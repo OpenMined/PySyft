@@ -97,6 +97,9 @@ class AutogradTensor(AbstractTensor):
     def __pow__(self, power, **kwargs):
         return self.pow(power, **kwargs)
 
+    def __truediv__(self, other):
+        return self.div(other)
+
     @overloaded.method
     def __gt__(self, _self, other):
         return _self.__gt__(other)
@@ -130,7 +133,7 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                     name, self, args, kwargs
                 )
 
@@ -153,17 +156,17 @@ class AutogradTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def add(self, other):
-            return self.__add__(other)
+            return self.add(other)
 
         module.add = add
 
         def sub(self, other):
-            return self.__sub__(other)
+            return self.sub(other)
 
         module.sub = sub
 
         def mul(self, other):
-            return self.__mul__(other)
+            return self.mul(other)
 
         module.mul = mul
 
@@ -171,6 +174,11 @@ class AutogradTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
+
+        def div(self, other):
+            return self.div(other)
+
+        module.div = div
 
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
@@ -233,7 +241,7 @@ class AutogradTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 

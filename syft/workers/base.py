@@ -9,6 +9,7 @@ from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
+from syft import messaging
 from syft import codes
 from typing import Callable
 from typing import List
@@ -122,6 +123,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                             self.add_worker(worker)
                         if self.id not in worker._known_workers:
                             worker.add_worker(self)
+            else:
+                # Make the local worker aware of itself
+                # self is the to-be-created local worker
+                self.add_worker(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -213,8 +218,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if self.verbose:
             print(f"worker {self} sending {msg_type} {message} to {location}")
+
         # Step 0: combine type and message
-        message = (msg_type, message)
+        message = messaging.Message(msg_type, message)
 
         # Step 1: serialize the message to simple python objects
         bin_message = sy.serde.serialize(message)
@@ -247,7 +253,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        (msg_type, contents) = sy.serde.deserialize(bin_message, worker=self)
+        msg = sy.serde.deserialize(bin_message, worker=self)
+
+        (msg_type, contents) = (msg.msg_type, msg.contents)
+
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
         # Step 1: route message to appropriate function
@@ -268,6 +277,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         ptr_id: Union[str, int] = None,
         local_autograd=False,
         preinitialize_grad=False,
+        garbage_collect_data=None,
     ) -> "pointers.ObjectPointer":
         """Sends tensor to the worker(s).
 
@@ -284,6 +294,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
+            garbage_collect_data: argument passed down to create_pointer()
 
         Example:
             >>> import torch
@@ -320,7 +331,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
 
-            pointer = obj.create_pointer(
+            pointer = type(obj).create_pointer(
+                obj,
                 owner=self,
                 location=worker,
                 id_at_location=obj.id,
@@ -328,6 +340,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 ptr_id=ptr_id,
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
+                garbage_collect_data=garbage_collect_data,
             )
         else:
             pointer = obj
@@ -354,7 +367,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self._objects[_self]
+                _self = self.get_obj(_self)
+                if _self is None:
+                    return
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
@@ -419,7 +434,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
-            return_ids = [sy.ID_PROVIDER.pop()]
+            return_ids = tuple([sy.ID_PROVIDER.pop()])
 
         message = (message, return_ids)
 
@@ -460,6 +475,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # deleted
         if hasattr(obj, "child") and hasattr(obj.child, "set_garbage_collect_data"):
             obj.child.set_garbage_collect_data(value=False)
+
+        if hasattr(obj, "private") and obj.private:
+            return None
 
         return obj
 
@@ -675,12 +693,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def __getitem__(self, idx):
         return self._objects[idx]
 
-    def clear_objects(self):
-        """Removes all objects from the worker."""
-
-        self._objects.clear()
-        return self
-
     @staticmethod
     def is_tensor_none(obj):
         return obj is None
@@ -853,4 +865,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return tuple([codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]])
+        return messaging.Message(
+            codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
+        )

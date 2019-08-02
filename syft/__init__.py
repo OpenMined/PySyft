@@ -1,4 +1,8 @@
-"""Some syft imports..."""
+r"""
+PySyft is a Python library for secure, private Deep Learning. 
+PySyft decouples private data from model training, using Federated Learning,
+Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
+"""
 # Major imports
 from syft import frameworks
 from syft import workers
@@ -21,6 +25,7 @@ from syft import dependency_check
 
 if dependency_check.keras_available:
     from syft.frameworks.keras import KerasHook
+    from syft.workers import TFECluster
     from syft.workers import TFEWorker
 else:
     logger.warning("Keras (Tensorflow) not available.")
@@ -43,11 +48,14 @@ from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoade
 from syft.grid import VirtualGrid
 
 # Import federate learning objects
-from syft.federated import Plan
 from syft.federated import TrainConfig
-from syft.federated import func2plan
-from syft.federated import method2plan
-from syft.federated import make_plan
+
+# Import messaging objects
+from syft.messaging.message import Message
+from syft.messaging import Plan
+from syft.messaging import func2plan
+from syft.messaging import method2plan
+from syft.messaging import make_plan
 
 # Import Worker Types
 from syft.workers import VirtualWorker
@@ -56,6 +64,7 @@ from syft.workers import VirtualWorker
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
