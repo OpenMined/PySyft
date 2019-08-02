@@ -193,10 +193,10 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
-            h = init_hidden(x, self.hidden_size)
+            h = init_hidden(x, self.hidden_size, self.num_layers * self.num_directions)
 
             if self.is_lstm:
-                c = init_hidden(x, self.hidden_size)
+                c = init_hidden(x, self.hidden_size, self.num_layers * self.num_directions)
 
         elif self.is_lstm:
             h, c = h
@@ -372,8 +372,13 @@ class LSTM(RNNBase):
         )
 
 
-def init_hidden(input, hidden_size):
-    h = torch.zeros(input.shape[0], hidden_size, dtype=input.dtype, device=input.device)
+def init_hidden(input, hidden_size, n_layers=None):
+    if n_layers is None:
+        h = torch.zeros(input.shape[0], hidden_size, dtype=input.dtype, device=input.device)
+    else:
+        h = torch.zeros(
+            n_layers, input.shape[1], hidden_size, dtype=input.dtype, device=input.device
+        )
     if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
         h = h.fix_precision()
         child = input.child
