@@ -133,11 +133,12 @@ def test_fixed():
     charlie = sy.VirtualWorker(hook, id="charlie")
     james = sy.VirtualWorker(hook, id="james")
 
-    t = torch.tensor([3, -9, 4, 1]).fix_precision()
-
+    t = torch.tensor([3, -9, 4, 1]).fix_precision().poly()
+    
     h = PolynomialTensor().on(t)
 
     h.exp()
+
 
 
 """

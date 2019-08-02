@@ -80,6 +80,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    PolynomialTensor: lambda i, **kwargs: PolynomialTensor(**kwargs).on(i, wrap=False),
     LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
         LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
     ),

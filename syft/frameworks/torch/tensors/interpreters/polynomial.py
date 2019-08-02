@@ -38,6 +38,7 @@ class PolynomialTensor(AbstractTensor):
         # Stores fitted function
         self.func_approx = {}
         self.child = child
+        self.id = None
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
@@ -258,56 +259,3 @@ class PolynomialTensor(AbstractTensor):
         # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
         self.child = self.child + (self.child ** 2) + (1 / 2) + (self.child ** 3)
         return self.child
-
-    @overloaded.method
-    def add(self, _self, *args, **kwargs):
-        print("Log method add")
-        response = _self.add(*args, **kwargs)
-        return response
-
-    @staticmethod
-    @overloaded.module
-    def torch(module):
-        """
-        We use the @overloaded.module to specify we're writing here
-        a function which should overload the function with the same
-        name in the <torch> module
-        :param module: object which stores the overloading functions
-
-        Note that we used the @staticmethod decorator as we're in a
-        class
-        
-        """
-
-        def poly():
-
-            print("Hello You called me :D ? ")
-
-        module.exp = poly
-
-        def add(x, y):
-            """
-            You can write the function to overload in the most natural
-            way, so this will be called whenever you call torch.add on
-            Logging Tensors, and the x and y you get are also Logging
-            Tensors, so compared to the @overloaded.method, you see
-            that the @overloaded.module does not hook the arguments.
-            """
-            print("Log function torch.add")
-            return x + y
-
-        # Just register it using the module variable
-        module.add = add
-
-        @overloaded.function
-        def mul(x, y):
-            """
-            You can also add the @overloaded.function decorator to also
-            hook arguments, ie all the LoggingTensor are replaced with
-            their child attribute
-            """
-            print("Log function torch.mul")
-            return x * y
-
-        # Just register it using the module variable
-        module.mul = mul

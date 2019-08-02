@@ -66,7 +66,7 @@ from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-
+from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 from syft.frameworks.torch.pointers import ObjectPointer
 from syft.frameworks.torch.pointers import CallablePointer
 from syft.frameworks.torch.pointers import ObjectWrapper
@@ -92,6 +92,7 @@ __all__ = [
     "VirtualGrid",
     "ObjectWrapper",
     "LargePrecisionTensor",
+    "PolynomialTensor",
 ]
 
 local_worker = None
