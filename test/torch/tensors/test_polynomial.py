@@ -122,6 +122,21 @@ def test_log_function():
     assert torch.allclose(expected, result, atol=1e-03)
 
 
+def test_fixed():
+
+    hook = sy.TorchHook(torch)
+    bob = sy.VirtualWorker(hook, id="bob")
+    alice = sy.VirtualWorker(hook, id="alice")
+    charlie = sy.VirtualWorker(hook, id="charlie")
+    james = sy.VirtualWorker(hook, id="james")
+
+    t = torch.tensor([3, -9, 4, 1]).fix_precision()
+
+    h = PolynomialTensor().on(t)
+
+    h.exp()
+
+
 """
 def test_exp_taylor():
     expected = torch.tensor(
@@ -146,19 +161,3 @@ def test_sigmoid_taylor():
     result = poly_tensor.sigmoid(x)
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, result, atol=1e-03)"""
-
-
-def test_fixed():
-
-    import syft as sy
-    import torch
-    import torch.nn as nn
-    import time
-
-    hook = sy.TorchHook(torch)
-    bob = sy.VirtualWorker(hook, id="bob")
-    alice = sy.VirtualWorker(hook, id="alice")
-    charlie = sy.VirtualWorker(hook, id="charlie")
-    james = sy.VirtualWorker(hook, id="james")
-
-    t = torch.tensor([3, -9, 4, 1]).fix_precision().test_tensor()

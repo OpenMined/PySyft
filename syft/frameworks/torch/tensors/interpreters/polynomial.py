@@ -238,7 +238,6 @@ class PolynomialTensor(AbstractTensor):
 
         return (1 / 2) + ((x) * 1 / 4) - ((x ** 3) * (1 / 48)) + ((x ** 5) * (1 / 480))
 
-    @overloaded.overload_method
     def test_tensor(self, x):
         """
          Method provides exponential function approximation interms of Taylor Series
@@ -249,7 +248,16 @@ class PolynomialTensor(AbstractTensor):
          Returns:
              approximation of the sigmoid function as a torch tensor
          """
-
+        # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
         # self.child=self.function(1)+ self.function(x)+(x ** 2) * (self.function(1 / 2))+(x ** 3) * (self.function(1 / 6))+(x ** 4) * (self.function(1 / (24)))+(x ** 5) * (self.function(1 / (120)))
         self.child = x.child + (x.child ** 2) + (1 / 2) + (x.child ** 3)
         return self.child
+
+    def exp(self):
+
+        # The below approximations are inaccurate and only for verifying if polynomialTensor is part of chain.
+        self.child = self.child + (self.child ** 2) + (1 / 2) + (self.child ** 3)
+        return self.child
+
+
+test_fixed()
