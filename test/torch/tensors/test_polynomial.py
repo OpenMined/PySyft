@@ -8,6 +8,9 @@ from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 import syft as sy
 
 
+# test_wrap()
+
+
 def test_sigmoid():
 
     poly_tensor = PolynomialTensor()

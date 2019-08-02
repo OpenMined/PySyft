@@ -9,6 +9,7 @@ import weakref
 import syft
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
@@ -652,7 +653,7 @@ class TorchTensor(AbstractTensor):
 
     def polynomial(self, *args, **kwargs):
 
-        pass
+        return PolynomialTensor().on(self)
 
     poly = polynomial
 
