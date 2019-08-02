@@ -366,7 +366,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self._objects[_self]
+                _self = self.get_obj(_self)
+                if _self is None:
+                    return
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
