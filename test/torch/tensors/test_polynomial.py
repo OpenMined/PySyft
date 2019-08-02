@@ -125,22 +125,6 @@ def test_log_function():
     assert torch.allclose(expected, result, atol=1e-03)
 
 
-def test_fixed():
-
-    hook = sy.TorchHook(torch)
-    bob = sy.VirtualWorker(hook, id="bob")
-    alice = sy.VirtualWorker(hook, id="alice")
-    charlie = sy.VirtualWorker(hook, id="charlie")
-    james = sy.VirtualWorker(hook, id="james")
-
-    t = torch.tensor([3, -9, 4, 1]).fix_precision().poly()
-    
-    h = PolynomialTensor().on(t)
-
-    h.exp()
-
-
-
 """
 def test_exp_taylor():
     expected = torch.tensor(
