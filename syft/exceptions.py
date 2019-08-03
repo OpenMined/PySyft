@@ -235,6 +235,23 @@ class IdNotUniqueError(Exception):
     pass
 
 
+class InvalidProtocolFileError(Exception):
+    """Raised when PySyft protocol file cannot be loaded."""
+
+    pass
+
+
+class UndefinedProtocolTypeError(Exception):
+    """Raised when trying to serialize type that is not defined in protocol file."""
+
+    pass
+
+class UndefinedProtocolTypePropertyError(Exception):
+    """Raised when trying to get protocol type property that is not defined in protocol file."""
+
+    pass
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:

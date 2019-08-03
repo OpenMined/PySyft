@@ -1,0 +1,91 @@
+{
+  "_DOC": "This file defines PySyft protocol serialization constants",
+  "VERSION": 0,
+  "TYPES": {
+    "dict": {
+      "code": 0
+    },
+    "list": {
+      "code": 1
+    },
+    "range": {
+      "code": 2
+    },
+    "set": {
+      "code": 3
+    },
+    "slice": {
+      "code": 4
+    },
+    "str": {
+      "code": 5
+    },
+    "tuple": {
+      "code": 6
+    },
+    "ellipsis": {
+      "code": 7
+    },
+    "numpy.ndarray": {
+      "code": 8
+    },
+    "torch.device": {
+      "code": 9
+    },
+    "torch.jit.ScriptModule": {
+      "code": 10
+    },
+    "torch.jit.TopLevelTracedModule": {
+      "code": 10
+    },
+    "torch.nn.parameter.Parameter": {
+      "code": 11
+    },
+    "torch.Tensor": {
+      "code": 12
+    },
+    "torch.Size": {
+      "code": 13
+    },
+    "syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor": {
+      "code": 14
+    },
+    "syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor": {
+      "code": 15
+    },
+    "syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor": {
+      "code": 16
+    },
+    "syft.frameworks.torch.tensors.decorators.logging.LoggingTensor": {
+      "code": 17
+    },
+    "syft.frameworks.torch.tensors.interpreters.multi_pointer.MultiPointerTensor": {
+      "code": 18
+    },
+    "syft.messaging.plan.Plan": {
+      "code": 19
+    },
+    "syft.frameworks.torch.pointers.pointer_tensor.PointerTensor": {
+      "code": 20
+    },
+    "syft.frameworks.torch.pointers.object_wrapper.ObjectWrapper": {
+      "code": 21
+    },
+    "syft.federated.train_config.TrainConfig": {
+      "code": 22
+    },
+    "syft.workers.virtual.VirtualWorker": {
+      "code": 23,
+      "forced_code": 27
+    },
+    "syft.messaging.message.Message": {
+      "code": 24
+    },
+    "syft.exceptions.GetNotPermittedError": {
+      "code": 25
+    },
+    "syft.exceptions.ResponseSignatureError": {
+      "code": 26
+    }
+  }
+}

@@ -66,6 +66,8 @@ from syft.frameworks.torch import pointers
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
 
+from syft.serde.proto import proto_type_info
+
 # Maps a type to a tuple containing its simplifier and detailer function
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
@@ -125,19 +127,16 @@ def _generate_simplifiers_and_detailers():
     """Generate simplifiers, forced full simplifiers and detailers."""
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
-    detailers = []
+    detailers = OrderedDict()
 
     def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
-        if detailer in detailers:
-            curr_index = detailers.index(detailer)
-        else:
-            curr_index = len(detailers)
-            detailers.append(detailer)
-
+        type_info = proto_type_info(curr_type)
         if forced:
-            forced_full_simplifiers[curr_type] = (curr_index, simplifier)
+            forced_full_simplifiers[curr_type] = (type_info.forced_code, simplifier)
+            detailers[type_info.forced_code] = detailer
         else:
-            simplifiers[curr_type] = (curr_index, simplifier)
+            simplifiers[curr_type] = (type_info.code, simplifier)
+            detailers[type_info.code] = detailer
 
     # Register native and torch types
     for curr_type in MAP_TO_SIMPLIFIERS_AND_DETAILERS:
