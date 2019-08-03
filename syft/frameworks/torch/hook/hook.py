@@ -12,7 +12,7 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
-from syft.federated import Plan
+from syft.messaging import Plan
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.pointers import PointerTensor
