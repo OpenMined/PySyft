@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir syft
 RUN mkdir $WORKER_DIR
 WORKDIR $WORKER_DIR
 COPY ./entrypoint.sh .
+RUN chmod +x ./entrypoint.sh
 COPY ./worker-server.py .
 
 ENTRYPOINT "$WORKER_DIR/entrypoint.sh"
