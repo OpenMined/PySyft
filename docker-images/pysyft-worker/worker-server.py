@@ -10,7 +10,7 @@ def get_args():
         "--port",
         "-p",
         type=int,
-        default=8777
+        default=8777,
         help="port number of the websocket server worker, e.g. --port 8777"
     )
     parser.add_argument(
