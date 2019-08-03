@@ -6,6 +6,10 @@ ENV WORKER_DIR /worker
 RUN apt-get update && apt-get install -y gcc
 RUN pip install --no-cache-dir syft
 
-# TODO: Add worker code
+# Add worker code
 RUN mkdir $WORKER_DIR
 WORKDIR $WORKER_DIR
+COPY ./entrypoint.sh .
+COPY ./worker-server.py .
+
+ENTRYPOINT "$WORKER_DIR/entrypoint.sh"
