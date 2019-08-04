@@ -650,9 +650,9 @@ class TorchTensor(AbstractTensor):
 
     fix_precision = fix_prec
 
-    def polynomial(self):
+    def polynomial(self, *args, **kwargs):
 
-        return syft.PolynomialTensor().on(self)
+        return syft.PolynomialTensor(*args, **kwargs).on(self)
 
     poly = polynomial
 

@@ -39,6 +39,7 @@ class PolynomialTensor(AbstractTensor):
         self.func_approx = {}
         self.child = child
         self.id = None
+        self.encrypt_fn = None
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
@@ -63,7 +64,13 @@ class PolynomialTensor(AbstractTensor):
                 lambda x: np.tanh(x),
             )
 
-        default_functions()
+    def get_encrypt_function(self):
+
+        encryption_fn = {
+            "syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor": "fix_precision"
+        }
+
+        self.encrypt_fn = encryption_fn[type(self.child)]
 
     def add_function(self, name, degree, piecewise, function):
         """Add function to function_attr dictionary.
@@ -106,7 +113,9 @@ class PolynomialTensor(AbstractTensor):
         self, function: Callable, interval: List[Union[int, float]], degree: int = 10
     ) -> np.poly1d:
 
-        """Returns a interpolated version of given function using Numpy's polyfit method
+        """Returns a interpolated version of given function using Numpy's polyfit method.
+        
+           Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/
 
          Args:
              function (a lambda function): Base function to be approximated
@@ -146,9 +155,18 @@ class PolynomialTensor(AbstractTensor):
          """
 
         val = torch.from_numpy(polyinstance.coef)
-        return function(val)
 
-    def piecewise_linear_fit(self, name, array):
+        if isinstance(self.child, FixedPrecisionTensor):
+
+            self.encrypt_fn = getattr(torch.tensor(val), "fix_precision")()
+
+        for i in range(0, len(val)):
+
+            self.child += (self.child ** i) * self.encrypt_fn[i].child
+
+        return self.child
+
+    '''def piecewise_linear_fit(self, name, array):
         """Fit a piecewise linear function. This can be used to approximate a non-linear function
          as separate linear functions valid for separate ranges.
          For instance function approximations are more accurate for exponential when separate instances
@@ -179,9 +197,9 @@ class PolynomialTensor(AbstractTensor):
                 ]
             )
 
-        return arguments
+        return arguments'''
 
-    def piecewise_linear_eval(self, data, x):
+    '''def piecewise_linear_eval(self, data, x):
         """Get approximated value for a given function. This takes only scalar value.
          If you have a Numpy array or torch tensor consider passing it using a lambda
          or torch.apply_ method.
@@ -200,7 +218,7 @@ class PolynomialTensor(AbstractTensor):
 
             if min_val <= x <= max_val:
 
-                return function(x)
+                return function(x)'''
 
     def fit_function(self, name, min_val=0, max_val=10, steps=100, degree=10) -> np.poly1d:
         """Interpolated approximation of given function
@@ -237,12 +255,15 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        self.child = (
-            (1 / 2)
-            + ((self.child) * 1 / 4)
-            - ((self.child ** 3) * (1 / 48))
-            + ((self.child ** 5) * (1 / 480))
-        )
+        self.sigmoidtaylorcoeffs = [(1 / 2), (1 / 4), 0, (1 / 3), 0, (1 / 480)]
+
+        if isinstance(self.child, FixedPrecisionTensor):
+
+            self.encrypt_fn = getattr(torch.tensor(self.sigmoidtaylorcoeffs), "fix_precision")()
+
+        for i in range(0, len(self.sigmoidtaylorcoeffs)):
+
+            self.child += (self.child ** i) * self.encrypt_fn[i].child
 
         return self.child
 
@@ -266,21 +287,21 @@ class PolynomialTensor(AbstractTensor):
 
     def exp(self):
 
-        self.child = (
-            1
-            + self.child
-            + (self.child ** 2) * (1 / 2)
-            + (self.child ** 3) * (1 / 6)
-            + (self.child ** 4) * (1 / (24))
-            + (self.child ** 5) * ((1 / (120)))
-            + (self.child ** 6) * (self.child * (1 / (840)))
-            + (self.child ** 7) * (self.child * (1 / (6720)))
-        )
+        self.exptaylorcoeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+
+        if isinstance(self.child, FixedPrecisionTensor):
+
+            self.encrypt_fn = getattr(torch.tensor(self.exptaylorcoeffs), "fix_precision")()
+
+        for i in range(0, len(self.exptaylorcoeffs)):
+
+            self.child += (self.child ** i) * self.encrypt_fn[i].child
+
         return self.child
 
     __exp__ = exp
 
-    @staticmethod
+    """@staticmethod
     @overloaded.module
     def torch(module):
         def exp(self, x):
@@ -300,4 +321,4 @@ class PolynomialTensor(AbstractTensor):
             return self.__tanh__(x)
 
         # Just register it using the module variable
-        module.tanh = tanh
+        module.tanh = tanh"""
