@@ -546,12 +546,12 @@ def test_get_float_prec_on_autograd_tensor(workers):
 def test_serialize_deserialize_autograd_tensor(workers):
     # let's try to send an autogradTensor to a remote location and get it back
     alice = workers["alice"]
-    # random_tensor = torch.randn(5, 3) #previous code
+
     random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
     assert isinstance(random_tensor, torch.Tensor)
 
     remote_tensor = random_tensor.send(alice, local_autograd=True)
-    assert isinstance(remote_tensor, torch.Tensor)
+    assert isinstance(remote_tensor.child, syft.AutogradTensor)
 
     local_tensor = remote_tensor.get()
     assert isinstance(local_tensor, torch.Tensor)
@@ -563,12 +563,12 @@ def test_serialize_deserialize_autograd_tensor(workers):
 def test_types_auto_remote_tensors(workers):
     alice = workers["alice"]
     bob = workers["bob"]
-    # random_tensor = torch.randn(5, 3) #previous code
+
     random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
     assert isinstance(random_tensor, torch.Tensor)
 
     remote_tensor_auto = random_tensor.send(alice, local_autograd=True)
-    assert isinstance(remote_tensor_auto, torch.Tensor)
+    assert isinstance(remote_tensor_auto.child, syft.AutogradTensor)
 
     remote_tensor_remote = remote_tensor_auto.send(bob)
     assert isinstance(remote_tensor_remote, torch.Tensor)
@@ -623,10 +623,10 @@ def test_train_remote_autograd_tensor(workers):
 
     # Remote training, setting autograd for the data and the targets
     data_remote = data_local.send(alice, local_autograd=True)
-    assert isinstance(data_remote, torch.Tensor)
+    assert isinstance(data_remote.child, syft.PointerTensor)
 
     target_remote = target_local.send(alice, local_autograd=True)
-    assert isinstance(target_remote, torch.Tensor)
+    assert isinstance(target_remote.child, syft.PointerTensor)
 
     model_remote = model_local.send(alice, local_autograd=True)
 
@@ -634,7 +634,7 @@ def test_train_remote_autograd_tensor(workers):
 
     loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote, remote=True)
 
-    # let's check if the local version and the remote version have the same weigth
+    # let's check if the local version and the remote version have the same weight
     assert torch.all(
         torch.eq(
             model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data
