@@ -59,7 +59,7 @@ def test_set_simplify():
     input = set(["hello", "world"])
     set_detail_code = serde.proto_type_info(set).code
     str_detail_code = serde.proto_type_info(str).code
-    target = (set_detail_code, [(str_detail_code, (b"hello",)), (str_detail_code, (b"world",))])
+    target = (set_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
 
@@ -109,7 +109,7 @@ def test_dict_simplify():
     detail_str_code = serde.proto_type_info(str).code
     target = (
         detail_dict_code,
-        [((detail_str_code, (b"hello",)), (detail_str_code, (b"world",)))],
+        (((detail_str_code, (b"hello",)), (detail_str_code, (b"world",))),),
     )
     assert serde._simplify(input) == target
 
