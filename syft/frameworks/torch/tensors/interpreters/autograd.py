@@ -273,6 +273,7 @@ class AutogradTensor(AbstractTensor):
         if isinstance(self.child, torch.Tensor) and not self.child.is_wrapper:
             return self.child
         return self
+
     @staticmethod
     def simplify(tensor: "AutogradTensor") -> tuple:
         """Takes the attributes of an AutogradTensor and saves them in a tuple.
