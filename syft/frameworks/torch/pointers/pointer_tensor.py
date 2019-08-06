@@ -307,6 +307,24 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
     fix_precision = fix_prec
 
+    def float_prec(self, *args, **kwargs):
+        """
+        Send a command to remote worker to transform a fix_precision tensor back to float_precision
+
+        Returns:
+            A pointer to a Tensor
+        """
+
+        # Send the command
+        command = ("float_prec", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        # For some reason the response has no Wrapper. Must be manually added here
+        return response.wrap()
+
+    float_precision = float_prec
+
     def share(self, *args, **kwargs):
         """
         Send a command to remote worker to additively share a tensor

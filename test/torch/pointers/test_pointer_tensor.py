@@ -309,3 +309,36 @@ def test_raising_error_when_item_func_called(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     with pytest.raises(RuntimeError):
         pointer.item()
+
+
+def test_fix_prec_on_pointer_tensor(workers):
+    """
+    Ensure .fix_precision() works as expected.
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+
+    ptr = ptr.fix_precision()
+
+    assert type(ptr.child) is syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+    assert (
+        type(ptr.get().child)
+        is syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
+    )
+
+
+def test_float_prec_on_pointer_tensor(workers):
+    """
+    Ensure .float_precision() works as expected.
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0]).fix_prec()
+    ptr = tensor.send(bob)
+
+    ptr = ptr.float_precision()
+
+    assert type(ptr.child) is syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+    assert type(ptr.get()) is torch.Tensor
