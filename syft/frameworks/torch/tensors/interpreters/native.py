@@ -210,6 +210,60 @@ class TorchTensor(AbstractTensor):
                 self._id = syft.ID_PROVIDER.pop()
                 return self._id
 
+    @property
+    def gc(self):
+        if self.has_child():
+            return self.child.garbage_collect_data
+        else:
+
+            if not hasattr(self, "_gc"):
+                self._gc = True
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+                self.child.garbage_collect_data = self._gc
+                self.garbage_collection = self._gc
+            return self._gc
+
+    @gc.setter
+    def gc(self, flag):
+        if self.has_child():
+            self.child.garbage_collect_data = flag
+        else:
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+                self.child.garbage_collect_data = flag
+        self._gc = flag
+
+    @property
+    def disable_gc(self):
+        self.child.garbage_collect_data = False
+        if self.has_gc():
+            self.gc = False
+            self.garbage_collection = False
+        return self
+
+    def has_gc(self):
+        return hasattr(self, "gc")
+
+    @property
+    def garbage_collection(self):
+        if self.has_child():
+            return self.child.garbage_collect_data
+        elif self.has_gc():
+            return self.gc
+        else:
+            if not hasattr(self, "_garbage_collection"):
+                self._garbage_collection = True
+            return self._garbage_collection
+
+    @garbage_collection.setter
+    def garbage_collection(self, flag):
+        if self.has_child():
+            self.child.garbage_collect_data = flag
+        else:
+            self.gc = flag
+            self._garbage_collection = flag
+
     @id.setter
     def id(self, new_id):
         if self.is_wrapper:

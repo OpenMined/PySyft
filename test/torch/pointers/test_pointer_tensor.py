@@ -23,6 +23,42 @@ def test_send_default_garbage_collector_true(workers):
     assert x_ptr.child.garbage_collect_data
 
 
+def test_send_garbage_collect_data_false(workers):
+    """Pointer tensor should be not garbage collected."""
+    x = torch.Tensor([-1, 2])
+    x_ptr = x.send(workers["alice"])
+    x_ptr.garbage_collection = False
+    print(x_ptr.gc)
+    assert x_ptr.child.garbage_collect_data == False
+
+
+def test_send_gc_false(workers):
+    """Pointer tensor should be not garbage collected."""
+    x = torch.Tensor([-1, 2])
+    x_ptr = x.send(workers["alice"])
+    x_ptr.gc = False
+    assert x_ptr.child.garbage_collect_data == False
+    assert x_ptr.gc == False, "property GC is not in sync"
+    assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
+
+
+def test_send_gc_true(workers):
+    """Pointer tensor should be not garbage collected."""
+    x = torch.Tensor([-1, 2])
+    x_ptr = x.send(workers["alice"])
+
+    assert x_ptr.gc == True
+
+
+def test_send_disable_gc(workers):
+    """Pointer tensor should be not garbage collected."""
+    x = torch.Tensor([-1, 2])
+    x_ptr = x.send(workers["alice"]).disable_gc
+    assert x_ptr.child.garbage_collect_data == False
+    assert x_ptr.gc == False, "property GC is not in sync"
+    assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
+
+
 def test_send_get(workers):
     """Test several send get usages"""
     bob = workers["bob"]
