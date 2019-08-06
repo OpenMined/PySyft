@@ -268,7 +268,7 @@ class TorchTensor(AbstractTensor):
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
-            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.hook_function_args(
+            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
                 cmd, args, kwargs, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
@@ -318,6 +318,7 @@ class TorchTensor(AbstractTensor):
         local_autograd=False,
         preinitialize_grad=False,
         no_wrap=False,
+        garbage_collect_data=True,
     ):
         """Gets the pointer to a new remote object.
 
@@ -334,6 +335,8 @@ class TorchTensor(AbstractTensor):
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
+            no_wrap: If True, wrap() is called on the created pointer
+            garbage_collect_data: argument passed down to create_pointer()
 
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
@@ -356,7 +359,11 @@ class TorchTensor(AbstractTensor):
                     self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(
-                self, location, local_autograd=local_autograd, preinitialize_grad=preinitialize_grad
+                self,
+                location,
+                local_autograd=local_autograd,
+                preinitialize_grad=preinitialize_grad,
+                garbage_collect_data=garbage_collect_data,
             )
 
             ptr.description = self.description

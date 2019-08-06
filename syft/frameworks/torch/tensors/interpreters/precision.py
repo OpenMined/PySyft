@@ -245,12 +245,12 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             # If we try to multiply a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 "mul", self, other, None
             )
 
         elif isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 "mul", self, other, None
             )
 
@@ -357,7 +357,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 "matmul", self, args, kwargs
             )
 
@@ -647,7 +647,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 
