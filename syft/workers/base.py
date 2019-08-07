@@ -222,7 +222,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # # Step 0: combine type and message
         # message = messaging.Message(msg_type, message)
 
-        # Step 1: serialize the message to simple python objects
+        # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message)
 
         # Step 2: send the message and wait for a response
@@ -691,7 +691,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self._objects[idx]
+        try:
+            return self._objects[idx]
+        except:
+            return None
 
     @staticmethod
     def is_tensor_none(obj):
