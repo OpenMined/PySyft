@@ -56,6 +56,7 @@ from syft.messaging import ObjectRequestMessage
 from syft.messaging import IsNoneMessage
 from syft.messaging import GetShapeMessage
 from syft.messaging import ForceObjectDeleteMessage
+from syft.messaging import SearchMessage
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -97,6 +98,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     IsNoneMessage,
     GetShapeMessage,
     ForceObjectDeleteMessage,
+    SearchMessage
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list

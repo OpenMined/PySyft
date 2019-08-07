@@ -1,10 +1,12 @@
 import syft as sy
 import torch as th
 
+from syft import messaging
+
 
 def test_message_serde():
 
-    x = sy.Message(0, [1, 2, 3])
+    x = messaging.Message(0, [1, 2, 3])
     x_bin = sy.serde.serialize(x)
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
@@ -80,7 +82,7 @@ def test_force_object_delete_message(workers):
 
 
 def test_is_none_message(workers):
-    
+
     bob = workers["bob"]
 
     x = th.tensor([1, 2, 3, 4]).send(bob)
@@ -94,3 +96,14 @@ def test_is_none_message(workers):
     del x
 
     assert y.child.is_none()
+
+
+def test_search_message_serde():
+
+    x = messaging.SearchMessage([1, 2, 3])
+
+    x_bin = sy.serde.serialize(x)
+    y = sy.serde.deserialize(x_bin, sy.local_worker)
+
+    assert x.contents == y.contents
+    assert x.msg_type == y.msg_type

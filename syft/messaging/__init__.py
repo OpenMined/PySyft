@@ -5,6 +5,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import ForceObjectDeleteMessage
+from syft.messaging.message import SearchMessage
 
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
