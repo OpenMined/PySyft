@@ -98,8 +98,13 @@ class LSTMCell(RNNCellBase):
 
         # Bias of forget gate should be initialize with 1 or 2
         # Ref: http://proceedings.mlr.press/v37/jozefowicz15.pdf
-        self.fc_xh.bias[self.hidden_size : 2 * self.hidden_size] = 1.0 / self.hidden_size
-        self.fc_hh.bias[self.hidden_size : 2 * self.hidden_size] = 1.0 / self.hidden_size
+        incr_bias = 1.0 / self.hidden_size
+        init.uniform_(
+            self.fc_xh.bias[self.hidden_size : 2 * self.hidden_size], -incr_bias, incr_bias
+        )
+        init.uniform_(
+            self.fc_hh.bias[self.hidden_size : 2 * self.hidden_size], -incr_bias, incr_bias
+        )
 
     def forward(self, x, hc=None):
 
