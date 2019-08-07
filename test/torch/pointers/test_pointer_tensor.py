@@ -3,6 +3,7 @@ import torch as th
 import syft
 
 from syft.frameworks.torch.pointers import PointerTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 import pytest
 
 
@@ -322,11 +323,25 @@ def test_fix_prec_on_pointer_tensor(workers):
 
     ptr = ptr.fix_precision()
 
-    assert type(ptr.child) is syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
-    assert (
-        type(ptr.get().child)
-        is syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
-    )
+    assert type(ptr.child) is PointerTensor
+    assert type(ptr.get().child) is FixedPrecisionTensor
+
+
+def test_fix_prec_on_pointer_of_pointer(workers):
+    """
+    Ensure .fix_precision() works along a chain of pointers.
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    ptr = ptr.send(alice)
+
+    ptr = ptr.fix_precision()
+
+    assert type(ptr.child) is PointerTensor
+    assert type(ptr.get().get().child) is FixedPrecisionTensor
 
 
 def test_float_prec_on_pointer_tensor(workers):
@@ -340,5 +355,22 @@ def test_float_prec_on_pointer_tensor(workers):
 
     ptr = ptr.float_precision()
 
-    assert type(ptr.child) is syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+    assert type(ptr.child) is PointerTensor
     assert type(ptr.get()) is torch.Tensor
+
+
+def test_float_prec_on_pointer_of_pointer(workers):
+    """
+    Ensure .float_precision() works along a chain of pointers.
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0]).fix_prec()
+    ptr = tensor.send(bob)
+    ptr = ptr.send(alice)
+
+    ptr = ptr.float_precision()
+
+    assert type(ptr.child) is PointerTensor
+    assert type(ptr.get().get()) is torch.Tensor
