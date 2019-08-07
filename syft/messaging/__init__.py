@@ -11,3 +11,18 @@ from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
 from syft.messaging.plan import make_plan
+
+__all__ = [
+    "Message",
+    "CommandMessage",
+    "ObjectMessage",
+    "ObjectRequestMessage",
+    "IsNoneMessage",
+    "GetShapeMessage",
+    "ForceObjectDeleteMessage",
+    "SearchMessage",
+    "Plan",
+    "func2plan",
+    "method2plan",
+    "make_plan"
+]

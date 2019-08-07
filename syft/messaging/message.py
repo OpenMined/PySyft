@@ -70,8 +70,6 @@ class CommandMessage(Message):
 
 
 class ObjectMessage(Message):
-    # TODO: add more efficieent detalier and simplifier custom for this type
-
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ, contents)
 
