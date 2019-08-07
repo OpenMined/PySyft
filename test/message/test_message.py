@@ -47,3 +47,24 @@ def test_obj_req_message(workers):
 
     assert (y==th.tensor([2,4,6,8])).all()
 
+
+def test_get_shape_message(workers):
+    bob = workers["bob"]
+    x = th.tensor([1, 2, 3, 4]).send(bob)
+    y = x + x
+    z = y.shape # this is the test
+    assert z == th.Size([4])
+
+def test_force_object_delete_message(workers):
+
+    bob = workers["bob"]
+
+    x = th.tensor([1, 2, 3, 4]).send(bob)
+
+    id_on_worker = x.id_at_location
+
+    assert id_on_worker in bob._objects
+
+    del x
+
+    assert id_on_worker not in bob._objects

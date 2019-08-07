@@ -30,6 +30,12 @@ class Message:
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
 
+    def __str__(self):
+        return f"({codes.code2MSGTYPE[self.msg_type]} {self.contents})"
+
+    def __repr__(self):
+        return self.__str__()
+
 class CommandMessage(Message):
 
     def __init__(self, contents):

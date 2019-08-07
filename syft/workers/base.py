@@ -217,7 +217,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location.
         """
         if self.verbose:
-            print(f"worker {self} sending {message.msg_type} {message} to {location}")
+            print(f"worker {self} sending {message} to {location}")
         #
         # # Step 0: combine type and message
         # message = messaging.Message(msg_type, message)
