@@ -155,12 +155,7 @@ class RNNBase(nn.Module):
         self.is_lstm = base_cell is LSTMCell
 
         # Dropout layers
-        # TO DO: check if there is support for dropout with AST and FPT
-        self.dropout_forward = nn.ModuleList([nn.Dropout(p=dropout) for _ in range(num_layers - 1)])
-        if self.bidirectional:
-            self.dropout_backward = nn.ModuleList(
-                [nn.Dropout(p=dropout) for _ in range(num_layers - 1)]
-            )
+        # TO DO: implement a nn.Dropout class for PySyft
 
         # Build RNN layers
         self.rnn_forward = nn.ModuleList()
@@ -236,19 +231,11 @@ class RNNBase(nn.Module):
 
                 else:
                     if self.is_lstm:
-                        # h_next[layer, :, :], c_next[layer, :, :] = self.rnn_forward[layer](
-                        #    self.dropout_forward[layer - 1](h_next[layer - 1, :, :]),
-                        #    (h_forward[layer, :, :], c_forward[layer, :, :]),
-                        # )
                         h_next[layer, :, :], c_next[layer, :, :] = self.rnn_forward[layer](
                             h_next[layer - 1, :, :],
                             (h_forward[layer, :, :], c_forward[layer, :, :]),
                         )
                     else:
-                        # h_next[layer, :, :] = self.rnn_forward[layer](
-                        #    self.dropout_forward[layer - 1](h_next[layer - 1, :, :]),
-                        #    h_forward[layer, :, :],
-                        # )
                         h_next[layer, :, :] = self.rnn_forward[layer](
                             h_next[layer - 1, :, :], h_forward[layer, :, :]
                         )
@@ -284,13 +271,12 @@ class RNNBase(nn.Module):
                     else:
                         if self.is_lstm:
                             h_next[layer, :, :], c_next[layer, :, :] = self.rnn_backward[layer](
-                                self.dropout_backward[layer - 1](h_next[layer - 1, :, :]),
+                                h_next[layer - 1, :, :],
                                 (h_backward[layer, :, :], c_backward[layer, :, :]),
                             )
                         else:
                             h_next[layer, :, :] = self.rnn_backward[layer](
-                                self.dropout_backward[layer - 1](h_next[layer - 1, :, :]),
-                                h_backward[layer, :, :],
+                                h_next[layer - 1, :, :], h_backward[layer, :, :]
                             )
                 output_backward[t, :, :] = h_next[layer, :, :]
                 h_backward = h_next
