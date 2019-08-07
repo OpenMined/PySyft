@@ -38,26 +38,36 @@ class Message:
 
 
 class CommandMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.CMD, contents)
 
 
 class ObjectMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ, contents)
 
 
 class ObjectRequestMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ_REQ, contents)
 
 
 class IsNoneMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.IS_NONE, contents)
 
 
 class GetShapeMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.GET_SHAPE, contents)
 
@@ -68,5 +78,7 @@ class ForceObjectDeleteMessage(Message):
 
 
 class SearchMessage(Message):
+    # TODO: add more efficieent detalier and simplifier custom for this type
+    
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.SEARCH, contents)
