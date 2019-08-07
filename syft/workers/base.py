@@ -436,10 +436,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        message = (message, return_ids)
-
         try:
-            ret_val = self.send_msg(messaging.CommandMessage(message), location=recipient)
+            ret_val = self.send_msg(messaging.CommandMessage(message, return_ids), location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated

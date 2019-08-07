@@ -5,9 +5,10 @@ from syft import codes
 
 
 class Message:
-    def __init__(self, msg_type, contents):
+    def __init__(self, msg_type, contents=None):
         self.msg_type = msg_type
-        self.contents = contents
+        if contents is not None:
+            self.contents = contents
 
     def _simplify(self):
         return (self.msg_type, self.contents)
@@ -38,10 +39,35 @@ class Message:
 
 
 class CommandMessage(Message):
-    # TODO: add more efficieent detalier and simplifier custom for this type
 
-    def __init__(self, contents):
-        super().__init__(codes.MSGTYPE.CMD, contents)
+    def __init__(self, message, return_ids):
+        super().__init__(codes.MSGTYPE.CMD)
+
+        self.message = message
+        self.return_ids = return_ids
+
+    @property
+    def contents(self): # need this just because some methods assume the tuple form (legacy)
+        return (self.message, self.return_ids)
+
+    @staticmethod
+    def simplify(ptr: "Message") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple
+        Args:
+            ptr (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(ptr)
+        """
+        # NOTE: we can skip calling _simplify on return_ids because they should already be
+        # a list of simple types.
+        return (ptr.msg_type, (sy.serde._simplify(ptr.message), ptr.return_ids))
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
+        return CommandMessage(sy.serde._detail(worker, tensor_tuple[1][0]), tensor_tuple[1][1])
 
 
 class ObjectMessage(Message):
@@ -49,7 +75,6 @@ class ObjectMessage(Message):
 
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ, contents)
-
 
 class ObjectRequestMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
