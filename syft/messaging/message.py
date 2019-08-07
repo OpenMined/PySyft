@@ -36,33 +36,32 @@ class Message:
     def __repr__(self):
         return self.__str__()
 
-class CommandMessage(Message):
 
+class CommandMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.CMD, contents)
 
 
 class ObjectMessage(Message):
-
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ, contents)
 
-class ObjectRequestMessage(Message):
 
+class ObjectRequestMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ_REQ, contents)
 
-class IsNoneMessage(Message):
 
+class IsNoneMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.IS_NONE, contents)
 
-class GetShapeMessage(Message):
 
+class GetShapeMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.GET_SHAPE, contents)
 
-class ForceObjectDeleteMessage(Message):
 
+class ForceObjectDeleteMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.FORCE_OBJ_DEL, contents)

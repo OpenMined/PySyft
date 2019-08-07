@@ -216,7 +216,9 @@ class ObjectPointer(abstract.AbstractObject):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(messaging.ForceObjectDeleteMessage(self.id_at_location), self.location)
+                self.owner.send_msg(
+                    messaging.ForceObjectDeleteMessage(self.id_at_location), self.location
+                )
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:

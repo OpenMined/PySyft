@@ -96,7 +96,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ObjectRequestMessage,
     IsNoneMessage,
     GetShapeMessage,
-    ForceObjectDeleteMessage
+    ForceObjectDeleteMessage,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
