@@ -218,9 +218,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if self.verbose:
             print(f"worker {self} sending {message} to {location}")
-        #
-        # # Step 0: combine type and message
-        # message = messaging.Message(msg_type, message)
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message)
