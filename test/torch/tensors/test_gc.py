@@ -193,16 +193,19 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
     assert x_id not in bob._objects
 
 
-def test_websocket_garbage_collection(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="ws_gc", port=8555, hook=hook)
+def test_websocket_garbage_collection(hook, start_proc):
+    kwargs = {"id": "ws_gc", "host": "localhost", "port": 8555, "hook": hook}
+    process_remote = start_proc(WebsocketServerWorker, **kwargs)
+    time.sleep(0.1)
+    local_worker = WebsocketClientWorker(**kwargs)
 
     sample_data = torch.tensor([1, 2, 3, 4])
-    sample_ptr = sample_data.send(remote_worker)
+    sample_ptr = sample_data.send(local_worker)
 
     _ = sample_ptr.get()
-    assert sample_data not in remote_worker._objects
+    assert sample_data not in local_worker._objects
 
-    remote_worker.ws.shutdown()
-    remote_worker.ws.close()
+    local_worker.ws.shutdown()
+    local_worker.ws.close()
     time.sleep(0.1)
-    server.terminate()
+    process_remote.terminate()
