@@ -66,6 +66,7 @@ class ForceObjectDeleteMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.FORCE_OBJ_DEL, contents)
 
+
 class SearchMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.SEARCH, contents)
