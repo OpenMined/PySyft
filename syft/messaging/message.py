@@ -50,11 +50,11 @@ class CommandMessage(Message):
         return (self.message, self.return_ids)
 
     @staticmethod
-    def simplify(ptr: "Message") -> tuple:
+    def simplify(ptr: "CommandMessage") -> tuple:
         """
-        This function takes the attributes of a Message and saves them in a tuple
+        This function takes the attributes of a CommandMessage and saves them in a tuple
         Args:
-            ptr (Message): a Message
+            ptr (CommandMessage): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
