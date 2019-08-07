@@ -688,10 +688,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-        try:
-            return self._objects[idx]
-        except:
-            return None
+        return self._objects.get(idx, None)
 
     @staticmethod
     def is_tensor_none(obj):
