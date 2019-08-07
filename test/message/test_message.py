@@ -52,10 +52,15 @@ def test_obj_req_message(workers):
 
 
 def test_get_shape_message(workers):
+
     bob = workers["bob"]
+
     x = th.tensor([1, 2, 3, 4]).send(bob)
+
     y = x + x
+
     z = y.shape  # this is the test
+
     assert z == th.Size([4])
 
 
