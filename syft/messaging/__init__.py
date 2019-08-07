@@ -24,5 +24,5 @@ __all__ = [
     "Plan",
     "func2plan",
     "method2plan",
-    "make_plan"
+    "make_plan",
 ]
