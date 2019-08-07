@@ -17,23 +17,22 @@ def test_create_pointer(workers):
 
 
 def test_send_default_garbage_collector_true(workers):
-    """Pointer tensor should be garbage collected by default."""
+    """ emote tensor should be garbage collected by default on deletion of the Pointer tensor pointing to remote tensor"""
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(workers["alice"])
     assert x_ptr.child.garbage_collect_data
 
 
 def test_send_garbage_collect_data_false(workers):
-    """Pointer tensor should be not garbage collected."""
+    """Remote tensor should be not garbage collected on deletion of the Pointer tensor pointing to remote tensor"""
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(workers["alice"])
     x_ptr.garbage_collection = False
-    print(x_ptr.gc)
     assert x_ptr.child.garbage_collect_data == False
 
 
 def test_send_gc_false(workers):
-    """Pointer tensor should be not garbage collected."""
+    """Remote tensor should be not garbage collected on deletion of the Pointer tensor pointing to remote tensor"""
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(workers["alice"])
     x_ptr.gc = False
@@ -43,7 +42,7 @@ def test_send_gc_false(workers):
 
 
 def test_send_gc_true(workers):
-    """Pointer tensor should be not garbage collected."""
+    """Remote tensor by default is garbage collected on deletion of Pointer Tensor"""
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(workers["alice"])
 

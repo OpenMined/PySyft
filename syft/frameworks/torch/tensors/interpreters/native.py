@@ -215,7 +215,6 @@ class TorchTensor(AbstractTensor):
         if self.has_child():
             return self.child.garbage_collect_data
         else:
-
             if not hasattr(self, "_gc"):
                 self._gc = True
             if hasattr(self, "ptr") and self.ptr is not None:
@@ -237,20 +236,14 @@ class TorchTensor(AbstractTensor):
     @property
     def disable_gc(self):
         self.child.garbage_collect_data = False
-        if self.has_gc():
-            self.gc = False
-            self.garbage_collection = False
+        self.gc = False
+        self.garbage_collection = False
         return self
-
-    def has_gc(self):
-        return hasattr(self, "gc")
 
     @property
     def garbage_collection(self):
         if self.has_child():
             return self.child.garbage_collect_data
-        elif self.has_gc():
-            return self.gc
         else:
             if not hasattr(self, "_garbage_collection"):
                 self._garbage_collection = True
