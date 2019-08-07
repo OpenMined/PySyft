@@ -50,6 +50,12 @@ from syft.workers import VirtualWorker
 
 from syft.messaging import Plan
 from syft.messaging import Message
+from syft.messaging import CommandMessage
+from syft.messaging import ObjectMessage
+from syft.messaging import ObjectRequestMessage
+from syft.messaging import IsNoneMessage
+from syft.messaging import GetShapeMessage
+from syft.messaging import ForceObjectDeleteMessage
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -85,6 +91,12 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     TrainConfig,
     VirtualWorker,
     Message,
+    CommandMessage,
+    ObjectMessage,
+    ObjectRequestMessage,
+    IsNoneMessage,
+    GetShapeMessage,
+    ForceObjectDeleteMessage
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list

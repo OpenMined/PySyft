@@ -1,6 +1,7 @@
 import syft as sy
 
 from syft.workers import AbstractWorker
+from syft import codes
 
 
 class Message:
@@ -28,3 +29,34 @@ class Message:
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
+
+class CommandMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.CMD, contents)
+
+
+class ObjectMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.OBJ, contents)
+
+class ObjectRequestMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.OBJ_REQ, contents)
+
+class IsNoneMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.IS_NONE, contents)
+
+class GetShapeMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.GET_SHAPE, contents)
+
+class ForceObjectDeleteMessage(Message):
+
+    def __init__(self, contents):
+        super().__init__(codes.MSGTYPE.FORCE_OBJ_DEL, contents)

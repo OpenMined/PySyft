@@ -197,7 +197,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.register_obj(tensor)
                 tensor.owner = self
 
-    def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
+    def send_msg(self, message: "messaging.Message", location: "BaseWorker") -> object:
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -208,7 +208,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             msg_type: A integer representing the message type.
-            message: A string representing the message being received.
+            message: A Message object
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
 
@@ -217,10 +217,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location.
         """
         if self.verbose:
-            print(f"worker {self} sending {msg_type} {message} to {location}")
-
-        # Step 0: combine type and message
-        message = messaging.Message(msg_type, message)
+            print(f"worker {self} sending {message.msg_type} {message} to {location}")
+        #
+        # # Step 0: combine type and message
+        # message = messaging.Message(msg_type, message)
 
         # Step 1: serialize the message to simple python objects
         bin_message = sy.serde.serialize(message)
@@ -439,7 +439,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = (message, return_ids)
 
         try:
-            ret_val = self.send_msg(codes.MSGTYPE.CMD, message, location=recipient)
+            ret_val = self.send_msg(messaging.CommandMessage(message), location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated
@@ -521,7 +521,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(codes.MSGTYPE.OBJ, obj, location)
+        return self.send_msg(messaging.ObjectMessage(obj), location)
 
     def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
         """Returns the requested object from specified location.
@@ -534,7 +534,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(codes.MSGTYPE.OBJ_REQ, obj_id, location)
+        obj = self.send_msg(messaging.ObjectRequestMessage(obj_id), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -710,7 +710,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(codes.MSGTYPE.IS_NONE, pointer, location=pointer.location)
+        return self.send_msg(messaging.IsNoneMessage(pointer), location=pointer.location)
 
     @staticmethod
     def get_tensor_shape(tensor: torch.Tensor) -> List:
@@ -739,7 +739,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(codes.MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
+        shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.torch.Size(shape)
 
     def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
