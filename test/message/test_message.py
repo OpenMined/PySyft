@@ -77,3 +77,18 @@ def test_force_object_delete_message(workers):
     del x
 
     assert id_on_worker not in bob._objects
+
+def test_is_none_message(workers):
+    bob = workers["bob"]
+
+    x = th.tensor([1, 2, 3, 4]).send(bob)
+
+    y = th.tensor([1]).send(bob)
+    y.child.id_at_location = x.id_at_location
+
+    assert not bob.request_is_remote_tensor_none(x)
+    assert not x.child.is_none()
+
+    del x
+
+    assert y.child.is_none()
