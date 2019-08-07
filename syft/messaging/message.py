@@ -39,7 +39,6 @@ class Message:
 
 
 class CommandMessage(Message):
-
     def __init__(self, message, return_ids):
         super().__init__(codes.MSGTYPE.CMD)
 
@@ -47,7 +46,7 @@ class CommandMessage(Message):
         self.return_ids = return_ids
 
     @property
-    def contents(self): # need this just because some methods assume the tuple form (legacy)
+    def contents(self):  # need this just because some methods assume the tuple form (legacy)
         return (self.message, self.return_ids)
 
     @staticmethod
@@ -75,6 +74,7 @@ class ObjectMessage(Message):
 
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.OBJ, contents)
+
 
 class ObjectRequestMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
