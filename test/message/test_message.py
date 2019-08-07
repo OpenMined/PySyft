@@ -78,6 +78,7 @@ def test_force_object_delete_message(workers):
 
     assert id_on_worker not in bob._objects
 
+
 def test_is_none_message(workers):
     bob = workers["bob"]
 
