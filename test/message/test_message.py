@@ -21,6 +21,7 @@ def test_cmd_message(workers):
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = x + x  # this is the test
+    assert isinstance(bob._get_msg(-1), sy.messaging.CommandMessage)
 
     y = y.get()
 
@@ -32,6 +33,8 @@ def test_obj_message(workers):
     bob = workers["bob"]
 
     x = th.tensor([1, 2, 3, 4]).send(bob)  # this is the test
+
+    assert isinstance(bob._get_msg(-1), sy.messaging.ObjectMessage)
 
     y = x + x
 
@@ -49,6 +52,7 @@ def test_obj_req_message(workers):
     y = x + x
 
     y = y.get()  # this is the test
+    assert isinstance(bob._get_msg(-1), sy.messaging.ObjectRequestMessage)
 
     assert (y == th.tensor([2, 4, 6, 8])).all()
 
@@ -62,6 +66,7 @@ def test_get_shape_message(workers):
     y = x + x
 
     z = y.shape  # this is the test
+    assert isinstance(bob._get_msg(-1), sy.messaging.GetShapeMessage)
 
     assert z == th.Size([4])
 
@@ -76,7 +81,8 @@ def test_force_object_delete_message(workers):
 
     assert id_on_worker in bob._objects
 
-    del x
+    del x # this is the test
+    assert isinstance(bob._get_msg(-1), sy.messaging.ForceObjectDeleteMessage)
 
     assert id_on_worker not in bob._objects
 
@@ -91,11 +97,14 @@ def test_is_none_message(workers):
     y.child.id_at_location = x.id_at_location
 
     assert not bob.request_is_remote_tensor_none(x)
+    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
     assert not x.child.is_none()
+    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
 
     del x
 
     assert y.child.is_none()
+    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
 
 
 def test_search_message_serde():
