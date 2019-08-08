@@ -4,7 +4,7 @@
 
 ### Learn Git and Github
 
-If you're not too familiar with Git and Github, start by reviewing this guide. https://guides.github.com/activities/hello-world/
+All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. https://guides.github.com/activities/hello-world/
 
 ### Slack
 
