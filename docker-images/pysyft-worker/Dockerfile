@@ -12,5 +12,6 @@ WORKDIR $WORKER_DIR
 COPY ./entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
 COPY ./worker-server.py .
+EXPOSE 8777
 
 ENTRYPOINT "$WORKER_DIR/entrypoint.sh"
