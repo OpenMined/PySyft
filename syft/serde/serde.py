@@ -48,7 +48,8 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.federated import Plan
+from syft.messaging import Plan
+from syft.messaging import Message
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -60,6 +61,8 @@ from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+
 from syft.frameworks.torch import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
@@ -83,6 +86,8 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+    AutogradTensor,
+    Message,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
