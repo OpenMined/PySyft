@@ -81,7 +81,7 @@ def test_force_object_delete_message(workers):
 
     assert id_on_worker in bob._objects
 
-    del x # this is the test
+    del x  # this is the test
     assert isinstance(bob._get_msg(-1), sy.messaging.ForceObjectDeleteMessage)
 
     assert id_on_worker not in bob._objects

@@ -324,7 +324,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
-        if hasattr(obj, "create_pointer"): #TODO: this seems like hack to check a type
+        if hasattr(obj, "create_pointer"):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
 

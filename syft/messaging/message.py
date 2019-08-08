@@ -77,6 +77,7 @@ class ObjectMessage(Message):
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return ObjectMessage(sy.serde._detail(worker, tensor_tuple[1]))
 
+
 class ObjectRequestMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
 
@@ -86,6 +87,7 @@ class ObjectRequestMessage(Message):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return ObjectRequestMessage(sy.serde._detail(worker, tensor_tuple[1]))
+
 
 class IsNoneMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
@@ -97,6 +99,7 @@ class IsNoneMessage(Message):
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return IsNoneMessage(sy.serde._detail(worker, tensor_tuple[1]))
 
+
 class GetShapeMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
 
@@ -107,6 +110,7 @@ class GetShapeMessage(Message):
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return GetShapeMessage(sy.serde._detail(worker, tensor_tuple[1]))
 
+
 class ForceObjectDeleteMessage(Message):
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.FORCE_OBJ_DEL, contents)
@@ -114,6 +118,7 @@ class ForceObjectDeleteMessage(Message):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
         return ForceObjectDeleteMessage(sy.serde._detail(worker, tensor_tuple[1]))
+
 
 class SearchMessage(Message):
     # TODO: add more efficieent detalier and simplifier custom for this type
