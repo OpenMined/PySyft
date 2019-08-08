@@ -842,6 +842,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         c_shared = c.share(*locations, field=field, crypto_provider=self).child
         return a_shared, b_shared, c_shared
 
+    def _get_msg(self, index):
+        """Returns a decrypted message from msg_history. Mostly useful for testing.
+
+        Args:
+            index: the index of the message you'd like to receive.
+
+        Returns:
+            A decrypted messaging.Message object.
+
+        """
+
+        return sy.serde.deserialize(self.msg_history[index], worker=self)
+
     @staticmethod
     def create_message_execute_command(
         command_name: codes.MSGTYPE, command_owner=None, return_ids=None, *args, **kwargs
