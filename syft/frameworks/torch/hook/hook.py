@@ -747,7 +747,7 @@ class TorchHook:
                 this iterated over all tensor types.
             torch_tensor: An optional boolean parameter (default False) to
                 specify whether to skip running the native initialization
-                logic. TODO: this flag might never get used.
+                logic.
         """
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
