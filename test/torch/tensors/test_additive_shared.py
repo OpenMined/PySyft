@@ -177,11 +177,11 @@ def test_mul(workers):
     assert (y == (t * t)).all()
 
     # with fixed precision
-    t = torch.tensor([1, 2, 3, 4.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
-    y = (x * x).get().float_prec()
+    x = torch.tensor([1, -2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = torch.tensor([-1, 2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x * y).get().float_prec()
 
-    assert (y == (t * t)).all()
+    assert (y == torch.tensor([-1, -4, 9, 16.0])).all()
 
     # with non-default fixed precision
     t = torch.tensor([1, 2, 3, 4.0])
@@ -257,8 +257,7 @@ def test_div(workers):
     x2 = t2.fix_prec().share(bob, alice, crypto_provider=james)
 
     y = (x1 / x2).get().float_prec()
-
-    assert (y == torch.tensor([[5.0, 0.0], [5.0, 4.0]])).all()
+    assert (y == torch.tensor([[5.0, 0.75], [5.0, 4.285]])).all()
 
 
 def test_pow(workers):
