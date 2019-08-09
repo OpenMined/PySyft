@@ -472,9 +472,11 @@ class AdditiveSharingTensor(AbstractTensor):
         return self._private_mul(other, "mul")
 
     def __mul__(self, other, **kwargs):
-        """Multiplies two number for details see mul
-        """
         return self.mul(other, **kwargs)
+
+    def __imul__(self, other):
+        self = self.mul(other)
+        return self
 
     def pow(self, power):
         """
