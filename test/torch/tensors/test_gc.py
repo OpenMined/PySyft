@@ -56,20 +56,22 @@ def test_explicit_garbage_collect_double_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
+    # ensure alice's object was garbage collected
     assert x_ptr.id not in workers["alice"]._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
     x_id = x.id
+
     # send tensor to bob and then pointer to alice
-    x_ptr_ptr = x.send(bob).send(alice)
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
+    x = x.send(bob).send(alice)
 
     # ensure bob has tensor
     assert x_id in bob._objects
     # delete pointer to pointer to tensor
-    del x_ptr_ptr
+    del x
     # ensure bob's object was garbage collected
     assert x_id not in bob._objects
 
@@ -127,17 +129,20 @@ def test_implicit_garbage_collect_double_pointer(workers):
 
     # Chained version
     x = torch.Tensor([1, 2])
+    x_id = x.id
     # send tensor to bob and then pointer to alice
-    x_ptr_ptr = x.send(bob).send(alice)
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
+    x = x.send(bob).send(alice)
 
     # ensure bob has tensor
-    assert x.id in bob._objects
+    assert x_id in bob._objects
 
     # delete pointer to pointer to tensor
-    x_ptr_ptr = "asdf"
+    x = "asdf"
 
     # ensure bob's object was garbage collected
-    assert x.id not in bob._objects
+    assert x_id not in bob._objects
 
 
 # TESTING IN PLACE METHODS
