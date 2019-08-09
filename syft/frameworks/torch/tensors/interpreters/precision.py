@@ -256,7 +256,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 cmd, self, other, None
             )
 
