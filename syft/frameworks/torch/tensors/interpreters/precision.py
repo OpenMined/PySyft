@@ -220,14 +220,14 @@ class FixedPrecisionTensor(AbstractTensor):
         Hook manually mul and div to add the trucation/rescaling part
         which is inherent to these operations in the fixed precision setting
         """
-
+        changed_sign = False
         if isinstance(other, FixedPrecisionTensor):
             assert (
                 self.precision_fractional == other.precision_fractional
             ), "In mul and div, all args should have the same precision_fractional"
             assert self.base == other.base, "In mul and div, all args should have the same base"
 
-        if isinstance(other, (int, torch.Tensor)):
+        if isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             new_self = self.child
             new_other = other
 
@@ -266,19 +266,20 @@ class FixedPrecisionTensor(AbstractTensor):
             # 2) overflow when scaling self in division
 
             # sgn_self is 1 when new_self is positive else it's 0
-            sgn_self = (new_self < self.field // 2).long()
+            sgn_self = (new_self < self.field // 2).long() if isinstance(new_self, torch.Tensor) else new_self > 0
             pos_self = new_self * sgn_self
-            neg_self = (self.field - new_self) * (1 - sgn_self)
+            neg_self = (self.field - new_self) * (-sgn_self + 1) if isinstance(new_self, torch.Tensor) else new_self * (sgn_self - 1)
             new_self = neg_self + pos_self
 
             # sgn_other is 1 when new_other is positive else it's 0
-            sgn_other = (new_other < self.field // 2).long()
+            sgn_other = (new_other < self.field // 2).long() if isinstance(new_other, torch.Tensor) else new_other > 0
             pos_other = new_other * sgn_other
-            neg_other = (self.field - new_other) * (1 - sgn_other)
+            neg_other = (self.field - new_other) * (-sgn_other + 1) if isinstance(new_other, torch.Tensor) else new_other * (sgn_other - 1)
             new_other = neg_other + pos_other
 
             # If both have the same sign, sgn is 1 else it's 0
-            sgn = 1 - (sgn_self - sgn_other) ** 2
+            sgn = -(sgn_self - sgn_other) ** 2 + 1
+            changed_sign = True
 
             if cmd == "div":
                 new_self *= self.base ** self.precision_fractional
@@ -291,18 +292,18 @@ class FixedPrecisionTensor(AbstractTensor):
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        if not isinstance(other, (int, torch.Tensor)):
+        if not isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             if cmd == "mul":
                 # If operation is mul, we need to truncate
                 response = response.truncate(self.precision_fractional, check_sign=False)
 
             response %= self.field  # Wrap around the field
 
-            if isinstance(self.child, torch.Tensor) and isinstance(other.child, torch.Tensor):
+            if changed_sign:
                 # Give back its sign to response
                 pos_res = response * sgn
-                neg_res = (self.field - response) * (1 - sgn)
-                response = neg_res + pos_res
+                neg_res = response * (sgn - 1)
+                response = (neg_res + pos_res)
 
         else:
             response %= self.field  # Wrap around the field
