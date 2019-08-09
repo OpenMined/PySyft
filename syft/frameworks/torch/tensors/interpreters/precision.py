@@ -266,18 +266,38 @@ class FixedPrecisionTensor(AbstractTensor):
             # 2) overflow when scaling self in division
 
             # sgn_self is 1 when new_self is positive else it's 0
-            sgn_self = (new_self < self.field // 2).long() if isinstance(new_self, torch.Tensor) else new_self > 0
+            # The comparison is different is new_self is a torch tensor or an AST
+            sgn_self = (
+                (new_self < self.field // 2).long()
+                if isinstance(new_self, torch.Tensor)
+                else new_self > 0
+            )
             pos_self = new_self * sgn_self
-            neg_self = (self.field - new_self) * (-sgn_self + 1) if isinstance(new_self, torch.Tensor) else new_self * (sgn_self - 1)
+            neg_self = (
+                (self.field - new_self) * (1 - sgn_self)
+                if isinstance(new_self, torch.Tensor)
+                else new_self * (sgn_self - 1)
+            )
             new_self = neg_self + pos_self
 
             # sgn_other is 1 when new_other is positive else it's 0
-            sgn_other = (new_other < self.field // 2).long() if isinstance(new_other, torch.Tensor) else new_other > 0
+            # The comparison is different is new_other is a torch tensor or an AST
+            sgn_other = (
+                (new_other < self.field // 2).long()
+                if isinstance(new_other, torch.Tensor)
+                else new_other > 0
+            )
             pos_other = new_other * sgn_other
-            neg_other = (self.field - new_other) * (-sgn_other + 1) if isinstance(new_other, torch.Tensor) else new_other * (sgn_other - 1)
+            neg_other = (
+                (self.field - new_other) * (1 - sgn_other)
+                if isinstance(new_other, torch.Tensor)
+                else new_other * (sgn_other - 1)
+            )
             new_other = neg_other + pos_other
 
             # If both have the same sign, sgn is 1 else it's 0
+            # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
+            # we would need to overload the __add__ for operators int and AST.
             sgn = -(sgn_self - sgn_other) ** 2 + 1
             changed_sign = True
 
@@ -303,7 +323,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 # Give back its sign to response
                 pos_res = response * sgn
                 neg_res = response * (sgn - 1)
-                response = (neg_res + pos_res)
+                response = neg_res + pos_res
 
         else:
             response %= self.field  # Wrap around the field
