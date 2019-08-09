@@ -25,7 +25,7 @@ def test_base_dataset():
 
 def test_base_dataset_torch():
 
-    num_teachers, num_examples, num_labels = (100, 50000, 10)
+    num_teachers, num_examples, num_labels = (100, 50, 10)
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
 
     indices = (np.random.rand(num_examples) * num_labels).astype(int)  # true answers
@@ -35,9 +35,6 @@ def test_base_dataset_torch():
     data_dep_eps, data_ind_eps = pate.perform_analysis_torch(
         preds, indices, noise_eps=0.1, delta=1e-5
     )
-
-    print(data_dep_eps)
-    print(data_ind_eps)
 
     assert data_dep_eps < data_ind_eps
 
@@ -63,6 +60,3 @@ def test_torch_ref_match():
 
     assert torch.isclose(data_dep_eps, torch.tensor(data_dep_eps_ref.item()))
     assert torch.isclose(data_ind_eps, torch.tensor(data_ind_eps_ref.item()))
-
-
-test_base_dataset_torch()

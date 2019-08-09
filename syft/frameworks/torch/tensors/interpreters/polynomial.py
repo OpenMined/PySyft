@@ -197,8 +197,6 @@ class PolynomialTensor(AbstractTensor):
 
     def exp(self):
 
-        self.exptaylorcoeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
-
         if self.method == "taylor":
 
             self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
