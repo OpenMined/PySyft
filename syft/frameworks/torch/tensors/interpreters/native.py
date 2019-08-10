@@ -212,26 +212,11 @@ class TorchTensor(AbstractTensor):
 
     @property
     def gc(self):
-        if self.has_child():
-            return self.child.garbage_collect_data
-        else:
-            if not hasattr(self, "_gc"):
-                self._gc = True
-            if hasattr(self, "ptr") and self.ptr is not None:
-                self.child = self.ptr
-                self.child.garbage_collect_data = self._gc
-                self.garbage_collection = self._gc
-            return self._gc
+        return self.garbage_collection
 
     @gc.setter
     def gc(self, flag):
-        if self.has_child():
-            self.child.garbage_collect_data = flag
-        else:
-            if hasattr(self, "ptr") and self.ptr is not None:
-                self.child = self.ptr
-                self.child.garbage_collect_data = flag
-        self._gc = flag
+        self.garbage_collection = flag
 
     @property
     def disable_gc(self):
@@ -242,20 +227,18 @@ class TorchTensor(AbstractTensor):
 
     @property
     def garbage_collection(self):
-        if self.has_child():
-            return self.child.garbage_collect_data
-        else:
-            if not hasattr(self, "_garbage_collection"):
-                self._garbage_collection = True
-            return self._garbage_collection
+        if not self.has_child():
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+                self.child.garbage_collect_data = True
+        return self.child.garbage_collect_data
 
     @garbage_collection.setter
     def garbage_collection(self, flag):
-        if self.has_child():
-            self.child.garbage_collect_data = flag
-        else:
-            self.gc = flag
-            self._garbage_collection = flag
+        if not self.has_child():
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+        self.child.garbage_collect_data = flag
 
     @id.setter
     def id(self, new_id):
