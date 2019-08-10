@@ -18,40 +18,23 @@ def test_wrap():
     assert isinstance(x.child.child, torch.Tensor)
 
 
-def test_sigmoid():
+def test_sigmoid_torch():
 
-    poly_tensor = PolynomialTensor()
-
-    # x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
-
-    expected = torch.tensor(
-        [0.0337, 0.0886, 0.1759, 0.2921, 0.4283, 0.5717, 0.7079, 0.8241, 0.9114, 0.9663]
-    )
-
-    # allclose function to compare the expected values and approximations with fixed precision
-    # result = poly_tensor.get_val("sigmoid", x)
-
-    # assert torch.abs(expected - expected).max()[0] < 1e-03
-    _ = (expected - expected).max()
-    print(_)
-    assert True
+    x = torch.tensor([-10.0, 4.0, 8.0, -8.0]).poly()
+    result = x.sigmoid()
+    expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
+    assert torch.allclose(result.child, expected, atol=1e-00)
 
 
-"""def test_exp():
-    poly_tensor = PolynomialTensor()
+def test_exp_torch():
 
-    x = torch.tensor(np.linspace(-3, 3, 10), dtype=torch.double)
-
-    expected = torch.tensor(
-        [0.0498, 0.0970, 0.1889, 0.3679, 0.7165, 1.1176, 2.9503, 5.1088, 10.2501, 20.2955],
-        dtype=torch.double,
-    )
-
-    # allclose function to compare the expected values and approximations with fixed precision
-    result = poly_tensor.get_val("exp", x)
-    assert torch.allclose(expected, result, atol=1e-03)"""
+    x = torch.tensor([1, 4.0, 8.0, 10.0]).poly()
+    result = x.exp()
+    expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
+    assert torch.allclose(result.child, expected, atol=1e-01)
 
 
+"""
 def test_tanh():
     # Test if tanh approximation works as expected
 
@@ -129,10 +112,8 @@ def test_log_function():
     result = poly_tensor.get_val("log", x.clone())
 
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, result, atol=1e-03)
+    assert torch.allclose(expected, result, atol=1e-03
 
-
-"""
 def test_exp_taylor():
     expected = torch.tensor(
         [-0.1076, 0.0664, 0.1852, 0.3677, 0.7165, 1.3956, 2.7180, 5.2867, 10.2325, 19.5933],
@@ -155,4 +136,4 @@ def test_sigmoid_taylor():
     x = torch.tensor(np.linspace(-2, 2, 10), dtype=torch.double)
     result = poly_tensor.sigmoid(x)
     # allclose function to compare the expected values and approximations with fixed precision
-    assert torch.allclose(expected, result, atol=1e-03)"""
+    assert torch.allclose(expected, result, atol=1e-03) """

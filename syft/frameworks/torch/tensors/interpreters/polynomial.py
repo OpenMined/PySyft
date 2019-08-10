@@ -39,27 +39,67 @@ class PolynomialTensor(AbstractTensor):
         self.func_approx = {}
         self.child = child
         self.id = None
-        self.encrypt_fn = None
+        self.encrypt_fn = {"exp": None, "sigmoid": None}
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
 
-            self.add_function("exp", 10, -10, 10, 10, lambda x: np.exp(x))
+            self.add_function(
+                "exp", lambda x: np.exp(x), degree=10, min_val=-10, max_val=10, steps=100
+            )
             # self.add_function("log", 10,-10,10,10, lambda x: np.log(x))
-            self.add_function("sigmoid", 10, -10, 10, 10, (lambda x: 1 / (1 + np.exp(-x))))
-            self.add_function("tanh", 10, -10, 10, 10, lambda x: np.tanh(x))
+            self.add_function(
+                "sigmoid",
+                (lambda x: 1 / (1 + np.exp(-x))),
+                degree=10,
+                min_val=-10,
+                max_val=10,
+                steps=100,
+            )
+            self.add_function(
+                "tanh", lambda x: np.tanh(x), degree=10, min_val=-10, max_val=10, steps=100
+            )
 
         default_functions()
+        self.apply_coefs()
+
+    def apply_coefs(self):
+        """The function sets the values of coefficients into interpolation/Taylor series based on 
+           the method set by the user.
+        """
+
+        if self.method == "taylor":
+
+            self.sigmoid_coeffs = [(1 / 2), (1 / 4), 0, (1 / 3), 0, (1 / 480)]
+            self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+
+        else:
+
+            self.sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
+            self.exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
 
     def get_encrypt_function(self):
+        """The method encrypts the coefficients as required by the child tensor"""
 
-        encryption_fn = {
-            "syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor": "fix_precision"
-        }
+        if isinstance(self.child, FixedPrecisionTensor):
 
-        self.encrypt_fn = encryption_fn[type(self.child)]
+            print("\n")
 
-    def add_function(self, name, degree, min_val, max_val, steps, function):
+            print("Fixed Precision")
+
+            print("\n")
+
+            self.encrypt_fn["exp"] = getattr(torch.tensor(self.exp_coeffs), "fix_precision")()
+            self.encrypt_fn["sigmoid"] = getattr(
+                torch.tensor(self.sigmoid_coeffs), "fix_precision"
+            )()
+
+        else:
+
+            self.encrypt_fn["exp"] = torch.tensor(self.exp_coeffs)
+            self.encrypt_fn["sigmoid"] = torch.tensor(self.sigmoid_coeffs)
+
+    def add_function(self, name, function, degree=10, min_val=-10, max_val=10, steps=100):
         """Add function to function_attr dictionary.
 
            Args:
@@ -71,26 +111,9 @@ class PolynomialTensor(AbstractTensor):
 
         self.function_attr[name + "_degree"] = degree
         self.function_attr[name + "_function"] = function
-        self.func_approx[name] = self.interpolate(function, [min_val, max_val], degree=degree)
-
-    def get_val(self, name, x):
-        """Get value of given function approximation
-
-         Args:
-             name[str]: Name of function
-             value[torch tensor,float,integer]: Value to be approximated
-
-         Returns:
-             Approximated value using given function approximation
-         """
-
-        value = x
-
-        if type(x) == torch.Tensor:
-
-            return value.apply_(lambda k: self.piecewise_linear_eval(self.func_approx[name], k))
-
-        return self.piecewise_linear_eval(self.func_approx[name], x)
+        self.func_approx[name] = self.interpolate(
+            function, [min_val, max_val, steps], degree=degree
+        )
 
     def interpolate(
         self, function: Callable, interval: List[Union[int, float]], degree: int = 10
@@ -113,10 +136,9 @@ class PolynomialTensor(AbstractTensor):
         # function we wish to approximate
         f_real = function
         # interval over which we wish to optimize
-        f_interval = np.linspace(-10, 10, 100)
+        f_interval = np.linspace(interval[0], interval[1], interval[2])
 
         # interpolate polynomial of given max degree
-        degree = 10
         coefs = np.polyfit(f_interval, f_real(f_interval), degree)
 
         # reduce precision of interpolated coefficients
@@ -128,27 +150,6 @@ class PolynomialTensor(AbstractTensor):
 
         return f_interpolated
 
-    def apply_coefs(self, polyinstance, function):
-        """Apply a given function over Numpy interpolation instances.This function could be used
-         to encrypt coefficients of function approximations approximated using interpolation
-
-         Args:
-             polyinstance (Numpy poly1d): Interpolation instance
-             function (Callable): Function to be applied
-         """
-
-        val = torch.from_numpy(polyinstance.coef)
-
-        if isinstance(self.child, FixedPrecisionTensor):
-
-            self.encrypt_fn = getattr(torch.tensor(val), "fix_precision")()
-
-        for i in range(0, len(val)):
-
-            self.child += (self.child ** i) * self.encrypt_fn[i].child
-
-        return self.child
-
     def sigmoid(self):
         """Method provides Sigmoid function approximation interms of Taylor Series
 
@@ -159,21 +160,25 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        if self.method == "taylor":
+        self.get_encrypt_function()
 
-            self.sigmoid_coeffs = [(1 / 2), (1 / 4), 0, (1 / 3), 0, (1 / 480)]
+        if hasattr(self.encrypt_fn["sigmoid"], "child"):
+
+            for i in range(0, len(self.sigmoid_coeffs)):
+
+                self.child += (self.child ** i) * self.encrypt_fn["sigmoid"][
+                    (len(self.sigmoid_coeffs) - 1) - i
+                ].child
 
         else:
 
-            self.sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
+            x = self.child
+            val = 0
+            for i in range(0, len(self.sigmoid_coeffs)):
 
-        if isinstance(self.child, FixedPrecisionTensor):
+                val += (x ** i) * self.encrypt_fn["sigmoid"][(len(self.sigmoid_coeffs) - 1) - i]
 
-            self.encrypt_fn = getattr(torch.tensor(self.self.sigmoid_coeffs), "fix_precision")()
-
-        for i in range(0, len(self.sigmoid_coeffs)):
-
-            self.child += (self.child ** i) * self.encrypt_fn[i].child
+            self.child = val
 
         return self.child
 
@@ -197,21 +202,26 @@ class PolynomialTensor(AbstractTensor):
 
     def exp(self):
 
-        if self.method == "taylor":
+        self.get_encrypt_function()
 
-            self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+        if hasattr(self.encrypt_fn["exp"], "child"):
+            val = 0
+            x = self.child
+            for i in range(0, len(self.exp_coeffs)):
+
+                val += (self.child ** i) * self.encrypt_fn["exp"][
+                    (len(self.sigmoid_coeffs) - 1) - i
+                ].child
 
         else:
 
-            self.exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
+            val = 0
+            x = self.child
+            for i in range(0, len(self.exp_coeffs)):
 
-        if isinstance(self.child, FixedPrecisionTensor):
+                val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i]
 
-            self.encrypt_fn = getattr(torch.tensor(self.exp_coeffs), "fix_precision")()
-
-        for i in range(0, len(self.exp_coeffs)):
-
-            self.child += (self.child ** i) * self.encrypt_fn[i].child
+            self.child = val
 
         return self.child
 
