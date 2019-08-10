@@ -221,7 +221,6 @@ class TorchTensor(AbstractTensor):
     @property
     def disable_gc(self):
         self.child.garbage_collect_data = False
-        self.gc = False
         self.garbage_collection = False
         return self
 
