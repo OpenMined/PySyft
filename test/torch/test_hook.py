@@ -293,3 +293,15 @@ def test_RNN_grad_set_backpropagation(workers):
         # so we better check it beforehand
         assert param.grad.data is not None
         param.data.add_(-learning_rate, param.grad.data)
+        
+def test_remote_gradient_clipping(workers):
+    
+    #Vanishing gradient test
+    alice = workers["alice"]
+    vanishing_tensor_test = torch.Tensor([-9.8367e+23])  
+    remote_vanishing_tensor = vanishing_tensor_test.send(alice)
+    vanishing_remote_tensor_clipped = torch.nn.utils.clip_grad(remote_vanishing_tensor, 2, alice)
+    
+    #Check if the value has indeed increased
+    assert(torch.eq(vanishing_remote_tensor_clipped > remote_vanishing_tensor, 1))
+    
