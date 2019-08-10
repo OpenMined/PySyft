@@ -1155,7 +1155,6 @@ class TorchHook:
             Returns:
                 Total norm of the parameters (viewed as a single vector).
             """
-            print("In remote method")
             if isinstance(parameters, torch.Tensor):
                 parameters = [parameters]
             parameters = list(filter(lambda p: p.grad is not None, parameters))
