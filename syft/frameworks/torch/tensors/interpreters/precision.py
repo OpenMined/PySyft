@@ -330,8 +330,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def __mul__(self, other):
+    def mul(self, other):
         return self.mul_and_div(other, "mul")
+
+    __mul__ = mul
 
     def __imul__(self, other):
         self = self.mul_and_div(other, "mul")
@@ -339,8 +341,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
     mul_ = __imul__
 
-    def __truediv__(self, other):
+    def div(self, other):
         return self.mul_and_div(other, "div")
+
+    __truediv__ = div
 
     def __itruediv__(self, other):
         self = self.mul_and_div(other, "div")
