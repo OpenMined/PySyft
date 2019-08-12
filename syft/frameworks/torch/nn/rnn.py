@@ -15,12 +15,13 @@ class RNNCellBase(nn.Module):
     Only Linear and Dropout layers are used to be able to use MPC
     """
 
-    def __init__(self, input_size, hidden_size, bias, num_chunks):
+    def __init__(self, input_size, hidden_size, bias, num_chunks, nonlinearity=None):
         super(RNNCellBase, self).__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.bias = bias
         self.num_chunks = num_chunks
+        self.nonlinearity = nonlinearity
         self.fc_xh = nn.Linear(input_size, self.num_chunks * hidden_size, bias=bias)
         self.fc_hh = nn.Linear(hidden_size, self.num_chunks * hidden_size, bias=bias)
         self.reset_parameters()
@@ -62,7 +63,7 @@ class GRUCell(RNNCellBase):
     This class overrides the torch.nn.GRUCell
     """
 
-    def __init__(self, input_size, hidden_size, bias=True):
+    def __init__(self, input_size, hidden_size, bias=True, nonlinearity=None):
         super(GRUCell, self).__init__(input_size, hidden_size, bias, num_chunks=3)
 
     def forward(self, x, h=None):
@@ -90,7 +91,7 @@ class LSTMCell(RNNCellBase):
     This class overrides the torch.nn.LSTMCell
     """
 
-    def __init__(self, input_size, hidden_size, bias=True):
+    def __init__(self, input_size, hidden_size, bias=True, nonlinearity=None):
         super(LSTMCell, self).__init__(input_size, hidden_size, bias, num_chunks=4)
 
     def reset_parameters(self):
@@ -143,6 +144,7 @@ class RNNBase(nn.Module):
         dropout,
         bidirectional,
         base_cell,
+        nonlinearity=None,
     ):
         super(RNNBase, self).__init__()
         self.input_size = input_size
@@ -154,6 +156,7 @@ class RNNBase(nn.Module):
         self.bidirectional = bidirectional
         self.num_directions = 2 if bidirectional else 1
         self.is_lstm = base_cell is LSTMCell
+        self.nonlinearity = nonlinearity
 
         # Dropout layers
         # TO DO: implement a nn.Dropout class for PySyft
@@ -162,17 +165,19 @@ class RNNBase(nn.Module):
         self.rnn_forward = nn.ModuleList()
         for layer in range(self.num_layers):
             if layer == 0:
-                self.rnn_forward.append(base_cell(input_size, hidden_size))
+                self.rnn_forward.append(base_cell(input_size, hidden_size, bias, nonlinearity))
             else:
-                self.rnn_forward.append(base_cell(hidden_size, hidden_size))
+                self.rnn_forward.append(base_cell(hidden_size, hidden_size, bias, nonlinearity))
 
         if self.bidirectional:
             self.rnn_backward = nn.ModuleList()
             for layer in range(self.num_layers):
                 if layer == 0:
-                    self.rnn_backward.append(base_cell(input_size, hidden_size))
+                    self.rnn_backward.append(base_cell(input_size, hidden_size, bias, nonlinearity))
                 else:
-                    self.rnn_backward.append(base_cell(hidden_size, hidden_size))
+                    self.rnn_backward.append(
+                        base_cell(hidden_size, hidden_size, bias, nonlinearity)
+                    )
 
     def forward(self, x, h=None):
 
@@ -312,6 +317,7 @@ class RNN(RNNBase):
         input_size,
         hidden_size,
         num_layers=1,
+        nonlinearity="tanh",
         bias=True,
         batch_first=False,
         dropout=0,
@@ -319,7 +325,15 @@ class RNN(RNNBase):
     ):
 
         super(RNN, self).__init__(
-            input_size, hidden_size, num_layers, bias, batch_first, dropout, bidirectional, RNNCell
+            input_size,
+            hidden_size,
+            num_layers,
+            bias,
+            batch_first,
+            dropout,
+            bidirectional,
+            RNNCell,
+            nonlinearity,
         )
 
 
