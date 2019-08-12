@@ -188,6 +188,7 @@ class RNNBase(nn.Module):
                     h, c = h
                     h = torch.transpose(h, 0, 1)
                     c = torch.transpose(c, 0, 1)
+                    h = (h, c)
                 else:
                     h = torch.transpose(h, 0, 1)
 
