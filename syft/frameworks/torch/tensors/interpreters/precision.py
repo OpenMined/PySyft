@@ -252,7 +252,9 @@ class FixedPrecisionTensor(AbstractTensor):
                 new_other = self
             elif cmd == "div":
                 # TODO how to divide by AST?
-                raise NotImplementedError("Division by AST not implemented")
+                raise NotImplementedError(
+                    "Division of a FixedPrecisionTensor by an AdditiveSharingTensor not implemented"
+                )
 
         else:
             # Replace all syft tensor with their child attribute
