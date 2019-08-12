@@ -12,8 +12,18 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-requirements = read("requirements.txt").split()
+def get_requirements(req_file):
+    requirements = []
+    dependency_links = []
+    lines = read(req_file).split()
+    for line in lines:
+        if line.startswith('git+'):
+            dependency_links.append(line)
+        else:
+            requirements.append(line)
+    return requirements, dependency_links
 
+requirements, dependency_links = get_requirements("requirements.txt")
 
 setup(
     name="syft",
@@ -29,6 +39,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/OpenMined/PySyft",
     install_requires=requirements,
+    dependency_links=dependency_links,
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],

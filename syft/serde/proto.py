@@ -1,17 +1,11 @@
-import os
-import json
+from pysyft_proto import proto_info
 from syft.exceptions import InvalidProtocolFileError
 from syft.exceptions import UndefinedProtocolTypeError
 from syft.exceptions import UndefinedProtocolTypePropertyError
 
-filename = os.path.dirname(__file__) + "/proto.json"
-proto_info = {}
+if proto_info is None:
+    raise InvalidProtocolFileError("Failed to load syft protocol data")
 
-try:
-    with open(filename) as f:
-        proto_info = json.load(f)
-except Exception:
-    raise InvalidProtocolFileError("Failed to load %s" % filename)
 
 class TypeInfo():
     def __init__(self, name, obj):
