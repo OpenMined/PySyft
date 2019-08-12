@@ -682,6 +682,10 @@ class TorchTensor(AbstractTensor):
             )
         else:
             assert not need_large_prec, "This tensor needs large precision to be correctly stored"
+            if "internal_type" in kwargs:
+                raise TypeError(
+                    "internal_type not needed if data does not need LargePrecisionTensor to be stored"
+                )
             return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
