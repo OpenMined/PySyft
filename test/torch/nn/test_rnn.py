@@ -149,11 +149,14 @@ def test_lstm(hook, workers):
         .share(alice, bob, crypto_provider=crypto_prov)
     )
 
-    out, h = model(x)
+    out, (h, c) = model(x)
     assert out.get().float_precision().shape == th.Size(
         [batch_size, seq_len, directions * hidden_size]
     )
     assert h.get().float_precision().shape == th.Size(
+        [batch_size, directions * num_layers, hidden_size]
+    )
+    assert c.get().float_precision().shape == th.Size(
         [batch_size, directions * num_layers, hidden_size]
     )
 
@@ -162,10 +165,13 @@ def test_lstm(hook, workers):
         .fix_precision()
         .share(alice, bob, crypto_provider=crypto_prov)
     )
-    out, h = model(x, h0)
+    out, (h, c) = model(x, h0)
     assert out.get().float_precision().shape == th.Size(
         [batch_size, seq_len, directions * hidden_size]
     )
     assert h.get().float_precision().shape == th.Size(
+        [batch_size, directions * num_layers, hidden_size]
+    )
+    assert c.get().float_precision().shape == th.Size(
         [batch_size, directions * num_layers, hidden_size]
     )
