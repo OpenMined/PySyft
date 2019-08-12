@@ -7,7 +7,7 @@ from syft.frameworks.torch.nn import LSTM
 
 
 @pytest.mark.parametrize("nonlinearity", ["tanh", "relu"])
-def test_rnn(nonlinearity, hook, workers):
+def test_simple_rnn(nonlinearity, hook, workers):
     """
     Testing RNN modules with MPC
     """
