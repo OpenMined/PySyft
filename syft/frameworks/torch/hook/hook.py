@@ -1164,7 +1164,7 @@ class TorchHook:
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
                 # Init tensor with value 0 and dimension 1 (plain scalar)
-                total_norm = torch.Tensor(1)
+                total_norm = torch.zeros(1)
                 total_norm = total_norm.send(worker)
                 for param in parameters:
                     param_norm = param.grad.data.norm(norm_type)
@@ -1178,4 +1178,4 @@ class TorchHook:
                     param.grad.data.mul_(clip_coef)
             return total_norm
 
-        self.torch.torch.nn.utils.clip_grad = clip_grad_norm_remote_
+        self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
