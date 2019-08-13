@@ -305,3 +305,13 @@ def test_remote_gradient_clipping(workers):
     greater_tensor_check = (vanishing_remote_tensor_clipped > remote_vanishing_tensor).copy().get()
     one_tensors = torch.ones([1], dtype=torch.uint8)
     assert torch.eq(greater_tensor_check, one_tensors)
+    
+def test_local_gradient_clipping(workers):
+    # Vanishing gradient test
+    alice = workers["alice"]
+    vanishing_tensor_test = torch.Tensor([-9.8367e23])
+    vanishing_remote_tensor_clipped = torch.nn.utils.clip_grad(vanishing_tensor_test, 2, alice)
+    # Has the gradient indeed increased?
+    greater_tensor_check = (vanishing_remote_tensor_clipped > vanishing_tensor_test)
+    one_tensors = torch.ones([1], dtype=torch.uint8)
+    assert torch.eq(greater_tensor_check, one_tensors)
