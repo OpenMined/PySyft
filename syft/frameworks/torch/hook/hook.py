@@ -1171,7 +1171,7 @@ class TorchHook:
                 #Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor):      
                     total_norm = torch.zeros(1)
-                    #Let's send the total norm over to
+                    #Let's send the total norm over to the remote worker where the remote tensor is
                     total_norm = total_norm.send(worker)
                 #Local PyTorch tensor
                 else:
