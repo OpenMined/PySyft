@@ -2,6 +2,10 @@
 
 ## Getting Started
 
+### Learn Git and Github
+
+All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. https://guides.github.com/activities/hello-world/
+
 ### Slack
 
 A great first place to join the Community is the Slack channel <http://slack.openmined.org>.

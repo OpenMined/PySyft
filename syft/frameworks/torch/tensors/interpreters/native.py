@@ -210,6 +210,35 @@ class TorchTensor(AbstractTensor):
                 self._id = syft.ID_PROVIDER.pop()
                 return self._id
 
+    @property
+    def gc(self):
+        return self.garbage_collection
+
+    @gc.setter
+    def gc(self, flag):
+        self.garbage_collection = flag
+
+    @property
+    def disable_gc(self):
+        self.child.garbage_collect_data = False
+        self.garbage_collection = False
+        return self
+
+    @property
+    def garbage_collection(self):
+        if not self.has_child():
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+                self.child.garbage_collect_data = True
+        return self.child.garbage_collect_data
+
+    @garbage_collection.setter
+    def garbage_collection(self, flag):
+        if not self.has_child():
+            if hasattr(self, "ptr") and self.ptr is not None:
+                self.child = self.ptr
+        self.child.garbage_collect_data = flag
+
     @id.setter
     def id(self, new_id):
         if self.is_wrapper:
