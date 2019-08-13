@@ -1140,7 +1140,7 @@ class TorchHook:
         #PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
         #and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
-            r"""Clips gradient norm of an iterable of parameters stored over a remote model
+            """Clips gradient norm of an iterable of parameters stored over a remote model
         
             The norm is computed over all gradients together, as if they were
             concatenated into a single vector. Gradients are modified in-place.
@@ -1158,7 +1158,7 @@ class TorchHook:
                 Total norm of the parameters (viewed as a single vector).
             """
             if isinstance(parameters, torch.Tensor):
-                #Remote tensor
+                #Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor):      
                     worker = parameters.location
                 parameters = [parameters]
