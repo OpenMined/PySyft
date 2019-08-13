@@ -210,7 +210,6 @@ def test_websocket_garbage_collection(hook, start_proc):
     _ = sample_ptr.get()
     assert sample_data not in local_worker._objects
 
-    local_worker.ws.shutdown()
-    local_worker.ws.close()
+    local_worker.close()
     time.sleep(0.1)
     process_remote.terminate()
