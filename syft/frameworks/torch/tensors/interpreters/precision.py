@@ -400,7 +400,7 @@ class FixedPrecisionTensor(AbstractTensor):
     def eq(self, _self, other):
         result = _self.eq(other)
         return result.long() * self.base ** self.precision_fractional
-    
+
     __eq__ = eq
 
     @staticmethod
