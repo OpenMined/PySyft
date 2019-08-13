@@ -36,7 +36,6 @@ class WebsocketClientWorker(BaseWorker):
         WebsocketServerWorker and receive all responses back from the server.
         """
 
-        # TODO get angry when we have no connection params
         self.port = port
         self.host = host
 
