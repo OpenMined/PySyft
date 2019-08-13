@@ -1137,8 +1137,8 @@ class TorchHook:
         self.torch.optim.Optimizer.float_precision = optim_float_precision_
 
         # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
-        #PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
-        #and keeps functionalities from PyTorch to clip local PyTorch tensors.
+        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
+        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
         
@@ -1158,8 +1158,10 @@ class TorchHook:
                 Total norm of the parameters (viewed as a single vector).
             """
             if isinstance(parameters, torch.Tensor):
-                #Remote PySyft tensor
-                if hasattr(parameters, "child") and isinstance(parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor):      
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                ):
                     worker = parameters.location
                 parameters = [parameters]
             parameters = list(filter(lambda p: p.grad is not None, parameters))
@@ -1168,26 +1170,26 @@ class TorchHook:
             if norm_type == inf:
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
-                #Remote PySyft tensor
-                if hasattr(parameters, "child") and isinstance(parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor):      
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                ):
                     total_norm = torch.zeros(1)
-                    #Let's send the total norm over to the remote worker where the remote tensor is
+                    # Let's send the total norm over to the remote worker where the remote tensor is
                     total_norm = total_norm.send(worker)
-                #Local PyTorch tensor
+                # Local PyTorch tensor
                 else:
                     total_norm = 0
                 for p in parameters:
                     param_norm = p.grad.data.norm(norm_type)
                     total_norm += param_norm.item() ** norm_type
-                total_norm = total_norm ** (1. / norm_type)
+                total_norm = total_norm ** (1.0 / norm_type)
             clip_coef = max_norm / (total_norm + 1e-6)
             if clip_coef < 1:
                 for p in parameters:
                     p.grad.data.mul_(clip_coef)
             return total_norm
-            
-                
-                
+
         self.clip_grad_local = torch.nn.utils.clip_grad
 
         self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
