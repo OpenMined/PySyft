@@ -565,6 +565,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def chunk(self, shares, *args, **kwargs):
+        """
+        This method overrides the torch.Tensor.chunk() method of Pytorch
+        """
         results = None
 
         for worker, share in shares.items():
