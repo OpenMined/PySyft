@@ -27,9 +27,28 @@ class RNNCellBase(nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """
+        This method initializes or reset all the parameters of the cell.
+        The paramaters are initiated following a uniform distribution.
+        """
         std = 1.0 / np.sqrt(self.hidden_size)
         for w in self.parameters():
             init.uniform_(w, -std, std)
+
+    def init_hidden(self, input):
+        """
+        This method initializes a hidden state when no hidden state is provided
+        in the forward method. It creates a hidden state with zero values.
+        """
+        h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
+        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+            h = h.fix_precision()
+            child = input.child
+            if isinstance(child.child, AdditiveSharingTensor):
+                crypto_provider = child.child.crypto_provider
+                owners = child.child.locations
+                h = h.share(*owners, crypto_provider=crypto_provider)
+        return h
 
 
 class RNNCell(RNNCellBase):
@@ -46,12 +65,12 @@ class RNNCell(RNNCellBase):
         elif nonlinearity == "relu":
             self.nonlinearity = torch.relu
         else:
-            raise RuntimeError("Unknown nonlinearity: {}".format(nonlinearity))
+            raise ValueError("Unknown nonlinearity: {}".format(nonlinearity))
 
     def forward(self, x, h=None):
 
         if h is None:
-            h = init_hidden(x, self.hidden_size)
+            h = self.init_hidden(x)
         h_ = self.nonlinearity(self.fc_xh(x) + self.fc_hh(h))
 
         return h_
@@ -69,7 +88,7 @@ class GRUCell(RNNCellBase):
     def forward(self, x, h=None):
 
         if h is None:
-            h = init_hidden(x, self.hidden_size)
+            h = self.init_hidden(x)
 
         gate_x = self.fc_xh(x)
         gate_h = self.fc_hh(h)
@@ -106,7 +125,7 @@ class LSTMCell(RNNCellBase):
     def forward(self, x, hc=None):
 
         if hc is None:
-            hc = (init_hidden(x, self.hidden_size), init_hidden(x, self.hidden_size))
+            hc = (self.init_hidden(x), self.init_hidden(x))
         h, c = hc
 
         gate_x = self.fc_xh(x)
@@ -196,10 +215,10 @@ class RNNBase(nn.Module):
         seq_len = x.shape[0]
 
         if h is None:
-            h = init_hidden(x, self.hidden_size, self.num_layers * self.num_directions)
+            h = self.init_hidden(x)
 
             if self.is_lstm:
-                c = init_hidden(x, self.hidden_size, self.num_layers * self.num_directions)
+                c = self.init_hidden(x)
 
         elif self.is_lstm:
             h, c = h
@@ -306,6 +325,28 @@ class RNNBase(nn.Module):
 
         return output, hidden
 
+    def init_hidden(self, input):
+        """
+        This method initializes a hidden state when no hidden state is provided
+        in the forward method. It creates a hidden state with zero values for each
+        layer of the network.
+        """
+        h = torch.zeros(
+            self.num_layers * self.num_directions,
+            input.shape[1],
+            self.hidden_size,
+            dtype=input.dtype,
+            device=input.device,
+        )
+        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+            h = h.fix_precision()
+            child = input.child
+            if isinstance(child.child, AdditiveSharingTensor):
+                crypto_provider = child.child.crypto_provider
+                owners = child.child.locations
+                h = h.share(*owners, crypto_provider=crypto_provider)
+        return h
+
 
 class RNN(RNNBase):
     """
@@ -380,20 +421,3 @@ class LSTM(RNNBase):
         super(LSTM, self).__init__(
             input_size, hidden_size, num_layers, bias, batch_first, dropout, bidirectional, LSTMCell
         )
-
-
-def init_hidden(input, hidden_size, n_layers=None):
-    if n_layers is None:
-        h = torch.zeros(input.shape[0], hidden_size, dtype=input.dtype, device=input.device)
-    else:
-        h = torch.zeros(
-            n_layers, input.shape[1], hidden_size, dtype=input.dtype, device=input.device
-        )
-    if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
-        h = h.fix_precision()
-        child = input.child
-        if isinstance(child.child, AdditiveSharingTensor):
-            crypto_provider = child.child.crypto_provider
-            owners = child.child.locations
-            h = h.share(*owners, crypto_provider=crypto_provider)
-    return h
