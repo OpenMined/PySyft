@@ -25,6 +25,11 @@ def test_sigmoid_torch():
     expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
     assert torch.allclose(result.child, expected, atol=1e-00)
 
+    x = torch.tensor([-10.0, 4.0, 8.0, -8.0]).poly()
+    result = x.sigmoid()
+    expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
+    assert torch.allclose(result.child, expected, atol=1e-00)
+
 
 def test_exp_torch():
 
@@ -32,6 +37,41 @@ def test_exp_torch():
     result = x.exp()
     expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
     assert torch.allclose(result.child, expected, atol=1e-01)
+
+    x = torch.tensor([1, 4.0, 8.0, 10.0]).poly()
+    result = x.exp()
+    expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
+    assert torch.allclose(result.child, expected, atol=1e-01)
+
+
+def test_exp_fixprecision():
+
+    hook = sy.TorchHook(torch)
+    print(torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04]).fix_precision())
+    x = torch.tensor([1, 4.0, 8.0, 10.0]).fix_precision().poly()
+    result = x.exp()
+    print(result)
+    expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
+
+    """print(torch.tensor[1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04].fix_precision())
+    x = torch.tensor([1, 4.0, 8.0,10.0]).fix_precision().poly()
+    result = x.exp()
+    print(result)
+    expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
+    #assert torch.allclose(result.child, expected, atol=1e-01)"""
+
+
+def test_sigmoid_fixprecision():
+
+    x = torch.tensor([-1, 2.0, 3.0, 4.0, 5.0, -6.0]).fix_precision().poly(method="interpolation")
+    result = x.sigmoid()
+    expected = torch.tensor([4611686018427387298, 2813, 3638, 4160, 4296, 4611686018427383608])
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
+
+    x = torch.tensor([-1, 2.0, 3.0, 4.0, 5.0, -6.0]).fix_precision().poly(method="interpolation")
+    result = x.sigmoid()
+    expected = torch.tensor([4611686018427387298, 2813, 3638, 4160, 4296, 4611686018427383608])
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
 
 
 """

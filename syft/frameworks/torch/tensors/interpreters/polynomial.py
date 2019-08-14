@@ -83,12 +83,6 @@ class PolynomialTensor(AbstractTensor):
 
         if isinstance(self.child, FixedPrecisionTensor):
 
-            print("\n")
-
-            print("Fixed Precision")
-
-            print("\n")
-
             self.encrypt_fn["exp"] = getattr(torch.tensor(self.exp_coeffs), "fix_precision")()
             self.encrypt_fn["sigmoid"] = getattr(
                 torch.tensor(self.sigmoid_coeffs), "fix_precision"
