@@ -9,6 +9,9 @@ import sys
 import asyncio
 import numpy as np
 
+FORMAT = "%(asctime)s %(message)s"
+logging.basicConfig(format=FORMAT)
+
 import syft as sy
 from syft import workers
 from syft.frameworks.torch.federated import utils
@@ -108,7 +111,7 @@ async def fit_model_on_worker(
         max_nr_batches=max_nr_batches,
         epochs=1,
         optimizer="SGD",
-        optimizer_args={"lr": 0.1},
+        optimizer_args={"lr": lr},
     )
     train_config.send(worker)
     logger.info("Training round %s, calling fit on worker: %s", curr_round, worker.id)
@@ -131,9 +134,17 @@ def evaluate_model_on_worker(
     train_config.send(worker)
 
     result = worker.evaluate(
-        dataset_key=dataset_key, return_histograms=True, nr_bins=nr_bins, return_loss=True
+        dataset_key=dataset_key,
+        return_histograms=True,
+        nr_bins=nr_bins,
+        return_loss=True,
+        return_raw_accuracy=True,
     )
-    test_loss, correct, len_dataset, hist_pred, hist_target = result
+    test_loss = result["loss"]
+    correct = result["nr_correct_predictions"]
+    len_dataset = result["nr_predictions"]
+    hist_pred = result["histogram_predictions"]
+    hist_target = result["histogram_target"]
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
@@ -177,26 +188,9 @@ async def main():
 
     device = torch.device("cuda" if use_cuda else "cpu")
 
-    kwargs = {"num_workers": 1, "pin_memory": True} if use_cuda else {}
-
-    test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST(
-            "../data",
-            train=False,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-            ),
-        ),
-        batch_size=args.test_batch_size,
-        shuffle=False,
-        drop_last=False,
-        **kwargs,
-    )
-
     model = Net().to(device)
 
-    (data, target) = test_loader.__iter__().next()
-    traced_model = torch.jit.trace(model, data)
+    traced_model = torch.jit.trace(model, torch.zeros([1, 1, 28, 28], dtype=torch.float))
     learning_rate = args.lr
 
     for curr_round in range(1, args.training_rounds + 1):
@@ -258,9 +252,7 @@ async def main():
 
 if __name__ == "__main__":
     # Logging setup
-    logger = logging.getLogger("run_websocket_server")
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
-    logging.basicConfig(format=FORMAT)
+    logger = logging.getLogger("run_websocket_client")
     logger.setLevel(level=logging.DEBUG)
 
     # Websockets setup
