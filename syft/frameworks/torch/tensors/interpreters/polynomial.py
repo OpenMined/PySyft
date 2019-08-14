@@ -72,11 +72,13 @@ class PolynomialTensor(AbstractTensor):
 
             self.sigmoid_coeffs = [(1 / 2), (1 / 4), 0, (1 / 3), 0, (1 / 480)]
             self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+            self.tanh = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
 
         else:
 
             self.sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
             self.exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
+            self.tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
     def get_encrypt_function(self):
         """The method encrypts the coefficients as required by the child tensor"""
@@ -87,11 +89,13 @@ class PolynomialTensor(AbstractTensor):
             self.encrypt_fn["sigmoid"] = getattr(
                 torch.tensor(self.sigmoid_coeffs), "fix_precision"
             )()
+            self.encrypt_fn["tanh"] = getattr(torch.tensor(self.sigmoid_coeffs), "fix_precision")()
 
         else:
 
             self.encrypt_fn["exp"] = torch.tensor(self.exp_coeffs)
             self.encrypt_fn["sigmoid"] = torch.tensor(self.sigmoid_coeffs)
+            self.encrypt_fn["tanh"] = torch.tensor(self.sigmoid_coeffs)
 
     def add_function(self, name, function, degree=10, min_val=-10, max_val=10, steps=100):
         """Add function to function_attr dictionary.
@@ -179,7 +183,7 @@ class PolynomialTensor(AbstractTensor):
     __sigmoid__ = sigmoid
 
     def tanh(self):
-        """Method provides Sigmoid function approximation interms of Taylor Series
+        """Method provides tanh function approximation interms of Taylor Series
 
          Args:
              x: Torch tensor
@@ -188,7 +192,25 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        self.child = (self.exp(self.child) - self.exp(-self.child)) / 2
+        self.get_encrypt_function()
+
+        if hasattr(self.encrypt_fn["tanh"], "child"):
+
+            for i in range(0, len(self.tanh_coeffs)):
+
+                self.child += (self.child ** i) * self.encrypt_fn["tanh"][
+                    (len(self.tanh_coeffs) - 1) - i
+                ].child
+
+        else:
+
+            x = self.child
+            val = 0
+            for i in range(0, len(self.tanh_coeffs)):
+
+                val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i]
+
+            self.child = val
 
         return self.child
 
