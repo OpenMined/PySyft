@@ -25,9 +25,13 @@ def test_sigmoid_torch():
     expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
     assert torch.allclose(result.child, expected, atol=1e-00)
 
-    x = torch.tensor([-10.0, 4.0, 8.0, -8.0]).poly()
-    result = x.sigmoid()
-    expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
+
+def test_tanh():
+
+    hook = sy.TorchHook(torch)
+    x = torch.tensor([-10.0, 0.5, 2.0, -8.0]).poly()
+    result = x.tanh()
+    expected = torch.tensor([-1.0558, 0.2851, 0.9433, -1.0585])
     assert torch.allclose(result.child, expected, atol=1e-00)
 
 
@@ -47,10 +51,8 @@ def test_exp_torch():
 def test_exp_fixprecision():
 
     hook = sy.TorchHook(torch)
-    print(torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04]).fix_precision())
     x = torch.tensor([1, 4.0, 8.0, 10.0]).fix_precision().poly()
     result = x.exp()
-    print(result)
     expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
 
     """print(torch.tensor[1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04].fix_precision())

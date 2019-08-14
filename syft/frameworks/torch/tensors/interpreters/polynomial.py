@@ -89,13 +89,13 @@ class PolynomialTensor(AbstractTensor):
             self.encrypt_fn["sigmoid"] = getattr(
                 torch.tensor(self.sigmoid_coeffs), "fix_precision"
             )()
-            self.encrypt_fn["tanh"] = getattr(torch.tensor(self.sigmoid_coeffs), "fix_precision")()
+            self.encrypt_fn["tanh"] = getattr(torch.tensor(self.tanh_coeffs), "fix_precision")()
 
         else:
 
             self.encrypt_fn["exp"] = torch.tensor(self.exp_coeffs)
             self.encrypt_fn["sigmoid"] = torch.tensor(self.sigmoid_coeffs)
-            self.encrypt_fn["tanh"] = torch.tensor(self.sigmoid_coeffs)
+            self.encrypt_fn["tanh"] = torch.tensor(self.tanh_coeffs)
 
     def add_function(self, name, function, degree=10, min_val=-10, max_val=10, steps=100):
         """Add function to function_attr dictionary.
