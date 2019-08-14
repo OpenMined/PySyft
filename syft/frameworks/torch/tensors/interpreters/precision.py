@@ -443,14 +443,12 @@ class FixedPrecisionTensor(AbstractTensor):
             weights = [0.5, 0.216578258, -0.0083312848, 0.0001876528, -1.9669e-06, 7.5e-09]
             degrees = [0, 1, 3, 5, 7, 9]
 
-            max_degree = 9
+            max_degree = degrees[-1]
             max_idx = degrees.index(max_degree)
-            selected_weights = weights[1:max_idx]
-            selected_degrees = degrees[1:max_idx]
 
             # initiate with term of degree 0 to avoid errors with tensor ** 0
             result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(selected_weights, selected_degrees):
+            for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
                 result += (tensor ** d) * torch.tensor(w).fix_precision().child
 
             return result
