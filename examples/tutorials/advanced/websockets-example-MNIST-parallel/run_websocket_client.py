@@ -133,7 +133,11 @@ def evaluate_model_on_worker(
     result = worker.evaluate(
         dataset_key=dataset_key, return_histograms=True, nr_bins=nr_bins, return_loss=True
     )
-    test_loss, correct, len_dataset, hist_pred, hist_target = result
+    test_loss = result["loss"]
+    correct = result["nr_correct_predictions"]
+    len_dataset = result["nr_predictions"]
+    hist_pred = result["histogram_predictions"]
+    hist_target = result["histogram_target"]
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
