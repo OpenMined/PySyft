@@ -576,13 +576,13 @@ def test_argmax(workers):
     t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     ids = x.argmax().get().float_prec()
-    assert ids.long() == torch.argmax(t)  # TODO rm .long()
+    assert ids.long() == torch.argmax(t)
 
     # dim=1
     t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     ids = x.argmax(dim=1).get().float_prec()
-    assert (ids.long() == torch.argmax(t, dim=1)).all()  # TODO rm .long()
+    assert (ids.long() == torch.argmax(t, dim=1)).all()
 
 
 def test_mod(workers):
