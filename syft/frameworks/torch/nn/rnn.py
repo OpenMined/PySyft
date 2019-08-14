@@ -92,8 +92,8 @@ class GRUCell(RNNCellBase):
 
         gate_x = self.fc_xh(x)
         gate_h = self.fc_hh(h)
-        x_r, x_z, x_n = gate_x.chunk(3, 1)
-        h_r, h_z, h_n = gate_h.chunk(3, 1)
+        x_r, x_z, x_n = gate_x.chunk(self.num_chunks, 1)
+        h_r, h_z, h_n = gate_h.chunk(self.num_chunks, 1)
 
         resetgate = torch.sigmoid(x_r + h_r)
         updategate = torch.sigmoid(x_z + h_z)
@@ -131,8 +131,8 @@ class LSTMCell(RNNCellBase):
         gate_x = self.fc_xh(x)
         gate_h = self.fc_hh(h)
 
-        x_i, x_f, x_c, x_o = gate_x.chunk(4, 1)
-        h_i, h_f, h_c, h_o = gate_h.chunk(4, 1)
+        x_i, x_f, x_c, x_o = gate_x.chunk(self.num_chunks, 1)
+        h_i, h_f, h_c, h_o = gate_h.chunk(self.num_chunks, 1)
 
         inputgate = torch.sigmoid(x_i + h_i)
         forgetgate = torch.sigmoid(x_f + h_f)
@@ -178,7 +178,8 @@ class RNNBase(nn.Module):
         self.nonlinearity = nonlinearity
 
         # Dropout layers
-        # TO DO: implement a nn.Dropout class for PySyft
+        # TODO: implement a nn.Dropout class for PySyft
+        # Link to issue: https://github.com/OpenMined/PySyft/issues/2500
 
         # Build RNN layers
         self.rnn_forward = nn.ModuleList()
