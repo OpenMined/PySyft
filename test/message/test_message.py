@@ -75,6 +75,8 @@ def test_force_object_delete_message(workers):
 
     bob = workers["bob"]
 
+    bob.log_msgs = True
+
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     id_on_worker = x.id_at_location
@@ -85,6 +87,8 @@ def test_force_object_delete_message(workers):
     assert isinstance(bob._get_msg(-1), sy.messaging.ForceObjectDeleteMessage)
 
     assert id_on_worker not in bob._objects
+
+    bob.log_msgs = False
 
 
 def test_is_none_message(workers):
