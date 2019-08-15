@@ -74,7 +74,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
-# If a object implements its own simplify and detail functions it should be stored in this list
+# If an object implements its own simplify and detail functions it should be stored in this list
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
@@ -90,10 +90,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     Message,
 ]
 
-# If a object implements its own force_simplify and force_detail functions it should be stored in this list
+# If an object implements its own force_simplify and force_detail functions it should be stored in this list
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
 
-
+# For egistering syft objects with custom simplify and detail methods
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -108,6 +108,13 @@ scheme_to_bytes = {
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
+    """
+    To force a full simplify genrally if the usual _simplify is not suitable.
+    
+    Args:
+    :param: the object
+    :return: the result from either _simplify or _forced_full_simplify on the object
+    """
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
