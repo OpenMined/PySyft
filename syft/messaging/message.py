@@ -67,6 +67,7 @@ class Message:
         """
 
         # TODO: attempt to use the tensor_tuple[0] to return the correct type instead of Message
+        # TODO: as an alternative, this detailer could raise NotImplementedException
 
         return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
 
