@@ -1,9 +1,13 @@
-import logging
-
 from abc import abstractmethod
-import syft as sy
+import logging
+from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import Union
+from typing import TYPE_CHECKING
 
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+import syft as sy
+from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
@@ -11,16 +15,10 @@ from syft.exceptions import ResponseSignatureError
 from syft.workers import AbstractWorker
 from syft import messaging
 from syft import codes
-from typing import Callable
-from typing import List
-from typing import Tuple
-from typing import Union
-from typing import TYPE_CHECKING
-import torch
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.frameworks.torch import pointers
+    from syft.generic import pointers
 
 logger = logging.getLogger(__name__)
 

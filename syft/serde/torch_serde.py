@@ -3,20 +3,18 @@ This file exists to provide one common place for all serialisation and simplify_
 for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
+import io
 from tempfile import TemporaryFile
 from typing import Tuple
-import torch
-
-import io
-import numpy
 import warnings
 
+import numpy
+import torch
+
 import syft
-
+from syft.generic import pointers
+from syft.generic.tensor import initialize_tensor
 from syft.workers import AbstractWorker
-
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-from syft.frameworks.torch import pointers
 
 
 def _serialize_tensor(tensor) -> bin:

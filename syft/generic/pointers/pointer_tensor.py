@@ -6,7 +6,6 @@ import torch
 import syft
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import ObjectPointer
-from syft.generic.pointers import PointerTensor
 from syft.workers import AbstractWorker
 
 

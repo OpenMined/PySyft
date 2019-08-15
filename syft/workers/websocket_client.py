@@ -10,11 +10,10 @@ import ssl
 import time
 
 import syft as sy
+from syft import messaging
 from syft.codes import MSGTYPE
-from syft import messaging
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers import BaseWorker
-from syft import messaging
 
 logger = logging.getLogger(__name__)
 

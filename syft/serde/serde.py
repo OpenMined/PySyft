@@ -62,7 +62,7 @@ from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS

@@ -39,7 +39,7 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.generic.pointers import PointerTensor
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -73,9 +73,9 @@ from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 
-from syft.frameworks.torch.pointers import ObjectPointer
-from syft.frameworks.torch.pointers import CallablePointer
-from syft.frameworks.torch.pointers import ObjectWrapper
+from syft.generic.pointers import ObjectPointer
+from syft.generic.pointers import CallablePointer
+from syft.generic.pointers import ObjectWrapper
 
 # Import serialization tools
 from syft import serde

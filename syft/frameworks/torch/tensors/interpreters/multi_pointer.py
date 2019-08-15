@@ -3,7 +3,7 @@ from typing import List
 from typing import Union
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
 
