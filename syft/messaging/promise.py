@@ -44,6 +44,9 @@ class Promise:
 
         self.plans = plans
 
+        # the object which will eventually be here (with id self.obj_id)
+        self.obj = None
+
     def __repr__(self):
         return self.__str__()
 
