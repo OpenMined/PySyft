@@ -92,10 +92,10 @@ __all__ = [
     "codes",
     "LoggingTensor",
     "PointerTensor",
+    "PolynomialTensor",
     "VirtualGrid",
     "ObjectWrapper",
     "LargePrecisionTensor",
-    "PolynomialTensor",
     "create_sandbox",
 ]
 
