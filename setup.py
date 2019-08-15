@@ -27,7 +27,7 @@ requirements, dependency_links = get_requirements("requirements.txt")
 
 setup(
     name="syft",
-    version="0.1.22a1",
+    version="0.1.23a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
