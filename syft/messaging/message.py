@@ -36,12 +36,12 @@ class Message:
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the command (backwards compatability)
+        """Return a tuple with the contents of the message (backwards compatability)
 
         Some of our codebase still assumes that all message types have a .contents attribute. However,
         the contents attribute is very opaque in that it doesn't put any constraints on what the contents
         might be. Some message types can be more efficient by storing their contents more explicitly (see
-        CommandMessage). They can override this property to return a tuple view on their other properties.
+        Operation). They can override this property to return a tuple view on their other properties.
         """
         if hasattr(self, "_contents"):
             return self._contents
@@ -80,13 +80,15 @@ class Message:
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Message): a CommandMessage.
+            ptr (Message): a Operation.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
 
-        # TODO: attempt to use the tensor_tuple[0] to return the correct type instead of Message
+        # TODO: attempt to use the msg_tuple[0] to return the correct type instead of Message
+        # https://github.com/OpenMined/PySyft/issues/2514
         # TODO: as an alternative, this detailer could raise NotImplementedException
+        # https://github.com/OpenMined/PySyft/issues/2514
 
         return Message(msg_tuple[0], sy.serde._detail(worker, msg_tuple[1]))
 
@@ -99,27 +101,27 @@ class Message:
         return self.__str__()
 
 
-class CommandMessage(Message):
-    """All syft commands use this message type
+class Operation(Message):
+    """All syft operations use this message type
 
-    In Syft, a command is when one worker wishes to tell another worker to do something with
+    In Syft, an operation is when one worker wishes to tell another worker to do something with
     objects contained in the worker._objects registry (or whatever the official object store is
     backed with in the case that it's been overridden). Semantically, one could view all Messages
-    as a kind of command, but when we say command this is what we mean. For example, telling a
-    worker to take two tensors and add them together is a command. However, sending an object
-    from one worker to another is not a command (and would instead use the ObjectMessage type)."""
+    as a kind of operation, but when we say operation this is what we mean. For example, telling a
+    worker to take two tensors and add them together is an operation. However, sending an object
+    from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
 
     def __init__(self, message, return_ids):
-        """Initialize a command message
+        """Initialize an operation message
 
         Args:
             message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the command properly.
+                can be any information necessary to execute the operation properly.
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                command results are set by the client. This allows the client to be able to predict where
+                operation results are set by the client. This allows the client to be able to predict where
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the command has yet executed. It also
-                reduces the size of the response from the command (which is very often empty).
+                pointers to the future data, regardless of whether the operation has yet executed. It also
+                reduces the size of the response from the operation (which is very often empty).
 
         """
 
@@ -131,22 +133,22 @@ class CommandMessage(Message):
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the command (backwards compatability)
+        """Return a tuple with the contents of the operation (backwards compatability)
 
         Some of our codebase still assumes that all message types have a .contents attribute. However,
         the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a command, we instead choose to store contents in two pieces,
+        might be. Since we know this message is a operation, we instead choose to store contents in two pieces,
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
         return (self.message, self.return_ids)
 
     @staticmethod
-    def simplify(ptr: "CommandMessage") -> tuple:
+    def simplify(ptr: "Operation") -> tuple:
         """
-        This function takes the attributes of a CommandMessage and saves them in a tuple
+        This function takes the attributes of a Operation and saves them in a tuple
         Args:
-            ptr (CommandMessage): a Message
+            ptr (Operation): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
@@ -157,21 +159,21 @@ class CommandMessage(Message):
         return (ptr.msg_type, (sy.serde._simplify(ptr.message), ptr.return_ids))
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a CommandMessage. The simplify() method runs the inverse of this method.
+        it into a Operation. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (CommandMessage): a CommandMessage.
+            ptr (Operation): a Operation.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return CommandMessage(sy.serde._detail(worker, msg_tuple[1][0]), msg_tuple[1][1])
+        return Operation(sy.serde._detail(worker, msg_tuple[1][0]), msg_tuple[1][1])
 
 
 class ObjectMessage(Message):
@@ -214,6 +216,7 @@ class ObjectRequestMessage(Message):
     local copy of the object after sending it to you."""
 
     # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -247,6 +250,7 @@ class IsNoneMessage(Message):
     (such as a tensor) does NOT exist."""
 
     # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -280,8 +284,10 @@ class GetShapeMessage(Message):
 
     # TODO: remove this message type and use ObjectRequestMessage instead.
     # note that the above to do is likely waiting for custom tensor type support in PyTorch
+    # https://github.com/OpenMined/PySyft/issues/2513
 
     # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -316,6 +322,7 @@ class ForceObjectDeleteMessage(Message):
     """
 
     # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -350,6 +357,7 @@ class SearchMessage(Message):
     """
 
     # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.

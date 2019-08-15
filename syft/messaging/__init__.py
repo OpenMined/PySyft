@@ -1,5 +1,5 @@
 from syft.messaging.message import Message
-from syft.messaging.message import CommandMessage
+from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
@@ -14,7 +14,7 @@ from syft.messaging.plan import make_plan
 
 __all__ = [
     "Message",
-    "CommandMessage",
+    "Operation",
     "ObjectMessage",
     "ObjectRequestMessage",
     "IsNoneMessage",

@@ -87,7 +87,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     VirtualWorker,
     AutogradTensor,
     messaging.Message,
-    messaging.CommandMessage,
+    messaging.Operation,
     messaging.ObjectMessage,
     messaging.ObjectRequestMessage,
     messaging.IsNoneMessage,

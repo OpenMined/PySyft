@@ -436,7 +436,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                messaging.CommandMessage(message, return_ids), location=recipient
+                messaging.Operation(message, return_ids), location=recipient
             )
         except ResponseSignatureError as e:
             ret_val = None
