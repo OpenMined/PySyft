@@ -1,9 +1,9 @@
-import syft as sy
-from syft.generic.pointers import object_pointer
-
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
+
+import syft as sy
+from syft.generic.pointers import object_pointer
 
 # this if statement avoids circular imports
 if TYPE_CHECKING:
