@@ -1,9 +1,9 @@
 from typing import List
 from typing import Union
 
-import torch
-
 import syft
+from syft.frameworks.types import FrameworkShapeType
+from syft.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import ObjectPointer
 from syft.workers import AbstractWorker
@@ -19,7 +19,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     remote machine as specified by self.location. Specifically, every
     PointerTensor has a tensor located somewhere that it points to (they should
     never exist by themselves). Note that PointerTensor objects can point to
-    both torch.Tensor objects AND to other PointerTensor objects. Furthermore,
+    both FrameworkTensor objects AND to other PointerTensor objects. Furthermore,
     the objects being pointed to can be on the same machine or (more commonly)
     on a different one. Note further that a PointerTensor does not know the
     nature how it sends messages to the tensor it points to (whether over
@@ -46,7 +46,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         owner: "AbstractWorker" = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
-        shape: torch.Size = None,
+        shape: FrameworkShapeType = None,
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
@@ -156,9 +156,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         local_autograd=False,
         preinitialize_grad=False,
     ) -> "PointerTensor":
-        """Creates a pointer to the "self" torch.Tensor object.
+        """Creates a pointer to the "self" FrameworkTensor object.
 
-        This method is called on a torch.Tensor object, returning a pointer
+        This method is called on a FrameworkTensor object, returning a pointer
         to that object. This method is the CORRECT way to create a pointer,
         and the parameters of this method give all possible attributes that
         a pointer can be created with.
@@ -203,8 +203,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
 
         Returns:
-            A torch.Tensor[PointerTensor] pointer to self. Note that this
-            object will likely be wrapped by a torch.Tensor wrapper.
+            A FrameworkTensor[PointerTensor] pointer to self. Note that this
+            object itself will likely be wrapped by a FrameworkTensor wrapper.
         """
         if owner is None:
             owner = tensor.owner
@@ -276,7 +276,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # The fact we have to check this means
         # something else is probably broken
         if tensor.is_wrapper:
-            if isinstance(tensor.child, torch.Tensor):
+            if isinstance(tensor.child, FrameworkTensor):
                 return tensor.child
 
         return tensor
@@ -392,7 +392,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             worker_id = worker_id.decode()
 
         if shape is not None:
-            shape = torch.Size(syft.serde._detail(worker, shape))
+            shape = syft.hook.create_shape(syft.serde._detail(worker, shape))
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
@@ -407,7 +407,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                 if tensor is not None:
 
-                    if not tensor.is_wrapper and not isinstance(tensor, torch.Tensor):
+                    if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
                         # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
@@ -420,7 +420,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Else we keep the same Pointer
         else:
 
-            location = syft.torch.hook.local_worker.get_worker(worker_id)
+            location = syft.hook.local_worker.get_worker(worker_id)
 
             ptr = PointerTensor(
                 location=location,
