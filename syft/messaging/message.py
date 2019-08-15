@@ -273,14 +273,38 @@ class IsNoneMessage(Message):
 
 
 class GetShapeMessage(Message):
+    """Get the shape property of a tensor in PyTorch
+
+    We needed to have a special message type for this because .shape had some
+    constraints in the older version of PyTorch."""
+
+    # TODO: remove this message type and use ObjectRequestMessage instead.
+    # note that the above to do is likely waiting for custom tensor type support in PyTorch
+
     # TODO: add more efficient detailer and simplifier custom for this type
 
     def __init__(self, contents):
+        """Initialize the message using default Message constructor.
+
+        See Message.__init__ for details."""
         super().__init__(codes.MSGTYPE.GET_SHAPE, contents)
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
-        return GetShapeMessage(sy.serde._detail(worker, tensor_tuple[1]))
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "GetShapeMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an GetShapeMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (GetShapeMessage): a GetShapeMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return GetShapeMessage(sy.serde._detail(worker, msg_tuple[1]))
 
 
 class ForceObjectDeleteMessage(Message):
