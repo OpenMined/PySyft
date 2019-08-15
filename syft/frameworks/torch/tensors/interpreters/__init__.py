@@ -6,3 +6,4 @@ from .multi_pointer import MultiPointerTensor  # noqa: F401
 from .crt_precision import CRTPrecisionTensor  # noqa: F401
 from .large_precision import LargePrecisionTensor  # noqa: F401
 from .autograd import AutogradTensor  # noqa: F401
+from .promise import PromiseTensor  # noqa: F401

@@ -209,6 +209,8 @@ class AbstractTensor(AbstractObject):
         tags: List[str] = None,
         description: str = None,
         child=None,
+        *args,
+        **kwargs
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
