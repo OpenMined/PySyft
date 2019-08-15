@@ -50,7 +50,7 @@ class Message:
         return (ptr.msg_type, sy.serde._simplify(ptr.contents))
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
         """
         This function takes the simplified tuple version of this message and converts
         it into a message. The simplify() method runs the inverse of this method.
@@ -59,17 +59,19 @@ class Message:
         every message type should have its own detailer.
 
         Args:
-            ptr (tuple): a tuple holding the unique attributes of the message
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Message): a Message.
+            ptr (Message): a CommandMessage.
         Examples:
-            data = simplify(ptr)
+            message = detail(sy.local_worker, msg_tuple)
         """
 
         # TODO: attempt to use the tensor_tuple[0] to return the correct type instead of Message
         # TODO: as an alternative, this detailer could raise NotImplementedException
 
-        return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
+        return Message(msg_tuple[0], sy.serde._detail(worker, msg_tuple[1]))
 
     def __str__(self):
         """Return a human readable version of this message"""
