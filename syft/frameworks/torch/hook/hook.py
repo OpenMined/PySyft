@@ -13,6 +13,7 @@ from syft import workers
 
 from syft.workers import BaseWorker
 from syft.messaging import Plan
+from syft.frameworks.hook import BaseHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -31,7 +32,7 @@ from syft.exceptions import TensorsNotCollocatedException
 from math import inf
 
 
-class TorchHook:
+class TorchHook(BaseHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
 
     The purpose of this class is to:
@@ -92,6 +93,7 @@ class TorchHook:
         """
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
+        self.framework = self.torch
 
         # Save the local worker as an attribute
         self.local_worker = local_worker
@@ -105,6 +107,7 @@ class TorchHook:
 
         # Add all the torch attributes in the syft.torch attr
         syft.torch = TorchAttributes(torch, self)
+        syft.framework = syft.torch
 
         if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is
@@ -178,6 +181,12 @@ class TorchHook:
         # called several times
         syft.local_worker = self.local_worker
         syft.hook = self
+
+    def create_wrapper(cls, child_to_wrap):
+        return torch.Tensor()
+
+    def create_shape(cls, shape_dims):
+        return torch.Size(shape_dims)
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -759,7 +768,7 @@ class TorchHook:
                 hook_self=hook_self,
                 cls=cls,
                 id=id,
-                torch_tensor=torch_tensor,
+                is_tensor=torch_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
