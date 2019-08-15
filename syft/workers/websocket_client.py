@@ -14,6 +14,7 @@ from syft.codes import MSGTYPE
 from syft import messaging
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
+from syft import messaging
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,6 @@ class WebsocketClientWorker(BaseWorker):
         WebsocketServerWorker and receive all responses back from the server.
         """
 
-        # TODO get angry when we have no connection params
         self.port = port
         self.host = host
 
@@ -158,7 +158,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        msg = messaging.Message(MSGTYPE.OBJ_REQ, return_ids[0])
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
 
@@ -190,9 +190,10 @@ class WebsocketClientWorker(BaseWorker):
     def evaluate(
         self,
         dataset_key: str,
-        calculate_histograms: bool = False,
+        return_histograms: bool = False,
         nr_bins: int = -1,
-        calculate_loss=True,
+        return_loss=True,
+        return_raw_accuracy: bool = True,
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
 
@@ -215,9 +216,10 @@ class WebsocketClientWorker(BaseWorker):
         return self._send_msg_and_deserialize(
             "evaluate",
             dataset_key=dataset_key,
-            histograms=calculate_histograms,
+            return_histograms=return_histograms,
             nr_bins=nr_bins,
-            calculate_loss=calculate_loss,
+            return_loss=return_loss,
+            return_raw_accuracy=return_raw_accuracy,
         )
 
     def __str__(self):
