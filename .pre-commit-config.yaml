@@ -11,7 +11,7 @@ repos:
     -   id: name-tests-test
     -   id: requirements-txt-fixer
     -   id: flake8
--   repo: https://github.com/ambv/black
+-   repo: https://github.com/psf/black
     rev: 19.3b0
     hooks:
     -   id: black
