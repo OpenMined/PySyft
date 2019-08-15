@@ -27,5 +27,5 @@ __all__ = [
     "func2plan",
     "method2plan",
     "make_plan",
-    "Promise"
+    "Promise",
 ]

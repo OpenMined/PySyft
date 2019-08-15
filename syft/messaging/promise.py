@@ -44,6 +44,14 @@ class Promise:
 
         self.plans = plans
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return (
+            f"<Promise({self.id}) promises Obj(id:{self.obj_id}) blocking {len(self.plans)} plans>"
+        )
+
     @staticmethod
     def simplify(promise: "Promise") -> tuple:
         """
