@@ -9,7 +9,7 @@ from syft.workers import AbstractWorker
 
 
 class Promise:
-    def __init__(self, id=None, obj_id=None, plans=set()):
+    def __init__(self, id=None, obj_id=None, plans=None):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
         A Promise is a data-structure which indicates that "there will be an object
@@ -41,6 +41,9 @@ class Promise:
             obj_id = sy.ID_PROVIDER.pop()
 
         self.obj_id = obj_id
+
+        if plans is None:
+            plans = set()
 
         self.plans = plans
 
