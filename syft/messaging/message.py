@@ -158,11 +158,34 @@ class CommandMessage(Message):
 
 
 class ObjectMessage(Message):
+    """Send an object to another worker using this message type.
+
+    When a worker has an object in its local object repository (such as a tensor) and it wants
+    to send that object to another worker (and delete its local copy), it uses this message type
+    to do so.
+    """
+
     def __init__(self, contents):
+        """Initialize the message using default Message constructor.
+
+        See Message.__init__ for details."""
         super().__init__(codes.MSGTYPE.OBJ, contents)
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "ObjectMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an ObjectMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (ObjectMessage): a ObjectMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
         return ObjectMessage(sy.serde._detail(worker, tensor_tuple[1]))
 
 
