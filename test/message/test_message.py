@@ -32,6 +32,8 @@ def test_obj_message(workers):
 
     bob = workers["bob"]
 
+    bob.log_msgs = True
+
     x = th.tensor([1, 2, 3, 4]).send(bob)  # this is the test
 
     assert isinstance(bob._get_msg(-1), sy.messaging.ObjectMessage)
@@ -42,6 +44,7 @@ def test_obj_message(workers):
 
     assert (y == th.tensor([2, 4, 6, 8])).all()
 
+    bob.log_msgs = False
 
 def test_obj_req_message(workers):
 
