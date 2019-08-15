@@ -11,4 +11,4 @@ torchvision==0.3.0
 websocket_client>=0.56.0
 websockets>=7.0
 zstd>=1.4.0.0
-git+git://github.com/vvmnnnkv/PySyft-Proto@master
+git+git://github.com/vvmnnnkv/proto@serde-protocol
