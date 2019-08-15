@@ -81,14 +81,45 @@ class Message:
 
 
 class CommandMessage(Message):
+    """All syft commands use this message type
+
+    In Syft, a command is when one worker wishes to tell another worker to do something with
+    objects contained in the worker._objects registry (or whatever the official object store is
+    backed with in the case that it's been overridden). Semantically, one could view all Messages
+    as a kind of command, but when we say command this is what we mean. For example, telling a
+    worker to take two tensors and add them together is a command. However, sending an object
+    from one worker to another is not a command (and would instead use the ObjectMessage type)."""
+
     def __init__(self, message, return_ids):
+        """Initialize a command message
+
+        Args:
+            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
+                can be any information necessary to execute the command properly.
+            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
+                command results are set by the client. This allows the client to be able to predict where
+                the results will be ahead of time. Importantly, this allows the client to pre-initalize the
+                pointers to the future data, regardless of whether the command has yet executed. It also
+                reduces the size of the response from the command (which is very often empty).
+
+        """
+
+        # call the parent constructor - setting the type integer correctly
         super().__init__(codes.MSGTYPE.CMD)
 
         self.message = message
         self.return_ids = return_ids
 
     @property
-    def contents(self):  # need this just because some methods assume the tuple form (legacy)
+    def contents(self):
+        """Return a tuple with the contents of the command (backwards compatability)
+
+        Some of our codebase still assumes that all message types have a .contents attribute. However,
+        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
+        might be. Since we know this message is a command, we instead choose to store contents in two pieces,
+        self.message and self.return_ids, which allows for more efficient simplification (we don't have to
+        simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
+
         return (self.message, self.return_ids)
 
     @staticmethod
@@ -107,8 +138,21 @@ class CommandMessage(Message):
         return (ptr.msg_type, (sy.serde._simplify(ptr.message), ptr.return_ids))
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
-        return CommandMessage(sy.serde._detail(worker, tensor_tuple[1][0]), tensor_tuple[1][1])
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a CommandMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (CommandMessage): a CommandMessage.
+        Examples:
+            message = detail(sy.local_worker, message_tuple)
+        """
+        return CommandMessage(sy.serde._detail(worker, msg_tuple[1][0]), msg_tuple[1][1])
 
 
 class ObjectMessage(Message):
