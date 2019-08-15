@@ -91,6 +91,8 @@ def test_is_none_message(workers):
 
     bob = workers["bob"]
 
+    bob.log_msgs = True
+
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = th.tensor([1]).send(bob)
@@ -104,7 +106,8 @@ def test_is_none_message(workers):
     del x
 
     assert y.child.is_none()
-    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
+
+    bob.log_msgs = True
 
 
 def test_search_message_serde():
