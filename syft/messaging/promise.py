@@ -73,4 +73,5 @@ class Promise:
         Examples:
             message = detail(sy.local_worker, promise_tuple)
         """
+        # TODO: probably need to register the Promise
         return Promise(promise_tuple[0], promise_tuple[1], set(sy.serde._detail(promise_tuple[3])))

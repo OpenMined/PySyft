@@ -12,6 +12,8 @@ from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
 from syft.messaging.plan import make_plan
 
+from syft.messaging.promise import Promise
+
 __all__ = [
     "Message",
     "Operation",
@@ -25,4 +27,5 @@ __all__ = [
     "func2plan",
     "method2plan",
     "make_plan",
+    "Promise"
 ]
