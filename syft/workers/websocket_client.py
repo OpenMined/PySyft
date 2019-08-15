@@ -11,6 +11,7 @@ import time
 
 import syft as sy
 from syft.codes import MSGTYPE
+from syft import messaging
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
 from syft import messaging
@@ -66,7 +67,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-        message = messaging.Message(MSGTYPE.SEARCH, query)
+        message = messaging.SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
