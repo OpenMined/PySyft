@@ -1,12 +1,15 @@
+from typing import Callable
+from typing import Union
+from typing import Tuple
+from typing import List
+
+import numpy as np
 import torch
-import syft as sy
+
 from syft.exceptions import RemoteObjectFoundError
 from syft.exceptions import PureTorchTensorFoundError
-
 from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
@@ -14,13 +17,8 @@ from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
-
-from typing import Callable
-from typing import Union
-from typing import Tuple
-from typing import List
-
-import numpy as np
+from syft.generic.tensor import AbstractTensor
+from syft.generic.pointers import PointerTensor
 
 
 hook_method_args_functions = {}

@@ -1,7 +1,7 @@
 import math
 import torch
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 from syft.workers import AbstractWorker

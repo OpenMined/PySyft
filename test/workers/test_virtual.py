@@ -9,7 +9,7 @@ from syft import messaging
 from syft import serde
 from syft import messaging
 
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 import pytest
 import torch

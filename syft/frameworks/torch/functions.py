@@ -1,6 +1,7 @@
-from .tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.pointers.object_pointer import ObjectPointer
 from typing import List
+
+from .tensors.interpreters import MultiPointerTensor
+from syft.generic.pointers.object_pointer import ObjectPointer
 
 
 def combine_pointers(*pointers: List[ObjectPointer]) -> MultiPointerTensor:

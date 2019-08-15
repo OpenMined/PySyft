@@ -15,15 +15,15 @@ from syft.workers import BaseWorker
 from syft.messaging import Plan
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
+from syft.generic.pointers import PointerTensor
+from syft.generic.tensor import initialize_tensor
+from syft.generic.tensor import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
