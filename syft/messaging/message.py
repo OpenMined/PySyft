@@ -152,7 +152,7 @@ class CommandMessage(Message):
         Returns:
             ptr (CommandMessage): a CommandMessage.
         Examples:
-            message = detail(sy.local_worker, message_tuple)
+            message = detail(sy.local_worker, msg_tuple)
         """
         return CommandMessage(sy.serde._detail(worker, msg_tuple[1][0]), msg_tuple[1][1])
 
