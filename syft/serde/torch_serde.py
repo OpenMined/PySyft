@@ -164,7 +164,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     initialize_tensor(
         hook_self=syft.torch.hook,
         cls=tensor,
-        torch_tensor=True,
+        is_tensor=True,
         owner=worker,
         id=tensor_id,
         init_args=[],

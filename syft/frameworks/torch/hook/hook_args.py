@@ -19,6 +19,7 @@ from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import PointerTensor
+from syft.workers import AbstractWorker
 
 
 hook_method_args_functions = {}
@@ -634,7 +635,7 @@ register_response_functions = {}
 
 
 def register_response(
-    attr: str, response: object, response_ids: object, owner: sy.workers.AbstractWorker
+    attr: str, response: object, response_ids: object, owner: AbstractWorker
 ) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
@@ -705,9 +706,7 @@ def build_register_response_function(response: object) -> Callable:
 
 
 def register_tensor(
-    tensor: Union[torch.Tensor, AbstractTensor],
-    owner: sy.workers.AbstractWorker,
-    response_ids: List = list(),
+    tensor: Union[torch.Tensor, AbstractTensor], owner: AbstractWorker, response_ids: List = list()
 ):
     """
     Registers a tensor.

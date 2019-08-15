@@ -66,7 +66,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def __init__(
         self,
-        hook: "sy.TorchHook",
+        hook: "sy.frameworks.BaseHook",
         id: Union[int, str] = 0,
         data: Union[List, tuple] = None,
         is_client_worker: bool = False,
@@ -734,7 +734,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A torch.Size object for the shape.
         """
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
-        return sy.hook.torch.Size(shape)
+        return sy.hook.create_shape(shape)
 
     def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
