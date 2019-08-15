@@ -31,7 +31,7 @@ class Message:
 
         # saves us a write op but costs us a check op to only sometimes
         # set ._contents
-        if(contents is not None):
+        if contents is not None:
             self._contents = contents
 
     @property
@@ -43,7 +43,7 @@ class Message:
         might be. Some message types can be more efficient by storing their contents more explicitly (see
         CommandMessage). They can override this property to return a tuple view on their other properties.
         """
-        if(hasattr(self, '_contents')):
+        if hasattr(self, "_contents"):
             return self._contents
         else:
             return None
