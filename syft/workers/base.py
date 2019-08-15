@@ -79,7 +79,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        self.torch = None if hook is None else hook.torch
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -334,9 +343,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 id_at_location=obj.id,
                 register=True,
                 ptr_id=ptr_id,
-                local_autograd=local_autograd,
-                preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
+                **kwargs,
             )
         else:
             pointer = obj
@@ -370,6 +378,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
+                # TODO[jvmancuso]: figure out a good way to generalize the above check
                 getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
@@ -387,7 +396,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command_name, "torch_modules")
+            sy.torch.command_guard(command_name, "torch_modules")  # TODO[jvmancuso]: generalize
 
             paths = command_name.split(".")
             command = self
@@ -401,6 +410,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if response is not None:
             # Register response and create pointers for tensor elements
             try:
+                # TODO[jvmancuso]: figure out how to generalize register_response
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )

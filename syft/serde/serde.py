@@ -261,7 +261,8 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
         object: the deserialized form of the binary input.
     """
     if worker is None:
-        worker = sy.torch.hook.local_worker
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = sy.framework.hook.local_worker
 
     # 1) Decompress the binary if needed
     binary = _decompress(binary)
