@@ -37,7 +37,8 @@ class Message:
     @staticmethod
     def simplify(ptr: "Message") -> tuple:
         """
-        This function takes the attributes of a Message and saves them in a tuple
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
         Args:
             ptr (Message): a Message
         Returns:
@@ -50,12 +51,31 @@ class Message:
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "Message":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a message. The simplify() method runs the inverse of this method.
+
+        This method shouldn't get called very often. It exists as a backup but in theory
+        every message type should have its own detailer.
+
+        Args:
+            ptr (tuple): a tuple holding the unique attributes of the message
+        Returns:
+            ptr (Message): a Message.
+        Examples:
+            data = simplify(ptr)
+        """
+
+        # TODO: attempt to use the tensor_tuple[0] to return the correct type instead of Message
+
         return Message(tensor_tuple[0], sy.serde._detail(worker, tensor_tuple[1]))
 
     def __str__(self):
+        """Return a human readable version of this message"""
         return f"({codes.code2MSGTYPE[self.msg_type]} {self.contents})"
 
     def __repr__(self):
+        """Return a human readable version of this message"""
         return self.__str__()
 
 
