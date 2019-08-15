@@ -189,7 +189,7 @@ class ObjectMessage(Message):
         super().__init__(codes.MSGTYPE.OBJ, contents)
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "ObjectMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectMessage":
         """
         This function takes the simplified tuple version of this message and converts
         it into an ObjectMessage. The simplify() method runs the inverse of this method.
@@ -203,7 +203,7 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectMessage(sy.serde._detail(worker, tensor_tuple[1]))
+        return ObjectMessage(sy.serde._detail(worker, msg_tuple[1]))
 
 
 class ObjectRequestMessage(Message):
@@ -222,7 +222,7 @@ class ObjectRequestMessage(Message):
         super().__init__(codes.MSGTYPE.OBJ_REQ, contents)
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "ObjectRequestMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectRequestMessage":
         """
         This function takes the simplified tuple version of this message and converts
         it into an ObjectRequestMessage. The simplify() method runs the inverse of this method.
@@ -236,7 +236,7 @@ class ObjectRequestMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectRequestMessage(sy.serde._detail(worker, tensor_tuple[1]))
+        return ObjectRequestMessage(sy.serde._detail(worker, msg_tuple[1]))
 
 
 class IsNoneMessage(Message):
