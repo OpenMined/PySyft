@@ -213,7 +213,7 @@ class ObjectRequestMessage(Message):
     object from another worker. It also assumes that the other worker will delete it's
     local copy of the object after sending it to you."""
 
-    # TODO: add more efficient detalier and simplifier custom for this type
+    # TODO: add more efficient detailer and simplifier custom for this type
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -246,7 +246,7 @@ class IsNoneMessage(Message):
     object. To do so, we send an IsNoneMessage, which returns True if the object
     (such as a tensor) does NOT exist."""
 
-    # TODO: add more efficient detalier and simplifier custom for this type
+    # TODO: add more efficient detailer and simplifier custom for this type
 
     def __init__(self, contents):
         """Initialize the message using default Message constructor.
@@ -260,7 +260,7 @@ class IsNoneMessage(Message):
 
 
 class GetShapeMessage(Message):
-    # TODO: add more efficient detalier and simplifier custom for this type
+    # TODO: add more efficient detailer and simplifier custom for this type
 
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.GET_SHAPE, contents)
@@ -280,7 +280,7 @@ class ForceObjectDeleteMessage(Message):
 
 
 class SearchMessage(Message):
-    # TODO: add more efficient detalier and simplifier custom for this type
+    # TODO: add more efficient detailer and simplifier custom for this type
 
     def __init__(self, contents):
         super().__init__(codes.MSGTYPE.SEARCH, contents)
