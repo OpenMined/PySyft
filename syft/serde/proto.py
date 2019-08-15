@@ -7,7 +7,7 @@ if proto_info is None:
     raise InvalidProtocolFileError("Failed to load syft protocol data")
 
 
-class TypeInfo():
+class TypeInfo:
     def __init__(self, name, obj):
         self.name = name
         self.obj = obj
@@ -29,11 +29,11 @@ class TypeInfo():
 
 # https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python
 def fullname(cls):
-  module = cls.__module__
-  if module is None or module == str.__module__:
-    return cls.__name__  # Avoid reporting __builtin__
-  else:
-    return module + '.' + cls.__name__
+    module = cls.__module__
+    if module is None or module == str.__module__:
+        return cls.__name__  # Avoid reporting __builtin__
+    else:
+        return module + "." + cls.__name__
 
 
 def proto_type_info(cls):
@@ -42,4 +42,3 @@ def proto_type_info(cls):
         return TypeInfo(name=type_name, obj=proto_info["TYPES"][type_name])
     else:
         raise UndefinedProtocolTypeError("%s is not defined in the protocol file" % type_name)
-

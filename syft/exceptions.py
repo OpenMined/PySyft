@@ -246,6 +246,7 @@ class UndefinedProtocolTypeError(Exception):
 
     pass
 
+
 class UndefinedProtocolTypePropertyError(Exception):
     """Raised when trying to get protocol type property that is not defined in protocol file."""
 

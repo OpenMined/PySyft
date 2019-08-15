@@ -17,11 +17,12 @@ def get_requirements(req_file):
     dependency_links = []
     lines = read(req_file).split()
     for line in lines:
-        if line.startswith('git+'):
+        if line.startswith("git+"):
             dependency_links.append(line)
         else:
             requirements.append(line)
     return requirements, dependency_links
+
 
 requirements, dependency_links = get_requirements("requirements.txt")
 
