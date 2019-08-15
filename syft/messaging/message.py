@@ -223,9 +223,18 @@ class ObjectRequestMessage(Message):
 
 
 class IsNoneMessage(Message):
+    """Check if a worker does not have an object with a specific id.
+
+    Occasionally we need to verify whether or not a remote worker has a specific
+    object. To do so, we send an IsNoneMessage, which returns True if the object
+    (such as a tensor) does NOT exist."""
+
     # TODO: add more efficient detalier and simplifier custom for this type
 
     def __init__(self, contents):
+        """Initialize the message using default Message constructor.
+
+        See Message.__init__ for details."""
         super().__init__(codes.MSGTYPE.IS_NONE, contents)
 
     @staticmethod
