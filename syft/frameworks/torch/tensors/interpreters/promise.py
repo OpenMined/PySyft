@@ -5,7 +5,9 @@ from syft.messaging.promise import Promise
 
 
 class PromiseTensor(AbstractTensor, Promise):
-    def __init__(self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None):
+    def __init__(
+        self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None
+    ):
         """Initializes a LoggingTensor, whose behaviour is to log all operations
         applied on it.
 
@@ -14,7 +16,9 @@ class PromiseTensor(AbstractTensor, Promise):
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description, tensor_id=tensor_id, plans=plans)
+        super().__init__(
+            id=id, owner=owner, tags=tags, description=description, tensor_id=tensor_id, plans=plans
+        )
 
     # Method overloading
 
