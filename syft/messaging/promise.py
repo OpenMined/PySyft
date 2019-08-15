@@ -5,8 +5,8 @@ the plan has all of the inputs it requires). """
 
 import syft as sy
 
-class Promise:
 
+class Promise:
     def __init__(self, id=None, obj_id=None, plans=set()):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
