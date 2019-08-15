@@ -27,12 +27,6 @@ def test_sigmoid_torch():
     expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
     assert torch.allclose(result.child, expected, atol=1e-00)
 
-    x = torch.tensor([-1.1, -1.0, 1.0, 1.1]).poly(method="taylor")
-    result = x.sigmoid()
-    expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
-    print(result)
-    assert torch.allclose(result.child, expected, atol=1e-00)
-
     # Taylor series approximations for sigmoid were wrong. Needs correction.
 
 
@@ -186,9 +180,3 @@ def test_sigmoid_taylor():
     result = poly_tensor.sigmoid(x)
     # allclose function to compare the expected values and approximations with fixed precision
     assert torch.allclose(expected, result, atol=1e-03) """
-
-hook = sy.TorchHook(torch)
-test_exp_torch()
-test_tanh()
-test_sigmoid_torch()
-test_exp_fixprecision()
