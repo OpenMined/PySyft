@@ -229,7 +229,7 @@ class PolynomialTensor(AbstractTensor):
         if hasattr(self.encrypt_fn["exp"], "child"):
             for i in range(0, len(self.exp_coeffs)):
 
-                val += (x ** i) * self.encrypt_fn["exp"][(len(self.sigmoid_coeffs) - 1) - i].child
+                val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i].child
 
         else:
 
