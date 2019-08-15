@@ -104,12 +104,13 @@ def workers(hook):
 
 
 @pytest.fixture
-def no_tf_encrypted():
+def hide_module():
     import_orig = builtins.__import__
 
     def mocked_import(name, globals, locals, fromlist, level):
-        if "tf_encrypted" in name:
-            raise ImportError()
+        for module_name in ["tensorflow", "tf_encrypted", "torch"]:
+            if module_name == name:
+                raise ImportError()
         return import_orig(name, globals, locals, fromlist, level)
 
     builtins.__import__ = mocked_import

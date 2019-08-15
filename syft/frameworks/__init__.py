@@ -5,11 +5,17 @@ logger = logging.getLogger(__name__)
 
 __all__ = list()
 
-if dependency_check.keras_available:
+if dependency_check.tensorflow_available:
+    from . import tensorflow
+
+    __all__.append("tensorflow")
+
+if dependency_check.tfe_available:
     from . import keras
 
     __all__.append("keras")
 
-from . import torch
+if dependency_check.torch_available:
+    from . import torch
 
-__all__.append("torch")
+    __all__.append("torch")
