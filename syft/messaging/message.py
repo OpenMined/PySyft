@@ -12,6 +12,7 @@ import syft as sy
 from syft.workers import AbstractWorker
 from syft import codes
 
+
 class Message:
     """All syft message types extend this class
 
@@ -25,7 +26,7 @@ class Message:
     You can read more abouty detailers and simplifiers in syft/serde/serde.py.
     """
 
-    def __init__(self, msg_type:int, contents=None):
+    def __init__(self, msg_type: int, contents=None):
         self.msg_type = msg_type
         if contents is not None:
             self.contents = contents
