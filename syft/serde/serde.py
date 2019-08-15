@@ -48,15 +48,7 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.messaging import Plan
-from syft.messaging import Message
-from syft.messaging import CommandMessage
-from syft.messaging import ObjectMessage
-from syft.messaging import ObjectRequestMessage
-from syft.messaging import IsNoneMessage
-from syft.messaging import GetShapeMessage
-from syft.messaging import ForceObjectDeleteMessage
-from syft.messaging import SearchMessage
+from syft import messaging
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -88,20 +80,20 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
-    Plan,
+    messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
     AutogradTensor,
-    Message,
-    CommandMessage,
-    ObjectMessage,
-    ObjectRequestMessage,
-    IsNoneMessage,
-    GetShapeMessage,
-    ForceObjectDeleteMessage,
-    SearchMessage,
+    messaging.Message,
+    messaging.CommandMessage,
+    messaging.ObjectMessage,
+    messaging.ObjectRequestMessage,
+    messaging.IsNoneMessage,
+    messaging.GetShapeMessage,
+    messaging.ForceObjectDeleteMessage,
+    messaging.SearchMessage,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
