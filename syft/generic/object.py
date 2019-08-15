@@ -5,7 +5,6 @@ from typing import List
 import syft as sy
 
 
-
 class AbstractObject(ABC):
     """
     This is a generic object abstraction.

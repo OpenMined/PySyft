@@ -5,6 +5,7 @@ import syft as sy
 from syft.frameworks.types import FrameworkTensorType
 from syft.generic.object import AbstractObject
 
+
 class AbstractTensor(AbstractObject):
     def __init__(
         self,

@@ -1,8 +1,10 @@
+import builtins
+from multiprocessing import Process
+import sys
 import time
+
 import pytest
 import torch
-from multiprocessing import Process
-import builtins
 
 import syft
 from syft import TorchHook
@@ -106,13 +108,22 @@ def workers(hook):
 @pytest.fixture
 def hide_module():
     import_orig = builtins.__import__
+    find_spec_orig = sys.meta_path[3].find_spec
 
     def mocked_import(name, globals, locals, fromlist, level):
         for module_name in ["tensorflow", "tf_encrypted", "torch"]:
             if module_name == name:
                 raise ImportError()
+
         return import_orig(name, globals, locals, fromlist, level)
 
+    def mocked_find_spec(self, fullname, target=None):
+        if self in ["tensorflow", "tf_encrypted"]:
+            return None
+        return find_spec_orig(self, fullname, target)
+
     builtins.__import__ = mocked_import
+    sys.meta_path[3].find_spec = mocked_find_spec
     yield
     builtins.__import__ = import_orig
+    sys.meta_path[3].find_spec = find_spec_orig
