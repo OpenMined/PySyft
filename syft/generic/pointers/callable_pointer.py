@@ -1,5 +1,5 @@
 import syft as sy
-from syft.frameworks.torch.pointers import object_pointer
+from syft.generic.pointers import object_pointer
 
 from typing import List
 from typing import Union

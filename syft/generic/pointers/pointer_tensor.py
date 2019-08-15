@@ -1,15 +1,16 @@
-import syft
-import torch
-from syft.frameworks.torch.tensors.interpreters import abstract
-from syft.frameworks.torch import pointers
-
-from syft.workers import AbstractWorker
-
 from typing import List
 from typing import Union
 
+import torch
 
-class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
+import syft
+from syft.generic.tensor import AbstractTensor
+from syft.generic.pointers import ObjectPointer
+from syft.generic.pointers import PointerTensor
+from syft.workers import AbstractWorker
+
+
+class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
     A PointerTensor forwards all API calls to the remote.PointerTensor objects
@@ -270,7 +271,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = pointers.ObjectPointer.get(self, deregister_ptr=deregister_ptr)
+        tensor = ObjectPointer.get(self, deregister_ptr=deregister_ptr)
 
         # TODO: remove these 3 lines
         # The fact we have to check this means
@@ -347,7 +348,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         """
         This function takes the attributes of a PointerTensor and saves them in a dictionary
         Args:
-            ptr (pointers.PointerTensor): a PointerTensor
+            ptr (PointerTensor): a PointerTensor
         Returns:
             tuple: a tuple holding the unique attributes of the pointer
         Examples:
@@ -381,7 +382,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
             worker: the worker doing the deserialization
             tensor_tuple: a tuple holding the attributes of the PointerTensor
         Returns:
-            PointerTensor: a pointers.PointerTensor
+            PointerTensor: a PointerTensor
         Examples:
             ptr = detail(data)
         """
@@ -422,7 +423,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
             location = syft.torch.hook.local_worker.get_worker(worker_id)
 
-            ptr = pointers.PointerTensor(
+            ptr = PointerTensor(
                 location=location,
                 id_at_location=id_at_location,
                 owner=worker,
