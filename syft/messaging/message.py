@@ -1,11 +1,31 @@
+"""
+This file exists as the Python encoding of all Message types that Syft sends over the network. It is
+an important bottleneck in the system, impacting both security, performance, and cross-platform
+compatability. As such, message types should strive to not be framework specific (i.e., Torch,
+Tensorflow, etc.).
+
+All Syft message types extend the Message class.
+"""
+
 import syft as sy
 
 from syft.workers import AbstractWorker
 from syft import codes
 
-
 class Message:
-    def __init__(self, msg_type, contents=None):
+    """All syft message types extend this class
+
+    All messages in the pysyft protocol extend this class. This abstraction
+    requires that every message has an integer type, which is important because
+    this integer is what determines how the message is handled when a BaseWorker
+    receives it.
+
+    Additionally, this type supports a default simplifier and detailer, which are
+    important parts of PySyft's serialization and deserialization functionality.
+    You can read more abouty detailers and simplifiers in syft/serde/serde.py.
+    """
+
+    def __init__(self, msg_type:int, contents=None):
         self.msg_type = msg_type
         if contents is not None:
             self.contents = contents
