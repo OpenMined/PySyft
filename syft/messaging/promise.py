@@ -5,6 +5,8 @@ the plan has all of the inputs it requires). """
 
 import syft as sy
 
+from syft.workers import AbstractWorker
+
 
 class Promise:
     def __init__(self, id=None, obj_id=None, plans=set()):
@@ -41,3 +43,34 @@ class Promise:
         self.obj_id = obj_id
 
         self.plans = plans
+
+    @staticmethod
+    def simplify(promise: "Promise") -> tuple:
+        """
+        This function takes the attributes of a Promise and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            promise (Promise): a Promise object
+        Returns:
+            tuple: a tuple holding the unique attributes of the promise
+        Examples:
+            data = simplify(promise)
+        """
+        return (promise.id, promise.obj_id, sy.serde._simplify(promise.plans))
+
+    @staticmethod
+    def detail(worker: AbstractWorker, promise_tuple: tuple) -> "Promise":
+        """
+        This function takes the simplified tuple version of this promise and converts
+        it into a Promise. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            promise_tuple (Tuple): the raw information being detailed into a Promise
+        Returns:
+            promise (Promise): a Promise object.
+        Examples:
+            message = detail(sy.local_worker, promise_tuple)
+        """
+        return Promise(promise_tuple[0], promise_tuple[1], set(sy.serde._detail(promise_tuple[3])))

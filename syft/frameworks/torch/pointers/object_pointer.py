@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 # TODO: move this file/class to the generic folder because the functionality is not PyTorch specific
 # https://github.com/OpenMined/PySyft/issues/2517
 
+
 class ObjectPointer(abstract.AbstractObject):
     """A pointer to a remote object.
 
