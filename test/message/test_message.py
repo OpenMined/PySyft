@@ -61,6 +61,8 @@ def test_get_shape_message(workers):
 
     bob = workers["bob"]
 
+    bob.log_msgs = True
+
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = x + x
@@ -69,6 +71,8 @@ def test_get_shape_message(workers):
     assert isinstance(bob._get_msg(-1), sy.messaging.GetShapeMessage)
 
     assert z == th.Size([4])
+
+    bob.log_msgs = False
 
 
 def test_force_object_delete_message(workers):
