@@ -50,6 +50,7 @@ def test_obj_message(workers):
 
     bob.log_msgs = False
 
+
 def test_obj_req_message(workers):
 
     bob = workers["bob"]
