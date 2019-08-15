@@ -28,8 +28,25 @@ class Message:
 
     def __init__(self, msg_type: int, contents=None):
         self.msg_type = msg_type
-        if contents is not None:
-            self.contents = contents
+
+        # saves us a write op but costs us a check op to only sometimes
+        # set ._contents
+        if(contents is not None):
+            self._contents = contents
+
+    @property
+    def contents(self):
+        """Return a tuple with the contents of the command (backwards compatability)
+
+        Some of our codebase still assumes that all message types have a .contents attribute. However,
+        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
+        might be. Some message types can be more efficient by storing their contents more explicitly (see
+        CommandMessage). They can override this property to return a tuple view on their other properties.
+        """
+        if(hasattr(self, '_contents')):
+            return self._contents
+        else:
+            return None
 
     def _simplify(self):
         return (self.msg_type, self.contents)
