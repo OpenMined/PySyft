@@ -70,9 +70,20 @@ class PolynomialTensor(AbstractTensor):
 
         if self.method == "taylor":
 
-            self.sigmoid_coeffs = [(1 / 2), (1 / 4), 0, (1 / 3), 0, (1 / 480)]
+            self.sigmoid_coeffs = [
+                (1 / 2),
+                (1 / 4),
+                0,
+                -(1 / 48),
+                0,
+                (1 / 480),
+                0,
+                -(17 / 80640),
+                0,
+                (31 / 1451520),
+            ]
             self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
-            self.tanh = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
+            self.tanh_coeffs = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
 
         else:
 
@@ -159,26 +170,23 @@ class PolynomialTensor(AbstractTensor):
          """
 
         self.get_encrypt_function()
-
+        val = 0
+        x = self.child
         if hasattr(self.encrypt_fn["sigmoid"], "child"):
 
             for i in range(0, len(self.sigmoid_coeffs)):
 
-                self.child += (self.child ** i) * self.encrypt_fn["sigmoid"][
+                val += (x ** i) * self.encrypt_fn["sigmoid"][
                     (len(self.sigmoid_coeffs) - 1) - i
                 ].child
 
         else:
 
-            x = self.child
-            val = 0
             for i in range(0, len(self.sigmoid_coeffs)):
 
                 val += (x ** i) * self.encrypt_fn["sigmoid"][(len(self.sigmoid_coeffs) - 1) - i]
 
-            self.child = val
-
-        return self.child
+        return val
 
     __sigmoid__ = sigmoid
 
@@ -193,53 +201,43 @@ class PolynomialTensor(AbstractTensor):
          """
 
         self.get_encrypt_function()
+        val = 0
+        x = self.child
 
         if hasattr(self.encrypt_fn["tanh"], "child"):
 
             for i in range(0, len(self.tanh_coeffs)):
 
-                self.child += (self.child ** i) * self.encrypt_fn["tanh"][
-                    (len(self.tanh_coeffs) - 1) - i
-                ].child
+                val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i].child
 
         else:
 
-            x = self.child
-            val = 0
             for i in range(0, len(self.tanh_coeffs)):
 
                 val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i]
 
-            self.child = val
-
-        return self.child
+        return val
 
     __tanh__ = tanh
 
     def exp(self):
 
         self.get_encrypt_function()
+        val = 0
+        x = self.child
 
         if hasattr(self.encrypt_fn["exp"], "child"):
-            val = 0
-            x = self.child
             for i in range(0, len(self.exp_coeffs)):
 
-                val += (self.child ** i) * self.encrypt_fn["exp"][
-                    (len(self.sigmoid_coeffs) - 1) - i
-                ].child
+                val += (x ** i) * self.encrypt_fn["exp"][(len(self.sigmoid_coeffs) - 1) - i].child
 
         else:
 
-            val = 0
-            x = self.child
             for i in range(0, len(self.exp_coeffs)):
 
                 val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i]
 
-            self.child = val
-
-        return self.child
+        return val
 
     __exp__ = exp
 

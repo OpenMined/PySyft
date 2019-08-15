@@ -96,6 +96,7 @@ __all__ = [
     "ObjectWrapper",
     "LargePrecisionTensor",
     "PolynomialTensor",
+    "create_sandbox",
 ]
 
 local_worker = None
