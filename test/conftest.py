@@ -10,7 +10,7 @@ from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
 
-def _start_proc(participant, dataset: str = None, **kwargs):
+def _start_proc(participant, dataset: str = None, **kwargs):  # pragma: no cover
     """Helper function for spinning up a websocket participant."""
 
     def target():
