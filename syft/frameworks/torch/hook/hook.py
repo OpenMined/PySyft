@@ -27,6 +27,7 @@ from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
+from math import inf
 
 
 class TorchHook:
@@ -1134,3 +1135,61 @@ class TorchHook:
             return optim_self
 
         self.torch.optim.Optimizer.float_precision = optim_float_precision_
+
+        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
+        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
+        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
+        def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
+            """Clips gradient norm of an iterable of parameters stored over a remote model
+        
+            The norm is computed over all gradients together, as if they were
+            concatenated into a single vector. Gradients are modified in-place.
+        
+            Arguments:
+                - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
+                Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
+                - max_norm (float or int): max norm of the gradients
+                - worker: The worker where the parameters are hosted and where the gradient clipping
+                will be performed
+                - norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
+                    infinity norm.
+        
+            Returns:
+                Total norm of the parameters (viewed as a single vector).
+            """
+            if isinstance(parameters, torch.Tensor):
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                ):
+                    worker = parameters.location
+                parameters = [parameters]
+            parameters = list(filter(lambda p: p.grad is not None, parameters))
+            max_norm = float(max_norm)
+            norm_type = float(norm_type)
+            if norm_type == inf:
+                total_norm = max(p.grad.data.abs().max() for p in parameters)
+            else:
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                ):
+                    total_norm = torch.zeros(1)
+                    # Let's send the total norm over to the remote worker where the remote tensor is
+                    total_norm = total_norm.send(worker)
+                # Local PyTorch tensor
+                else:
+                    total_norm = 0
+                for p in parameters:
+                    param_norm = p.grad.data.norm(norm_type)
+                    total_norm += param_norm.item() ** norm_type
+                total_norm = total_norm ** (1.0 / norm_type)
+            clip_coef = max_norm / (total_norm + 1e-6)
+            if clip_coef < 1:
+                for p in parameters:
+                    p.grad.data.mul_(clip_coef)
+            return total_norm
+
+        self.clip_grad_local = torch.nn.utils.clip_grad
+
+        self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
