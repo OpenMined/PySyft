@@ -1190,6 +1190,4 @@ class TorchHook:
                     p.grad.data.mul_(clip_coef)
             return total_norm
 
-        self.clip_grad_local = torch.nn.utils.clip_grad
-
         self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
