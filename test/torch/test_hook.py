@@ -145,10 +145,8 @@ def test_hook_tensor(workers):
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
     x.send(workers["bob"])
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)[0:2]
-    x.send(workers["bob"])
-
-    # TODO: shouldn't there be an assertion here?
-    # assert True
+    x_ptr = x.send(workers["bob"])
+    assert hasattr(x_ptr, "child")
 
 
 def test_properties():
