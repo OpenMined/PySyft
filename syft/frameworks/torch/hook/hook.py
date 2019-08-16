@@ -28,6 +28,8 @@ from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
 
+from math import inf
+
 
 class TorchHook:
     """A Hook which Overrides Methods on PyTorch Tensors.
