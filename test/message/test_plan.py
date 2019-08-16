@@ -338,6 +338,7 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
     # delete remote object before websocket connection termination
     del x_ptr
 
+    remote_proxy.close()
     server.terminate()
     hook.local_worker.is_client_worker = True
 

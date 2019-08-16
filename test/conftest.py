@@ -35,7 +35,7 @@ def instantiate_websocket_client_worker(max_tries=5, sleep_time=0.1, **kwargs): 
     connection_open = False
     while not connection_open:
         try:
-            local_worker = WebsocketClientWorker(**kwargs)
+            remote_proxy = WebsocketClientWorker(**kwargs)
             connection_open = True
         except ConnectionRefusedError as e:
             if retry_counter < max_tries:
@@ -43,7 +43,7 @@ def instantiate_websocket_client_worker(max_tries=5, sleep_time=0.1, **kwargs): 
                 time.sleep(sleep_time)
             else:
                 raise e
-    return local_worker
+    return remote_proxy
 
 
 @pytest.fixture()
@@ -60,11 +60,11 @@ def start_remote_worker():  # pragma: no cover
     ):
         kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
-        remote_worker = instantiate_websocket_client_worker(
+        remote_proxy = instantiate_websocket_client_worker(
             max_tries=max_tries, sleep_time=sleep_time, **kwargs
         )
 
-        return server, remote_worker
+        return server, remote_proxy
 
     return _start_remote_worker
 

@@ -165,6 +165,24 @@ def test_objects_count_remote(hook, start_remote_worker):
     server.terminate()
 
 
+def test_clear_objects_remote(hook, start_remote_worker):
+    server, remote_proxy = start_remote_worker(id="fed-clear-objects", hook=hook)
+
+    x = torch.tensor([1, 2, 3]).send(remote_proxy, garbage_collect_data=False)
+    y = torch.tensor(4).send(remote_proxy, garbage_collect_data=False)
+
+    nr_objects = remote_proxy.objects_count_remote()
+    assert nr_objects == 2
+
+    remote_proxy.clear_objects_remote()
+    nr_objects = remote_proxy.objects_count_remote()
+    assert nr_objects == 0
+
+    remote_proxy.close()
+    remote_proxy.remove_worker_from_local_worker_registry()
+    server.terminate()
+
+
 def test_connect_close(hook, start_remote_worker):
     server, remote_proxy = start_remote_worker(id="fed-connect-close", hook=hook)
 
