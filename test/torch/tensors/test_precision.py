@@ -205,12 +205,10 @@ def test_torch_mul(workers):
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
 
-    # When overflow occurs
     x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
-    # (1100 * 1100) % 2**16 = 30352
-    assert y == torch.tensor([3.03])
+    assert y == torch.tensor([121.0])
 
     # mixing + and *
     x = torch.tensor([2.113]).fix_prec()
@@ -270,6 +268,15 @@ def test_torch_addmm():
     fp_result = torch.addmm(bias, inputs, weight)
 
     assert (fp_result.float_precision() == torch.tensor([[10.0, 8.0]])).all()
+
+
+def test_torch_dot(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec()
+    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec()
+
+    assert torch.dot(x, y).float_prec() == 45
 
 
 def test_torch_conv2d(workers):
@@ -380,3 +387,29 @@ def test_get_preserves_attributes(workers):
     out = x.get().float_prec()
 
     assert (out == torch.tensor([1, 2, 3, 4.0])).all()
+
+
+def test_comp():
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([2.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert not (x <= y).float_prec()
+    assert (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([2.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert not (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert (x < y).float_prec()
