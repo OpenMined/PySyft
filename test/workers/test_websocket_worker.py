@@ -11,27 +11,10 @@ from syft.frameworks.torch.federated import utils
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
 
+from test.conftest import instantiate_websocket_client_worker
+
+
 PRINT_IN_UNITTESTS = False
-
-
-def instantiate_websocket_client_worker(**kwargs):  # pragma: no cover
-    """ Helper function to instantiate the websocket client.
-    If connection is refused, we wait a bit and try again.
-    After 5 failed tries, a ConnectionRefusedError is raised.
-    """
-    retry_counter = 0
-    connection_open = False
-    while not connection_open:
-        try:
-            local_worker = WebsocketClientWorker(**kwargs)
-            connection_open = True
-        except ConnectionRefusedError as e:
-            if retry_counter < 5:
-                retry_counter += 1
-                time.sleep(0.1)
-            else:
-                raise e
-    return local_worker
 
 
 @pytest.mark.parametrize("secure", [True, False])
@@ -106,7 +89,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
     _ = sample_data.send(remote_worker)
-    
+
     # Search for the tensor located on the server by using its tag
     results = remote_worker.search("#sample_data", "#another_tag")
 
@@ -213,7 +196,7 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker."""
     server, remote_worker = start_remote_worker(id="socket_multiple_output", hook=hook)
-    
+
     x = torch.tensor([1.0, 3, 2])
     x = x.send(remote_worker)
 
@@ -227,6 +210,7 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
 
     remote_worker.close()
     server.terminate()
+
 
 @pytest.mark.skipif(
     torch.__version__ >= "1.1",

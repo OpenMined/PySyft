@@ -25,6 +25,27 @@ def _start_proc(participant, dataset: str = None, **kwargs):
     return p
 
 
+def instantiate_websocket_client_worker(max_tries=5, sleep_time=0.1, **kwargs):  # pragma: no cover
+    """Helper function to instantiate the websocket client.
+
+    If a connection is refused, we wait a bit (`sleep_time` seconds) and try again.
+    After `max_tries` failed tries, a ConnectionRefusedError is raised.
+    """
+    retry_counter = 0
+    connection_open = False
+    while not connection_open:
+        try:
+            local_worker = WebsocketClientWorker(**kwargs)
+            connection_open = True
+        except ConnectionRefusedError as e:
+            if retry_counter < max_tries:
+                retry_counter += 1
+                time.sleep(sleep_time)
+            else:
+                raise e
+    return local_worker
+
+
 @pytest.fixture()
 def start_proc():  # pragma: no cover
     return _start_proc
@@ -39,19 +60,9 @@ def start_remote_worker():  # pragma: no cover
     ):
         kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
-
-        retry_counter = 0
-        connection_open = False
-        while not connection_open:
-            try:
-                remote_worker = WebsocketClientWorker(**kwargs)
-                connection_open = True
-            except ConnectionRefusedError as e:
-                if retry_counter < max_tries:
-                    retry_counter += 1
-                    time.sleep(sleep_time)
-                else:
-                    raise e
+        remote_worker = instantiate_websocket_client_worker(
+            max_tries=max_tries, sleep_time=sleep_time, **kwargs
+        )
 
         return server, remote_worker
 
