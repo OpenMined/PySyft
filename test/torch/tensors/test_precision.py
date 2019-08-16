@@ -232,6 +232,34 @@ def test_torch_mul(workers):
     assert (z == torch.mul(t, u)).all()
 
 
+def test_torch_div(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # With scalar
+    x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec()
+    y = torch.tensor([[3.0, 6.2], [3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).float_prec()
+
+    assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
+
+    # With negative numbers
+    x = torch.tensor([[-9.0, 25.42], [-3.3, 0.0]]).fix_prec()
+    y = torch.tensor([[3.0, -6.2], [-3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).float_prec()
+
+    assert (z == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
+
+    # AST divided by FPT
+    x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = torch.tensor([[3.0, 6.2], [3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).get().float_prec()
+
+    assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
+
+
 def test_torch_pow():
 
     m = torch.tensor([[1, 2], [3, 4.0]])
