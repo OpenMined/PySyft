@@ -1,13 +1,13 @@
-import torch
 from typing import List
 from typing import Union
 
 import syft as sy
-from syft.generic.tensor import AbstractTensor
-from syft.workers import BaseWorker
 from syft.frameworks.torch.overload_torch import overloaded
-
+from syft.frameworks.types import FrameworkShapeType
+from syft.frameworks.types import FrameworkTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers import AbstractWorker
+from syft.workers import BaseWorker
 
 
 class MultiPointerTensor(AbstractTensor):
@@ -20,7 +20,7 @@ class MultiPointerTensor(AbstractTensor):
     attribute is a dictionary {worker.id: Pointer}
 
     MultiPointerTensor can be directly instantiated using x.send(worker1, worker2, etc) where
-    x is a syft or torch tensor. In that case, the value of x will be sent and replicated to
+    x is a syft or framework tensor. In that case, the value of x will be sent and replicated to
     each workers.
     """
 
@@ -81,7 +81,7 @@ class MultiPointerTensor(AbstractTensor):
         return results if not all_none else None
 
     def __eq__(self, other):
-        return torch.eq(self, other)
+        return self.eq(other)
 
     def __add__(self, other):
         """
@@ -106,7 +106,7 @@ class MultiPointerTensor(AbstractTensor):
             return self.mul(other)
 
     @property
-    def shape(self) -> torch.Size:
+    def shape(self) -> FrameworkShapeType:
         """This method returns the shape of the data being pointed to.
         This shape information SHOULD be cached on self._shape, but
         occasionally this information may not be present. If this is the
@@ -120,7 +120,7 @@ class MultiPointerTensor(AbstractTensor):
         stored inside a multipointer tensor"""
         return len(self.shape)
 
-    def get(self, sum_results: bool = False) -> torch.Tensor:
+    def get(self, sum_results: bool = False) -> FrameworkTensor:
 
         results = list()
         for v in self.child.values():
@@ -193,6 +193,7 @@ class MultiPointerTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
+        # TODO[yanndupis]: get rid of these torch references when extending hook_args
         new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
@@ -209,6 +210,7 @@ class MultiPointerTensor(AbstractTensor):
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back MultiPointerTensor on the tensors found in the response
+        # TODO[yanndupis]: get rid of these torch references when extending hook_args
         response = sy.frameworks.torch.hook_args.hook_response(
             cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
