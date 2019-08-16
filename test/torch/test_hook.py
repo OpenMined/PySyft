@@ -10,7 +10,6 @@ from syft.exceptions import RemoteObjectFoundError
 from syft.frameworks.torch.pointers import PointerTensor
 
 
-
 def test___init__(hook):
     assert torch.torch_hooked
     assert hook.torch.__version__ == torch.__version__
