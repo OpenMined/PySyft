@@ -5,8 +5,10 @@ from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 
-__all__ = ["ObjectPointer",
-           "CallablePointer",
-           "create_callable_pointer",
-           "MultiPointerTensor",
-           "PointerTensor"]
+__all__ = [
+    "ObjectPointer",
+    "CallablePointer",
+    "create_callable_pointer",
+    "MultiPointerTensor",
+    "PointerTensor",
+]
