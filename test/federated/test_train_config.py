@@ -372,7 +372,7 @@ def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma:
     dataset = sy.BaseDataset(data, target)
     dataset_key = "gaussian_mixture"
 
-    server, remote_worker = start_remote_worker(
+    server, remote_proxy = start_remote_worker(
         id="sync_fit", hook=hook, dataset=(dataset, dataset_key)
     )
 
@@ -402,10 +402,10 @@ def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma:
 
     # Create and send train config
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2, epochs=1)
-    train_config.send(remote_worker)
+    train_config.send(remote_proxy)
 
     for epoch in range(5):
-        loss = remote_worker.fit(dataset_key=dataset_key)
+        loss = remote_proxy.fit(dataset_key=dataset_key)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
@@ -428,8 +428,8 @@ def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma:
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
-    remote_worker.ws.shutdown()
-    del remote_worker
+    remote_proxy.close()
+    del remote_proxy
 
     time.sleep(0.1)
     server.terminate()
