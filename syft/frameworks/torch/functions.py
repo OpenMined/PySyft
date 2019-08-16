@@ -1,6 +1,6 @@
 from typing import List
 
-from .tensors.interpreters import MultiPointerTensor
+from syft.generic.pointers import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 
 

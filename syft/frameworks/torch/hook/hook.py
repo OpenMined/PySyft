@@ -19,9 +19,9 @@ from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
+from syft.generic.pointers import MultiPointerTensor
 from syft.generic.pointers import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args

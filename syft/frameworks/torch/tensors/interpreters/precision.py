@@ -2,9 +2,9 @@ import torch
 
 import syft
 from syft.workers import AbstractWorker
+from syft.generic.pointers import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.multi_pointer import MultiPointerTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 
