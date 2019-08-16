@@ -108,6 +108,25 @@ def test_tanh_fixprecision():
     )
     assert torch.allclose(result.child.child, expected, atol=1e01)
 
+
+def test_exp_additiveshared():
+
+    hook = sy.TorchHook(torch)
+    bob = sy.VirtualWorker(hook, id="bob")
+    alice = sy.VirtualWorker(hook, id="alice")
+    james = sy.VirtualWorker(hook, id="james")
+
+    result = (
+        torch.tensor([3, 5, 4, 1])
+        .fix_precision()
+        .share(alice, bob, crypto_provider=james)
+        .poly()
+        .exp()
+    )
+    expected = torch.tensor([22736, 207530, 57406, 11302])
+
+    # assert torch.allclose(result.child.child, expected, atol=1e01)
+
     # Do the same with Taylor series
 
     """print(torch.tensor[1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04].fix_precision())

@@ -23,13 +23,24 @@ class PolynomialTensor(AbstractTensor):
         precision:
     """
 
-    def __init__(self, method="interpolation", precision=10, child=None):
+    def __init__(
+        self,
+        method="interpolation",
+        precision=10,
+        child=None,
+        owner=None,
+        id=None,
+        tags: set = None,
+        description: str = None,
+    ):
         """
         Args:
             function[callable,Optional]: Function to applied to function approximation coefficients.
                 Used to encrypt coefficients.
             precision[integer]: Precision of approximated values
         """
+
+        super().__init__(owner=owner, id=id, tags=tags, description=description)
 
         self.method = method
         self.precision = precision
@@ -159,7 +170,7 @@ class PolynomialTensor(AbstractTensor):
 
         return f_interpolated
 
-    def sigmoid(self):
+    def sigmoid(self, method="interpolation", degree=10, precision=10):
         """Method provides Sigmoid function approximation interms of Taylor Series
 
          Args:
@@ -190,7 +201,7 @@ class PolynomialTensor(AbstractTensor):
 
     __sigmoid__ = sigmoid
 
-    def tanh(self):
+    def tanh(self, method="interpolation", degree=10, precision=10):
         """Method provides tanh function approximation interms of Taylor Series
 
          Args:
@@ -220,7 +231,7 @@ class PolynomialTensor(AbstractTensor):
 
     __tanh__ = tanh
 
-    def exp(self):
+    def exp(self, method="interpolation", degree=10, precision=10):
 
         self.get_encrypt_function()
         val = 0
