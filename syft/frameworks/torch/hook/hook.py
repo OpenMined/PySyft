@@ -12,7 +12,7 @@ import syft
 from syft import workers
 
 from syft.workers import BaseWorker
-from syft.federated import Plan
+from syft.messaging import Plan
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.pointers import PointerTensor
@@ -512,6 +512,10 @@ class TorchHook:
 
             response = owner.send_command(location, command)
 
+            # For inplace methods, just directly return self
+            if syft.torch.is_inplace_method(attr):
+                return self
+
             return response
 
         return overloaded_pointer_method
@@ -536,7 +540,7 @@ class TorchHook:
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -576,7 +580,7 @@ class TorchHook:
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -612,7 +616,7 @@ class TorchHook:
             """
             # TODO: I can't manage the import issue, can you?
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -653,11 +657,7 @@ class TorchHook:
                 # Run the native function with the new args
 
                 try:
-                    if isinstance(args, tuple):
-                        response = method(*args, **kwargs)
-                    else:
-                        response = method(args, **kwargs)
-
+                    response = method(*args, **kwargs)
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
@@ -665,7 +665,7 @@ class TorchHook:
             else:  # means that there is a wrapper to remove
                 try:
                     # Replace all torch tensor with their child attribute
-                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
                         method_name, self, args, kwargs
                     )
                 except BaseException as e:
@@ -707,14 +707,29 @@ class TorchHook:
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
+        cmd_name = f"{attr.__module__}.{attr.__name__}"
+
         @wraps(attr)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
-            cmd_name = f"{attr.__module__}.{attr.__name__}"
+            try:
+                tensor_type = (
+                    type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
+                )
+            except IndexError:
+                tensor_type = TorchTensor
+
             command = (cmd_name, None, args, kwargs)
-            response = TorchTensor.handle_func_command(command)
+
+            try:
+                handle_func_command = tensor_type.handle_func_command
+            except AttributeError:
+                handle_func_command = TorchTensor.handle_func_command
+
+            response = handle_func_command(command)
+
             return response
 
         return overloaded_func
@@ -732,7 +747,7 @@ class TorchHook:
                 this iterated over all tensor types.
             torch_tensor: An optional boolean parameter (default False) to
                 specify whether to skip running the native initialization
-                logic. TODO: this flag might never get used.
+                logic.
         """
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
@@ -960,17 +975,17 @@ class TorchHook:
                 o.backward()
                 p.grad -= p.grad
 
-        def module_send_(nn_self, dest, force_send=False, **kwargs):
+        def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
 
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(dest)
+                p.send_(*dest)
 
             if isinstance(nn_self.forward, Plan):
-                nn_self.forward.send(dest, force=force_send)
+                nn_self.forward.send(*dest, force=force_send)
 
             return nn_self
 
@@ -980,7 +995,7 @@ class TorchHook:
 
             params = list(nn_self.parameters())
             for p in params:
-                p.child.wrap().move(destination)
+                p.move(destination)
 
         self.torch.nn.Module.move = module_move_
 
@@ -1037,6 +1052,7 @@ class TorchHook:
             return nn_self
 
         self.torch.nn.Module.fix_precision = module_fix_precision_
+        self.torch.nn.Module.fix_prec = module_fix_precision_
 
         def module_float_precision_(nn_self):
             """Overloads float_precision for torch.nn.Module, convert fix_precision

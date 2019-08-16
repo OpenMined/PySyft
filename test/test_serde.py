@@ -45,7 +45,7 @@ def test_list_simplify():
     input = ["hello", "world"]
     list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
     str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (list_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
+    target = (list_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
     assert serde._simplify(input) == target
 
 
@@ -59,7 +59,7 @@ def test_set_simplify():
     input = set(["hello", "world"])
     set_detail_index = serde.detailers.index(native_serde._detail_collection_set)
     str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (set_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
+    target = (set_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
 
@@ -109,7 +109,7 @@ def test_dict_simplify():
     detail_str_index = serde.detailers.index(native_serde._detail_str)
     target = (
         detail_dict_index,
-        [((detail_str_index, (b"hello",)), (detail_str_index, (b"world",)))],
+        (((detail_str_index, (b"hello",)), (detail_str_index, (b"world",))),),
     )
     assert serde._simplify(input) == target
 
@@ -331,21 +331,6 @@ def test_compressed_serde(compress_scheme):
 
     arr_serialized_deserialized = serde.deserialize(arr_serialized)
     assert numpy.array_equal(arr, arr_serialized_deserialized)
-
-
-@pytest.mark.parametrize("compress_scheme", [1, 2, 3, 100])
-def test_invalid_decompression_scheme(compress_scheme):
-    # using numpy.ones because numpy.random.random is not compressed.
-    arr = numpy.ones((100, 100))
-
-    def some_other_compression_scheme(decompressed_input):
-        # Simulate compression by removing some values
-        return decompressed_input[:10], compress_scheme
-
-    serde._apply_compress_scheme = some_other_compression_scheme
-    arr_serialized = serde.serialize(arr)
-    with pytest.raises(CompressionNotFoundException):
-        _ = serde.deserialize(arr_serialized)
 
 
 @pytest.mark.parametrize("compress", [True, False])
@@ -593,7 +578,7 @@ def test_additive_sharing_tensor_serde(compress, workers):
 
     x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
 
-    additive_sharing_tensor = x.child.child.child
+    additive_sharing_tensor = x.child.child
     data = syft.AdditiveSharingTensor.simplify(additive_sharing_tensor)
     additive_sharing_tensor_reconstructed = syft.AdditiveSharingTensor.detail(
         syft.hook.local_worker, data

@@ -48,7 +48,7 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.federated import Plan
+from syft import messaging
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -58,7 +58,10 @@ from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+
 from syft.frameworks.torch import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
@@ -74,13 +77,23 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
+    CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
-    Plan,
+    messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+    AutogradTensor,
+    messaging.Message,
+    messaging.Operation,
+    messaging.ObjectMessage,
+    messaging.ObjectRequestMessage,
+    messaging.IsNoneMessage,
+    messaging.GetShapeMessage,
+    messaging.ForceObjectDeleteMessage,
+    messaging.SearchMessage,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
@@ -93,6 +106,11 @@ EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureErr
 NO_COMPRESSION = 40
 LZ4 = 41
 ZSTD = 42
+scheme_to_bytes = {
+    NO_COMPRESSION: NO_COMPRESSION.to_bytes(1, byteorder="big"),
+    LZ4: LZ4.to_bytes(1, byteorder="big"),
+    ZSTD: ZSTD.to_bytes(1, byteorder="big"),
+}
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
@@ -251,7 +269,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
+    simple_objects = msgpack.loads(binary, use_list=False)
 
     if details:
         # 3) Detail
@@ -329,10 +347,13 @@ def _compress(decompressed_input_bin: bin) -> bin:
 
     """
     compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
-    if len(compress_stream) < len(decompressed_input_bin):
-        return compress_scheme.to_bytes(1, byteorder="big") + compress_stream
-    else:
-        return NO_COMPRESSION.to_bytes(1, byteorder="big") + decompressed_input_bin
+    try:
+        z = scheme_to_bytes[compress_scheme] + compress_stream
+        return z
+    except KeyError:
+        raise CompressionNotFoundException(
+            f"Compression scheme not found for compression code: {str(compress_scheme)}"
+        )
 
 
 def _decompress(binary: bin) -> bin:
@@ -361,7 +382,7 @@ def _decompress(binary: bin) -> bin:
         return binary
     else:
         raise CompressionNotFoundException(
-            "compression scheme not found for" " compression code:" + str(compress_scheme)
+            f"Compression scheme not found for compression code: {str(compress_scheme)}"
         )
 
 

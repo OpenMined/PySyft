@@ -48,13 +48,14 @@ class ObjectWrapper:
     def obj(self):
         return self._obj
 
+    @staticmethod
     def create_pointer(
-        self,
+        object,
         owner: "BaseWorker",
         location: "BaseWorker",
         ptr_id: Union[int, str],
         id_at_location: Union[int, str] = None,
-        garbage_collect_data=False,
+        garbage_collect_data=None,
         **kwargs,
     ):
         """ Creates a callable pointer to the object wrapper instance
@@ -88,10 +89,10 @@ class ObjectWrapper:
             owner=owner,
             location=location,
             id=ptr_id,
-            id_at_location=id_at_location if id_at_location is not None else self.id,
-            tags=self.tags,
-            description=self.description,
-            garbage_collect_data=garbage_collect_data,
+            id_at_location=id_at_location if id_at_location is not None else object.id,
+            tags=object.tags,
+            description=object.description,
+            garbage_collect_data=False if garbage_collect_data is None else garbage_collect_data,
         )
         return pointer
 

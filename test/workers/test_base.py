@@ -27,6 +27,29 @@ def test_create_already_existing_worker(hook):
     _ = x + y * z
 
 
+def test_clear_object_for_worker_created_with_pre_existing_id(hook):
+
+    worker = sy.VirtualWorker(hook, id="worker")
+    worker.clear_objects()
+
+    ptr = th.tensor([1, 2, 3]).send(worker)
+
+    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
+    assert len(worker._objects) == 1
+
+    # create worker with pre-existing id
+    worker = sy.VirtualWorker(hook, id="worker")
+    worker.clear_objects()
+
+    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
+    assert len(worker._objects) == 0
+
+    ptr = th.tensor([1, 2, 3]).send(worker)
+
+    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
+    assert len(worker._objects) == 1
+
+
 def test_create_already_existing_worker_with_different_type(hook, start_proc):
     # Shares tensor with bob
     bob = sy.VirtualWorker(hook, "bob")
@@ -56,6 +79,7 @@ def test_execute_command_self(hook):
     message = bob.create_message_execute_command(
         command_name="mocked_function", command_owner="self"
     )
+
     serialized_message = sy.serde.serialize(message)
 
     response = bob._recv_msg(serialized_message)
