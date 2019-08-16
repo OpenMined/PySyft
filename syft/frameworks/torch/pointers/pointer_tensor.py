@@ -136,7 +136,12 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         self._data = new_data
 
     def is_none(self):
-        return self.owner.request_is_remote_tensor_none(self)
+        try:
+            return self.owner.request_is_remote_tensor_none(self)
+        except:
+            """TODO: this might hide useful errors, but we don't have good
+            enough remote error handling yet to do anything better."""
+            return True
 
     @staticmethod
     def create_pointer(
