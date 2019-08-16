@@ -94,7 +94,16 @@ backward_func = {
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute", "add_", "sub_"}
-ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
+ambiguous_functions = {
+    "torch.unbind",
+    "unbind",
+    "torch.stack",
+    "stack",
+    "torch.mean",
+    "torch.sum",
+    "torch.functional.split",
+    "split",
+}
 
 
 def unwrap_args_from_method(attr, method_self, args, kwargs):
