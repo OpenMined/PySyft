@@ -291,8 +291,8 @@ def test_RNN_grad_set_backpropagation(workers):
         # so we better check it beforehand
         assert param.grad.data is not None
         param.data.add_(-learning_rate, param.grad.data)
-        
-        
+
+
 def test_remote_gradient_clipping(workers):
     # Vanishing gradient test
     alice = workers["alice"]
