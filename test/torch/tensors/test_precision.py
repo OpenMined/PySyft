@@ -415,3 +415,29 @@ def test_get_preserves_attributes(workers):
     out = x.get().float_prec()
 
     assert (out == torch.tensor([1, 2, 3, 4.0])).all()
+
+
+def test_comp():
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([2.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert not (x <= y).float_prec()
+    assert (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([2.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert not (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert (x < y).float_prec()

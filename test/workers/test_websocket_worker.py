@@ -270,7 +270,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
 
     dataset = sy.BaseDataset(data=data, targets=target)
 
-    kwargs = {"id": "evaluate_remote", "host": "localhost", "port": 8780, "hook": hook}
+    kwargs = {"id": "evaluate_remote", "host": "localhost", "port": 8790, "hook": hook}
     dataset_key = "iris"
     # TODO: check why unit test sometimes fails when WebsocketServerWorker is started from the unit test. Fails when run after test_federated_client.py
     # process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, dataset_key), verbose=True, **kwargs)
@@ -313,10 +313,11 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     train_config.send(local_worker)
 
     result = local_worker.evaluate(
-        dataset_key=dataset_key, calculate_histograms=True, nr_bins=3, calculate_loss=True
+        dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
     )
 
-    test_loss_before, correct_before, len_dataset, hist_pred_before, hist_target = result
+    len_dataset = result["nr_predictions"]
+    hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Evaluation result before training: {}".format(result))

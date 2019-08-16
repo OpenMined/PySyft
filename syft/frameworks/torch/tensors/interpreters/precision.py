@@ -430,27 +430,29 @@ class FixedPrecisionTensor(AbstractTensor):
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
-        return result * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __ge__(self, _self, other):
         result = _self.__ge__(other)
-        return result * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __lt__(self, _self, other):
         result = _self.__lt__(other)
-        return result * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __le__(self, _self, other):
         result = _self.__le__(other)
-        return result * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def eq(self, _self, other):
         result = _self.eq(other)
-        return result * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
+
+    __eq__ = eq
 
     @staticmethod
     @overloaded.module
