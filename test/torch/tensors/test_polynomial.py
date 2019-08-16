@@ -59,10 +59,12 @@ def test_exp_torch():
 
 
 def test_exp_fixprecision():
+
     x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).fix_precision().poly()
     result = x.exp()
     expected = torch.tensor([11302, 19502, 22736, 57406, 207530, 598502, 1362052, 2562326])
     assert torch.allclose(result.child.child, expected, atol=1e-01)
+    # Do the same with Taylor series
 
 
 def test_sigmoid_fixprecision():
@@ -75,6 +77,38 @@ def test_sigmoid_fixprecision():
     result = x.sigmoid()
     expected = torch.tensor([134, 205, 293, 394, 500, 606, 707, 795, 866, 929, 848])
     assert torch.allclose(result.child.child, expected, atol=1e01)
+
+    # Do the same with Taylor series
+
+
+def test_tanh_fixprecision():
+
+    x = (
+        torch.tensor([-2.4, -2.3, -2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 2.6])
+        .fix_precision()
+        .poly(method="interpolation")
+    )
+    result = x.tanh()
+    expected = torch.tensor(
+        [
+            4611686018427386920,
+            4611686018427386929,
+            4611686018427386982,
+            4611686018427387136,
+            4611686018427387356,
+            4611686018427387619,
+            0,
+            285,
+            548,
+            768,
+            922,
+            989,
+            991,
+        ]
+    )
+    assert torch.allclose(result.child.child, expected, atol=1e01)
+
+    # Do the same with Taylor series
 
     """print(torch.tensor[1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04].fix_precision())
     x = torch.tensor([1, 4.0, 8.0,10.0]).fix_precision().poly()
