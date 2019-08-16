@@ -8,12 +8,13 @@ import websockets
 import logging
 import ssl
 import time
-import os
 
 import syft as sy
 from syft.codes import MSGTYPE
+from syft import messaging
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
+from syft import messaging
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +38,6 @@ class WebsocketClientWorker(BaseWorker):
         WebsocketServerWorker and receive all responses back from the server.
         """
 
-        # TODO get angry when we have no connection params
         self.port = port
         self.host = host
 
@@ -67,7 +67,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-        message = (MSGTYPE.SEARCH, query)
+        message = messaging.SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
@@ -80,7 +80,7 @@ class WebsocketClientWorker(BaseWorker):
             "make hook.local_worker a WebsocketClientWorker?",
         )
 
-    def _receive_action(self, message: bin) -> bin:
+    def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
         return response
@@ -88,7 +88,7 @@ class WebsocketClientWorker(BaseWorker):
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketServerWorker"""
 
-        response = self._receive_action(message)
+        response = self._forward_to_websocket_server_worker(message)
         if not self.ws.connected:
             logger.warning("Websocket connection closed (worker: %s)", self.id)
             self.ws.shutdown()
@@ -97,7 +97,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
-            response = self._receive_action(message)
+            response = self._forward_to_websocket_server_worker(message)
             if not self.ws.connected:
                 raise RuntimeError(
                     "Websocket connection closed and creation of new connection failed."
@@ -119,6 +119,9 @@ class WebsocketClientWorker(BaseWorker):
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
+
+    def clear_objects_remote(self):
+        return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
     async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
         """Asynchronous call to fit function on the remote location.
@@ -155,7 +158,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        msg = messaging.Message(MSGTYPE.OBJ_REQ, return_ids[0])
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
 
@@ -187,9 +190,10 @@ class WebsocketClientWorker(BaseWorker):
     def evaluate(
         self,
         dataset_key: str,
-        calculate_histograms: bool = False,
+        return_histograms: bool = False,
         nr_bins: int = -1,
-        calculate_loss=True,
+        return_loss=True,
+        return_raw_accuracy: bool = True,
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
 
@@ -212,9 +216,10 @@ class WebsocketClientWorker(BaseWorker):
         return self._send_msg_and_deserialize(
             "evaluate",
             dataset_key=dataset_key,
-            histograms=calculate_histograms,
+            return_histograms=return_histograms,
             nr_bins=nr_bins,
-            calculate_loss=calculate_loss,
+            return_loss=return_loss,
+            return_raw_accuracy=return_raw_accuracy,
         )
 
     def __str__(self):

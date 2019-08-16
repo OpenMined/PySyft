@@ -45,7 +45,7 @@ def test_list_simplify():
     input = ["hello", "world"]
     list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
     str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (list_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
+    target = (list_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
     assert serde._simplify(input) == target
 
 
@@ -59,7 +59,7 @@ def test_set_simplify():
     input = set(["hello", "world"])
     set_detail_index = serde.detailers.index(native_serde._detail_collection_set)
     str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (set_detail_index, [(str_detail_index, (b"hello",)), (str_detail_index, (b"world",))])
+    target = (set_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
     assert serde._simplify(input)[0] == target[0]
     assert set(serde._simplify(input)[1]) == set(target[1])
 
@@ -109,7 +109,7 @@ def test_dict_simplify():
     detail_str_index = serde.detailers.index(native_serde._detail_str)
     target = (
         detail_dict_index,
-        [((detail_str_index, (b"hello",)), (detail_str_index, (b"world",)))],
+        (((detail_str_index, (b"hello",)), (detail_str_index, (b"world",))),),
     )
     assert serde._simplify(input) == target
 

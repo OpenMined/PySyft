@@ -136,7 +136,12 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         self._data = new_data
 
     def is_none(self):
-        return self.owner.request_is_remote_tensor_none(self)
+        try:
+            return self.owner.request_is_remote_tensor_none(self)
+        except:
+            """TODO: this might hide useful errors, but we don't have good
+            enough remote error handling yet to do anything better."""
+            return True
 
     @staticmethod
     def create_pointer(
@@ -146,7 +151,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
         register: bool = False,
         owner: AbstractWorker = None,
         ptr_id: (str or int) = None,
-        garbage_collect_data: bool = True,
+        garbage_collect_data=None,
         shape=None,
         local_autograd=False,
         preinitialize_grad=False,
@@ -219,7 +224,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
                 id_at_location=id_at_location,
                 owner=owner,
                 id=ptr_id,
-                garbage_collect_data=garbage_collect_data,
+                garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
                 shape=shape,
                 tags=tensor.tags,
                 description=tensor.description,

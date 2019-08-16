@@ -205,12 +205,10 @@ def test_torch_mul(workers):
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
 
-    # When overflow occurs
     x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
-    # (1100 * 1100) % 2**16 = 30352
-    assert y == torch.tensor([3.03])
+    assert y == torch.tensor([121.0])
 
     # mixing + and *
     x = torch.tensor([2.113]).fix_prec()
@@ -232,6 +230,34 @@ def test_torch_mul(workers):
     z = torch.mul(x, y).get().float_prec()
 
     assert (z == torch.mul(t, u)).all()
+
+
+def test_torch_div(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # With scalar
+    x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec()
+    y = torch.tensor([[3.0, 6.2], [3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).float_prec()
+
+    assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
+
+    # With negative numbers
+    x = torch.tensor([[-9.0, 25.42], [-3.3, 0.0]]).fix_prec()
+    y = torch.tensor([[3.0, -6.2], [-3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).float_prec()
+
+    assert (z == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
+
+    # AST divided by FPT
+    x = torch.tensor([[9.0, 25.42], [3.3, 0.0]]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = torch.tensor([[3.0, 6.2], [3.3, 4.7]]).fix_prec()
+
+    z = torch.div(x, y).get().float_prec()
+
+    assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
 
 
 def test_torch_pow():
@@ -389,3 +415,29 @@ def test_get_preserves_attributes(workers):
     out = x.get().float_prec()
 
     assert (out == torch.tensor([1, 2, 3, 4.0])).all()
+
+
+def test_comp():
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([3.1]).fix_prec()
+    y = torch.tensor([2.1]).fix_prec()
+
+    assert (x >= y).float_prec()
+    assert not (x <= y).float_prec()
+    assert (x > y).float_prec()
+    assert not (x < y).float_prec()
+
+    x = torch.tensor([2.1]).fix_prec()
+    y = torch.tensor([3.1]).fix_prec()
+
+    assert not (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert (x < y).float_prec()

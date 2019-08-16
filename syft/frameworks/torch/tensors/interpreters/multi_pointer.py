@@ -118,7 +118,6 @@ class MultiPointerTensor(AbstractTensor):
     def dim(self) -> int:
         """This method fixes the error that the result of dim was a list of ints
         stored inside a multipointer tensor"""
-
         return len(self.shape)
 
     def get(self, sum_results: bool = False) -> torch.Tensor:
@@ -194,7 +193,7 @@ class MultiPointerTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 

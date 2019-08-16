@@ -13,19 +13,8 @@ import warnings
 
 import syft
 
-from syft.federated import TrainConfig
-
 from syft.workers import AbstractWorker
-from syft.workers import VirtualWorker
 
-from syft.federated import Plan
-
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import ResponseSignatureError
-
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.frameworks.torch import pointers
 
@@ -185,6 +174,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     )
 
     if tags is not None:
+
+        tags = list(tags)
+
         for i in range(len(tags)):
             tag = tags[i]
             if isinstance(tag, bytes):

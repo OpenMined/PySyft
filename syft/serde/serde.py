@@ -48,7 +48,7 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
-from syft.federated import Plan
+from syft import messaging
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -58,7 +58,10 @@ from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+
 from syft.frameworks.torch import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
@@ -74,13 +77,23 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
+    CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
-    Plan,
+    messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+    AutogradTensor,
+    messaging.Message,
+    messaging.Operation,
+    messaging.ObjectMessage,
+    messaging.ObjectRequestMessage,
+    messaging.IsNoneMessage,
+    messaging.GetShapeMessage,
+    messaging.ForceObjectDeleteMessage,
+    messaging.SearchMessage,
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list
@@ -256,7 +269,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     # 2) Deserialize
     # This function converts the binary into the appropriate python
     # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary)
+    simple_objects = msgpack.loads(binary, use_list=False)
 
     if details:
         # 3) Detail

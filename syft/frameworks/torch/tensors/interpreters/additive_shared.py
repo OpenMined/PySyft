@@ -368,7 +368,7 @@ class AdditiveSharingTensor(AbstractTensor):
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.Tensor([other])
+                torch.tensor([other])
                 .share(
                     *self.child.keys(),
                     field=self.field,
@@ -472,9 +472,11 @@ class AdditiveSharingTensor(AbstractTensor):
         return self._private_mul(other, "mul")
 
     def __mul__(self, other, **kwargs):
-        """Multiplies two number for details see mul
-        """
         return self.mul(other, **kwargs)
+
+    def __imul__(self, other):
+        self = self.mul(other)
+        return self
 
     def pow(self, power):
         """
@@ -529,11 +531,12 @@ class AdditiveSharingTensor(AbstractTensor):
         result = self.__truediv__(*args, **kwargs)
         self.child = result.child
 
-    @overloaded.method
-    def __truediv__(self, shares: dict, divisor):
-        # TODO: how to correctly handle division in Zq?
-        assert isinstance(divisor, int)
+    def _private_div(self, divisor):
+        return securenn.division(self, divisor)
 
+    @overloaded.method
+    def _public_div(self, shares: dict, divisor):
+        # TODO: how to correctly handle division in Zq?
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
             # Still no solution to perform a real division on a additive shared tensor
@@ -548,7 +551,13 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return divided_shares
 
-    div = __truediv__
+    def div(self, divisor):
+        if isinstance(divisor, AdditiveSharingTensor):
+            return self._private_div(divisor)
+        else:
+            return self._public_div(divisor)
+
+    __truediv__ = div
 
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
@@ -911,7 +920,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.hook_function_args(
+        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
 

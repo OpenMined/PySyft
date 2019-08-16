@@ -36,6 +36,8 @@
 
   * syft.grid module
 
+  * syft.sandbox module
+
   * syft.serde module
 
   * Module contents
