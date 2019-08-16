@@ -16,50 +16,46 @@ from syft import serde
 # Simplify/Detail Collections (list, set, tuple, etc.)
 
 
-def _simplify_collection(my_collection: Collection) -> Collection:
+def _simplify_collection(my_collection: Collection) -> Tuple:
     """
     This function is designed to search a collection for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
     through each object in the collection and calls _simplify on it. Finally,
-    it returns the output collection as the same type as the input collection
-    so that the consuming serialization step knows the correct type info. The
-    reverse function to this function is _detail_collection, which undoes
-    the functionality of this function.
+    it returns the output as the tuple of simplified items of the input collection.
+    This function is used to simplify list, set, and tuple. The reverse function,
+    which undoes the functionality of this function is different for each of these types:
+    _detail_collection_list, _detail_collection_set, _detail_collection_tuple.
 
     Args:
         my_collection (Collection): a collection of python objects
 
     Returns:
-        Collection: a collection of the same type as the input of simplified
-            objects.
+        Tuple: a tuple with simplified objects.
 
     """
 
-    # Step 0: get collection type for later use and itialize empty list
-    my_type = type(my_collection)
+    # Step 0: initialize empty list
     pieces = list()
 
     # Step 1: serialize each part of the collection
     for part in my_collection:
         pieces.append(serde._simplify(part))
 
-    # Step 2: convert back to original type and return serialization
-    if my_type == set:
-        return pieces
-    return my_type(pieces)
+    # Step 2: return serialization as tuple of simplified items
+    return tuple(pieces)
 
 
-def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -> Collection:
+def _detail_collection_list(worker: AbstractWorker, my_collection: Tuple) -> Collection:
     """
     This function is designed to operate in the opposite direction of
-    _simplify_collection. It takes a collection of simple python objects
+    _simplify_collection. It takes a tuple of simple python objects
     and iterates through it to determine whether objects in the collection
     need to be converted into more advanced types. In particular, it
     converts binary objects into torch Tensors where appropriate.
 
     Args:
         worker: the worker doing the deserialization
-        my_collection (Collection): a collection of simple python objects (including binary).
+        my_collection (Tuple): a tuple of simple python objects (including binary).
 
     Returns:
         Collection: a collection of the same type as the input where the objects
@@ -80,17 +76,17 @@ def _detail_collection_list(worker: AbstractWorker, my_collection: Collection) -
     return pieces
 
 
-def _detail_collection_set(worker: AbstractWorker, my_collection: Collection) -> Collection:
+def _detail_collection_set(worker: AbstractWorker, my_collection: Tuple) -> Collection:
     """
     This function is designed to operate in the opposite direction of
-    _simplify_collection. It takes a collection of simple python objects
+    _simplify_collection. It takes a tuple of simple python objects
     and iterates through it to determine whether objects in the collection
     need to be converted into more advanced types. In particular, it
     converts binary objects into torch Tensors where appropriate.
 
     Args:
         worker: the worker doing the deserialization
-        my_collection (Collection): a collection of simple python objects (including binary).
+        my_collection (Tuple): a tuple of simple python objects (including binary).
 
     Returns:
         Collection: a collection of the same type as the input where the objects
@@ -138,13 +134,12 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
     return tuple(pieces)
 
 
-def _simplify_dictionary(my_dict: Dict) -> Dict:
+def _simplify_dictionary(my_dict: Dict) -> Tuple:
     """
     This function is designed to search a dict for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
     through each key, value in the dict and calls _simplify on it. Finally,
-    it returns the output dict as the same type as the input dict
-    so that the consuming serialization step knows the correct type info. The
+    it returns the output tuple of tuples containing key/value pairs. The
     reverse function to this function is _detail_dictionary, which undoes
     the functionality of this function.
 
@@ -152,8 +147,8 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
         my_dict: A dictionary of python objects.
 
     Returns:
-        Dict: A dictionary of the same type as the input of simplified
-            objects.
+        Tuple: Tuple containing tuples of simplified key/value pairs from the
+            input dictionary.
 
     """
     pieces = list()
@@ -161,10 +156,10 @@ def _simplify_dictionary(my_dict: Dict) -> Dict:
     for key, value in my_dict.items():
         pieces.append((serde._simplify(key), serde._simplify(value)))
 
-    return pieces
+    return tuple(pieces)
 
 
-def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
+def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
     """
     This function is designed to operate in the opposite direction of
     _simplify_dictionary. It takes a dictionary of simple python objects
@@ -174,10 +169,10 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Dict) -> Dict:
 
     Args:
         worker: the worker doing the deserialization
-        my_dict (Dict): a dictionary of simple python objects (including binary).
+        my_dict (Tuple): a simplified dictionary of simple python objects (including binary).
 
     Returns:
-        tuple: a collection of the same type as the input where the objects
+        Dict: a collection of the same type as the input where the objects
             in the collection have been detailed.
     """
     pieces = {}

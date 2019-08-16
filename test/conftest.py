@@ -35,14 +35,24 @@ def start_remote_worker():  # pragma: no cover
     """Helper function for starting a websocket worker."""
 
     def _start_remote_worker(
-        id, hook, dataset: str = None, host="localhost", port=8768, sleep_time=0.01
+        id, hook, dataset: str = None, host="localhost", port=8768, max_tries=5, sleep_time=0.01
     ):
         kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
 
-        time.sleep(sleep_time)
+        retry_counter = 0
+        connection_open = False
+        while not connection_open:
+            try:
+                remote_worker = WebsocketClientWorker(**kwargs)
+                connection_open = True
+            except ConnectionRefusedError as e:
+                if retry_counter < max_tries:
+                    retry_counter += 1
+                    time.sleep(sleep_time)
+                else:
+                    raise e
 
-        remote_worker = WebsocketClientWorker(**kwargs)
         return server, remote_worker
 
     return _start_remote_worker

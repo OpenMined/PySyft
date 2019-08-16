@@ -226,7 +226,10 @@ class FederatedDataLoader(object):
         else:
             # You can't have more iterators than n - 1 workers, because you always
             # need a worker idle in the worker switch process made by iterators
-            self.num_iterators = min(num_iterators, len(self.workers) - 1)
+            if len(self.workers) == 1:
+                self.num_iterators = 1
+            else:
+                self.num_iterators = min(num_iterators, len(self.workers) - 1)
 
     def __iter__(self):
         self.iterators = list()

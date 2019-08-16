@@ -54,24 +54,24 @@ def test_explicit_garbage_collect_double_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in workers["alice"]._objects
+    # ensure alice's object was garbage collected
+    assert x_ptr.id not in workers["alice"]._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
     x_id = x.id
+
     # send tensor to bob and then pointer to alice
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
     x = x.send(bob).send(alice)
+
     # ensure bob has tensor
     assert x_id in bob._objects
     # delete pointer to pointer to tensor
     del x
     # ensure bob's object was garbage collected
     assert x_id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in workers["alice"]._objects
 
 
 def test_implicit_garbage_collection_pointer(workers):
@@ -111,6 +111,8 @@ def test_implicit_garbage_collect_double_pointer(workers):
 
     # ensure bob has tensor
     assert x.id in bob._objects
+    # ensure alice has tensor
+    assert x_ptr.id in alice._objects
 
     # delete pointer to pointer to tensor, which should automatically
     # garbage collect the remote object on Bob's machine
@@ -118,24 +120,25 @@ def test_implicit_garbage_collect_double_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in alice._objects
+    # ensure alice's object was garbage collected
+    assert x_ptr.id not in alice._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
     x_id = x.id
     # send tensor to bob and then pointer to alice
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
     x = x.send(bob).send(alice)
+
     # ensure bob has tensor
     assert x_id in bob._objects
+
     # delete pointer to pointer to tensor
     x = "asdf"
+
     # ensure bob's object was garbage collected
     assert x_id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in alice._objects
 
 
 # TESTING IN PLACE METHODS
@@ -200,7 +203,5 @@ def test_websocket_garbage_collection(hook, start_remote_worker):
     _ = sample_ptr.get()
     assert sample_data not in remote_worker._objects
 
-    remote_worker.ws.shutdown()
-    remote_worker.ws.close()
-    time.sleep(0.1)
+    remote_worker.close()
     server.terminate()

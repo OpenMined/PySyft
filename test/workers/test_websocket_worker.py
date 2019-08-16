@@ -5,9 +5,33 @@ from socket import gethostname
 from OpenSSL import crypto, SSL
 import pytest
 import torch
+import syft as sy
+from syft.frameworks.torch.federated import utils
 
 from syft.workers import WebsocketClientWorker
 from syft.workers import WebsocketServerWorker
+
+PRINT_IN_UNITTESTS = False
+
+
+def instantiate_websocket_client_worker(**kwargs):  # pragma: no cover
+    """ Helper function to instantiate the websocket client.
+    If connection is refused, we wait a bit and try again.
+    After 5 failed tries, a ConnectionRefusedError is raised.
+    """
+    retry_counter = 0
+    connection_open = False
+    while not connection_open:
+        try:
+            local_worker = WebsocketClientWorker(**kwargs)
+            connection_open = True
+        except ConnectionRefusedError as e:
+            if retry_counter < 5:
+                retry_counter += 1
+                time.sleep(0.1)
+            else:
+                raise e
+    return local_worker
 
 
 @pytest.mark.parametrize("secure", [True, False])
@@ -32,9 +56,9 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
         open(key_path, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
     kwargs = {
-        "id": "secure_fed" if secure else "fed",
+        "id": "secure_fed" if secure else "not_secure_fed",
         "host": "localhost",
-        "port": 8766 if secure else 8765,
+        "port": 8766,
         "hook": hook,
     }
 
@@ -57,7 +81,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
         del kwargs["key_path"]
 
     kwargs["secure"] = secure
-    local_worker = WebsocketClientWorker(**kwargs)
+    local_worker = instantiate_websocket_client_worker(**kwargs)
 
     x = x.send(local_worker)
     y = x + x
@@ -67,7 +91,7 @@ def test_websocket_worker_basic(hook, start_proc, secure, tmpdir):
 
     del x
 
-    local_worker.ws.shutdown()
+    local_worker.close()
     time.sleep(0.1)
     local_worker.remove_worker_from_local_worker_registry()
     process_remote_worker.terminate()
@@ -82,7 +106,7 @@ def test_websocket_workers_search(hook, start_remote_worker):
     # Sample tensor to store on the server
     sample_data = torch.tensor([1, 2, 3, 4]).tag("#sample_data", "#another_tag")
     _ = sample_data.send(remote_worker)
-
+    
     # Search for the tensor located on the server by using its tag
     results = remote_worker.search("#sample_data", "#another_tag")
 
@@ -97,15 +121,20 @@ def test_websocket_workers_search(hook, start_remote_worker):
     assert results[0].owner.id == "me"
     assert results[0].location.id == "fed2"
 
-    remote_worker.ws.shutdown()
-    remote_worker.ws.close()
+    remote_worker.close()
     time.sleep(0.1)
     remote_worker.remove_worker_from_local_worker_registry()
     server.terminate()
 
 
 def test_list_objects_remote(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", hook=hook)
+    server, remote_worker = start_remote_worker(id="fed-list-objects", hook=hook)
+    remote_worker.clear_objects()
+
+    x = torch.tensor([1, 2, 3]).send(remote_worker)
+
+    res = remote_worker.list_objects_remote()
+
     x = torch.tensor([1, 2, 3]).send(remote_worker)
 
     res = remote_worker.list_objects_remote()
@@ -121,14 +150,15 @@ def test_list_objects_remote(hook, start_remote_worker):
     del x
     del y
     time.sleep(0.1)
-    remote_worker.ws.shutdown()
+    remote_worker.close()
     time.sleep(0.1)
     remote_worker.remove_worker_from_local_worker_registry()
     server.terminate()
 
 
 def test_objects_count_remote(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", hook=hook)
+    server, remote_worker = start_remote_worker(id="fed-count-objects", hook=hook)
+    remote_worker.clear_objects()
 
     x = torch.tensor([1, 2, 3]).send(remote_worker)
 
@@ -146,14 +176,14 @@ def test_objects_count_remote(hook, start_remote_worker):
     # delete remote object before terminating the websocket connection
     del y
     time.sleep(0.1)
-    remote_worker.ws.shutdown()
+    remote_worker.close()
     time.sleep(0.1)
     remote_worker.remove_worker_from_local_worker_registry()
     server.terminate()
 
 
 def test_connect_close(hook, start_remote_worker):
-    server, remote_worker = start_remote_worker(id="fed", hook=hook)
+    server, remote_worker = start_remote_worker(id="fed-connect-close", hook=hook)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_worker)
@@ -171,7 +201,8 @@ def test_connect_close(hook, start_remote_worker):
     x_val = x_ptr.get()
     assert (x_val == x).all()
 
-    remote_worker.ws.shutdown()
+    remote_worker.close()
+    remote_worker.remove_worker_from_local_worker_registry()
 
     time.sleep(0.1)
 
@@ -182,9 +213,10 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker."""
     server, remote_worker = start_remote_worker(id="socket_multiple_output", hook=hook)
+    
     x = torch.tensor([1.0, 3, 2])
-
     x = x.send(remote_worker)
+
     p1, p2 = torch.sort(x)
     x1, x2 = p1.get(), p2.get()
 
@@ -193,5 +225,80 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
 
     x.get()  # retrieve remote object before closing the websocket connection
 
-    remote_worker.ws.shutdown()
+    remote_worker.close()
     server.terminate()
+
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
+def test_evaluate(hook, start_proc):  # pragma: no cover
+
+    sy.local_worker.clear_objects()
+    sy.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
+    sy.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
+    sy.frameworks.torch.hook.hook_args.get_tensor_type_functions = {}
+    sy.frameworks.torch.hook.hook_args.register_response_functions = {}
+
+    data, target = utils.iris_data_partial()
+
+    dataset = sy.BaseDataset(data=data, targets=target)
+
+    kwargs = {"id": "evaluate_remote", "host": "localhost", "port": 8790, "hook": hook}
+    dataset_key = "iris"
+    # TODO: check why unit test sometimes fails when WebsocketServerWorker is started from the unit test. Fails when run after test_federated_client.py
+    # process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, dataset_key), verbose=True, **kwargs)
+
+    local_worker = instantiate_websocket_client_worker(**kwargs)
+
+    def loss_fn(pred, target):
+        return torch.nn.functional.cross_entropy(input=pred, target=target)
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(4, 3)
+
+            torch.nn.init.xavier_normal_(self.fc1.weight)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            return x
+
+    model_untraced = Net()
+    model = torch.jit.trace(model_untraced, data)
+    loss_traced = torch.jit.trace(loss_fn, (torch.tensor([[0.3, 0.5, 0.2]]), torch.tensor([1])))
+
+    pred = model(data)
+    loss_before = loss_fn(target=target, pred=pred)
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print("Loss: {}".format(loss_before))
+
+    # Create and send train config
+    train_config = sy.TrainConfig(
+        batch_size=4,
+        model=model,
+        loss_fn=loss_traced,
+        model_id=None,
+        loss_fn_id=None,
+        optimizer_args=None,
+        epochs=1,
+    )
+    train_config.send(local_worker)
+
+    result = local_worker.evaluate(
+        dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
+    )
+
+    len_dataset = result["nr_predictions"]
+    hist_target = result["histogram_target"]
+
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print("Evaluation result before training: {}".format(result))
+
+    assert len_dataset == 30
+    assert (hist_target == [10, 10, 10]).all()
+
+    local_worker.close()
+    local_worker.remove_worker_from_local_worker_registry()
+    # process_remote_worker.terminate()

@@ -7,6 +7,7 @@ import torch.optim as optim
 
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
+from syft import messaging
 import time
 
 import pytest
@@ -402,15 +403,16 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     # delete remote object before websocket connection termination
     del x_ptr
 
+    remote_worker.close()
     server.terminate()
     hook.local_worker.is_client_worker = True
 
 
 def test_replace_worker_ids_two_strings(hook):
     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+    _replace_message_ids_orig = messaging.Plan._replace_message_ids
     mock_fun = mock.Mock(return_value=[])
-    sy.federated.Plan._replace_message_ids = mock_fun
+    messaging.Plan._replace_message_ids = mock_fun
     plan.replace_worker_ids("me", "you")
     args = {"change_id": -1, "obj": [], "to_id": -1}
     calls = [
@@ -419,15 +421,15 @@ def test_replace_worker_ids_two_strings(hook):
     ]
     assert len(mock_fun.mock_calls) == 2
     mock_fun.assert_has_calls(calls, any_order=True)
-    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+    messaging.Plan._replace_message_ids = _replace_message_ids_orig
 
 
 def test_replace_worker_ids_one_string_one_int(hook):
     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+    _replace_message_ids_orig = messaging.Plan._replace_message_ids
 
     mock_fun = mock.Mock(return_value=[])
-    sy.federated.Plan._replace_message_ids = mock_fun
+    messaging.Plan._replace_message_ids = mock_fun
     plan.replace_worker_ids(100, "you")
 
     args = {"change_id": -1, "obj": [], "to_id": -1}
@@ -436,7 +438,7 @@ def test_replace_worker_ids_one_string_one_int(hook):
     mock_fun.assert_has_calls(calls, any_order=True)
 
     mock_fun = mock.Mock(return_value=[])
-    sy.federated.Plan._replace_message_ids = mock_fun
+    messaging.Plan._replace_message_ids = mock_fun
     plan.replace_worker_ids("me", 200)
     calls = [
         mock.call(from_worker="me", to_worker=200, **args),
@@ -444,31 +446,31 @@ def test_replace_worker_ids_one_string_one_int(hook):
     ]
     assert len(mock_fun.mock_calls) == 2
     mock_fun.assert_has_calls(calls, any_order=True)
-    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+    messaging.Plan._replace_message_ids = _replace_message_ids_orig
 
 
 def test_replace_worker_ids_two_ints(hook):
     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-    _replace_message_ids_orig = sy.federated.Plan._replace_message_ids
+    _replace_message_ids_orig = messaging.Plan._replace_message_ids
     mock_fun = mock.Mock(return_value=[])
-    sy.federated.Plan._replace_message_ids = mock_fun
+    messaging.Plan._replace_message_ids = mock_fun
     plan.replace_worker_ids(300, 400)
     args = {"change_id": -1, "obj": [], "to_id": -1}
     calls = [mock.call(from_worker=300, to_worker=400, **args)]
     mock_fun.assert_called_once()
     mock_fun.assert_has_calls(calls, any_order=True)
-    sy.federated.Plan._replace_message_ids = _replace_message_ids_orig
+    messaging.Plan._replace_message_ids = _replace_message_ids_orig
 
 
 def test__replace_message_ids():
     messages = [10, ("worker", "me"), "you", 20, 10, b"you", (30, ["you", "me", "bla"])]
 
-    replaced = sy.federated.plan.Plan._replace_message_ids(
+    replaced = messaging.Plan._replace_message_ids(
         obj=messages, change_id=10, to_id=100, from_worker="me", to_worker="another"
     )
 
     # note that tuples are converted to lists
-    expected = [100, ["worker", "another"], "you", 20, 100, b"you", [30, ["you", "another", "bla"]]]
+    expected = (100, ("worker", "another"), "you", 20, 100, b"you", (30, ("you", "another", "bla")))
 
     assert replaced == expected
 
