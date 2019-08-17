@@ -67,6 +67,7 @@ class Message:
         return (ptr.msg_type, sy.serde._simplify(ptr.contents))
 
     @staticmethod
+
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
         """
         This function takes the simplified tuple version of this message and converts
@@ -381,3 +382,4 @@ class SearchMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         return SearchMessage(sy.serde._detail(worker, msg_tuple[1]))
+

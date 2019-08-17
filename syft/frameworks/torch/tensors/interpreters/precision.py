@@ -246,6 +246,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to multiply a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
             new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+
                 "mul", self, other, None
             )
 

@@ -48,7 +48,12 @@ from syft.federated import TrainConfig
 from syft.workers import AbstractWorker
 from syft.workers import VirtualWorker
 
+<<<<<<< HEAD
 from syft import messaging
+=======
+from syft.messaging import Plan
+from syft.messaging import Message
+>>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -85,6 +90,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.ObjectWrapper,
     TrainConfig,
     VirtualWorker,
+<<<<<<< HEAD
     AutogradTensor,
     messaging.Message,
     messaging.Operation,
@@ -94,6 +100,9 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.GetShapeMessage,
     messaging.ForceObjectDeleteMessage,
     messaging.SearchMessage,
+=======
+    Message,
+>>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
 ]
 
 # If a object implements its own force_simplify and force_detail functions it should be stored in this list

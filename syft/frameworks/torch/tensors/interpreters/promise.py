@@ -8,8 +8,7 @@ class PromiseTensor(AbstractTensor, Promise):
     def __init__(
         self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None
     ):
-        """Initializes a LoggingTensor, whose behaviour is to log all operations
-        applied on it.
+        """Initializes a PromiseTensor
 
         Args:
             owner: An optional BaseWorker object to specify the worker on which
@@ -20,10 +19,8 @@ class PromiseTensor(AbstractTensor, Promise):
             id=id, owner=owner, tags=tags, description=description, tensor_id=tensor_id, plans=plans
         )
 
-    # Method overloading
-
     @overloaded.method
-    def add(self, _self, *args, **kwargs):
+    def __add__(self, _self, *args, **kwargs):
         """
         Here is an example of how to use the @overloaded.method decorator. To see
         what this decorator do, just look at the next method manual_add: it does
@@ -32,6 +29,6 @@ class PromiseTensor(AbstractTensor, Promise):
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
         print("Log method add")
-        response = getattr(_self, "add")(*args, **kwargs)
+        response = getattr(_self, "__add__")(*args, **kwargs)
 
         return response

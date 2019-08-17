@@ -463,6 +463,7 @@ class TorchTensor(AbstractTensor):
 
             output = syft.MultiPointerTensor(children=children)
 
+
             if not no_wrap:
                 output = output.wrap()
 

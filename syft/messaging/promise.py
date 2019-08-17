@@ -47,8 +47,8 @@ class Promise:
 
         self.plans = plans
 
-        # the object which will eventually be here (with id self.obj_id)
-        self.obj = None
+        # by default, a Promise has not been kept when it is created.
+        self.is_kept = False
 
     def __repr__(self):
         return self.__str__()
