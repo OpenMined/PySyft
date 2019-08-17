@@ -10,7 +10,7 @@ from syft.workers import AbstractWorker
 
 
 class Promise(ABC):
-    def __init__(self, id=None, obj_id=None, plans=None):
+    def __init__(self, id=None, obj_id=None, obj_type=None, plans=None):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
         A Promise is a data-structure which indicates that "there will be an object
@@ -43,6 +43,8 @@ class Promise(ABC):
 
         self.obj_id = obj_id
 
+        self.obj_type = obj_type
+
         if plans is None:
             plans = set()
 
@@ -72,10 +74,16 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
-        self.parent().child = self.child
+
+        parent = self.parent()
+
+        parent.child = self.child
+
         if(not hasattr(self.child, "child")):
-            self.set_(self.child)
-            self.child = None
+            # parent.
+            parent.set_(self.child)
+            del parent.child
+            parent.is_wrapper = False
 
     def __repr__(self):
         return self.__str__()

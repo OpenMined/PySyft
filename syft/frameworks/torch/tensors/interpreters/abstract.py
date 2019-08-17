@@ -260,7 +260,19 @@ class AbstractTensor(AbstractObject):
         Returns:
             A pytorch tensor.
         """
+
+        # print("wrapping:" + str((self)) + ":" + str(wrapper_type))
+
         wrapper = torch.Tensor()
+
+        if(isinstance(self, torch.Tensor)):
+            wrapper = wrapper.type(self.type())
+        else:
+            wrapper = wrapper.type(self.torch_type())
+
+        # if wrapper_type is not None:
+        #     wrapper = wrapper.type(wrapper_type)
+
         wrapper.child = self
         wrapper.is_wrapper = True
         wrapper.child.parent = weakref.ref(wrapper)
@@ -290,6 +302,13 @@ class AbstractTensor(AbstractObject):
             return None
         else:
             return child_grad.wrap()
+
+    def torch_type(self):
+        if self.child is not None:
+            return self.child.torch_type()
+        else:
+            print("WARNING: Couldn't find proper torch_type, using 'torch.LongTensor' as default")
+            return 'torch.LongTensor'
 
 
 def initialize_tensor(

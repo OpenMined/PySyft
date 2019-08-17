@@ -1,5 +1,6 @@
 import syft as sy
 import torch as th
+import weakref
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
@@ -8,7 +9,7 @@ from syft.messaging.promise import Promise
 
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
-        self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None
+        self, owner=None, id=None, tags=None, description=None, tensor_id=None, tensor_type=None, plans=None
     ):
         """Initializes a PromiseTensor
 
@@ -25,7 +26,7 @@ class PromiseTensor(AbstractTensor, Promise):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         # constructor for Promise
-        Promise.__init__(self, obj_id=tensor_id, plans=plans)
+        Promise.__init__(self, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
 
     def __add__(self, *args, **kwargs):
         """
@@ -34,7 +35,10 @@ class PromiseTensor(AbstractTensor, Promise):
         some particular behaviour: so here what to start from :)
         """
 
+
         other = args[0]
+
+        print("adding:" + str(self.torch_type()) + " and " + str(other.torch_type()))
 
         @sy.func2plan([th.tensor([1]), th.tensor([2])])
         def __add__(self, other):
@@ -49,7 +53,7 @@ class PromiseTensor(AbstractTensor, Promise):
         # otherwise we would simplty check the ._objects registry
         __add__.args_fulfilled = {}
 
-        self.result_promise = PromiseTensor(tensor_id=__add__.result_ids[0], plans=set())
+        self.result_promise = PromiseTensor(tensor_id=__add__.result_ids[0], tensor_type=self.obj_type,  plans=set())
         other.result_promise = self.result_promise
 
         return self.result_promise
@@ -69,3 +73,39 @@ class PromiseTensor(AbstractTensor, Promise):
         # )
         #
         # return response
+
+    def torch_type(self):
+        return self.obj_type
+
+    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
+        """
+        Add a syft(log) tensor on top of the tensor.
+
+        Args:
+            tensor: the tensor to extend
+            wrap: if true, add the syft tensor between the wrapper
+            and the rest of the chain. If false, just add it at the top
+
+        Returns:
+            a syft/torch tensor
+        """
+
+        self.obj_type = tensor.type()
+
+        if not wrap:
+
+            self.child = tensor
+
+            return self
+
+        else:
+
+            # if tensor is a wrapper
+            if not hasattr(tensor, "child"):
+                tensor = tensor.wrap()
+
+            self.child = tensor.child
+            tensor.child = self
+
+            tensor.child.parent = weakref.ref(tensor)
+            return tensor
