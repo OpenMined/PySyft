@@ -68,7 +68,7 @@ forward_func = {
     MultiPointerTensor: lambda i: i.child,
     CRTPrecisionTensor: lambda i: i.child,
     LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
-    PromiseTensor: lambda i:i.child,
+    PromiseTensor: lambda i: i.child,
     "my_syft_tensor_type": lambda i: i.child,
 }
 

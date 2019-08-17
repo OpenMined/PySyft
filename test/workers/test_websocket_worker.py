@@ -319,7 +319,6 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     len_dataset = result["nr_predictions"]
     hist_target = result["histogram_target"]
 
-
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Evaluation result before training: {}".format(result))
 
