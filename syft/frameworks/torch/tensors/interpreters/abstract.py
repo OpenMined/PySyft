@@ -304,7 +304,8 @@ class AbstractTensor(AbstractObject):
             return child_grad.wrap()
 
     def torch_type(self):
-        if self.child is not None:
+
+        if self.child is not None and hasattr(self.child, "torch_type"):
             return self.child.torch_type()
         else:
             print("WARNING: Couldn't find proper torch_type, using 'torch.LongTensor' as default")
