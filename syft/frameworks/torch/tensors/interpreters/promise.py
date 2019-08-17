@@ -3,7 +3,6 @@ import torch as th
 import weakref
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
 from syft.messaging.promise import Promise
 
 
@@ -98,6 +97,7 @@ class PromiseTensor(AbstractTensor, Promise):
             a syft/torch tensor
         """
 
+        # This is the only difference from AbstractTensor.on()
         self.obj_type = tensor.type()
 
         if not wrap:
