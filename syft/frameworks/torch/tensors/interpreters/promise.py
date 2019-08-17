@@ -6,26 +6,6 @@ from syft.frameworks.torch.overload_torch import overloaded
 from syft.messaging.promise import Promise
 
 
-class First(object):
-    def __init__(self, param2):
-        print("First:" + str(param2))
-
-
-class Second(object):
-    def __init__(self, param):
-        print("Second:" + str(param))
-
-
-class Third(First, Second):
-    def __init__(self):
-        # constructor for First
-        super().__init__(param2="param2")
-
-        # constructor for Second
-        super(First, self).__init__(param="param")
-        print("third")
-
-
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
         self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None
