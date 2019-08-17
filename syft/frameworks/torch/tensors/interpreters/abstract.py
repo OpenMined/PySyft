@@ -308,7 +308,9 @@ class AbstractTensor(AbstractObject):
         if self.child is not None and hasattr(self.child, "torch_type"):
             return self.child.torch_type()
         else:
-            print("WARNING: Couldn't find proper torch_type, using 'torch.LongTensor' as default")
+            # TODO: we should know torch_type always - come back and fix this logic.
+            # https://github.com/OpenMined/PySyft/issues/2524
+            
             return 'torch.LongTensor'
 
 
