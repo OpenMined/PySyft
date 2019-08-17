@@ -60,7 +60,7 @@ class PromiseTensor(AbstractTensor, Promise):
         __add__.args_fulfilled = {}
 
         self.result_promise = PromiseTensor(
-            shape=self.shape,
+            shape=__add__.output_shape,
             tensor_id=__add__.result_ids[0],
             tensor_type=self.obj_type,
             plans=set(),
