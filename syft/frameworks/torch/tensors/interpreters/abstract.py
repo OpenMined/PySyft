@@ -224,16 +224,23 @@ class AbstractTensor(AbstractObject):
         Returns:
             a syft/torch tensor
         """
+
         if not wrap:
+
             self.child = tensor
             return self
+
         else:
+
             # if tensor is a wrapper
             if not hasattr(tensor, "child"):
                 tensor = tensor.wrap()
 
             self.child = tensor.child
             tensor.child = self
+
+            tensor.child.parent = weakref.ref(tensor)
+
             return tensor
 
     def wrap(self) -> torch.Tensor:

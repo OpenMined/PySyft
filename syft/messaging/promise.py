@@ -72,6 +72,8 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
+        self.parent().child = self.child
+
     def __repr__(self):
         return self.__str__()
 
