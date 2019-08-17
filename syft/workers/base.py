@@ -217,14 +217,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location.
         """
         if self.verbose:
-<<<<<<< HEAD
             print(f"worker {self} sending {message} to {location}")
-=======
-            print(f"worker {self} sending {msg_type} {message} to {location}")
-
-        # Step 0: combine type and message
-        message = messaging.Message(msg_type, message)
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message)
@@ -372,11 +365,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-<<<<<<< HEAD
                 _self = BaseWorker.get_obj(self, _self)
-=======
-                _self = self.get_obj(_self)
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
                 if _self is None:
                     return
             if type(_self) == str and _self == "self":
@@ -444,11 +433,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
-<<<<<<< HEAD
-=======
-
-        message = (message, return_ids)
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
 
         try:
             ret_val = self.send_msg(messaging.Operation(message, return_ids), location=recipient)
@@ -703,11 +687,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-<<<<<<< HEAD
         return self._objects.get(idx, None)
-=======
-        return self._objects[idx]
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
 
     @staticmethod
     def is_tensor_none(obj):

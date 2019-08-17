@@ -67,11 +67,8 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-<<<<<<< HEAD
+
         message = messaging.SearchMessage(query)
-=======
-        message = sy.Message(MSGTYPE.SEARCH, query)
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
@@ -194,16 +191,10 @@ class WebsocketClientWorker(BaseWorker):
     def evaluate(
         self,
         dataset_key: str,
-<<<<<<< HEAD
         return_histograms: bool = False,
         nr_bins: int = -1,
         return_loss=True,
         return_raw_accuracy: bool = True,
-=======
-        calculate_histograms: bool = False,
-        nr_bins: int = -1,
-        calculate_loss=True,
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
 
@@ -226,16 +217,10 @@ class WebsocketClientWorker(BaseWorker):
         return self._send_msg_and_deserialize(
             "evaluate",
             dataset_key=dataset_key,
-<<<<<<< HEAD
             return_histograms=return_histograms,
             nr_bins=nr_bins,
             return_loss=return_loss,
             return_raw_accuracy=return_raw_accuracy,
-=======
-            histograms=calculate_histograms,
-            nr_bins=nr_bins,
-            calculate_loss=calculate_loss,
->>>>>>> 044038c2ccff817bfb2891bd376f678105b6829f
         )
 
     def __str__(self):

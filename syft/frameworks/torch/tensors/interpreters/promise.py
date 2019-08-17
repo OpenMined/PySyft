@@ -5,6 +5,7 @@ from syft.messaging.promise import Promise
 
 
 class PromiseTensor(AbstractTensor, Promise):
+
     def __init__(
         self, owner=None, id=None, tags=None, description=None, tensor_id=None, plans=None
     ):
@@ -15,9 +16,7 @@ class PromiseTensor(AbstractTensor, Promise):
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
-        super().__init__(
-            id=id, owner=owner, tags=tags, description=description, tensor_id=tensor_id, plans=plans
-        )
+        super().__init__(id=id, owner=owner, tags=tags, description=description, tensor_id=tensor_id, plans=plans)
 
     @overloaded.method
     def __add__(self, _self, *args, **kwargs):

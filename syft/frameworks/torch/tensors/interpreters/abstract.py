@@ -210,7 +210,7 @@ class AbstractTensor(AbstractObject):
         description: str = None,
         child=None,
         *args,
-        **kwargs,
+        **kwargs
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
