@@ -117,7 +117,7 @@ class PromiseTensor(AbstractTensor, Promise):
             return tensor
 
 
-def CreatePromiseTensor(tensor_type, *args, **kwargs):
+def CreatePromiseTensor(tensor_type:str, *args, **kwargs):
     return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
 
 
