@@ -73,6 +73,9 @@ class Promise(ABC):
                 self.result_promise.keep(result)
 
         self.parent().child = self.child
+        if(not hasattr(self.child, "child")):
+            self.set_(self.child)
+            self.child = None
 
     def __repr__(self):
         return self.__str__()
