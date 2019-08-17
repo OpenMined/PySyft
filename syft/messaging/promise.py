@@ -74,12 +74,11 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
-
         parent = self.parent()
 
         parent.child = self.child
 
-        if(not hasattr(self.child, "child")):
+        if not hasattr(self.child, "child"):
             # parent.
             parent.set_(self.child)
             del parent.child

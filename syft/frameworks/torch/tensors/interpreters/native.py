@@ -770,7 +770,7 @@ class TorchTensor(AbstractTensor):
 
     def torch_type(self):
 
-        if(isinstance(self, torch.Tensor) and not self.is_wrapper):
+        if isinstance(self, torch.Tensor) and not self.is_wrapper:
             return self.type()
         else:
             return self.child.torch_type()

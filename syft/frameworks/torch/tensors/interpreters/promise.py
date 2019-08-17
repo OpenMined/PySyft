@@ -9,7 +9,14 @@ from syft.messaging.promise import Promise
 
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
-        self, owner=None, id=None, tags=None, description=None, tensor_id=None, tensor_type=None, plans=None
+        self,
+        owner=None,
+        id=None,
+        tags=None,
+        description=None,
+        tensor_id=None,
+        tensor_type=None,
+        plans=None,
     ):
         """Initializes a PromiseTensor
 
@@ -35,7 +42,6 @@ class PromiseTensor(AbstractTensor, Promise):
         some particular behaviour: so here what to start from :)
         """
 
-
         other = args[0]
 
         print("adding:" + str(self.torch_type()) + " and " + str(other.torch_type()))
@@ -53,7 +59,9 @@ class PromiseTensor(AbstractTensor, Promise):
         # otherwise we would simplty check the ._objects registry
         __add__.args_fulfilled = {}
 
-        self.result_promise = PromiseTensor(tensor_id=__add__.result_ids[0], tensor_type=self.obj_type,  plans=set())
+        self.result_promise = PromiseTensor(
+            tensor_id=__add__.result_ids[0], tensor_type=self.obj_type, plans=set()
+        )
         other.result_promise = self.result_promise
 
         return self.result_promise

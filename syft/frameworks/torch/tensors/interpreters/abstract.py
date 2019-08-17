@@ -265,7 +265,7 @@ class AbstractTensor(AbstractObject):
 
         wrapper = torch.Tensor()
 
-        if(isinstance(self, torch.Tensor)):
+        if isinstance(self, torch.Tensor):
             wrapper = wrapper.type(self.type())
         else:
             wrapper = wrapper.type(self.torch_type())
@@ -308,10 +308,11 @@ class AbstractTensor(AbstractObject):
         if self.child is not None and hasattr(self.child, "torch_type"):
             return self.child.torch_type()
         else:
+
             # TODO: we should know torch_type always - come back and fix this logic.
             # https://github.com/OpenMined/PySyft/issues/2524
-            
-            return 'torch.LongTensor'
+
+            return "torch.LongTensor"
 
 
 def initialize_tensor(
