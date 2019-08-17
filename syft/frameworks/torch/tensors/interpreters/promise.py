@@ -9,6 +9,7 @@ from syft.messaging.promise import Promise
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
         self,
+        shape,
         owner=None,
         id=None,
         tags=None,
@@ -34,6 +35,8 @@ class PromiseTensor(AbstractTensor, Promise):
         # constructor for Promise
         Promise.__init__(self, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
 
+        self.shape = shape
+
     def __add__(self, *args, **kwargs):
         """
         Here is the version of the add method without the decorator: as you can see
@@ -43,7 +46,7 @@ class PromiseTensor(AbstractTensor, Promise):
 
         other = args[0]
 
-        @sy.func2plan([th.tensor([1]), th.tensor([2])])
+        @sy.func2plan([self.shape, other.shape])
         def __add__(self, other):
             return self.__add__(other)
 
@@ -57,7 +60,10 @@ class PromiseTensor(AbstractTensor, Promise):
         __add__.args_fulfilled = {}
 
         self.result_promise = PromiseTensor(
-            tensor_id=__add__.result_ids[0], tensor_type=self.obj_type, plans=set()
+            shape=self.shape,
+            tensor_id=__add__.result_ids[0],
+            tensor_type=self.obj_type,
+            plans=set(),
         )
         other.result_promise = self.result_promise
 
@@ -101,43 +107,43 @@ class PromiseTensor(AbstractTensor, Promise):
             return tensor
 
 
-def CreatePromiseTensor(tensor_type: str, *args, **kwargs):
-    return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
+def CreatePromiseTensor(shape, tensor_type: str, *args, **kwargs):
+    return PromiseTensor(shape, *args, tensor_type=tensor_type, **kwargs).wrap()
 
 
 class Promises:
     @staticmethod
-    def FloatTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.FloatTensor", *args, **kwargs)
+    def FloatTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.FloatTensor", *args, **kwargs)
 
     @staticmethod
-    def DoubleTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.DoubleTensor", *args, **kwargs)
+    def DoubleTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.DoubleTensor", *args, **kwargs)
 
     @staticmethod
-    def HalfTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.HalfTensor", *args, **kwargs)
+    def HalfTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.HalfTensor", *args, **kwargs)
 
     @staticmethod
-    def ByteTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.ByteTensor", *args, **kwargs)
+    def ByteTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.ByteTensor", *args, **kwargs)
 
     @staticmethod
-    def CharTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.CharTensor", *args, **kwargs)
+    def CharTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.CharTensor", *args, **kwargs)
 
     @staticmethod
-    def ShortTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.ShortTensor", *args, **kwargs)
+    def ShortTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.ShortTensor", *args, **kwargs)
 
     @staticmethod
-    def IntTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.IntTensor", *args, **kwargs)
+    def IntTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.IntTensor", *args, **kwargs)
 
     @staticmethod
-    def LongTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.LongTensor", *args, **kwargs)
+    def LongTensor(shape, *args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.LongTensor", *args, **kwargs)
 
     @staticmethod
-    def BoolTensor(*args, **kwargs):
-        return CreatePromiseTensor(tensor_type="torch.BoolTensor", *args, **kwargs)
+    def BoolTensor(shape, args, **kwargs):
+        return CreatePromiseTensor(shape, tensor_type="torch.BoolTensor", *args, **kwargs)

@@ -5,6 +5,7 @@ from typing import Tuple
 from typing import Union
 
 import torch
+import torch as th
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.generic import ObjectStorage
@@ -126,6 +127,8 @@ class Plan(ObjectStorage):
         self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
         self.is_built = is_built
+        self.input_shapes = None
+        self._output_shape = None
 
         # Pointing info towards a remote plan
         self.locations = []
@@ -201,7 +204,7 @@ class Plan(ObjectStorage):
         # TODO: try to find a better way to deal with local execution
         # of methods.
         if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.get()
+            result = self._self.get()
 
     def build(self, *args):
         """Builds the plan.
@@ -215,10 +218,16 @@ class Plan(ObjectStorage):
             args: Input data.
         """
         self._prepare_for_running_local_method()
-        self._build(list(args))
+        res_ptr = self._build(list(args))
         self._after_running_local_method()
 
+        return res_ptr
+
     def _build(self, args: List):
+
+        self.input_shapes = [x.shape for x in args]
+        self._output_shape = None
+
         if self.is_method:
             args = tuple([self._self] + args)
 
@@ -236,6 +245,8 @@ class Plan(ObjectStorage):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
+        print(self.blueprint)
+
         res_ptr = self.blueprint(*local_args)
 
         res_ptr.child.garbage_collect_data = False
@@ -251,6 +262,8 @@ class Plan(ObjectStorage):
         self.owner_when_built = self.owner
 
         self.is_built = True
+
+        return res_ptr
 
     def find_location(self, args):
         """
@@ -623,6 +636,17 @@ class Plan(ObjectStorage):
         out += ">"
 
         return out
+
+    @property
+    def output_shape(self):
+
+        if self._output_shape is None:
+
+            args = [th.zeros(shape) for shape in self.input_shapes]
+            output = self(*args)
+            self._output_shape = output.shape
+
+        return self._output_shape
 
     @staticmethod
     def simplify(plan: "Plan") -> tuple:
