@@ -7,10 +7,6 @@ from syft.frameworks.torch.overload_torch import overloaded
 from syft.messaging.promise import Promise
 
 
-def CreatePromiseTensor(tensor_type, *args, **kwargs):
-    return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
-
-
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
         self,
@@ -121,6 +117,10 @@ class PromiseTensor(AbstractTensor, Promise):
 
             tensor.child.parent = weakref.ref(tensor)
             return tensor
+
+
+def CreatePromiseTensor(tensor_type, *args, **kwargs):
+    return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
 
 
 class Promises:
