@@ -62,22 +62,6 @@ class PromiseTensor(AbstractTensor, Promise):
         other.result_promise = self.result_promise
 
         return self.result_promise
-        #
-        # # Replace all syft tensor with their child attribute
-        # new_self, new_args, new_kwargs = sy.frameworks.torch.hook_args.unwrap_args_from_method(
-        #     "add", self, args, kwargs
-        # )
-        #
-        # print("Log method manual_add")
-        # # Send it to the appropriate class and get the response
-        # response = getattr(new_self, "add")(*new_args, **new_kwargs)
-        #
-        # # Put back SyftTensor on the tensors found in the response
-        # response = sy.frameworks.torch.hook_args.hook_response(
-        #     "add", response, wrap_type=type(self)
-        # )
-        #
-        # return response
 
     def torch_type(self):
         return self.obj_type
@@ -117,7 +101,7 @@ class PromiseTensor(AbstractTensor, Promise):
             return tensor
 
 
-def CreatePromiseTensor(tensor_type:str, *args, **kwargs):
+def CreatePromiseTensor(tensor_type: str, *args, **kwargs):
     return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
 
 
