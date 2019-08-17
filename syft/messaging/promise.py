@@ -55,6 +55,11 @@ class Promise(ABC):
 
     def keep(self, obj):
 
+        if obj.type() != self.obj_type:
+            raise TypeError(
+                "keep() was called with an object of incorrect type (not the type that was promised)"
+            )
+
         self.child = obj
         self.child.id = self.obj_id
 

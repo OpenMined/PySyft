@@ -72,10 +72,14 @@ from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters.promise import CreatePromiseTensor as PromiseTensor
 
 from syft.frameworks.torch.pointers import ObjectPointer
 from syft.frameworks.torch.pointers import CallablePointer
 from syft.frameworks.torch.pointers import ObjectWrapper
+
+# Import Promises
+from syft.frameworks.torch.tensors.interpreters.promise import Promises
 
 # Import serialization tools
 from syft import serde

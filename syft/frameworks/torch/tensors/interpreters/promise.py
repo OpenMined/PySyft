@@ -7,6 +7,10 @@ from syft.frameworks.torch.overload_torch import overloaded
 from syft.messaging.promise import Promise
 
 
+def CreatePromiseTensor(tensor_type, *args, **kwargs):
+    return PromiseTensor(*args, tensor_type=tensor_type, **kwargs).wrap()
+
+
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
         self,
@@ -117,3 +121,41 @@ class PromiseTensor(AbstractTensor, Promise):
 
             tensor.child.parent = weakref.ref(tensor)
             return tensor
+
+
+class Promises:
+    @staticmethod
+    def FloatTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.FloatTensor", *args, **kwargs)
+
+    @staticmethod
+    def DoubleTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.DoubleTensor", *args, **kwargs)
+
+    @staticmethod
+    def HalfTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.HalfTensor", *args, **kwargs)
+
+    @staticmethod
+    def ByteTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.ByteTensor", *args, **kwargs)
+
+    @staticmethod
+    def CharTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.CharTensor", *args, **kwargs)
+
+    @staticmethod
+    def ShortTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.ShortTensor", *args, **kwargs)
+
+    @staticmethod
+    def IntTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.IntTensor", *args, **kwargs)
+
+    @staticmethod
+    def LongTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.LongTensor", *args, **kwargs)
+
+    @staticmethod
+    def BoolTensor(*args, **kwargs):
+        return CreatePromiseTensor(tensor_type="torch.BoolTensor", *args, **kwargs)
