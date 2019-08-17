@@ -763,3 +763,8 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
+
+    def keep(self, *args, **kwargs):
+
+        result = self.child.keep(*args, **kwargs)
+

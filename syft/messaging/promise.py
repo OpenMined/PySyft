@@ -33,8 +33,6 @@ class Promise(ABC):
             future_x = Promise()
         """
 
-        print("Making a Promise")
-
         if id is None:
             id = sy.ID_PROVIDER.pop()
 
@@ -52,6 +50,27 @@ class Promise(ABC):
 
         # by default, a Promise has not been kept when it is created.
         self.is_kept = False
+
+    def keep(self, obj):
+
+        self.child = obj
+        self.child.id = self.obj_id
+
+        self.is_kept = True
+
+        for plan in self.plans:
+
+            plan.args_fulfilled[self.obj_id] = self.child
+
+            plan_missing_arg = False
+            for arg_id in plan.arg_ids:
+                if arg_id not in plan.args_fulfilled:
+                    plan_missing_arg = True
+
+            if not plan_missing_arg:
+                args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
+                result = plan(*args)
+                self.result_promise.keep(result)
 
     def __repr__(self):
         return self.__str__()

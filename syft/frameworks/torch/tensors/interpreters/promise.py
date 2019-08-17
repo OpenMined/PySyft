@@ -36,23 +36,20 @@ class PromiseTensor(AbstractTensor, Promise):
 
         other = args[0]
 
-        print(self)
-        print(other)
-
         @sy.func2plan([th.tensor([1]), th.tensor([2])])
-        def add(a, b):
-            return a + b
+        def __add__(self, other):
+            return self.__add__(other)
 
-        add.arg_ids = [self.obj_id, other.obj_id]
+        __add__.arg_ids = [self.obj_id, other.obj_id]
 
-        self.plans.add(add)
-        other.plans.add(add)
+        self.plans.add(__add__)
+        other.plans.add(__add__)
 
         # only need this for use of Promises with the local_worker VirtualWorker
         # otherwise we would simplty check the ._objects registry
-        add.args_fulfilled = {}
+        __add__.args_fulfilled = {}
 
-        self.result_promise = PromiseTensor(tensor_id=add.result_ids[0], plans=set())
+        self.result_promise = PromiseTensor(tensor_id=__add__.result_ids[0], plans=set())
         other.result_promise = self.result_promise
 
         return self.result_promise
