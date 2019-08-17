@@ -5,11 +5,12 @@ the plan has all of the inputs it requires). """
 
 import syft as sy
 
+from abc import ABC
 from syft.workers import AbstractWorker
 
 
-class Promise:
-    def __init__(self, id=None, obj_id=None, plans=None, *args, **kwargs):
+class Promise(ABC):
+    def __init__(self, id=None, obj_id=None, plans=None):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
         A Promise is a data-structure which indicates that "there will be an object
@@ -31,6 +32,8 @@ class Promise:
         Example:
             future_x = Promise()
         """
+
+        print("Making a Promise")
 
         if id is None:
             id = sy.ID_PROVIDER.pop()
