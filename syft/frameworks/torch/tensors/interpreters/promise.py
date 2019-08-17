@@ -22,13 +22,10 @@ class PromiseTensor(AbstractTensor, Promise):
         # was exhibiting some strange behavior when I used super() for both of them.
 
         # constructor for AbstractTensor
-        super().__init__(
-            id=id, owner=owner, tags=tags, description=description
-        )
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         # constructor for Promise
         Promise.__init__(self, obj_id=tensor_id, plans=plans)
-
 
     def __add__(self, *args, **kwargs):
         """
