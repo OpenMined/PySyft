@@ -43,8 +43,6 @@ class PromiseTensor(AbstractTensor, Promise):
 
         other = args[0]
 
-        print("adding:" + str(self.torch_type()) + " and " + str(other.torch_type()))
-
         @sy.func2plan([th.tensor([1]), th.tensor([2])])
         def __add__(self, other):
             return self.__add__(other)
