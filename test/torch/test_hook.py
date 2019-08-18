@@ -293,23 +293,65 @@ def test_RNN_grad_set_backpropagation(workers):
         param.data.add_(-learning_rate, param.grad.data)
 
 
-def test_remote_gradient_clipping(workers):
+#Real test case of gradient clipping
+def test_local_remote_gradient_clipping(workers):
     # Vanishing gradient test
     alice = workers["alice"]
-    vanishing_tensor_test = torch.Tensor([-9.8367e23])
-    remote_vanishing_tensor = vanishing_tensor_test.send(alice)
-    vanishing_remote_tensor_clipped = torch.nn.utils.clip_grad(remote_vanishing_tensor, 2)
-    # Has the remote gradient indeed increased?
-    greater_tensor_check = (vanishing_remote_tensor_clipped > remote_vanishing_tensor).copy().get()
-    one_tensors = torch.ones([1], dtype=torch.uint8)
-    assert torch.eq(greater_tensor_check, one_tensors)
 
+    class RNN(nn.Module):
+        def __init__(self, input_size, hidden_size, output_size):
+            super(RNN, self).__init__()
+            self.hidden_size = hidden_size
+            self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+            self.i2o = nn.Linear(input_size + hidden_size, output_size)
+            self.softmax = nn.LogSoftmax(dim=1)
 
-def test_local_gradient_clipping():
-    # Vanishing gradient test
-    vanishing_tensor_test = torch.Tensor([-9.8367e23])
-    vanishing_tensor_clipped = torch.nn.utils.clip_grad(vanishing_tensor_test, 2)
-    # Has the local gradient indeed increased?
-    greater_tensor_check = vanishing_tensor_clipped > vanishing_tensor_test
-    one_tensors = torch.ones([1], dtype=torch.uint8)
-    assert torch.eq(greater_tensor_check, one_tensors)
+        def forward(self, input, hidden):
+            combined = torch.cat((input, hidden), 1)
+            hidden = self.i2h(combined)
+            output = self.i2o(combined)
+            output = self.softmax(output)
+            return output, hidden
+
+        def initHidden(self):
+            return torch.zeros(1, self.hidden_size)
+
+    # let's initialize a simple RNN
+    n_hidden = 128
+    n_letters = 57
+    n_categories = 18
+
+    rnn = RNN(n_letters, n_hidden, n_categories)
+
+    # Let's send the model to alice, who will be responsible for the tiny computation
+    alice_model = rnn.copy().send(alice)
+
+    # Simple input for the Recurrent Neural Network
+    input_tensor = torch.zeros(size=(1, 57))
+    # Just set a random category for it
+    input_tensor[0][20] = 1
+    alice_input = input_tensor.copy().send(alice)
+
+    label_tensor = torch.randint(low=0, high=(n_categories - 1), size=(1,))
+    alice_label = label_tensor.send(alice)
+
+    hidden_layer = alice_model.initHidden()
+    alice_hidden_layer = hidden_layer.send(alice)
+    # Forward pass into the NN and its hidden layers, notice how it goes sequentially
+    output, alice_hidden_layer = alice_model(alice_input, alice_hidden_layer)
+    criterion = nn.NLLLoss()
+    loss = criterion(output, alice_label)
+    # time to backpropagate...
+    loss.backward()
+
+    #Remote gradient clipping
+    remote_parameters = alice_model.parameters()
+    total_norm_remote = nn.utils.clip_grad_norm_(remote_parameters, 2)
+    
+    #Local gradient clipping
+    local_alice_model = alice_model.get()
+    local_parameters = local_alice_model.parameters()
+    total_norm_local = nn.utils.clip_grad_norm_(local_parameters, 2)
+    
+    assert(total_norm_remote == total_norm_local)
+    
