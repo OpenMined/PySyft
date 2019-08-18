@@ -138,7 +138,15 @@ def _force_full_simplify(obj: object) -> object:
 
 ## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers."""
+    """
+    Generate simplifiers, forced full simplifiers and detailers,
+    by registering native and torch types, syft objects with custom
+    simplify and detail methods, or syft objects with custom
+    force_simplify and force_detail methods.
+    
+    Args:
+    :return: the simplifiers, forced_full_simplifiers, detailers
+    """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
     detailers = []
