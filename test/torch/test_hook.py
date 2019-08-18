@@ -293,7 +293,7 @@ def test_RNN_grad_set_backpropagation(workers):
         param.data.add_(-learning_rate, param.grad.data)
 
 
-#Real test case of gradient clipping
+# Real test case of gradient clipping
 def test_local_remote_gradient_clipping(workers):
     # Vanishing gradient test
     alice = workers["alice"]
@@ -344,14 +344,13 @@ def test_local_remote_gradient_clipping(workers):
     # time to backpropagate...
     loss.backward()
 
-    #Remote gradient clipping
+    # Remote gradient clipping
     remote_parameters = alice_model.parameters()
     total_norm_remote = nn.utils.clip_grad_norm_(remote_parameters, 2)
-    
-    #Local gradient clipping
+
+    # Local gradient clipping
     local_alice_model = alice_model.get()
     local_parameters = local_alice_model.parameters()
     total_norm_local = nn.utils.clip_grad_norm_(local_parameters, 2)
-    
-    assert(total_norm_remote == total_norm_local)
-    
+
+    assert total_norm_remote == total_norm_local
