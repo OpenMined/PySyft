@@ -325,8 +325,7 @@ class PointerTensor(pointers.ObjectPointer, abstract.AbstractTensor):
 
         response = self.owner.send_command(self.location, command)
 
-        # For some reason the response has no Wrapper. Must be manually added here
-        return response.wrap()
+        return response
 
     float_precision = float_prec
 
