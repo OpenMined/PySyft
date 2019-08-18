@@ -1140,9 +1140,6 @@ class TorchHook:
         # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
         # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
         # and keeps functionalities from PyTorch to clip local PyTorch tensors.
-        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
-        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
-        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
         
