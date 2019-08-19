@@ -6,6 +6,7 @@ from torch.nn import init
 import syft
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.pointers.pointer_tensor import PointerTensor
 
 
 class RNNCellBase(nn.Module):
@@ -41,6 +42,8 @@ class RNNCellBase(nn.Module):
         in the forward method. It creates a hidden state with zero values.
         """
         h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
+        if input.has_child() and isinstance(input.child, PointerTensor):
+            h = h.send(input.child.location)
         if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
@@ -339,6 +342,8 @@ class RNNBase(nn.Module):
             dtype=input.dtype,
             device=input.device,
         )
+        if input.has_child() and isinstance(input.child, PointerTensor):
+            h = h.send(input.child.location)
         if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
