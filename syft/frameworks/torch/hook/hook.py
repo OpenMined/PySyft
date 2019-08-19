@@ -9,12 +9,15 @@ from functools import wraps
 
 
 import syft
+import syft as sy
+
 from syft import workers
 
 from syft.workers import BaseWorker
 from syft.messaging import Plan
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import PromiseTensor
 from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
@@ -158,6 +161,9 @@ class TorchHook:
 
         # Add all hooked tensor methods to LargePrecisionTensor tensor
         self._hook_syft_tensor_methods(LargePrecisionTensor)
+
+        # Add all hooked tensor methods to PromiseTensor
+        self._hook_promise_tensor()
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -690,6 +696,52 @@ class TorchHook:
             return response
 
         return overloaded_native_method
+
+    def _hook_promise_tensor(hook_self):
+
+        methods_to_hook = hook_self.to_auto_overload[torch.Tensor]
+
+        for method_name in methods_to_hook:
+
+            def generate_method(method_name):
+                def method(self, *args, **kwargs):
+
+                    arg_shapes = list([self._shape])
+                    arg_ids = list([self.obj_id])
+                    for arg in args:
+                        arg_shapes.append(arg._shape)
+                        arg_ids.append(arg.obj_id)
+
+                    @sy.func2plan(arg_shapes)
+                    def operation(self, *args, **kwargs):
+                        return getattr(self, method_name)(*args, **kwargs)
+
+                    operation.arg_ids = arg_ids
+
+                    self.plans.add(operation)
+
+                    for arg in args:
+                        arg.plans.add(operation)
+
+                    # only need this for use of Promises with the local_worker VirtualWorker
+                    # otherwise we would simplty check the ._objects registry
+                    operation.args_fulfilled = {}
+
+                    self.result_promise = PromiseTensor(
+                        shape=operation.output_shape,
+                        tensor_id=operation.result_ids[0],
+                        tensor_type=self.obj_type,
+                        plans=set(),
+                    )
+
+                    for arg in args:
+                        arg.result_promise = self.result_promise
+
+                    return self.result_promise
+
+                return method
+
+            setattr(PromiseTensor, method_name, generate_method(method_name))
 
     def get_hooked_func(hook_self, attr):
         """
