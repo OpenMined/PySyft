@@ -78,51 +78,52 @@ class PromiseTensor(AbstractTensor, Promise):
             tensor.child.parent = weakref.ref(tensor)
             return tensor
 
-methods_to_hook = ["__add__"]
+methods_to_hook = ["__add__", "__sub__", "__mul__"]
 
 for method_name in methods_to_hook:
 
-    def method(self, *args, **kwargs):
-        """
-        Here is the version of the add method without the decorator: as you can see
-        it is much more complicated. However you might need sometimes to specify
-        some particular behaviour: so here what to start from :)
-        """
+    def generate_method(method_name):
+        def method(self, *args, **kwargs):
+            """
+            Here is the version of the add method without the decorator: as you can see
+            it is much more complicated. However you might need sometimes to specify
+            some particular behaviour: so here what to start from :)
+            """
 
-        arg_shapes = list([self._shape])
-        arg_ids = list([self.obj_id])
-        for arg in args:
-            arg_shapes.append(arg._shape)
-            arg_ids.append(arg.obj_id)
+            arg_shapes = list([self._shape])
+            arg_ids = list([self.obj_id])
+            for arg in args:
+                arg_shapes.append(arg._shape)
+                arg_ids.append(arg.obj_id)
 
-        @sy.func2plan(arg_shapes)
-        def operation(self, *args, **kwargs):
-            return getattr(self, method_name)(*args, **kwargs)
+            @sy.func2plan(arg_shapes)
+            def operation(self, *args, **kwargs):
+                return getattr(self, method_name)(*args, **kwargs)
 
-        operation.arg_ids = arg_ids
+            operation.arg_ids = arg_ids
 
-        self.plans.add(operation)
+            self.plans.add(operation)
 
-        for arg in args:
-            arg.plans.add(operation)
+            for arg in args:
+                arg.plans.add(operation)
 
-        # only need this for use of Promises with the local_worker VirtualWorker
-        # otherwise we would simplty check the ._objects registry
-        operation.args_fulfilled = {}
+            # only need this for use of Promises with the local_worker VirtualWorker
+            # otherwise we would simplty check the ._objects registry
+            operation.args_fulfilled = {}
 
-        self.result_promise = PromiseTensor(
-            shape=operation.output_shape,
-            tensor_id=operation.result_ids[0],
-            tensor_type=self.obj_type,
-            plans=set(),
-        )
+            self.result_promise = PromiseTensor(
+                shape=operation.output_shape,
+                tensor_id=operation.result_ids[0],
+                tensor_type=self.obj_type,
+                plans=set(),
+            )
 
-        for arg in args:
-            arg.result_promise = self.result_promise
+            for arg in args:
+                arg.result_promise = self.result_promise
 
-        return self.result_promise
-
-    setattr(PromiseTensor, method_name, method)
+            return self.result_promise
+        return method
+    setattr(PromiseTensor, method_name, generate_method(method_name))
 
 def CreatePromiseTensor(shape, tensor_type: str, *args, **kwargs):
     return PromiseTensor(shape, *args, tensor_type=tensor_type, **kwargs).wrap()
