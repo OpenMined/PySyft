@@ -17,12 +17,12 @@ def test___init__(hook):
 
 def test_torch_attributes():
     with pytest.raises(RuntimeError):
-        syft.torch._command_guard("false_command", "torch_modules")
+        syft.framework._command_guard("false_command")
 
-    assert syft.torch._is_command_valid_guard("torch.add", "torch_modules")
-    assert not syft.torch._is_command_valid_guard("false_command", "torch_modules")
+    assert syft.framework._is_command_valid_guard("torch.add")
+    assert not syft.framework._is_command_valid_guard("false_command")
 
-    syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
+    syft.framework._command_guard("torch.add", get_native=False)
 
 
 def test_worker_registration(hook, workers):

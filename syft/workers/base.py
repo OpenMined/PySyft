@@ -378,7 +378,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                     return
             if type(_self) == str and _self == "self":
                 _self = self
-            if sy.torch.is_inplace_method(command_name):
+            if sy.framework.is_inplace_method(command_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
                 getattr(_self, command_name)(*args, **kwargs)
@@ -398,7 +398,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command_name, "torch_modules")  # TODO[jvmancuso]: generalize
+            sy.framework.command_guard(command_name)
 
             paths = command_name.split(".")
             command = self

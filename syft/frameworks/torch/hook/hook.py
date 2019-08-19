@@ -526,7 +526,7 @@ class TorchHook(FrameworkHook):
             response = owner.send_command(location, command)
 
             # For inplace methods, just directly return self
-            if syft.torch.is_inplace_method(attr):
+            if syft.framework.is_inplace_method(attr):
                 return self
 
             return response
@@ -690,7 +690,7 @@ class TorchHook(FrameworkHook):
                 response = method(*new_args, **new_kwargs)
 
                 # For inplace methods, just directly return self
-                if syft.torch.is_inplace_method(method_name):
+                if syft.framework.is_inplace_method(method_name):
                     return self
 
                 # Put back the wrappers where needed
