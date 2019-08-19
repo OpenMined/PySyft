@@ -143,7 +143,7 @@ def test_rnn_federated(module, hook, workers):
     input_size = 3
     hidden_size = 5
     seq_len = 4
-    num_layers = 1
+    num_layers = 2
     bidirectional = True
 
     # Create toy dataset and federated loader
