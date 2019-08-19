@@ -91,7 +91,11 @@ for method_name in methods_to_hook:
 
         other = args[0]
 
-        @sy.func2plan([self._shape, other._shape])
+        arg_shapes = list([self._shape])
+        for arg in args:
+            arg_shapes.append(arg._shape)
+
+        @sy.func2plan(arg_shapes)
         def operation(self, *args, **kwargs):
             return getattr(self, method_name)(*args, **kwargs)
 
