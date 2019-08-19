@@ -287,7 +287,7 @@ def test_execute_plan_remotely(hook, start_remote_worker):
     x = th.tensor([-1, 2, 3])
     local_res = my_plan(x)
 
-    server, remote_proxy = start_remote_worker(id="test_plan_worker", hook=hook)
+    server, remote_proxy = start_remote_worker(id="test_plan_worker", hook=hook, port=8799)
 
     plan_ptr = my_plan.send(remote_proxy)
     x_ptr = x.send(remote_proxy)
@@ -327,7 +327,7 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
 
     net.forward.build(x)
 
-    server, remote_proxy = start_remote_worker(id="test_plan_worker_2", hook=hook)
+    server, remote_proxy = start_remote_worker(id="test_plan_worker_2", port=8799, hook=hook)
 
     plan_ptr = net.send(remote_proxy)
     x_ptr = x.send(remote_proxy)
@@ -394,7 +394,7 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     local_res = net(x)
     net.forward.build(x)
 
-    server, remote_proxy = start_remote_worker(id="test_plan_worker_3", hook=hook)
+    server, remote_proxy = start_remote_worker(id="test_plan_worker_3", port=8800, hook=hook)
 
     plan_ptr = net.send(remote_proxy)
     x_ptr = x.send(remote_proxy)
