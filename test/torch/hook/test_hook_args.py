@@ -1,5 +1,5 @@
 from syft.frameworks.torch.hook import hook_args
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 import torch
 import numpy as np
 
