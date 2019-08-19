@@ -18,12 +18,12 @@ def test_rnn_mpc(module, hook, workers):
     crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
 
     # model hyperparameters
-    batch_size = 4
-    input_size = 3
-    hidden_size = 5
-    seq_len = 6
+    batch_size = 2
+    input_size = 2
+    hidden_size = 2
+    seq_len = 2
     num_layers = 2
-    bidirectional = True
+    bidirectional = False
     directions = 2 if bidirectional else 1
 
     if module == "lstm":
