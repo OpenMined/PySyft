@@ -245,8 +245,6 @@ class Plan(ObjectStorage):
                 self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
-        print(self.blueprint)
-
         res_ptr = self.blueprint(*local_args)
 
         res_ptr.child.garbage_collect_data = False

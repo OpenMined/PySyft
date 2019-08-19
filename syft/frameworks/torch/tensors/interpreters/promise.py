@@ -35,7 +35,7 @@ class PromiseTensor(AbstractTensor, Promise):
         # constructor for Promise
         Promise.__init__(self, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
 
-        self.shape = shape
+        self._shape = shape
 
     def __add__(self, *args, **kwargs):
         """
@@ -46,22 +46,22 @@ class PromiseTensor(AbstractTensor, Promise):
 
         other = args[0]
 
-        @sy.func2plan([self.shape, other.shape])
-        def __add__(self, other):
+        @sy.func2plan([self._shape, other._shape])
+        def operation(self, other):
             return self.__add__(other)
 
-        __add__.arg_ids = [self.obj_id, other.obj_id]
+        operation.arg_ids = [self.obj_id, other.obj_id]
 
-        self.plans.add(__add__)
-        other.plans.add(__add__)
+        self.plans.add(operation)
+        other.plans.add(operation)
 
         # only need this for use of Promises with the local_worker VirtualWorker
         # otherwise we would simplty check the ._objects registry
-        __add__.args_fulfilled = {}
+        operation.args_fulfilled = {}
 
         self.result_promise = PromiseTensor(
-            shape=__add__.output_shape,
-            tensor_id=__add__.result_ids[0],
+            shape=operation.output_shape,
+            tensor_id=operation.result_ids[0],
             tensor_type=self.obj_type,
             plans=set(),
         )
@@ -71,6 +71,10 @@ class PromiseTensor(AbstractTensor, Promise):
 
     def torch_type(self):
         return self.obj_type
+
+    @property
+    def shape(self):
+        return self._shape
 
     def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
