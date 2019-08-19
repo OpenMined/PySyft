@@ -1,8 +1,9 @@
 import syft as sy
-import torch as th
+from syft.workers import AbstractWorker
 import weakref
 
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
 from syft.messaging.promise import Promise
 
 
@@ -37,6 +38,8 @@ class PromiseTensor(AbstractTensor, Promise):
 
         self._shape = shape
 
+        del self.child
+
     def torch_type(self):
         return self.obj_type
 
@@ -46,10 +49,11 @@ class PromiseTensor(AbstractTensor, Promise):
 
     @property
     def grad(self):
-        if not hasattr(self, "_grad"):
-            self._grad = PromiseTensor(shape=self._shape, tensor_type=self.torch_type()).wrap()
-
-        return self._grad
+        return None
+        # if not hasattr(self, "_grad"):
+        #     self._grad = PromiseTensor(shape=self._shape, tensor_type=self.torch_type()).wrap()
+        #
+        # return self._grad
 
     def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
@@ -84,6 +88,59 @@ class PromiseTensor(AbstractTensor, Promise):
 
             tensor.child.parent = weakref.ref(tensor)
             return tensor
+
+    @staticmethod
+    def simplify(self: "PromiseTensor") -> tuple:
+        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+
+        Args:
+            tensor: a FixedPrecisionTensor.
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the fixed precision tensor.
+        """
+
+        print("Simplifying PromiseTensor")
+
+        return (
+            sy.serde._simplify((self.id)),
+            sy.serde._simplify(self._shape),
+            sy.serde._simplify(self.obj_id),
+            sy.serde._simplify(self.obj_type),
+            sy.serde._simplify(self.plans),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PromiseTensor":
+        """
+            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
+            Args:
+                worker: the worker doing the deserialization
+                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+            Returns:
+                FixedPrecisionTensor: a FixedPrecisionTensor
+            Examples:
+                shared_tensor = detail(data)
+            """
+
+        print("Detailing PromiseTensor")
+
+        id, shape, tensor_id, tensor_type, plans = tensor_tuple
+
+        tensor = PromiseTensor(id=id, shape=shape, tensor_id=tensor_id, tensor_type=tensor_type, plans=plans)
+
+        initialize_tensor(
+            hook_self=sy.torch.hook,
+            cls=tensor,
+            torch_tensor=True,
+            owner=worker,
+            id=id,
+            init_args=[],
+            kwargs={},
+        )
+
+        return tensor
+
 
 def CreatePromiseTensor(shape, tensor_type: str, *args, **kwargs):
     return PromiseTensor(shape, *args, tensor_type=tensor_type, **kwargs).wrap()
