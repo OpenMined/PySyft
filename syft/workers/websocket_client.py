@@ -182,7 +182,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
 
-        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        msg = messaging.Message(MSGTYPE.OBJ_REQ, return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
