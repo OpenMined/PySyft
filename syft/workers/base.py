@@ -1,26 +1,26 @@
-import logging
-
 from abc import abstractmethod
-import syft as sy
-
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import WorkerNotFoundException
-from syft.exceptions import ResponseSignatureError
-from syft.workers import AbstractWorker
-from syft import messaging
-from syft import codes
+import logging
 from typing import Callable
 from typing import List
 from typing import Tuple
 from typing import Union
 from typing import TYPE_CHECKING
-import torch
+
+import syft as sy
+from syft.generic.tensor import AbstractTensor
+from syft.generic import ObjectStorage
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import WorkerNotFoundException
+from syft.exceptions import ResponseSignatureError
+from syft.frameworks.types import FrameworkTensorType
+from syft.frameworks.types import FrameworkTensor
+from syft.workers import AbstractWorker
+from syft import messaging
+from syft import codes
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.frameworks.torch import pointers
+    from syft.generic import pointers
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def __init__(
         self,
-        hook: "sy.TorchHook",
+        hook: "sy.frameworks.BaseHook",
         id: Union[int, str] = 0,
         data: Union[List, tuple] = None,
         is_client_worker: bool = False,
@@ -79,7 +79,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        self.torch = None if hook is None else hook.torch
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -182,7 +192,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
 
-    def load_data(self, data: List[Union[torch.Tensor, AbstractTensor]]) -> None:
+    def load_data(self, data: List[Union[FrameworkTensorType, AbstractTensor]]) -> None:
         """Allows workers to be initialized with data when created
 
            The method registers the tensor individual tensor objects.
@@ -269,12 +279,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def send(
         self,
-        obj: Union[torch.Tensor, AbstractTensor],
+        obj: Union[FrameworkTensorType, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
-        local_autograd=False,
-        preinitialize_grad=False,
         garbage_collect_data=None,
+        **kwargs,
     ) -> "pointers.ObjectPointer":
         """Sends tensor to the worker(s).
 
@@ -283,7 +292,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/torch tensor/object object to send.
+            tensor: A syft/framework tensor/object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
@@ -335,9 +344,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 id_at_location=obj.id,
                 register=True,
                 ptr_id=ptr_id,
-                local_autograd=local_autograd,
-                preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
+                **kwargs,
             )
         else:
             pointer = obj
@@ -371,6 +379,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
+                # TODO[jvmancuso]: figure out a good way to generalize the
+                # above check (#2530)
                 getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
@@ -388,7 +398,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command_name, "torch_modules")
+            sy.torch.command_guard(command_name, "torch_modules")  # TODO[jvmancuso]: generalize
 
             paths = command_name.split(".")
             command = self
@@ -402,6 +412,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if response is not None:
             # Register response and create pointers for tensor elements
             try:
+                # TODO[jvmancuso]: figure out how to generalize
+                # register_response (#2530)
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )
@@ -709,7 +721,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.send_msg(messaging.IsNoneMessage(pointer), location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(tensor: torch.Tensor) -> List:
+    def get_tensor_shape(tensor: FrameworkTensorType) -> List:
         """
         Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
@@ -736,7 +748,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A torch.Size object for the shape.
         """
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
-        return sy.hook.torch.Size(shape)
+        return sy.hook.create_shape(shape)
 
     def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
@@ -782,7 +794,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 if query_item == str(key):
                     match = True
 
-                if isinstance(obj, torch.Tensor):
+                if isinstance(obj, FrameworkTensor):
                     if obj.tags is not None:
                         if query_item in obj.tags:
                             match = True

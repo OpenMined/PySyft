@@ -13,17 +13,18 @@ from syft import workers
 
 from syft.workers import BaseWorker
 from syft.messaging import Plan
+from syft.frameworks.hook import BaseHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.pointers import PointerTensor
+from syft.generic.tensor import initialize_tensor
+from syft.generic.tensor import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
@@ -31,7 +32,7 @@ from syft.exceptions import TensorsNotCollocatedException
 from math import inf
 
 
-class TorchHook:
+class TorchHook(BaseHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
 
     The purpose of this class is to:
@@ -92,6 +93,7 @@ class TorchHook:
         """
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
+        self.framework = self.torch
 
         # Save the local worker as an attribute
         self.local_worker = local_worker
@@ -105,6 +107,7 @@ class TorchHook:
 
         # Add all the torch attributes in the syft.torch attr
         syft.torch = TorchAttributes(torch, self)
+        syft.framework = syft.torch
 
         if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is
@@ -178,6 +181,14 @@ class TorchHook:
         # called several times
         syft.local_worker = self.local_worker
         syft.hook = self
+
+    def create_wrapper(cls, child_to_wrap):
+        # Note this overrides BaseHook.create_wrapper, so it must conform to
+        # that classmethod's signature
+        return torch.Tensor()
+
+    def create_shape(cls, shape_dims):
+        return torch.Size(shape_dims)
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -759,7 +770,7 @@ class TorchHook:
                 hook_self=hook_self,
                 cls=cls,
                 id=id,
-                torch_tensor=torch_tensor,
+                is_tensor=torch_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
@@ -1142,10 +1153,10 @@ class TorchHook:
         # and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
-        
+
             The norm is computed over all gradients together, as if they were
             concatenated into a single vector. Gradients are modified in-place.
-        
+
             Arguments:
                 - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
                 Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
@@ -1154,14 +1165,14 @@ class TorchHook:
                 will be performed
                 - norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
                     infinity norm.
-        
+
             Returns:
                 Total norm of the parameters (viewed as a single vector).
             """
             if isinstance(parameters, torch.Tensor):
                 # Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
                 ):
                     worker = parameters.location
                 parameters = [parameters]
@@ -1173,7 +1184,7 @@ class TorchHook:
             else:
                 # Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
                 ):
                     total_norm = torch.zeros(1)
                     # Let's send the total norm over to the remote worker where the remote tensor is
