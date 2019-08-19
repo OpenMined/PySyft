@@ -203,133 +203,85 @@ class RNNBase(nn.Module):
                     )
 
     def forward(self, x, h=None):
-
+        # If batch_first == True, swap axis with seq_len
+        # At the end of the process we swap it back to the original structure
         if self.batch_first:
-            x = torch.transpose(x, 0, 1)
-            if h is not None:
-                if self.is_lstm:
-                    h, c = h
-                    h = torch.transpose(h, 0, 1)
-                    c = torch.transpose(c, 0, 1)
-                    h = (h, c)
-                else:
-                    h = torch.transpose(h, 0, 1)
+            x, h = self._swap_axis(x, h)
+
+        # If it is LSTM, get hidden and cell states
+        if h is not None and self.is_lstm:
+            h, c = h
 
         batch_size = x.shape[1]
         seq_len = x.shape[0]
 
+        # Initiate states if needed
         if h is None:
-            h = self.init_hidden(x)
+            h = self._init_hidden(x)
+            c = self._init_hidden(x) if self.is_lstm else None
 
-            if self.is_lstm:
-                c = self.init_hidden(x)
-
-        elif self.is_lstm:
-            h, c = h
-
+        # If bidirectional==True, split states in two, each one for each direction
         if self.bidirectional:
             h = h.contiguous().view(self.num_layers, 2, batch_size, self.hidden_size)
-            h_forward = h[:, 0, :, :]
-            h_backward = h[:, 1, :, :]
+            h_for = h[:, 0, :, :]
+            h_back = h[:, 1, :, :]
             if self.is_lstm:
                 c = c.contiguous().view(self.num_layers, 2, batch_size, self.hidden_size)
-                c_forward = c[:, 0, :, :]
-                c_backward = c[:, 1, :, :]
+                c_for = c[:, 0, :, :]
+                c_back = c[:, 1, :, :]
+            else:
+                c_for = c_back = None
 
         else:
-            h_forward = h
-            if self.is_lstm:
-                c_forward = c
+            h_for = h
+            c_for = c if self.is_lstm else None
 
-        # Forward direction
-        output_forward = x.new(seq_len, batch_size, self.hidden_size).zero_()
+        # Run through rnn in the forward direction
+        output = x.new(seq_len, batch_size, self.hidden_size).zero_()
         for t in range(seq_len):
-            h_next = h_forward.new(h_forward.shape).zero_()
-            if self.is_lstm:
-                c_next = c_forward.new(c_forward.shape).zero_()
+            h_for, c_for = self._apply_time_step(x, h_for, c_for, t)
+            output[t, :, :] = h_for[-1, :, :]
 
-            for layer in range(self.num_layers):
-                if layer == 0:
-                    if self.is_lstm:
-                        h_next[layer, :, :], c_next[layer, :, :] = self.rnn_forward[layer](
-                            x[t, :, :], (h_forward[layer, :, :], c_forward[layer, :, :])
-                        )
-                    else:
-                        h_next[layer, :, :] = self.rnn_forward[layer](
-                            x[t, :, :], h_forward[layer, :, :]
-                        )
+        hidden = h_for
+        cell = c_for  # None if it is not an LSTM
 
-                else:
-                    if self.is_lstm:
-                        h_next[layer, :, :], c_next[layer, :, :] = self.rnn_forward[layer](
-                            h_next[layer - 1, :, :],
-                            (h_forward[layer, :, :], c_forward[layer, :, :]),
-                        )
-                    else:
-                        h_next[layer, :, :] = self.rnn_forward[layer](
-                            h_next[layer - 1, :, :], h_forward[layer, :, :]
-                        )
-            output_forward[t, :, :] = h_next[layer, :, :]
-            h_forward = h_next
-            if self.is_lstm:
-                c_forward = c_next
-
-        output = output_forward
-        hidden = h_forward
-        if self.is_lstm:
-            cell = c_forward
-
-        # Backward direction
+        # Run through rnn in the backward direction if bidirectional==True
         if self.bidirectional:
-            output_backward = x.new(seq_len, batch_size, self.hidden_size).zero_()
+            output_back = x.new(seq_len, batch_size, self.hidden_size).zero_()
             for t in range(seq_len - 1, -1, -1):
-                h_next = h_backward.new(h_backward.shape).zero_()
-                if self.is_lstm:
-                    c_next = c_backward.new(c_backward.shape).zero_()
+                h_back, c_back = self._apply_time_step(x, h_back, c_back, t, reverse_direction=True)
+                output_back[t, :, :] = h_back[-1, :, :]
 
-                for layer in range(self.num_layers):
-                    if layer == 0:
-                        if self.is_lstm:
-                            h_next[layer, :, :], c_next[layer, :, :] = self.rnn_backward[layer](
-                                x[t, :, :], (h_backward[layer, :, :], c_backward[layer, :, :])
-                            )
-                        else:
-                            h_next[layer, :, :] = self.rnn_backward[layer](
-                                x[t, :, :], h_backward[layer, :, :]
-                            )
-
-                    else:
-                        if self.is_lstm:
-                            h_next[layer, :, :], c_next[layer, :, :] = self.rnn_backward[layer](
-                                h_next[layer - 1, :, :],
-                                (h_backward[layer, :, :], c_backward[layer, :, :]),
-                            )
-                        else:
-                            h_next[layer, :, :] = self.rnn_backward[layer](
-                                h_next[layer - 1, :, :], h_backward[layer, :, :]
-                            )
-                output_backward[t, :, :] = h_next[layer, :, :]
-                h_backward = h_next
-                if self.is_lstm:
-                    c_backward = c_next
-
-            output = torch.cat((output, output_backward), dim=-1)
-            hidden = torch.cat((hidden, h_backward), dim=0)
+            # Concatenate both directions
+            output = torch.cat((output, output_back), dim=-1)
+            hidden = torch.cat((hidden, h_back), dim=0)
             if self.is_lstm:
-                cell = torch.cat((cell, c_backward), dim=0)
+                cell = torch.cat((cell, c_back), dim=0)
 
+        # If batch_first == True, swap axis back to get original structure
         if self.batch_first:
             output = torch.transpose(output, 0, 1)
             hidden = torch.transpose(hidden, 0, 1)
             if self.is_lstm:
                 cell = torch.transpose(cell, 0, 1)
 
-        if self.is_lstm:
-            hidden = (hidden, cell)
+        hidden = (hidden, cell) if self.is_lstm else hidden
 
         return output, hidden
 
-    def init_hidden(self, input):
+    def _swap_axis(self, x, h):
+        x = torch.transpose(x, 0, 1)
+        if h is not None:
+            if self.is_lstm:
+                h, c = h
+                h = torch.transpose(h, 0, 1)
+                c = torch.transpose(c, 0, 1)
+                h = (h, c)
+            else:
+                h = torch.transpose(h, 0, 1)
+        return x, h
+
+    def _init_hidden(self, input):
         """
         This method initializes a hidden state when no hidden state is provided
         in the forward method. It creates a hidden state with zero values for each
@@ -352,6 +304,33 @@ class RNNBase(nn.Module):
                 owners = child.child.locations
                 h = h.share(*owners, crypto_provider=crypto_provider)
         return h
+
+    def _apply_time_step(self, x, h, c, t, reverse_direction=False):
+        """
+        Apply RNN layers at time t, given input and previous hidden states
+        """
+        rnn_layers = self.rnn_backward if reverse_direction else self.rnn_forward
+
+        h_next = h.new(h.shape).zero_()
+        c_next = c.new(c.shape).zero_() if self.is_lstm else None
+
+        for layer in range(self.num_layers):
+            if layer == 0:
+                if self.is_lstm:
+                    h_next[layer, :, :], c_next[layer, :, :] = rnn_layers[layer](
+                        x[t, :, :], (h[layer, :, :], c[layer, :, :])
+                    )
+                else:
+                    h_next[layer, :, :] = rnn_layers[layer](x[t, :, :], h[layer, :, :])
+            else:
+                if self.is_lstm:
+                    h_next[layer, :, :], c_next[layer, :, :] = rnn_layers[layer](
+                        h_next[layer - 1, :, :], (h[layer, :, :], c[layer, :, :])
+                    )
+                else:
+                    h_next[layer, :, :] = rnn_layers[layer](h_next[layer - 1, :, :], h[layer, :, :])
+
+        return h_next, c_next
 
 
 class RNN(RNNBase):
