@@ -68,7 +68,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def __init__(
         self,
-        hook: "sy.frameworks.BaseHook",
+        hook: "sy.frameworks.FrameworkHook",
         id: Union[int, str] = 0,
         data: Union[List, tuple] = None,
         is_client_worker: bool = False,

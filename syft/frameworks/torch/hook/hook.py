@@ -13,7 +13,7 @@ from syft import workers
 
 from syft.workers import BaseWorker
 from syft.messaging import Plan
-from syft.frameworks.hook import BaseHook
+from syft.frameworks.hook import FrameworkHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -32,7 +32,7 @@ from syft.exceptions import TensorsNotCollocatedException
 from math import inf
 
 
-class TorchHook(BaseHook):
+class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
 
     The purpose of this class is to:
@@ -183,7 +183,7 @@ class TorchHook(BaseHook):
         syft.hook = self
 
     def create_wrapper(cls, child_to_wrap):
-        # Note this overrides BaseHook.create_wrapper, so it must conform to
+        # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
         return torch.Tensor()
 
