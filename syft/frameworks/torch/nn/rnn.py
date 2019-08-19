@@ -325,10 +325,12 @@ class RNNBase(nn.Module):
             else:
                 if self.is_lstm:
                     h_next[layer, :, :], c_next[layer, :, :] = rnn_layers[layer](
-                        h_next[layer - 1, :, :], (h[layer, :, :], c[layer, :, :])
+                        h_next[layer - 1, :, :].clone(), (h[layer, :, :], c[layer, :, :])
                     )
                 else:
-                    h_next[layer, :, :] = rnn_layers[layer](h_next[layer - 1, :, :], h[layer, :, :])
+                    h_next[layer, :, :] = rnn_layers[layer](
+                        h_next[layer - 1, :, :].clone(), h[layer, :, :]
+                    )
 
         return h_next, c_next
 
