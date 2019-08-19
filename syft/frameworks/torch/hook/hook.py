@@ -183,6 +183,8 @@ class TorchHook(BaseHook):
         syft.hook = self
 
     def create_wrapper(cls, child_to_wrap):
+        # Note this overrides BaseHook.create_wrapper, so it must conform to
+        # that classmethod's signature
         return torch.Tensor()
 
     def create_shape(cls, shape_dims):
@@ -1151,10 +1153,10 @@ class TorchHook(BaseHook):
         # and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
-        
+
             The norm is computed over all gradients together, as if they were
             concatenated into a single vector. Gradients are modified in-place.
-        
+
             Arguments:
                 - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
                 Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
@@ -1163,14 +1165,14 @@ class TorchHook(BaseHook):
                 will be performed
                 - norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
                     infinity norm.
-        
+
             Returns:
                 Total norm of the parameters (viewed as a single vector).
             """
             if isinstance(parameters, torch.Tensor):
                 # Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
                 ):
                     worker = parameters.location
                 parameters = [parameters]
@@ -1182,7 +1184,7 @@ class TorchHook(BaseHook):
             else:
                 # Remote PySyft tensor
                 if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
                 ):
                     total_norm = torch.zeros(1)
                     # Let's send the total norm over to the remote worker where the remote tensor is

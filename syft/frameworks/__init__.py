@@ -6,16 +6,16 @@ logger = logging.getLogger(__name__)
 __all__ = list()
 
 if dependency_check.tensorflow_available:
-    from . import tensorflow
+    from syft.frameworks import tensorflow
 
     __all__.append("tensorflow")
 
 if dependency_check.tfe_available:
-    from . import keras
+    from syft.frameworks import keras
 
     __all__.append("keras")
 
 if dependency_check.torch_available:
-    from . import torch
+    from syft.frameworks import torch
 
     __all__.append("torch")

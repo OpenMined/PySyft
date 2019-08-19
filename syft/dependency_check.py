@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from distutils.version import LooseVersion
 import importlib
 import logging
@@ -16,18 +15,9 @@ except ImportError:
     tensorflow_available = False
 
 
-try:
-    tfe_spec = importlib.util.find_spec("tf_encrypted")
-    tfe_available = tfe_spec is not None
-
-except ImportError as e:
-    tfe_available = False
+tfe_spec = importlib.util.find_spec("tf_encrypted")
+tfe_available = tfe_spec is not None
 
 
-try:
-    torch_spec = importlib.util.find_spec("torch")
-
-    torch_available = torch_spec is not None
-
-except ImportError:
-    torch_available = False
+torch_spec = importlib.util.find_spec("torch")
+torch_available = torch_spec is not None

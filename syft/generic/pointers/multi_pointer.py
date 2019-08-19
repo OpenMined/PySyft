@@ -193,7 +193,8 @@ class MultiPointerTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        # TODO[yanndupis]: get rid of these torch references when extending hook_args
+        # TODO[yanndupis]: get rid of these torch references when extending
+        # hook_args (#2530)
         new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
             cmd, args, kwargs
         )
@@ -210,7 +211,8 @@ class MultiPointerTensor(AbstractTensor):
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back MultiPointerTensor on the tensors found in the response
-        # TODO[yanndupis]: get rid of these torch references when extending hook_args
+        # TODO[yanndupis]: get rid of these torch references when extending
+        # hook_args (#2530)
         response = sy.frameworks.torch.hook_args.hook_response(
             cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
