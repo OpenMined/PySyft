@@ -84,6 +84,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
             #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
             self.framework = hook.framework
             if hasattr(hook, "torch"):
                 self.torch = self.framework
@@ -378,7 +379,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.torch.is_inplace_method(command_name):
-                # TODO[jvmancuso]: figure out a good way to generalize the above check
+                # TODO[jvmancuso]: figure out a good way to generalize the
+                # above check (#2530)
                 getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
@@ -410,7 +412,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if response is not None:
             # Register response and create pointers for tensor elements
             try:
-                # TODO[jvmancuso]: figure out how to generalize register_response
+                # TODO[jvmancuso]: figure out how to generalize
+                # register_response (#2530)
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )

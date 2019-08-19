@@ -108,12 +108,19 @@ def workers(hook):
 @pytest.fixture
 def hide_module():
     import_orig = builtins.__import__
+    # When we check for imports in dependency_check, we don't actually attempt
+    # to import each package, so popping a module from sys.modules and mocking
+    # the import statement is not sufficient to simulate the dependency check
+    # for when the dependency is absent. The way we check for dependencies
+    # (importlib.util.find_spec) uses module Finders in the sys.meta_path when
+    # checking for module specs, so we need to mock the find_spec method of the
+    # Finder that will discover the module we want to hide. That Finder happens
+    # to be in position three of the meta path.
     find_spec_orig = sys.meta_path[3].find_spec
 
     def mocked_import(name, globals, locals, fromlist, level):
-        for module_name in ["tensorflow", "tf_encrypted", "torch"]:
-            if module_name == name:
-                raise ImportError()
+        if name in ["tensorflow", "tf_encrypted", "torch"]:
+            raise ImportError()
 
         return import_orig(name, globals, locals, fromlist, level)
 

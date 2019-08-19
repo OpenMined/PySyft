@@ -1,11 +1,9 @@
-# from __future__ import absolute_import
 from typing import Union
 
 from syft import dependency_check
 
 framework_tensors = []
 framework_shapes = []
-hooks = []
 
 if dependency_check.tensorflow_available:
     import tensorflow as tf
@@ -20,19 +18,10 @@ if dependency_check.torch_available:
     framework_tensors.append(torch.Tensor)
     framework_shapes.append(torch.Size)
 
-FrameworkTensorType = None
-for tensor_type in framework_tensors:
-    if FrameworkTensorType is None:
-        FrameworkTensorType = tensor_type
-    else:
-        FrameworkTensorType = Union[FrameworkTensorType, tensor_type]
+framework_tensors = tuple(framework_tensors)
+FrameworkTensorType = Union[framework_tensors]
+FrameworkTensor = framework_tensors
 
-FrameworkShapeType = None
-for shape_type in framework_shapes:
-    if FrameworkShapeType is None:
-        FrameworkShapeType = shape_type
-    else:
-        FrameworkShapeType = Union[FrameworkShapeType, shape_type]
-
-FrameworkTensor = tuple(tt for tt in framework_tensors)
-FrameworkShape = tuple(sh for sh in framework_shapes)
+framework_shapes = tuple(framework_shapes)
+FrameworkShapeType = Union[framework_shapes]
+FrameworkShape = framework_shapes
