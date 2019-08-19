@@ -7,8 +7,9 @@ from syft.workers.virtual import VirtualWorker
 from syft.codes import MSGTYPE
 from syft import messaging
 from syft import serde
+from syft import messaging
 
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 import pytest
 import torch
@@ -34,7 +35,7 @@ def test_send_msg():
     obj_id = obj.id
 
     # Send data to bob
-    me.send_msg(MSGTYPE.OBJ, obj, bob)
+    me.send_msg(messaging.ObjectMessage(obj), bob)
 
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects

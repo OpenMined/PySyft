@@ -1,18 +1,19 @@
-import syft
-from syft.frameworks.torch.tensors.interpreters import abstract
-from syft.codes import MSGTYPE
-from syft import exceptions
-
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
+
+import syft
+from syft import exceptions
+from syft import messaging
+from syft.codes import MSGTYPE
+from syft.generic.object import AbstractObject
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class ObjectPointer(abstract.AbstractObject):
+class ObjectPointer(AbstractObject):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
@@ -216,7 +217,9 @@ class ObjectPointer(abstract.AbstractObject):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(MSGTYPE.FORCE_OBJ_DEL, self.id_at_location, self.location)
+                self.owner.send_msg(
+                    messaging.ForceObjectDeleteMessage(self.id_at_location), self.location
+                )
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
