@@ -1158,19 +1158,29 @@ class TorchHook:
             Returns:
                 Total norm of the parameters (viewed as a single vector).
             """
+
+            def param_is_pointer_tensor(param):
+                """
+                A list of parameters is remote if all params contained in the list are
+                remote (i.e., the child of each param is a pointer tensor).
+                This method checks if a single param is indeed remote, so whether
+                the child of a parameter is a pointer tensor
+                """
+                return hasattr(param, "child") and isinstance(
+                    param.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
+                )
+
             if isinstance(parameters, torch.Tensor):
-                # Remote PySyft tensor
                 parameters = [parameters]
+
             parameters = list(filter(lambda p: p.grad is not None, parameters))
             max_norm = float(max_norm)
             norm_type = float(norm_type)
             if norm_type == inf:
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
-                # Remote PySyft tensor
-                if hasattr(parameters[0], "child") and isinstance(
-                    parameters[0].child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
-                ):
+                # all parameters are remote
+                if all([param_is_pointer_tensor(param) for param in parameters]):
                     total_norm = torch.zeros(1)
                     # Let's send the total norm over to the remote worker where the remote tensor is
                     total_norm = total_norm.send(parameters[0].location)
@@ -1179,9 +1189,7 @@ class TorchHook:
                 for p in parameters:
                     param_norm = p.grad.data.norm(norm_type)
                     # Remote PySyft tensor
-                    if hasattr(p, "child") and isinstance(
-                        p.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
-                    ):
+                    if param_is_pointer_tensor(p):
                         total_norm += param_norm ** norm_type
                     # Local PySyft tensor
                     else:
