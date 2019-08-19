@@ -195,7 +195,7 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
 
 
 def test_websocket_garbage_collection(hook, start_remote_worker):
-    server, remote_proxy = start_remote_worker(id="ws_gc", hook=hook)
+    server, remote_proxy = start_remote_worker(id="ws_gc", hook=hook, port=8555)
 
     sample_data = torch.tensor([1, 2, 3, 4])
     sample_ptr = sample_data.send(remote_proxy)
