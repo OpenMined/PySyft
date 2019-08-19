@@ -1,0 +1,38 @@
+version: '3'
+services:
+    gateway:
+        image: gateway:latest
+        environment:
+                - PORT=8080
+                - SECRET_KEY=ineedtoputasecrethere
+        network_mode: "host"
+    bob:
+        image: node:latest
+        environment:
+                - GRID_NETWORK_URL=http://localhost:8080
+                - ID=Bob
+                - ADDRESS=http://localhost:3000/
+                - PORT=3000
+        depends_on:
+                - "gateway"
+        network_mode: "host"
+    alice:
+        image: node:latest
+        environment:
+                - GRID_NETWORK_URL=http://localhost:8080
+                - ID=Alice
+                - ADDRESS=http://localhost:3001/
+                - PORT=3001
+        depends_on:
+                - "gateway"
+        network_mode: "host"
+    bill:
+        image: node:latest
+        environment:
+                - GRID_NETWORK_URL=http://localhost:8080
+                - ID=Bill
+                - ADDRESS=http://localhost:3002/
+                - PORT=3002
+        depends_on:
+                - "gateway"
+        network_mode: "host"

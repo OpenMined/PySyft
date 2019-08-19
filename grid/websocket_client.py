@@ -8,9 +8,11 @@ import torch
 import syft as sy
 from syft.frameworks.torch.tensors.interpreters import AbstractTensor
 from syft.workers import BaseWorker
+from syft.federated import FederatedClient
+from syft.codes import MSGTYPE
 
 
-class WebsocketGridClient(BaseWorker):
+class WebsocketGridClient(BaseWorker, FederatedClient):
     """ Websocket Grid Client """
 
     def __init__(
@@ -53,16 +55,20 @@ class WebsocketGridClient(BaseWorker):
             if msg != "OpenGrid":
                 raise PermissionError("App is not an OpenGrid app")
 
-        @self.__sio.on("/cmd")
+        @self.__sio.on("/cmd-response")
         def on_client_result(args):
             if log_msgs:
                 print("Receiving result from client {}".format(args))
-            # The server broadcasted the results from another client
-            self.response_from_client = binascii.unhexlify(args[2:-1])
+            try:
+                # The server broadcasted the results from another client
+                self.response_from_client = binascii.unhexlify(args[2:-1])
+            except:
+                raise Exception(args)
+
             # Tell the wait_for_client_event to clear up and continue execution
             self.wait_for_client_event = False
 
-        @self.__sio.on("/connect-node")
+        @self.__sio.on("/connect-node-response")
         def connect_node(msg):
             if self.verbose:
                 print("Connect Grid Node: ", msg)
@@ -81,7 +87,7 @@ class WebsocketGridClient(BaseWorker):
         self.wait_for_client_event = True
         # Wait until the server gets back with a result or an ACK
         while self.wait_for_client_event:
-            continue
+            self.__sio.sleep()
 
         # Return the result
         if self.response_from_client == "ACK":
@@ -89,12 +95,22 @@ class WebsocketGridClient(BaseWorker):
             return sy.serde.serialize(b"")
         return self.response_from_client
 
-    def connect_grid_node(self, addr=str, id=str):
+    def connect_grid_node(self, addr: str, id: str, sleep_time=0.5):
         self.__sio.emit("/connect-node", {"uri": addr, "id": id})
+        self.__sio.sleep(sleep_time)
+
+    def search(self, *query):
+        # Prepare a message requesting the websocket server to search among its objects
+        message = sy.Message(MSGTYPE.SEARCH, query)
+        serialized_message = sy.serde.serialize(message)
+        # Send the message and return the deserialized response.
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
 
     def connect(self):
-        self.__sio.connect(self.uri)
-        self.__sio.emit("/set-grid-id", {"id": self.id})
+        if self.__sio.eio.state != "connected":
+            self.__sio.connect(self.uri)
+            self.__sio.emit("/set-grid-id", {"id": self.id})
 
     def disconnect(self):
         self.__sio.disconnect()

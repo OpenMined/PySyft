@@ -28,7 +28,7 @@ before_script:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
 script:
-  - coverage run --omit=*/virtualenv/*,setup.py,.eggs/*,*__init__.py setup.py test
+  - coverage run -m pytest -v
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:
   on_success: change

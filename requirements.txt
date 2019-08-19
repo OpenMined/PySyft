@@ -10,6 +10,8 @@ requests
 syft
 websocket_client
 websockets>=7.0
+eventlet==0.25.0
 flask_sqlalchemy
 flask_migrate
 flask_testing
+flask_cors

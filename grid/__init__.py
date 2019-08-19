@@ -6,6 +6,7 @@ import os
 from grid.client import GridClient
 from grid.websocket_client import WebsocketGridClient
 from grid import utils as gr_utils
+from grid.grid_network import GridNetwork
 
 __all__ = ["workers"]
 

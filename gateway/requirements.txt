@@ -1,0 +1,13 @@
+Click==7.0
+Flask==1.0.2
+eventlet==0.24.1
+gunicorn==19.9.0
+Flask-Cors==3.0.7
+Flask-SocketIO==3.3.2
+itsdangerous==1.1.0
+Flask-Sockets==0.2.1
+Jinja2==2.10.1
+MarkupSafe==1.1.1
+gevent==1.4.0
+Werkzeug==0.15.2
+requests
