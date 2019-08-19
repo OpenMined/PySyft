@@ -108,6 +108,8 @@ ambiguous_functions = {
     "torch.sum",
     "torch.chunk",
     "chunk",
+    "torch.functional.split",
+    "split",
 }
 
 
