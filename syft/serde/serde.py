@@ -61,6 +61,7 @@ from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import PromiseTensor
 
 from syft.frameworks.torch import pointers
 
@@ -80,6 +81,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
+    PromiseTensor,
     messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,

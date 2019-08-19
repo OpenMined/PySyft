@@ -44,6 +44,13 @@ class PromiseTensor(AbstractTensor, Promise):
     def shape(self):
         return self._shape
 
+    @property
+    def grad(self):
+        if not hasattr(self, "_grad"):
+            self._grad = PromiseTensor(shape=self._shape, tensor_type=self.torch_type()).wrap()
+
+        return self._grad
+
     def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
         """
         Add a syft(log) tensor on top of the tensor.
