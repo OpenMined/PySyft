@@ -89,20 +89,22 @@ for method_name in methods_to_hook:
         some particular behaviour: so here what to start from :)
         """
 
-        other = args[0]
-
         arg_shapes = list([self._shape])
+        arg_ids = list([self.obj_id])
         for arg in args:
             arg_shapes.append(arg._shape)
+            arg_ids.append(arg.obj_id)
 
         @sy.func2plan(arg_shapes)
         def operation(self, *args, **kwargs):
             return getattr(self, method_name)(*args, **kwargs)
 
-        operation.arg_ids = [self.obj_id, other.obj_id]
+        operation.arg_ids = arg_ids
 
         self.plans.add(operation)
-        other.plans.add(operation)
+
+        for arg in args:
+            arg.plans.add(operation)
 
         # only need this for use of Promises with the local_worker VirtualWorker
         # otherwise we would simplty check the ._objects registry
@@ -114,7 +116,9 @@ for method_name in methods_to_hook:
             tensor_type=self.obj_type,
             plans=set(),
         )
-        other.result_promise = self.result_promise
+
+        for arg in args:
+            arg.result_promise = self.result_promise
 
         return self.result_promise
 
