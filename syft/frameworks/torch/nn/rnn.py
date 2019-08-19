@@ -6,7 +6,7 @@ from torch.nn import init
 import syft
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 class RNNCellBase(nn.Module):
