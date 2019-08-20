@@ -572,6 +572,28 @@ class AdditiveSharingTensor(AbstractTensor):
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
 
+    @overloaded.method
+    def chunk(self, shares, *args, **kwargs):
+        """
+        This method overrides the torch.Tensor.chunk() method of Pytorch
+        """
+        results = None
+
+        for worker, share in shares.items():
+            share_results = share.chunk(*args, **kwargs)
+            if isinstance(share_results, (tuple, list)):
+                if results is None:
+                    results = [{worker: share_result} for share_result in share_results]
+                else:
+                    for result, share_result in zip(results, share_results):
+                        result[worker] = share_result
+            else:
+                if results is None:
+                    results = {}
+                results[worker] = share_results
+
+        return results
+
     @staticmethod
     @overloaded.module
     def torch(module):
@@ -680,23 +702,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.cat = cat
 
-        @overloaded.function
-        def chunk(tensor_shares, *args, **kwargs):
-            worker_chunks = {}
-            results = []
-
-            for worker, share in tensor_shares.items():
-                chunked_share = torch.chunk(share, *args, **kwargs)
-                worker_chunks[worker] = chunked_share
-
-            for c in range(len(worker_chunks[worker])):
-                shared_chunk = {}
-                for worker in tensor_shares.keys():
-                    shared_chunk[worker] = worker_chunks[worker][c]
-
-                results.append(shared_chunk)
-
-            return results
+        def chunk(tensor, *args, **kwargs):
+            return tensor.chunk(*args, **kwargs)
 
         module.chunk = chunk
 
