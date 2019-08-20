@@ -1177,9 +1177,7 @@ class TorchHook(BaseHook):
                 This method checks if a single param is indeed remote, so whether
                 the child of a parameter is a pointer tensor
                 """
-                return hasattr(param, "child") and isinstance(
-                    param.child, syft.frameworks.torch.pointers.pointer_tensor.PointerTensor
-                )
+                return hasattr(param, "child") and isinstance(param.child, PointerTensor)
 
             if isinstance(parameters, torch.Tensor):
                 parameters = [parameters]
