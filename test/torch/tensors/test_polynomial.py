@@ -24,7 +24,7 @@ def test_sigmoid_torch():
     x = torch.tensor([-10.0, 4.0, 8.0, -8.0]).poly()
     result = x.sigmoid()
     expected = torch.tensor([0.0505, 0.9957, 1.0023, -0.0023])
-    assert torch.allclose(result.child, expected, atol=1e-01)
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
 
     # Test for Taylor series
     x = torch.tensor([-2.0, -1.5, -1, 0, 0.5, 1.0]).poly(method="taylor")
@@ -32,7 +32,7 @@ def test_sigmoid_torch():
     expected = torch.tensor(
         [-1.9330e02, -1.3042e01, -2.6894e-01, 2.1357e-05, 1.7265e-03, 7.3106e-01]
     )
-    assert torch.allclose(result.child, expected, atol=1e-01)
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
 
 
 def test_tanh():
@@ -41,7 +41,7 @@ def test_tanh():
     x = torch.tensor([-10.0, 0.5, 2.0, -8.0]).poly()
     result = x.tanh()
     expected = torch.tensor([-1.0558, 0.2851, 0.9433, -1.0585])
-    assert torch.allclose(result.child, expected, atol=1e-00)
+    assert torch.allclose(result.child.child, expected, atol=1e-00)
 
     # Test for Taylor series
     # Taylor series approximations for tanh give error. Needs correction.
@@ -52,7 +52,7 @@ def test_exp_torch():
     x = torch.tensor([1, 4.0, 8.0, 10.0]).poly()
     result = x.exp()
     expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
-    assert torch.allclose(result.child, expected, atol=1e-01)
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
 
     # Test for Taylor series
     # Taylor series approximations for exp give error. Needs correction.
@@ -63,7 +63,7 @@ def test_exp_fixprecision():
     x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).fix_precision().poly()
     result = x.exp()
     expected = torch.tensor([11302, 19502, 22736, 57406, 207530, 598502, 1362052, 2562326])
-    assert torch.allclose(result.child.child, expected, atol=1e-01)
+    assert torch.allclose(result.child.child.child, expected, atol=1e-01)
     # Do the same with Taylor series
 
 
@@ -76,19 +76,19 @@ def test_sigmoid_fixprecision():
     )
     result = x.sigmoid()
     expected = torch.tensor([134, 205, 293, 394, 500, 606, 707, 795, 866, 929, 848])
-    assert torch.allclose(result.child.child, expected, atol=1e01)
+    assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
     # Do the same with Taylor series
 
 
 def test_tanh_fixprecision():
-
-    x = (
+    hook = sy.TorchHook(torch)
+    y = (
         torch.tensor([-2.4, -2.3, -2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 2.6])
         .fix_precision()
         .poly(method="interpolation")
     )
-    result = x.tanh()
+    result = y.tanh()
     expected = torch.tensor(
         [
             4611686018427386920,
@@ -106,7 +106,7 @@ def test_tanh_fixprecision():
             991,
         ]
     )
-    assert torch.allclose(result.child.child, expected, atol=1e01)
+    assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
 
 def test_exp_additiveshared():
@@ -122,12 +122,57 @@ def test_exp_additiveshared():
         .share(alice, bob, crypto_provider=james)
         .poly()
         .exp()
+        .get()
     )
     expected = torch.tensor([22736, 207530, 57406, 11302])
+
+    assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+
+def test_tanh_additiveshared():
+
+    hook = sy.TorchHook(torch)
+    bob = sy.VirtualWorker(hook, id="bob")
+    alice = sy.VirtualWorker(hook, id="alice")
+    james = sy.VirtualWorker(hook, id="james")
+
+    result = (
+        torch.tensor([-2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 3.0])
+        .fix_precision()
+        .share(alice, bob, crypto_provider=james)
+        .poly()
+        .tanh()
+        .get()
+    )
+    expected = torch.tensor([-922, -767, -548, -284, 0, 286, 548, 768, 922, 948])
+
+    assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
     # assert torch.allclose(result.child.child, expected, atol=1e01)
 
     # Do the same with Taylor series
+
+
+def test_sigmoid_additiveshared():
+
+    hook = sy.TorchHook(torch)
+    bob = sy.VirtualWorker(hook, id="bob")
+    alice = sy.VirtualWorker(hook, id="alice")
+    james = sy.VirtualWorker(hook, id="james")
+
+    result = (
+        torch.tensor([-2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0])
+        .fix_precision()
+        .share(alice, bob, crypto_provider=james)
+        .poly()
+        .exp()
+        .get()
+    )
+    expected = torch.tensor(
+        [-5354, -9775, -11044, -8653, -3130, 4133, 11302, 16697, 19502, 22736, 57406]
+    )
+
+    assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
     """print(torch.tensor[1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04].fix_precision())
     x = torch.tensor([1, 4.0, 8.0,10.0]).fix_precision().poly()

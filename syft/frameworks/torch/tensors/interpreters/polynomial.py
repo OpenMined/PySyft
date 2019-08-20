@@ -171,7 +171,11 @@ class PolynomialTensor(AbstractTensor):
         return f_interpolated
 
     def sigmoid(self, method="interpolation", degree=10, precision=10):
-        """Method provides Sigmoid function approximation interms of Taylor Series
+        """Method provides Sigmoid function approximation interms of Taylor Series.
+           Range:
+               
+               Taylor Series:[?,?]
+               Interpolation:[-10.0,10.0] (Default , can be fitted to other ranges)
 
          Args:
              x: Torch tensor
@@ -197,12 +201,18 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * self.encrypt_fn["sigmoid"][(len(self.sigmoid_coeffs) - 1) - i]
 
-        return val
+        Ptensor = PolynomialTensor()
+        Ptensor.child = val
+        return Ptensor
 
     __sigmoid__ = sigmoid
 
     def tanh(self, method="interpolation", degree=10, precision=10):
-        """Method provides tanh function approximation interms of Taylor Series
+        """Method provides tanh function approximation interms of Taylor Series.
+           Range:
+               
+               Taylor Series:[?,?]
+               Interpolation:[-10.0,10.0] (Default , can be fitted to other ranges)
 
          Args:
              x: Torch tensor
@@ -227,7 +237,9 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i]
 
-        return val
+        Ptensor = PolynomialTensor()
+        Ptensor.child = val
+        return Ptensor
 
     __tanh__ = tanh
 
@@ -248,7 +260,9 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i]
 
-        return val
+        Ptensor = PolynomialTensor()
+        Ptensor.child = val
+        return Ptensor
 
     __exp__ = exp
 
