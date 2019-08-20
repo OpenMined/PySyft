@@ -1,18 +1,19 @@
-import syft
-from syft.frameworks.torch.tensors.interpreters import abstract
-from syft import messaging
-from syft import exceptions
-
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
+
+import syft
+from syft import exceptions
+from syft import messaging
+from syft.codes import MSGTYPE
+from syft.generic.object import AbstractObject
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.workers import BaseWorker
 
 
-class ObjectPointer(abstract.AbstractObject):
+class ObjectPointer(AbstractObject):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects

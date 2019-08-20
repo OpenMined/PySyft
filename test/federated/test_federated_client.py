@@ -4,7 +4,7 @@ import torch
 
 import syft as sy
 from syft import federated
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 from syft.frameworks.torch.federated import utils
 
 PRINT_IN_UNITTESTS = False

@@ -2,7 +2,7 @@ from functools import wraps
 import torch
 
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from . import gradients
 

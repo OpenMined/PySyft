@@ -1,5 +1,8 @@
-from . import model
-from . import layers
-from syft.frameworks.keras.hook import KerasHook
+import syft
 
-__all__ = ["KerasHook"]
+if syft.dependency_check.tfe_available:
+    from syft.frameworks.keras import layers
+    from syft.frameworks.keras import model
+    from syft.frameworks.keras.hook import KerasHook
+
+    __all__ = ["KerasHook"]
