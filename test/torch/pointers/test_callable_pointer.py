@@ -1,6 +1,6 @@
 import torch
-from syft.frameworks.torch.pointers import callable_pointer
-from syft.frameworks.torch import pointers
+from syft.generic.pointers import callable_pointer
+from syft.generic import pointers
 
 
 def test_create_callable_pointer(workers):

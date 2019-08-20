@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.overload_torch import overloaded
@@ -218,7 +218,7 @@ class CRTPrecisionTensor(AbstractTensor):
         2) yi = N / ni where the ni's are moduli in the system
         3) zi = yi^(-1) mod ni (we know zi exists because all the original moduli are pairwise coprime)
         4) The result is x = sum(ai * yi * zi) where ai is the residue modulo ni in the system
-        
+
         We can see that this boils down to a linear combination of ai's with coefficients yi * zi.
         These coefficients depend only on the moduli used to represent the tensor so we don't need
         to compute them several times for the same tensor. We can also reuse them for a tensor produced
