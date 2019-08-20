@@ -1,9 +1,8 @@
 from typing import List
 from typing import Union
 
-import torch
-
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.types import FrameworkTensorType
+from syft.generic.tensor import AbstractTensor
 
 
 class ObjectStorage:
@@ -88,7 +87,7 @@ class ObjectStorage:
 
         return obj
 
-    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+    def set_obj(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Adds an object to the registry of objects.
 
         Args:

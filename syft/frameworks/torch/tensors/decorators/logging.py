@@ -1,5 +1,5 @@
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from syft.workers import AbstractWorker
 import syft as sy
