@@ -313,6 +313,12 @@ def test_cat(workers):
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
 
+    # Test when using more tensors
+    res2 = torch.cat([x, x, x], dim=1).get()
+    expected2 = torch.tensor([[1, 2, 3, 1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6, 4, 5, 6]])
+
+    assert (res2 == expected2).all()
+
 
 def test_chunk(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
