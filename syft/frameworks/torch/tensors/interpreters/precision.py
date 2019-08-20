@@ -2,9 +2,9 @@ import torch
 
 import syft
 from syft.workers import AbstractWorker
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.multi_pointer import MultiPointerTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 
@@ -488,6 +488,41 @@ class FixedPrecisionTensor(AbstractTensor):
             return result
 
         module.addmm = addmm
+
+        def sigmoid(tensor):
+            """
+            Overloads torch.sigmoid to be able to use MPC
+            Approximation with polynomial interpolation of degree 10 over [-10,10]
+            Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+            """
+
+            weights = [0.5, 0.216578258, -0.0083312848, 0.0001876528, -1.9669e-06, 7.5e-09]
+            degrees = [0, 1, 3, 5, 7, 9]
+
+            # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
+            # will be faster
+            max_degree = degrees[2]
+            max_idx = degrees.index(max_degree)
+
+            # initiate with term of degree 0 to avoid errors with tensor ** 0
+            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+            for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
+                result += (tensor ** d) * torch.tensor(w).fix_precision().child
+
+            return result
+
+        module.sigmoid = sigmoid
+
+        def tanh(tensor):
+            """
+            Overloads torch.tanh to be able to use MPC
+            """
+
+            result = 2 * sigmoid(2 * tensor) - 1
+
+            return result
+
+        module.tanh = tanh
 
         def dot(self, other):
             return self.__mul__(other).sum()

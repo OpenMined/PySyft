@@ -2,7 +2,7 @@ from syft.workers.base import BaseWorker
 from syft.federated import FederatedClient
 from syft.workers import AbstractWorker
 import syft as sy
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 
 class VirtualWorker(BaseWorker, FederatedClient):
