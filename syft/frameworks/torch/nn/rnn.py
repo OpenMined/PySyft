@@ -270,6 +270,10 @@ class RNNBase(nn.Module):
         return output, hidden
 
     def _swap_axis(self, x, h):
+        """
+        This method swap the axes for batch_size and seq_len. It is used when
+        batch_first==True.
+        """
         x = torch.transpose(x, 0, 1)
         if h is not None:
             if self.is_lstm:
