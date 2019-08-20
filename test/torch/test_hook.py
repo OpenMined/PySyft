@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 import syft
 from syft.exceptions import RemoteObjectFoundError
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.generic.pointers import PointerTensor
 
 
 def test___init__(hook):

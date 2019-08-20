@@ -1,5 +1,5 @@
 r"""
-PySyft is a Python library for secure, private Deep Learning. 
+PySyft is a Python library for secure, private Deep Learning.
 PySyft decouples private data from model training, using Federated Learning,
 Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
 """
@@ -23,12 +23,12 @@ logger = logging.getLogger(__name__)
 
 from syft import dependency_check
 
-if dependency_check.keras_available:
+if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
     from syft.workers import TFECluster
     from syft.workers import TFEWorker
 else:
-    logger.warning("Keras (Tensorflow) not available.")
+    logger.info("TF Encrypted Keras not available.")
 
 # Pytorch dependencies
 # Import Hook
@@ -37,9 +37,9 @@ from syft.frameworks.torch import TorchHook
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.pointers import PointerTensor
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -71,11 +71,10 @@ from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 
-from syft.frameworks.torch.pointers import ObjectPointer
-from syft.frameworks.torch.pointers import CallablePointer
-from syft.frameworks.torch.pointers import ObjectWrapper
+from syft.generic.pointers import ObjectPointer
+from syft.generic.pointers import CallablePointer
+from syft.generic.pointers import ObjectWrapper
 
 # Import serialization tools
 from syft import serde

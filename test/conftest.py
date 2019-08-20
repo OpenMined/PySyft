@@ -1,8 +1,10 @@
+import builtins
+from multiprocessing import Process
+import sys
 import time
+
 import pytest
 import torch
-from multiprocessing import Process
-import builtins
 
 import syft
 from syft import TorchHook
@@ -104,14 +106,31 @@ def workers(hook):
 
 
 @pytest.fixture
-def no_tf_encrypted():
+def hide_module():
     import_orig = builtins.__import__
+    # When we check for imports in dependency_check, we don't actually attempt
+    # to import each package, so popping a module from sys.modules and mocking
+    # the import statement is not sufficient to simulate the dependency check
+    # for when the dependency is absent. The way we check for dependencies
+    # (importlib.util.find_spec) uses module Finders in the sys.meta_path when
+    # checking for module specs, so we need to mock the find_spec method of the
+    # Finder that will discover the module we want to hide. That Finder happens
+    # to be in position three of the meta path.
+    find_spec_orig = sys.meta_path[3].find_spec
 
     def mocked_import(name, globals, locals, fromlist, level):
-        if "tf_encrypted" in name:
+        if name in ["tensorflow", "tf_encrypted", "torch"]:
             raise ImportError()
+
         return import_orig(name, globals, locals, fromlist, level)
 
+    def mocked_find_spec(self, fullname, target=None):
+        if self in ["tensorflow", "tf_encrypted"]:
+            return None
+        return find_spec_orig(self, fullname, target)
+
     builtins.__import__ = mocked_import
+    sys.meta_path[3].find_spec = mocked_find_spec
     yield
     builtins.__import__ = import_orig
+    sys.meta_path[3].find_spec = find_spec_orig
