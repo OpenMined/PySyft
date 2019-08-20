@@ -499,6 +499,8 @@ class FixedPrecisionTensor(AbstractTensor):
             weights = [0.5, 0.216578258, -0.0083312848, 0.0001876528, -1.9669e-06, 7.5e-09]
             degrees = [0, 1, 3, 5, 7, 9]
 
+            # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
+            # will be faster
             max_degree = degrees[2]
             max_idx = degrees.index(max_degree)
 
