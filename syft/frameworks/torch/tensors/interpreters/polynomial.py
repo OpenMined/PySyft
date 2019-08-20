@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
@@ -368,7 +367,8 @@ class PolynomialTensor(AbstractTensor):
         fitted_function = self.apply_coefs(fitted_function, self.function)
 
         return np.poly1d(fitted_function)"""
-=======
+
+
 # from syft.generic.tensor import AbstractTensor
 # import torch
 # import numpy as np
@@ -626,4 +626,3 @@ class PolynomialTensor(AbstractTensor):
 #             + (x ** 6) * (self.function(1 / (840)))
 #             + (x ** 7) * (self.function(1 / (6720)))
 #         )
->>>>>>> upstream/dev
