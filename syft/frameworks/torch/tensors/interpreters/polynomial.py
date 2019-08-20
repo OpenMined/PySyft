@@ -1,4 +1,4 @@
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 import torch
