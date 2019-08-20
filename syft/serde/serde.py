@@ -99,7 +99,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
 
-# For egistering syft objects with custom simplify and detail methods
+# For registering syft objects with custom simplify and detail methods
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -114,8 +114,7 @@ scheme_to_bytes = {
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
-    """
-    To force a full simplify genrally if the usual _simplify is not suitable.
+    """To force a full simplify genrally if the usual _simplify is not suitable.
     
     Args:
     :param: the object
@@ -138,8 +137,7 @@ def _force_full_simplify(obj: object) -> object:
 
 ## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """
-    Generate simplifiers, forced full simplifiers and detailers,
+    """Generate simplifiers, forced full simplifiers and detailers,
     by registering native and torch types, syft objects with custom
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
@@ -220,7 +218,6 @@ def serialize(
 
     Returns:
         binary: the serialized form of the object.
-
     """
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
