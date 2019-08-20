@@ -127,6 +127,12 @@ class PromiseTensor(AbstractTensor, Promise):
 
         id, shape, tensor_id, tensor_type, plans = tensor_tuple
 
+        id = sy.serde._detail(worker, id)
+        shape = sy.serde._detail(worker, shape)
+        tensor_id = sy.serde._detail(worker, tensor_id)
+        tensor_type = sy.serde._detail(worker, tensor_type)
+        plans = sy.serde._detail(worker, plans)
+
         tensor = PromiseTensor(id=id, shape=shape, tensor_id=tensor_id, tensor_type=tensor_type, plans=plans)
 
         initialize_tensor(

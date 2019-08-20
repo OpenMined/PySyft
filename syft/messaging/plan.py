@@ -657,9 +657,7 @@ class Plan(ObjectStorage):
 
         """
         return (
-            tuple(
-                plan.readable_plan
-            ),  # We're not simplifying because readable_plan is already simplified
+            tuple(plan.readable_plan),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
@@ -667,6 +665,8 @@ class Plan(ObjectStorage):
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
             plan.is_built,
+            sy.serde._simplify(plan.input_shapes),
+            sy.serde._simplify(plan._output_shape if plan._output_shape is not None else None)
         )
 
     @staticmethod
@@ -679,7 +679,8 @@ class Plan(ObjectStorage):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built = plan_tuple
+        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape = plan_tuple
+        # readable_plan = sy.serde._detail(worker, readable_plan)
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
@@ -692,6 +693,9 @@ class Plan(ObjectStorage):
             readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
+
+        plan.input_shapes = input_shapes
+        plan._output_shape = output_shape
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
