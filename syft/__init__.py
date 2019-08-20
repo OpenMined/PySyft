@@ -63,21 +63,22 @@ from syft.messaging import make_plan
 # Import Worker Types
 from syft.workers import VirtualWorker
 
-
 # Import Tensor Types
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+
 from syft.generic.pointers import ObjectPointer
 from syft.generic.pointers import CallablePointer
 from syft.generic.pointers import ObjectWrapper
+
 # Import serialization tools
 from syft import serde
 from syft.serde import torch_serde
+
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
