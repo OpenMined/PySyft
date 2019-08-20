@@ -19,11 +19,12 @@ def test_rnn_mpc(module, hook, workers):
 
     # model hyperparameters
     batch_size = 2
-    input_size = 2
-    hidden_size = 2
-    seq_len = 2
+    input_size = 3
+    hidden_size = 5
+    seq_len = 3
     num_layers = 2
-    bidirectional = False
+    bidirectional = True
+    dropout = 0.1
     directions = 2 if bidirectional else 1
 
     if module == "lstm":
