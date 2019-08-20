@@ -70,6 +70,7 @@ from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
 
 from syft.generic.pointers import ObjectPointer
 from syft.generic.pointers import CallablePointer
