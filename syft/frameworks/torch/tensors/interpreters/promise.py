@@ -100,8 +100,6 @@ class PromiseTensor(AbstractTensor, Promise):
             tuple: a tuple holding the unique attributes of the fixed precision tensor.
         """
 
-        print("Simplifying PromiseTensor")
-
         return (
             sy.serde._simplify((self.id)),
             sy.serde._simplify(self._shape),
@@ -122,8 +120,6 @@ class PromiseTensor(AbstractTensor, Promise):
             Examples:
                 shared_tensor = detail(data)
             """
-
-        print("Detailing PromiseTensor")
 
         id, shape, tensor_id, tensor_type, plans = tensor_tuple
 
