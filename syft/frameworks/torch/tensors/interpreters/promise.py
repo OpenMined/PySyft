@@ -40,6 +40,51 @@ class PromiseTensor(AbstractTensor, Promise):
 
         del self.child
 
+    def send(self, *args, **kwargs):
+
+        arg_shapes = list([self._shape])
+        arg_ids = list([self.obj_id])
+
+        @sy.func2plan([self.shape])
+        def operation(self):
+            return self.send(*args, **kwargs)
+
+        operation.arg_ids = arg_ids
+
+        self.plans.add(operation)
+
+        # only need this for use of Promises with the local_worker VirtualWorker
+        # otherwise we would simplty check the ._objects registry
+        operation.args_fulfilled = {}
+
+        self.result_promise = PromiseTensor(
+            shape=self.shape,
+            tensor_id=operation.result_ids[0],
+            tensor_type=self.obj_type,
+            plans=set(),
+        )
+
+        for arg in args:
+            arg.result_promise = self.result_promise
+
+        # unfortunatley we accidentally send a PointerTensor to
+        # the remote worker when tracing the operation func above.
+        # Thus, we need to remove it.
+        sy.local_worker.send_msg(location=bob, message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0]))
+
+        # The object we removed in the last line causes a garbage
+        # collection message to be sent to readable_plan, so we need
+        # to eliminate that as well
+        operation.readable_plan = operation.readable_plan[:-1]
+
+        # Because promises re-use wrappers, this wrappere will evnetually
+        # wrap a pointer tensor, at which point it runs the risk of
+        # getting pre-maturely garbage collected. So, we cache it here
+        # just to be safe
+        self.wrapped_result_promise = self.result_promise.wrap()
+
+        return self.wrapped_result_promise
+
     def torch_type(self):
         return self.obj_type
 
