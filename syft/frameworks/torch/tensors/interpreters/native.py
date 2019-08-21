@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import math
+import warnings
 
 from typing import List
 from typing import Union
@@ -682,6 +683,11 @@ class TorchTensor(AbstractTensor):
             )
         else:
             assert not need_large_prec, "This tensor needs large precision to be correctly stored"
+            if "internal_type" in kwargs:
+                warnings.warn(
+                    "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
+                )
+                del kwargs["internal_type"]
             return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
 
     fix_precision = fix_prec
