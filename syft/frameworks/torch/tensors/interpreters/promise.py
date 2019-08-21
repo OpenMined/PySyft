@@ -2,8 +2,8 @@ import syft as sy
 from syft.workers import AbstractWorker
 import weakref
 
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
+from syft.generic.tensor import AbstractTensor
+from syft.generic.tensor import initialize_tensor
 from syft.messaging.promise import Promise
 
 
