@@ -153,8 +153,6 @@ def _generate_simplifiers_and_detailers():
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
     
-    Args: None
-    
     Returns:
         The simplifiers, forced_full_simplifiers, detailers
     """
@@ -343,7 +341,7 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
     Apply ZSTD compression to the input
 
     Args:
-        param decompressed_input_bin: the binary to be compressed
+        param: decompressed_input_bin: the binary to be compressed
     
     Returns:
         a tuple (compressed_result, ZSTD)
