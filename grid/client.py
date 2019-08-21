@@ -47,6 +47,8 @@ class GridClient(BaseWorker):
 
     def destroy(self):
         grid_name = self.addr.split("//")[1].split(".")[0]
-        gr_utils.exec_os_cmd("heroku destroy " + grid_name + " --confirm " + grid_name)
+        gr_utils.execute_command(
+            "heroku destroy " + grid_name + " --confirm " + grid_name
+        )
         if self.verbose:
             print("Destroyed node: " + str(grid_name))

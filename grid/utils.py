@@ -2,5 +2,5 @@
 import os
 
 
-def exec_os_cmd(command):
+def execute_command(command):
     return os.popen(command).read()
