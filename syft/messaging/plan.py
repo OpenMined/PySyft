@@ -180,11 +180,6 @@ class Plan(ObjectStorage):
 
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
-        print(msg_type)
-        print(contents)
-        print(self.owner)
-        print(self)
-        print(type(self.plan))
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
