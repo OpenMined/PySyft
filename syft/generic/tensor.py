@@ -112,7 +112,7 @@ def initialize_tensor(
     if not is_tensor:
         cls.native___init__(*init_args, **init_kwargs)
 
-    _apply_args(hook_self, cls, owner, id)
+    _apply_args(hook_self=hook_self, new_tensor=cls, owner=owner, id=id)
 
 
 def _apply_args(hook_self, new_tensor, owner=None, id=None):

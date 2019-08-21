@@ -37,7 +37,7 @@ class PromiseTensor(AbstractTensor, Promise):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         # constructor for Promise
-        Promise.__init__(self, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
+        Promise.__init__(self, owner=owner, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
 
         self._shape = shape
 
@@ -137,7 +137,10 @@ class PromiseTensor(AbstractTensor, Promise):
             tensor.child.parent = weakref.ref(tensor)
             return tensor
     def __str__(self):
-        return f"[PromiseTensor({self.id}) -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
+        return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
+
+    def __repr__(self):
+        return self.__str__()
 
     @staticmethod
     def simplify(self: "PromiseTensor") -> tuple:
@@ -151,7 +154,7 @@ class PromiseTensor(AbstractTensor, Promise):
         """
 
         return (
-            sy.serde._simplify((self.id)),
+            sy.serde._simplify(self.id),
             sy.serde._simplify(self._shape),
             sy.serde._simplify(self.obj_id),
             sy.serde._simplify(self.obj_type),
@@ -179,7 +182,7 @@ class PromiseTensor(AbstractTensor, Promise):
         tensor_type = sy.serde._detail(worker, tensor_type)
         plans = sy.serde._detail(worker, plans)
 
-        tensor = PromiseTensor(id=id, shape=shape, tensor_id=tensor_id, tensor_type=tensor_type, plans=plans)
+        tensor = PromiseTensor(owner=worker, id=id, shape=shape, tensor_id=tensor_id, tensor_type=tensor_type, plans=plans)
 
         initialize_tensor(
             hook_self=sy.torch.hook,

@@ -391,10 +391,6 @@ class TorchTensor(AbstractTensor):
                     if self._is_parameter():
                         self.data.child.garbage_collect_data = False
 
-                elif (isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor)):
-                    self.child.send(location)
-
-
             ptr = self.owner.send(
                 self,
                 location,
@@ -402,6 +398,10 @@ class TorchTensor(AbstractTensor):
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
             )
+
+            if(hasattr(self, "child")):
+                if (isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor)):
+                    self.child.send(location)
 
             ptr.description = self.description
             ptr.tags = self.tags

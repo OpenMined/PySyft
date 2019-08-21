@@ -666,7 +666,8 @@ class Plan(ObjectStorage):
             sy.serde._simplify(plan.description),
             plan.is_built,
             sy.serde._simplify(plan.input_shapes),
-            sy.serde._simplify(plan._output_shape if plan._output_shape is not None else None)
+            sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
+            sy.serde._simplify(plan.args_fulfilled) if hasattr(plan, "args_fulfilled") else None
         )
 
     @staticmethod
@@ -679,12 +680,13 @@ class Plan(ObjectStorage):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape = plan_tuple
+        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape, args_fulfilled = plan_tuple
         # readable_plan = sy.serde._detail(worker, readable_plan)
 
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
+        args_fulfilled = sy.serde._detail(worker, args_fulfilled)
 
         plan = sy.Plan(
             owner=worker,
@@ -697,9 +699,11 @@ class Plan(ObjectStorage):
 
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
+        plan.args_fulfilled = args_fulfilled
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
         plan.description = sy.serde._detail(worker, description)
+
 
         return plan

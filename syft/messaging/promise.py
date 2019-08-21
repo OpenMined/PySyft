@@ -10,7 +10,7 @@ from syft.workers import AbstractWorker
 
 
 class Promise(ABC):
-    def __init__(self, id=None, obj_id=None, obj_type=None, plans=None):
+    def __init__(self, owner=None, id=None, obj_id=None, obj_type=None, plans=None):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
         A Promise is a data-structure which indicates that "there will be an object
@@ -33,10 +33,12 @@ class Promise(ABC):
             future_x = Promise()
         """
 
+        self.owner = owner
+
         if id is None:
             id = sy.ID_PROVIDER.pop()
 
-        self.id = id
+        self._id = id
 
         if obj_id is None:
             obj_id = sy.ID_PROVIDER.pop()
@@ -52,6 +54,8 @@ class Promise(ABC):
 
         # by default, a Promise has not been kept when it is created.
         self.is_kept = False
+
+        self.owner.obj_id2promise_id[self.obj_id] = self.id
 
     def keep(self, obj):
 
@@ -79,10 +83,15 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
-        print(f"keep({self})")
+        if(hasattr(self, "parent")):
+            # if you're on a VirtualWorker, you need a ref to the wrapper
+            parent = self.parent()
+        else:
+            # else you're on a non VirtualWorker and you should just
+            # delete the PromiseTensor
+            self.owner.rm_obj(self.id)
+            return
 
-
-        parent = self.parent()
 
         if(self.child.is_wrapper):
             parent.child = self.child.child
@@ -95,6 +104,25 @@ class Promise(ABC):
                 parent.set_(self.child)
                 del parent.child
                 parent.is_wrapper = False
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, new_id):
+
+        if(not hasattr(self, "_id")):
+            return None
+
+
+        if(self._id in self.owner.obj_id2promise_id):
+            del self.owner.obj_id2promise_id[self._id]
+
+        self._id = new_id
+
+        self.owner.obj_id2promise_id[self.obj_id] = new_id
+
 
     def __repr__(self):
         return self.__str__()

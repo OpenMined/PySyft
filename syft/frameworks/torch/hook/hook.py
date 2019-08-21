@@ -739,6 +739,7 @@ class TorchHook(FrameworkHook):
                     operation.args_fulfilled = {}
 
                     self.result_promise = PromiseTensor(
+                        owner=self.owner,
                         shape=operation.output_shape,
                         tensor_id=operation.result_ids[0],
                         tensor_type=self.obj_type,

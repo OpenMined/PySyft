@@ -13,7 +13,17 @@ class ObjectStorage:
     """
 
     def __init__(self):
+
+        # This is the collection of objects being stored.
         self._objects = {}
+
+        # When we receive an object, we need to check to see if
+        # there are any promises waiting on the object to be received.
+        # In order to do this efficiently, we need a lookup table
+        # mapping from the id of the object being received to the id
+        # of a promise waiting to receive said object. obj_id2promise_id
+        # is that lookup table.
+        self.obj_id2promise_id = {}
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -93,6 +103,14 @@ class ObjectStorage:
         Args:
             obj: A torch or syft tensor with an id.
         """
+
+        if obj.id in self.obj_id2promise_id:
+            promise_id = self.obj_id2promise_id[obj.id]
+            if(promise_id in self._objects):
+                promise = self.get_obj(promise_id)
+                promise.keep(obj)
+
+
         self._objects[obj.id] = obj
 
     def rm_obj(self, remote_key: Union[str, int]):
@@ -120,7 +138,8 @@ class ObjectStorage:
         if remote_key in self._objects:
             obj = self._objects[remote_key]
             if hasattr(obj, "child"):
-                obj.child.garbage_collect_data = True
+                if(hasattr(obj.child, "garbage_collect_data")):
+                    obj.child.garbage_collect_data = True
             del self._objects[remote_key]
 
     def clear_objects(self, return_self: bool = True):
