@@ -58,6 +58,7 @@ class AbstractTensor(AbstractObject):
         Returns:
             A pytorch tensor.
         """
+
         wrapper = sy.framework.hook.create_wrapper(self)
         wrapper.child = self
         wrapper.is_wrapper = True

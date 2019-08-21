@@ -88,6 +88,8 @@ class PromiseTensor(AbstractTensor, Promise):
 
             tensor.child.parent = weakref.ref(tensor)
             return tensor
+    def __str__(self):
+        return f"[PromiseTensor({self.id})  -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
 
     @staticmethod
     def simplify(self: "PromiseTensor") -> tuple:

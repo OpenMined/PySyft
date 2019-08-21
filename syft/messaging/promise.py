@@ -79,15 +79,22 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
+        print("keep()")
+        print(self)
+
         parent = self.parent()
 
-        parent.child = self.child
+        if(self.child.is_wrapper):
+            parent.child = self.child.child
+        else:
 
-        if not hasattr(self.child, "child"):
-            # parent.
-            parent.set_(self.child)
-            del parent.child
-            parent.is_wrapper = False
+            parent.child = self.child
+
+            if not hasattr(self.child, "child"):
+                # parent.
+                parent.set_(self.child)
+                del parent.child
+                parent.is_wrapper = False
 
     def __repr__(self):
         return self.__str__()
