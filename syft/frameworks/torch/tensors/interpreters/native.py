@@ -379,17 +379,21 @@ class TorchTensor(AbstractTensor):
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
 
-        if(isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor)):
-            self.child.send(*location)
 
         if len(location) == 1:
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
-                self.child.garbage_collect_data = False
-                if self._is_parameter():
-                    self.data.child.garbage_collect_data = False
+            if hasattr(self, "child"):
+
+                if isinstance(self.child, PointerTensor):
+                    self.child.garbage_collect_data = False
+                    if self._is_parameter():
+                        self.data.child.garbage_collect_data = False
+
+                elif (isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor)):
+                    self.child.send(location)
+
 
             ptr = self.owner.send(
                 self,

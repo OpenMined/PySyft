@@ -79,8 +79,8 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
-        print("keep()")
-        print(self)
+        print(f"keep({self})")
+
 
         parent = self.parent()
 

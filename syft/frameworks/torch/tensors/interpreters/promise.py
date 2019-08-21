@@ -27,6 +27,9 @@ class PromiseTensor(AbstractTensor, Promise):
             id: An optional string or integer id of the LoggingTensor.
         """
 
+        if owner is None:
+            owner = sy.local_worker
+
         # I did check that the two __init__ methods below only get called once, but it
         # was exhibiting some strange behavior when I used super() for both of them.
 
@@ -70,7 +73,7 @@ class PromiseTensor(AbstractTensor, Promise):
         # unfortunatley we accidentally send a PointerTensor to
         # the remote worker when tracing the operation func above.
         # Thus, we need to remove it.
-        sy.local_worker.send_msg(location=bob, message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0]))
+        sy.local_worker.send_msg(location=args[0], message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0]))
 
         # The object we removed in the last line causes a garbage
         # collection message to be sent to readable_plan, so we need
@@ -134,7 +137,7 @@ class PromiseTensor(AbstractTensor, Promise):
             tensor.child.parent = weakref.ref(tensor)
             return tensor
     def __str__(self):
-        return f"[PromiseTensor({self.id})  -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
+        return f"[PromiseTensor({self.id}) -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
 
     @staticmethod
     def simplify(self: "PromiseTensor") -> tuple:
