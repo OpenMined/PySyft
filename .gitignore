@@ -20,3 +20,6 @@ docs/_modules
 .vscode/
 **/pip-wheel-metadata
 
+# IDE specific
+out/
+*.iml
