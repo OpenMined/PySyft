@@ -134,7 +134,7 @@ class PromiseTensor(AbstractTensor, Promise):
         initialize_tensor(
             hook_self=sy.torch.hook,
             cls=tensor,
-            torch_tensor=True,
+            is_tensor=True,
             owner=worker,
             id=id,
             init_args=[],

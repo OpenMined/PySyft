@@ -180,6 +180,11 @@ class Plan(ObjectStorage):
 
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+        print(msg_type)
+        print(contents)
+        print(self.owner)
+        print(self)
+        print(type(self.plan))
 
         if msg_type != MSGTYPE.OBJ:
             self.plan.append(bin_message)
@@ -320,13 +325,13 @@ class Plan(ObjectStorage):
             # for every message of the plan
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = Plan._replace_message_ids(
+                self.readable_plan[j] = list(Plan._replace_message_ids(
                     obj=msg,
                     change_id=from_ids[i],
                     to_id=to_ids[i],
                     from_worker=from_worker,
                     to_worker=to_worker,
-                )
+                ))
 
         return self
 
@@ -348,13 +353,13 @@ class Plan(ObjectStorage):
             id_pairs.append((from_worker_id.encode(), to_worker_id_encoded))
 
         for id_pair in id_pairs:
-            self.readable_plan = Plan._replace_message_ids(
+            self.readable_plan = list(Plan._replace_message_ids(
                 obj=self.readable_plan,
                 change_id=-1,
                 to_id=-1,
                 from_worker=id_pair[0],
                 to_worker=id_pair[1],
-            )
+            ))
 
     @staticmethod
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
@@ -681,6 +686,7 @@ class Plan(ObjectStorage):
 
         readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape = plan_tuple
         # readable_plan = sy.serde._detail(worker, readable_plan)
+
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
