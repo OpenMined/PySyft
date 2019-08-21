@@ -7,7 +7,7 @@ from typing import Union
 import torch
 import torch as th
 
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
 from syft.codes import MSGTYPE
 import syft as sy

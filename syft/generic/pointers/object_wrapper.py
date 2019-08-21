@@ -1,9 +1,9 @@
-from syft.frameworks.torch.pointers import create_callable_pointer
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
 
 import syft as sy
+from syft.generic.pointers import create_callable_pointer
 from syft.workers import AbstractWorker
 
 
