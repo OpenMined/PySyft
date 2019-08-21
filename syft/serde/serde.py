@@ -126,8 +126,10 @@ def _force_full_simplify(obj: object) -> object:
     """To force a full simplify genrally if the usual _simplify is not suitable.
     
     Args:
-    :param: the object
-    :return: the result from either _simplify or _forced_full_simplify on the object
+        param: the object
+    
+    Returns:
+        the result from either _simplify or _forced_full_simplify on the object
     """
     current_type = type(obj)
 
@@ -151,8 +153,10 @@ def _generate_simplifiers_and_detailers():
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
     
-    Args:
-    :return: the simplifiers, forced_full_simplifiers, detailers
+    Args: None
+    
+    Returns:
+        The simplifiers, forced_full_simplifiers, detailers
     """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
@@ -326,8 +330,10 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
     Apply LZ4 compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, LZ4)
+        param: decompressed_input_bin: the binary to be compressed
+        
+    Returns:
+        a tuple (compressed_result, LZ4)
     """
     return lz4.frame.compress(decompressed_input_bin), LZ4
 
@@ -337,8 +343,10 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
     Apply ZSTD compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, ZSTD)
+        param decompressed_input_bin: the binary to be compressed
+    
+    Returns:
+        a tuple (compressed_result, ZSTD)
     """
 
     return zstd.compress(decompressed_input_bin), ZSTD
@@ -350,7 +358,9 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
 
     Args:
         :param decompressed_input_bin: the binary
-        :return: a tuple (the binary, LZ4)
+        
+    Returns:
+        a tuple (the binary, LZ4)
     """
 
     return decompressed_input_bin, NO_COMPRESSION
