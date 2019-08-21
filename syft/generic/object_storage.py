@@ -106,10 +106,9 @@ class ObjectStorage:
 
         if obj.id in self.obj_id2promise_id:
             promise_id = self.obj_id2promise_id[obj.id]
-            if(promise_id in self._objects):
+            if promise_id in self._objects:
                 promise = self.get_obj(promise_id)
                 promise.keep(obj)
-
 
         self._objects[obj.id] = obj
 
@@ -138,7 +137,7 @@ class ObjectStorage:
         if remote_key in self._objects:
             obj = self._objects[remote_key]
             if hasattr(obj, "child"):
-                if(hasattr(obj.child, "garbage_collect_data")):
+                if hasattr(obj.child, "garbage_collect_data"):
                     obj.child.garbage_collect_data = True
             del self._objects[remote_key]
 

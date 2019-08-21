@@ -320,13 +320,15 @@ class Plan(ObjectStorage):
             # for every message of the plan
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = list(Plan._replace_message_ids(
-                    obj=msg,
-                    change_id=from_ids[i],
-                    to_id=to_ids[i],
-                    from_worker=from_worker,
-                    to_worker=to_worker,
-                ))
+                self.readable_plan[j] = list(
+                    Plan._replace_message_ids(
+                        obj=msg,
+                        change_id=from_ids[i],
+                        to_id=to_ids[i],
+                        from_worker=from_worker,
+                        to_worker=to_worker,
+                    )
+                )
 
         return self
 
@@ -348,13 +350,15 @@ class Plan(ObjectStorage):
             id_pairs.append((from_worker_id.encode(), to_worker_id_encoded))
 
         for id_pair in id_pairs:
-            self.readable_plan = list(Plan._replace_message_ids(
-                obj=self.readable_plan,
-                change_id=-1,
-                to_id=-1,
-                from_worker=id_pair[0],
-                to_worker=id_pair[1],
-            ))
+            self.readable_plan = list(
+                Plan._replace_message_ids(
+                    obj=self.readable_plan,
+                    change_id=-1,
+                    to_id=-1,
+                    from_worker=id_pair[0],
+                    to_worker=id_pair[1],
+                )
+            )
 
     @staticmethod
     def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
@@ -657,7 +661,9 @@ class Plan(ObjectStorage):
 
         """
         return (
-            tuple(plan.readable_plan),  # We're not simplifying because readable_plan is already simplified
+            tuple(
+                plan.readable_plan
+            ),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
@@ -667,7 +673,7 @@ class Plan(ObjectStorage):
             plan.is_built,
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
-            sy.serde._simplify(plan.args_fulfilled) if hasattr(plan, "args_fulfilled") else None
+            sy.serde._simplify(plan.args_fulfilled) if hasattr(plan, "args_fulfilled") else None,
         )
 
     @staticmethod
@@ -680,7 +686,9 @@ class Plan(ObjectStorage):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape, args_fulfilled = plan_tuple
+        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built, input_shapes, output_shape, args_fulfilled = (
+            plan_tuple
+        )
         # readable_plan = sy.serde._detail(worker, readable_plan)
 
         id = sy.serde._detail(worker, id)
@@ -704,6 +712,5 @@ class Plan(ObjectStorage):
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
         plan.description = sy.serde._detail(worker, description)
-
 
         return plan

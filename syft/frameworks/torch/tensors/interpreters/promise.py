@@ -73,7 +73,9 @@ class PromiseTensor(AbstractTensor, Promise):
         # unfortunatley we accidentally send a PointerTensor to
         # the remote worker when tracing the operation func above.
         # Thus, we need to remove it.
-        sy.local_worker.send_msg(location=args[0], message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0]))
+        sy.local_worker.send_msg(
+            location=args[0], message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0])
+        )
 
         # The object we removed in the last line causes a garbage
         # collection message to be sent to readable_plan, so we need
@@ -136,6 +138,7 @@ class PromiseTensor(AbstractTensor, Promise):
 
             tensor.child.parent = weakref.ref(tensor)
             return tensor
+
     def __str__(self):
         return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
 
@@ -182,7 +185,14 @@ class PromiseTensor(AbstractTensor, Promise):
         tensor_type = sy.serde._detail(worker, tensor_type)
         plans = sy.serde._detail(worker, plans)
 
-        tensor = PromiseTensor(owner=worker, id=id, shape=shape, tensor_id=tensor_id, tensor_type=tensor_type, plans=plans)
+        tensor = PromiseTensor(
+            owner=worker,
+            id=id,
+            shape=shape,
+            tensor_id=tensor_id,
+            tensor_type=tensor_type,
+            plans=plans,
+        )
 
         initialize_tensor(
             hook_self=sy.torch.hook,

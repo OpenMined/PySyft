@@ -83,7 +83,7 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.keep(result)
 
-        if(hasattr(self, "parent")):
+        if hasattr(self, "parent"):
             # if you're on a VirtualWorker, you need a ref to the wrapper
             parent = self.parent()
         else:
@@ -92,8 +92,7 @@ class Promise(ABC):
             self.owner.rm_obj(self.id)
             return
 
-
-        if(self.child.is_wrapper):
+        if self.child.is_wrapper:
             parent.child = self.child.child
         else:
 
@@ -112,17 +111,15 @@ class Promise(ABC):
     @id.setter
     def id(self, new_id):
 
-        if(not hasattr(self, "_id")):
+        if not hasattr(self, "_id"):
             return None
 
-
-        if(self._id in self.owner.obj_id2promise_id):
+        if self._id in self.owner.obj_id2promise_id:
             del self.owner.obj_id2promise_id[self._id]
 
         self._id = new_id
 
         self.owner.obj_id2promise_id[self.obj_id] = new_id
-
 
     def __repr__(self):
         return self.__str__()

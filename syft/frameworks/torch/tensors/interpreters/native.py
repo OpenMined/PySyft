@@ -379,7 +379,6 @@ class TorchTensor(AbstractTensor):
         # want to do so, as p2 is not GCed, you can still do `del p2`.
         # This allows to chain multiple .send().send() calls.
 
-
         if len(location) == 1:
 
             location = location[0]
@@ -399,8 +398,8 @@ class TorchTensor(AbstractTensor):
                 garbage_collect_data=garbage_collect_data,
             )
 
-            if(hasattr(self, "child")):
-                if (isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor)):
+            if hasattr(self, "child"):
+                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor):
                     self.child.send(location)
 
             ptr.description = self.description
