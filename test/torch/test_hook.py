@@ -358,3 +358,60 @@ def test_local_remote_gradient_clipping(workers):
     # Is the output of the remote gradient clipping version equal to
     # the output of the local gradient clipping version?
     assert total_norm_remote == total_norm_local
+
+
+# Input: None
+# Output: a local PyTorch tensor with .grad attribute set to [4.5, 4.5, 4.5, 4.5]
+# These operations were taken from this tutorial:
+# https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html
+def produce_tensor_with_grad():
+    x = torch.ones(2, 2, requires_grad=True)
+    a = torch.randn(2, 2)
+    a = (a * 3) / (a - 1)
+    a.requires_grad_(True)
+    b = (a * a).sum()
+    y = x + 2
+    z = y * y * 3
+    out = z.mean()
+    # backward function is used for computing the gradient of the tensor 'x'
+    out.backward()
+
+    return x
+
+
+def test_remote_gradient_clipping(workers):
+    """ Vanishing gradient test over
+        gradients of a remote tensor
+    """
+    alice = workers["alice"]
+    local_tensor = produce_tensor_with_grad()
+    remote_tensor = local_tensor.send(alice)
+    # initially, remote_tensor.grad is [4.5, 4.5, 4.5, 4.5]
+    # Method operates in place
+    nn.utils.clip_grad_norm_(remote_tensor, 2)
+    tensor_comparison_grad = torch.Tensor([[4.5, 4.5], [4.5, 4.5]])
+    tensor_comp_grad_remote = tensor_comparison_grad.send(alice)
+    # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
+    smaller_tensor_check_remote = remote_tensor.grad < tensor_comp_grad_remote
+
+    one_tensors = torch.ones([1], dtype=torch.uint8)
+    one_tensors_remote = one_tensors.send(alice)
+
+    assert torch.eq(one_tensors_remote, smaller_tensor_check_remote.all())
+
+
+def test_local_gradient_clipping():
+    """ Vanishing gradient test over
+        gradients of a local tensor
+    """
+    local_tensor = produce_tensor_with_grad()
+    # initially, local_tensor.grad is [4.5, 4.5, 4.5, 4.5]
+    # Method operates in place
+    nn.utils.clip_grad_norm_(local_tensor, 2)
+    tensor_comparison_grad = torch.Tensor([[4.5, 4.5], [4.5, 4.5]])
+    # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
+    smaller_tensor_check = local_tensor.grad < tensor_comparison_grad
+
+    one_tensors = torch.ones([1], dtype=torch.uint8)
+
+    assert torch.eq(one_tensors, smaller_tensor_check.all())
