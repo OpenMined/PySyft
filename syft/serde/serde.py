@@ -99,6 +99,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.Operation,
     messaging.ObjectMessage,
     messaging.ObjectRequestMessage,
+    messaging.IntroduceMessage,
     messaging.IsNoneMessage,
     messaging.GetShapeMessage,
     messaging.ForceObjectDeleteMessage,

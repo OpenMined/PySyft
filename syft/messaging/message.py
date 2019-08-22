@@ -381,3 +381,30 @@ class SearchMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         return SearchMessage(sy.serde._detail(worker, msg_tuple[1]))
+
+
+class IntroduceMessage(Message):
+    """A client introduces a remote worker to another worker using this message."""
+
+    def __init__(self, contents):
+        """Initialize the message using default Message constructor.
+
+        See Message.__init__ for details."""
+        super().__init__(codes.MSGTYPE.INTRODUCE, contents)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "IntroduceMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an IntroduceMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (IntroduceMessage): a IntroduceMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return IntroduceMessage(sy.serde._detail(worker, msg_tuple[1]))
