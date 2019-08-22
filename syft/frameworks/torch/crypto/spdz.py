@@ -42,7 +42,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     if len(locations) == 2:
         j = sy.MultiPointerTensor(children=[j1, j0])
     else:
-        j = sy.MultiPointerTensor(children=[j1] + j0.child.values())
+        j = sy.MultiPointerTensor(children=[j1] + list(j0.child.values()))
 
     delta_b = cmd(delta, b)
     a_epsilon = cmd(a, epsilon)
