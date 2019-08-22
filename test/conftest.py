@@ -91,17 +91,25 @@ def workers(hook):
     syft.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
     syft.frameworks.torch.hook.hook_args.get_tensor_type_functions = {}
 
-    # Define 3 virtual workers
+    # Define 4 virtual workers
     alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
     bob = syft.VirtualWorker(id="bob", hook=hook, is_client_worker=False)
+    charlie = syft.VirtualWorker(id="charlie", hook=hook, is_client_worker=False)
     james = syft.VirtualWorker(id="james", hook=hook, is_client_worker=False)
 
-    workers = {"me": hook.local_worker, "alice": alice, "bob": bob, "james": james}
+    workers = {
+        "me": hook.local_worker,
+        "alice": alice,
+        "bob": bob,
+        "charlie": charlie,
+        "james": james,
+    }
 
     yield workers
 
     alice.remove_worker_from_local_worker_registry()
     bob.remove_worker_from_local_worker_registry()
+    charlie.remove_worker_from_local_worker_registry()
     james.remove_worker_from_local_worker_registry()
 
 
