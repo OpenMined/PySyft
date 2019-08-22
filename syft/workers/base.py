@@ -18,6 +18,7 @@ from syft.workers import AbstractWorker
 from syft import messaging
 from syft import codes
 
+
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.generic import pointers
@@ -107,6 +108,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            codes.MSGTYPE.INTRODUCE: self.introduce_remote_worker,
         }
 
         self.load_data(data)
@@ -865,4 +867,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             return_ids = []
         return messaging.Message(
             codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
+        )
+
+    def introduce_remote_worker(self, message: tuple):
+        (remote_worker_id, port, host) = message
+        kwargs = {"host": host, "verbose": False, "hook": self.hook}
+        # TODO: re-use existing connection
+        self._known_workers[remote_worker_id] = sy.workers.WebsocketClientWorker(
+            id=remote_worker_id, port=port, **kwargs
         )

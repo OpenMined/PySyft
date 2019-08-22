@@ -110,6 +110,39 @@ def test_websocket_workers_search(hook, start_remote_worker):
     server.terminate()
 
 
+def test_websocket_workers_mult(hook, start_remote_worker):
+    server, alice = start_remote_worker(id="alice-remote", hook=hook, port=8761)
+    server, bob = start_remote_worker(id="bob-remote", hook=hook, port=8762)
+    server, charlie = start_remote_worker(id="charlie-remote", hook=hook, port=8763)
+
+    x = torch.tensor([[3, 4]])
+    y = torch.tensor([[3, 4]])
+    x_sh = x.share(alice, bob, crypto_provider=charlie)
+    y_sh = x.share(alice, bob, crypto_provider=charlie)
+
+    """
+    x_ptr = x.send(alice)
+    x_move = x_ptr.move(bob)
+
+
+    result = x_sh * y_sh
+    assert torch.equal(result.get(), x * y)
+    """
+
+    alice.close()
+    time.sleep(0.1)
+    alice.remove_worker_from_local_worker_registry()
+
+    bob.close()
+    time.sleep(0.1)
+    bob.remove_worker_from_local_worker_registry()
+
+    charlie.close()
+    time.sleep(0.1)
+    charlie.remove_worker_from_local_worker_registry()
+    server.terminate()
+
+
 def test_list_objects_remote(hook, start_remote_worker):
     server, remote_proxy = start_remote_worker(id="fed-list-objects", hook=hook, port=8765)
     remote_proxy.clear_objects()

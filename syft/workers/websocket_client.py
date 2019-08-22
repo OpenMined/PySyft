@@ -72,6 +72,19 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
 
+    def introduce_remote_worker(self, remote_worker_id: str, port: int, host: str):
+        """Introduce a remote worker to a websocket client.
+
+        This is mainly used to perform SMPC operations involving
+        crypto providers.
+        """
+        # Prepare a message requesting the websocket server to search among its objects
+        message = messaging.IntroduceMessage((remote_worker_id, port, host))
+        serialized_message = sy.serde.serialize(message)
+        # Send the message and return the deserialized response.
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
+
     def _send_msg(self, message: bin, location) -> bin:
         raise RuntimeError(
             "_send_msg should never get called on a ",
@@ -118,6 +131,9 @@ class WebsocketClientWorker(BaseWorker):
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
+
+    def list_known_workers_remote(self):
+        return self._send_msg_and_deserialize("list_known_workers")
 
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
