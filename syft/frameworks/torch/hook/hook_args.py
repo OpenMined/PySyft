@@ -103,6 +103,8 @@ ambiguous_functions = {
     "unbind",
     "torch.stack",
     "stack",
+    "torch.cat",
+    "cat",
     "torch.mean",
     "torch.sum",
     "torch.chunk",
