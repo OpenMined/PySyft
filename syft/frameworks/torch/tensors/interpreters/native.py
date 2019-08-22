@@ -752,7 +752,7 @@ class TorchTensor(AbstractTensor):
             if not no_wrap:
                 shared_tensor = shared_tensor.wrap()
 
-        if requires_grad and not isinstance(self.child, syft.PointerTensor):
+        if requires_grad and not (self.is_wrapper and isinstance(self.child, syft.PointerTensor)):
             shared_tensor = syft.AutogradTensor().on(shared_tensor)
 
         return shared_tensor
