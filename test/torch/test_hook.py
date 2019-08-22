@@ -394,10 +394,7 @@ def test_remote_gradient_clipping(workers):
     # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
     smaller_tensor_check_remote = remote_tensor.grad < tensor_comp_grad_remote
 
-    one_tensors = torch.ones([1], dtype=torch.uint8)
-    one_tensors_remote = one_tensors.send(alice)
-
-    assert torch.eq(one_tensors_remote, smaller_tensor_check_remote.all())
+    assert 1 == smaller_tensor_check_remote.all().copy().get().item()
 
 
 def test_local_gradient_clipping():
@@ -412,6 +409,4 @@ def test_local_gradient_clipping():
     # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
     smaller_tensor_check = local_tensor.grad < tensor_comparison_grad
 
-    one_tensors = torch.ones([1], dtype=torch.uint8)
-
-    assert torch.eq(one_tensors, smaller_tensor_check.all())
+    assert 1 == smaller_tensor_check.all().item()
