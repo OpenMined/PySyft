@@ -472,6 +472,53 @@ def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
     assert (model.bias.grad == bias_grad).all()
 
 
+def test_remote_share_with_requires_grad(workers):
+    """
+    Test calling fix_precision and share(requires_grad=True) on pointers
+    to tensors and model
+    """
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    t = torch.Tensor([3])
+    t = t.send(charlie)
+    t = t.fix_precision()
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    t = t.get()
+
+    assert isinstance(t.child, AutogradTensor)
+
+    t = torch.Tensor([3])
+    t = t.fix_precision()
+    t = t.send(charlie)
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    t = t.get()
+
+    assert isinstance(t.child, AutogradTensor)
+
+    model = nn.Linear(2, 1)
+    model.send(charlie)
+    model.fix_precision()
+    model.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    model.get()
+
+    assert isinstance(model.weight.child, AutogradTensor)
+
+    # See Issue #2546
+
+    # model = nn.Linear(2, 1)
+    # model.fix_precision()
+    # model.send(charlie)
+    # model.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    # model.get()
+    #
+    # assert isinstance(model.weight.child, AutogradTensor)
+
+
 def test_encrypted_training_with_linear_model(workers):
     """
     Test a minimal example of encrypted training using nn.Linear
