@@ -8,7 +8,7 @@ import torch
 from flask import Flask
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 from flask_socketio import SocketIO
 

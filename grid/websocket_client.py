@@ -6,7 +6,7 @@ from typing import Union
 import torch
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers import BaseWorker
 from syft.federated import FederatedClient
 from syft.codes import MSGTYPE

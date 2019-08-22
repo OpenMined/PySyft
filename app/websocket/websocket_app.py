@@ -53,8 +53,10 @@ if __name__ == "__main__":
     node_id = args.id if args.id else node_id
 
     # Register request
-    requests.post(
-        gateway_url + "/join",
-        data=json.dumps({"node-id": node_id, "node-address": node_address}),
-    )
+    if gateway_url is not None:
+        requests.post(
+            os.path.join(gateway_url, "join"),
+            data=json.dumps({"node-id": node_id, "node-address": node_address}),
+        )
+
     socketio.run(app, host="0.0.0.0", port=port)
