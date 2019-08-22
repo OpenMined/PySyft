@@ -14,7 +14,7 @@ from syft.generic.pointers import PointerTensor
 from syft.workers import BaseWorker
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 
-from syft.exceptions import PureTorchTensorFoundError
+from syft.exceptions import PureFrameworkTensorFoundError
 
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -314,7 +314,7 @@ class TorchTensor(AbstractTensor):
             response = syft.frameworks.torch.hook_args.hook_response(
                 cmd, response, wrap_type=args_type
             )
-        except PureTorchTensorFoundError:  # means that it's not a wrapper but a pure tensor
+        except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
 
             # Check that the function has not been overwritten
             try:
