@@ -30,6 +30,14 @@ test: venv
 		venv/bin/coverage report -m --fail-under 95; \
 	)
 
+.PHONY: integration
+integration: venv
+	(. venv/bin/activate; \
+		python setup.py install; \
+		venv/bin/coverage run -m pytest test/integration; \
+		venv/bin/coverage report -m --fail-under 95; \
+	)
+
 .PHONY: docs
 docs: venv
 	(. venv/bin/activate; \
