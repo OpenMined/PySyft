@@ -17,3 +17,8 @@ class FrameworkHook(ABC):
     @abstractmethod
     def create_shape(cls, shape_dims):
         pass
+
+    @classmethod
+    @abstractmethod
+    def create_zeros(cls, shape):
+        pass
