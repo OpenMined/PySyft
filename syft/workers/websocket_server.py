@@ -14,7 +14,7 @@ import logging
 tblib.pickling_support.install()
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError

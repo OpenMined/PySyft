@@ -5,7 +5,7 @@ import torch
 
 import syft as sy
 from syft import workers
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 from syft.workers import AbstractWorker
 
 

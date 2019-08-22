@@ -13,23 +13,26 @@ from syft import workers
 
 from syft.workers import BaseWorker
 from syft.messaging import Plan
+from syft.frameworks.hook import FrameworkHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.pointers import PointerTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-from syft.frameworks.torch.tensors.interpreters.abstract import _apply_args
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.pointers import PointerTensor
+from syft.generic.tensor import initialize_tensor
+from syft.generic.tensor import _apply_args
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
 
+from math import inf
 
-class TorchHook:
+
+class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
 
     The purpose of this class is to:
@@ -90,6 +93,7 @@ class TorchHook:
         """
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
+        self.framework = self.torch
 
         # Save the local worker as an attribute
         self.local_worker = local_worker
@@ -103,6 +107,7 @@ class TorchHook:
 
         # Add all the torch attributes in the syft.torch attr
         syft.torch = TorchAttributes(torch, self)
+        syft.framework = syft.torch
 
         if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is
@@ -176,6 +181,14 @@ class TorchHook:
         # called several times
         syft.local_worker = self.local_worker
         syft.hook = self
+
+    def create_wrapper(cls, child_to_wrap):
+        # Note this overrides FrameworkHook.create_wrapper, so it must conform to
+        # that classmethod's signature
+        return torch.Tensor()
+
+    def create_shape(cls, shape_dims):
+        return torch.Size(shape_dims)
 
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
@@ -513,7 +526,7 @@ class TorchHook:
             response = owner.send_command(location, command)
 
             # For inplace methods, just directly return self
-            if syft.torch.is_inplace_method(attr):
+            if syft.framework.is_inplace_method(attr):
                 return self
 
             return response
@@ -677,7 +690,7 @@ class TorchHook:
                 response = method(*new_args, **new_kwargs)
 
                 # For inplace methods, just directly return self
-                if syft.torch.is_inplace_method(method_name):
+                if syft.framework.is_inplace_method(method_name):
                     return self
 
                 # Put back the wrappers where needed
@@ -757,7 +770,7 @@ class TorchHook:
                 hook_self=hook_self,
                 cls=cls,
                 id=id,
-                torch_tensor=torch_tensor,
+                is_tensor=torch_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
@@ -1134,3 +1147,59 @@ class TorchHook:
             return optim_self
 
         self.torch.optim.Optimizer.float_precision = optim_float_precision_
+
+        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
+        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
+        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
+        def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
+            """Clips gradient norm of an iterable of parameters stored over a remote model
+
+            The norm is computed over all gradients together, as if they were
+            concatenated into a single vector. Gradients are modified in-place.
+
+            Arguments:
+                - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
+                Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
+                - max_norm (float or int): max norm of the gradients
+                - worker: The worker where the parameters are hosted and where the gradient clipping
+                will be performed
+                - norm_type (float or int): type of the used p-norm. Can be ``'inf'`` for
+                    infinity norm.
+
+            Returns:
+                Total norm of the parameters (viewed as a single vector).
+            """
+            if isinstance(parameters, torch.Tensor):
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
+                ):
+                    worker = parameters.location
+                parameters = [parameters]
+            parameters = list(filter(lambda p: p.grad is not None, parameters))
+            max_norm = float(max_norm)
+            norm_type = float(norm_type)
+            if norm_type == inf:
+                total_norm = max(p.grad.data.abs().max() for p in parameters)
+            else:
+                # Remote PySyft tensor
+                if hasattr(parameters, "child") and isinstance(
+                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
+                ):
+                    total_norm = torch.zeros(1)
+                    # Let's send the total norm over to the remote worker where the remote tensor is
+                    total_norm = total_norm.send(worker)
+                # Local PyTorch tensor
+                else:
+                    total_norm = 0
+                for p in parameters:
+                    param_norm = p.grad.data.norm(norm_type)
+                    total_norm += param_norm.item() ** norm_type
+                total_norm = total_norm ** (1.0 / norm_type)
+            clip_coef = max_norm / (total_norm + 1e-6)
+            if clip_coef < 1:
+                for p in parameters:
+                    p.grad.data.mul_(clip_coef)
+            return total_norm
+
+        self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
