@@ -350,7 +350,8 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
 
 
 # Maps a type to a tuple containing its simplifier and detailer function
-# IMPORTANT: keep this structure sorted A-Z (by type name)
+# IMPORTANT: serialization constants for these objects need to be defined
+# in `proto.json` file of https://github.com/OpenMined/proto
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         numpy.ndarray: (_simplify_ndarray, _detail_ndarray),

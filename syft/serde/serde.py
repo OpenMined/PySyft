@@ -78,6 +78,8 @@ else:
 from syft.serde.proto import proto_type_info
 
 # Maps a type to a tuple containing its simplifier and detailer function
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
@@ -85,6 +87,8 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 )
 
 # If a object implements its own simplify and detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
@@ -107,10 +111,13 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.SearchMessage,
 ]
 
-# If a object implements its own force_simplify and force_detail functions it should be stored in this list
+# If an object implements its own force_simplify and force_detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
 
-
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -142,7 +149,13 @@ def _force_full_simplify(obj: object) -> object:
 
 ## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers."""
+    """Generate simplifiers, forced full simplifiers and detailers.
+
+    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
+    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
+    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
+    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
+    """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
     detailers = OrderedDict()
