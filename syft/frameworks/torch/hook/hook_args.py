@@ -111,6 +111,7 @@ ambiguous_functions = {
     "chunk",
     "torch.functional.split",
     "split",
+    "backward",
 }
 
 
