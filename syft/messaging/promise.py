@@ -66,7 +66,10 @@ class Promise(ABC):
 
         obj.id = self.obj_id
 
-        self.is_kept = True
+        # not necessary since we're about to delete the Promise anyway
+        # but when we have Promises which you can call multiple times
+        # some functionality like this might be necessary.
+        # self.is_kept = True
 
         for plan in self.plans:
 
@@ -78,7 +81,7 @@ class Promise(ABC):
                     plan_missing_arg = True
 
             if not plan_missing_arg:
-                
+
                 args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
                 result = plan(*args)
                 self.result_promise.parent().keep(result)
