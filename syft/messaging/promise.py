@@ -63,15 +63,17 @@ class Promise(ABC):
             raise TypeError(
                 "keep() was called with an object of incorrect type (not the type that was promised)"
             )
+        #
+        # self.child = obj
+        # self.child.id = self.obj_id
 
-        self.child = obj
-        self.child.id = self.obj_id
+        obj.id = self.obj_id
 
         self.is_kept = True
 
         for plan in self.plans:
 
-            plan.args_fulfilled[self.obj_id] = self.child
+            plan.args_fulfilled[self.obj_id] = obj
 
             plan_missing_arg = False
             for arg_id in plan.arg_ids:
@@ -79,30 +81,37 @@ class Promise(ABC):
                     plan_missing_arg = True
 
             if not plan_missing_arg:
+                print("plan gets run")
                 args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
                 result = plan(*args)
-                self.result_promise.keep(result)
+                self.result_promise.parent().keep(result)
 
-        if hasattr(self, "parent"):
-            # if you're on a VirtualWorker, you need a ref to the wrapper
-            parent = self.parent()
-        else:
-            # else you're on a non VirtualWorker and you should just
-            # delete the PromiseTensor
-            self.owner.rm_obj(self.id)
-            return
 
-        if self.child.is_wrapper:
-            parent.child = self.child.child
-        else:
+        return obj
 
-            parent.child = self.child
-
-            if not hasattr(self.child, "child"):
-                # parent.
-                parent.set_(self.child)
-                del parent.child
-                parent.is_wrapper = False
+        # if hasattr(self, "parent"):
+        #     # if you're on a VirtualWorker, you need a ref to the wrapper
+        #     parent = self.parent()
+        # else:
+        #     # else you're on a non VirtualWorker and you should just
+        #     # delete the PromiseTensor
+        #     self.owner.rm_obj(self.id)
+        #     return
+        #
+        # if self.child.is_wrapper:
+        #     parent.child = self.child.child
+        # else:
+        #
+        #     parent.child = self.child
+        #
+        #     if not hasattr(self.child, "child"):
+        #         # parent.
+        #         parent.set_(self.child)
+        #         del parent.child
+        #         parent.is_wrapper = False
+        #
+        # print("setting parent id to:" + str(self.obj_id))
+        # parent.id = self.obj_id
 
     @property
     def id(self):

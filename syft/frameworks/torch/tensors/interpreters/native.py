@@ -790,6 +790,15 @@ class TorchTensor(AbstractTensor):
 
         result = self.child.keep(*args, **kwargs)
 
+        future_id = self.child.obj_id
+
+        self.set_(result)
+
+        del self.child
+        self.is_wrapper = False
+
+        self.id = future_id
+
     def torch_type(self):
 
         if isinstance(self, torch.Tensor) and not self.is_wrapper:
