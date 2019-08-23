@@ -196,6 +196,9 @@ class TorchHook(FrameworkHook):
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 
+    def create_zeros(cls, shape):
+        return torch.zeros(shape)
+
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Adds PySyft Tensor Functionality to the given native tensor type.
 
