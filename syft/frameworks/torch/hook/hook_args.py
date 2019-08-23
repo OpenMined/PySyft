@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from syft.exceptions import RemoteObjectFoundError
-from syft.exceptions import PureTorchTensorFoundError
+from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
@@ -56,10 +56,10 @@ forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AutogradTensor: lambda i: i.child,
@@ -452,9 +452,9 @@ def build_get_tensor_type(rules, layer=None):
             return lambdas[0]
         except IndexError:
             # Some functions don't have tensors in their signature so rules is only made of 0s,
-            # Hence lambdas is empty. Raising PureTorchTensorFoundError triggers an execution of
+            # Hence lambdas is empty. Raising PureFrameworkTensorFoundError triggers an execution of
             # the un-hooked (so native) function which is perfect in that case.
-            raise PureTorchTensorFoundError
+            raise PureFrameworkTensorFoundError
     else:
         return lambdas
 
