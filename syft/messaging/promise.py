@@ -86,6 +86,10 @@ class Promise(ABC):
                 result = plan(*args)
                 self.result_promise.parent().keep(result)
 
+        if self.id in self.owner._objects:
+            self.owner.rm_obj(self.id)
+            self.owner.register(obj.parent())
+
         return obj
 
         # if hasattr(self, "parent"):
