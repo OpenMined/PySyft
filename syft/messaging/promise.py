@@ -63,9 +63,6 @@ class Promise(ABC):
             raise TypeError(
                 "keep() was called with an object of incorrect type (not the type that was promised)"
             )
-        #
-        # self.child = obj
-        # self.child.id = self.obj_id
 
         obj.id = self.obj_id
 
@@ -81,11 +78,10 @@ class Promise(ABC):
                     plan_missing_arg = True
 
             if not plan_missing_arg:
-                print("plan gets run")
+                
                 args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
                 result = plan(*args)
                 self.result_promise.parent().keep(result)
-
 
         return obj
 
