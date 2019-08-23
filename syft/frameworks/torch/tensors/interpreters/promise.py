@@ -43,7 +43,7 @@ class PromiseTensor(AbstractTensor, Promise):
 
         del self.child
 
-    def send(self, *args, **kwargs):
+    def create_send_plan(self, *args, **kwargs):
 
         arg_shapes = list([self._shape])
         arg_ids = list([self.obj_id])

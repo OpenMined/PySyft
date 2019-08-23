@@ -108,7 +108,10 @@ class ObjectStorage:
             promise_id = self.obj_id2promise_id[obj.id]
             if promise_id in self._objects:
                 promise = self.get_obj(promise_id)
+
                 promise.keep(obj)
+
+            del self.obj_id2promise_id[obj.id]
 
         self._objects[obj.id] = obj
 

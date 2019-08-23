@@ -390,17 +390,26 @@ class TorchTensor(AbstractTensor):
                     if self._is_parameter():
                         self.data.child.garbage_collect_data = False
 
+            # when we're sending a PromiseTensor, we want to make sure we don't accidentally send the wrapper
+            # so we set to_send to be child if a wrapper exists.
+            to_send = self
+            if hasattr(self, "child"):
+                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor):
+                    to_send = self.child
+
             ptr = self.owner.send(
-                self,
+                to_send,
                 location,
                 local_autograd=local_autograd,
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
             )
 
+            print(ptr)
+
             if hasattr(self, "child"):
                 if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor):
-                    self.child.send(location)
+                    self.child.create_send_plan(location)
 
             ptr.description = self.description
             ptr.tags = self.tags
