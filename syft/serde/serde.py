@@ -126,10 +126,10 @@ def _force_full_simplify(obj: object) -> object:
     """To force a full simplify genrally if the usual _simplify is not suitable.
     
     Args:
-        param: the object
+        The simplified object
     
     Returns:
-        the result from either _simplify or _forced_full_simplify on the object
+        The result from either _simplify or _forced_full_simplify on the object
     """
     current_type = type(obj)
 
@@ -328,7 +328,7 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
     Apply LZ4 compression to the input
 
     Args:
-        param: decompressed_input_bin: the binary to be compressed
+        decompressed_input_bin: the binary to be compressed
         
     Returns:
         a tuple (compressed_result, LZ4)
@@ -341,7 +341,7 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
     Apply ZSTD compression to the input
 
     Args:
-        param: decompressed_input_bin: the binary to be compressed
+        decompressed_input_bin: the binary to be compressed
     
     Returns:
         a tuple (compressed_result, ZSTD)
@@ -355,7 +355,7 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
     No compression is applied to the input
 
     Args:
-        :param decompressed_input_bin: the binary
+        decompressed_input_bin: the binary
         
     Returns:
         a tuple (the binary, LZ4)
