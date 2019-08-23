@@ -126,10 +126,10 @@ def _force_full_simplify(obj: object) -> object:
     """To force a full simplify genrally if the usual _simplify is not suitable.
     
     Args:
-        The simplified object
+        The object
     
     Returns:
-        The result from either _simplify or _forced_full_simplify on the object
+        The simplified object
     """
     current_type = type(obj)
 
