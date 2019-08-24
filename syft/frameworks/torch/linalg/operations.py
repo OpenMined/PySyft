@@ -1,6 +1,5 @@
 import torch as th
 import syft as sy
-from syft.workers import BaseWorker
 
 
 def inv_sym(t):
@@ -44,7 +43,7 @@ def _ldl(t):
 
     for i in range(n):
         d[i] = t[i, i] - (l[i, :i] ** 2 * d[:i]).sum()
-        inv_d[i] = 1.0 / d[i]
+        inv_d[i] = (0 * d[i] + 1) / d[i]  # Needed to compute inv of a number in MPC
         for j in range(i, n):
             # The diagonal of L in LDLt decomposition is 1
             if j == i:
