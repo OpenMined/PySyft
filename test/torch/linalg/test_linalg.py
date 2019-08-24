@@ -22,4 +22,4 @@ def test_inv_sym(hook, workers):
     gram = gram.get().float_precision()
 
     diff = (gram_inv - gram.inverse()).abs()
-    assert not (diff > 1e-4).any()
+    assert not (diff > 1e-3).any()
