@@ -1,27 +1,32 @@
-import torch
-import syft as sy
-from syft.exceptions import RemoteTensorFoundError
-from syft.exceptions import PureTorchTensorFoundError
-
-from syft.exceptions import ResponseSignatureError
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
-from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-
 from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
 
+import numpy as np
+import torch
+
+from syft.exceptions import RemoteObjectFoundError
+from syft.exceptions import PureFrameworkTensorFoundError
+from syft.exceptions import ResponseSignatureError
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.generic.tensor import AbstractTensor
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.pointers import PointerTensor
+from syft.workers import AbstractWorker
+
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
 get_tensor_type_functions = {}
+
+base_types = {int, float, str, bool, bytes, bytearray, complex}
 
 one = lambda _args: 1
 
@@ -30,31 +35,36 @@ type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
     tuple: lambda _args: tuple([build_rule(a) for a in _args]),
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
+    np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     FixedPrecisionTensor: one,
     AutogradTensor: one,
     AdditiveSharingTensor: one,
     MultiPointerTensor: one,
+    CRTPrecisionTensor: one,
     PointerTensor: one,
+    LargePrecisionTensor: one,
     torch.Tensor: one,
     torch.nn.Parameter: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteTensorFoundError(p)),
+    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AutogradTensor: lambda i: i.child,
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
+    CRTPrecisionTensor: lambda i: i.child,
+    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -66,19 +76,45 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
+    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
+        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
+    ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
+    CRTPrecisionTensor: lambda i, **kwargs: CRTPrecisionTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
-# methods that we really don't want to hook, for example because they have an arbitrary
-# number of tensors in args signature response
-exclude_methods = {"__getitem__", "view"}
-exclude_functions = {"torch.unbind", "unbind"}
+# Methods or functions whose signature changes a lot and that we don't want to "cache", because
+# they have an arbitrary number of tensors in args which can trigger unexpected behaviour
+ambiguous_methods = {
+    "__getitem__",
+    "_getitem_public",
+    "view",
+    "permute",
+    "add_",
+    "sub_",
+    "new",
+    "chunk",
+}
+ambiguous_functions = {
+    "torch.unbind",
+    "unbind",
+    "torch.stack",
+    "stack",
+    "torch.cat",
+    "cat",
+    "torch.mean",
+    "torch.sum",
+    "torch.chunk",
+    "chunk",
+    "torch.functional.split",
+    "split",
+}
 
 
-def hook_method_args(attr, method_self, args, kwargs):
+def unwrap_args_from_method(attr, method_self, args, kwargs):
     """Method arguments are sometimes simple types (such as strings or ints) but
     sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -103,7 +139,7 @@ def hook_method_args(attr, method_self, args, kwargs):
     attr_id = type(method_self).__name__ + "." + attr
 
     try:
-        assert attr not in exclude_methods
+        assert attr not in ambiguous_methods
 
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
@@ -111,7 +147,7 @@ def hook_method_args(attr, method_self, args, kwargs):
         new_self, new_args = hook_args((method_self, args))
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        args_hook_function, _ = build_hook_args_function((method_self, args))
+        args_hook_function, _ = build_unwrap_args_from_function((method_self, args))
         # Store this utility function in the registry
         hook_method_args_functions[attr_id] = args_hook_function
         # Run it
@@ -120,8 +156,8 @@ def hook_method_args(attr, method_self, args, kwargs):
     return new_self, new_args, kwargs
 
 
-def hook_function_args(attr, args, kwargs, return_args_type=False):
-    """See hook_method_args for details
+def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
+    """See unwrap_args_from_method for details
 
     Args:
         attr (str): the name of the function being called
@@ -137,6 +173,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         (- the type of the tensors in the arguments)
     """
     try:
+        assert attr not in ambiguous_functions
         # Load the utility function to transform the args
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
@@ -145,7 +182,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         new_args = hook_args(args)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        args_hook_function, get_tensor_type_function = build_hook_args_function(
+        args_hook_function, get_tensor_type_function = build_unwrap_args_from_function(
             args, return_tuple=True
         )
         # Store the utility functions in registries
@@ -162,7 +199,7 @@ def hook_function_args(attr, args, kwargs, return_args_type=False):
         return new_args, kwargs, new_type
 
 
-def build_hook_args_function(args, return_tuple=False):
+def build_unwrap_args_from_function(args, return_tuple=False):
     """
     Build the function f that hook the arguments:
     f(args) = new_args
@@ -173,7 +210,7 @@ def build_hook_args_function(args, return_tuple=False):
     rule = build_rule(args)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
-    args_hook_function = build_args_hook(args, rule, return_tuple)
+    args_hook_function = build_unwrap_args_with_rules(args, rule, return_tuple)
     # Build a function with this rule to efficiently the child type of the
     # tensor found in the args
     get_tensor_type_function = build_get_tensor_type(rule)
@@ -221,7 +258,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to transform the args
         response_hook_function = hook_method_response_functions[attr_id]
@@ -229,7 +266,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
-        response_hook_function = build_hook_response_function(response, wrap_type, wrap_args)
+        response_hook_function = build_wrap_reponse_from_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -242,7 +279,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     return new_response
 
 
-def build_hook_response_function(response, wrap_type, wrap_args):
+def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
     """
     Build the function that hook the response.
 
@@ -257,7 +294,7 @@ def build_hook_response_function(response, wrap_type, wrap_args):
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
-    response_hook_function = build_response_hook(response, rule, wrap_type, wrap_args)
+    response_hook_function = build_wrap_response_with_rules(response, rule, wrap_type, wrap_args)
     return response_hook_function
 
 
@@ -274,13 +311,21 @@ def build_rule(args):
     """
 
     type_args = type(args)
+    # for list, tuple but also tensors and syft tensors
     if type_args in type_rule:
         return type_rule[type_args](args)
+    # for int, float, str, etc
+    elif type_args in base_types:
+        return 0
     else:
+        # New kind of return with pytorch 1.1
+        if "torch.return_types" in str(type_args):
+            return type_rule[tuple](args)
+        # Still remain ellipsis, slices, etc.
         return 0
 
 
-def build_args_hook(args, rules, return_tuple=False):
+def build_unwrap_args_with_rules(args, rules, return_tuple=False):
     """
     Build a function given some rules to efficiently replace in the args object
     syft tensors with their child (but not pointer as they don't have .child),
@@ -303,7 +348,9 @@ def build_args_hook(args, rules, return_tuple=False):
     lambdas = [
         typed_identity(a)  # return the same obj with an identity fct with a type check if needed
         if not r  # if the rule is a number == 0.
-        else build_args_hook(a, r, True)  # If not, call recursively build_args_hook
+        else build_unwrap_args_with_rules(
+            a, r, True
+        )  # If not, call recursively build_unwrap_args_with_rules
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: forward_func[type(i)](i)
@@ -397,7 +444,13 @@ def build_get_tensor_type(rules, layer=None):
             lambdas += build_get_tensor_type(r, layer)
 
     if first_layer:
-        return lambdas[0]
+        try:
+            return lambdas[0]
+        except IndexError:
+            # Some functions don't have tensors in their signature so rules is only made of 0s,
+            # Hence lambdas is empty. Raising PureFrameworkTensorFoundError triggers an execution of
+            # the un-hooked (so native) function which is perfect in that case.
+            raise PureFrameworkTensorFoundError
     else:
         return lambdas
 
@@ -422,7 +475,7 @@ def four_layers(idx1, *ids):
 get_element_at = {1: one_layer, 2: two_layers, 3: three_layers, 4: four_layers}
 
 
-def build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=False):
+def build_wrap_response_with_rules(response, rules, wrap_type, wrap_args, return_tuple=False):
     """
     Build a function given some rules to efficiently replace in the response object
     syft or torch tensors with a wrapper, and do nothing for other types of object
@@ -442,9 +495,9 @@ def build_response_hook(response, rules, wrap_type, wrap_args, return_tuple=Fals
     lambdas = [
         (lambda i: i)  # return the same object
         if not r  # if the rule is a number == 0.
-        else build_response_hook(
+        else build_wrap_response_with_rules(
             a, r, wrap_type, wrap_args, True
-        )  # If not, call recursively build_response_hook
+        )  # If not, call recursively build_wrap_response_with_rules
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: backward_func[wrap_type](i, **wrap_args)
@@ -595,7 +648,7 @@ register_response_functions = {}
 
 
 def register_response(
-    attr: str, response: object, response_ids: object, owner: sy.workers.AbstractWorker
+    attr: str, response: object, response_ids: object, owner: AbstractWorker
 ) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
@@ -625,7 +678,7 @@ def register_response(
     attr_id = "{}".format(attr)
 
     try:
-        assert attr not in exclude_functions
+        assert attr not in ambiguous_functions
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
@@ -666,22 +719,17 @@ def build_register_response_function(response: object) -> Callable:
 
 
 def register_tensor(
-    tensor: Union[torch.Tensor, AbstractTensor],
-    response_ids: List = list(),
-    owner: sy.workers.AbstractWorker = None,
-) -> None:
+    tensor: Union[torch.Tensor, AbstractTensor], owner: AbstractWorker, response_ids: List = list()
+):
     """
-    Register a tensor
+    Registers a tensor.
 
     Args:
-        tensor: the tensor
-        response_ids: list of ids where the tensor should be stored
-            and each id is pop out when needed
-        owner: the owner that makes the registration
-    Returns:
-        the pointer
+        tensor: A tensor.
+        owner: The owner that makes the registration.
+        response_ids: List of ids where the tensor should be stored
+            and each id is pop out when needed.
     """
-    assert owner is not None
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
@@ -707,8 +755,10 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
     # get the transformation lambda for each args
     lambdas = [
         (lambda i, **kwargs: i)  # return the same object
-        if not r  # if the rule is a number == 0.
-        else build_register_response(a, r, True)  # If not, call recursively build_response_hook
+        if not r or not hasattr(a, "owner")  # if the rule is a number == 0.
+        else build_register_response(
+            a, r, True
+        )  # If not, call recursively build_wrap_response_with_rules
         if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i, **kwargs: register_tensor(i, **kwargs)

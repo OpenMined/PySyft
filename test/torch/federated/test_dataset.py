@@ -6,11 +6,12 @@ from syft.frameworks.torch.federated import BaseDataset
 
 
 def test_base_dataset(workers):
-    bob = workers["bob"]
 
+    bob = workers["bob"]
     inputs = th.tensor([1, 2, 3, 4.0])
     targets = th.tensor([1, 2, 3, 4.0])
     dataset = BaseDataset(inputs, targets)
+
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
 
@@ -24,6 +25,25 @@ def test_base_dataset(workers):
         assert dataset.data.location.id == 0
     with pytest.raises(AttributeError):
         assert dataset.targets.location.id == 0
+
+
+def test_base_dataset_transform():
+
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
+
+    transform_dataset = BaseDataset(inputs, targets)
+
+    def func(x):
+
+        return x * 2
+
+    transform_dataset.transform(func)
+
+    expected_val = th.tensor([2, 4, 6, 8])
+    transformed_val = [val[0].item() for val in transform_dataset]
+
+    assert expected_val.equal(th.tensor(transformed_val).long())
 
 
 def test_federated_dataset(workers):

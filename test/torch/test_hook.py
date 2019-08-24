@@ -6,8 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.exceptions import RemoteTensorFoundError
-from syft.frameworks.torch.tensors.interpreters import PointerTensor
+from syft.exceptions import RemoteObjectFoundError
+from syft.generic.pointers import PointerTensor
 
 
 def test___init__(hook):
@@ -17,12 +17,12 @@ def test___init__(hook):
 
 def test_torch_attributes():
     with pytest.raises(RuntimeError):
-        syft.torch._command_guard("false_command", "torch_modules")
+        syft.framework._command_guard("false_command")
 
-    assert syft.torch._is_command_valid_guard("torch.add", "torch_modules")
-    assert not syft.torch._is_command_valid_guard("false_command", "torch_modules")
+    assert syft.framework._is_command_valid_guard("torch.add")
+    assert not syft.framework._is_command_valid_guard("false_command")
 
-    syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
+    syft.framework._command_guard("torch.add", get_native=False)
 
 
 def test_worker_registration(hook, workers):
@@ -39,8 +39,8 @@ def test_pointer_found_exception(workers):
     pointer = PointerTensor(id=ptr_id, location=workers["alice"], owner=workers["me"])
 
     try:
-        raise RemoteTensorFoundError(pointer)
-    except RemoteTensorFoundError as err:
+        raise RemoteObjectFoundError(pointer)
+    except RemoteObjectFoundError as err:
         err_pointer = err.pointer
         assert isinstance(err_pointer, PointerTensor)
         assert err_pointer.id == ptr_id
@@ -145,10 +145,8 @@ def test_hook_tensor(workers):
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
     x.send(workers["bob"])
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)[0:2]
-    x.send(workers["bob"])
-
-    # TODO: shouldn't there be an assertion here?
-    # assert True
+    x_ptr = x.send(workers["bob"])
+    assert hasattr(x_ptr, "child")
 
 
 def test_properties():
@@ -159,7 +157,7 @@ def test_properties():
 def test_signature_cache_change():
     """Tests that calls to the same method using a different
     signature works correctly. We cache signatures in the
-    hook.build_hook_args_function dictionary but sometimes they
+    hook.build_unwrap_args_from_function dictionary but sometimes they
     are incorrect if we use the same method with different
     parameter types. So, we need to test to make sure that
     this cache missing fails gracefully. This test tests
@@ -221,6 +219,13 @@ def test_hook_args_and_cmd_signature_malleability():
 
     r3 = a + b
     assert (r3 == syft.LoggingTensor().on(torch.tensor([2.0, 4]))).all()
+
+
+def test_torch_func_signature_without_tensor():
+    """The hook on the args of torch commands should work even if the args
+    don't contain any tensor"""
+    x = torch.as_tensor((0.1307,), dtype=torch.float32, device="cpu")
+    assert (x == torch.tensor([0.1307])).all()
 
 
 def test_RNN_grad_set_backpropagation(workers):
@@ -286,3 +291,25 @@ def test_RNN_grad_set_backpropagation(workers):
         # so we better check it beforehand
         assert param.grad.data is not None
         param.data.add_(-learning_rate, param.grad.data)
+
+
+def test_remote_gradient_clipping(workers):
+    # Vanishing gradient test
+    alice = workers["alice"]
+    vanishing_tensor_test = torch.Tensor([-9.8367e23])
+    remote_vanishing_tensor = vanishing_tensor_test.send(alice)
+    vanishing_remote_tensor_clipped = torch.nn.utils.clip_grad(remote_vanishing_tensor, 2)
+    # Has the remote gradient indeed increased?
+    greater_tensor_check = (vanishing_remote_tensor_clipped > remote_vanishing_tensor).copy().get()
+    one_tensors = torch.ones([1], dtype=torch.uint8)
+    assert torch.eq(greater_tensor_check, one_tensors)
+
+
+def test_local_gradient_clipping():
+    # Vanishing gradient test
+    vanishing_tensor_test = torch.Tensor([-9.8367e23])
+    vanishing_tensor_clipped = torch.nn.utils.clip_grad(vanishing_tensor_test, 2)
+    # Has the local gradient indeed increased?
+    greater_tensor_check = vanishing_tensor_clipped > vanishing_tensor_test
+    one_tensors = torch.ones([1], dtype=torch.uint8)
+    assert torch.eq(greater_tensor_check, one_tensors)

@@ -88,3 +88,23 @@ class TestFederatedLearning(object):
 
                 # 6) print our progress
                 print(loss.get())  # NEW) slight edit... need to call .get() on loss
+
+
+def test_lstm(workers):
+    bob = workers["bob"]
+    lstm = nn.LSTM(3, 3)
+    inputs = torch.randn(5, 1, 3)
+    hidden = (torch.randn(1, 1, 3), torch.randn(1, 1, 3))  # clean out hidden state
+    out, hidden = lstm(inputs, hidden)
+    assert out.shape == torch.Size([5, 1, 3])
+    lstm = nn.LSTM(3, 3)
+    lstm.send(bob)
+    inputs = torch.randn(5, 1, 3).send(bob)
+    hidden = (
+        torch.randn(1, 1, 3).send(bob),
+        torch.randn(1, 1, 3).send(bob),
+    )  # clean out hidden state
+    # out, hidden = lstm(inputs, hidden)
+    # This test will pass once the .size() method is implemented for
+    # remote tensors
+    # assert out.shape == torch.Size([5, 1, 3])

@@ -1,9 +1,8 @@
 from typing import List
 from typing import Union
 
-import torch
-
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.frameworks.types import FrameworkTensorType
+from syft.generic.tensor import AbstractTensor
 
 
 class ObjectStorage:
@@ -28,7 +27,7 @@ class ObjectStorage:
             obj_id (int or string): random integer between 0 and 1e10 or
             string uniquely identifying the object.
         """
-        if obj_id is not None:
+        if obj_id is not None and hasattr(obj, "id"):
             obj.id = obj_id
         self.set_obj(obj)
 
@@ -88,7 +87,7 @@ class ObjectStorage:
 
         return obj
 
-    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+    def set_obj(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Adds an object to the registry of objects.
 
         Args:
@@ -123,3 +122,22 @@ class ObjectStorage:
             if hasattr(obj, "child"):
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
+
+    def clear_objects(self, return_self: bool = True):
+        """Removes all objects from the object storage.
+
+        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
+
+        Args:
+            return_self: flag, whether to return self as return value
+
+        Returns:
+            self, if return_self if True, else None
+
+        """
+        self._objects.clear()
+        return self if return_self else None
+
+    def current_objects(self):
+        """Returns a copy of the objects in the object storage."""
+        return self._objects.copy()

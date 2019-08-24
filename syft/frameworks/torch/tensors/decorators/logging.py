@@ -1,6 +1,8 @@
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
+from syft.workers import AbstractWorker
+import syft as sy
 
 
 class LoggingTensor(AbstractTensor):
@@ -38,7 +40,7 @@ class LoggingTensor(AbstractTensor):
         some particular behaviour: so here what to start from :)
         """
         # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
             "add", self, args, kwargs
         )
 
@@ -128,3 +130,42 @@ class LoggingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
         print("Default log", cmd)
+
+    @staticmethod
+    def simplify(tensor: "LoggingTensor") -> tuple:
+        """
+        This function takes the attributes of a LogTensor and saves them in a tuple
+        Args:
+            tensor (LoggingTensor): a LogTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the log tensor
+        Examples:
+            data = _simplify(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde._simplify(tensor.child)
+        return (tensor.id, chain)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
+        """
+        This function reconstructs a LogTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the LogTensor
+        Returns:
+            LoggingTensor: a LogTensor
+        Examples:
+            logtensor = detail(data)
+        """
+        obj_id, chain = tensor_tuple
+
+        tensor = LoggingTensor(owner=worker, id=obj_id)
+
+        if chain is not None:
+            chain = sy.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor
