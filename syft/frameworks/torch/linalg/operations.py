@@ -1,6 +1,5 @@
 import torch as th
 import syft as sy
-from typing import List
 from syft.workers import BaseWorker
 
 
