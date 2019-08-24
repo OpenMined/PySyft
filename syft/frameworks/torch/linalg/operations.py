@@ -13,8 +13,8 @@ def inv_sym(t):
 
     n = t.shape[0]
     l, d, inv_d = _ldl(t)
-    t_inv = th.zeros_like(t)
     l_t = l.t()
+    t_inv = th.zeros_like(t)
     for j in range(n - 1, -1, -1):
         for i in range(j, -1, -1):
             if i == j:
