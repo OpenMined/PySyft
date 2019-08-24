@@ -52,7 +52,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             variables are instantiated or deleted as opposed to handling
             tensor/variable/model lifecycle internally. Set to True if this
             object is not where the objects will be stored, but is instead
-            a pointer to a worker that eists elsewhere.
+            a pointer to a worker that exists elsewhere.
         log_msgs: An optional boolean parameter to indicate whether all
             messages should be saved into a log for later review. This is
             primarily a development/testing feature.
@@ -68,7 +68,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
-        auto_add: bool = True,
+        auto_add: bool = True
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -80,6 +80,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
+        self._has_paillier_public_key = False
+        self._has_paillier_private_key = False
 
         # For performance, we cache each
         self._message_router = {

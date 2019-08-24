@@ -60,6 +60,7 @@ def test_sub_method():
     y.child.encryptTensor(p.getEncryptedTensors())
     z = x.child.sub(y,p.getEncryptedTensors())
     decrypted = z.child.decryptTensor(p.private_key, p.getEncryptedTensors()).child
+    print(decrypted)
     assert (decrypted == th.LongTensor([-1,  4,  0])).all()
 
 
@@ -79,6 +80,6 @@ def test_div_method():
     x = PaillierTensor(p.public_key).on(x_)
     x.child.encryptTensor(p.getEncryptedTensors())
     res = x.child.div(0.2,p.getEncryptedTensors())
-    z = th.LongTensor([[10, -10, 15]])
+    z = th.LongTensor([10, -10, 15])
     decrypted = res.child.decryptTensor(p.private_key, p.getEncryptedTensors()).child
-    assert (decrypted== z).all()
+    assert (decrypted == z).all()
