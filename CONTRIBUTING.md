@@ -2,13 +2,17 @@
 
 ## Getting Started
 
+### Learn Git and Github
+
+All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. https://guides.github.com/activities/hello-world/
+
 ### Slack
 
 A great first place to join the Community is the Slack channel <http://slack.openmined.org>.
 
 ### Issues
 
-On <https://github.com/OpenMined/PySyft/issues> you can find all open Issues. You can find a detailed explanation on how to work with issues below under [Issue Allocation](#Issue-Allocation).
+On <https://github.com/OpenMined/PySyft/issues> you can find all open Issues. You can find a detailed explanation on how to work with issues below under [Issue Allocation](#issue-allocation).
 
 ## Setup
 
@@ -33,11 +37,20 @@ This can all also be done by running `make install_hooks`
 
 To sync your fork with the OpenMined/PySyft repository please see this [Guide](https://help.github.com/articles/syncing-a-fork/) on how to sync your fork.
 
+### Installing PySyft after Cloning Repository
+
+To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
+```bash
+cd PySyft
+pip install -e .
+```
+If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead. 
+
 ## Contributing
 
 ### Beginner Issues
 
-If you are new to the project and want to get into the code, we recommend picking an issue with the label "good first issue". These issues should ony require general programming knowledge and little to none insights into the project.
+If you are new to the project and want to get into the code, we recommend picking an issue with the label "good first issue". These issues should only require general programming knowledge and little to none insights into the project.
 
 ### Issue Allocation
 
@@ -49,7 +62,7 @@ If you want to work on an open issue, please post a comment telling that you wil
 
 ### Writing Test Cases
 
-Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via github if you don't feel confidant about your tests.
+Always make sure to create the necessary tests and keep test coverage at 100%. You can always ask for help in slack or via github if you don't feel confident about your tests.
 
 We aim to have a 100% test coverage, and the Travis CI will fail if the coverage is below this value. You can evaluate your coverage using the following commands.
 

@@ -4,8 +4,11 @@ from unittest.mock import patch
 import syft as sy
 from syft.exceptions import GetNotPermittedError
 from syft.workers.virtual import VirtualWorker
-from syft.codes import MSGTYPE
+from syft import messaging
 from syft import serde
+from syft import messaging
+
+from syft.generic import pointers
 
 import pytest
 import torch
@@ -31,7 +34,7 @@ def test_send_msg():
     obj_id = obj.id
 
     # Send data to bob
-    me.send_msg(MSGTYPE.OBJ, obj, bob)
+    me.send_msg(messaging.ObjectMessage(obj), bob)
 
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
@@ -79,8 +82,8 @@ def test_recv_msg():
     obj = torch.Tensor([100, 100])
 
     # create/serialize message
-    msg = (MSGTYPE.OBJ, obj)
-    bin_msg = serde.serialize(msg)
+    message = messaging.ObjectMessage(obj)
+    bin_msg = serde.serialize(message)
 
     # have alice receive message
     alice.recv_msg(bin_msg)
@@ -91,10 +94,10 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    msg = (MSGTYPE.OBJ_REQ, obj.id)
+    message = messaging.ObjectRequestMessage(obj.id)
 
     # serialize message
-    bin_msg = serde.serialize(msg)
+    bin_msg = serde.serialize(message)
 
     # call receive message on alice
     resp = alice.recv_msg(bin_msg)
@@ -226,3 +229,21 @@ def test_spinup_time(hook):
     dummy = sy.VirtualWorker(hook, id="dummy", data=data)
     end_time = time()
     assert (end_time - start_time) < 0.05
+
+
+@pytest.mark.skipif(
+    torch.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
+def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
+    bob = workers["bob"]
+
+    @torch.jit.script
+    def foo(x):
+        return x + 2
+
+    foo_wrapper = pointers.ObjectWrapper(obj=foo, id=99)
+    foo_ptr = hook.local_worker.send(foo_wrapper, bob)
+
+    res = foo_ptr(torch.tensor(4))
+    assert res == torch.tensor(6)
