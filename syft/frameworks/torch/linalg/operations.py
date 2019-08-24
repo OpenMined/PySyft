@@ -46,7 +46,11 @@ def _ldl(t):
         d[i] = t[i, i] - (l[i, :i] ** 2 * d[:i]).sum()
         inv_d[i] = 1.0 / d[i]
         for j in range(i, n):
-            l[j, i] = (t[j, i] - (l[j, :i] * l[i, :i] * d[:i]).sum()) * inv_d[i]
+            # The diagonal of L in LDLt decomposition is 1
+            if j == i:
+                l[j, i] += 1
+            else:
+                l[j, i] = (t[j, i] - (l[j, :i] * l[i, :i] * d[:i]).sum()) * inv_d[i]
 
     return l, d, inv_d
 
