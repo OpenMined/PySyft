@@ -1172,32 +1172,41 @@ class TorchHook(FrameworkHook):
             Returns:
                 Total norm of the parameters (viewed as a single vector).
             """
+
+            def param_is_pointer_tensor(param):
+                """
+                A list of parameters is remote if all params contained in the list are
+                remote (i.e., the child of each param is a pointer tensor).
+                This method checks if a single param is indeed remote, so whether
+                the child of a parameter is a pointer tensor
+                """
+                return hasattr(param, "child") and isinstance(param.child, PointerTensor)
+
             if isinstance(parameters, torch.Tensor):
-                # Remote PySyft tensor
-                if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
-                ):
-                    worker = parameters.location
                 parameters = [parameters]
+
             parameters = list(filter(lambda p: p.grad is not None, parameters))
             max_norm = float(max_norm)
             norm_type = float(norm_type)
             if norm_type == inf:
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
-                # Remote PySyft tensor
-                if hasattr(parameters, "child") and isinstance(
-                    parameters.child, syft.generic.pointers.pointer_tensor.PointerTensor
-                ):
+                # all parameters are remote
+                if all([param_is_pointer_tensor(param) for param in parameters]):
                     total_norm = torch.zeros(1)
-                    # Let's send the total norm over to the remote worker where the remote tensor is
-                    total_norm = total_norm.send(worker)
-                # Local PyTorch tensor
+                    # Let's send the total norm over to the remote where the remote tensor is
+                    total_norm = total_norm.send(parameters[0].location)
                 else:
                     total_norm = 0
                 for p in parameters:
                     param_norm = p.grad.data.norm(norm_type)
-                    total_norm += param_norm.item() ** norm_type
+                    # Remote PySyft tensor
+                    if param_is_pointer_tensor(p):
+                        total_norm += param_norm ** norm_type
+                    # Local PySyft tensor
+                    else:
+                        total_norm += param_norm.item() ** norm_type
+
                 total_norm = total_norm ** (1.0 / norm_type)
             clip_coef = max_norm / (total_norm + 1e-6)
             if clip_coef < 1:
@@ -1205,4 +1214,4 @@ class TorchHook(FrameworkHook):
                     p.grad.data.mul_(clip_coef)
             return total_norm
 
-        self.torch.nn.utils.clip_grad = clip_grad_norm_remote_
+        self.torch.nn.utils.clip_grad_norm_ = clip_grad_norm_remote_
