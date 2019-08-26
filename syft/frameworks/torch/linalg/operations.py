@@ -4,10 +4,17 @@ import syft as sy
 
 def inv_sym(t):
     """
-    This function performs the inversion of a symmetric matrix (tensor) in MPC.
+    This function performs the inversion of a symmetric matrix (2-dim tensor) in MPC.
     It uses LDLt decomposition, which is better than Cholensky decomposition in our case
     since it doesn't use square root.
     Algorithm reference: https://arxiv.org/abs/1111.4144 - Section IV
+
+    Args:
+        t: symmetric 2d tensor
+
+    Returns:
+        t_inv: inverse of t as 2-dim tensor
+
     """
 
     n = t.shape[0]
@@ -26,15 +33,17 @@ def inv_sym(t):
 
 def _ldl(t):
     """
-    This function performs the LDLt decomposition of a symmetric matrix (tensor)
+    This function performs the LDLt decomposition of a symmetric matrix (2-dim tensor)
+
+    Args:
+        t: symmetric 2d tensor
 
     Returns:
-    --------
-    l: lower triangular matrix as a tensor with same type as t
-    d: 1-dim tensor which represents the diagonal in the LDLt decomposition
-    inv_d: 1-dim tensor which represents the inverse of the diagonal d. It is usefull
-    when computing inverse of a symmetric matrix, by caching it we avoid repeated
-    computations with division, which is very slow in MPC
+        l: lower triangular matrix as a 2-dim tensor with same type as t
+        d: 1-dim tensor which represents the diagonal in the LDLt decomposition
+        inv_d: 1-dim tensor which represents the inverse of the diagonal d. It is usefull
+               when computing inverse of a symmetric matrix, by caching it we avoid repeated
+               computations with division, which is very slow in MPC
     """
     n = t.shape[0]
     l = th.zeros_like(t)
