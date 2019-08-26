@@ -405,22 +405,35 @@ def test_mm(workers):
 
     t = torch.tensor([[1, 2], [3, 4.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
-    y = (x.mm(x)).get().float_prec()
 
+    # Using the method
+    y = (x.mm(x)).get().float_prec()
     assert (y == (t.mm(t))).all()
+
+    # Using the function
+    y = (torch.mm(x, x)).get().float_prec()
+    assert (y == (torch.mm(t, t))).all()
 
     # with FPT>torch.tensor
     t = torch.tensor([[1, 2], [3, 4.0]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
     y = t.fix_prec()
 
+    # Using the method
     z = (x.mm(y)).get().float_prec()
-
     assert (z == (t.mm(t))).all()
 
+    # Using the function
+    z = (torch.mm(x, y)).get().float_prec()
+    assert (z == (torch.mm(t, t))).all()
+
+    # Using the method
     z = (y.mm(x)).get().float_prec()
-
     assert (z == (t.mm(t))).all()
+
+    # Using the function
+    z = (torch.mm(y, x)).get().float_prec()
+    assert (z == (torch.mm(t, t))).all()
 
 
 def test_torch_conv2d(workers):
