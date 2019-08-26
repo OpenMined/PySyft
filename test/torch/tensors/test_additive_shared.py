@@ -399,6 +399,30 @@ def test_matmul(workers):
     assert (z == (m @ m)).all()
 
 
+def test_mm(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([[1, 2], [3, 4.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x.mm(x)).get().float_prec()
+
+    assert (y == (t.mm(t))).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([[1, 2], [3, 4.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x.mm(y)).get().float_prec()
+
+    assert (z == (t.mm(t))).all()
+
+    z = (y.mm(x)).get().float_prec()
+
+    assert (z == (t.mm(t))).all()
+
+
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
