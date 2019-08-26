@@ -597,6 +597,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             id_or_worker = str(id_or_worker, "utf-8")
 
         if isinstance(id_or_worker, (str, int)):
+            # A worker should always know itself
+            if id_or_worker == self.id:
+                return self
             if id_or_worker in self._known_workers:
                 return self._known_workers[id_or_worker]
             else:
