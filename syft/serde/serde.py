@@ -32,6 +32,7 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
+import inspect
 import msgpack
 import lz4
 from lz4 import (  # noqa: F401
@@ -45,7 +46,7 @@ from syft import dependency_check
 from syft.federated import TrainConfig
 
 from syft.workers import AbstractWorker
-from syft.workers import VirtualWorker
+from syft.workers import BaseWorker
 
 from syft import messaging
 
@@ -93,7 +94,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.PointerTensor,
     pointers.ObjectWrapper,
     TrainConfig,
-    VirtualWorker,
+    BaseWorker,
     AutogradTensor,
     messaging.Message,
     messaging.Operation,
@@ -107,7 +108,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
-OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
+OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 
 # For registering syft objects with custom simplify and detail methods
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
@@ -125,10 +126,10 @@ scheme_to_bytes = {
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
     """To force a full simplify genrally if the usual _simplify is not suitable.
-    
+
     Args:
         The object
-    
+
     Returns:
         The simplified object
     """
@@ -153,7 +154,7 @@ def _generate_simplifiers_and_detailers():
     by registering native and torch types, syft objects with custom
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
-    
+
     Returns:
         The simplifiers, forced_full_simplifiers, detailers
     """
@@ -330,7 +331,7 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary to be compressed
-        
+
     Returns:
         a tuple (compressed_result, LZ4)
     """
@@ -343,7 +344,7 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary to be compressed
-    
+
     Returns:
         a tuple (compressed_result, ZSTD)
     """
@@ -357,7 +358,7 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary
-        
+
     Returns:
         a tuple (the binary, LZ4)
     """
@@ -439,20 +440,21 @@ def _simplify(obj: object) -> object:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
     """
-    try:
-        # check to see if there is a simplifier
-        # for this type. If there is, run return
-        # the simplified object
-        current_type = type(obj)
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-        return result
+    # check to see if there is a simplifier
+    # for one of the classes that this object inherits.
+    # If there is, return the simplified object.
+    classes_inheritance = inspect.getmro(type(obj))
 
-    except KeyError:
-        # if there is not a simplifier for this
-        # object, then the object is already a
-        # simple python object and we can just
-        # return it
-        return obj
+    for current_type in classes_inheritance:
+        if current_type in simplifiers:
+            result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+            return result
+
+    # if there is not a simplifier for this
+    # object, then the object is already a
+    # simple python object and we can just
+    # return it
+    return obj
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
