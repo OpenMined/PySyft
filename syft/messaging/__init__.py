@@ -1,6 +1,5 @@
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import IntroduceMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import Message
 from syft.messaging.message import Operation
