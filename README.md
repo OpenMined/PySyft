@@ -50,6 +50,7 @@ Done! now we have a gateway and three nodes (by default) running locally.
 
 ## Try out the Tutorials
 A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/Grid/tree/master/examples).
+A list with latest experimental tutorials can be found in the dev branch [here](https://github.com/Quisher/Grid/tree/dev/examples).
 
 These tutorials cover how to create a grid node and what operations you can perform.
 
@@ -57,6 +58,8 @@ These tutorials cover how to create a grid node and what operations you can perf
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
 Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of Grid/PySyft!
+
+We also have a Github Project page for PySyft and Grid [here](https://github.com/orgs/OpenMined/projects/9).
 
 
 ## High-level Architecture
