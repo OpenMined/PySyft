@@ -426,7 +426,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __matmul__ = matmul
-    __mm__ = mm = matmul
+    mm = matmul
 
     @overloaded.method
     def __gt__(self, _self, other):
