@@ -303,7 +303,7 @@ class TorchTensor(AbstractTensor):
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
-            if args_type not in (torch.Tensor, torch.nn.Parameter):
+            if args_type not in FrameworkTensor:
                 return args_type.handle_func_command(command)
 
             # build the new command
