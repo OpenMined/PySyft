@@ -412,6 +412,7 @@ class TorchTensor(AbstractTensor):
 
             if self._is_parameter():
                 if inplace:
+                    self.is_wrapper = True
                     with torch.no_grad():
                         self.set_()
                     self.data = ptr
@@ -421,6 +422,7 @@ class TorchTensor(AbstractTensor):
                         raise ValueError("Parameters can't accept no_wrap=True")
                     wrapper = torch.Tensor()
                     param_wrapper = torch.nn.Parameter(wrapper)
+                    param_wrapper.is_wrapper = True
                     with torch.no_grad():
                         param_wrapper.set_()
                     param_wrapper.data = ptr
@@ -571,12 +573,13 @@ class TorchTensor(AbstractTensor):
 
         # Parameters use .data instead of children
         # so we need to have special support to make sure
-        # that Parmaeters operate inline (because they're
+        # that Parmeters operate inline (because they're
         # typically being managed inside of a model/optimizer
         # so not using the same wrapper can cause the model/
         # optimizer to lose track of where the actual weights
         # are.
         if isinstance(self, torch.nn.Parameter):
+            self.is_wrapper = tensor.data.is_wrapper
             if inplace:
                 self.data = tensor.data
                 self.grad = tensor.grad
@@ -728,7 +731,14 @@ class TorchTensor(AbstractTensor):
 
         shared_tensor = self
         if self.has_child():
-            self.child = self.child.share(*owners, field=field, crypto_provider=crypto_provider)
+            kwargs = (
+                {"requires_grad": requires_grad}
+                if isinstance(self.child, syft.PointerTensor)
+                else {}
+            )
+            self.child = self.child.share(
+                *owners, field=field, crypto_provider=crypto_provider, **kwargs
+            )
             if no_wrap:
                 return self.child
         else:
@@ -742,7 +752,7 @@ class TorchTensor(AbstractTensor):
             if not no_wrap:
                 shared_tensor = shared_tensor.wrap()
 
-        if requires_grad:
+        if requires_grad and not (self.is_wrapper and isinstance(self.child, syft.PointerTensor)):
             shared_tensor = syft.AutogradTensor().on(shared_tensor)
 
         return shared_tensor
