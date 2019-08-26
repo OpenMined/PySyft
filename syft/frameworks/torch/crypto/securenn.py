@@ -83,7 +83,10 @@ def _shares_of_zero(size, field, crypto_provider, *workers):
     u = (
         torch.zeros(size)
         .long()
+        .send(workers[0])
         .share(*workers, field=field, crypto_provider=crypto_provider, **no_wrap)
+        .get()
+        .child
     )
 
     return u
