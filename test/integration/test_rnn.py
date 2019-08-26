@@ -19,9 +19,9 @@ def test_rnn_mpc(module, hook, workers):
 
     # model hyperparameters
     batch_size = 2
-    input_size = 3
-    hidden_size = 5
-    seq_len = 3
+    input_size = 2
+    hidden_size = 2
+    seq_len = 2
     num_layers = 2
     bidirectional = True
     dropout = 0.1
@@ -140,10 +140,10 @@ def test_rnn_federated(module, hook, workers):
     alice = workers["alice"]
 
     # model hyperparameters
-    data_size = 8
-    input_size = 3
-    hidden_size = 5
-    seq_len = 4
+    data_size = 2
+    input_size = 2
+    hidden_size = 2
+    seq_len = 2
     num_layers = 2
     bidirectional = True
 

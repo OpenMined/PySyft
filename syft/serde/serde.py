@@ -82,7 +82,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     + list(MAP_TF_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
-# If a object implements its own simplify and detail functions it should be stored in this list
+# If an object implements its own simplify and detail functions it should be stored in this list
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
@@ -105,10 +105,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.SearchMessage,
 ]
 
-# If a object implements its own force_simplify and force_detail functions it should be stored in this list
+# If an object implements its own force_simplify and force_detail functions it should be stored in this list
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
 
-
+# For registering syft objects with custom simplify and detail methods
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -123,6 +123,14 @@ scheme_to_bytes = {
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
+    """To force a full simplify genrally if the usual _simplify is not suitable.
+    
+    Args:
+        The object
+    
+    Returns:
+        The simplified object
+    """
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
@@ -140,7 +148,14 @@ def _force_full_simplify(obj: object) -> object:
 
 ## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers."""
+    """Generate simplifiers, forced full simplifiers and detailers,
+    by registering native and torch types, syft objects with custom
+    simplify and detail methods, or syft objects with custom
+    force_simplify and force_detail methods.
+    
+    Returns:
+        The simplifiers, forced_full_simplifiers, detailers
+    """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
     detailers = []
@@ -214,7 +229,6 @@ def serialize(
 
     Returns:
         binary: the serialized form of the object.
-
     """
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
@@ -314,8 +328,10 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
     Apply LZ4 compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, LZ4)
+        decompressed_input_bin: the binary to be compressed
+        
+    Returns:
+        a tuple (compressed_result, LZ4)
     """
     return lz4.frame.compress(decompressed_input_bin), LZ4
 
@@ -325,8 +341,10 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
     Apply ZSTD compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, ZSTD)
+        decompressed_input_bin: the binary to be compressed
+    
+    Returns:
+        a tuple (compressed_result, ZSTD)
     """
 
     return zstd.compress(decompressed_input_bin), ZSTD
@@ -337,8 +355,10 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
     No compression is applied to the input
 
     Args:
-        :param decompressed_input_bin: the binary
-        :return: a tuple (the binary, LZ4)
+        decompressed_input_bin: the binary
+        
+    Returns:
+        a tuple (the binary, LZ4)
     """
 
     return decompressed_input_bin, NO_COMPRESSION
