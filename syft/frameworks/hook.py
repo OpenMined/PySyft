@@ -65,6 +65,7 @@ class FrameworkHook(ABC):
         Args:
             tensor_type: The tensor type to which we are adding methods.
             syft_type: The tensor from which we are adding methods.
+            exclude: A list of method names to exclude from the hooking process.
         """
         # For all methods defined in syft_type which are not internal methods
         # (like __class__, etc)
