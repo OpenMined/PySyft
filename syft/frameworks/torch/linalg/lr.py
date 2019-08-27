@@ -7,17 +7,35 @@ import random
 
 
 class BloomRegressor:
+    """
+    Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
+    It performs linear regression using Secured Multi-Party Computation
+
+    Reference: Section 2 of https://arxiv.org/abs/1901.09531
+
+    Args:
+        cryto_provider: a BaseWorker providing crypto elements for ASTs such as
+            Beaver triples
+        hbc_worker: The "Honest but Curious" BaseWorker
+        precision_fractional: precision chosen for FixedPrecisionTensors
+        fit_intercept:  whether to calculate the intercept for this model. If set
+            to False, no intercept will be used in calculations (e.g. data is
+            expected to be already centered)
+
+    """
+
     def __init__(
         self,
         crypto_provider: BaseWorker,
         hbc_worker: BaseWorker,
-        precision_fractional=6,
+        precision_fractional: int = 6,
         fit_intercept=True,
     ):
+
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
-        self.fit_intercept = fit_intercept
         self.precision_fractional = precision_fractional
+        self.fit_intercept = fit_intercept
 
     def fit(self, X_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]):
 
@@ -30,7 +48,7 @@ class BloomRegressor:
         XX_ptrs, Xy_ptrs, yy_ptrs = self._remote_dot_products(X_ptrs, y_ptrs)
 
         # Secred share tensors between hbc_worker, crypto_provider and a random worker
-        # and compute agregates
+        # and compute agregates. It corresponds to the Combine stage of Bloom's algorithm
         idx = random.randint(0, len(self.workers) - 1)
         XX_shared = sum(self._share_ptrs(XX_ptrs, idx))
         Xy_shared = sum(self._share_ptrs(Xy_ptrs, idx))
@@ -40,7 +58,7 @@ class BloomRegressor:
         # We need to normalize it by dividing the Gram matrix by the total sample size
         # because matrix inversion in MPC is not precise for large numbers, which is the
         # case of the Gram matrix when total_size is large. We only resize back the
-        # final interested values (i.e. the coefficients and std errors) locally at
+        # values we are interested in (i.e. the coefficients and std errors) locally at
         # the end in order to make sure the subsequent computations are still precise
         XX_inv_shared = inv_sym(XX_shared / self.total_size)
 
@@ -59,6 +77,12 @@ class BloomRegressor:
         return self
 
     def _check_ptrs(self, X_ptrs, y_ptrs):
+        """
+        Method that check if the lists of pointers corresponding to the explanatory and
+        explained variables has their elements as expected.
+        It also computes parallelly  some Regressor's attributes such as number of features and
+        total sample size.
+        """
 
         # Set number of features
         self.n_features = X_ptrs[0].shape[1]
@@ -70,12 +94,12 @@ class BloomRegressor:
                 raise TypeError(
                     "Some tensors are not wrapped, please provide a wrapped Pointer Tensor"
                 )
-            # Check if they are pointers
+            # Check if x and y are pointers
             if not (isinstance(x.child, PointerTensor) and isinstance(y.child, PointerTensor)):
                 raise TypeError(
                     "Some tensors are not pointers, please provided a wrapped Pointer Tensor"
                 )
-            # Check if x and y are in the same worker
+            # Check if both are in the same worker
             if not x.child.location == y.child.location:
                 raise RuntimeError("Some pairs (X, y) are not located in the same worker")
             # Check if they have the same size
@@ -95,6 +119,9 @@ class BloomRegressor:
 
     @staticmethod
     def _get_workers(ptrs):
+        """
+        Method that returns the pool of workers in a tuple
+        """
         workers = []
         for ptr in ptrs:
             workers.append(ptr.child.location)
@@ -102,6 +129,10 @@ class BloomRegressor:
 
     @staticmethod
     def _remote_dot_products(X_ptrs, y_ptrs):
+        """
+        This method computes the aggregated dot-products remotelly. It corresponds
+        to the Compression stage (or Compression within) of Bloom's algorithm
+        """
         XX_ptrs = []
         Xy_ptrs = []
         yy_ptrs = []
@@ -112,20 +143,24 @@ class BloomRegressor:
 
         return XX_ptrs, Xy_ptrs, yy_ptrs
 
-    def _share_ptrs(self, ptrs, idx):
+    def _share_ptrs(self, ptrs, worker_idx):
         """
-        Method that secret share a remote tensor between the
+        Method that secret share a list of remote tensors between a worker of
+        the pool and the 'honest but curious' worker, using a crypto_provider worker
         """
         shared_tensors = []
         for ptr in ptrs:
-            shared_tensor = (
-                ptr.fix_precision(precision_fractional=self.precision_fractional)
-                .share(self.workers[idx], self.hbc_worker, crypto_provider=self.crypto_provider)
-                .get()
-            )
+            fpt_tensor = ptr.fix_precision(precision_fractional=self.precision_fractional)
+            shared_tensor = fpt_tensor.share(
+                self.workers[worker_idx], self.hbc_worker, crypto_provider=self.crypto_provider
+            ).get()
             shared_tensors.append(shared_tensor)
         return shared_tensors
 
     def summarize(self):
         # TODO
-        raise NotImplementedError()
+        pass
+
+    def predict(self):
+        # TODO
+        pass
