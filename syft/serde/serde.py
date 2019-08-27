@@ -132,19 +132,34 @@ def _force_full_simplify(obj: object) -> object:
     Returns:
         The simplified object
     """
-    current_type = type(obj)
+    try:
+        # check to see if there is a simplifier
+        # for this type. If there is, return the simplified object.
+        current_type = type(obj)
+        result = (
+            forced_full_simplifiers[current_type][0],
+            forced_full_simplifiers[current_type][1](obj),
+        )
+        return result
+    except:
+        classes_inheritance = inspect.getmro(type(obj))[1:]
 
-    if current_type in forced_full_simplifiers:
-        left = forced_full_simplifiers[current_type][0]
+        for inheritance_type in classes_inheritance:
+            if inheritance_type in forced_full_simplifiers:
+                # Store the inheritance_type in forced_full_simplifiers so next
+                # time we see this type serde will be faster.
+                forced_full_simplifiers[current_type] = forced_full_simplifiers[inheritance_type]
+                result = (
+                    forced_full_simplifiers[current_type][0],
+                    forced_full_simplifiers[current_type][1](obj),
+                )
+                return result
 
-        right = forced_full_simplifiers[current_type][1]
-        right = right(obj)
-
-        result = (left, right)
-    else:
-        result = _simplify(obj)
-
-    return result
+        # if there is not a simplifier for this
+        # object, then the object is already a
+        # simple python object and we can just
+        # return it.
+        return _simplify(obj)
 
 
 ## SECTION: dinamically generate simplifiers and detailers
@@ -439,21 +454,28 @@ def _simplify(obj: object) -> object:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
     """
-    # check to see if there is a simplifier
-    # for one of the classes that this object inherits.
-    # If there is, return the simplified object.
-    classes_inheritance = inspect.getmro(type(obj))
+    try:
+        # check to see if there is a simplifier
+        # for thys type. If there is, return the simplified object.
+        current_type = type(obj)
+        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+        return result
+    except:
+        classes_inheritance = inspect.getmro(type(obj))[1:]
 
-    for current_type in classes_inheritance:
-        if current_type in simplifiers:
-            result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
-            return result
+        for inheritance_type in classes_inheritance:
+            if inheritance_type in simplifiers:
+                # Store the inheritance_type in simplifiers so next time we see this type
+                # serde will be faster.
+                simplifiers[current_type] = simplifiers[inheritance_type]
+                result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+                return result
 
-    # if there is not a simplifier for this
-    # object, then the object is already a
-    # simple python object and we can just
-    # return it
-    return obj
+        # if there is not a simplifier for this
+        # object, then the object is already a
+        # simple python object and we can just
+        # return it.
+        return obj
 
 
 def _detail(worker: AbstractWorker, obj: object) -> object:
