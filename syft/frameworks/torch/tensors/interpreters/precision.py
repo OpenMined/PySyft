@@ -426,6 +426,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __matmul__ = matmul
+    mm = matmul
 
     @overloaded.method
     def __gt__(self, _self, other):
@@ -481,6 +482,7 @@ class FixedPrecisionTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
+        module.mm = matmul
 
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
