@@ -72,35 +72,6 @@ class PolynomialTensor(AbstractTensor):
             )
 
         default_functions()
-        self.apply_coefs()
-
-    def apply_coefs(self):
-        """The function sets the values of coefficients into interpolation/Taylor series based on 
-           the method set by the user.
-        """
-
-        if self.method == "taylor":
-
-            self.sigmoid_coeffs = [
-                (1 / 2),
-                (1 / 4),
-                0,
-                -(1 / 48),
-                0,
-                (1 / 480),
-                0,
-                -(17 / 80640),
-                0,
-                (31 / 1451520),
-            ]
-            self.exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
-            self.tanh_coeffs = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
-
-        else:
-
-            self.sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
-            self.exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
-            self.tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
     def get_encrypt_function(self, coeffs_tensor):
         """The method encrypts the coefficients as required by the child tensor"""
@@ -184,18 +155,9 @@ class PolynomialTensor(AbstractTensor):
         sigmoid_coeffs = None
         if self.method == "taylor":
 
-            sigmoid_coeffs = [
-                (1 / 2),
-                (1 / 4),
-                0,
-                -(1 / 48),
-                0,
-                (1 / 480),
-                0,
-                -(17 / 80640),
-                0,
-                (31 / 1451520),
-            ]
+            sigmoid_coeffs = torch.tensor(
+                [(1 / 2), (1 / 4), 0, -(1 / 48), 0, (1 / 480), 0, -(17 / 80640), 0, (31 / 1451520)]
+            )
 
         else:
 
@@ -204,6 +166,7 @@ class PolynomialTensor(AbstractTensor):
         sigmoid_coeffs = self.get_encrypt_function(sigmoid_coeffs)
         val = 0
         x = self.child
+
         if hasattr(sigmoid_coeffs, "child"):
 
             for i in range(0, len(sigmoid_coeffs)):
@@ -239,7 +202,7 @@ class PolynomialTensor(AbstractTensor):
         tanh_coeffs = None
         if self.method == "taylor":
 
-            tanh_coeffs = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
+            tanh_coeffs = torch.tensor([(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)])
 
         else:
 
@@ -271,7 +234,9 @@ class PolynomialTensor(AbstractTensor):
         exp_coeffs = None
         if self.method == "taylor":
 
-            exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+            exp_coeffs = torch.tensor(
+                [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
+            )
 
         else:
 
