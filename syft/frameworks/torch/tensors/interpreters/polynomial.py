@@ -102,8 +102,21 @@ class PolynomialTensor(AbstractTensor):
             self.exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
             self.tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
-    def get_encrypt_function(self):
+    def get_encrypt_function(self, coeffs_tensor):
         """The method encrypts the coefficients as required by the child tensor"""
+
+        tensor = None
+        if isinstance(self.child, FixedPrecisionTensor):
+
+            tensor = getattr(torch.tensor(coeffs_tensor), "fix_precision")()
+
+        else:
+
+            tensor = torch.tensor(coeffs_tensor)
+
+        return tensor
+
+    """def get_encrypt_function(self):
 
         if isinstance(self.child, FixedPrecisionTensor):
 
@@ -117,7 +130,7 @@ class PolynomialTensor(AbstractTensor):
 
             self.encrypt_fn["exp"] = torch.tensor(self.exp_coeffs)
             self.encrypt_fn["sigmoid"] = torch.tensor(self.sigmoid_coeffs)
-            self.encrypt_fn["tanh"] = torch.tensor(self.tanh_coeffs)
+            self.encrypt_fn["tanh"] = torch.tensor(self.tanh_coeffs)"""
 
     def add_function(self, name, function, degree=10, min_val=-10, max_val=10, steps=100):
         """Add function to function_attr dictionary.
@@ -184,22 +197,40 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        self.get_encrypt_function()
-        val = 0
-        x = self.child
-        if hasattr(self.encrypt_fn["sigmoid"], "child"):
+        sigmoid_coeffs = None
+        if self.method == "taylor":
 
-            for i in range(0, len(self.sigmoid_coeffs)):
-
-                val += (x ** i) * self.encrypt_fn["sigmoid"][
-                    (len(self.sigmoid_coeffs) - 1) - i
-                ].child
+            sigmoid_coeffs = [
+                (1 / 2),
+                (1 / 4),
+                0,
+                -(1 / 48),
+                0,
+                (1 / 480),
+                0,
+                -(17 / 80640),
+                0,
+                (31 / 1451520),
+            ]
 
         else:
 
-            for i in range(0, len(self.sigmoid_coeffs)):
+            sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
 
-                val += (x ** i) * self.encrypt_fn["sigmoid"][(len(self.sigmoid_coeffs) - 1) - i]
+        sigmoid_coeffs = self.get_encrypt_function(sigmoid_coeffs)
+        val = 0
+        x = self.child
+        if hasattr(sigmoid_coeffs, "child"):
+
+            for i in range(0, len(sigmoid_coeffs)):
+
+                val += (x ** i) * sigmoid_coeffs[(len(sigmoid_coeffs) - 1) - i].child
+
+        else:
+
+            for i in range(0, len(sigmoid_coeffs)):
+
+                val += (x ** i) * sigmoid_coeffs[(len(sigmoid_coeffs) - 1) - i]
 
         Ptensor = PolynomialTensor()
         Ptensor.child = val
@@ -221,21 +252,29 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
-        self.get_encrypt_function()
-        val = 0
-        x = self.child
+        tanh_coeffs = None
+        if self.method == "taylor":
 
-        if hasattr(self.encrypt_fn["tanh"], "child"):
-
-            for i in range(0, len(self.tanh_coeffs)):
-
-                val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i].child
+            tanh_coeffs = [(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)]
 
         else:
 
-            for i in range(0, len(self.tanh_coeffs)):
+            tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
-                val += (x ** i) * self.encrypt_fn["tanh"][(len(self.tanh_coeffs) - 1) - i]
+        tanh_coeffs = self.get_encrypt_function(tanh_coeffs)
+        val = 0
+        x = self.child
+        if hasattr(tanh_coeffs, "child"):
+
+            for i in range(0, len(tanh_coeffs)):
+
+                val += (x ** i) * tanh_coeffs[(len(tanh_coeffs) - 1) - i].child
+
+        else:
+
+            for i in range(0, len(tanh_coeffs)):
+
+                val += (x ** i) * tanh_coeffs[(len(tanh_coeffs) - 1) - i]
 
         Ptensor = PolynomialTensor()
         Ptensor.child = val
@@ -245,20 +284,29 @@ class PolynomialTensor(AbstractTensor):
 
     def exp(self, method="interpolation", degree=10, precision=10):
 
-        self.get_encrypt_function()
-        val = 0
-        x = self.child
+        exp_coeffs = None
+        if self.method == "taylor":
 
-        if hasattr(self.encrypt_fn["exp"], "child"):
-            for i in range(0, len(self.exp_coeffs)):
-
-                val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i].child
+            exp_coeffs = [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
 
         else:
 
-            for i in range(0, len(self.exp_coeffs)):
+            exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
 
-                val += (x ** i) * self.encrypt_fn["exp"][(len(self.exp_coeffs) - 1) - i]
+        exp_coeffs = self.get_encrypt_function(exp_coeffs)
+        val = 0
+        x = self.child
+        if hasattr(exp_coeffs, "child"):
+
+            for i in range(0, len(exp_coeffs)):
+
+                val += (x ** i) * exp_coeffs[(len(exp_coeffs) - 1) - i].child
+
+        else:
+
+            for i in range(0, len(exp_coeffs)):
+
+                val += (x ** i) * exp_coeffs[(len(exp_coeffs) - 1) - i]
 
         Ptensor = PolynomialTensor()
         Ptensor.child = val
