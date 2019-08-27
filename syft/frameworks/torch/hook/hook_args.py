@@ -91,6 +91,7 @@ backward_func = {
 ambiguous_methods = {
     "__getitem__",
     "_getitem_public",
+    "__setitem__",
     "view",
     "permute",
     "add_",
