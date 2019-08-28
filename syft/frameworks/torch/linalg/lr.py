@@ -45,6 +45,11 @@ class BloomRegressor:
         # Checking if the pointers are as expected
         self._check_ptrs(X_ptrs, y_ptrs)
 
+        # Check if each y is a 2-dim or 1-dim tensor, unsqueeze if it is not
+        for i, y in enumerate(y_ptrs):
+            if len(y.shape) < 2:
+                y_ptrs[i] = y.unsqueeze(1)
+
         if self.fit_intercept:
             self._add_intercept(X_ptrs)
             self._dgf -= 1
