@@ -592,26 +592,33 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             >>> me.get_worker(bob)
             <syft.core.workers.virtual.VirtualWorker id:bob>
         """
-
         if isinstance(id_or_worker, bytes):
             id_or_worker = str(id_or_worker, "utf-8")
 
-        if isinstance(id_or_worker, (str, int)):
-            # A worker should always know itself
-            if id_or_worker == self.id:
-                return self
-            if id_or_worker in self._known_workers:
-                return self._known_workers[id_or_worker]
-            else:
-                if fail_hard:
-                    raise WorkerNotFoundException
-                logger.warning("Worker %s couldn't recognize worker %s", self.id, id_or_worker)
-                return id_or_worker
+        if isinstance(id_or_worker, AbstractWorker):
+            return self._get_worker(id_or_worker)
         else:
-            if id_or_worker.id not in self._known_workers:
-                self.add_worker(id_or_worker)
+            return self._get_worker_based_on_id(id_or_worker, fail_hard=fail_hard)
 
-        return id_or_worker
+    def _get_worker(self, worker: AbstractWorker):
+        if worker.id not in self._known_workers:
+            self.add_worker(worker)
+        return worker
+
+    def _get_worker_based_on_id(self, worker_id: Union[str, int], fail_hard: bool = False):
+        # A worker should always know itself
+        if worker_id == self.id:
+            return self
+
+        worker = self._known_workers.get(worker_id)
+
+        if worker is None:
+            if fail_hard:
+                raise WorkerNotFoundException
+            logger.warning("Worker %s couldn't recognize worker %s", self.id, worker_id)
+            return worker_id
+
+        return worker
 
     def add_worker(self, worker: "BaseWorker"):
         """Adds a single worker.
