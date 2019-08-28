@@ -99,6 +99,42 @@ class BloomRegressor:
 
         return self
 
+    def predict(self, X: torch.Tensor):
+        coef = self.coef.copy()
+        intercept = self.intercept.copy() if self.fit_intercept else None
+
+        # Send coef and intercept to remote worker if X is a pointer
+        if X.has_child() and isinstance(X.child, PointerTensor):
+            coef = coef.send(X.child.location)
+            intercept = intercept.send(X.child.location)
+
+        y = X @ coef.unsqueeze(1)
+        if self.fit_intercept:
+            y += intercept
+        return y.squeeze()
+
+    def summarize(self):
+        print("=" * 52)
+        print(" " * 11 + "SMPC Linear Regression Results")
+        print("=" * 52)
+        print(" " * 17 + "value" + " " * 9 + "stderr" + " " * 8 + "p-value")
+        print("-" * 52)
+        for i, cf in enumerate(self.coef):
+            print(
+                "coef" + str(i + 1),
+                "{:>16.4f}".format(cf),
+                "{:>14.4f}".format(self.se_coef[i]),
+                "{:>14.4f}".format(self.pvalue_coef[i]),
+            )
+        if self.fit_intercept:
+            print(
+                "intercept",
+                "{:>12.4f}".format(self.intercept),
+                "{:>14.4f}".format(self.se_intercept),
+                "{:>14.4f}".format(self.pvalue_intercept),
+            )
+        print("-" * 52)
+
     def _check_ptrs(self, X_ptrs, y_ptrs):
         """
         Method that check if the lists of pointers corresponding to the explanatory and
@@ -199,28 +235,10 @@ class BloomRegressor:
         Compute p-values of coefficients (and intercept if fit_intercept==True)
         """
         tstat_coef = self.coef / torch.sqrt(self.sigma_sq)
-        self.pvalues_coef = 2 * t.cdf(-abs(tstat_coef), self._dgf)
+        self.pvalue_coef = 2 * t.cdf(-abs(tstat_coef), self._dgf)
 
         if self.fit_intercept:
             tstat_intercept = self.intercept / torch.sqrt(self.sigma_sq)
-            self.pvalues_intercept = 2 * t.cdf(-abs(tstat_intercept), self._dgf)
+            self.pvalue_intercept = 2 * t.cdf(-abs(tstat_intercept), self._dgf)
         else:
-            self.pvalues_intercept = None
-
-    def summarize(self):
-        # TODO
-        pass
-
-    def predict(self, X: torch.Tensor):
-        coef = self.coef.copy()
-        intercept = self.intercept.copy() if self.fit_intercept else None
-
-        # Send coef and intercept to remote worker if X is a pointer
-        if X.has_child() and isinstance(X.child, PointerTensor):
-            coef = coef.send(X.child.location)
-            intercept = intercept.send(X.child.location)
-
-        y = X @ coef.unsqueeze(1)
-        if self.fit_intercept:
-            y += intercept
-        return y.squeeze()
+            self.pvalue_intercept = None
