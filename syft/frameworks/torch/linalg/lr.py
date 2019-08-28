@@ -82,7 +82,7 @@ class BloomRegressor:
         if self.fit_intercept:
             self.intercept = self.coef[0]
             self.coef = self.coef[1:]
-            self.se_intercpt = self.se_coef[0]
+            self.se_intercept = self.se_coef[0]
             self.se_coef = self.se_coef[1:]
         else:
             self.intercept = None
