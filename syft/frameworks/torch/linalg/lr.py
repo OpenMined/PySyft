@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from syft.workers import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -79,9 +80,9 @@ class BloomRegressor:
 
         # Store results locally and resize by dividing by total_size
         self.coef = coef_shared.get().float_precision() / self.total_size
-        self.coef = self.coef.squeeze().numpy()
+        self.coef = self.coef.squeeze()
         self.se_coef = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
-        self.se_coef = self.se_coef.squeeze().numpy()
+        self.se_coef = self.se_coef.squeeze()
 
         self.sigma_sq = sigma2_shared.get().float_precision().squeeze()
 
@@ -194,6 +195,9 @@ class BloomRegressor:
         return shared_tensors
 
     def _compute_pvalues(self):
+        """
+        Compute p-values of coefficients (and intercept if fit_intercept==True)
+        """
         tstat_coef = self.coef / torch.sqrt(self.sigma_sq)
         self.pvalues_coef = 2 * t.cdf(-abs(tstat_coef), self._dgf)
 
