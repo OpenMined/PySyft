@@ -150,8 +150,8 @@ class BloomRegressor:
         print("-" * 52)
         for i, cf in enumerate(self.coef):
             print(
-                "coef" + str(i + 1),
-                "{:>16.4f}".format(cf),
+                "coef" + "{:<3d}".format(i + 1),
+                "{:>14.4f}".format(cf),
                 "{:>14.4f}".format(self.se_coef[i]),
                 "{:>14.4f}".format(self.pvalue_coef[i]),
             )
