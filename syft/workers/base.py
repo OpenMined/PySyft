@@ -610,7 +610,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if worker_id == self.id:
             return self
 
-        worker = self._known_workers.get(worker_id, d=worker_id)
+        worker = self._known_workers.get(worker_id, worker_id)
 
         if worker == worker_id and fail_hard:
             raise WorkerNotFoundException
