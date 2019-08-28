@@ -10,7 +10,7 @@ def test_bloom(hook, workers):
     """
     bob = workers["bob"]
     alice = workers["alice"]
-    jon = sy.VirtualWorker(hook, id="jon")
+    james = workers["james"]
     crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
     hbc_worker = sy.VirtualWorker(hook, id="hbc_worker")
 
@@ -31,14 +31,14 @@ def test_bloom(hook, workers):
     X_bob = torch.randn(N2, K).send(bob)
     y_bob = X_bob @ beta.copy().send(bob) + intercept
 
-    # Jon's data
+    # James's data
     N3 = 15000
-    X_jon = torch.randn(N3, K).send(jon)
-    y_jon = X_jon @ beta.copy().send(jon) + intercept
+    X_james = torch.randn(N3, K).send(james)
+    y_james = X_james @ beta.copy().send(james) + intercept
 
     # Gather pointers into lists
-    X_ptrs = [X_alice, X_bob, X_jon]
-    y_ptrs = [y_alice, y_bob, y_jon]
+    X_ptrs = [X_alice, X_bob, X_james]
+    y_ptrs = [y_alice, y_bob, y_james]
 
     # Perform linear regression
     bloom_lr = BloomRegressor(crypto_prov, hbc_worker)

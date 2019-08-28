@@ -2,6 +2,8 @@ import torch
 from syft.workers import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
 from syft.generic.pointers.pointer_tensor import PointerTensor
+
+from scipy.stats import t
 from typing import List
 import random
 
@@ -77,7 +79,11 @@ class BloomRegressor:
 
         # Store results locally and resize by dividing by total_size
         self.coef = coef_shared.get().float_precision() / self.total_size
+        self.coef = self.coef.squeeze().numpy()
         self.se_coef = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
+        self.se_coef = self.se_coef.squeeze().numpy()
+
+        self.sigma_sq = sigma2_shared.get().float_precision().squeeze()
 
         if self.fit_intercept:
             self.intercept = self.coef[0]
@@ -87,6 +93,8 @@ class BloomRegressor:
         else:
             self.intercept = None
             self.se_intercept = None
+
+        self._compute_pvalues()
 
         return self
 
@@ -184,6 +192,16 @@ class BloomRegressor:
             ).get()
             shared_tensors.append(shared_tensor)
         return shared_tensors
+
+    def _compute_pvalues(self):
+        tstat_coef = self.coef / torch.sqrt(self.sigma_sq)
+        self.pvalues_coef = 2 * t.cdf(-abs(tstat_coef), self._dgf)
+
+        if self.fit_intercept:
+            tstat_intercept = self.intercept / torch.sqrt(self.sigma_sq)
+            self.pvalues_intercept = 2 * t.cdf(-abs(tstat_intercept), self._dgf)
+        else:
+            self.pvalues_intercept = None
 
     def summarize(self):
         # TODO
