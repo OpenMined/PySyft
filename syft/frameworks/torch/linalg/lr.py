@@ -25,6 +25,17 @@ class BloomRegressor:
             to False, no intercept will be used in calculations (e.g. data is
             expected to be already centered)
 
+    Attributes:
+        coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
+            the linear regression problem.
+        intercept: torch.Tensor of shape (1, ) if fit_intercept is set to True,
+            None otherwise. Estimated intercept for the linear regression.
+        pvalue_coef: numpy.array of shape (n_features, ). Two-sided p-value for a
+            hypothesis test whose null hypothesis is that the each coeff is zero.
+        pvalue_intercept: numpy.array of shape (1, ) if fit_intercept is set to True,
+            None otherwise. Two-sided p-value for a hypothesis test whose null
+            hypothesis is that the intercept is zero.
+
     """
 
     def __init__(
@@ -41,6 +52,10 @@ class BloomRegressor:
         self.fit_intercept = fit_intercept
 
     def fit(self, X_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]):
+        """
+        Fits the linear model using Secured Multi-Party Linear Regression.
+        The final results (i.e. coefficients and p-values) will be public.
+        """
 
         # Checking if the pointers are as expected
         self._check_ptrs(X_ptrs, y_ptrs)
@@ -105,6 +120,11 @@ class BloomRegressor:
         return self
 
     def predict(self, X: torch.Tensor):
+        """
+        Performs predicion of linear model on X, which can be a local torch.Tensor
+        or a wrapped PointerTensor. The result will be either a local torch.Tensor
+        or a wrapped PointerTensor, depending on the nature of X.
+        """
         coef = self.coef.copy()
         intercept = self.intercept.copy() if self.fit_intercept else None
 
@@ -119,6 +139,10 @@ class BloomRegressor:
         return y.squeeze()
 
     def summarize(self):
+        """
+        Prints a summary of the coefficients and its statistics.
+        This method should be called only after training of the model.
+        """
         print("=" * 52)
         print(" " * 11 + "SMPC Linear Regression Results")
         print("=" * 52)
@@ -147,7 +171,6 @@ class BloomRegressor:
         It also computes parallelly  some Regressor's attributes such as number of features and
         total sample size.
         """
-
         # Set number of features
         self.n_features = X_ptrs[0].shape[1]
 
