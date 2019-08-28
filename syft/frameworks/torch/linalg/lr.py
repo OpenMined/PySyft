@@ -211,6 +211,16 @@ class BloomRegressor:
         # TODO
         pass
 
-    def predict(self):
-        # TODO
-        pass
+    def predict(self, X: torch.Tensor):
+        coef = self.coef.copy()
+        intercept = self.intercept.copy() if self.fit_intercept else None
+
+        # Send coef and intercept to remote worker if X is a pointer
+        if X.has_child() and isinstance(X.child, PointerTensor):
+            coef = coef.send(X.child.location)
+            intercept = intercept.send(X.child.location)
+
+        y = X @ coef.unsqueeze(1)
+        if self.fit_intercept:
+            y += intercept
+        return y.squeeze()
