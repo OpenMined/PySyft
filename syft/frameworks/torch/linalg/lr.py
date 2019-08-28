@@ -42,6 +42,10 @@ class BloomRegressor:
         # Checking if the pointers are as expected
         self._check_ptrs(X_ptrs, y_ptrs)
 
+        if self.fit_intercept:
+            self._add_intercept(X_ptrs)
+            self._dgf -= 1
+
         self.workers = self._get_workers(X_ptrs)
 
         # Computing aggregated pairwise dot products remotelly
@@ -60,18 +64,25 @@ class BloomRegressor:
         # case of the Gram matrix when total_size is large. We only resize back the
         # values we are interested in (i.e. the coefficients and std errors) locally at
         # the end in order to make sure the subsequent computations are still precise
+
         XX_inv_shared = inv_sym(XX_shared / self.total_size)
 
         # Compute shared coefficients
-        coeffs_shared = XX_inv_shared @ Xy_shared
+        coef_shared = XX_inv_shared @ Xy_shared
 
-        sigma2_shared = yy_shared - coeffs_shared.t() @ XX_shared @ coeffs_shared
+        sigma2_shared = yy_shared - coef_shared.t() @ XX_shared @ coef_shared
         sigma2_shared = sigma2_shared / self._dgf
 
         var_diag_shared = torch.diag(XX_inv_shared) * sigma2_shared
 
         # Store results locally and resize by dividing by total_size
-        self.coeffs = coeffs_shared.get().float_precision() / self.total_size
+        self.coef = coef_shared.get().float_precision() / self.total_size
+        if self.fit_intercept:
+            self.intercept = self.coef[0]
+            self.coef = self.coef[1:]
+        else:
+            self.intercept = None
+
         self.std_errors = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
 
         return self
@@ -94,19 +105,23 @@ class BloomRegressor:
                 raise TypeError(
                     "Some tensors are not wrapped, please provide a wrapped Pointer Tensor"
                 )
+
             # Check if x and y are pointers
             if not (isinstance(x.child, PointerTensor) and isinstance(y.child, PointerTensor)):
                 raise TypeError(
                     "Some tensors are not pointers, please provided a wrapped Pointer Tensor"
                 )
+
             # Check if both are in the same worker
             if not x.child.location == y.child.location:
                 raise RuntimeError("Some pairs (X, y) are not located in the same worker")
+
             # Check if they have the same size
             x_size += x.shape[0]
             y_size += y.shape[0]
             if x_size != y_size:
                 raise ValueError("Some pairs (X, y) do not have the same number of samples")
+
             # Check if all tensors have the same number of features
             if x.shape[1] != self.n_features:
                 raise ValueError("Tensors do not have the same number of features")
@@ -116,6 +131,16 @@ class BloomRegressor:
 
         # Set degrees of freedom
         self._dgf = self.total_size - self.n_features
+
+    @staticmethod
+    def _add_intercept(X_ptrs):
+        """
+        Adds a column-vector of 1's at the beginning of the tensors X_ptrs
+        """
+        for i, x in enumerate(X_ptrs):
+            ones = torch.ones_like(x[:, :1])
+            x = torch.cat((ones, x), 1)
+            X_ptrs[i] = x
 
     @staticmethod
     def _get_workers(ptrs):
