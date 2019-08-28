@@ -14,7 +14,7 @@ def test_bloom(hook, workers):
     crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
     hbc_worker = sy.VirtualWorker(hook, id="hbc_worker")
 
-    #### Simulate data ####
+    ###### Simulate data ######
 
     K = 2  # number of features
 
@@ -44,9 +44,21 @@ def test_bloom(hook, workers):
     bloom_lr = BloomRegressor(crypto_prov, hbc_worker)
     bloom_lr.fit(X_ptrs, y_ptrs)
 
-    assert abs(bloom_lr.intercept.item() - intercept) < 1e-5
+    assert abs(bloom_lr.intercept.item() - intercept) < 1e-4
 
     assert ((bloom_lr.coef - beta.squeeze()).abs() < 1e-4).all()
 
-    # Test prediction
-    # TODO
+    ###### Test prediction #######
+    # Pointer tensor
+    diff = bloom_lr.predict(X_alice) - y_alice.squeeze()
+    assert (diff.get().abs() < 1e-4).all()
+
+    # Local tensor
+    X_local = X_alice.get()
+    y_local = y_alice.get()
+    diff = bloom_lr.predict(X_local) - y_local.squeeze()
+    assert (diff.abs() < 1e-4).all()
+
+    ##### Test summarize ######
+
+    bloom_lr.summarize()
