@@ -77,13 +77,16 @@ class BloomRegressor:
 
         # Store results locally and resize by dividing by total_size
         self.coef = coef_shared.get().float_precision() / self.total_size
+        self.se_coef = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
+
         if self.fit_intercept:
             self.intercept = self.coef[0]
             self.coef = self.coef[1:]
+            self.se_intercpt = self.se_coef[0]
+            self.se_coef = self.se_coef[1:]
         else:
             self.intercept = None
-
-        self.std_errors = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
+            self.se_intercept = None
 
         return self
 
