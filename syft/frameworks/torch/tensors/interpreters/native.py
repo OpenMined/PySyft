@@ -429,6 +429,7 @@ class TorchTensor(AbstractTensor):
                     output = param_wrapper
             else:
                 if inplace:
+                    self.is_wrapper = True
                     self.set_()
                     self.child = ptr
                     return self
@@ -591,6 +592,8 @@ class TorchTensor(AbstractTensor):
             self.set_(tensor)
             if hasattr(tensor, "child"):
                 self.child = tensor.child
+            else:
+                self.is_wrapper = False
             return self
         else:
             return tensor
