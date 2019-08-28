@@ -595,10 +595,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if isinstance(id_or_worker, bytes):
             id_or_worker = str(id_or_worker, "utf-8")
 
-        if isinstance(id_or_worker, AbstractWorker):
-            return self._get_worker(id_or_worker)
-        else:
+        if isinstance(id_or_worker, str) or isinstance(id_or_worker, int):
             return self._get_worker_based_on_id(id_or_worker, fail_hard=fail_hard)
+        else:
+            return self._get_worker(id_or_worker)
 
     def _get_worker(self, worker: AbstractWorker):
         if worker.id not in self._known_workers:
