@@ -141,7 +141,13 @@ def _force_full_simplify(obj: object) -> object:
             forced_full_simplifiers[current_type][1](obj),
         )
         return result
-    except:
+    except KeyError:
+        # If the object type is not in forced_full_simplifiers,
+        # we check the classes that this object inherits from.
+        # `inspect.getmro` give us all types this object inherits
+        # from, including `type(obj)`. We can skip the type of the
+        # object because we already tried this in the
+        # previous step.
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
@@ -460,7 +466,13 @@ def _simplify(obj: object) -> object:
         current_type = type(obj)
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
         return result
-    except:
+    except KeyError:
+        # If the object type is not in simplifiers,
+        # we check the classes that this object inherits from.
+        # `inspect.getmro` give us all types this object inherits
+        # from, including `type(obj)`. We can skip the type of the
+        # object because we already tried this in the
+        # previous step.
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
