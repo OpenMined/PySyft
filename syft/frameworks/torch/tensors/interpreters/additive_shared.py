@@ -1,1004 +1,796 @@
-import math
+import copy
+import pytest
+
 import torch
-import syft as sy
-from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
+import torch.nn as nn
+import torch.nn.functional as F
 
-from syft.workers import AbstractWorker
-
-# Crypto protocols
-from syft.frameworks.torch.crypto import spdz
-from syft.frameworks.torch.crypto import securenn
-
-no_wrap = {"no_wrap": True}
+import syft
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 
 
-class AdditiveSharingTensor(AbstractTensor):
-    def __init__(
-        self,
-        shares: dict = None,
-        owner=None,
-        id=None,
-        field=None,
-        n_bits=None,
-        crypto_provider=None,
-        tags=None,
-        description=None,
-    ):
-        """Initializes an Additive Sharing Tensor, whose behaviour is to split a
-        single tensor into shares, distribute the shares amongst several machines,
-        and then manage how those shares are used to compute various arithmetic
-        functions.
+def test_wrap(workers):
+    """
+    Test the .on() wrap functionality for AdditiveSharingTensor
+    """
 
-        Args:
+    x_tensor = torch.Tensor([1, 2, 3])
+    x = AdditiveSharingTensor().on(x_tensor)
+    assert isinstance(x, torch.Tensor)
+    assert isinstance(x.child, AdditiveSharingTensor)
+    assert isinstance(x.child.child, torch.Tensor)
 
-            shares: Optional dictionary with the shares already split
-            owner: An optional BaseWorker object to specify the worker on which
-                the tensor is located.
-            id: An optional string or integer id of the AdditiveSharingTensor.
-            field: size of the arithmetic field in which the shares live
-            n_bits: linked to the field with the relation (2 ** nbits) == field
-            crypto_provider: an optional BaseWorker providing crypto elements
-                such as Beaver triples
-            tags: an optional set of hashtags corresponding to this tensor
-                which this tensor should be searchable for
-            description: an optional string describing the purpose of the
-                tensor
-        """
-        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.child = shares
+def test__str__(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    assert isinstance(x_sh.__str__(), str)
 
-        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
-        self.n_bits = (
-            n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
-        )  # < 63 bits
-        # assert 2 ** self.n_bits == self.field
-        self.crypto_provider = (
-            crypto_provider if crypto_provider is not None else sy.hook.local_worker
+
+def test_encode_decode(workers):
+
+    t = torch.tensor([1, 2, 3])
+    x = t.share(workers["bob"], workers["alice"], workers["james"])
+
+    x = x.get()
+
+    assert (x == t).all()
+
+
+def test_virtual_get(workers):
+    t = torch.tensor([1, 2, 3])
+    x = t.share(workers["bob"], workers["alice"], workers["james"])
+
+    x = x.child.virtual_get()
+
+    assert (x == t).all()
+
+
+def test_autograd_kwarg(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3])
+    x = t.share(alice, bob, crypto_provider=james, requires_grad=True)
+
+    assert isinstance(x.child, syft.AutogradTensor)
+
+
+def test_send_get(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+
+    alice_t_id = x_sh.child.child["alice"].id_at_location
+    assert alice_t_id in alice._objects
+
+    ptr_x = x_sh.send(james)
+    ptr_x_id_at_location = ptr_x.id_at_location
+    assert ptr_x_id_at_location in james._objects
+    assert alice_t_id in alice._objects
+
+    x_sh_back = ptr_x.get()
+    assert ptr_x_id_at_location not in james._objects
+    assert alice_t_id in alice._objects
+
+    x = x_sh_back.get()
+    assert alice_t_id not in alice._objects
+
+
+def test_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice)
+
+    y = (x + x).get()
+
+    # 3 workers
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
+
+    y = (x + x).get()
+
+    # negative numbers
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
+
+    y = (x + x).get()
+
+    assert (y == (t + t)).all()
+
+    # with fixed precisions
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x + x).get().float_prec()
+
+    assert (y == (t + t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x + y).get().float_prec()
+
+    assert (z == (t + t)).all()
+
+    z = (y + x).get().float_prec()
+
+    assert (z == (t + t)).all()
+
+
+def test_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 3 workers
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # negative numbers
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # with fixed precision
+    t = torch.tensor([1.0, -2, 3])
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
+
+    y = (x - x).get().float_prec()
+
+    assert (y == (t - t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    u = torch.tensor([4.0, 3.0, 2.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = u.fix_prec()
+
+    z = (x - y).get().float_prec()
+
+    assert (z == (t - u)).all()
+
+    z = (y - x).get().float_prec()
+
+    assert (z == (u - t)).all()
+
+
+def test_mul(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # 2 workers
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, crypto_provider=james)
+    y = (x * x).get()
+
+    assert (y == (t * t)).all()
+
+    # with fixed precision
+    x = torch.tensor([1, -2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = torch.tensor([-1, 2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x * y).get().float_prec()
+
+    assert (y == torch.tensor([-1, -4, 9, 16.0])).all()
+
+    # with non-default fixed precision
+    t = torch.tensor([1, 2, 3, 4.0])
+    x = t.fix_prec(precision_fractional=2).share(bob, alice, crypto_provider=james)
+    y = (x * x).get().float_prec()
+
+    assert (y == (t * t)).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    z = (x * y).get().float_prec()
+
+    assert (z == (t * t)).all()
+
+
+def test_public_mul(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 1
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t = torch.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 0
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    t_x = torch.tensor([-3.1, 1])
+    t_y = torch.tensor([1.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = torch.tensor([-3.1, 1])
+    t_y = torch.tensor([0.0])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+    t_x = torch.tensor([-3.1, 1])
+    t_y = torch.tensor([0.0, 2.1])
+    x = t_x.fix_prec().share(alice, bob, crypto_provider=james)
+    y = t_y.fix_prec()
+    z = x * y
+    z = z.get().float_prec()
+    assert (z == t_x * t_y).all()
+
+
+def test_div(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    # With scalar
+    t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x / 3).get().float_prec()
+
+    assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
+
+    # With another encrypted tensor
+    t1 = torch.tensor([[25, 9], [10, 30]])
+    t2 = torch.tensor([[5, 12], [2, 7]])
+    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james)
+    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james)
+
+    y = (x1 / x2).get().float_prec()
+    assert (y == torch.tensor([[5.0, 0.75], [5.0, 4.285]])).all()
+
+
+def test_pow(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x ** 3).get().float_prec()
+
+    assert (y == (m ** 3)).all()
+
+
+def test_operate_with_integer_constants(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([2.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+
+    r_sh = x_sh + 10
+    assert r_sh.get().float_prec() == x + 10
+
+    r_sh = x_sh - 7
+    assert r_sh.get().float_prec() == x - 7
+
+    r_sh = x_sh * 2
+    assert r_sh.get().float_prec() == x * 2
+
+    r_sh = x_sh / 2
+    assert r_sh.get().float_prec() == x / 2
+
+
+def test_stack(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([1.3, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    res = torch.stack([x, x]).get().float_prec()
+
+    expected = torch.tensor([[1.3000, 2.0000], [1.3000, 2.0000]])
+
+    assert (res == expected).all()
+
+
+def test_cat(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res0 = torch.cat([x, x], dim=0).get()
+    res1 = torch.cat([x, x], dim=1).get()
+
+    expected0 = torch.tensor([[1, 2, 3], [4, 5, 6], [1, 2, 3], [4, 5, 6]])
+    expected1 = torch.tensor([[1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6]])
+
+    assert (res0 == expected0).all()
+    assert (res1 == expected1).all()
+
+    # Test when using more tensors
+    res2 = torch.cat([x, x, x], dim=1).get()
+    expected2 = torch.tensor([[1, 2, 3, 1, 2, 3, 1, 2, 3], [4, 5, 6, 4, 5, 6, 4, 5, 6]])
+
+    assert (res2 == expected2).all()
+
+
+def test_chunk(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3, 4], [5, 6, 7, 8]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res0 = torch.chunk(x, 2, dim=0)
+    res1 = torch.chunk(x, 2, dim=1)
+
+    expected0 = [torch.tensor([[1, 2, 3, 4]]), torch.tensor([[5, 6, 7, 8]])]
+    expected1 = [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])]
+
+    assert all([(res0[i].get() == expected0[i]).all() for i in range(2)])
+    assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
+
+
+def test_roll(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    x = t.share(bob, alice, crypto_provider=james)
+
+    res1 = torch.roll(x, 2)
+    res2 = torch.roll(x, 2, dims=1)
+    res3 = torch.roll(x, (1, 2), dims=(0, 1))
+
+    assert (res1.get() == torch.roll(t, 2)).all()
+    assert (res2.get() == torch.roll(t, 2, dims=1)).all()
+    assert (res3.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+    # With MultiPointerTensor
+    shifts = torch.tensor(1).send(alice, bob)
+    res = torch.roll(x, shifts)
+
+    shifts1 = torch.tensor(1).send(alice, bob)
+    shifts2 = torch.tensor(2).send(alice, bob)
+    res2 = torch.roll(x, (shifts1, shifts2), dims=(0, 1))
+
+    assert (res.get() == torch.roll(t, 1)).all()
+    assert (res2.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
+
+
+def test_nn_linear(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1.0, 2]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    y = model(x)
+
+    assert y.get().float_prec() == torch.tensor([[2.0]])
+
+
+def test_matmul(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = (x @ x).get().float_prec()
+
+    assert (y == (m @ m)).all()
+
+    # with FPT>torch.tensor
+    m = torch.tensor([[1, 2], [3, 4.0]])
+    x = m.fix_prec().share(bob, alice, crypto_provider=james)
+    y = m.fix_prec()
+
+    z = (x @ y).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
+    z = (y @ x).get().float_prec()
+
+    assert (z == (m @ m)).all()
+
+
+def test_mm(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([[1, 2], [3, 4.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+
+    # Using the method
+    y = (x.mm(x)).get().float_prec()
+    assert (y == (t.mm(t))).all()
+
+    # Using the function
+    y = (torch.mm(x, x)).get().float_prec()
+    assert (y == (torch.mm(t, t))).all()
+
+    # with FPT>torch.tensor
+    t = torch.tensor([[1, 2], [3, 4.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    y = t.fix_prec()
+
+    # Using the method
+    z = (x.mm(y)).get().float_prec()
+    assert (z == (t.mm(t))).all()
+
+    # Using the function
+    z = (torch.mm(x, y)).get().float_prec()
+    assert (z == (torch.mm(t, t))).all()
+
+    # Using the method
+    z = (y.mm(x)).get().float_prec()
+    assert (z == (t.mm(t))).all()
+
+    # Using the function
+    z = (torch.mm(y, x)).get().float_prec()
+    assert (z == (torch.mm(t, t))).all()
+
+
+def test_torch_conv2d(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    im = torch.Tensor(
+        [
+            [
+                [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
+                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]],
+            ]
+        ]
+    )
+    w = torch.Tensor(
+        [
+            [[[1.0, 1.0], [1.0, 1.0]], [[2.0, 2.0], [2.0, 2.0]]],
+            [[[-1.0, -2.0], [-3.0, -4.0]], [[0.0, 0.0], [0.0, 0.0]]],
+        ]
+    )
+    bias = torch.Tensor([0.0, 5.0])
+
+    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
+    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
+    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
+
+    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
+    res1 = (
+        torch.conv2d(
+            im_shared,
+            w_shared[:, 0:1].contiguous(),
+            bias=bias_shared,
+            stride=2,
+            padding=3,
+            dilation=2,
+            groups=2,
         )
+        .get()
+        .float_precision()
+    )
 
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        type_name = type(self).__name__
-        out = f"[" f"{type_name}]"
-        for v in self.child.values():
-            out += "\n\t-> " + str(v)
-        if self.crypto_provider is not None:
-            out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
-        return out
-
-    @property
-    def locations(self):
-        """Provide a locations attribute"""
-        return [s.location for s in self.child.values()]
-
-    @property
-    def shape(self):
-        """
-        Return the shape which is the shape of any of the shares
-        """
-        for share in self.child.values():
-            return share.shape
-
-    def dim(self):
-        for share in self.child.values():
-            return len(share.shape)
-
-    def get_class_attributes(self):
-        """
-        Specify all the attributes need to build a wrapper correctly when returning a response,
-        for example precision_fractional is important when wrapping the result of a method
-        on a self which is a fixed precision tensor with a non default precision_fractional.
-        """
-        return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
-
-    @property
-    def grad(self):
-        """
-        Gradient makes no sense for Additive Shared Tensor, so we make it clear
-        that if someone query .grad on a Additive Shared Tensor it doesn't error
-        but returns grad and can't be set
-        """
-        return None
-
-    def get(self):
-        """Fetches all shares and returns the plaintext tensor they represent"""
-
-        shares = list()
-
-        for share in self.child.values():
-            if isinstance(share, sy.PointerTensor):
-                shares.append(share.get())
-            else:
-                shares.append(share)
-
-        res_field = sum(shares) % self.field
-
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
-        return result
-
-    def virtual_get(self):
-        """Get the value of the tensor without calling get
-         - Useful for debugging, only for VirtualWorkers"""
-
-        shares = list()
-
-        for v in self.child.values():
-            share = v.location._objects[v.id_at_location]
-            shares.append(share)
-
-        res_field = sum(shares) % self.field
-
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
-        return result
-
-    def init_shares(self, *owners):
-        """Initializes shares and distributes them amongst their respective owners
-
-        Args:
-            *owners the list of shareholders. Can be of any length.
-
-            """
-        shares = self.generate_shares(
-            self.child, n_workers=len(owners), field=self.field, random_type=torch.LongTensor
-        )
-
-        shares_dict = {}
-        for share, owner in zip(shares, owners):
-            share_ptr = share.send(owner, **no_wrap)
-            shares_dict[share_ptr.location.id] = share_ptr
-
-        self.child = shares_dict
-        return self
-
-    @staticmethod
-    def generate_shares(secret, n_workers, field, random_type):
-        """The cryptographic method for generating shares given a secret tensor.
-
-        Args:
-            secret: the tensor to be shared.
-            n_workers: the number of shares to generate for each value
-                (i.e., the number of tensors to return)
-            field: 1 + the max value for a share
-            random_type: the torch type shares should be encoded in (use the smallest possible
-                given the choise of mod"
-            """
-
-        if not isinstance(secret, random_type):
-            secret = secret.type(random_type)
-
-        random_shares = [random_type(secret.shape) for i in range(n_workers - 1)]
-
-        for share in random_shares:
-            share.random_(field)
-
-        shares = []
-        for i in range(n_workers):
-            if i == 0:
-                share = random_shares[i]
-            elif i < n_workers - 1:
-                share = random_shares[i] - random_shares[i - 1]
-            else:
-                share = secret - random_shares[i - 1]
-            share %= field  # Generated shares should be in a finite field Zq
-            shares.append(share)
-
-        return shares
-
-    def reconstruct(self):
-        """
-        Reconstruct the shares of the AdditiveSharingTensor remotely without
-        its owner being able to see any sensitive value
-
-        Returns:
-            A MultiPointerTensor where all workers hold the reconstructed value
-        """
-        workers = self.locations
-
-        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
-        pointer = ptr_to_sh.remote_get()
-
-        pointers = [pointer]
-        for worker in workers[1:]:
-            pointers.append(pointer.copy().move(worker))
-
-        return sy.MultiPointerTensor(children=pointers)
-
-    def zero(self):
-        """
-        Build an additive shared tensor of value zero with the same
-        properties as self
-        """
-        shape = self.shape if self.shape else [1]
-        zero = (
-            torch.zeros(*shape)
-            .long()
-            .share(
-                *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
-            )
-        )
-        return zero
-
-    def refresh(self):
-        """
-        Refresh shares by adding shares of zero
-        """
-        zero = self.zero()
-        r = self + zero
-        return r
-
-    @overloaded.overload_method
-    def _getitem_multipointer(self, self_shares, indices_shares):
-        """
-        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
-
-        Args:
-            self_shares (dict): the dict of shares of x
-            indices_shares (dict): the dict of shares of i
-
-        Returns:
-            an AdditiveSharingTensor
-        """
-        selected_shares = {}
-        for worker, share in self_shares.items():
-            indices = []
-            for index in indices_shares:
-                if isinstance(index, slice):
-                    indices.append(index)
-                elif isinstance(index, dict):
-                    indices.append(index[worker])
-                else:
-                    raise NotImplementedError("Index type", type(indices), "not supported")
-            selected_share = share[tuple(indices)]
-            selected_shares[worker] = selected_share
-
-        return selected_shares
-
-    @overloaded.overload_method
-    def _getitem_public(self, self_shares, indices):
-        """
-        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
-
-        Args:
-            self_shares (dict): the dict of shares of x
-            indices_shares (tuples of ints): integers indices
-
-        Returns:
-            an AdditiveSharingTensor
-
-        """
-        selected_shares = {}
-        for worker, share in self_shares.items():
-            selected_shares[worker] = share[indices]
-
-        return selected_shares
-
-    def __getitem__(self, indices):
-        if not isinstance(indices, (tuple, list)):
-            indices = (indices,)
-        tensor_type = type(indices[-1])
-
-        if tensor_type == sy.MultiPointerTensor:
-            return self._getitem_multipointer(indices)
-        else:
-            return self._getitem_public(indices)
-
-    ## SECTION SPDZ
-
-    @overloaded.method
-    def add(self, shares: dict, other):
-        """Adds operand to the self AST instance.
-
-        Args:
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other: the operand being added to self, can be:
-                - a dictionary <location_id -> PointerTensor) of shares
-                - a torch tensor
-                - a constant
-        """
-        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-            # if someone passes a torch tensor, we share it and keep the dict
-            other = other.share(
-                *self.child.keys(),
-                field=self.field,
-                crypto_provider=self.crypto_provider,
-                **no_wrap,
-            ).child
-        elif not isinstance(other, dict):
-            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other = (
-                torch.Tensor([other])
-                .share(
-                    *self.child.keys(),
-                    field=self.field,
-                    crypto_provider=self.crypto_provider,
-                    **no_wrap,
-                )
-                .child
-            )
-
-        assert len(shares) == len(other)
-
-        # matches each share which needs to be added according
-        # to the location of the share
-        new_shares = {}
-        for k, v in shares.items():
-            new_shares[k] = (other[k] + v) % self.field
-
-        return new_shares
-
-    def __add__(self, other, **kwargs):
-        """Adds two tensors. Forwards command to add. See add() for more details."""
-
-        return self.add(other, **kwargs)
-
-    @overloaded.method
-    def sub(self, shares: dict, other):
-        """Subtracts an operand from the self AST instance.
-
-        Args:
-            shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other: the operand being subtracted from self, can be:
-                - a dictionary <location_id -> PointerTensor) of shares
-                - a torch tensor
-                - a constant
-        """
-
-        if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-            # if someone passes a torch tensor, we share it and keep the dict
-            other = other.share(
-                *self.child.keys(),
-                field=self.field,
-                crypto_provider=self.crypto_provider,
-                **no_wrap,
-            ).child
-        elif not isinstance(other, dict):
-            # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
-            other = (
-                torch.tensor([other])
-                .share(
-                    *self.child.keys(),
-                    field=self.field,
-                    crypto_provider=self.crypto_provider,
-                    **no_wrap,
-                )
-                .child
-            )
-
-        assert len(shares) == len(other)
-
-        # matches each share which needs to be added according
-        # to the location of the share
-        new_shares = {}
-        for k, v in shares.items():
-            new_shares[k] = (v - other[k]) % self.field
-
-        return new_shares
-
-    def __sub__(self, *args, **kwargs):
-        """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
-        return self.sub(*args, **kwargs)
-
-    def _private_mul(self, other, equation: str):
-        """Abstractly Multiplies two tensors
-
-        Args:
-            self: an AdditiveSharingTensor
-            other: another AdditiveSharingTensor
-            equation: a string representation of the equation to be computed in einstein
-                summation form
-        """
-        # check to see that operation is either mul or matmul
-        assert equation == "mul" or equation == "matmul"
-        cmd = getattr(torch, equation)
-
-        assert isinstance(other, AdditiveSharingTensor)
-
-        assert len(self.child) == len(other.child)
-
-        if self.crypto_provider is None:
-            raise AttributeError("For multiplication a crypto_provider must be passed.")
-
-        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
-
-        return shares
-
-    @overloaded.method
-    def _public_mul(self, shares, other, equation):
-        """Multiplies an AdditiveSharingTensor with a non-private value
-        (int, torch tensor, MultiPointerTensor, etc.)
-
-        When other is a constant equal to zero, the shares vanish so we need to add fresh
-        shares of zero.
-
-        Args:
-            shares (dict): a dictionary <location_id -> PointerTensor) of shares corresponding to
-                self. Equivalent to calling self.child.
-            other (dict of int): operand being multiplied with self, can be:
-                - a dictionary <location_id -> PointerTensor) of shares
-                - a torch tensor (Int or Long)
-                - or an integer
-            equation: a string representation of the equation to be computed in einstein
-                summation form
-        """
-        assert equation == "mul" or equation == "matmul"
-        cmd = getattr(torch, equation)
-        if isinstance(other, dict):
-            return {
-                worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
-            }
-        else:
-            other_is_zero = False
-            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-                if (other == 0).any():
-                    other_is_zero = True
-            elif other == 0:
-                other_is_zero = True
-
-            if other_is_zero:
-                zero_shares = self.zero().child
-                return {
-                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
-                    for worker, share in shares.items()
-                }
-            else:
-                return {
-                    worker: (cmd(share, other) % self.field) for worker, share in shares.items()
-                }
-
-    def mul(self, other):
-        """Multiplies two tensors together
-
-        Args:
-            self (AdditiveSharingTensor): an AdditiveSharingTensor
-            other: another AdditiveSharingTensor, or a MultiPointerTensor, or an integer
-        """
-        if not isinstance(other, sy.AdditiveSharingTensor):
-            return self._public_mul(other, "mul")
-
-        return self._private_mul(other, "mul")
-
-    def __mul__(self, other, **kwargs):
-        return self.mul(other, **kwargs)
-
-    def __imul__(self, other):
-        self = self.mul(other)
-        return self
-
-    def pow(self, power):
-        """
-        Compute integer power of a number by recursion using mul
-
-        This uses the following trick:
-         - Divide power by 2 and multiply base to itself (if the power is even)
-         - Decrement power by 1 to make it even and then follow the first step
-        """
-        base = self
-
-        result = 1
-        while power > 0:
-            # If power is odd
-            if power % 2 == 1:
-                result = result * base
-
-            # Divide the power by 2
-            power = power // 2
-            # Multiply base to itself
-            base = base * base
-
-        return result
-
-    __pow__ = pow
-
-    def matmul(self, other):
-        """Multiplies two tensors matrices together
-
-        Args:
-            self: an AdditiveSharingTensor
-            other: another AdditiveSharingTensor or a MultiPointerTensor
-        """
-        # If the multiplication can be public
-        if not isinstance(other, sy.AdditiveSharingTensor):
-            return self._public_mul(other, "matmul")
-
-        return self._private_mul(other, "matmul")
-
-    def mm(self, *args, **kwargs):
-        """Multiplies two tensors matrices together
-        """
-        return self.matmul(*args, **kwargs)
-
-    def __matmul__(self, *args, **kwargs):
-        """Multiplies two tensors matrices together
-        """
-        return self.matmul(*args, **kwargs)
-
-    def __itruediv__(self, *args, **kwargs):
-
-        result = self.__truediv__(*args, **kwargs)
-        self.child = result.child
-
-    def _private_div(self, divisor):
-        return securenn.division(self, divisor)
-
-    @overloaded.method
-    def _public_div(self, shares: dict, divisor):
-        # TODO: how to correctly handle division in Zq?
-        divided_shares = {}
-        for i_worker, (location, pointer) in enumerate(shares.items()):
-            # Still no solution to perform a real division on a additive shared tensor
-            # without a heavy crypto protocol.
-            # For now, the solution works in most cases when the tensor is shared between 2 workers
-            # The idea is to compute Q - (Q - pointer) / divisor for as many worker
-            # as the number of times the sum of shares "crosses" Q/2.
-            if i_worker % 2 == 0:
-                divided_shares[location] = self.field - (self.field - pointer) / divisor
-            else:
-                divided_shares[location] = pointer / divisor
-
-        return divided_shares
-
-    def div(self, divisor):
-        if isinstance(divisor, AdditiveSharingTensor):
-            return self._private_div(divisor)
-        else:
-            return self._public_div(divisor)
-
-    __truediv__ = div
-
-    @overloaded.method
-    def mod(self, shares: dict, modulus: int):
-        assert isinstance(modulus, int)
-
-        moded_shares = {}
-        for location, pointer in shares.items():
-            moded_shares[location] = pointer % modulus
-
-        return moded_shares
-
-    def __mod__(self, *args, **kwargs):
-        return self.mod(*args, **kwargs)
-
-    @overloaded.method
-    def chunk(self, shares, *args, **kwargs):
-        """
-        This method overrides the torch.Tensor.chunk() method of Pytorch
-        """
-        results = None
-
-        for worker, share in shares.items():
-            share_results = share.chunk(*args, **kwargs)
-            if isinstance(share_results, (tuple, list)):
-                if results is None:
-                    results = [{worker: share_result} for share_result in share_results]
-                else:
-                    for result, share_result in zip(results, share_results):
-                        result[worker] = share_result
-            else:
-                if results is None:
-                    results = {}
-                results[worker] = share_results
-
-        return results
-
-    @staticmethod
-    @overloaded.module
-    def torch(module):
-        def add(self, other):
-            """Overload add(x, y) to redirect to add(y)"""
-            return self.add(other)
-
-        module.add = add
-
-        def mul(self, other):
-            """Overload torch.mul(x, y) to redirect to x.mul(y)"""
-            return self.mul(other)
-
-        module.mul = mul
-
-        def matmul(self, other):
-            """Overload torch.matmul(x, y) to redirect to x.matmul(y)"""
-            return self.matmul(other)
-
-        module.matmul = matmul
-
-        def sum(self, *args, **kwargs):
-            """Overload torch.sum(x) to redirect to x.sum()"""
-            return self.sum(*args, **kwargs)
-
-        module.sum = sum
-
-        def dot(self, other):
-            """Overload torch.dot(x, y)"""
-            return self.mul(other).sum()
-
-        module.dot = dot
-
-        def mean(self, *args, **kwargs):
-            """Overload torch.mean(x)"""
-            # We cannot directly use mean on Long tensors
-            # so we do it by hand with a sum and a division
-            sum = self.sum(*args, **kwargs)
-
-            # We need to know how many input values are used for each
-            # output value to divide
-            dims_to_reduce = args[0] if args else range(self.dim())
-            if isinstance(dims_to_reduce, int):
-                dims_to_reduce = (dims_to_reduce,)
-
-            div = 1
-            for i, s in enumerate(self.shape):
-                if i in dims_to_reduce:
-                    div *= s
-
-            return sum // div
-
-        module.mean = mean
-
-        @overloaded.function
-        def unbind(tensor_shares, **kwargs):
-            results = None
-
-            for worker, share in tensor_shares.items():
-                share_results = torch.unbind(share, **kwargs)
-                if results is None:
-                    results = [{worker: share_result} for share_result in share_results]
-                else:
-                    for result, share_result in zip(results, share_results):
-                        result[worker] = share_result
-
-            return results
-
-        module.unbind = unbind
-
-        @overloaded.function
-        def stack(tensors_shares, **kwargs):
-
-            results = {}
-
-            workers = tensors_shares[0].keys()
-
-            for worker in workers:
-                tensors_share = []
-                for tensor_shares in tensors_shares:
-                    tensor_share = tensor_shares[worker]
-                    tensors_share.append(tensor_share)
-                stacked_share = torch.stack(tensors_share, **kwargs)
-                results[worker] = stacked_share
-
-            return results
-
-        module.stack = stack
-
-        @overloaded.function
-        def cat(tensors_shares, **kwargs):
-            # The code is the same for cat and stack, maybe we could factorize
-
-            results = {}
-
-            workers = tensors_shares[0].keys()
-
-            for worker in workers:
-                cat_share = []
-                for tensor_shares in tensors_shares:
-                    tensor_share = tensor_shares[worker]
-                    cat_share.append(tensor_share)
-                results[worker] = torch.cat(cat_share, **kwargs)
-
-            return results
-
-        module.cat = cat
-
-        def chunk(tensor, *args, **kwargs):
-            return tensor.chunk(*args, **kwargs)
-
-        module.chunk = chunk
-
-        @overloaded.function
-        def roll(tensor_shares, shifts, **kwargs):
-            """ Return a tensor where values are cyclically shifted compared to the original one.
-            For instance, torch.roll([1, 2, 3], 1) returns torch.tensor([3, 1, 2]).
-            In **kwargs should be dims, an argument to tell along which dimension the tensor should
-            be rolled. If dims is None, the tensor is flattened, rolled, and restored to its original shape.
-            shifts and dims can be tuples of same length to perform several rolls along different dimensions.
-            """
-            results = {}
-            for worker, share in tensor_shares.items():
-                if isinstance(shifts, dict):
-                    results[worker] = torch.roll(share, shifts[worker], **kwargs)
-                elif isinstance(shifts, tuple) and isinstance(shifts[0], dict):
-                    worker_shifts = [s[worker] for s in shifts]
-                    results[worker] = torch.roll(share, worker_shifts, **kwargs)
-                else:
-                    results[worker] = torch.roll(share, shifts, **kwargs)
-
-            return results
-
-        module.roll = roll
-
-        def max(tensor, **kwargs):
-            return tensor.max(**kwargs)
-
-        module.max = max
-
-        def argmax(tensor, **kwargs):
-            return tensor.argmax(**kwargs)
-
-        module.argmax = argmax
-
-        @overloaded.module
-        def functional(module):
-            @overloaded.function
-            def split(tensor_shares, *args, **kwargs):
-                results = None
-
-                for worker, share in tensor_shares.items():
-                    share_results = torch.split(share, *args, **kwargs)
-                    if results is None:
-                        results = [{worker: share_result} for share_result in share_results]
-                    else:
-                        for result, share_result in zip(results, share_results):
-                            result[worker] = share_result
-
-                return results
-
-            module.split = split
-
-        module.functional = functional
-
-        @overloaded.module
-        def nn(module):
-            @overloaded.module
-            def functional(module):
-                def relu(tensor_shares):
-                    return tensor_shares.relu()
-
-                module.relu = relu
-
-                @overloaded.function
-                def pad(input_shares, pad, mode="constant", value=0):
-                    padded_shares = {}
-                    for location, shares in input_shares.items():
-                        padded_shares[location] = torch.nn.functional.pad(shares, pad, mode, value)
-
-                    return padded_shares
-
-                module.pad = pad
-
-            module.functional = functional
-
-        module.nn = nn
-
-    ## SECTION SNN
-
-    def relu(self):
-        return securenn.relu(self)
-
-    def positive(self):
-        # self >= 0
-        return securenn.relu_deriv(self)
-
-    def gt(self, other):
-        r = self - other - 1
-        return r.positive()
-
-    def __gt__(self, other):
-        return self.gt(other)
-
-    def ge(self, other):
-        return (self - other).positive()
-
-    def __ge__(self, other):
-        return self.ge(other)
-
-    def lt(self, other):
-        return (other - self - 1).positive()
-
-    def __lt__(self, other):
-        return self.lt(other)
-
-    def le(self, other):
-        return (other - self).positive()
-
-    def __le__(self, other):
-        return self.le(other)
-
-    def eq(self, other):
-        diff = self - other
-        diff2 = diff * diff
-        negdiff2 = diff2 * -1
-        return negdiff2.positive()
-
-    def __eq__(self, other):
-        return self.eq(other)
-
-    def max(self, dim=None, return_idx=False):
-        """
-        Return the maximum value of an additive shared tensor
-
-        Args:
-            dim (None or int): if not None, the dimension on which
-                the comparison should be done
-            return_idx (bool): Return the index of the maximum value
-                Note that if dim is specified then the index is returned
-                anyway to match the Pytorch syntax.
-
-        return:
-            the maximum value (possibly across an axis)
-            and optionally the index of the maximum value (possibly across an axis)
-        """
-        values = self
-        n_dim = self.dim()
-
-        # Make checks and transformation
-        assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
-        # FIXME make it cleaner and robust for more options
-        if n_dim == 2:
-            if dim == None:
-                values = values.view(-1)
-            elif dim == 1:
-                values = values.t()
-        assert n_dim <= 2, "Max on tensor with len(shape) > 2 is not supported."
-
-        # Init max vals and idx to the first element
-        max_value = values[0]
-        max_index = torch.tensor([0]).share(
-            *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
-        )
-
-        for i in range(1, len(values)):
-            a = values[i]
-            beta = a >= max_value
-            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
-            max_value = max_value + beta * (a - max_value)
-
-        if dim is None and return_idx is False:
-            return max_value
-        else:
-            return max_value, max_index * 1000
-
-    def argmax(self, dim=None):
-
-        max_value, max_index = self.max(dim=dim, return_idx=True)
-
-        return max_index
-
-    ## STANDARD
-
-    @staticmethod
-    def select_worker(args, worker):
-        """
-        utility function for handle_func_command which help to select
-        shares (seen as elements of dict) in an argument set. It could
-        perhaps be put elsewhere
-
-        Args:
-            args: arguments to give to a functions
-            worker: owner of the shares to select
-
-        Return:
-            args where the AdditiveSharedTensors are replaced by
-            the appropriate share
-        """
-        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
-
-    @classmethod
-    def handle_func_command(cls, command):
-        """
-        Receive an instruction for a function to be applied on a Syft Tensor,
-        Replace in the args all the LogTensors with
-        their child attribute, forward the command instruction to the
-        handle_function_command of the type of the child attributes, get the
-        response and replace a Syft Tensor on top of all tensors found in
-        the response.
-
-        Args:
-            command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
-
-        Returns:
-            the response of the function command
-        """
-        cmd, _, args, kwargs = command
-
-        # Check that the function has not been overwritten
-        try:
-            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-        except AttributeError:
-            pass
-        if not isinstance(cmd, str):
-            return cmd(*args, **kwargs)
-
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
-
-        # TODO: I can't manage the import issue, can you?
-        # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
-
-        results = {}
-        for worker, share in new_args[0].items():
-            new_type = type(share)
-            new_args_worker = tuple(AdditiveSharingTensor.select_worker(new_args, worker))
-
-            # build the new command
-            new_command = (cmd, None, new_args_worker, new_kwargs)
-
-            # Send it to the appropriate class and get the response
-            results[worker] = new_type.handle_func_command(new_command)
-
-        # Put back AdditiveSharingTensor on the tensors found in the response
-        response = sy.frameworks.torch.hook_args.hook_response(
-            cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
-        )
-
-        return response
-
-    def set_garbage_collect_data(self, value):
-        shares = self.child
-        for _, share in shares.items():
-            share.garbage_collect_data = value
-
-    @staticmethod
-    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
-        """
-        This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
-        Args:
-            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
-        Returns:
-            tuple: a tuple holding the unique attributes of the additive shared tensor
-        Examples:
-            data = simplify(tensor)
-        """
-
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
-
-        # Don't delete the remote values of the shares at simplification
-        tensor.set_garbage_collect_data(False)
-
-        return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
-
-    @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
-        """
-            This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
-            Returns:
-                AdditiveSharingTensor: a AdditiveSharingTensor
-            Examples:
-                shared_tensor = detail(data)
-            """
-
-        tensor_id, field, crypto_provider, chain = tensor_tuple
-
-        tensor = AdditiveSharingTensor(
-            owner=worker,
-            id=tensor_id,
-            field=field,
-            crypto_provider=worker.get_worker(crypto_provider),
-        )
-
-        if chain is not None:
-            chain = sy.serde._detail(worker, chain)
-            tensor.child = chain
-
-        return tensor
+    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
+    expected1 = torch.conv2d(
+        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
+    )
+
+    assert (res0 == expected0).all()
+    assert (res1 == expected1).all()
+
+
+def test_fixed_precision_and_sharing(workers):
+
+    bob, alice = (workers["bob"], workers["alice"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+    x = t.fix_prec().share(bob, alice)
+    out = x.get().float_prec()
+
+    assert (out == t).all()
+
+    x = t.fix_prec().share(bob, alice)
+
+    y = x + x
+
+    y = y.get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_fixed_precision_and_sharing_on_pointer(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+    ptr = t.send(james)
+
+    x = ptr.fix_prec().share(bob, alice)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_pointer_on_fixed_precision_and_sharing(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    t = torch.tensor([1, 2, 3, 4.0])
+
+    x = t.fix_prec().share(bob, alice)
+    x = x.send(james)
+
+    y = x + x
+
+    y = y.get().get().float_prec()
+    assert (y == (t + t)).all()
+
+
+def test_get_item(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
+    idx = torch.tensor([0]).send(alice, bob)
+
+    # Operate directly AST[MPT]
+    assert x.child.child[:, idx.child].get() == torch.tensor([[3100]])
+
+    # With usual wrappers and FPT
+    x = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    idx = torch.tensor([0]).send(alice, bob)
+    assert x[:, idx].get() == torch.tensor([[3]])
+
+
+def test_eq(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x == y).get().float_prec()
+
+    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert not (x == y).get().float_prec()
+
+    x = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x == y).get().float_prec()
+
+
+def test_comp(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert (x <= y).get().float_prec()
+    assert not (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert (x <= y).get().float_prec()
+    assert not (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert not (x <= y).get().float_prec()
+    assert (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+    x = torch.tensor([-2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert (x >= y).get().float_prec()
+    assert not (x <= y).get().float_prec()
+    assert (x > y).get().float_prec()
+    assert not (x < y).get().float_prec()
+
+
+def test_max(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([3.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([4.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    max_value = x.max().get().float_prec()
+    assert max_value == torch.tensor([5.0])
+
+
+def test_argmax(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([3, 1.0, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([0.0])
+
+    t = torch.tensor([3, 4.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([1.0])
+
+    t = torch.tensor([3, 4.0, 5, 2])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    idx = x.argmax().get().float_prec()
+    assert idx == torch.tensor([2.0])
+
+    # no dim=
+    t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax().get().float_prec()
+    assert ids.long() == torch.argmax(t)
+
+    # dim=1
+    t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    ids = x.argmax(dim=1).get().float_prec()
+    assert (ids.long() == torch.argmax(t, dim=1)).all()
+
+
+def test_mod(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([5])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-3])
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james)
+    assert t.child.mod(8).get() % 8 == torch.tensor([3])
+    assert t.child.mod(-8).get() % -8 == torch.tensor([-5])
+
+    assert (t.child % 8).get() % 8 == torch.tensor([3])
+
+
+def test_torch_sum(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([[1, 2, 4], [8, 5, 6]])
+    x = t.share(alice, bob, crypto_provider=james)
+
+    s = torch.sum(x).get()
+    s_dim = torch.sum(x, 0).get()
+    s_dim2 = torch.sum(x, (0, 1)).get()
+    s_keepdim = torch.sum(x, 1, keepdim=True).get()
+
+    assert (s == torch.sum(t)).all()
+    assert (s_dim == torch.sum(t, 0)).all()
+    assert (s_dim2 == torch.sum(t, (0, 1))).all()
+    assert (s_keepdim == torch.sum(t, 1, keepdim=True)).all()
+
+
+def test_torch_mean(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    base = 10
+    prec_frac = 4
+
+    t = torch.tensor([[1.0, 2.5], [8.0, 5.5]])
+    x = t.fix_prec(base=base, precision_fractional=prec_frac).share(
+        alice, bob, crypto_provider=james
+    )
+
+    s = torch.mean(x).get().float_prec()
+    s_dim = torch.mean(x, 0).get().float_prec()
+    s_dim2 = torch.mean(x, (0, 1)).get().float_prec()
+    s_keepdim = torch.mean(x, 1, keepdim=True).get().float_prec()
+
+    assert (s == torch.tensor(4.25)).all()
+    assert (s_dim == torch.tensor([4.5, 4.0])).all()
+    assert (s_dim2 == torch.tensor(4.25)).all()
+    assert (s_keepdim == torch.tensor([[1.75], [6.75]])).all()
+
+
+def test_torch_dot(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec().share(alice, bob, crypto_provider=james)
+    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    assert torch.dot(x, y).get().float_prec() == 45
+
+
+def test_unbind(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    x = torch.tensor([21, 17]).share(bob, alice, crypto_provider=james).child
+
+    x0, x1 = torch.unbind(x)
+
+    assert x0.get() == torch.tensor(21)
+    assert x1.get() == torch.tensor(17)
+
+
+def test_handle_func_command(workers):
+    """
+    Just to show that handle_func_command works
+    Even if torch.abs should be hooked to return a correct value
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([-21]).share(bob, alice, crypto_provider=james).child
+    _ = torch.abs(t).get()
+
+
+def test_init_with_no_crypto_provider(workers):
+    alice, bob = workers["alice"], workers["bob"]
+
+    x = torch.tensor([21, 17]).share(bob, alice).child
+
+    assert x.crypto_provider.id == syft.hook.local_worker.id
+
+
+def test_zero_refresh(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([2.2, -1.0])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+
+    x_sh = x.child.child
+    assert (x_sh.zero().get() == torch.zeros(*t.shape).long()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_copy = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert (x_r.get().float_prec() == x_copy.get().float_prec()).all()
+
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x_r = x.refresh()
+
+    assert ((x_r / 2).get().float_prec() == t / 2).all()
+
+
+def test_cnn_model(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.conv1 = nn.Conv2d(1, 20, 5, 1)
+            self.conv2 = nn.Conv2d(20, 50, 5, 1)
+            self.fc1 = nn.Linear(4 * 4 * 50, 500)
+            self.fc2 = nn.Linear(500, 10)
+
+        def forward(self, x):
+            # TODO: uncomment maxpool2d operations
+            # once it is supported with smpc.
+            x = F.relu(self.conv1(x))
+            # x = F.max_pool2d(x, 2, 2)
+            x = F.relu(self.conv2(x))
+            # x = F.max_pool2d(x, 2, 2)
+            x = x.view(-1, 4 * 4 * 50)
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            return x
+
+    model = Net()
+    sh_model = copy.deepcopy(model).fix_precision().share(alice, bob, crypto_provider=james)
+
+    data = torch.zeros((1, 1, 28, 28))
+    sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
+
+    assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
