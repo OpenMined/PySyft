@@ -3,19 +3,19 @@ This file tests the ability for serde.py to convert complex types into
 simple python types which are serializable by standard serialization tools.
 For more on how/why this works, see serde.py directly.
 """
-from syft.serde import native_serde
-from syft.serde import serde
-from syft.serde import torch_serde
-
-import syft
-from syft.exceptions import CompressionNotFoundException
-from syft.generic import pointers
-
 import msgpack
 import numpy
 import pytest
 import torch
 from torch import Tensor
+
+import syft
+from syft.generic import pointers
+from syft.serde import native_serde
+from syft.serde import serde
+from syft.serde import torch_serde
+
+from syft.exceptions import CompressionNotFoundException
 
 
 def test_tuple_simplify():

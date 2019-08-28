@@ -32,39 +32,32 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
+
 import inspect
-import msgpack
 import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
+import msgpack
 import zstd
 
 import syft as sy
 from syft import dependency_check
-
-from syft.federated import TrainConfig
-
-from syft.workers import AbstractWorker
-from syft.workers import BaseWorker
-
 from syft import messaging
-
-from syft.exceptions import CompressionNotFoundException
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import ResponseSignatureError
-
-
+from syft.federated import TrainConfig
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.generic.pointers import MultiPointerTensor
-
 from syft.generic import pointers
-
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
+from syft.workers import AbstractWorker
+from syft.workers import BaseWorker
+
+from syft.exceptions import CompressionNotFoundException
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
 
 if dependency_check.torch_available:
     from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
@@ -89,7 +82,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     FixedPrecisionTensor,
     CRTPrecisionTensor,
     LoggingTensor,
-    MultiPointerTensor,
+    pointers.MultiPointerTensor,
     messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,

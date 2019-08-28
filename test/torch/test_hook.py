@@ -1,13 +1,13 @@
 """Tests relative to verifying the hook process behaves properly."""
-
 import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.exceptions import RemoteObjectFoundError
 from syft.generic.pointers import PointerTensor
+
+from syft.exceptions import RemoteObjectFoundError
 
 
 def test___init__(hook):
