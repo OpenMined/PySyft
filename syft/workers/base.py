@@ -610,14 +610,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if worker_id == self.id:
             return self
 
-        worker = self._known_workers.get(worker_id)
+        worker = self._known_workers.get(worker_id, d=worker_id)
 
-        if worker is None:
-            if fail_hard:
-                raise WorkerNotFoundException
-            logger.warning("Worker %s couldn't recognize worker %s", self.id, worker_id)
-            return worker_id
+        if worker == worker_id and fail_hard:
+            raise WorkerNotFoundException
 
+        logger.warning("Worker %s couldn't recognize worker %s", self.id, worker_id)
         return worker
 
     def add_worker(self, worker: "BaseWorker"):
