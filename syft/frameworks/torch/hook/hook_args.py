@@ -6,9 +6,6 @@ from typing import List
 import numpy as np
 import torch
 
-from syft.exceptions import RemoteObjectFoundError
-from syft.exceptions import PureFrameworkTensorFoundError
-from syft.exceptions import ResponseSignatureError
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
@@ -20,6 +17,10 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import MultiPointerTensor
 from syft.generic.pointers import PointerTensor
 from syft.workers import AbstractWorker
+
+from syft.exceptions import RemoteObjectFoundError
+from syft.exceptions import PureFrameworkTensorFoundError
+from syft.exceptions import ResponseSignatureError
 
 
 hook_method_args_functions = {}
@@ -91,6 +92,7 @@ backward_func = {
 ambiguous_methods = {
     "__getitem__",
     "_getitem_public",
+    "__setitem__",
     "view",
     "permute",
     "add_",

@@ -7,16 +7,17 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 import syft as sy
+from syft import codes
+from syft import messaging
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import WorkerNotFoundException
-from syft.exceptions import ResponseSignatureError
 from syft.frameworks.types import FrameworkTensorType
 from syft.frameworks.types import FrameworkTensor
 from syft.workers import AbstractWorker
-from syft import messaging
-from syft import codes
+
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import WorkerNotFoundException
+from syft.exceptions import ResponseSignatureError
 
 
 # this if statement avoids circular imports between base.py and pointer.py

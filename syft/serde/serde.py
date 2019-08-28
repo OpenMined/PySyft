@@ -32,38 +32,31 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-import msgpack
+
 import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
+import msgpack
 import zstd
 
 import syft as sy
 from syft import dependency_check
-
-from syft.federated import TrainConfig
-
-from syft.workers import AbstractWorker
-from syft.workers import VirtualWorker
-
 from syft import messaging
-
-from syft.exceptions import CompressionNotFoundException
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import ResponseSignatureError
-
-
+from syft.federated import TrainConfig
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.generic.pointers import MultiPointerTensor
-
 from syft.generic import pointers
-
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
+from syft.workers import AbstractWorker
+from syft.workers import VirtualWorker
+
+from syft.exceptions import CompressionNotFoundException
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ResponseSignatureError
 
 if dependency_check.torch_available:
     from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
@@ -88,7 +81,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     FixedPrecisionTensor,
     CRTPrecisionTensor,
     LoggingTensor,
-    MultiPointerTensor,
+    pointers.MultiPointerTensor,
     messaging.Plan,
     pointers.PointerTensor,
     pointers.ObjectWrapper,
@@ -125,10 +118,10 @@ scheme_to_bytes = {
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
     """To force a full simplify genrally if the usual _simplify is not suitable.
-    
+
     Args:
         The object
-    
+
     Returns:
         The simplified object
     """
@@ -153,7 +146,7 @@ def _generate_simplifiers_and_detailers():
     by registering native and torch types, syft objects with custom
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
-    
+
     Returns:
         The simplifiers, forced_full_simplifiers, detailers
     """
@@ -330,7 +323,7 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary to be compressed
-        
+
     Returns:
         a tuple (compressed_result, LZ4)
     """
@@ -343,7 +336,7 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary to be compressed
-    
+
     Returns:
         a tuple (compressed_result, ZSTD)
     """
@@ -357,7 +350,7 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
 
     Args:
         decompressed_input_bin: the binary
-        
+
     Returns:
         a tuple (the binary, LZ4)
     """
