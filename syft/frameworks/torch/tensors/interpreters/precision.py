@@ -543,8 +543,8 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             """
             Overloads torch.conv2d to be able to use MPC on convolutional networks.
-            The idea is to build new tensors from input and weight to compute a matrix multiplication
-            equivalent to the convolution.
+            The idea is to build new tensors from input and weight to compute a
+            matrix multiplication equivalent to the convolution.
 
             Args:
                 input: input image
@@ -568,13 +568,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # Extract a few useful values
             batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
-            nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
+            nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = weight.shape
 
             if bias is not None:
                 assert len(bias) == nb_channels_out
 
             # Check if inputs are coherent
-            assert nb_channels_in == nb_channels_in_ * groups
+            assert nb_channels_in == nb_channels_kernel * groups
             assert nb_channels_in % groups == 0
             assert nb_channels_out % groups == 0
 
@@ -644,6 +644,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # Add a bias if needed
             if bias is not None:
+                if not bias.is_wrapper:
+                    bias = bias.wrap()
                 res += bias
 
             # ... And reshape it back to an image
