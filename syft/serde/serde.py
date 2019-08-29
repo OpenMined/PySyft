@@ -33,6 +33,7 @@ If different compressions are required, the worker can override the function app
 """
 from collections import OrderedDict
 
+import inspect
 import lz4
 from lz4 import (  # noqa: F401
     frame,
@@ -52,7 +53,7 @@ from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.generic import pointers
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers import AbstractWorker
-from syft.workers import VirtualWorker
+from syft.workers import BaseWorker
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -86,7 +87,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     pointers.PointerTensor,
     pointers.ObjectWrapper,
     TrainConfig,
-    VirtualWorker,
+    BaseWorker,
     AutogradTensor,
     messaging.Message,
     messaging.Operation,
@@ -99,7 +100,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
-OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
+OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 
 # For registering syft objects with custom simplify and detail methods
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
@@ -116,27 +117,52 @@ scheme_to_bytes = {
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
-    """To force a full simplify genrally if the usual _simplify is not suitable.
+    """To force a full simplify generally if the usual _simplify is not suitable.
+
+    If we can not full simplify a object we simplify it as usual instead.
 
     Args:
-        The object
+        obj: The object.
 
     Returns:
-        The simplified object
+        The simplified object.
     """
+    # check to see if there is a full simplifier
+    # for this type. If there is, return the full simplified object.
     current_type = type(obj)
-
     if current_type in forced_full_simplifiers:
-        left = forced_full_simplifiers[current_type][0]
-
-        right = forced_full_simplifiers[current_type][1]
-        right = right(obj)
-
-        result = (left, right)
+        result = (
+            forced_full_simplifiers[current_type][0],
+            forced_full_simplifiers[current_type][1](obj),
+        )
+    # If we already tried to find a full simplifier for this type but failed, we should
+    # simplify it instead.
+    elif current_type in no_full_simplifiers_found:
+        return _simplify(obj)
     else:
-        result = _simplify(obj)
+        # If the object type is not in forced_full_simplifiers,
+        # we check the classes that this object inherits from.
+        # `inspect.getmro` give us all types this object inherits
+        # from, including `type(obj)`. We can skip the type of the
+        # object because we already tried this in the
+        # previous step.
+        classes_inheritance = inspect.getmro(type(obj))[1:]
 
-    return result
+        for inheritance_type in classes_inheritance:
+            if inheritance_type in forced_full_simplifiers:
+                # Store the inheritance_type in forced_full_simplifiers so next
+                # time we see this type serde will be faster.
+                forced_full_simplifiers[current_type] = forced_full_simplifiers[inheritance_type]
+                result = (
+                    forced_full_simplifiers[current_type][0],
+                    forced_full_simplifiers[current_type][1](obj),
+                )
+                return result
+
+        # If there is not a full_simplifier for this
+        # object, then we simplify it.
+        no_full_simplifiers_found.add(current_type)
+        return _simplify(obj)
 
 
 ## SECTION: dinamically generate simplifiers and detailers
@@ -184,6 +210,9 @@ def _generate_simplifiers_and_detailers():
 
 
 simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+# Store types that are not simplifiable (int, float, None) so we
+# can ignore them during serialization.
+no_simplifiers_found, no_full_simplifiers_found = set(), set()
 
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
@@ -422,28 +451,50 @@ def _simplify(obj: object) -> object:
     being sent.
 
     Args:
-        obj: an object which may need to be simplified.
+        obj: An object which may need to be simplified.
 
     Returns:
-        obj: an simple Python object which msgpack can serialize.
+        An simple Python object which msgpack can serialize.
 
     Raises:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
     """
-    try:
-        # check to see if there is a simplifier
-        # for this type. If there is, run return
-        # the simplified object
-        current_type = type(obj)
+
+    # Check to see if there is a simplifier
+    # for this type. If there is, return the simplified object.
+    current_type = type(obj)
+    if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
         return result
 
-    except KeyError:
+    # If we already tried to find a simplifier for this type but failed, we should
+    # just return the object as it is.
+    elif current_type in no_simplifiers_found:
+        return obj
+
+    else:
+        # If the object type is not in simplifiers,
+        # we check the classes that this object inherits from.
+        # `inspect.getmro` give us all types this object inherits
+        # from, including `type(obj)`. We can skip the type of the
+        # object because we already tried this in the
+        # previous step.
+        classes_inheritance = inspect.getmro(type(obj))[1:]
+
+        for inheritance_type in classes_inheritance:
+            if inheritance_type in simplifiers:
+                # Store the inheritance_type in simplifiers so next time we see this type
+                # serde will be faster.
+                simplifiers[current_type] = simplifiers[inheritance_type]
+                result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+                return result
+
         # if there is not a simplifier for this
         # object, then the object is already a
         # simple python object and we can just
-        # return it
+        # return it.
+        no_simplifiers_found.add(current_type)
         return obj
 
 
