@@ -505,16 +505,14 @@ class FixedPrecisionTensor(AbstractTensor):
         def sigmoid(tensor):
             """
             Overloads torch.sigmoid to be able to use MPC
-            Approximation with polynomial interpolation of degree 10 over [-10,10]
+            Approximation with polynomial interpolation of degree 5 over [-8,8]
             Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
             """
 
-            weights = [0.5, 0.216578258, -0.0083312848, 0.0001876528, -1.9669e-06, 7.5e-09]
-            degrees = [0, 1, 3, 5, 7, 9]
+            weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
+            degrees = [0, 1, 3, 5]
 
-            # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
-            # will be faster
-            max_degree = degrees[-3]
+            max_degree = degrees[-1]
             max_idx = degrees.index(max_degree)
 
             # initiate with term of degree 0 to avoid errors with tensor ** 0
