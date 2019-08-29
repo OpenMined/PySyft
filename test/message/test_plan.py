@@ -23,6 +23,23 @@ def test_plan_built_automatically():
     assert plan_abs.is_built
 
 
+def test_stateful_plan_built_automatically():
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def foo(x, state):
+        bias = state.read("bias")
+        x = x * 2
+        return x + bias
+
+    assert isinstance(foo.__str__(), str)
+    assert len(foo.readable_plan) > 0
+    assert foo.is_built
+
+    t = th.tensor([1.0, 2])
+    x = foo(t)
+
+    assert (x == th.tensor([3.0, 5])).all()
+
+
 def test_plan_build():
     @sy.func2plan(args_shape=())
     def plan_abs(data):
@@ -35,6 +52,19 @@ def test_plan_build():
 
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
+
+
+def test_stateful_plan_build():
+    @sy.func2plan(state={"bias": th.tensor([1.0])})
+    def foo(x, state):
+        bias = state.read("bias")
+        x = x * 2
+        return x + bias
+
+    t = th.tensor([1.0, 2])
+    x = foo(t)
+
+    assert (x == th.tensor([3.0, 5])).all()
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -211,6 +241,28 @@ def test_plan_method_execute_locally():
     assert model(th.tensor([1.0, 2.1])) == 0
 
 
+def test_stateful_plan_method_execute_locally():
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=0) + self.bias
+
+    model = Net()
+
+    # Force build
+    assert model(th.tensor([1.0, 2])) == th.tensor([1000.0])
+
+    # Test call multiple times
+    assert model(th.tensor([1.0, 2.1])) == th.tensor([1000.0])
+
+
 def test_plan_multiple_send(workers):
     me, bob, alice = workers["me"], workers["bob"], workers["alice"]
 
@@ -235,9 +287,35 @@ def test_plan_multiple_send(workers):
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
-def test_plan_built_on_method(hook):
+def test_stateful_plan_multiple_send(workers):
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def plan_abs(x, state):
+        bias = state.read("bias")
+        x = x.abs()
+        return x + bias
+
+    plan_abs.send(bob)
+    x_ptr = th.tensor([-1.0, 7, 3]).send(bob)
+    p = plan_abs(x_ptr)
+    res = p.get()
+
+    assert (res == th.tensor([2.0, 8, 4])).all()
+
+    # Test get / send plan
+    plan_abs.get()
+    plan_abs.send(alice)
+
+    x_ptr = th.tensor([-1.0, 2, 3]).send(alice)
+    p = plan_abs(x_ptr)
+    res = p.get()
+    assert (res == th.tensor([2.0, 3, 4])).all()
+
+
+def test_plan_built_on_class(hook):
     """
-    Test @sy.meth2plan and plan send / get / send
+    Test class Plans and plan send / get / send
     """
 
     x11 = th.tensor([-1, 2.0]).tag("input_data")
@@ -250,14 +328,16 @@ def test_plan_built_on_method(hook):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
+            self.fc2 = nn.Linear(3, 1)
 
-            self.state += ["fc1", "fc2"]
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "fc2", "bias"]
 
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0)
+            return F.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 
@@ -268,7 +348,9 @@ def test_plan_built_on_method(hook):
     pointer_to_data = device_1.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
 
-    assert isinstance(pointer_to_result.get(), th.Tensor)
+    result = pointer_to_result.get()
+    assert isinstance(result, th.Tensor)
+    assert result == th.tensor([1000.0])
 
     net.get()
     net.send(device_2)
@@ -276,14 +358,13 @@ def test_plan_built_on_method(hook):
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
 
-    assert isinstance(pointer_to_result.get(), th.Tensor)
+    result = pointer_to_result.get()
+    assert isinstance(result, th.Tensor)
+    assert result == th.tensor([1000.0])
 
 
 def test_multiple_workers(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-    bob = workers["bob"]
-    alice = workers["alice"]
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -300,7 +381,26 @@ def test_multiple_workers(workers):
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 9, 3])).all()
 
-    me.is_client_worker = True
+
+def test_stateful_plan_multiple_workers(workers):
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})
+    def plan_abs(x, state):
+        bias = state.read("bias")
+        x = x.abs()
+        return x + bias
+
+    plan_abs.send(bob, alice)
+    x_ptr = th.tensor([-1, 7, 3]).send(bob)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([2, 8, 4])).all()
+
+    x_ptr = th.tensor([-1, 9, 3]).send(alice)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([2, 10, 4])).all()
 
 
 # TODO: Clarify this test
@@ -378,12 +478,14 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-            self.state += ["fc1", "fc2"]
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "fc2", "bias"]
 
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0)
+            return F.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 
