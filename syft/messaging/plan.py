@@ -629,7 +629,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
 
-        self.state.send(location)
+        state_original = self.state.copy()
+        self.state.send(location, garbage_collect_data=False)
         state_ptr_ids = self.state.get_id_at_location()
         self.replace_ids(self.state_ids, state_ptr_ids)
 
@@ -639,6 +640,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
 
         self.readable_plan = readable_plan_original
+        self.state.set_(state_original)
         return pointer
 
     def get(self) -> "Plan":
@@ -653,8 +655,6 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         self.locations = []
         self.ptr_plans = {}
-
-        self.state.get()
 
         return self
 
