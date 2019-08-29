@@ -32,7 +32,7 @@ def run_commands_in(commands, logs, tmp_dir="tmp", cleanup=True, verbose=False):
             print("\t" + str(output).replace("\n", "\n\t"))
 
     if cleanup:
-        gr_utils.executes_command("rm -rf " + tmp_dir)
+        gr_utils.execute_command("rm -rf " + tmp_dir)
 
     return outputs
 
@@ -64,9 +64,22 @@ def launch_on_heroku(
     app_type: str = "pg_rest_api",
     verbose=True,
     check_deps=True,
-    dev_user=None,
-    branch=None,
+    dev_user: str = "OpenMined",
+    branch: str = "dev",
 ):
+    """Launches a node as a heroku application. User needs to be logged in to heroku prior to calling this function.
+
+        Args:
+            grid_name (str): The name of the node / Heroku application.
+            app_type (str): Type of node being deployed to heroku. Defaults to "pg_rest_api".
+            verbose (bool): Specifies logging level. Set true for more logs. Default to True.
+            check_deps (bool): Checks before deployment for local git, heroku and pip installations. Defaults to True.
+            dev_user (str): Github username of the user/ organization whose Grid repo will be used. Leave undefined to use 'OpenMined' repo.
+            branch (str): The default branch to use from the Grid repo of the defined dev_user. Leave undefined to use 'dev' branch.
+        Returns:
+            str: heroku application address (url)
+
+    """
     app_addr = "https://" + str(grid_name) + ".herokuapp.com"
     if check_deps:
         if verbose:
@@ -187,20 +200,17 @@ def launch_on_heroku(
     logs.append("\nStep 4: cleaning up git")
     commands.append("rm -rf .git")
 
+    # Using the dev user and branch specified. Fetches, clones and then deploys the branch as a heroku application
+    # If no dev user/ branch is defined, then it defaults to OpenMined user and dev branch
     logs.append("Step 5: cloning heroku app code from Github")
-    if dev_user:
-        if branch:
-            commands.append(
-                "git clone -b {} https://github.com/{}/Grid".format(branch, dev_user)
-            )
-        else:
-            commands.append(
-                "git clone -b dev https://github.com/{}/Grid".format(dev_user)
-            )
-            logs.append("Checking out dev version...")
-            commands.append("git checkout origin/dev")
+    if branch:
+        commands.append(
+            "git clone -b {} https://github.com/{}/Grid".format(branch, dev_user)
+        )
     else:
-        commands.append("git clone https://github.com/OpenMined/Grid")
+        commands.append("git clone -b dev https://github.com/{}/Grid".format(dev_user))
+        logs.append("Checking out dev version...")
+        commands.append("git checkout origin/dev")
 
     logs.append("Step 6: copying app code from cloned repo")
     commands.append("cp -r Grid/app/{}/* ./".format(app_type))
