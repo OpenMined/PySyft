@@ -707,3 +707,13 @@ def test_serde_object_wrapper_traced_module():
 
     assert (pred_before == pred_after).all()
     assert obj_wrapper.id == obj_wrapper_received.id
+
+
+def test_no_simplifier_found():
+    """Test that types that can not be simplified are cached."""
+    # Clean cache.
+    serde.no_simplifiers_found = set()
+    x = 1.3
+    assert type(x) not in serde.no_simplifiers_found
+    _ = serde._simplify(x)
+    assert type(x) in serde.no_simplifiers_found
