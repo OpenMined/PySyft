@@ -141,7 +141,7 @@ class State(object):
             t.get_()
 
 
-class Plan(ObjectStorage):
+class Plan(ObjectStorage, torch.nn.Module):
     """A Plan store a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
@@ -153,24 +153,27 @@ class Plan(ObjectStorage):
 
     def __init__(
         self,
-        id: Union[str, int],
-        owner: "sy.workers.BaseWorker",
+        id: Union[str, int] = None,
+        owner: "sy.workers.BaseWorker" = None,
         name: str = "",
         state_ids: List[Union[str, int]] = None,
         arg_ids: List[Union[str, int]] = None,
         result_ids: List[Union[str, int]] = None,
         readable_plan: List = None,
+        blueprint = None,
         is_built: bool = False,
         verbose: bool = False,
         *args,
         **kwargs,
     ):
-        super().__init__()
+        ObjectStorage.__init__(self)
+        torch.nn.Module.__init__(self)
+        #super().__init__()
 
         # Plan instance info
-        self.id = id
-        self.name = name
-        self.owner = owner
+        self.id = sy.ID_PROVIDER.pop() if id is None else id
+        self.name = self.__class__.__name__ if name == "" else name
+        self.owner = sy.local_worker if owner is None else owner
         self.verbose = verbose
 
         # Info about the plan stored
@@ -190,14 +193,15 @@ class Plan(ObjectStorage):
         self.tags = None
         self.description = None
 
-        # # Enforce methods:
-        # #self.native___call__ = self.__call__
-        # self.__call__ = lambda x: Plan.__call__(self, x)
+        if blueprint is not None:
+            self.forward = blueprint
+
+        print('plan created')
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
         placeholders = self._create_placeholders(args_shape)
         args = placeholders
-        self._build(args)
+        self.build(*args)
 
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
@@ -268,6 +272,7 @@ class Plan(ObjectStorage):
         """
         print('$', '_build')
         args = list(args)
+        print(args)
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
