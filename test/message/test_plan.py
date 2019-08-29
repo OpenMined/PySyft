@@ -14,9 +14,6 @@ import unittest.mock as mock
 
 
 def test_plan_built_automatically(hook):
-    # To run a plan locally the local worker can't be a client worker,
-    # since it needs to register objects
-    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -26,11 +23,8 @@ def test_plan_built_automatically(hook):
     assert len(plan_abs.readable_plan) > 0
     assert plan_abs.is_built
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_plan_build(hook):
-    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=())
     def plan_abs(data):
@@ -44,11 +38,8 @@ def test_plan_build(hook):
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_plan_built_automatically_with_any_dimension(hook):
-    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(-1, 1)])
     def plan_abs(data):
@@ -57,11 +48,8 @@ def test_plan_built_automatically_with_any_dimension(hook):
     assert isinstance(plan_abs.__str__(), str)
     assert len(plan_abs.readable_plan) > 0
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_raise_exception_for_invalid_shape(hook):
-    hook.local_worker.is_client_worker = False
 
     with pytest.raises(ValueError):
 
@@ -69,14 +57,9 @@ def test_raise_exception_for_invalid_shape(hook):
         def _(data):
             return data  # pragma: no cover
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_raise_exception_when_sending_unbuilt_plan(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-
-    bob = workers["bob"]
+    me, bob = workers["me"], workers["bob"]
 
     @sy.func2plan()
     def plan(data):
@@ -85,11 +68,8 @@ def test_raise_exception_when_sending_unbuilt_plan(workers):
     with pytest.raises(RuntimeError):
         plan.send(bob)
 
-    me.is_client_worker = True
-
 
 def test_plan_execute_locally(hook):
-    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -99,20 +79,16 @@ def test_plan_execute_locally(hook):
     x_abs = plan_abs(x)
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_plan_method_execute_locally(hook):
-    hook.local_worker.is_client_worker = False
 
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
 
-        @sy.method2plan
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
@@ -127,15 +103,9 @@ def test_plan_method_execute_locally(hook):
     # Test call multiple times
     assert model(th.tensor([1.0, 2.1])) == 0
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_plan_multiple_send(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-
-    bob = workers["bob"]
-    alice = workers["alice"]
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -156,8 +126,6 @@ def test_plan_multiple_send(workers):
     p = plan_abs(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 2, 3])).all()
-    me.is_client_worker = True
-
 
 def test_plan_built_on_method(hook):
     """
@@ -171,13 +139,12 @@ def test_plan_built_on_method(hook):
     device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11,))
     device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21,))
 
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.method2plan
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
@@ -303,13 +270,12 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
     hook.local_worker.is_client_worker = False
 
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.method2plan
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
@@ -344,13 +310,12 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     hook.local_worker.is_client_worker = False
 
     # Create toy model
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.method2plan
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
