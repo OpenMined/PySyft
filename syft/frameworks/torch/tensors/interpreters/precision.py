@@ -620,7 +620,7 @@ class FixedPrecisionTensor(AbstractTensor):
                     # For each new output value, we just need to shift the receptive field
                     offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
                     tmp = [ind + offset for ind in pattern_ind]
-                    im_reshaped.append(im_flat[:, tmp].wrap())
+                    im_reshaped.append(im_flat[:, tmp])
             im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
             # The convolution kernels are also reshaped for the matrix multiplication
@@ -628,7 +628,7 @@ class FixedPrecisionTensor(AbstractTensor):
             #                       [weights for out channel 1],
             #                       ...
             #                       [weights for out channel nb_channels_out]].TRANSPOSE()
-            weight_reshaped = weight.view(nb_channels_out // groups, -1).t().wrap()
+            weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
 
             # Now that everything is set up, we can compute the result
             if groups > 1:
@@ -643,9 +643,8 @@ class FixedPrecisionTensor(AbstractTensor):
                 res = im_reshaped.matmul(weight_reshaped)
 
             # Add a bias if needed
+            print(res, bias)
             if bias is not None:
-                if not bias.is_wrapper:
-                    bias = bias.wrap()
                 res += bias
 
             # ... And reshape it back to an image
@@ -654,7 +653,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
                 .contiguous()
             )
-            return res.child
+            return res
 
         module.conv2d = conv2d
 
@@ -697,7 +696,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # Check that the function has not been overwritten
         try:
