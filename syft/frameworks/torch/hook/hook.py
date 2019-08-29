@@ -555,7 +555,7 @@ class TorchHook(FrameworkHook):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(*dest)
+                p.send_(*dest, **kwargs)
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.send(*dest, force=force_send)

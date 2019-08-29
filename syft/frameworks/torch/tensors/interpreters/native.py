@@ -472,7 +472,7 @@ class TorchTensor(AbstractTensor):
 
         return output
 
-    def send_(self, *location):
+    def send_(self, *location, **kwargs):
         """
         Calls send() with inplace option, but only with a single location
         :param location: workers locations
@@ -481,7 +481,7 @@ class TorchTensor(AbstractTensor):
         if len(location) > 1:
             raise NotImplementedError("Inplace send to several workers is currently not supported.")
 
-        return self.send(*location, inplace=True)
+        return self.send(*location, inplace=True, **kwargs)
 
     def create_pointer(
         self,
