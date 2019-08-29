@@ -542,10 +542,10 @@ class TorchHook(FrameworkHook):
 
         def create_grad_objects(model):
             """Assigns gradient to model parameters if not assigned"""
-            # for p in model.parameters():
-            #     o = p.sum()
-            #     o.backward()
-            #     p.grad -= p.grad
+            for p in model.parameters():
+                o = p.sum()
+                o.backward()
+                p.grad -= p.grad
             pass
 
         def module_send_(nn_self, *dest, force_send=False, **kwargs):

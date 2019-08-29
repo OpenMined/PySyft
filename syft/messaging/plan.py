@@ -50,40 +50,10 @@ class func2plan(object):
         return plan
 
 
-def method2plan(plan_blueprint):
-    """Converts a method to a plan.
-    Converts a method containing sequential pytorch code into
-    a plan object which can be sent to any arbitrary worker.
-    """
-    plan = Plan(
-        owner=sy.local_worker,
-        id=sy.ID_PROVIDER.pop(),
-        blueprint=plan_blueprint,
-        name=plan_blueprint.__name__,
+def method2plan(*args, **kwargs):
+    raise SyntaxError(
+        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
     )
-
-    @property
-    def method(self: object) -> Plan:
-        """
-        This property is a way to catch the self of the method and give it to the plan,
-        it will be provided in the future calls as this is not automatic (the structure
-        of @func2plan would not keep the self during the call)
-        Args:
-            self (object): an instance of a class
-        Returns:
-            the plan which is also a callable.
-        Example:
-            When you have your plan and that you do
-            > plan(*args)
-            First the property is call with the part "plan" and self is caught, plan is
-            returned
-            Then plan is called with "(*args)" and in the __call__ function of plan the
-            self parameter is re-inserted
-        """
-        plan._self = self
-        return plan
-
-    return method
 
 
 class State(object):
@@ -91,20 +61,36 @@ class State(object):
         self.keys = []
         self.plan = plan
 
+    def __repr__(self):
+        return "State: " + ", ".join(self.keys)
+
     def append(self, key):
-        t = getattr(self.plan, key)
-        if self.is_accepted_type(t):
-            self.keys.append(key)
+        if isinstance(key, (list, tuple)):
+            for k in key:
+                self.append(k)
+        elif not isinstance(key, str):
+            raise ValueError(
+                "Don't provide the element to the state but just its name:\n"
+                "Example: if you have self.elem1, call self.add_to_state('elem1')."
+            )
         else:
-            raise ValueError(f"Obj of type {type(t)} is not supported in the state")
+            t = getattr(self.plan, key)
+            if self.is_accepted_type(t) and key not in self.keys:
+                self.keys.append(key)
+            else:
+                raise ValueError(
+                    f"Obj of type {type(t)} is not supported in the state.\n"
+                    "Use instead tensors or parameters."
+                )
         return self
 
     def __iadd__(self, other_keys):
-        self.keys += other_keys
-        return self
+        return self.append(other_keys)
 
     def is_accepted_type(self, obf):
-        return isinstance(obf, torch.nn.Module) or (hasattr(obf, 'child') and isinstance(obf.child, sy.PointerTensor))
+        return isinstance(obf, torch.nn.Module) or (
+            hasattr(obf, "child") and isinstance(obf.child, sy.PointerTensor)
+        )
 
     def get_id_at_location(self):
         id_at_location = []
@@ -160,7 +146,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         arg_ids: List[Union[str, int]] = None,
         result_ids: List[Union[str, int]] = None,
         readable_plan: List = None,
-        blueprint = None,
+        blueprint=None,
         is_built: bool = False,
         verbose: bool = False,
         *args,
@@ -168,7 +154,6 @@ class Plan(ObjectStorage, torch.nn.Module):
     ):
         ObjectStorage.__init__(self)
         torch.nn.Module.__init__(self)
-        #super().__init__()
 
         # Plan instance info
         self.id = sy.ID_PROVIDER.pop() if id is None else id
@@ -195,8 +180,12 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         if blueprint is not None:
             self.forward = blueprint
+        elif self.is_built:
+            self.forward = None
 
-        print('plan created')
+    def add_to_state(self, *elements):
+        for elem in elements:
+            self.state.append(elem)
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
         placeholders = self._create_placeholders(args_shape)
@@ -248,7 +237,10 @@ class Plan(ObjectStorage, torch.nn.Module):
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
 
-        if msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL) and not self.is_built:
+        if (
+            msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
+            and not self.is_built
+        ):
             self.plan.append(bin_message)
             self.readable_plan.append((some_type, (msg_type, contents)))
 
@@ -270,9 +262,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         Args:
             args: Input data.
         """
-        print('$', '_build')
         args = list(args)
-        print(args)
 
         # The ids of args of the first call, which should be updated when
         # the function is called with new args
@@ -288,7 +278,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.state.send(location=self)
         self.state_ids = self.state.get_id_at_location()
 
-        res_ptr = self.forward(*local_args) #TODO
+        res_ptr = self.forward(*local_args)  # TODO
 
         self.state.set_(copied_state)
 
@@ -350,7 +340,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             from_worker: The previous worker that built the plan.
             to_worker: The new worker that is running the plan.
         """
-        print('$', 'replace_ids')
         if from_worker is None:
             from_worker = self.id
         if to_worker is None:
@@ -427,7 +416,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         return tuple(_obj)
 
     def _execute_readable_plan(self, *args):
-        print('$', '_execute_readable_plan')
         # TODO: for now only one value is returned from a plan
         result_ids = [sy.ID_PROVIDER.pop()]
 
@@ -445,14 +433,17 @@ class Plan(ObjectStorage, torch.nn.Module):
             The pointer to the result of the execution if the plan was already sent,
             else the None message serialized.
         """
-        print('$', '__call__')
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
-        if self.find_location(args) ==  self.owner:
-            return self.forward(*args)
+        if self.find_location(args) == self.owner:
+            if self.forward is not None:
+                return self.forward(*args)
+            else:
+                return self._execute_readable_plan(*args)
         else:
-            self.forward(*args)
+            if not self.is_built:
+                self.forward(*args)
             return self._execute_readable_plan(*args)
 
     def _update_args(
@@ -469,7 +460,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         """
 
         arg_ids = [arg.id for arg in args]
-        print('*** update args', self.arg_ids, arg_ids)
         self.replace_ids(self.arg_ids, arg_ids)
         self.arg_ids = arg_ids
 
@@ -477,7 +467,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.result_ids = result_ids
 
     def _execute_plan(self):
-        print("$", "_execute_plan")
         for message in self.readable_plan:
             bin_message = sy.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
@@ -496,7 +485,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         return responses
 
     def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        print("$", "_execute_plan_locally")
 
         self._update_args(args, result_ids)
         self._execute_plan()
@@ -517,7 +505,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
-        print("$", "execute_plan")
         # We build the plan only if needed
         if not self.is_built:
             self._build(args)
@@ -566,7 +553,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             Execution response.
 
         """
-        print("$", "request_execute_plan")
         args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
@@ -611,7 +597,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         Args:
             location: Worker where plan should be sent to.
         """
-        print("$", "modle send")
         readable_plan_original = copy.deepcopy(self.readable_plan)
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
@@ -625,7 +610,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         # Deep copy the plan without using deep copy
         pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
 
-        # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
         return pointer
 
@@ -638,7 +622,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         Returns:
             Plan.
         """
-        # self.replace_worker_ids(self.location.id, self.owner.id)
 
         self.locations = []
         self.ptr_plans = {}
@@ -696,14 +679,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-        # dict_state = {key: getattr(plan, key) for key in plan.state}
 
         return (
             tuple(
                 plan.readable_plan
             ),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
-            #sy.serde._simplify(dict_state),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
             sy.serde._simplify(plan.name),
@@ -735,10 +716,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
-        #
-        # for key, elem in dict_state:
-        #     setattr(plan, key, elem)
-        #     plan.state.append(key)
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
