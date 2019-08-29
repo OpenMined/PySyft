@@ -33,9 +33,15 @@ class func2plan(object):
     This class should be used only as decorator.
     """
 
-    def __init__(self, args_shape=None, verbose=False):
+    def __init__(self, args_shape=None, state=None, verbose=False):
         self.args_shape = args_shape
         self.verbose = verbose
+        if state is not None:
+            self.state = state
+            self.include_state = True
+        else:
+            self.state = {}
+            self.include_state = False
 
     def __call__(self, plan_blueprint):
         plan = Plan(
@@ -43,6 +49,8 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
+            state=self.state,
+            include_state=self.include_state,
             verbose=self.verbose,
         )
         if self.args_shape:
@@ -87,10 +95,8 @@ class State(object):
     def __iadd__(self, other_keys):
         return self.append(other_keys)
 
-    def is_accepted_type(self, obf):
-        return isinstance(obf, torch.nn.Module) or (
-            hasattr(obf, "child") and isinstance(obf.child, sy.PointerTensor)
-        )
+    def is_accepted_type(self, obj):
+        return isinstance(obj, (torch.nn.Module, torch.Tensor))
 
     def get_id_at_location(self):
         id_at_location = []
@@ -112,14 +118,22 @@ class State(object):
             copied_state[key] = t.copy()
         return copied_state
 
+    def read(self, key):
+        return getattr(self.plan, key)
+
     def set_(self, dict_state):
         for key in self.keys:
+            delattr(self.plan, key)
+
+        for key in dict_state.keys():
             setattr(self.plan, key, dict_state[key])
 
-    def send(self, location):
+        self.keys = list(dict_state.keys())
+
+    def send(self, location, **kwargs):
         for key in self.keys:
             t = getattr(self.plan, key)
-            t.send_(location)
+            t.send_(location, **kwargs)
 
     def get(self):
         for key in self.keys:
@@ -147,6 +161,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         result_ids: List[Union[str, int]] = None,
         readable_plan: List = None,
         blueprint=None,
+        state=None,
+        include_state: bool = False,
         is_built: bool = False,
         verbose: bool = False,
         *args,
@@ -165,6 +181,9 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.plan = list()
         self.readable_plan = readable_plan if readable_plan is not None else []
         self.state = State(self)
+        self.include_state = include_state
+        if state is not None:
+            self.state.set_(state)
         self.state_ids = state_ids if state_ids is not None else []
         self.arg_ids = arg_ids if arg_ids is not None else []
         self.result_ids = result_ids if result_ids is not None else []
@@ -278,7 +297,10 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.state.send(location=self)
         self.state_ids = self.state.get_id_at_location()
 
-        res_ptr = self.forward(*local_args)  # TODO
+        if self.include_state:
+            res_ptr = self.forward(*local_args, self.state)
+        else:
+            res_ptr = self.forward(*local_args)
 
         self.state.set_(copied_state)
 
@@ -438,12 +460,18 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         if self.find_location(args) == self.owner:
             if self.forward is not None:
-                return self.forward(*args)
+                if self.include_state:
+                    return self.forward(*args, self.state)
+                else:
+                    return self.forward(*args)
             else:
                 return self._execute_readable_plan(*args)
         else:
             if not self.is_built:
-                self.forward(*args)
+                if self.include_state:
+                    self.forward(*args, self.state)
+                else:
+                    self.forward(*args)
             return self._execute_readable_plan(*args)
 
     def _update_args(
