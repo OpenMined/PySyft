@@ -80,8 +80,117 @@ def test_plan_execute_locally(hook):
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
-def test_plan_method_execute_locally(hook):
+def test_add_to_state():
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ("fc1", "fc2")
 
+        def forward(self, x):
+            pass
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ["fc1", "fc2"]
+
+        def forward(self, x):
+            pass
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state.append("fc1")
+            self.state.append("fc2")
+
+        def forward(self, x):
+            pass
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.add_to_state("fc1", "fc2")
+
+        def forward(self, x):
+            pass
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.add_to_state(["fc1", "fc2"])
+
+        def forward(self, x):
+            pass
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ["fc3"]
+
+        def forward(self, x):
+            pass
+
+    with pytest.raises(AttributeError):
+        model = Net()
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.state += [self.fc1]
+
+        def forward(self, x):
+            pass
+
+    with pytest.raises(ValueError):
+        model = Net()
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.y = "hello"
+            self.state += ["y"]
+
+        def forward(self, x):
+            pass
+
+    with pytest.raises(ValueError):
+        model = Net()
+
+
+def test_plan_method_execute_locally():
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
