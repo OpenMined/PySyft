@@ -64,7 +64,7 @@ def _ldl(t):
     return l, d, inv_d
 
 
-def qr(t):
+def qr(t, mode="reduced"):
     """
     This function performs the QR decomposition of a matrix (2-dim tensor). The
     decomposition is performed using Householder Reflection.
@@ -72,13 +72,31 @@ def qr(t):
     does not support instances of FixedPrecisionTensor or AdditiveSharedTensor
 
     Args:
-        t: symmetric 2-dim tensor. It should be whether a local tensor or a pointer
-            to a remote tensor
+        t: symmetric 2-dim tensor, shape(M, N). It should be whether
+            a local tensor or a pointer to a remote tensor
+
+        mode : {'reduced', 'complete', 'r'}. If K = min(M, N), then
+            - 'reduced' : returns q, r with dimensions (M, K), (K, N) (default)
+            - 'complete' : returns q, r with dimensions (M, M), (M, N)
+            - 'r' : returns r only with dimensions (K, N)
 
     Returns:
         q: orthogonal matrix as a 2-dim tensor with same type as t
         r: lower triangular matrix as a 2-dim tensor with same type as t
     """
+    if not isinstance(t, th.Tensor):
+        raise TypeError("The provided matrix should be a tensor")
+
+    if t.has_child() and not isinstance(t.child, PointerTensor):
+        raise TypeError(
+            "The provided matrix should be a local torch.Tensor or " + "a PointerTensor"
+        )
+
+    if mode not in ["reduced", "complete", "r"]:
+        raise ValueError(
+            "mode should have one of the values in the list:" + str(["reduced", "complete", "r"])
+        )
+
     n_rows, n_cols = t.shape
 
     # Initiate R matrix from t
@@ -91,7 +109,9 @@ def qr(t):
     if t.has_child() and isinstance(t.child, PointerTensor):
         I = I.send(t.child.location)
 
-    Q_t = I.copy()
+    if not mode == "r":
+        # Initiate Q_transpose
+        Q_t = I.copy()
 
     # Iteration via Household Reflection
     for i in range(n_cols):
@@ -124,12 +144,16 @@ def qr(t):
             right_cat = th.cat((up_zeros, H), dim=0)
             H = th.cat((left_cat, right_cat), dim=1)
 
-        # Update Q_transpose
-        Q_t = H @ Q_t
         # Update R
         R = H @ R
+        if not mode == "r":
+            # Update Q_transpose
+            Q_t = H @ Q_t
 
-    # Get Q from Q_transpose
-    Q = Q_t.t()
+    if mode in ["reduced", "r"]:
+        R = R[:n_cols, :]
 
-    return Q, R
+    if not mode == "r":
+        return Q_t.t(), R
+    else:
+        return R
