@@ -115,7 +115,7 @@ def test_add_to_state():
             self.state += ("fc1", "fc2")
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     model = Net()
     assert "fc1" in model.state.keys
@@ -129,7 +129,7 @@ def test_add_to_state():
             self.state += ["fc1", "fc2"]
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     model = Net()
     assert "fc1" in model.state.keys
@@ -144,7 +144,7 @@ def test_add_to_state():
             self.state.append("fc2")
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     model = Net()
     assert "fc1" in model.state.keys
@@ -158,7 +158,7 @@ def test_add_to_state():
             self.add_to_state("fc1", "fc2")
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     model = Net()
     assert "fc1" in model.state.keys
@@ -172,7 +172,7 @@ def test_add_to_state():
             self.add_to_state(["fc1", "fc2"])
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     model = Net()
     assert "fc1" in model.state.keys
@@ -186,7 +186,7 @@ def test_add_to_state():
             self.state += ["fc3"]
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     with pytest.raises(AttributeError):
         model = Net()
@@ -198,7 +198,7 @@ def test_add_to_state():
             self.state += [self.fc1]
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     with pytest.raises(ValueError):
         model = Net()
@@ -210,7 +210,7 @@ def test_add_to_state():
             self.state += ["y"]
 
         def forward(self, x):
-            pass
+            pass  # pragma: no cover
 
     with pytest.raises(ValueError):
         model = Net()
