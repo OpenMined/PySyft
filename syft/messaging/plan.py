@@ -65,6 +65,12 @@ def method2plan(*args, **kwargs):
 
 
 class State(object):
+    """The State is a Plan attribute and is used to send tensors along functions
+
+    It references Plan tensor or parameters attributes using their name, and make
+    sure they are provided to remote workers who are sent the Plan.
+    """
+
     def __init__(self, plan):
         self.keys = []
         self.plan = plan
@@ -73,6 +79,9 @@ class State(object):
         return "State: " + ", ".join(self.keys)
 
     def append(self, key):
+        """
+        Insert element to the store by referencing its name
+        """
         if isinstance(key, (list, tuple)):
             for k in key:
                 self.append(k)
@@ -99,6 +108,9 @@ class State(object):
         return isinstance(obj, (torch.nn.Module, torch.Tensor))
 
     def get_id_at_location(self):
+        """
+        Returns all the id_at_location of the pointers in the state
+        """
         id_at_location = []
 
         for key in self.keys:
@@ -119,9 +131,15 @@ class State(object):
         return copied_state
 
     def read(self, key):
+        """
+        Returns one element referenced by the store
+        """
         return getattr(self.plan, key)
 
     def set_(self, dict_state):
+        """
+        Reset inplace the state by feeding him a dict of tensors or params
+        """
         for key in self.keys:
             delattr(self.plan, key)
 
@@ -142,7 +160,7 @@ class State(object):
 
 
 class Plan(ObjectStorage, torch.nn.Module):
-    """A Plan store a sequence of torch operations, just like a function.
+    """A Plan stores a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
     but it allows to send this sequence of operations to remote workers and to keep a
@@ -273,41 +291,50 @@ class Plan(ObjectStorage, torch.nn.Module):
     def build(self, *args):
         """Builds the plan.
 
-        The plan must be built with some input data, here `args`. When they
-        are provided, they are sent to the plan worker, which executes its
-        blueprint: each command of the blueprint is catched by _recv_msg
-        and is used to fill the plan.
+        The build operation is done "on" the plan (which can be seen like a
+        worker), by running the forward function. The plan will therefore
+        execute each command of the function, will cache it using _recv_msg
+        and will use it to fill the plan.
+        To do so, all the arguments provided and the state elements should be
+        moved to the plan, using send().
 
         Args:
             args: Input data.
         """
         args = list(args)
 
-        # The ids of args of the first call, which should be updated when
-        # the function is called with new args
+        # Move the arguments of the first call to the plan and store their ids
+        # as they will be included in the readable_plan: it should be updated
+        # when the function is called with new args and that's why we keep the
+        # refs self.arg_ids
         self.arg_ids = list()
         local_args = list()
-
         for arg in args:
             arg = arg.send(self)
             self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
+        # Same for the state element: we send them to the plan and keep reference
+        # to the ids
         copied_state = self.state.copy()
         self.state.send(location=self)
         self.state_ids = self.state.get_id_at_location()
 
+        # We usually have include_state==True for functions converted to plan
+        # using @func2plan and we need therefore to add the state manually
         if self.include_state:
             res_ptr = self.forward(*local_args, self.state)
         else:
             res_ptr = self.forward(*local_args)
-
-        self.state.set_(copied_state)
-
         res_ptr.child.garbage_collect_data = False
 
-        worker = self.find_location(local_args)
+        # We put back the original state. There is no need to keep a reference
+        # To the element sent to the plan.
+        self.state.set_(copied_state)
 
+        # The readable plan is now built, we hide the fact that it was run on
+        # the plan and on the owner by replacing the workers ids
+        worker = self.find_location(local_args)
         self.replace_worker_ids(worker.id, self.owner.id)
 
         # The id where the result should be stored

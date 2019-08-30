@@ -455,9 +455,9 @@ class TorchTensor(AbstractTensor):
                 output.backup_grad = grad
 
             if local_autograd:
-                output = syft.AutogradTensor(
-                    data=output, preinitialize_grad=preinitialize_grad
-                ).on(output)
+                output = syft.AutogradTensor(data=output, preinitialize_grad=preinitialize_grad).on(
+                    output
+                )
 
         else:
 
