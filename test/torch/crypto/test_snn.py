@@ -161,24 +161,21 @@ def test_maxpool_deriv(workers):
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
 
 
-@pytest.mark.parametrize("kernel_size, stride", [(1, 1), (2, 1), (3, 1)])
+@pytest.mark.parametrize(
+    "kernel_size, stride", [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 3)]
+)
 def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    """
-    x = th.tensor([
-        [
-            [[10, 9.1, 1, 1], [.72, -2.5, 1, 1], [.72, -2.5, 1, 1], [.72, -2.5, 1, 1]]
-        ],
-        [
-            [[15, .6, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
-        [
-            [[1.2, .3, 1, 1], [5.5, 6.2, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
-        [
-            [[0.1, -9, 1, 1], [-4.2, 7.9, 1, 1], [-4.2, 7.9, 1, 1], [-4.2, 7.9, 1, 1]]]
-        ]).share(alice, bob, crypto_provider=james).child
-    """
-    x = torch.Tensor(
+    def _test_maxpool2d(x):
+        x_sh = x.share(alice, bob, crypto_provider=james).wrap()
+        y = maxpool2d(x_sh, kernel_size=kernel_size, stride=stride)
+
+        torch_maxpool = torch.nn.MaxPool2d(kernel_size, stride=stride)
+
+        assert torch.all(torch.eq(y.get(), torch_maxpool(x).long()))
+
+    x1 = torch.Tensor(
         [
             [
                 [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
@@ -186,25 +183,15 @@ def test_maxpool2d(workers, kernel_size, stride):
             ]
         ]
     )
-    x_sh = x.share(alice, bob, crypto_provider=james).wrap()
 
-    """
-    x = th.tensor([
-        [
-            [[10, 11, 19], [10, 10, 10]], [[10, 10, 10], [10, 10, 10]]
-        ],
-        [
-            [[10, 10, 1], [10, 10, 10]], [[10, 10, 10], [10, 10, 10]],
-        ],
-        [
-            [[10, 10, 10], [10, 10, 10]], [[10, 10, 10], [10, 10, 10]],
-        ],
-        [
-            [[10, 10, 10], [10, 10, 10]], [[10, 10, 10], [10, 10, 10]]
-        ]]).share(alice, bob, crypto_provider=james).child
-    """
-    y = maxpool2d(x_sh, kernel_size=kernel_size, stride=stride)
+    _test_maxpool2d(x1)
 
-    torch_maxpool = torch.nn.MaxPool2d(kernel_size, stride=stride)
+    x2 = th.tensor(
+        [
+            [[[10, 9.1, 1, 1], [0.72, -2.5, 1, 1], [0.72, -2.5, 1, 1], [0.72, -2.5, 1, 1]]],
+            [[[15, 0.6, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
+            [[[1.2, 0.3, 1, 1], [5.5, 6.2, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
+        ]
+    )
 
-    assert torch.all(torch.eq(y.get(), torch_maxpool(x).long()))
+    _test_maxpool2d(x2)
