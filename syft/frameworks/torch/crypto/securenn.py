@@ -622,23 +622,15 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
         nb_rows_in += 2 * padding[0]
         nb_cols_in += 2 * padding[1]
 
-    # TODO: use array instead of a sharing zeros
-    res = _shares_of_zero(
-        (batch_size, nb_channels, nb_rows_out, nb_cols_out),
-        a_sh.child.child.field,
-        a_sh.child.child.crypto_provider,
-        *a_sh.child.child.locations,
-    )
+    res = []
     for batch in range(batch_size):
         for channel in range(nb_channels):
-            r_out = 0
             for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
-                c_out = 0
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
                         a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
                     )
-                    res[batch, channel, r_out, c_out] = m
-                    c_out += 1
-                r_out += 1
+                    res.append(m.wrap())
+
+    res = torch.stack(res).reshape(batch_size, nb_channels, nb_rows_out, nb_cols_out)
     return res
