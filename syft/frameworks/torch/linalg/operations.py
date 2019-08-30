@@ -75,7 +75,7 @@ def qr(t, mode="reduced"):
         t: symmetric 2-dim tensor, shape(M, N). It should be whether
             a local tensor or a pointer to a remote tensor
 
-        mode : {'reduced', 'complete', 'r'}. If K = min(M, N), then
+        mode: {'reduced', 'complete', 'r'}. If K = min(M, N), then
             - 'reduced' : returns q, r with dimensions (M, K), (K, N) (default)
             - 'complete' : returns q, r with dimensions (M, M), (M, N)
             - 'r' : returns r only with dimensions (K, N)
@@ -88,9 +88,7 @@ def qr(t, mode="reduced"):
         raise TypeError("The provided matrix should be a tensor")
 
     if t.has_child() and not isinstance(t.child, PointerTensor):
-        raise TypeError(
-            "The provided matrix should be a local torch.Tensor or " + "a PointerTensor"
-        )
+        raise TypeError("The provided matrix should be a local torch.Tensor or a PointerTensor")
 
     if mode not in ["reduced", "complete", "r"]:
         raise ValueError(
@@ -114,7 +112,7 @@ def qr(t, mode="reduced"):
         Q_t = I.copy()
 
     # Iteration via Household Reflection
-    for i in range(n_cols):
+    for i in range(min(n_rows, n_cols)):
         # Identity for this iteration, it has size (n_cols-i, n_cols-i)
         I_i = I[i:, i:]
 
@@ -150,10 +148,16 @@ def qr(t, mode="reduced"):
             # Update Q_transpose
             Q_t = H @ Q_t
 
-    if mode in ["reduced", "r"]:
+    if mode == "reduced":
         R = R[:n_cols, :]
+        Q_t = Q_t[:n_cols, :]
 
-    if not mode == "r":
-        return Q_t.t(), R
-    else:
+    if mode == "r":
+        R = R[:n_cols, :]
         return R
+
+    return Q_t.t(), R
+
+    def qr_mpc(t):
+        # TODO
+        pass
