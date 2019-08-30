@@ -5,9 +5,9 @@ https://eprint.iacr.org/2018/442.pdf
 Note that there is a difference here in that our shares can be
 negative numbers while they are always positive in the paper
 """
+import math
 
 import torch
-
 import syft as sy
 
 
@@ -438,7 +438,7 @@ def relu(a_sh):
 # 2**62 would almost always lead to overflow).
 def division(x_sh, y_sh, bit_len_max=Q_BITS // 2):
     """ Performs division of encrypted numbers
-    
+
     Args:
         x_sh, y_sh (AdditiveSharingTensor): the private tensors on which the op applies
         bit_len_max: the number of bits needed to represent the highest value in the tensors
@@ -493,20 +493,23 @@ def division(x_sh, y_sh, bit_len_max=Q_BITS // 2):
 def maxpool(x_sh):
     """ Compute MaxPool: returns fresh shares of the max value in the input tensor
     and the index of this value in the flattened tensor
-    
+
     Args:
         x_sh (AdditiveSharingTensor): the private tensor on which the op applies
-        
+
     Returns:
         maximum value as an AdditiveSharingTensor
         index of this value in the flattened tensor as an AdditiveSharingTensor
     """
+    print("maxpool", x_sh.shape)
+    if x_sh.is_wrapper:
+        x_sh = x_sh.child
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
     L = x_sh.field
 
     input_shape = x_sh.shape
-    x_sh = x_sh.view(-1)
+    x_sh = x_sh.contiguous().view(-1)
 
     # Common Randomness
     u_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
@@ -583,3 +586,72 @@ def maxpool_deriv(x_sh):
 
     maxpool_d_sh = D_sh + U_sh
     return maxpool_d_sh.view(n1, n2)
+
+
+def maxpool2d(
+    a_sh,
+    kernel_size: int = 1,
+    stride: int = 1,
+    padding: int = 0,
+    dilation: int = 1,
+    ceil_mode: bool = False,
+):
+    """Applies a 2D max pooling over an input signal composed of several input planes.
+    This interface is similar to torch.nn.MaxPool2D.
+    Args:
+        kernel_size: the size of the window to take a max over
+        stride: the stride of the window
+        padding: implicit zero padding to be added on both sides
+        dilation: a parameter that controls the stride of elements in the window
+        ceil_mode: when True, will use ceil instead of floor to compute the output shape
+    """
+    assert len(a_sh.shape) == 4
+
+    # Change to tuple if not one
+    kernel = torch.nn.modules.utils._pair(kernel_size)
+    stride = torch.nn.modules.utils._pair(stride)
+    padding = torch.nn.modules.utils._pair(padding)
+    dilation = torch.nn.modules.utils._pair(dilation)
+
+    # Extract a few useful values
+    batch_size, nb_channels_in, nb_rows_in, nb_cols_in = a_sh.shape
+
+    # ########## Calculate output shapes ###############
+    round_op = math.ceil if ceil_mode else math.floor
+    nb_rows_out = round_op(
+        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0] + 1
+    )
+    nb_cols_out = round_op(
+        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1] + 1
+    )
+
+    # Apply padding to the input
+    if padding != (0, 0):
+        a_sh = torch.nn.functional.pad(
+            a_sh, (padding[1], padding[1], padding[0], padding[0]), "constant"
+        )
+        # Update shape after padding
+        nb_rows_in += 2 * padding[0]
+        nb_cols_in += 2 * padding[1]
+
+    # TODO: use array instead of a sharing zeros
+    res = _shares_of_zero(
+        (batch_size, nb_channels_in, nb_rows_out, nb_cols_out),
+        a_sh.child.child.field,
+        a_sh.child.child.crypto_provider,
+        *a_sh.child.child.locations,
+    )
+    for batch in range(batch_size):
+        for channel in range(nb_channels_in):
+            r_out = 0
+            for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
+                c_out = 0
+                for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
+                    print(r_in, r_in + kernel[0], c_in, c_in + kernel[1])
+                    m, _ = maxpool(
+                        a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
+                    )
+                    res[batch, channel, r_out, c_out] = m
+                    c_out += 1
+                r_out += 1
+    return res
