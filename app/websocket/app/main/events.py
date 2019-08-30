@@ -6,6 +6,7 @@ from flask import session
 from flask_socketio import emit
 from .. import socketio
 from . import hook
+from .persistence.utils import recover_objects, snapshot
 
 import grid as gr
 import binascii
@@ -42,6 +43,8 @@ def cmd(message):
     """ Forward pysyft command to hook virtual worker. """
     try:
         worker = hook.local_worker
+        if not len(worker.current_objects()):
+            recover_objects(hook)
 
         # Decode Message
         encoded_message = message["message"]
@@ -50,6 +53,8 @@ def cmd(message):
         # Process and encode response
         decoded_response = worker._recv_msg(decoded_message)
         encoded_response = str(binascii.hexlify(decoded_response))
+
+        snapshot(worker)
 
         emit("/cmd-response", encoded_response)
     except Exception as e:

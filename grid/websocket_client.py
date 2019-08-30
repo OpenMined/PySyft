@@ -102,6 +102,7 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
         # Prepare a message requesting the websocket server to search among its objects
         message = sy.Message(MSGTYPE.SEARCH, query)
         serialized_message = sy.serde.serialize(message)
+
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
