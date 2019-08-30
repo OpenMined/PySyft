@@ -558,6 +558,11 @@ class FixedPrecisionTensor(AbstractTensor):
             Returns:
                 the result of the convolution as an AdditiveSharingTensor
             """
+            # Currently, kwargs are not unwrapped by hook_args
+            # So this needs to be done manually
+            if bias.is_wrapper:
+                bias = bias.child
+
             assert len(input.shape) == 4
             assert len(weight.shape) == 4
 
@@ -643,7 +648,6 @@ class FixedPrecisionTensor(AbstractTensor):
                 res = im_reshaped.matmul(weight_reshaped)
 
             # Add a bias if needed
-            print(res, bias)
             if bias is not None:
                 res += bias
 
