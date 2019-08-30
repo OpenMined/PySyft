@@ -4,6 +4,7 @@ import syft
 from syft.workers import AbstractWorker
 from syft.generic.pointers import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
+from syft.frameworks.torch.crypto import securenn
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
@@ -678,6 +679,11 @@ class FixedPrecisionTensor(AbstractTensor):
                     return torch.nn.functional.native_linear(*args)
 
                 module.linear = linear
+
+                def max_pool2d(*args):
+                    return securenn.maxpool2d(*args)
+
+                module.max_pool2d = max_pool2d
 
             module.functional = functional
 
