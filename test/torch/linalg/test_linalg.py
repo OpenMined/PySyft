@@ -35,7 +35,7 @@ def test_qr(hook, workers):
     n_cols = 5
     n_rows = 10
     t = th.randn([n_rows, n_cols])
-    Q, R = qr(t.send(bob))
+    Q, R = qr(t.send(bob), mode="complete")
     Q = Q.get()
     R = R.get()
 
@@ -49,3 +49,15 @@ def test_qr(hook, workers):
 
     # Check if QR == t
     assert ((Q @ R - t).abs() < 1e-5).all()
+
+    # test modes
+    Q, R = qr(t.send(bob), mode="reduced")
+    assert Q.shape == (n_rows, n_cols)
+    assert R.shape == (n_cols, n_cols)
+
+    Q, R = qr(t.send(bob), mode="complete")
+    assert Q.shape == (n_rows, n_rows)
+    assert R.shape == (n_rows, n_cols)
+
+    R = qr(t.send(bob), mode="r")
+    assert R.shape == (n_cols, n_cols)
