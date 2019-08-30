@@ -10,7 +10,7 @@ def inv_sym(t):
     Algorithm reference: https://arxiv.org/abs/1111.4144 - Section IV
 
     Args:
-        t: symmetric 2d tensor
+        t: symmetric 2-dim tensor
 
     Returns:
         t_inv: inverse of t as 2-dim tensor
@@ -36,7 +36,7 @@ def _ldl(t):
     This function performs the LDLt decomposition of a symmetric matrix (2-dim tensor)
 
     Args:
-        t: symmetric 2d tensor
+        t: symmetric 2-dim tensor
 
     Returns:
         l: lower triangular matrix as a 2-dim tensor with same type as t
@@ -64,5 +64,62 @@ def _ldl(t):
 
 
 def qr(t):
-    # TODO
-    pass
+    """
+    This function performs the QR decomposition of a matrix (2-dim tensor). The
+    decomposition is performed using Householder Reflection.
+    Please note that this function only supports local or pointer tensors, it
+    does not support instances of FixedPrecisionTensor or AdditiveSharedTensor
+
+    Args:
+        t: symmetric 2-dim tensor. It should be whether a local tensor or a pointer
+            to a remote tensor
+
+    Returns:
+        q: orthogonal matrix as a 2-dim tensor with same type as t
+        r: lower triangular matrix as a 2-dim tensor with same type as t
+    """
+    n_cols = t.shape[1]
+
+    # Initiate R matrix from t
+    R = t.copy()
+
+    # Initiate identity matrix with same size and in the same worker as t
+    I = th.diag(th.diag(th.ones_like(t)))
+
+    # Iteration via Household Reflection
+    for i in range(n_cols):
+        # Identity for this iteration, it has size (n_cols-i, n_cols-i)
+        I_i = I[i:, i:]
+
+        # Init 1st vector of the canonical base in the same worker as t
+        e = th.zeros_like(t)[i:, 0].view(-1, 1)
+        e[0, 0] += 1.0
+
+        # Current vector in R to perform reflection
+        x = R[i:, i].view(-1, 1)
+        x_norm = th.sqrt(x.t() @ x).squeeze()
+
+        # Compute Householder transform
+        numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
+        denominator = x.t() @ x - x_norm * x[0, 0]
+        H = I_i - numerator / denominator
+
+        # If it's the 1st iteration, init Q_transpose
+        if i == 0:
+            Q_t = H
+        else:
+            # Expand matrix H with Identity at diagonal and zero elsewhere
+            down_zeros = th.zeros_like(t)[: n_cols - i, :i]
+            up_zeros = th.zeros_like(t)[:i, : n_cols - i]
+            left_cat = th.cat((I[:i, :i], down_zeros), dim=0)
+            right_cat = th.cat((up_zeros, H), dim=0)
+            H = th.cat((left_cat, right_cat), dim=1)
+            # Update Q_transpose
+            Q_t = H @ Q_t
+        # Update R
+        R = H @ R
+
+    # Get Q from Q_transpose
+    Q = Q_t.t()
+
+    return Q, R
