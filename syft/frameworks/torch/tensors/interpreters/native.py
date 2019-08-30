@@ -454,10 +454,10 @@ class TorchTensor(AbstractTensor):
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
 
-                if local_autograd:
-                    output = syft.AutogradTensor(
-                        data=output, preinitialize_grad=preinitialize_grad
-                    ).on(output)
+            if local_autograd:
+                output = syft.AutogradTensor(
+                    data=output, preinitialize_grad=preinitialize_grad
+                ).on(output)
 
         else:
 
