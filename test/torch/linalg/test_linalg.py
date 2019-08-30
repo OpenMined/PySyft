@@ -2,6 +2,7 @@ import pytest
 import torch as th
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
+from syft.frameworks.torch.linalg import qr
 
 
 def test_inv_sym(hook, workers):
@@ -23,3 +24,28 @@ def test_inv_sym(hook, workers):
 
     diff = (gram_inv - gram.inverse()).abs()
     assert (diff < 1e-3).all()
+
+
+def test_qr(hook, workers):
+    """
+    Testing QR decomposition with remote matrix
+    """
+
+    bob = workers["bob"]
+    n_cols = 5
+    n_rows = 10
+    t = th.randn([n_rows, n_cols])
+    Q, R = qr(t.send(bob))
+    Q = Q.get()
+    R = R.get()
+
+    # Check if Q is orthogonal
+    I = Q @ Q.t()
+    assert ((th.eye(n_rows) - I).abs() < 1e-5).all()
+
+    # Check if R is upper triangular matrix
+    for col in range(n_cols):
+        assert ((R[col + 1 :, col]).abs() < 1e-5).all()
+
+    # Check if QR == t
+    assert ((Q @ R - t).abs() < 1e-5).all()
