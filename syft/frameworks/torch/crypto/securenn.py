@@ -501,14 +501,12 @@ def maxpool(x_sh):
         maximum value as an AdditiveSharingTensor
         index of this value in the flattened tensor as an AdditiveSharingTensor
     """
-    print("maxpool", x_sh.shape)
     if x_sh.is_wrapper:
         x_sh = x_sh.child
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
     L = x_sh.field
 
-    input_shape = x_sh.shape
     x_sh = x_sh.contiguous().view(-1)
 
     # Common Randomness
@@ -647,7 +645,6 @@ def maxpool2d(
             for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
                 c_out = 0
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
-                    print(r_in, r_in + kernel[0], c_in, c_in + kernel[1])
                     m, _ = maxpool(
                         a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
                     )
