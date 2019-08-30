@@ -623,6 +623,7 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
         nb_cols_in += 2 * padding[1]
 
     res = []
+    # TODO: make this operation more efficient in order to be used with cnn modules.
     for batch in range(batch_size):
         for channel in range(nb_channels):
             for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
