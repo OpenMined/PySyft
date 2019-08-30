@@ -65,22 +65,32 @@ def method2plan(*args, **kwargs):
 
 
 class State(object):
-    """The State is a Plan attribute and is used to send tensors along functions
+    """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make
     sure they are provided to remote workers who are sent the Plan.
     """
 
     def __init__(self, plan):
-        self.keys = []
+        self.keys = set()
         self.plan = plan
 
     def __repr__(self):
         return "State: " + ", ".join(self.keys)
 
     def append(self, key):
-        """
-        Insert element to the store by referencing its name
+        """Insert element to the store by referencing its name.
+
+        The method is voluntarily flexible to several inputs
+        Example:
+            state.append(('key1, 'key2'))
+            state.append(['key1, 'key2'])
+            state.append('key1, 'key2')
+
+        But it should only be given strings which correspond to plan
+        attributes which are of is_valid_type.
+        Example:
+            'key1' is ok if plan.key1 is a tensor or a parameter
         """
         if isinstance(key, (list, tuple)):
             for k in key:
@@ -92,8 +102,8 @@ class State(object):
             )
         else:
             t = getattr(self.plan, key)
-            if self.is_accepted_type(t) and key not in self.keys:
-                self.keys.append(key)
+            if self.is_valid_type(t):
+                self.keys.add(key)
             else:
                 raise ValueError(
                     f"Obj of type {type(t)} is not supported in the state.\n"
@@ -104,7 +114,7 @@ class State(object):
     def __iadd__(self, other_keys):
         return self.append(other_keys)
 
-    def is_accepted_type(self, obj):
+    def is_valid_type(self, obj):
         return isinstance(obj, (torch.nn.Module, torch.Tensor))
 
     def get_id_at_location(self):
@@ -138,7 +148,7 @@ class State(object):
 
     def set_(self, dict_state):
         """
-        Reset inplace the state by feeding him a dict of tensors or params
+        Reset inplace the state by feeding it a dict of tensors or params
         """
         for key in self.keys:
             delattr(self.plan, key)
@@ -192,7 +202,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         # Plan instance info
         self.id = sy.ID_PROVIDER.pop() if id is None else id
         self.name = self.__class__.__name__ if name == "" else name
-        self.owner = sy.local_worker if owner is None else owner
+        self._owner = sy.local_worker if owner is None else owner
         self.verbose = verbose
 
         # Info about the plan stored
@@ -225,8 +235,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.state.append(elem)
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
-        placeholders = self._create_placeholders(args_shape)
-        args = placeholders
+        args = self._create_placeholders(args_shape)
         self.build(*args)
 
     def _create_placeholders(self, args_shape):
@@ -244,6 +253,20 @@ class Plan(ObjectStorage, torch.nn.Module):
     @property
     def _known_workers(self):
         return self.owner._known_workers
+
+    # Override property of nn.Module
+    @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, new_owner):
+        self._owner = new_owner
+
+    # Override property of nn.Module
+    @property
+    def location(nn_self):
+        raise AttributeError("Plan has no attribute location")
 
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)

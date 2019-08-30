@@ -546,7 +546,6 @@ class TorchHook(FrameworkHook):
                 o = p.sum()
                 o.backward()
                 p.grad -= p.grad
-            pass
 
         def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
@@ -649,24 +648,24 @@ class TorchHook(FrameworkHook):
 
         self.torch.nn.Module.copy = module_copy
 
-        # @property
-        # def owner(nn_self):
-        #     for p in nn_self.parameters():
-        #         return p.owner
-        #
-        # self.torch.nn.Module.owner = owner
-        #
-        # @property
-        # def location(nn_self):
-        #     try:
-        #         for p in nn_self.parameters():
-        #             return p.location
-        #     except AttributeError:
-        #         raise AttributeError(
-        #             "Module has no attribute location, did you already send it to some location?"
-        #         )
-        #
-        # self.torch.nn.Module.location = location
+        @property
+        def owner(nn_self):
+            for p in nn_self.parameters():
+                return p.owner
+
+        self.torch.nn.Module.owner = owner
+
+        @property
+        def location(nn_self):
+            try:
+                for p in nn_self.parameters():
+                    return p.location
+            except AttributeError:
+                raise AttributeError(
+                    "Module has no attribute location, did you already send it to some location?"
+                )
+
+        self.torch.nn.Module.location = location
 
         # Make sure PySyft uses the PyTorch version
         self.torch.nn.modules.rnn._rnn_impls["LSTM"] = self.torch.lstm
