@@ -1,5 +1,6 @@
 import torch as th
 import syft as sy
+from syft.generic.pointers import PointerTensor
 
 
 def inv_sym(t):
@@ -78,13 +79,19 @@ def qr(t):
         q: orthogonal matrix as a 2-dim tensor with same type as t
         r: lower triangular matrix as a 2-dim tensor with same type as t
     """
-    n_cols = t.shape[1]
+    n_rows, n_cols = t.shape
 
     # Initiate R matrix from t
     R = t.copy()
 
-    # Initiate identity matrix with same size and in the same worker as t
-    I = th.diag(th.diag(th.ones_like(t)))
+    # Initiate identity matrix with size (n_rows, n_rows)
+    I = th.diag(th.Tensor([1.0] * n_rows))
+
+    # Send it to remote worker if t is pointer
+    if t.has_child() and isinstance(t.child, PointerTensor):
+        I = I.send(t.child.location)
+
+    Q_t = I.copy()
 
     # Iteration via Household Reflection
     for i in range(n_cols):
@@ -104,18 +111,21 @@ def qr(t):
         denominator = x.t() @ x - x_norm * x[0, 0]
         H = I_i - numerator / denominator
 
-        # If it's the 1st iteration, init Q_transpose
-        if i == 0:
-            Q_t = H
-        else:
-            # Expand matrix H with Identity at diagonal and zero elsewhere
-            down_zeros = th.zeros_like(t)[: n_cols - i, :i]
-            up_zeros = th.zeros_like(t)[:i, : n_cols - i]
+        # If it is not the 1st iteration
+        # expand matrix H with Identity at diagonal and zero elsewhere
+        if i > 0:
+            down_zeros = th.zeros([n_rows - i, i])
+            up_zeros = th.zeros([i, n_rows - i])
+            # Send them to remote worker if t is pointer
+            if t.has_child() and isinstance(t.child, PointerTensor):
+                down_zeros = down_zeros.send(t.child.location)
+                up_zeros = up_zeros.send(t.child.location)
             left_cat = th.cat((I[:i, :i], down_zeros), dim=0)
             right_cat = th.cat((up_zeros, H), dim=0)
             H = th.cat((left_cat, right_cat), dim=1)
-            # Update Q_transpose
-            Q_t = H @ Q_t
+
+        # Update Q_transpose
+        Q_t = H @ Q_t
         # Update R
         R = H @ R
 
