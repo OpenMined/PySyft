@@ -97,8 +97,7 @@ class PolynomialTensor(AbstractTensor):
              function[callable]: Base function
            """
 
-        self.function_attr[name + "_degree"] = degree
-        self.function_attr[name + "_function"] = function
+        self.function_attr[name] = [degree, min_val, max_val, steps]
         self.func_approx[name] = self.interpolate(
             function, [min_val, max_val, steps], degree=degree
         )
@@ -138,7 +137,9 @@ class PolynomialTensor(AbstractTensor):
 
         return f_interpolated
 
-    def sigmoid(self, method="interpolation", degree=10, precision=10):
+    def sigmoid(
+        self, method="interpolation", degree=10, precision=10, min_val=-10, max_val=10, steps=100
+    ):
         """Method provides Sigmoid function approximation interms of Taylor Series.
            Range:
                
@@ -161,7 +162,21 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
-            sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
+            if self.function_attr["sigmoid"] == [degree, min_val, max_val, steps]:
+
+                sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
+
+            else:
+
+                self.add_function(
+                    "sigmoid",
+                    (lambda x: 1 / (1 + np.exp(-x))),
+                    degree=10,
+                    min_val=-10,
+                    max_val=10,
+                    steps=100,
+                )
+                sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
 
         else:
 
@@ -189,7 +204,9 @@ class PolynomialTensor(AbstractTensor):
 
     __sigmoid__ = sigmoid
 
-    def tanh(self, method="interpolation", degree=10, precision=10):
+    def tanh(
+        self, method="interpolation", degree=10, min_val=-10, max_val=10, steps=100, precision=10
+    ):
         """Method provides tanh function approximation interms of Taylor Series.
            Range:
                
@@ -210,7 +227,16 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
-            tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
+            if self.function_attr["tanh"] == [degree, min_val, max_val, steps]:
+
+                tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
+
+            else:
+
+                self.add_function(
+                    "tanh", (lambda x: np.tanh(x)), degree=10, min_val=-10, max_val=10, steps=100
+                )
+                tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
         else:
 
@@ -237,7 +263,9 @@ class PolynomialTensor(AbstractTensor):
 
     __tanh__ = tanh
 
-    def exp(self, method="interpolation", degree=10, precision=10):
+    def exp(
+        self, method="interpolation", degree=10, min_val=-10, max_val=10, steps=100, precision=10
+    ):
 
         exp_coeffs = None
         if self.method == "taylor":
@@ -248,7 +276,16 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
-            exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
+            if self.function_attr["exp"] == [degree, min_val, max_val, steps]:
+
+                exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
+
+            else:
+
+                self.add_function(
+                    "tanh", (lambda x: np.exp(x)), degree=10, min_val=-10, max_val=10, steps=100
+                )
+                exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
 
         else:
 

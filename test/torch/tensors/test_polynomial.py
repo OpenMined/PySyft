@@ -43,9 +43,6 @@ def test_tanh():
     expected = torch.tensor([-1.0558, 0.2851, 0.9433, -1.0585])
     assert torch.allclose(result.child.child, expected, atol=1e-00)
 
-    # Test for Taylor series
-    # Taylor series approximations for tanh give error. Needs correction.
-
 
 def test_exp_torch():
 
@@ -54,32 +51,28 @@ def test_exp_torch():
     expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
     assert torch.allclose(result.child.child, expected, atol=1e-01)
 
-    # Test for Taylor series
-    # Taylor series approximations for exp give error. Needs correction.
-
 
 def test_exp_fixprecision():
+
+    hook = sy.TorchHook(torch)
 
     x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).fix_precision().poly()
     result = x.exp()
     expected = torch.tensor([11302, 19502, 22736, 57406, 207530, 598502, 1362052, 2562326])
     assert torch.allclose(result.child.child.child, expected, atol=1e-01)
-    # Do the same with Taylor series
 
 
 def test_sigmoid_fixprecision():
 
-    hook = sy.TorchHook(torch)
     x = (
         torch.tensor([-2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0])
         .fix_precision()
         .poly(method="interpolation")
     )
+
     result = x.sigmoid()
     expected = torch.tensor([134, 205, 293, 394, 500, 606, 707, 795, 866, 929, 848])
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
-
-    # Do the same with Taylor series
 
 
 def test_tanh_fixprecision():
@@ -174,3 +167,6 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+
+test_sigmoid_additiveshared()
