@@ -49,7 +49,6 @@ class PolynomialTensor(AbstractTensor):
         self.func_approx = {}
         self.child = child
         self.id = None
-        self.encrypt_fn = {"exp": None, "sigmoid": None}
 
         def default_functions():
             """Initializes default function approximations exp, log, sigmoid and tanh"""
@@ -57,7 +56,6 @@ class PolynomialTensor(AbstractTensor):
             self.add_function(
                 "exp", lambda x: np.exp(x), degree=10, min_val=-10, max_val=10, steps=100
             )
-            # self.add_function("log", 10,-10,10,10, lambda x: np.log(x))
             self.add_function(
                 "sigmoid",
                 (lambda x: 1 / (1 + np.exp(-x))),
@@ -162,6 +160,7 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
+            # Check if the user wants a fitted approximation different from already fitted function and fit accordingly
             if self.function_attr["sigmoid"] == [degree, min_val, max_val, steps]:
 
                 sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
@@ -171,10 +170,10 @@ class PolynomialTensor(AbstractTensor):
                 self.add_function(
                     "sigmoid",
                     (lambda x: 1 / (1 + np.exp(-x))),
-                    degree=10,
-                    min_val=-10,
-                    max_val=10,
-                    steps=100,
+                    degree=degree,
+                    min_val=min_val,
+                    max_val=max_val,
+                    steps=steps,
                 )
                 sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
 
@@ -227,6 +226,7 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
+            # Check if the user wants a fitted approximation different from already fitted function and fit accordingly
             if self.function_attr["tanh"] == [degree, min_val, max_val, steps]:
 
                 tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
@@ -234,7 +234,12 @@ class PolynomialTensor(AbstractTensor):
             else:
 
                 self.add_function(
-                    "tanh", (lambda x: np.tanh(x)), degree=10, min_val=-10, max_val=10, steps=100
+                    "tanh",
+                    (lambda x: np.tanh(x)),
+                    degree=degree,
+                    min_val=min_val,
+                    max_val=max_val,
+                    steps=steps,
                 )
                 tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
 
@@ -276,6 +281,7 @@ class PolynomialTensor(AbstractTensor):
 
         elif self.method == "interpolation":
 
+            # Check if the user wants a fitted approximation different from already fitted function and fit accordingly
             if self.function_attr["exp"] == [degree, min_val, max_val, steps]:
 
                 exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
@@ -283,7 +289,12 @@ class PolynomialTensor(AbstractTensor):
             else:
 
                 self.add_function(
-                    "tanh", (lambda x: np.exp(x)), degree=10, min_val=-10, max_val=10, steps=100
+                    "tanh",
+                    (lambda x: np.exp(x)),
+                    degree=degree,
+                    min_val=min_val,
+                    max_val=max_val,
+                    steps=steps,
                 )
                 exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
 
