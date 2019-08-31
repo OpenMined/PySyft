@@ -69,6 +69,7 @@ def test_exp_fixprecision():
 
 def test_sigmoid_fixprecision():
 
+    hook = sy.TorchHook(torch)
     x = (
         torch.tensor([-2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0])
         .fix_precision()
@@ -82,7 +83,7 @@ def test_sigmoid_fixprecision():
 
 
 def test_tanh_fixprecision():
-    hook = sy.TorchHook(torch)
+
     y = (
         torch.tensor([-2.4, -2.3, -2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 2.5, 2.6])
         .fix_precision()
@@ -173,3 +174,6 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+
+test_sigmoid_fixprecision()

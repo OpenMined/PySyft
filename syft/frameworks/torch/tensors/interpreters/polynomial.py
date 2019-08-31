@@ -4,7 +4,6 @@ from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 import torch
 import numpy as np
 from typing import Callable, List, Union
-import syft as sy
 
 
 class PolynomialTensor(AbstractTensor):
@@ -77,6 +76,7 @@ class PolynomialTensor(AbstractTensor):
         """The method encrypts the coefficients as required by the child tensor"""
 
         tensor = None
+
         if isinstance(self.child, FixedPrecisionTensor):
 
             tensor = getattr(torch.tensor(coeffs_tensor), "fix_precision")()
@@ -159,9 +159,13 @@ class PolynomialTensor(AbstractTensor):
                 [(1 / 2), (1 / 4), 0, -(1 / 48), 0, (1 / 480), 0, -(17 / 80640), 0, (31 / 1451520)]
             )
 
-        else:
+        elif self.method == "interpolation":
 
             sigmoid_coeffs = torch.tensor(self.func_approx["sigmoid"].coef)
+
+        else:
+
+            raise ValueError(self.method + " method of evaluating polynomials not found ")
 
         sigmoid_coeffs = self.get_encrypt_function(sigmoid_coeffs)
         val = 0
@@ -204,9 +208,13 @@ class PolynomialTensor(AbstractTensor):
 
             tanh_coeffs = torch.tensor([(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)])
 
-        else:
+        elif self.method == "interpolation":
 
             tanh_coeffs = torch.tensor(self.func_approx["tanh"].coef)
+
+        else:
+
+            raise ValueError(self.method + " method of evaluating polynomials not found ")
 
         tanh_coeffs = self.get_encrypt_function(tanh_coeffs)
         val = 0
@@ -238,9 +246,13 @@ class PolynomialTensor(AbstractTensor):
                 [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
             )
 
-        else:
+        elif self.method == "interpolation":
 
             exp_coeffs = torch.tensor(self.func_approx["exp"].coef)
+
+        else:
+
+            raise ValueError(self.method + " method of evaluating polynomials not found ")
 
         exp_coeffs = self.get_encrypt_function(exp_coeffs)
         val = 0
