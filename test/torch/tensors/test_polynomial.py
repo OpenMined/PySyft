@@ -10,7 +10,6 @@ import syft as sy
 
 def test_wrap():
 
-    hook = sy.TorchHook(torch)
     x_tensor = torch.Tensor([1, 2, 3])
     x = PolynomialTensor().on(x_tensor)
     assert isinstance(x, torch.Tensor)
@@ -51,10 +50,19 @@ def test_exp_torch():
     expected = torch.tensor([1.1302e01, 4.1313e01, 2.9646e03, 2.1985e04])
     assert torch.allclose(result.child.child, expected, atol=1e-01)
 
+    # Test for Taylor Series
+    x = torch.tensor([1, 4.0, 8.0, 10.0]).poly(method="taylor")
+    result = x.exp()
+    expected = torch.tensor([1.7167e00, 2.9084e02, 4.3630e03, 1.0517e04])
+    assert torch.allclose(result.child.child, expected, atol=1e-01)
+
 
 def test_exp_fixprecision():
 
-    hook = sy.TorchHook(torch)
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).fix_precision().poly()
+    result = x.exp()
+    expected = torch.tensor([11302, 19502, 22736, 57406, 207530, 598502, 1362052, 2562326])
+    assert torch.allclose(result.child.child.child, expected, atol=1e-01)
 
     x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]).fix_precision().poly()
     result = x.exp()
@@ -167,6 +175,3 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
-
-
-test_sigmoid_additiveshared()

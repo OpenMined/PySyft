@@ -51,6 +51,7 @@ class PolynomialTensor(AbstractTensor):
         self.id = None
 
         def default_functions():
+            
             """Initializes default function approximations exp, log, sigmoid and tanh"""
 
             self.add_function(
@@ -222,7 +223,24 @@ class PolynomialTensor(AbstractTensor):
         tanh_coeffs = None
         if self.method == "taylor":
 
-            tanh_coeffs = torch.tensor([(1), 0, (-1 / 3), 0, (2 / 15), 0, (-17 / 315)])
+            tanh_coeffs = torch.tensor(
+                [
+                    0,
+                    (1),
+                    0,
+                    (-1 / 3),
+                    0,
+                    (2 / 15),
+                    0,
+                    (-17 / 315),
+                    0,
+                    (62 / 2835),
+                    0,
+                    (-1382 / 155925),
+                ]
+            )
+
+            print(tanh_coeffs)
 
         elif self.method == "interpolation":
 
@@ -275,9 +293,7 @@ class PolynomialTensor(AbstractTensor):
         exp_coeffs = None
         if self.method == "taylor":
 
-            exp_coeffs = torch.tensor(
-                [1, (1 / 2), (1 / 6), (1 / 24), (1 / 120), (1 / 840), (1 / 6720)]
-            )
+            exp_coeffs = torch.tensor([1, (1 / 2), (1 / 6), (1 / 24), (1 / 120)])
 
         elif self.method == "interpolation":
 
