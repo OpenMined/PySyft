@@ -150,9 +150,6 @@ def test_tanh_additiveshared():
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
-    # assert torch.allclose(result.child.child, expected, atol=1e01)
-
-    # Do the same with Taylor series
 
 
 def test_sigmoid_additiveshared():
