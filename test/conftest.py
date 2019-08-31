@@ -13,7 +13,7 @@ from pg_app import create_app
 
 import syft
 from syft import TorchHook
-from test import IDS, PORTS, GATEWAY_URL
+from test import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
 import time
 import requests
 import json
@@ -48,10 +48,10 @@ def init_gateway():
         from gateway.app import create_app
 
         app = create_app(debug=False)
-        app.run(host="0.0.0.0", port="8080")
+        app.run(host="0.0.0.0", port=GATEWAY_PORT)
 
     # Init Grid Gateway
-    p = Process(target=setUpGateway, args=("8080",))
+    p = Process(target=setUpGateway, args=(GATEWAY_PORT,))
     p.start()
     time.sleep(5)
 

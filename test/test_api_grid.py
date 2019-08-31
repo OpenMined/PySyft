@@ -17,57 +17,69 @@ class GridAPITest(unittest.TestCase):
     def tearDown(self):
         self.my_grid.disconnect_nodes()
 
-    def test_connected_nodes(self):
-        response = json.loads(requests.get(GATEWAY_URL + "/connected-nodes").content)
-        self.assertEqual(len(response["grid-nodes"]), 3)
-        self.assertTrue("Bob" in response["grid-nodes"])
-        self.assertTrue("Alice" in response["grid-nodes"])
-        self.assertTrue("James" in response["grid-nodes"])
+    def connect_nodes(self):
+        nodes = {}
 
-    def test_grid_search(self):
-        nodes = []
         for (node_id, port) in zip(IDS, PORTS):
             node = gr.WebsocketGridClient(
                 hook, "http://localhost:" + port + "/", id=node_id
             )
             node.connect()
-            nodes.append(node)
+            nodes[node_id] = node
 
-        x = th.tensor([1, 2, 3, 4, 5]).tag("#simple-tensor").describe("Simple tensor")
-        y = (
-            th.tensor([[4], [5], [7], [8]])
-            .tag("#2d-tensor")
-            .describe("2d tensor example")
+        return nodes
+
+    def disconnect_nodes(self, nodes):
+        for node_id in nodes:
+            nodes[node_id].disconnect()
+
+    def test_connected_nodes(self):
+        response = json.loads(requests.get(GATEWAY_URL + "/connected-nodes").content)
+        self.assertEqual(len(response["grid-nodes"]), 3)
+        self.assertTrue("bob" in response["grid-nodes"])
+        self.assertTrue("alice" in response["grid-nodes"])
+        self.assertTrue("james" in response["grid-nodes"])
+
+    def test_grid_search(self):
+        nodes = self.connect_nodes()
+        alice, bob, james = nodes["alice"], nodes["bob"], nodes["james"]
+
+        simple_tensor = (
+            th.tensor([1, 2, 3, 4, 5]).tag("#simple-tensor").describe("Simple tensor")
         )
-        z = (
+        ptr_simple_tensor = simple_tensor.send(alice)
+        ptr_simple_tensor.child.garbage_collect_data = False
+
+        tensor_2d = th.tensor([[4], [5], [7], [8]]).tag("#2d-tensor").describe("2d")
+        ptr_tensor_2d = tensor_2d.send(alice)
+        ptr_tensor_2d.child.garbage_collect_data = False
+
+        zero_tensor1 = (
             th.tensor([[0, 0, 0, 0, 0]])
             .tag("#zeros-tensor")
             .describe("tensor with zeros")
         )
-        w = (
+        zero_tensor2 = (
             th.tensor([[0, 0, 0, 0, 0]])
             .tag("#zeros-tensor")
             .describe("tensor with zeros")
         )
 
-        x_s = x.send(nodes[0])
-        y_s = y.send(nodes[1])
-        z_s = z.send(nodes[2])
-        w_s = w.send(nodes[0])
+        ptr_zero_tensor1 = zero_tensor1.send(bob)
+        ptr_zero_tensor2 = zero_tensor2.send(james)
+        ptr_zero_tensor1.child.garbage_collect_data = False
+        ptr_zero_tensor2.child.garbage_collect_data = False
 
-        x_s.child.garbage_collect_data = False
-        y_s.child.garbage_collect_data = False
-        z_s.child.garbage_collect_data = False
-        w_s.child.garbage_collect_data = False
+        self.disconnect_nodes(nodes)
 
-        for node in nodes:
-            node.disconnect()
+        search_simple_tensor = self.my_grid.search("#simple-tensor")
+        self.assertEqual(len(search_simple_tensor), 1)
 
-        simple_tensor = self.my_grid.search("#simple-tensor")
-        self.assertEqual(len(simple_tensor), 1)
-        zeros_tensor = self.my_grid.search("#zeros-tensor")
-        self.assertEqual(len(zeros_tensor), 2)
-        d_tensor = self.my_grid.search("#2d-tensor")
-        self.assertEqual(len(d_tensor), 1)
-        nothing = self.my_grid.search("#nothing")
-        self.assertEqual(len(nothing), 0)
+        search_tensor_2d = self.my_grid.search("#2d-tensor")
+        self.assertEqual(len(search_tensor_2d), 1)
+
+        search_zeros_tensor = self.my_grid.search("#zeros-tensor")
+        self.assertEqual(len(search_zeros_tensor), 2)
+
+        search_nothing = self.my_grid.search("#nothing")
+        self.assertEqual(len(search_nothing), 0)
