@@ -51,7 +51,7 @@ class PolynomialTensor(AbstractTensor):
         self.id = None
 
         def default_functions():
-            
+
             """Initializes default function approximations exp, log, sigmoid and tanh"""
 
             self.add_function(

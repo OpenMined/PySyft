@@ -151,7 +151,6 @@ def test_tanh_additiveshared():
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
 
 
-
 def test_sigmoid_additiveshared():
 
     hook = sy.TorchHook(torch)
