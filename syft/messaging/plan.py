@@ -356,7 +356,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.state.set_(copied_state)
 
         # The readable plan is now built, we hide the fact that it was run on
-        # the plan and on the owner by replacing the workers ids
+        # the plan and not on the owner by replacing the workers ids
         worker = self.find_location(local_args)
         self.replace_worker_ids(worker.id, self.owner.id)
 
@@ -765,6 +765,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
+            sy.serde._simplify(plan.state_ids),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -781,10 +782,13 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built = plan_tuple
+        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
+            plan_tuple
+        )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
+        state_ids = sy.serde._detail(worker, state_ids)
 
         plan = sy.Plan(
             owner=worker,
@@ -794,6 +798,8 @@ class Plan(ObjectStorage, torch.nn.Module):
             readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
+
+        plan.state_ids = state_ids
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)

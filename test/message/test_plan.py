@@ -234,10 +234,12 @@ def test_plan_method_execute_locally():
 
     model = Net()
 
-    # Force build
+    model.build(th.tensor([1.0, 2]))
+
+    # Call one time
     assert model(th.tensor([1.0, 2])) == 0
 
-    # Test call multiple times
+    # Call one more time
     assert model(th.tensor([1.0, 2.1])) == 0
 
 
@@ -256,10 +258,12 @@ def test_stateful_plan_method_execute_locally():
 
     model = Net()
 
-    # Force build
+    model.build(th.tensor([1.0, 2]))
+
+    # Call one time
     assert model(th.tensor([1.0, 2])) == th.tensor([1000.0])
 
-    # Test call multiple times
+    # Call one more time
     assert model(th.tensor([1.0, 2.1])) == th.tensor([1000.0])
 
 
@@ -403,25 +407,28 @@ def test_stateful_plan_multiple_workers(workers):
     assert (x_abs == th.tensor([2, 10, 4])).all()
 
 
-# TODO: Clarify this test
-# def test_fetch_plan(hook):
-#     device_4 = sy.VirtualWorker(hook, id="device_4")
-#
-#     @sy.func2plan(args_shape=[(1,)])
-#     def plan_mult_3(data):
-#         return data * 3
-#
-#     sent_plan = plan_mult_3.send(device_4)
-#
-#     # Fetch plan
-#     fetched_plan = device_4.fetch_plan(sent_plan.id)
-#     get_plan = sent_plan.get()
-#
-#     # Execut it locally
-#     x = th.tensor([-1, 2, 3])
-#     assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
-#     assert fetched_plan.is_built
-#     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+def test_fetch_plan(hook):
+    hook.local_worker.is_client_worker = False
+
+    device_4 = sy.VirtualWorker(hook, id="device_4")
+
+    @sy.func2plan(args_shape=[(1,)])
+    def plan_mult_3(data):
+        return data * 3
+
+    sent_plan = plan_mult_3.send(device_4)
+
+    # Fetch plan
+    fetched_plan = device_4.fetch_plan(sent_plan.id)
+    get_plan = sent_plan.get()
+
+    # Execute it locally
+    x = th.tensor([-1, 2, 3])
+    assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
+    assert fetched_plan.is_built
+    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_serde(hook):
