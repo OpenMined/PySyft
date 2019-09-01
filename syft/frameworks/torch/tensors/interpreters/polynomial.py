@@ -136,6 +136,7 @@ class PolynomialTensor(AbstractTensor):
 
         return f_interpolated
 
+    @overloaded.method
     def sigmoid(
         self, method="interpolation", degree=10, precision=10, min_val=-10, max_val=10, steps=100
     ):
@@ -204,6 +205,7 @@ class PolynomialTensor(AbstractTensor):
 
     __sigmoid__ = sigmoid
 
+    @overloaded.method
     def tanh(
         self, method="interpolation", degree=10, min_val=-10, max_val=10, steps=100, precision=10
     ):
@@ -223,6 +225,7 @@ class PolynomialTensor(AbstractTensor):
         tanh_coeffs = None
         if self.method == "taylor":
 
+            # 2 * sigmoid(2 * tensor) - 1
             tanh_coeffs = torch.tensor(
                 [
                     0,
@@ -286,6 +289,7 @@ class PolynomialTensor(AbstractTensor):
 
     __tanh__ = tanh
 
+    @overloaded.method
     def exp(
         self, method="interpolation", degree=10, min_val=-10, max_val=10, steps=100, precision=10
     ):
@@ -338,6 +342,88 @@ class PolynomialTensor(AbstractTensor):
         return Ptensor
 
     __exp__ = exp
+
+    def _exp(self, x):
+
+        tensor = x.poly().exp()
+
+        return tensor
+
+    @classmethod
+    def on_function_call(cls, command):
+        """
+        Override this to perform a specific action for each call of a torch
+        function with arguments containing syft tensors of the class doing
+        the overloading
+        """
+        cmd, _, args, kwargs = command
+        print("Default log", cmd)
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        """
+        We use the @overloaded.module to specify we're writing here
+        a function which should overload the function with the same
+        name in the <torch> module
+        :param module: object which stores the overloading functions
+        Note that we used the @staticmethod decorator as we're in a
+        class
+        """
+
+        def add(x, y):
+            """
+            You can write the function to overload in the most natural
+            way, so this will be called whenever you call torch.add on
+            Logging Tensors, and the x and y you get are also Logging
+            Tensors, so compared to the @overloaded.method, you see
+            that the @overloaded.module does not hook the arguments.
+            """
+            return x + y
+
+        # Just register it using the module variable
+        module.add = add
+
+        @overloaded.function
+        def mul(x, y):
+            """
+            You can also add the @overloaded.function decorator to also
+            hook arguments, ie all the LoggingTensor are replaced with
+            their child attribute
+            """
+            print("Log function torch.mul")
+            return x * y
+
+        # Just register it using the module variable
+        module.mul = mul
+
+        # You can also overload functions in submodules!
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+                def relu(x):
+                    print("Log function torch.nn.functional.relu")
+                    return x * (x.child > 0)
+
+                module.relu = relu
+
+                def sigmoid(self, x):
+
+                    print("Log function torch.nn.functional.relu")
+                    return self._exp(x)
+
+                module.sigmoid = sigmoid
+
+            module.functional = functional
+
+        # Modules should be registered just like functions
+        module.nn = nn
 
     """def piecewise_linear_eval(self, data, x):
         Get approximated value for a given function. This takes only scalar value.
