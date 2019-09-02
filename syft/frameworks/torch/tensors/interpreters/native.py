@@ -1,22 +1,22 @@
-import torch
-import numpy as np
 import math
-import warnings
-
 from typing import List
 from typing import Union
+import warnings
 import weakref
 
+import numpy as np
+import torch
+
 import syft
-from syft.exceptions import InvalidTensorForRemoteGet
+from syft.frameworks.torch.overload_torch import overloaded
+from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
+from syft.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import PointerTensor
 from syft.workers import BaseWorker
-from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 
 from syft.exceptions import PureFrameworkTensorFoundError
-
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.exceptions import InvalidTensorForRemoteGet
 
 
 def _get_maximum_precision():
@@ -303,7 +303,7 @@ class TorchTensor(AbstractTensor):
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
-            if args_type not in (torch.Tensor, torch.nn.Parameter):
+            if args_type not in FrameworkTensor:
                 return args_type.handle_func_command(command)
 
             # build the new command
