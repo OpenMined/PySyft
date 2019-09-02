@@ -562,13 +562,6 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         return responses
 
-    def _execute_plan_locally(self, result_ids, *args, **kwargs):
-
-        self._update_args(args, result_ids)
-        self._execute_plan()
-        responses = self._get_plan_output(result_ids)
-        return responses
-
     def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
 
@@ -587,7 +580,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         if not self.is_built:
             self._build(args)
 
-        if len(self.locations) > 0:
+        if len(self.locations):
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
@@ -595,14 +588,10 @@ class Plan(ObjectStorage, torch.nn.Module):
 
             return response
 
-        # If the plan is local, we execute the plan and return the response
-        if len(self.locations) == 0 and self.owner == sy.framework.hook.local_worker:
-            return self._execute_plan_locally(result_ids, *args)
-
-        # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been requested to be executed, so we update the plan with the
+        # if the plan is not to be sent then it has been requested to be executed,
+        # so we update the plan with the
         # correct input and output ids and we run it
-        elif len(self.locations) == 0 and self.owner != sy.framework.hook.local_worker:
+        elif not len(self.locations):
             self._update_args(args, result_ids)
             self._execute_plan()
             responses = self._get_plan_output(result_ids)
