@@ -1,6 +1,6 @@
 import pytest
-import torch
 
+import torch
 from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
 
 
@@ -12,7 +12,7 @@ def test_wrap(workers):
     x = LargePrecisionTensor().on(x_tensor)
     assert isinstance(x, torch.Tensor)
     assert isinstance(x.child, LargePrecisionTensor)
-    assert isinstance(x.child.child, torch.Tensor)
+    assert isinstance(not x.child.child, torch.Tensor)
 
 
 def test_fix_prec(workers):
@@ -238,3 +238,27 @@ def test_types(x, expected):
     restored = enlarged.float_precision()
     # And now x and restored must be the same
     assert torch.all(torch.eq(expected, restored))
+
+
+def test_share_and_get(workers):
+    # Override _get_maximum_precision() with 32?
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    x = torch.tensor([25.])
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    expected = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+
+    print("######\n")
+    print(enlarged)
+    print("\n######\n")
+    print(enlarged.child)
+    print("\n######\n")
+
+    shared = enlarged.share(alice, bob, crypto_provider=james)
+    print("SHARED")
+    print(shared)
+    print("\n######\n")
+
+    back = shared.get()
+
+    assert (back.float_precision() == expected.float_precision()).all()

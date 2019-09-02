@@ -271,6 +271,20 @@ class LargePrecisionTensor(AbstractTensor):
 
         return _restore_recursive(number_parts, 0, 2 ** bits)
 
+    def share(self, *owners, field=None, crypto_provider=None):
+        # if field is None:
+        #     field = self.field
+        # else:
+        #     assert (
+        #         field == self.field
+        #     ), "When sharing a LargePrecisionTensor, the field of the resulting AdditiveSharingTensor \
+        #         must be the same as the one of the original tensor"
+
+        self.child = self.child.share(
+            *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
+        )
+        return self
+
 
 # The size of each type
 type_precision = {
