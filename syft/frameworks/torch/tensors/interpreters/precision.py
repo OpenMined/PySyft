@@ -512,8 +512,6 @@ class FixedPrecisionTensor(AbstractTensor):
             for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
                 result += (tensor ** d) * torch.tensor(w).fix_precision().child"""
 
-            print("Using polynomial Tensor")
-
             x = syft.PolynomialTensor()
             x.child = tensor
 
@@ -526,9 +524,10 @@ class FixedPrecisionTensor(AbstractTensor):
             Overloads torch.tanh to be able to use MPC
             """
 
-            result = 2 * sigmoid(2 * tensor) - 1
+            x = syft.PolynomialTensor()
+            x.child = tensor
 
-            return result
+            return x.tanh()
 
         module.tanh = tanh
 

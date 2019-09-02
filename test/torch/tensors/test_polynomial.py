@@ -152,6 +152,7 @@ def test_exp_additiveshared():
         .share(alice, bob, crypto_provider=james)
         .poly()
         .exp()
+        .get()
     )
     expected = torch.tensor([22736, 207530, 57406, 11302])
 
@@ -198,3 +199,6 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+
+test_exp_additiveshared()
