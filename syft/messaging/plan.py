@@ -736,6 +736,9 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         return out
 
+    def __repr__(self):
+        return self.__str__()
+
     @staticmethod
     def simplify(plan: "Plan") -> tuple:
         """
