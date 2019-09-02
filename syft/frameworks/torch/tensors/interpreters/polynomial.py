@@ -2,6 +2,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 import torch
+import syft
 import numpy as np
 from typing import Callable, List, Union
 
@@ -343,6 +344,51 @@ class PolynomialTensor(AbstractTensor):
         return val
 
     __exp__ = exp
+    
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Receive an instruction for a function to be applied on a FixedPrecision Tensor,
+        Perform some specific action (like logging) which depends of the
+        instruction content, replace in the args all the FPTensors with
+        their child attribute, forward the command instruction to the
+        handle_function_command of the type of the child attributes, get the
+        response and replace a FixedPrecision on top of all tensors found in
+        the response.
+        :param command: instruction of a function command: (command name,
+        <no self>, arguments[, kwargs])
+        :return: the response of the function command
+        """
+        cmd, _, args, kwargs = command
+
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
+
+        # Check that the function has not been overwritten
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = cls.rgetattr(cls, cmd)
+            return cmd(*args, **kwargs)
+        except AttributeError:
+            pass
+
+        # TODO: I can't manage the import issue, can you?
+        # Replace all FixedPrecisionTensor with their child attribute
+        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
+            cmd, args, kwargs
+        )
+
+        # build the new command
+        new_command = (cmd, None, new_args, new_kwargs)
+
+        # Send it to the appropriate class and get the response
+        response = new_type.handle_func_command(new_command)
+
+        # Put back FixedPrecisionTensor on the tensors found in the response
+        response = syft.frameworks.torch.hook_args.hook_response(
+            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+        )
+
+        return response
 
     @staticmethod
     @overloaded.module
@@ -364,7 +410,10 @@ class PolynomialTensor(AbstractTensor):
             Tensors, so compared to the @overloaded.method, you see
             that the @overloaded.module does not hook the arguments.
             """
-            return x.child + y.child
+            
+            P=PolynomialTensor()
+            P.child=x.child + y.child
+            return P
 
         # Just register it using the module variable
         module.add = add
@@ -377,7 +426,7 @@ class PolynomialTensor(AbstractTensor):
             their child attribute
             """
             print("Log function torch.mul")
-            return x.child * y.child
+            return x.child*y.child
 
         # Just register it using the module variable
         module.mul = mul
