@@ -1,6 +1,6 @@
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 import torch
 import numpy as np
 from typing import Callable, List, Union
@@ -70,6 +70,15 @@ class PolynomialTensor(AbstractTensor):
             )
 
         default_functions()
+
+    @property
+    def grad(self):
+        """
+        Gradient makes no sense for Polynomial Tensor, so we make it clear
+        that if someone query .grad on a Fixed Precision Tensor it doesn't error
+        but returns grad and can't be set
+        """
+        return None
 
     def get_encrypt_function(self, coeffs_tensor):
         """The method encrypts the coefficients as required by the child tensor"""
@@ -199,9 +208,7 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * sigmoid_coeffs[(len(sigmoid_coeffs) - 1) - i]
 
-        Ptensor = PolynomialTensor()
-        Ptensor.child = val
-        return Ptensor
+        return val
 
     __sigmoid__ = sigmoid
 
@@ -243,8 +250,6 @@ class PolynomialTensor(AbstractTensor):
                 ]
             )
 
-            print(tanh_coeffs)
-
         elif self.method == "interpolation":
 
             # Check if the user wants a fitted approximation different from already fitted function and fit accordingly
@@ -283,9 +288,7 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * tanh_coeffs[(len(tanh_coeffs) - 1) - i]
 
-        Ptensor = PolynomialTensor()
-        Ptensor.child = val
-        return Ptensor
+        return val
 
     __tanh__ = tanh
 
@@ -337,27 +340,9 @@ class PolynomialTensor(AbstractTensor):
 
                 val += (x ** i) * exp_coeffs[(len(exp_coeffs) - 1) - i]
 
-        Ptensor = PolynomialTensor()
-        Ptensor.child = val
-        return Ptensor
+        return val
 
     __exp__ = exp
-
-    def _exp(self, x):
-
-        tensor = x.poly().exp()
-
-        return tensor
-
-    @classmethod
-    def on_function_call(cls, command):
-        """
-        Override this to perform a specific action for each call of a torch
-        function with arguments containing syft tensors of the class doing
-        the overloading
-        """
-        cmd, _, args, kwargs = command
-        print("Default log", cmd)
 
     @staticmethod
     @overloaded.module
@@ -416,7 +401,7 @@ class PolynomialTensor(AbstractTensor):
                 def sigmoid(self, x):
 
                     print("Log function torch.nn.functional.relu")
-                    return self._exp(x)
+                    return self._sigmoid(x)
 
                 module.sigmoid = sigmoid
 

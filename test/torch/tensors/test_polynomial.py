@@ -33,6 +33,10 @@ def test_sigmoid_torch():
     )
     assert torch.allclose(result.child.child, expected, atol=1e-01)
 
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, torch.Tensor)
+
 
 def test_tanh():
 
@@ -41,6 +45,10 @@ def test_tanh():
     result = x.tanh()
     expected = torch.tensor([-1.0558, 0.2851, 0.9433, -1.0585])
     assert torch.allclose(result.child.child, expected, atol=1e-00)
+
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, torch.Tensor)
 
 
 def test_exp_torch():
@@ -56,6 +64,10 @@ def test_exp_torch():
     expected = torch.tensor([1.7167e00, 2.9084e02, 4.3630e03, 1.0517e04])
     assert torch.allclose(result.child.child, expected, atol=1e-01)
 
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, torch.Tensor)
+
 
 def test_exp_fixprecision():
 
@@ -69,6 +81,11 @@ def test_exp_fixprecision():
     expected = torch.tensor([11302, 19502, 22736, 57406, 207530, 598502, 1362052, 2562326])
     assert torch.allclose(result.child.child.child, expected, atol=1e-01)
 
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, FixedPrecisionTensor)
+    assert isinstance(result.child.child.child, torch.Tensor)
+
 
 def test_sigmoid_fixprecision():
 
@@ -81,6 +98,11 @@ def test_sigmoid_fixprecision():
     result = x.sigmoid()
     expected = torch.tensor([134, 205, 293, 394, 500, 606, 707, 795, 866, 929, 848])
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, FixedPrecisionTensor)
+    assert isinstance(result.child.child.child, torch.Tensor)
 
 
 def test_tanh_fixprecision():
@@ -108,7 +130,13 @@ def test_tanh_fixprecision():
             991,
         ]
     )
+
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+    # Test if the tensor is hooked correctly
+    assert isinstance(result.child, PolynomialTensor)
+    assert isinstance(result.child.child, FixedPrecisionTensor)
+    assert isinstance(result.child.child.child, torch.Tensor)
 
 
 def test_exp_additiveshared():
@@ -124,7 +152,6 @@ def test_exp_additiveshared():
         .share(alice, bob, crypto_provider=james)
         .poly()
         .exp()
-        .get()
     )
     expected = torch.tensor([22736, 207530, 57406, 11302])
 

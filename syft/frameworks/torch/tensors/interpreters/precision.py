@@ -498,6 +498,7 @@ class FixedPrecisionTensor(AbstractTensor):
             Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
             """
 
+            """
             weights = [0.5, 0.216_578_258, -0.008_331_284_8, 0.000_187_652_8, -1.9669e-06, 7.5e-09]
             degrees = [0, 1, 3, 5, 7, 9]
 
@@ -509,9 +510,14 @@ class FixedPrecisionTensor(AbstractTensor):
             # initiate with term of degree 0 to avoid errors with tensor ** 0
             result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
             for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
-                result += (tensor ** d) * torch.tensor(w).fix_precision().child
+                result += (tensor ** d) * torch.tensor(w).fix_precision().child"""
 
-            return result
+            print("Using polynomial Tensor")
+
+            x = syft.PolynomialTensor()
+            x.child = tensor
+
+            return x.sigmoid()
 
         module.sigmoid = sigmoid
 
