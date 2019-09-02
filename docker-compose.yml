@@ -12,6 +12,7 @@ services:
                 - GRID_NETWORK_URL=http://localhost:8080
                 - ID=Bob
                 - ADDRESS=http://localhost:3000/
+                - TEST_CONFIG=sqlite:///databaseBob.db
                 - PORT=3000
         depends_on:
                 - "gateway"
@@ -22,6 +23,7 @@ services:
                 - GRID_NETWORK_URL=http://localhost:8080
                 - ID=Alice
                 - ADDRESS=http://localhost:3001/
+                - TEST_CONFIG=sqlite:///databaseAlice.db
                 - PORT=3001
         depends_on:
                 - "gateway"
@@ -32,6 +34,7 @@ services:
                 - GRID_NETWORK_URL=http://localhost:8080
                 - ID=Bill
                 - ADDRESS=http://localhost:3002/
+                - TEST_CONFIG=sqlite:///databaseBill.db
                 - PORT=3002
         depends_on:
                 - "gateway"

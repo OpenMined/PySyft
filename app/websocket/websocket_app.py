@@ -15,9 +15,12 @@ gateway_url = os.environ.get("GRID_NETWORK_URL", None)
 node_id = os.environ.get("ID", None)
 node_address = os.environ.get("ADDRESS", None)
 port = os.environ.get("PORT", None)
+test_config = os.environ.get("TEST_CONFIG", None)
 
-
-app = create_app(debug=False)
+if test_config:
+    app = create_app(debug=False, tst_config={"SQLALCHEMY_DATABASE_URI": test_config})
+else:
+    app = create_app(debug=False)
 
 
 def check_args():
