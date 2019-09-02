@@ -369,9 +369,10 @@ def test_fix_prec_on_pointer_tensor(workers):
     ptr = tensor.send(bob)
 
     ptr = ptr.fix_precision()
+    remote_tensor = bob._objects[ptr.id_at_location]
 
-    assert type(ptr.child) is PointerTensor
-    assert type(ptr.get().child) is FixedPrecisionTensor
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
 
 
 def test_fix_prec_on_pointer_of_pointer(workers):
@@ -387,8 +388,11 @@ def test_fix_prec_on_pointer_of_pointer(workers):
 
     ptr = ptr.fix_precision()
 
-    assert type(ptr.child) is PointerTensor
-    assert type(ptr.get().get().child) is FixedPrecisionTensor
+    alice_tensor = alice._objects[ptr.id_at_location]
+    remote_tensor = bob._objects[alice_tensor.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
 
 
 def test_float_prec_on_pointer_tensor(workers):
@@ -397,13 +401,15 @@ def test_float_prec_on_pointer_tensor(workers):
     """
     bob = workers["bob"]
 
-    tensor = torch.tensor([1, 2, 3, 4.0]).fix_prec()
+    tensor = torch.tensor([1, 2, 3, 4.0])
     ptr = tensor.send(bob)
+    ptr = ptr.fix_precision()
 
     ptr = ptr.float_precision()
+    remote_tensor = bob._objects[ptr.id_at_location]
 
-    assert type(ptr.child) is PointerTensor
-    assert type(ptr.get()) is torch.Tensor
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor, torch.Tensor)
 
 
 def test_float_prec_on_pointer_of_pointer(workers):
@@ -413,11 +419,15 @@ def test_float_prec_on_pointer_of_pointer(workers):
     bob = workers["bob"]
     alice = workers["alice"]
 
-    tensor = torch.tensor([1, 2, 3, 4.0]).fix_prec()
+    tensor = torch.tensor([1, 2, 3, 4.0])
     ptr = tensor.send(bob)
     ptr = ptr.send(alice)
+    ptr = ptr.fix_precision()
 
     ptr = ptr.float_precision()
 
-    assert type(ptr.child) is PointerTensor
-    assert type(ptr.get().get()) is torch.Tensor
+    alice_tensor = alice._objects[ptr.id_at_location]
+    remote_tensor = bob._objects[alice_tensor.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor, torch.Tensor)
