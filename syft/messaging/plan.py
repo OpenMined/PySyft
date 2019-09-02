@@ -6,11 +6,12 @@ from typing import Union
 
 import torch
 
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.codes import MSGTYPE
 import syft as sy
-
+from syft.codes import MSGTYPE
+from syft.frameworks.types import FrameworkTensor
+from syft.frameworks.types import FrameworkTensorType
+from syft.generic.tensor import AbstractTensor
+from syft.generic import ObjectStorage
 from syft.workers import AbstractWorker  #
 
 
@@ -154,7 +155,7 @@ class Plan(ObjectStorage):
                 raise ValueError("Invalid shape {}".format(shape))
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
-        return [torch.zeros(shape) for shape in mapped_shapes]
+        return [sy.framework.hook.create_zeros(shape) for shape in mapped_shapes]
 
     @property
     def _known_workers(self):
@@ -193,14 +194,14 @@ class Plan(ObjectStorage):
         """Steps needed before running or building a local plan based on a method."""
         # TODO: try to find a better way to deal with local execution
         # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
-            self._self.send(sy.hook.local_worker, force_send=True)
+        if self.is_method and not self.locations and self.owner == sy.framework.hook.local_worker:
+            self._self.send(sy.framework.hook.local_worker, force_send=True)
 
     def _after_running_local_method(self):
         """Steps needed after running or building a local plan based on a method."""
         # TODO: try to find a better way to deal with local execution
         # of methods.
-        if self.is_method and not self.locations and self.owner == sy.hook.local_worker:
+        if self.is_method and not self.locations and self.owner == sy.framework.hook.local_worker:
             self._self.get()
 
     def build(self, *args):
@@ -229,7 +230,7 @@ class Plan(ObjectStorage):
         for arg in args:
             # Send only tensors (in particular don't send the "self" for methods)
             # in the case of a method.
-            if isinstance(arg, torch.Tensor):
+            if isinstance(arg, FrameworkTensor):
                 self.owner.register_obj(arg)
                 arg = arg.send(self)
                 arg.child.garbage_collect_data = False
@@ -257,10 +258,10 @@ class Plan(ObjectStorage):
         Return location if args contain pointers else the local worker
         """
         for arg in args:
-            if isinstance(arg, torch.Tensor):
+            if isinstance(arg, FrameworkTensor):
                 if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
                     return arg.location
-        return sy.hook.local_worker
+        return sy.framework.hook.local_worker
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -407,7 +408,9 @@ class Plan(ObjectStorage):
         return self._execute_readable_plan(*args)
 
     def _update_args(
-        self, args: List[Union[torch.Tensor, AbstractTensor]], result_ids: List[Union[str, int]]
+        self,
+        args: List[Union[FrameworkTensorType, AbstractTensor]],
+        result_ids: List[Union[str, int]],
     ):
         """Replace args and result_ids with the ones given.
         Updates the arguments ids and result ids used to execute
@@ -477,13 +480,13 @@ class Plan(ObjectStorage):
             return response
 
         # If the plan is local, we execute the plan and return the response
-        if len(self.locations) == 0 and self.owner == sy.hook.local_worker:
+        if len(self.locations) == 0 and self.owner == sy.framework.hook.local_worker:
             return self._execute_plan_locally(result_ids, *args)
 
         # if the plan is not to be sent but is not local (ie owned by the local worker)
         # then it has been requested to be executed, so we update the plan with the
         # correct input and output ids and we run it
-        elif len(self.locations) == 0 and self.owner != sy.hook.local_worker:
+        elif len(self.locations) == 0 and self.owner != sy.framework.hook.local_worker:
             self._update_args(args, result_ids)
             self._execute_plan()
             responses = self._get_plan_output(result_ids)
@@ -512,7 +515,7 @@ class Plan(ObjectStorage):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, torch.Tensor)]
+        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
@@ -540,7 +543,7 @@ class Plan(ObjectStorage):
         self.locations += [self.owner.get_worker(location).id for location in locations]
 
         # rm duplicates
-        self.locations = list(set(self.locations) - set([sy.hook.local_worker.id]))
+        self.locations = list(set(self.locations) - set([sy.framework.hook.local_worker.id]))
 
         for location in locations:
             self.ptr_plans[location.id] = self._send(location)

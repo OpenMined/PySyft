@@ -63,7 +63,8 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
 
-    print(alice)
+    if PRINT_IN_UNITTESTS:
+        print(alice)
     new_model = model_ptr.get()
     data = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
     target = torch.tensor([[1], [0], [1], [0]])
@@ -115,10 +116,13 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
 
     model = torch.jit.trace(model_untraced, data)
 
-    print("Evaluation before training")
+    if PRINT_IN_UNITTESTS:
+        print("Evaluation before training")
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
-    print("Loss: {}".format(loss_before))
+
+    if PRINT_IN_UNITTESTS:
+        print("Loss: {}".format(loss_before))
 
     # Create and send train config
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2)
@@ -299,11 +303,11 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     # TODO check reason for error (RuntimeError: This event loop is already running) when starting websocket server from pytest-asyncio environment
     # dataset = sy.BaseDataset(data, target)
 
-    # process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, dataset_key), **kwargs)
+    # server, remote_proxy = start_remote_worker(id="async_fit", port=8777, hook=hook, dataset=(dataset, dataset_key))
 
     # time.sleep(0.1)
 
-    local_worker = WebsocketClientWorker(**kwargs)
+    remote_proxy = WebsocketClientWorker(**kwargs)
 
     @hook.torch.jit.script
     def loss_fn(pred, target):
@@ -333,10 +337,10 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     train_config = sy.TrainConfig(
         model=model, loss_fn=loss_fn, batch_size=2, optimizer="SGD", optimizer_args={"lr": 0.1}
     )
-    train_config.send(local_worker)
+    train_config.send(remote_proxy)
 
     for epoch in range(5):
-        loss = await local_worker.async_fit(dataset_key=dataset_key)
+        loss = await remote_proxy.async_fit(dataset_key=dataset_key)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
@@ -357,8 +361,8 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
-    local_worker.ws.shutdown()
-    # process_remote_worker.terminate()
+    remote_proxy.close()
+    # server.terminate()
 
     assert loss_after < loss_before
 
@@ -367,21 +371,14 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     torch.__version__ >= "1.1",
     reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
 )
-def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
-    kwargs = {"id": "sync_fit", "host": "localhost", "port": 9000, "hook": hook}
-
+def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma: no cover
     data, target = utils.create_gaussian_mixture_toy_data(100)
-
     dataset = sy.BaseDataset(data, target)
-
     dataset_key = "gaussian_mixture"
-    process_remote_worker = start_proc(
-        WebsocketServerWorker, dataset=(dataset, dataset_key), **kwargs
+
+    server, remote_proxy = start_remote_worker(
+        id="sync_fit", hook=hook, port=9000, dataset=(dataset, dataset_key)
     )
-
-    time.sleep(0.1)
-
-    local_worker = WebsocketClientWorker(**kwargs)
 
     @hook.torch.jit.script
     def loss_fn(pred, target):
@@ -409,10 +406,10 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
 
     # Create and send train config
     train_config = sy.TrainConfig(model=model, loss_fn=loss_fn, batch_size=2, epochs=1)
-    train_config.send(local_worker)
+    train_config.send(remote_proxy)
 
     for epoch in range(5):
-        loss = local_worker.fit(dataset_key=dataset_key)
+        loss = remote_proxy.fit(dataset_key=dataset_key)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (epoch, loss))
@@ -435,9 +432,7 @@ def test_train_config_with_jit_trace_sync(hook, start_proc):  # pragma: no cover
         print("Loss before training: {}".format(loss_before))
         print("Loss after training: {}".format(loss_after))
 
-    local_worker.ws.shutdown()
-    del local_worker
-
-    process_remote_worker.terminate()
+    remote_proxy.close()
+    server.terminate()
 
     assert loss_after < loss_before

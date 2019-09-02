@@ -14,8 +14,6 @@ def test_explicit_garbage_collect_pointer(workers):
     """Tests whether deleting a PointerTensor garbage collects the remote object too"""
     bob = workers["bob"]
 
-    alice, bob = workers["alice"], workers["bob"]
-
     # create tensor
     x = torch.Tensor([1, 2])
 
@@ -79,8 +77,6 @@ def test_explicit_garbage_collect_double_pointer(workers):
 def test_implicit_garbage_collection_pointer(workers):
     """Tests whether GCing a PointerTensor GCs the remote object too."""
     bob = workers["bob"]
-
-    alice, bob = workers["alice"], workers["bob"]
 
     # create tensor
     x = torch.Tensor([1, 2])
@@ -198,18 +194,14 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
     assert x_id not in bob._objects
 
 
-def test_websocket_garbage_collection(hook, start_proc):
-    kwargs = {"id": "ws_gc", "host": "localhost", "port": 8555, "hook": hook}
-    process_remote = start_proc(WebsocketServerWorker, **kwargs)
-    time.sleep(0.1)
-    local_worker = WebsocketClientWorker(**kwargs)
+def test_websocket_garbage_collection(hook, start_remote_worker):
+    server, remote_proxy = start_remote_worker(id="ws_gc", hook=hook, port=8555)
 
     sample_data = torch.tensor([1, 2, 3, 4])
-    sample_ptr = sample_data.send(local_worker)
+    sample_ptr = sample_data.send(remote_proxy)
 
     _ = sample_ptr.get()
-    assert sample_data not in local_worker._objects
+    assert sample_data not in remote_proxy._objects
 
-    local_worker.close()
-    time.sleep(0.1)
-    process_remote.terminate()
+    remote_proxy.close()
+    server.terminate()

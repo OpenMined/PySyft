@@ -10,11 +10,9 @@ import ssl
 import time
 
 import syft as sy
-from syft.codes import MSGTYPE
 from syft import messaging
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers import BaseWorker
-from syft import messaging
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +156,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = messaging.Message(MSGTYPE.OBJ_REQ, return_ids[0])
+        msg = messaging.ObjectRequestMessage(return_ids[0])
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
 
@@ -181,7 +179,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
 
-        msg = (MSGTYPE.OBJ_REQ, return_ids[0])
+        msg = messaging.ObjectRequestMessage(return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
