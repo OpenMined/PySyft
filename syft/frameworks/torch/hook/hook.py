@@ -62,11 +62,13 @@ class TorchHook(FrameworkHook):
             max length of the list that stores the messages to be sent.
 
     Example:
+        >>> import torch as th
         >>> import syft as sy
-        >>> hook = sy.TorchHook()
+        >>> hook = sy.TorchHook(th)
         Hooking into Torch...
         Overloading Complete.
-        >>> x = sy.Tensor([-2,-1,0,1,2,3])
+        # constructing a normal torch tensor in pysyft
+        >>> x = th.Tensor([-2,-1,0,1,2,3])
         >>> x
         -2
         -1
