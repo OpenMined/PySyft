@@ -1,7 +1,7 @@
 import math
 import torch
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.overload_torch import overloaded
 
 from syft.workers import AbstractWorker
@@ -472,9 +472,11 @@ class AdditiveSharingTensor(AbstractTensor):
         return self._private_mul(other, "mul")
 
     def __mul__(self, other, **kwargs):
-        """Multiplies two number for details see mul
-        """
         return self.mul(other, **kwargs)
+
+    def __imul__(self, other):
+        self = self.mul(other)
+        return self
 
     def pow(self, power):
         """
@@ -529,11 +531,12 @@ class AdditiveSharingTensor(AbstractTensor):
         result = self.__truediv__(*args, **kwargs)
         self.child = result.child
 
-    @overloaded.method
-    def __truediv__(self, shares: dict, divisor):
-        # TODO: how to correctly handle division in Zq?
-        assert isinstance(divisor, int)
+    def _private_div(self, divisor):
+        return securenn.division(self, divisor)
 
+    @overloaded.method
+    def _public_div(self, shares: dict, divisor):
+        # TODO: how to correctly handle division in Zq?
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
             # Still no solution to perform a real division on a additive shared tensor
@@ -548,7 +551,13 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return divided_shares
 
-    div = __truediv__
+    def div(self, divisor):
+        if isinstance(divisor, AdditiveSharingTensor):
+            return self._private_div(divisor)
+        else:
+            return self._public_div(divisor)
+
+    __truediv__ = div
 
     @overloaded.method
     def mod(self, shares: dict, modulus: int):
@@ -562,6 +571,28 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def __mod__(self, *args, **kwargs):
         return self.mod(*args, **kwargs)
+
+    @overloaded.method
+    def chunk(self, shares, *args, **kwargs):
+        """
+        This method overrides the torch.Tensor.chunk() method of Pytorch
+        """
+        results = None
+
+        for worker, share in shares.items():
+            share_results = share.chunk(*args, **kwargs)
+            if isinstance(share_results, (tuple, list)):
+                if results is None:
+                    results = [{worker: share_result} for share_result in share_results]
+                else:
+                    for result, share_result in zip(results, share_results):
+                        result[worker] = share_result
+            else:
+                if results is None:
+                    results = {}
+                results[worker] = share_results
+
+        return results
 
     @staticmethod
     @overloaded.module
@@ -671,23 +702,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.cat = cat
 
-        @overloaded.function
-        def chunk(tensor_shares, *args, **kwargs):
-            worker_chunks = {}
-            results = []
-
-            for worker, share in tensor_shares.items():
-                chunked_share = torch.chunk(share, *args, **kwargs)
-                worker_chunks[worker] = chunked_share
-
-            for c in range(len(worker_chunks[worker])):
-                shared_chunk = {}
-                for worker in tensor_shares.keys():
-                    shared_chunk[worker] = worker_chunks[worker][c]
-
-                results.append(shared_chunk)
-
-            return results
+        def chunk(tensor, *args, **kwargs):
+            return tensor.chunk(*args, **kwargs)
 
         module.chunk = chunk
 
@@ -907,7 +923,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(cmd, str):
             return cmd(*args, **kwargs)
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute

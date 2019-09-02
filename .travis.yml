@@ -33,10 +33,12 @@ before_script:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
 script:
-  - coverage run -m pytest
+  - coverage run -m pytest test --ignore=test/integration
   - coverage report --fail-under 95 -m
   # ensuring coverage of tests stays at 100 until entire coverage can be 100
   - coverage report --fail-under 100 -m --include="test/*"
+  - coverage run -m pytest test/integration
+  - coverage report --fail-under 100 -m test/integration/*
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:

@@ -1,26 +1,28 @@
-import logging
-
 from abc import abstractmethod
-import syft as sy
-
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.exceptions import GetNotPermittedError
-from syft.exceptions import WorkerNotFoundException
-from syft.exceptions import ResponseSignatureError
-from syft.workers import AbstractWorker
-from syft import messaging
-from syft import codes
+import logging
 from typing import Callable
 from typing import List
 from typing import Tuple
 from typing import Union
 from typing import TYPE_CHECKING
-import torch
+
+import syft as sy
+from syft import codes
+from syft import messaging
+from syft.generic.tensor import AbstractTensor
+from syft.generic import ObjectStorage
+from syft.frameworks.types import FrameworkTensorType
+from syft.frameworks.types import FrameworkTensor
+from syft.workers import AbstractWorker
+
+from syft.exceptions import GetNotPermittedError
+from syft.exceptions import WorkerNotFoundException
+from syft.exceptions import ResponseSignatureError
+
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.frameworks.torch import pointers
+    from syft.generic import pointers
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def __init__(
         self,
-        hook: "sy.TorchHook",
+        hook: "sy.frameworks.FrameworkHook",
         id: Union[int, str] = 0,
         data: Union[List, tuple] = None,
         is_client_worker: bool = False,
@@ -79,7 +81,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        self.torch = None if hook is None else hook.torch
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -182,7 +194,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         self.hook.local_worker.remove_worker_from_registry(worker_id=self.id)
 
-    def load_data(self, data: List[Union[torch.Tensor, AbstractTensor]]) -> None:
+    def load_data(self, data: List[Union[FrameworkTensorType, AbstractTensor]]) -> None:
         """Allows workers to be initialized with data when created
 
            The method registers the tensor individual tensor objects.
@@ -197,7 +209,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.register_obj(tensor)
                 tensor.owner = self
 
-    def send_msg(self, msg_type: int, message: str, location: "BaseWorker") -> object:
+    def send_msg(self, message: "messaging.Message", location: "BaseWorker") -> object:
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -208,7 +220,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             msg_type: A integer representing the message type.
-            message: A string representing the message being received.
+            message: A Message object
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
 
@@ -217,12 +229,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location.
         """
         if self.verbose:
-            print(f"worker {self} sending {msg_type} {message} to {location}")
+            print(f"worker {self} sending {message} to {location}")
 
-        # Step 0: combine type and message
-        message = messaging.Message(msg_type, message)
-
-        # Step 1: serialize the message to simple python objects
+        # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message)
 
         # Step 2: send the message and wait for a response
@@ -272,12 +281,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def send(
         self,
-        obj: Union[torch.Tensor, AbstractTensor],
+        obj: Union[FrameworkTensorType, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
-        local_autograd=False,
-        preinitialize_grad=False,
         garbage_collect_data=None,
+        **kwargs,
     ) -> "pointers.ObjectPointer":
         """Sends tensor to the worker(s).
 
@@ -286,7 +294,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/torch tensor/object object to send.
+            tensor: A syft/framework tensor/object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
@@ -327,7 +335,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
-        if hasattr(obj, "create_pointer"):
+        if hasattr(obj, "create_pointer"):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
 
@@ -338,12 +346,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 id_at_location=obj.id,
                 register=True,
                 ptr_id=ptr_id,
-                local_autograd=local_autograd,
-                preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
+                **kwargs,
             )
         else:
             pointer = obj
+
         # Send the object
         self.send_obj(obj, worker)
 
@@ -367,12 +375,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self.get_obj(_self)
+                _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
             if type(_self) == str and _self == "self":
                 _self = self
-            if sy.torch.is_inplace_method(command_name):
+            if sy.framework.is_inplace_method(command_name):
+                # TODO[jvmancuso]: figure out a good way to generalize the
+                # above check (#2530)
                 getattr(_self, command_name)(*args, **kwargs)
                 return
             else:
@@ -390,7 +400,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.torch.command_guard(command_name, "torch_modules")
+            sy.framework.command_guard(command_name)
 
             paths = command_name.split(".")
             command = self
@@ -404,6 +414,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if response is not None:
             # Register response and create pointers for tensor elements
             try:
+                # TODO[jvmancuso]: figure out how to generalize
+                # register_response (#2530)
                 response = sy.frameworks.torch.hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )
@@ -436,10 +448,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        message = (message, return_ids)
-
         try:
-            ret_val = self.send_msg(codes.MSGTYPE.CMD, message, location=recipient)
+            ret_val = self.send_msg(messaging.Operation(message, return_ids), location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated
@@ -521,7 +531,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(codes.MSGTYPE.OBJ, obj, location)
+        return self.send_msg(messaging.ObjectMessage(obj), location)
 
     def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
         """Returns the requested object from specified location.
@@ -534,14 +544,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(codes.MSGTYPE.OBJ_REQ, obj_id, location)
+        obj = self.send_msg(messaging.ObjectRequestMessage(obj_id), location)
         return obj
 
     # SECTION: Manage the workers network
 
     def get_worker(
         self, id_or_worker: Union[str, int, "BaseWorker"], fail_hard: bool = False
-    ) -> Union[str, int]:
+    ) -> Union[str, int, AbstractWorker]:
         """Returns the worker id or instance.
 
         Allows for resolution of worker ids to workers to happen automatically
@@ -582,23 +592,31 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             >>> me.get_worker(bob)
             <syft.core.workers.virtual.VirtualWorker id:bob>
         """
-
         if isinstance(id_or_worker, bytes):
             id_or_worker = str(id_or_worker, "utf-8")
 
-        if isinstance(id_or_worker, (str, int)):
-            if id_or_worker in self._known_workers:
-                return self._known_workers[id_or_worker]
-            else:
-                if fail_hard:
-                    raise WorkerNotFoundException
-                logger.warning("Worker %s couldn't recognize worker %s", self.id, id_or_worker)
-                return id_or_worker
+        if isinstance(id_or_worker, str) or isinstance(id_or_worker, int):
+            return self._get_worker_based_on_id(id_or_worker, fail_hard=fail_hard)
         else:
-            if id_or_worker.id not in self._known_workers:
-                self.add_worker(id_or_worker)
+            return self._get_worker(id_or_worker)
 
-        return id_or_worker
+    def _get_worker(self, worker: AbstractWorker):
+        if worker.id not in self._known_workers:
+            self.add_worker(worker)
+        return worker
+
+    def _get_worker_based_on_id(self, worker_id: Union[str, int], fail_hard: bool = False):
+        # A worker should always know itself
+        if worker_id == self.id:
+            return self
+
+        worker = self._known_workers.get(worker_id, worker_id)
+
+        if worker == worker_id:
+            if fail_hard:
+                raise WorkerNotFoundException
+            logger.warning("Worker %s couldn't recognize worker %s", self.id, worker_id)
+        return worker
 
     def add_worker(self, worker: "BaseWorker"):
         """Adds a single worker.
@@ -691,7 +709,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self._objects[idx]
+        return self._objects.get(idx, None)
 
     @staticmethod
     def is_tensor_none(obj):
@@ -710,10 +728,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(codes.MSGTYPE.IS_NONE, pointer, location=pointer.location)
+        return self.send_msg(messaging.IsNoneMessage(pointer), location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(tensor: torch.Tensor) -> List:
+    def get_tensor_shape(tensor: FrameworkTensorType) -> List:
         """
         Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
@@ -739,8 +757,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(codes.MSGTYPE.GET_SHAPE, pointer, location=pointer.location)
-        return sy.hook.torch.Size(shape)
+        shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
+        return sy.hook.create_shape(shape)
 
     def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
@@ -786,7 +804,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 if query_item == str(key):
                     match = True
 
-                if isinstance(obj, torch.Tensor):
+                if isinstance(obj, FrameworkTensor):
                     if obj.tags is not None:
                         if query_item in obj.tags:
                             match = True
@@ -822,28 +840,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.search(*query_items)
 
-    def generate_triple(
-        self, cmd: Callable, field: int, a_size: tuple, b_size: tuple, locations: list
-    ):
-        """Generates a multiplication triple and sends it to all locations.
+    def _get_msg(self, index):
+        """Returns a decrypted message from msg_history. Mostly useful for testing.
 
         Args:
-            cmd: An equation in einsum notation.
-            field: An integer representing the field size.
-            a_size: A tuple which is the size that a should be.
-            b_size: A tuple which is the size that b should be.
-            locations: A list of workers where the triple should be shared between.
+            index: the index of the message you'd like to receive.
 
         Returns:
-            A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
+            A decrypted messaging.Message object.
+
         """
-        a = self.torch.randint(field, a_size)
-        b = self.torch.randint(field, b_size)
-        c = cmd(a, b)
-        a_shared = a.share(*locations, field=field, crypto_provider=self).child
-        b_shared = b.share(*locations, field=field, crypto_provider=self).child
-        c_shared = c.share(*locations, field=field, crypto_provider=self).child
-        return a_shared, b_shared, c_shared
+
+        return sy.serde.deserialize(self.msg_history[index], worker=self)
 
     @staticmethod
     def create_message_execute_command(
@@ -868,3 +876,44 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return messaging.Message(
             codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids]
         )
+
+    @staticmethod
+    def simplify(worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(worker.id),)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["AbstractWorker", int, str]:
+        """
+        This function reconstructs a PlanPointer given it's attributes in form of a tuple.
+
+        Args:
+            worker: the worker doing the deserialization
+            plan_pointer_tuple: a tuple holding the attributes of the PlanPointer
+        Returns:
+            A worker id or worker instance.
+        """
+        worker_id = sy.serde._detail(worker, worker_tuple[0])
+
+        referenced_worker = worker.get_worker(worker_id)
+
+        return referenced_worker
+
+    @staticmethod
+    def force_simplify(worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(worker.id), sy.serde._simplify(worker._objects), worker.auto_add)
+
+    @staticmethod
+    def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
+        worker_id, _objects, auto_add = worker_tuple
+        worker_id = sy.serde._detail(worker, worker_id)
+
+        result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
+        _objects = sy.serde._detail(worker, _objects)
+        result._objects = _objects
+
+        # make sure they weren't accidentally double registered
+        for _, obj in _objects.items():
+            if obj.id in worker._objects:
+                del worker._objects[obj.id]
+
+        return result
