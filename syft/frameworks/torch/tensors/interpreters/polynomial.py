@@ -364,7 +364,7 @@ class PolynomialTensor(AbstractTensor):
             Tensors, so compared to the @overloaded.method, you see
             that the @overloaded.module does not hook the arguments.
             """
-            return x + y
+            return x.child + y.child
 
         # Just register it using the module variable
         module.add = add
@@ -377,7 +377,7 @@ class PolynomialTensor(AbstractTensor):
             their child attribute
             """
             print("Log function torch.mul")
-            return x * y
+            return x.child * y.child
 
         # Just register it using the module variable
         module.mul = mul
