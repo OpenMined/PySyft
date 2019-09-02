@@ -426,6 +426,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __matmul__ = matmul
+    mm = matmul
 
     @overloaded.method
     def __gt__(self, _self, other):
@@ -481,6 +482,7 @@ class FixedPrecisionTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
+        module.mm = matmul
 
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
@@ -541,8 +543,8 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             """
             Overloads torch.conv2d to be able to use MPC on convolutional networks.
-            The idea is to build new tensors from input and weight to compute a matrix multiplication
-            equivalent to the convolution.
+            The idea is to build new tensors from input and weight to compute a
+            matrix multiplication equivalent to the convolution.
 
             Args:
                 input: input image
@@ -556,6 +558,11 @@ class FixedPrecisionTensor(AbstractTensor):
             Returns:
                 the result of the convolution as an AdditiveSharingTensor
             """
+            # Currently, kwargs are not unwrapped by hook_args
+            # So this needs to be done manually
+            if bias.is_wrapper:
+                bias = bias.child
+
             assert len(input.shape) == 4
             assert len(weight.shape) == 4
 
@@ -566,13 +573,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # Extract a few useful values
             batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
-            nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
+            nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = weight.shape
 
             if bias is not None:
                 assert len(bias) == nb_channels_out
 
             # Check if inputs are coherent
-            assert nb_channels_in == nb_channels_in_ * groups
+            assert nb_channels_in == nb_channels_kernel * groups
             assert nb_channels_in % groups == 0
             assert nb_channels_out % groups == 0
 
@@ -618,7 +625,7 @@ class FixedPrecisionTensor(AbstractTensor):
                     # For each new output value, we just need to shift the receptive field
                     offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
                     tmp = [ind + offset for ind in pattern_ind]
-                    im_reshaped.append(im_flat[:, tmp].wrap())
+                    im_reshaped.append(im_flat[:, tmp])
             im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
             # The convolution kernels are also reshaped for the matrix multiplication
@@ -626,7 +633,7 @@ class FixedPrecisionTensor(AbstractTensor):
             #                       [weights for out channel 1],
             #                       ...
             #                       [weights for out channel nb_channels_out]].TRANSPOSE()
-            weight_reshaped = weight.view(nb_channels_out // groups, -1).t().wrap()
+            weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
 
             # Now that everything is set up, we can compute the result
             if groups > 1:
@@ -650,7 +657,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
                 .contiguous()
             )
-            return res.child
+            return res
 
         module.conv2d = conv2d
 
@@ -693,7 +700,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # Check that the function has not been overwritten
         try:

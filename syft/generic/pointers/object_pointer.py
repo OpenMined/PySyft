@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import syft
 from syft import exceptions
 from syft import messaging
-from syft.codes import MSGTYPE
 from syft.generic.object import AbstractObject
 
 # this if statement avoids circular imports between base.py and pointer.py
