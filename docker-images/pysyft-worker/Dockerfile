@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y gcc
 RUN pip install --no-cache-dir syft
 
 # Add worker code
-RUN mkdir $WORKER_DIR
 WORKDIR $WORKER_DIR
 COPY ./entrypoint.sh .
 RUN chmod +x ./entrypoint.sh
