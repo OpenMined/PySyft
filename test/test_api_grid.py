@@ -35,10 +35,9 @@ class GridAPITest(unittest.TestCase):
 
     def test_connected_nodes(self):
         response = json.loads(requests.get(GATEWAY_URL + "/connected-nodes").content)
-        self.assertEqual(len(response["grid-nodes"]), 3)
-        self.assertTrue("bob" in response["grid-nodes"])
-        self.assertTrue("alice" in response["grid-nodes"])
-        self.assertTrue("james" in response["grid-nodes"])
+        self.assertEqual(len(response["grid-nodes"]), len(IDS))
+        for node_id in IDS:
+            self.assertTrue(node_id in response["grid-nodes"])
 
     def test_grid_search(self):
         nodes = self.connect_nodes()

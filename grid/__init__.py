@@ -9,7 +9,9 @@ from grid import utils as gr_utils
 from grid import deploy
 from grid.grid_network import GridNetwork
 
-__all__ = ["workers"]
+from grid.utils import connect_all_nodes
+
+__all__ = ["workers", "connect_all_nodes"]
 
 
 def run_commands_in(commands, logs, tmp_dir="tmp", cleanup=True, verbose=False):

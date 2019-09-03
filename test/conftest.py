@@ -96,15 +96,18 @@ def init_nodes(node_infos):
         job.terminate()
 
 
+def create_websocket_client(hook, port, id):
+    node = gr.WebsocketGridClient(hook, "http://localhost:" + port + "/", id=id)
+    node.connect()
+    time.sleep(0.1)
+    return node
+
+
 @pytest.fixture(scope="function")
 def connected_node(hook):
     nodes = {}
     for (node_id, port) in zip(IDS, PORTS):
-        node = gr.WebsocketGridClient(
-            hook, "http://localhost:" + port + "/", id=node_id
-        )
-        node.connect()
-        time.sleep(0.1)
+        node = create_websocket_client(hook, port, node_id)
         nodes[node_id] = node
 
     yield nodes
