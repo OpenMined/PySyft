@@ -2,11 +2,11 @@ import time
 from functools import wraps
 
 
-def assert_time(time):
+def assert_time(max_time):
     """
     Decorator used to assert time execution of functions.
     Args:
-        time: int or float. Maximum time in seconds that the decorated
+        max_time: int or float. Maximum time in seconds that the decorated
         function should take to be executed
     """
 
@@ -16,7 +16,7 @@ def assert_time(time):
             t0 = time.time()
             func(*args, **kwargs)
             dt = time.time() - t0
-            assert dt < time
+            assert dt < max_time
 
         return wrapper
 

@@ -7,7 +7,7 @@ import torch as th
 
 
 @pytest.mark.parametrize("activation", [th.tanh, th.sigmoid])
-@assert_time(time=1)
+@assert_time(max_time=1)
 def test_activation(activation, hook, workers):
     bob = workers["bob"]
     alice = workers["alice"]
