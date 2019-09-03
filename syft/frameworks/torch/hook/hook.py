@@ -510,6 +510,7 @@ class TorchHook(FrameworkHook):
             "__init__",
             "__init_subclass__",
             "__weakref__",
+            "__module__",
             "__ne__",
             "__new__",
             "__reduce__",
