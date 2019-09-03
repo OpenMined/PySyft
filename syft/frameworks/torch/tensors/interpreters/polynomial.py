@@ -411,6 +411,7 @@ class PolynomialTensor(AbstractTensor):
             that the @overloaded.module does not hook the arguments.
             """
             
+            print("ADD STUFF")
             P=PolynomialTensor()
             P.child=x.child + y.child
             return P
