@@ -8,9 +8,8 @@ RUN pip install --no-cache-dir syft
 
 # Add worker code
 WORKDIR $WORKER_DIR
-COPY ./entrypoint.sh .
+COPY ./entrypoint.sh /worker-server.py ./
 RUN chmod +x ./entrypoint.sh
-COPY ./worker-server.py .
 EXPOSE 8777
 
 ENTRYPOINT "$WORKER_DIR/entrypoint.sh"
