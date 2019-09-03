@@ -65,7 +65,7 @@ else:
     MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = {}
 
 if dependency_check.tensorflow_available:
-    from syft.frameworks.tensorflow import MAP_TF_SIMPLIFIERS_AND_DETAILERS
+    from syft_tensorflow.serde import MAP_TF_SIMPLIFIERS_AND_DETAILERS
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
