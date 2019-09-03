@@ -6,4 +6,4 @@ if [ -z "${WORKER_ID}" ]; then
   exit
 fi
 
-python worker-server.py --id $WORKER_ID --port 8777
+exec python worker-server.py --id $WORKER_ID --port 8777
