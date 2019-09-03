@@ -13,11 +13,7 @@ import pytest
 import unittest.mock as mock
 
 
-def test_plan_built_automatically(hook):
-    # To run a plan locally the local worker can't be a client worker,
-    # since it needs to register objects
-    hook.local_worker.is_client_worker = False
-
+def test_plan_built_automatically():
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
         return data.abs()
@@ -26,12 +22,25 @@ def test_plan_built_automatically(hook):
     assert len(plan_abs.readable_plan) > 0
     assert plan_abs.is_built
 
-    hook.local_worker.is_client_worker = True
+
+def test_stateful_plan_built_automatically():
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def foo(x, state):
+        bias = state.read("bias")
+        x = x * 2
+        return x + bias
+
+    assert isinstance(foo.__str__(), str)
+    assert len(foo.readable_plan) > 0
+    assert foo.is_built
+
+    t = th.tensor([1.0, 2])
+    x = foo(t)
+
+    assert (x == th.tensor([3.0, 5])).all()
 
 
-def test_plan_build(hook):
-    hook.local_worker.is_client_worker = False
-
+def test_plan_build():
     @sy.func2plan(args_shape=())
     def plan_abs(data):
         return data.abs()
@@ -44,12 +53,21 @@ def test_plan_build(hook):
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
 
-    hook.local_worker.is_client_worker = True
+
+def test_stateful_plan_build():
+    @sy.func2plan(state={"bias": th.tensor([1.0])})
+    def foo(x, state):
+        bias = state.read("bias")
+        x = x * 2
+        return x + bias
+
+    t = th.tensor([1.0, 2])
+    x = foo(t)
+
+    assert (x == th.tensor([3.0, 5])).all()
 
 
-def test_plan_built_automatically_with_any_dimension(hook):
-    hook.local_worker.is_client_worker = False
-
+def test_plan_built_automatically_with_any_dimension():
     @sy.func2plan(args_shape=[(-1, 1)])
     def plan_abs(data):
         return data.abs()
@@ -57,11 +75,8 @@ def test_plan_built_automatically_with_any_dimension(hook):
     assert isinstance(plan_abs.__str__(), str)
     assert len(plan_abs.readable_plan) > 0
 
-    hook.local_worker.is_client_worker = True
 
-
-def test_raise_exception_for_invalid_shape(hook):
-    hook.local_worker.is_client_worker = False
+def test_raise_exception_for_invalid_shape():
 
     with pytest.raises(ValueError):
 
@@ -69,14 +84,9 @@ def test_raise_exception_for_invalid_shape(hook):
         def _(data):
             return data  # pragma: no cover
 
-    hook.local_worker.is_client_worker = True
-
 
 def test_raise_exception_when_sending_unbuilt_plan(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-
-    bob = workers["bob"]
+    me, bob = workers["me"], workers["bob"]
 
     @sy.func2plan()
     def plan(data):
@@ -85,12 +95,8 @@ def test_raise_exception_when_sending_unbuilt_plan(workers):
     with pytest.raises(RuntimeError):
         plan.send(bob)
 
-    me.is_client_worker = True
 
-
-def test_plan_execute_locally(hook):
-    hook.local_worker.is_client_worker = False
-
+def test_plan_execute_locally():
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
         return data.abs()
@@ -99,43 +105,170 @@ def test_plan_execute_locally(hook):
     x_abs = plan_abs(x)
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
-    hook.local_worker.is_client_worker = True
+
+def test_add_to_state():
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ("fc1", "fc2")
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ["fc1", "fc2"]
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state.append("fc1")
+            self.state.append("fc2")
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.add_to_state("fc1", "fc2")
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.add_to_state(["fc1", "fc2"])
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    model = Net()
+    assert "fc1" in model.state.keys
+    assert "fc2" in model.state.keys
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.state += ["fc3"]
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    with pytest.raises(AttributeError):
+        model = Net()
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.state += [self.fc1]
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    with pytest.raises(ValueError):
+        model = Net()
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.y = "hello"
+            self.state += ["y"]
+
+        def forward(self, x):
+            pass  # pragma: no cover
+
+    with pytest.raises(ValueError):
+        model = Net()
 
 
-def test_plan_method_execute_locally(hook):
-    hook.local_worker.is_client_worker = False
-
-    class Net(nn.Module):
+def test_plan_method_execute_locally():
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
 
-        @sy.method2plan
+            self.state += ["fc1", "fc2", "fc3"]
+
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
             x = self.fc3(x)
-            return F.log_softmax(x)
+            return F.log_softmax(x, dim=0)
 
     model = Net()
 
-    # Force build
+    model.build(th.tensor([1.0, 2]))
+
+    # Call one time
     assert model(th.tensor([1.0, 2])) == 0
 
-    # Test call multiple times
+    # Call one more time
     assert model(th.tensor([1.0, 2.1])) == 0
 
-    hook.local_worker.is_client_worker = True
+
+def test_stateful_plan_method_execute_locally():
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=0) + self.bias
+
+    model = Net()
+
+    model.build(th.tensor([1.0, 2]))
+
+    # Call one time
+    assert model(th.tensor([1.0, 2])) == th.tensor([1000.0])
+
+    # Call one more time
+    assert model(th.tensor([1.0, 2.1])) == th.tensor([1000.0])
 
 
 def test_plan_multiple_send(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-
-    bob = workers["bob"]
-    alice = workers["alice"]
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -156,14 +289,38 @@ def test_plan_multiple_send(workers):
     p = plan_abs(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 2, 3])).all()
-    me.is_client_worker = True
 
 
-def test_plan_built_on_method(hook):
+def test_stateful_plan_multiple_send(workers):
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def plan_abs(x, state):
+        bias = state.read("bias")
+        x = x.abs()
+        return x + bias
+
+    plan_abs.send(bob)
+    x_ptr = th.tensor([-1.0, 7, 3]).send(bob)
+    p = plan_abs(x_ptr)
+    res = p.get()
+
+    assert (res == th.tensor([2.0, 8, 4])).all()
+
+    # Test get / send plan
+    plan_abs.get()
+    plan_abs.send(alice)
+
+    x_ptr = th.tensor([-1.0, 2, 3]).send(alice)
+    p = plan_abs(x_ptr)
+    res = p.get()
+    assert (res == th.tensor([2.0, 3, 4])).all()
+
+
+def test_plan_built_on_class(hook):
     """
-    Test @sy.meth2plan and plan send / get / send
+    Test class Plans and plan send / get / send
     """
-    hook.local_worker.is_client_worker = False
 
     x11 = th.tensor([-1, 2.0]).tag("input_data")
     x21 = th.tensor([-1, 2.0]).tag("input_data")
@@ -171,28 +328,33 @@ def test_plan_built_on_method(hook):
     device_1 = sy.VirtualWorker(hook, id="device_1", data=(x11,))
     device_2 = sy.VirtualWorker(hook, id="device_2", data=(x21,))
 
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
+            self.fc2 = nn.Linear(3, 1)
 
-        @sy.method2plan
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "fc2", "bias"]
+
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0)
+            return F.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 
     # build
-    net.forward.build(th.tensor([1, 2.0]))
+    net.build(th.tensor([1, 2.0]))
 
     net.send(device_1)
     pointer_to_data = device_1.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
 
-    assert isinstance(pointer_to_result.get(), th.Tensor)
+    result = pointer_to_result.get()
+    assert isinstance(result, th.Tensor)
+    assert result == th.tensor([1000.0])
 
     net.get()
     net.send(device_2)
@@ -200,16 +362,13 @@ def test_plan_built_on_method(hook):
     pointer_to_data = device_2.search("input_data")[0]
     pointer_to_result = net(pointer_to_data)
 
-    assert isinstance(pointer_to_result.get(), th.Tensor)
-
-    hook.local_worker.is_client_worker = True
+    result = pointer_to_result.get()
+    assert isinstance(result, th.Tensor)
+    assert result == th.tensor([1000.0])
 
 
 def test_multiple_workers(workers):
-    me = workers["me"]
-    me.is_client_worker = False
-    bob = workers["bob"]
-    alice = workers["alice"]
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -226,11 +385,31 @@ def test_multiple_workers(workers):
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 9, 3])).all()
 
-    me.is_client_worker = True
+
+def test_stateful_plan_multiple_workers(workers):
+    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})
+    def plan_abs(x, state):
+        bias = state.read("bias")
+        x = x.abs()
+        return x + bias
+
+    plan_abs.send(bob, alice)
+    x_ptr = th.tensor([-1, 7, 3]).send(bob)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([2, 8, 4])).all()
+
+    x_ptr = th.tensor([-1, 9, 3]).send(alice)
+    p = plan_abs(x_ptr)
+    x_abs = p.get()
+    assert (x_abs == th.tensor([2, 10, 4])).all()
 
 
 def test_fetch_plan(hook):
     hook.local_worker.is_client_worker = False
+
     device_4 = sy.VirtualWorker(hook, id="device_4")
 
     @sy.func2plan(args_shape=[(1,)])
@@ -243,7 +422,7 @@ def test_fetch_plan(hook):
     fetched_plan = device_4.fetch_plan(sent_plan.id)
     get_plan = sent_plan.get()
 
-    # Execut it locally
+    # Execute it locally
     x = th.tensor([-1, 2, 3])
     assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
     assert fetched_plan.is_built
@@ -272,7 +451,6 @@ def test_plan_serde(hook):
 
 def test_execute_plan_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
-    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)])
     def my_plan(data):
@@ -296,32 +474,33 @@ def test_execute_plan_remotely(hook, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
-    hook.local_worker.is_client_worker = True
 
 
 def test_execute_plan_module_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
-    hook.local_worker.is_client_worker = False
 
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.method2plan
+            self.bias = th.tensor([1000.0])
+
+            self.state += ["fc1", "fc2", "bias"]
+
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0)
+            return F.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 
     x = th.tensor([-1, 2.0])
     local_res = net(x)
-    assert not net.forward.is_built
+    assert not net.is_built
 
-    net.forward.build(x)
+    net.build(x)
 
     server, remote_proxy = start_remote_worker(id="test_plan_worker_2", port=8799, hook=hook)
 
@@ -336,21 +515,20 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
-    hook.local_worker.is_client_worker = True
 
 
 def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     """Test training a plan locally and then executing it remotely."""
-    hook.local_worker.is_client_worker = False
 
     # Create toy model
-    class Net(nn.Module):
+    class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
 
-        @sy.method2plan
+            self.state += ["fc1", "fc2"]
+
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
@@ -388,7 +566,7 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
         previous_loss = loss
 
     local_res = net(x)
-    net.forward.build(x)
+    net.build(x)
 
     server, remote_proxy = start_remote_worker(id="test_plan_worker_3", port=8800, hook=hook)
 
@@ -403,7 +581,6 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
-    hook.local_worker.is_client_worker = True
 
 
 def test_replace_worker_ids_two_strings(hook):
@@ -471,62 +648,6 @@ def test__replace_message_ids():
     expected = (100, ("worker", "another"), "you", 20, 100, b"you", (30, ("you", "another", "bla")))
 
     assert replaced == expected
-
-
-def test___call__function(hook):
-    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-    with pytest.raises(ValueError):
-        plan(kwarg1="hello", kwarg2=None)
-
-    result_id = 444
-
-    pop_function_original = sy.ID_PROVIDER.pop
-    sy.ID_PROVIDER.pop = mock.Mock(return_value=result_id)
-
-    return_value = "return value"
-    plan.execute_plan = mock.Mock(return_value=return_value)
-
-    arg_list = (100, 200, 356)
-    ret_val = plan(*arg_list)
-
-    plan.execute_plan.assert_called_with(arg_list, [result_id])
-
-    assert ret_val == return_value
-
-    # reset function
-    sy.ID_PROVIDER.pop = pop_function_original
-
-
-def test__call__raise(hook):
-    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-    with pytest.raises(ValueError):
-        plan(kwarg1="hello", kwarg2=None)
-
-
-def test__call__for_method(hook):
-    plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan", is_method=True)
-    result_id = 444
-
-    pop_function_original = sy.ID_PROVIDER.pop
-    sy.ID_PROVIDER.pop = mock.Mock(return_value=result_id)
-
-    return_value = "return value"
-    plan.execute_plan = mock.Mock(return_value=return_value)
-
-    self_value = mock.Mock()
-    self_value.send = mock.Mock()
-    plan._self = self_value
-
-    arg_list = (100, 200, 356)
-    ret_val = plan(*arg_list)
-
-    expected_args = tuple([self_value] + list(arg_list))
-    plan.execute_plan.assert_called_with(expected_args, [result_id])
-
-    assert ret_val == return_value
-
-    # reset function
-    sy.ID_PROVIDER.pop = pop_function_original
 
 
 def test_send_with_plan(workers):

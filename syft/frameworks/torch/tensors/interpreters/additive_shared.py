@@ -923,7 +923,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(cmd, str):
             return cmd(*args, **kwargs)
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
