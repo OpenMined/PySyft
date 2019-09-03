@@ -2,9 +2,9 @@ from typing import List
 from typing import Union
 
 import syft as sy
-from syft.frameworks.torch.overload_torch import overloaded
-from syft.frameworks.types import FrameworkShapeType
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.types import FrameworkShapeType
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers import AbstractWorker
 from syft.workers import BaseWorker
