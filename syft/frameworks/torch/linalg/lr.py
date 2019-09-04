@@ -131,7 +131,8 @@ class BloomRegressor:
         # Send coef and intercept to remote worker if X is a pointer
         if X.has_child() and isinstance(X.child, PointerTensor):
             coef = coef.send(X.child.location)
-            intercept = intercept.send(X.child.location)
+            if self.fit_intercept:
+                intercept = intercept.send(X.child.location)
 
         y = X @ coef.unsqueeze(1)
         if self.fit_intercept:
