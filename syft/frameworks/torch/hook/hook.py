@@ -62,11 +62,13 @@ class TorchHook(FrameworkHook):
             max length of the list that stores the messages to be sent.
 
     Example:
+        >>> import torch as th
         >>> import syft as sy
-        >>> hook = sy.TorchHook()
+        >>> hook = sy.TorchHook(th)
         Hooking into Torch...
         Overloading Complete.
-        >>> x = sy.Tensor([-2,-1,0,1,2,3])
+        # constructing a normal torch tensor in pysyft
+        >>> x = th.Tensor([-2,-1,0,1,2,3])
         >>> x
         -2
         -1
@@ -510,6 +512,7 @@ class TorchHook(FrameworkHook):
             "__init__",
             "__init_subclass__",
             "__weakref__",
+            "__module__",
             "__ne__",
             "__new__",
             "__reduce__",
@@ -554,7 +557,7 @@ class TorchHook(FrameworkHook):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(*dest)
+                p.send_(*dest, **kwargs)
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.send(*dest, force=force_send)
@@ -562,6 +565,7 @@ class TorchHook(FrameworkHook):
             return nn_self
 
         self.torch.nn.Module.send = module_send_
+        self.torch.nn.Module.send_ = module_send_
 
         def module_move_(nn_self, destination):
 
@@ -599,6 +603,7 @@ class TorchHook(FrameworkHook):
             return nn_self
 
         self.torch.nn.Module.get = module_get_
+        self.torch.nn.Module.get_ = module_get_
 
         def module_share_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""

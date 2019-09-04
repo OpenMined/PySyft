@@ -774,6 +774,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if isinstance(candidate, sy.Plan):
                 plan = candidate.copy()
                 plan.owner = sy.local_worker
+                plan.replace_worker_ids(self.id, plan.owner.id)
                 return plan
 
         return None
