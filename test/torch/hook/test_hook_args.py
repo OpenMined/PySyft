@@ -48,6 +48,8 @@ def test_backward_multiple_use(workers):
 
         model = Net()
 
+        model_weight = model.fc.weight.copy()
+
         # Training Logic
         opt = optim.SGD(params=model.parameters(), lr=0.1)
 
@@ -72,12 +74,16 @@ def test_backward_multiple_use(workers):
         # 5) change those weights
         opt.step()
 
+        assert (model_weight - model.get().fc.weight).sum().abs() > 1.0e-3
+
     def encrypted():
         # A Toy Dataset
         data2 = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
         target2 = th.tensor([[0], [0], [1], [1.0]])
 
         model2 = Net()
+
+        model2_weight = model2.fc.weight.copy()
 
         # We encode everything
         data2 = data2.fix_precision().share(
@@ -106,6 +112,9 @@ def test_backward_multiple_use(workers):
 
         # 5) change those weights
         opt2.step()
+
+        weight_diff = (model2_weight - model2.fc.weight.get().float_prec()).sum().abs()
+        assert weight_diff > 1.0e-3
 
     federated()
     encrypted()
