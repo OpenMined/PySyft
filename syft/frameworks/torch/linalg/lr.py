@@ -17,7 +17,7 @@ class BloomRegressor:
     Reference: Section 2 of https://arxiv.org/abs/1901.09531
 
     Args:
-        cryto_provider: a BaseWorker providing crypto elements for ASTs such as
+        crypto_provider: a BaseWorker providing crypto elements for ASTs such as
             Beaver triples
         hbc_worker: The "Honest but Curious" BaseWorker
         precision_fractional: precision chosen for FixedPrecisionTensors
@@ -43,7 +43,7 @@ class BloomRegressor:
         crypto_provider: BaseWorker,
         hbc_worker: BaseWorker,
         precision_fractional: int = 6,
-        fit_intercept=True,
+        fit_intercept: bool = True,
     ):
 
         self.crypto_provider = crypto_provider
@@ -60,7 +60,7 @@ class BloomRegressor:
         # Checking if the pointers are as expected
         self._check_ptrs(X_ptrs, y_ptrs)
 
-        # Check if each y is a 2-dim or 1-dim tensor, unsqueeze if it is not
+        # Check if each y is a 2-dim or 1-dim tensor, unsqueeze it if it's 1-dim
         for i, y in enumerate(y_ptrs):
             if len(y.shape) < 2:
                 y_ptrs[i] = y.unsqueeze(1)
@@ -75,7 +75,7 @@ class BloomRegressor:
         XX_ptrs, Xy_ptrs, yy_ptrs = self._remote_dot_products(X_ptrs, y_ptrs)
 
         # Secred share tensors between hbc_worker, crypto_provider and a random worker
-        # and compute agregates. It corresponds to the Combine stage of Bloom's algorithm
+        # and compute aggregates. It corresponds to the Combine stage of Bloom's algorithm
         idx = random.randint(0, len(self.workers) - 1)
         XX_shared = sum(self._share_ptrs(XX_ptrs, idx))
         Xy_shared = sum(self._share_ptrs(Xy_ptrs, idx))
@@ -177,7 +177,7 @@ class BloomRegressor:
         x_size, y_size = 0, 0
         for x, y in zip(X_ptrs, y_ptrs):
             # Check wrapper
-            if not (x.has_child and y.has_child):
+            if not (x.has_child() and y.has_child()):
                 raise TypeError(
                     "Some tensors are not wrapped, please provide a wrapped Pointer Tensor"
                 )
@@ -223,15 +223,15 @@ class BloomRegressor:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = []
+        workers = set([])
         for ptr in ptrs:
-            workers.append(ptr.child.location)
-        return tuple(set(workers))
+            workers.add(ptr.child.location)
+        return tuple(workers)
 
     @staticmethod
     def _remote_dot_products(X_ptrs, y_ptrs):
         """
-        This method computes the aggregated dot-products remotelly. It corresponds
+        This method computes the aggregated dot-products remotely. It corresponds
         to the Compression stage (or Compression within) of Bloom's algorithm
         """
         XX_ptrs = []
