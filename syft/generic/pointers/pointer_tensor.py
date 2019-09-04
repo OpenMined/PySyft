@@ -2,8 +2,8 @@ from typing import List
 from typing import Union
 
 import syft
-from syft.frameworks.types import FrameworkShapeType
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkShapeType
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import ObjectPointer
 from syft.workers import AbstractWorker

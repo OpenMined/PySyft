@@ -11,8 +11,8 @@ from syft import codes
 from syft import messaging
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.frameworks.types import FrameworkTensorType
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -109,6 +109,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            codes.MSGTYPE.FETCH_PLAN: self.fetch_plan,
         }
 
         self.load_data(data)
@@ -774,6 +775,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if isinstance(candidate, sy.Plan):
                 plan = candidate.copy()
                 plan.owner = sy.local_worker
+                plan.replace_worker_ids(self.id, plan.owner.id)
                 return plan
 
         return None

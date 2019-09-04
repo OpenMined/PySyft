@@ -3,7 +3,7 @@ from typing import Union
 from typing import Callable
 from typing import Any
 
-from syft.frameworks.attributes import FrameworkAttributes
+from syft.generic.frameworks.attributes import FrameworkAttributes
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 
 
