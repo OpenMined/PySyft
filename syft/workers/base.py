@@ -109,6 +109,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            codes.MSGTYPE.FETCH_PLAN: self.fetch_plan,
         }
 
         self.load_data(data)
