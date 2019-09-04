@@ -9,7 +9,7 @@ import types
 
 import syft
 from syft import workers
-from syft.frameworks.hook import FrameworkHook
+from syft.generic.frameworks.hook import FrameworkHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor

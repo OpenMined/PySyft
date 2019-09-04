@@ -3,7 +3,7 @@ import torch
 
 import syft
 from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 from . import gradients
 
 

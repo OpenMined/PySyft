@@ -7,7 +7,7 @@ import syft
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 
 
 class CRTPrecisionTensor(AbstractTensor):
