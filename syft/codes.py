@@ -8,6 +8,7 @@ class MSGTYPE(object):
     GET_SHAPE = 7
     SEARCH = 8
     FORCE_OBJ_DEL = 9
+    FETCH_PLAN = 10
 
 
 # Build automatically the reverse map from codes to messaging types
