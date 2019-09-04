@@ -12,7 +12,7 @@ from syft.frameworks.types import FrameworkTensor
 from syft.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker  #
+from syft.workers import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -220,6 +220,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         # Pointing info towards a remote plan
         self.locations = []
+        self.state_location = None
         self.ptr_plans = {}
 
         self.tags = None
@@ -342,6 +343,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         copied_state = self.state.copy()
         self.state.send(location=self)
         self.state_ids = self.state.get_id_at_location()
+        self.state_location = self.owner.id
 
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
@@ -388,7 +390,9 @@ class Plan(ObjectStorage, torch.nn.Module):
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
             is_built=self.is_built,
+            state_ids=self.state_ids,
         )
+        plan.state_location = self.state_location
         plan.replace_ids(
             from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
         )
@@ -585,19 +589,16 @@ class Plan(ObjectStorage, torch.nn.Module):
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
             response = self.request_execute_plan(worker, result_ids, *args)
-
             return response
 
         # if the plan is not to be sent then it has been requested to be executed,
         # so we update the plan with the
         # correct input and output ids and we run it
-        elif not len(self.locations):
-            self._update_args(args, result_ids)
-            self._execute_plan()
-            responses = self._get_plan_output(result_ids)
-            return responses
+        self._update_args(args, result_ids)
+        self._execute_plan()
+        responses = self._get_plan_output(result_ids)
+        return responses
 
-        return sy.serde.serialize(None)
 
     def request_execute_plan(
         self,
@@ -669,10 +670,29 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.replace_worker_ids(worker_id, location.id)
 
         state_original = self.state.copy()
-        self.state.send(location, garbage_collect_data=False)
-        state_ptr_ids = self.state.get_id_at_location()
-        self.replace_ids(self.state_ids, state_ptr_ids)
 
+        if len(self.state.keys): # DEBUG
+            self.state.send(location, garbage_collect_data=False)
+            state_ptr_ids = self.state.get_id_at_location()
+            self.replace_ids(self.state_ids, state_ptr_ids)
+            self.state_ids = state_ptr_ids # DEBUG
+            self.state_location = location # DEBUG
+        # DEBUG
+        else:
+            print('state_ids', self.state_ids, self.state_location)
+            state_ptrs = [sy.PointerTensor(
+                location=self.owner.get_worker(self.state_location),
+                id_at_location=state_id,
+                owner=self.owner,
+                id=sy.ID_PROVIDER.pop(),
+                garbage_collect_data=False,
+            ) for state_id in self.state_ids]
+            state_ptr_ids = [state_ptr.id for state_ptr in state_ptrs]
+            # self.replace_ids(self.state_ids, state_ptr_ids)
+            # print('after:', self.readable_plan)
+            for ptr in state_ptrs:
+                self.owner._objects[ptr.id] = ptr
+            print(state_ptrs)
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
@@ -758,6 +778,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
             sy.serde._simplify(plan.state_ids),
+            sy.serde._simplify(plan.state_location),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -774,7 +795,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
+        readable_plan, id, arg_ids, result_ids, state_ids, state_location, name, tags, description, is_built = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
@@ -792,6 +813,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         )
 
         plan.state_ids = state_ids
+        plan.state_location = sy.serde._detail(worker, state_location)
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
