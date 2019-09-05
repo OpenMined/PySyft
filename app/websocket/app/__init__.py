@@ -5,7 +5,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
 
-socketio = SocketIO(async_mode="eventlet")
+# TODO: define a reasonable ping interval
+# and ping timeout
+PING_INTERVAL = 10000000
+PING_TIMEOUT = 5000
+
+
+socketio = SocketIO(
+    async_mode="eventlet", ping_interval=PING_INTERVAL, ping_timeout=PING_TIMEOUT
+)
 
 
 def set_database_config(app, test_config=None, verbose=False):

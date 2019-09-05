@@ -3,16 +3,100 @@ import time
 import pytest
 from random import randint, sample
 
-from test import PORTS, IDS, worker_ports
-from test import conftest
-
 import grid as gr
 import syft as sy
 import torch as th
+import torch.nn.functional as F
 import numpy as np
+
+from test import PORTS, IDS, worker_ports
+from test import conftest
 
 
 hook = sy.TorchHook(th)
+
+
+def test_host_plan_model(connected_node):
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=0) + self.bias
+
+    model = Net()
+    model.build(th.tensor([1.0, 2]))
+
+    nodes = list(connected_node.values())
+    bob = nodes[0]
+    bob.serve_model(model, model_id="1")
+
+    # Call one time
+    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    assert th.tensor(prediction) == th.tensor([1000.0])
+
+    # Call one more time
+    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    assert th.tensor(prediction) == th.tensor([1000.0])
+
+
+def test_host_models_with_the_same_key(connected_node):
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=1) + self.bias
+
+    model = Net()
+    model.build(th.tensor([1.0, 2]))
+
+    nodes = list(connected_node.values())
+    bob = nodes[0]
+
+    # Serve it once with no problems
+    assert "success" in bob.serve_model(model, model_id="2")
+    # Error when using the same id twice
+    assert "error" in bob.serve_model(model, model_id="2")
+
+
+@pytest.mark.skipif(
+    th.__version__ >= "1.1",
+    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
+)
+def test_host_jit_model(connected_node):
+    class Net(th.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=1) + self.bias
+
+    model = Net()
+    trace_model = th.jit.trace(model, th.tensor([1.0, 2]))
+
+    nodes = list(connected_node.values())
+    bob = nodes[0]
+    bob.serve_model(trace_model, model_id="1")
+
+    # Call one time
+    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    assert th.tensor(prediction) == th.tensor([1000.0])
+
+    # Call one more time
+    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    assert th.tensor(prediction) == th.tensor([1000.0])
 
 
 @pytest.mark.parametrize(

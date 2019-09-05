@@ -10,16 +10,17 @@ from syft.workers import BaseWorker
 from syft.federated import FederatedClient
 from syft.codes import MSGTYPE
 
+from grid.client import GridClient
 
-class WebsocketGridClient(BaseWorker, FederatedClient):
-    """ Websocket Grid Client """
+
+class WebsocketGridClient(GridClient, FederatedClient):
+    """Websocket Grid Client."""
 
     def __init__(
         self,
         hook,
         addr: str,
         id: Union[int, str] = 0,
-        is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
@@ -47,7 +48,9 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
 
         # Creates the connection with the server
         self.__sio = socketio.Client()
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+        super().__init__(
+            addr=addr, hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose
+        )
 
         @self.__sio.on("/identity/")
         def check_identity(msg):
