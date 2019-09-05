@@ -235,6 +235,14 @@ class IdNotUniqueError(Exception):
     pass
 
 
+class PlanCommandUnknownError(Exception):
+    """Raised when an unknown plan command execution is requested."""
+
+    def __init__(self, command_name: object):
+        message = "Command {} is not implemented.".format(command_name)
+        super().__init__(message)
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:
