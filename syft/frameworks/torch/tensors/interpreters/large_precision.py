@@ -2,7 +2,7 @@ import numpy as np
 import math
 import torch
 
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
 

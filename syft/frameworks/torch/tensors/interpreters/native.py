@@ -8,9 +8,9 @@ import numpy as np
 import torch
 
 import syft
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import PointerTensor
 from syft.workers import BaseWorker
@@ -429,6 +429,7 @@ class TorchTensor(AbstractTensor):
                     output = param_wrapper
             else:
                 if inplace:
+                    self.is_wrapper = True
                     self.set_()
                     self.child = ptr
                     return self
@@ -453,10 +454,10 @@ class TorchTensor(AbstractTensor):
                 # want it to keep. #HackAlert
                 output.backup_grad = grad
 
-                if local_autograd:
-                    output = syft.AutogradTensor(
-                        data=output, preinitialize_grad=preinitialize_grad
-                    ).on(output)
+            if local_autograd:
+                output = syft.AutogradTensor(data=output, preinitialize_grad=preinitialize_grad).on(
+                    output
+                )
 
         else:
 
@@ -471,7 +472,7 @@ class TorchTensor(AbstractTensor):
 
         return output
 
-    def send_(self, *location):
+    def send_(self, *location, **kwargs):
         """
         Calls send() with inplace option, but only with a single location
         :param location: workers locations
@@ -480,7 +481,7 @@ class TorchTensor(AbstractTensor):
         if len(location) > 1:
             raise NotImplementedError("Inplace send to several workers is currently not supported.")
 
-        return self.send(*location, inplace=True)
+        return self.send(*location, inplace=True, **kwargs)
 
     def create_pointer(
         self,
@@ -591,6 +592,8 @@ class TorchTensor(AbstractTensor):
             self.set_(tensor)
             if hasattr(tensor, "child"):
                 self.child = tensor.child
+            else:
+                self.is_wrapper = False
             return self
         else:
             return tensor

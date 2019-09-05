@@ -9,7 +9,7 @@ import types
 
 import syft
 from syft import workers
-from syft.frameworks.hook import FrameworkHook
+from syft.generic.frameworks.hook import FrameworkHook
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.decorators import LoggingTensor
@@ -514,6 +514,7 @@ class TorchHook(FrameworkHook):
             "__init__",
             "__init_subclass__",
             "__weakref__",
+            "__module__",
             "__ne__",
             "__new__",
             "__reduce__",
@@ -558,7 +559,7 @@ class TorchHook(FrameworkHook):
                 create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
-                p.send_(*dest)
+                p.send_(*dest, **kwargs)
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.send(*dest, force=force_send)
@@ -566,6 +567,7 @@ class TorchHook(FrameworkHook):
             return nn_self
 
         self.torch.nn.Module.send = module_send_
+        self.torch.nn.Module.send_ = module_send_
 
         def module_move_(nn_self, destination):
 
@@ -603,6 +605,7 @@ class TorchHook(FrameworkHook):
             return nn_self
 
         self.torch.nn.Module.get = module_get_
+        self.torch.nn.Module.get_ = module_get_
 
         def module_share_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""

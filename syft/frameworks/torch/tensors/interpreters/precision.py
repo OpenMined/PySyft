@@ -5,7 +5,7 @@ from syft.workers import AbstractWorker
 from syft.generic.pointers import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -256,6 +256,17 @@ class FixedPrecisionTensor(AbstractTensor):
                     "Division of a FixedPrecisionTensor by an AdditiveSharingTensor not implemented"
                 )
 
+        elif (
+            cmd == "mul"
+            and isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor))
+            and isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor))
+        ):
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
+            # we swap operators so that we do the same operation as above
+            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+                "mul", self, other, None
+            )
+
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
@@ -502,9 +513,7 @@ class FixedPrecisionTensor(AbstractTensor):
             weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
             degrees = [0, 1, 3, 5]
 
-            # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
-            # will be faster
-            max_degree = degrees[2]
+            max_degree = degrees[-1]
             max_idx = degrees.index(max_degree)
 
             # initiate with term of degree 0 to avoid errors with tensor ** 0
