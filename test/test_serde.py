@@ -710,42 +710,42 @@ def test_serde_object_wrapper_traced_module():
 
 
 # DEBUG
-def test_stateful_plan():
-    syft.hook.local_worker.is_client_worker = False
-    @syft.func2plan(args_shape=[(1,)], state={"bias": torch.tensor([3.0])})
-    def plan_mult_3(x, state):
-        bias = state.read("bias")
-        x = x * bias
-        return x
+# def test_stateful_plan():
+#     syft.hook.local_worker.is_client_worker = False
+#     @syft.func2plan(args_shape=[(1,)], state={"bias": torch.tensor([3.0])})
+#     def plan_mult_3(x, state):
+#         bias = state.read("bias")
+#         x = x * bias
+#         return x
 
-    class Net(syft.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = torch.nn.Linear(1, 1)
+#     class Net(syft.Plan):
+#         def __init__(self):
+#             super(Net, self).__init__()
+#             self.fc1 = torch.nn.Linear(1, 1)
 
-            self.state += "fc1"
+#             self.state += "fc1"
 
-        def forward(self, x):
-            return self.fc1(x)
+#         def forward(self, x):
+#             return self.fc1(x)
 
-    plan_mult_3 = Net()
-    plan_mult_3.build(torch.tensor([1.]))
+#     plan_mult_3 = Net()
+#     plan_mult_3.build(torch.tensor([1.]))
 
-    serialized_plan = serde.serialize(plan_mult_3)
-    deserialized_plan = serde.deserialize(serialized_plan)
+#     serialized_plan = serde.serialize(plan_mult_3)
+#     deserialized_plan = serde.deserialize(serialized_plan)
 
-    # print(plan_mult_3.state_ids)
-    # print(plan_mult_3.state)
-    # print('---------------------')
-    # print(deserialized_plan.state_ids)
-    # print(deserialized_plan.state)
+#     # print(plan_mult_3.state_ids)
+#     # print(plan_mult_3.state)
+#     # print('---------------------')
+#     # print(deserialized_plan.state_ids)
+#     # print(deserialized_plan.state)
 
-    x = torch.tensor([1.])
-    print(deserialized_plan.state_location)
-    deserialized_plan = deserialized_plan.send(syft.hook.local_worker)
-    assert deserialized_plan.ptr_plans["me"](x) == plan_mult_3(x)
-    
-    syft.hook.local_worker.is_client_worker = True
+#     x = torch.tensor([1.])
+#     print(deserialized_plan.state_location)
+#     deserialized_plan = deserialized_plan.send(syft.hook.local_worker)
+#     assert deserialized_plan.ptr_plans["me"](x) == plan_mult_3(x)
+
+#     syft.hook.local_worker.is_client_worker = True
 
 
 def test_no_simplifier_found():
