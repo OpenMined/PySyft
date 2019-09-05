@@ -802,3 +802,7 @@ class FixedPrecisionTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(FixedPrecisionTensor)

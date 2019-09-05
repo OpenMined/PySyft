@@ -11,6 +11,10 @@ from syft import frameworks
 from syft import codes
 from syft.version import __version__
 
+# This import statement is strictly here to trigger registration of syft
+# tensor types inside hook_args.py.
+import syft.frameworks.torch.hook.hook_args
+
 import logging
 
 logger = logging.getLogger(__name__)

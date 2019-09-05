@@ -1,17 +1,11 @@
 from typing import Callable
-from typing import Union
-from typing import Tuple
+from typing import Dict
 from typing import List
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 
-from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.generic.tensor import AbstractTensor
-from syft.generic.pointers import PointerTensor
-from syft.exceptions import RemoteObjectFoundError
 import syft
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
@@ -30,6 +24,8 @@ get_tensor_type_functions = {}
 base_types = {int, float, str, bool, bytes, bytearray, complex}
 
 one = lambda _args: 1
+get_child = lambda i: i.child
+
 
 # dict to specify the action depending of the type found
 type_rule = {
@@ -39,51 +35,25 @@ type_rule = {
     np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
-    FixedPrecisionTensor: one,
     AutogradTensor: one,
-    AdditiveSharingTensor: one,
-    MultiPointerTensor: one,
-    CRTPrecisionTensor: one,
-    PointerTensor: one,
     LargePrecisionTensor: one,
-    torch.Tensor: one,
-    torch.nn.Parameter: one,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
-    PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
-    torch.Tensor: lambda i: i.child
-    if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
-    torch.nn.Parameter: lambda i: i.child
-    if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
-    LoggingTensor: lambda i: i.child,
-    FixedPrecisionTensor: lambda i: i.child,
-    AutogradTensor: lambda i: i.child,
-    AdditiveSharingTensor: lambda i: i.child,
-    MultiPointerTensor: lambda i: i.child,
-    CRTPrecisionTensor: lambda i: i.child,
+    LoggingTensor: get_child,
+    AutogradTensor: get_child,
     LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
-    "my_syft_tensor_type": lambda i: i.child,
+    "my_syft_tensor_type": get_child,
 }
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 backward_func = {
-    TorchTensor: lambda i: i.wrap(),
-    torch.Tensor: lambda i: i.wrap(),
-    torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
-    PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
     LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
         LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
     ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
-    AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
-    MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
-    CRTPrecisionTensor: lambda i, **kwargs: CRTPrecisionTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
 
@@ -114,6 +84,31 @@ ambiguous_functions = {
     "torch.functional.split",
     "split",
 }
+
+
+def register_type_rule(new_type_rules: Dict):
+    global type_rule
+    type_rule = {**type_rule, **new_type_rules}
+
+
+def register_forward_func(new_forward_rules: Dict):
+    global forward_func
+    forward_func = {**forward_func, **new_forward_rules}
+
+
+def register_backward_func(new_backward_rules: Dict):
+    global backward_func
+    backward_func = {**backward_func, **new_backward_rules}
+
+
+def default_backward_func(tensorcls):
+    return lambda i, **kwargs: tensorcls(**kwargs).on(i, wrap=False)
+
+
+def default_register_tensor(*tensorcls):
+    register_type_rule({t: one for t in tensorcls})
+    register_forward_func({t: get_child for t in tensorcls})
+    register_backward_func({t: default_backward_func(t) for t in tensorcls})
 
 
 def unwrap_args_from_method(attr, method_self, args, kwargs):
