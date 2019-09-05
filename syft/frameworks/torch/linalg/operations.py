@@ -158,6 +158,7 @@ def qr(t, mode="reduced"):
 
     return Q_t.t(), R
 
-    def qr_mpc(t):
-        # TODO
-        pass
+
+def qr_mpc(t):
+    # TODO
+    pass
