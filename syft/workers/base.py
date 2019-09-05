@@ -518,7 +518,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
             raise GetNotPermittedError()
         else:
-            return obj.copy()
+            return obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
