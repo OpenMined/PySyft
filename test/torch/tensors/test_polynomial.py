@@ -199,8 +199,3 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
-
-hook = sy.TorchHook(torch)
-t=torch.tensor([-2.0, -1.5, -1.0, -0.5, 0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0]).poly()
-
-torch.add(t,t)

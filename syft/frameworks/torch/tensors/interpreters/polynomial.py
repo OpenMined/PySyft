@@ -344,7 +344,7 @@ class PolynomialTensor(AbstractTensor):
         return val
 
     __exp__ = exp
-    
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -410,16 +410,15 @@ class PolynomialTensor(AbstractTensor):
             Tensors, so compared to the @overloaded.method, you see
             that the @overloaded.module does not hook the arguments.
             """
-            
+
             print("ADD STUFF")
-            P=PolynomialTensor()
-            P.child=x.child + y.child
+            P = PolynomialTensor()
+            P.child = x.child + y.child
             return P
 
         # Just register it using the module variable
         module.add = add
 
-        @overloaded.function
         def mul(x, y):
             """
             You can also add the @overloaded.function decorator to also
@@ -427,7 +426,9 @@ class PolynomialTensor(AbstractTensor):
             their child attribute
             """
             print("Log function torch.mul")
-            return x.child*y.child
+            P = PolynomialTensor()
+            P.child = x.child * y.child
+            return P
 
         # Just register it using the module variable
         module.mul = mul
