@@ -388,7 +388,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
             is_built=self.is_built,
-            state_ids=self.state_ids,
         )
 
         # TODO: support this operation remotely.
@@ -405,6 +404,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             )
 
         plan.replace_ids(self.state_ids, state_ids)
+        plan.state_ids = state_ids
 
         # Replace IDs
         plan.replace_ids(
