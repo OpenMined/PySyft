@@ -491,7 +491,6 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 
     # Execute it locally
     x = th.tensor([-1.26])
-    print(x.id)
     assert (fetched_plan(x) == sent_plan(x)).all()
 
     # Make sure fetched_plan is using the readable_plan
