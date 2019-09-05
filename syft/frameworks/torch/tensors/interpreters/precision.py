@@ -499,8 +499,8 @@ class FixedPrecisionTensor(AbstractTensor):
             """
 
             """
-            weights = [0.5, 0.216_578_258, -0.008_331_284_8, 0.000_187_652_8, -1.9669e-06, 7.5e-09]
-            degrees = [0, 1, 3, 5, 7, 9]
+            weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
+            degrees = [0, 1, 3, 5]
 
             # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
             # will be faster
