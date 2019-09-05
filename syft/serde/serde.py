@@ -98,6 +98,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.ForceObjectDeleteMessage,
     messaging.SearchMessage,
     messaging.FetchPlanMessage,
+    messaging.GetObjCopyMessage,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
