@@ -406,8 +406,8 @@ class PolynomialTensor(AbstractTensor):
             """
             You can write the function to overload in the most natural
             way, so this will be called whenever you call torch.add on
-            Logging Tensors, and the x and y you get are also Logging
-            Tensors, so compared to the @overloaded.method, you see
+            polynomial Tensors, and the x and y you get are also polynomial tensors
+            ,so compared to the @overloaded.method, you see
             that the @overloaded.module does not hook the arguments.
             """
             P = PolynomialTensor()
@@ -421,7 +421,7 @@ class PolynomialTensor(AbstractTensor):
         def mul(x, y):
             """
             You can also add the @overloaded.function decorator to also
-            hook arguments, ie all the LoggingTensor are replaced with
+            hook arguments, ie all the Polynomial Tensor are replaced with
             their child attribute
             """
             P = PolynomialTensor()
