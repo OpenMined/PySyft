@@ -1,3 +1,4 @@
+from syft.messaging.message import FetchPlanMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import IsNoneMessage
