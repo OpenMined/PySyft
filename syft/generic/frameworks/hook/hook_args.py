@@ -4,7 +4,6 @@ from typing import Tuple
 from typing import List
 
 import numpy as np
-import torch
 
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
@@ -17,7 +16,7 @@ import syft
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
-from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
@@ -249,9 +248,6 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste
     response_is_tuple = isinstance(response, tuple)
-
-    if wrap_type == torch.nn.Parameter:
-        wrap_type = torch.Tensor
 
     # Add an artificial tuple
     if not response_is_tuple:
@@ -722,7 +718,7 @@ def build_register_response_function(response: object) -> Callable:
 
 
 def register_tensor(
-    tensor: Union[torch.Tensor, AbstractTensor], owner: AbstractWorker, response_ids: List = list()
+    tensor: FrameworkTensorType, owner: AbstractWorker, response_ids: List = list()
 ):
     """
     Registers a tensor.
