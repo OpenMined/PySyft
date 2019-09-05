@@ -379,6 +379,32 @@ class Plan(ObjectStorage, torch.nn.Module):
                     return arg.location
         return sy.framework.hook.local_worker
 
+    def copy(self):
+        """Creates a copy of a plan."""
+        plan = Plan(
+            sy.ID_PROVIDER.pop(),
+            self.owner,
+            self.name,
+            arg_ids=self.arg_ids,
+            result_ids=self.result_ids,
+            readable_plan=self.readable_plan,
+            is_built=self.is_built,
+        )
+
+        # Replace ids that reference self.id
+        plan.replace_ids(
+            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
+        )
+        plan.replace_ids(
+            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
+        )
+
+        # We need these ids to create a copy of
+        # the state
+        plan._last_sent_ids = self._last_sent_ids
+
+        return plan
+
     def copy_to_worker(self, worker):
         """Creates a copy of a plan."""
         plan = Plan(

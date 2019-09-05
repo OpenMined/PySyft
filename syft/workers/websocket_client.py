@@ -71,13 +71,31 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
 
-    def fetch_plan(self, plan_id):
-        # Prepare a message requesting the websocket server to search among its objects
-        message = messaging.FetchPlanMessage(plan_id)
+    def get_obj_copy(self, obj_id):
+        message = messaging.GetObjCopyMessage(obj_id)
         serialized_message = sy.serde.serialize(message)
-        # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
+
+    def fetch_plan(self, plan_id):
+        message = messaging.FetchPlanMessage(plan_id)
+        serialized_message = sy.serde.serialize(message)
+        response = self._recv_msg(serialized_message)
+        plan = sy.serde.deserialize(response)
+
+        if plan._last_sent_ids:
+            state_ids = []
+            for state_id in plan._last_sent_ids:
+                state_ids.append(
+                    self.get_obj_copy(state_id)
+                    .send(sy.hook.local_worker, garbage_collect_data=False)
+                    .id_at_location
+                )
+            plan.replace_ids(plan._last_sent_ids, state_ids)
+            plan.state_ids = state_ids
+        plan.replace_worker_ids(self.id, sy.hook.local_worker.id)
+
+        return plan
 
     def _send_msg(self, message: bin, location) -> bin:
         raise RuntimeError(

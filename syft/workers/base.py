@@ -109,7 +109,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
-            codes.MSGTYPE.FETCH_PLAN: self.fetch_plan,
+            codes.MSGTYPE.FETCH_PLAN: self._fetch_plan,
+            codes.MSGTYPE.GET_OBJ_COPY: self.get_obj_copy,
         }
 
         self.load_data(data)
@@ -506,6 +507,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.de_register_obj(obj)
             return obj
 
+    def get_obj_copy(self, obj_id: Union[str, int]):
+        """Returns the deregistered object from registry.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+        """
+
+        obj = self.get_obj(obj_id)
+        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+            raise GetNotPermittedError()
+        else:
+            return obj.copy()
+
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
 
@@ -761,7 +775,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.create_shape(shape)
 
-    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
+    def fetch_plan(self, plan_id):
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                return candidate.copy_to_worker(sy.hook.local_worker)
+
+    def _fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
@@ -773,7 +793,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if plan_id in self._objects:
             candidate = self._objects[plan_id]
             if isinstance(candidate, sy.Plan):
-                return candidate.copy_to_worker(sy.hook.local_worker)
+                return candidate.copy()
 
         return None
 
