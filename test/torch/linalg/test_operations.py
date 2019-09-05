@@ -1,5 +1,5 @@
 import pytest
-import torch as th
+import torch
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
@@ -9,11 +9,13 @@ def test_inv_sym(hook, workers):
     """
     Testing inverse of symmetric matrix with MPC
     """
+    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
+
     bob = workers["bob"]
     alice = workers["alice"]
     crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
 
-    x = th.Tensor([[0.4627, 0.8224], [0.8224, 2.4084]])
+    x = torch.Tensor([[0.4627, 0.8224], [0.8224, 2.4084]])
 
     x = x.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
     gram = x.matmul(x.t())
@@ -30,18 +32,19 @@ def test_qr(hook, workers):
     """
     Testing QR decomposition with remote matrix
     """
+    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
 
     bob = workers["bob"]
     n_cols = 5
     n_rows = 10
-    t = th.randn([n_rows, n_cols])
+    t = torch.randn([n_rows, n_cols])
     Q, R = qr(t.send(bob), mode="complete")
     Q = Q.get()
     R = R.get()
 
     # Check if Q is orthogonal
     I = Q @ Q.t()
-    assert ((th.eye(n_rows) - I).abs() < 1e-5).all()
+    assert ((torch.eye(n_rows) - I).abs() < 1e-5).all()
 
     # Check if R is upper triangular matrix
     for col in range(n_cols):
