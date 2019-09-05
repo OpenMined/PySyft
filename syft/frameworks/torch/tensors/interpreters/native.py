@@ -8,12 +8,13 @@ import numpy as np
 import torch
 
 import syft
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic.pointers import PointerTensor
-from syft.workers import BaseWorker
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
@@ -298,7 +299,7 @@ class TorchTensor(AbstractTensor):
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
-            new_args, new_kwargs, new_type, args_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
+            new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
                 cmd, args, kwargs, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
@@ -311,9 +312,7 @@ class TorchTensor(AbstractTensor):
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
-            response = syft.frameworks.torch.hook_args.hook_response(
-                cmd, response, wrap_type=args_type
-            )
+            response = hook_args.hook_response(cmd, response, wrap_type=args_type)
         except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
 
             # Check that the function has not been overwritten

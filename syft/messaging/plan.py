@@ -11,8 +11,8 @@ from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker  #
+from syft.generic.object_storage import ObjectStorage
+from syft.workers.abstract import AbstractWorker  #
 
 
 def make_plan(plan_blueprint):

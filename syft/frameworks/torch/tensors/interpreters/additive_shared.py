@@ -2,9 +2,10 @@ import math
 import torch
 import syft as sy
 from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 
 # Crypto protocols
 from syft.frameworks.torch.crypto import spdz
@@ -927,9 +928,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         results = {}
         for worker, share in new_args[0].items():
@@ -943,7 +942,7 @@ class AdditiveSharingTensor(AbstractTensor):
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back AdditiveSharingTensor on the tensors found in the response
-        response = sy.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 

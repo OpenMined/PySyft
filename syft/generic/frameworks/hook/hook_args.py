@@ -6,19 +6,20 @@ from typing import List
 import numpy as np
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters import TorchTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic.pointers import MultiPointerTensor
 from syft.generic.pointers import PointerTensor
-from syft.workers import AbstractWorker
-
 from syft.exceptions import RemoteObjectFoundError
+import syft
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.workers.abstract import AbstractWorker
+
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import ResponseSignatureError
 

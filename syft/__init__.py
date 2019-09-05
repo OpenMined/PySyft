@@ -3,12 +3,13 @@ PySyft is a Python library for secure, private Deep Learning.
 PySyft decouples private data from model training, using Federated Learning,
 Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
 """
+# We load this module first so that syft knows which frameworks are available
+from syft import dependency_check
+
 # Major imports
 from syft import frameworks
-from syft import workers
 from syft import codes
-from syft import federated
-from .version import __version__
+from syft.version import __version__
 
 import logging
 
@@ -21,25 +22,23 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
-from syft import dependency_check
-
 if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
-    from syft.workers import TFECluster
-    from syft.workers import TFEWorker
+    from syft.workers.tfe import TFECluster
+    from syft.workers.tfe import TFEWorker
 else:
     logger.info("TF Encrypted Keras not available.")
 
 # Pytorch dependencies
 # Import Hook
-from syft.frameworks.torch import TorchHook
+from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import Tensor Types
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.generic.pointers import MultiPointerTensor
-from syft.generic.pointers import PointerTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 # import other useful classes
 from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -51,30 +50,30 @@ from syft.grid import VirtualGrid
 from syft.sandbox import create_sandbox
 
 # Import federate learning objects
-from syft.federated import TrainConfig
+from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
 from syft.messaging.message import Message
-from syft.messaging import Plan
-from syft.messaging import func2plan
-from syft.messaging import method2plan
-from syft.messaging import make_plan
+from syft.messaging.plan import Plan
+from syft.messaging.plan import func2plan
+from syft.messaging.plan import method2plan
+from syft.messaging.plan import make_plan
 
 # Import Worker Types
-from syft.workers import VirtualWorker
+from syft.workers.virtual import VirtualWorker
 
 
 # Import Tensor Types
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 
-from syft.generic.pointers import ObjectPointer
-from syft.generic.pointers import CallablePointer
-from syft.generic.pointers import ObjectWrapper
+from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.generic.pointers.callable_pointer import CallablePointer
+from syft.generic.pointers.object_wrapper import ObjectWrapper
 
 # Import serialization tools
 from syft import serde
@@ -104,6 +103,6 @@ local_worker = None
 torch = None
 
 if "ID_PROVIDER" not in globals():
-    from syft.generic import IdProvider
+    from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()

@@ -5,8 +5,8 @@ import syft
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic.pointers import ObjectPointer
-from syft.workers import AbstractWorker
+from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.workers.abstract import AbstractWorker
 
 
 class PointerTensor(ObjectPointer, AbstractTensor):

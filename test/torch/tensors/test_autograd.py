@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 
 
 def test_wrap():

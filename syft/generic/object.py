@@ -3,6 +3,7 @@ import functools
 from typing import List
 
 import syft as sy
+from syft.generic.frameworks.hook import hook_args
 
 
 class AbstractObject(ABC):
@@ -155,11 +156,7 @@ class AbstractObject(ABC):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        # TODO[jvmancuso]: get rid of these torch references when extending
-        # hook_args (#2530)
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -171,7 +168,7 @@ class AbstractObject(ABC):
         response = new_type.handle_func_command(new_command)
 
         # Put back LoggingTensor on the tensors found in the response
-        response = sy.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
 

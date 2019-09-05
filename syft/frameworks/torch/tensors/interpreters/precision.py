@@ -1,8 +1,9 @@
 import torch
 
 import syft
-from syft.workers import AbstractWorker
-from syft.generic.pointers import MultiPointerTensor
+from syft.workers.abstract import AbstractWorker
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.overload import overloaded
@@ -263,15 +264,11 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             # If we try to multiply a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
-                "mul", self, other, None
-            )
+            new_self, new_other, _ = hook_args.unwrap_args_from_method("mul", self, other, None)
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
-                cmd, self, other, None
-            )
+            new_self, new_other, _ = hook_args.unwrap_args_from_method(cmd, self, other, None)
 
             # To avoid problems with negative numbers
             # we take absolute value of the operands
@@ -321,7 +318,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, cmd)(new_other)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -419,7 +416,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 "matmul", self, args, kwargs
             )
 
@@ -427,7 +424,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, "matmul")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -721,9 +718,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -732,7 +727,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 

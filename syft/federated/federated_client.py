@@ -2,7 +2,7 @@ import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
 import numpy as np
 
-from syft.generic import ObjectStorage
+from syft.generic.object_storage import ObjectStorage
 from syft.federated.train_config import TrainConfig
 
 

@@ -8,21 +8,22 @@ import types
 
 
 import syft
-from syft import workers
-from syft.generic.frameworks.hook import FrameworkHook
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.generic.pointers import MultiPointerTensor
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
-from syft.workers import BaseWorker
-from syft.messaging import Plan
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
+from syft.messaging.plan import Plan
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
@@ -114,9 +115,7 @@ class TorchHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = workers.VirtualWorker(
-                hook=self, is_client_worker=is_client, id="me"
-            )
+            self.local_worker = VirtualWorker(hook=self, is_client_worker=is_client, id="me")
         else:
             self.local_worker.hook = self
 
@@ -449,7 +448,7 @@ class TorchHook(FrameworkHook):
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -458,7 +457,7 @@ class TorchHook(FrameworkHook):
                 results[k] = v.__getattribute__(attr)(*dispatch(new_args, k), **new_kwargs)
 
             # Put back AdditiveSharingTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr,
                 results,
                 wrap_type=AdditiveSharingTensor,
