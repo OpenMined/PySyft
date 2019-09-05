@@ -12,7 +12,7 @@ from syft.frameworks.types import FrameworkTensor
 from syft.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker  #
+from syft.workers import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -216,6 +216,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.arg_ids = arg_ids if arg_ids is not None else []
         self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
+        self._state_ids_sent = None
         self.is_built = is_built
 
         # Pointing info towards a remote plan
@@ -378,6 +379,15 @@ class Plan(ObjectStorage, torch.nn.Module):
                     return arg.location
         return sy.framework.hook.local_worker
 
+    def _replace_reference_ids(self, old_id):
+        # Replace ids that reference self.id
+        self.replace_ids(
+            from_ids=self.arg_ids, to_ids=self.arg_ids, from_worker=old_id, to_worker=self.id
+        )
+        self.replace_ids(
+            from_ids=self.result_ids, to_ids=self.result_ids, from_worker=old_id, to_worker=self.id
+        )
+
     def copy(self):
         """Creates a copy of a plan."""
         plan = Plan(
@@ -389,12 +399,49 @@ class Plan(ObjectStorage, torch.nn.Module):
             readable_plan=self.readable_plan,
             is_built=self.is_built,
         )
-        plan.replace_ids(
-            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
+
+        plan._replace_reference_ids(self.id)
+        # We need these ids to get a copy of the state
+        plan._state_ids_sent = self._state_ids_sent
+
+        return plan
+
+    def copy_to_worker(self, worker: AbstractWorker):
+        """Creates a copy of a plan and gives the worker plan ownership.
+
+        This method is used for local execution only.
+
+        Args:
+            worker: Owner of the plan copy.
+        """
+        plan = Plan(
+            sy.ID_PROVIDER.pop(),
+            worker,
+            self.name,
+            arg_ids=self.arg_ids,
+            result_ids=self.result_ids,
+            readable_plan=self.readable_plan,
+            is_built=self.is_built,
         )
-        plan.replace_ids(
-            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
-        )
+
+        # Sent state to the new owner
+        if self._state_ids_sent:
+            state_ids = []
+            for state_id in self._state_ids_sent:
+                state_ids.append(
+                    self.owner._objects[state_id]
+                    .copy()
+                    .send(worker, garbage_collect_data=False)
+                    .id_at_location
+                )
+
+            plan.replace_ids(self._state_ids_sent, state_ids)
+            plan.state_ids = state_ids
+
+        plan._replace_reference_ids(self.id)
+        # Replace old owner id to the new owner id
+        plan.replace_worker_ids(self.owner.id, worker.id)
+
         return plan
 
     def replace_ids(
@@ -672,6 +719,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.state.send(location, garbage_collect_data=False)
         state_ptr_ids = self.state.get_id_at_location()
         self.replace_ids(self.state_ids, state_ptr_ids)
+        self._state_ids_sent = state_ptr_ids
 
         _ = self.owner.send(self, workers=location)
 
@@ -758,6 +806,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
             sy.serde._simplify(plan.state_ids),
+            sy.serde._simplify(plan._state_ids_sent),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -774,13 +823,14 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
+        readable_plan, id, arg_ids, result_ids, state_ids, state_ids_sent, name, tags, description, is_built = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
         state_ids = sy.serde._detail(worker, state_ids)
+        state_ids_sent = sy.serde._detail(worker, state_ids_sent)
 
         plan = sy.Plan(
             owner=worker,
@@ -792,6 +842,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         )
 
         plan.state_ids = state_ids
+        plan._state_ids_sent = state_ids_sent
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
