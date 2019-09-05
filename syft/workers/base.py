@@ -18,6 +18,7 @@ from syft.workers import AbstractWorker
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
+from syft.exceptions import PlanCommandUnknownError
 
 
 # this if statement avoids circular imports between base.py and pointer.py
@@ -102,6 +103,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # For performance, we cache each
         self._message_router = {
             codes.MSGTYPE.CMD: self.execute_command,
+            codes.MSGTYPE.PLAN_CMD: self.execute_plan_command,
             codes.MSGTYPE.OBJ: self.set_obj,
             codes.MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             codes.MSGTYPE.OBJ_DEL: self.rm_obj,
@@ -109,7 +111,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
-            codes.MSGTYPE.FETCH_PLAN: self.fetch_plan,
         }
 
         self.load_data(data)
@@ -431,6 +432,23 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
+    def execute_plan_command(self, message: tuple):
+        """Executes commands related to plans.
+
+        This method is intended to execute all commands related to plans and
+        avoiding having several new message types specific to plans.
+
+        Args:
+            message: A tuple specifying the command and args.
+        """
+        args, command_name = message
+        if command_name == "fetch_plan":
+            return self._fetch_plan(*args)
+        elif command_name == "get_ptr":
+            return self.get_ptr(*args)
+        else:
+            raise PlanCommandUnknownError(command_name)
+
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
     ) -> Union[List["pointers.PointerTensor"], "pointers.PointerTensor"]:
@@ -505,6 +523,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             self.de_register_obj(obj)
             return obj
+
+    def get_ptr(self, obj_id: Union[str, int]):
+        """Returns a pointer to an object from the registry.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+        """
+        obj = self.get_obj(obj_id)
+        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+            raise GetNotPermittedError()
+        else:
+            return obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -761,7 +791,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.create_shape(shape)
 
-    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
+    def fetch_plan(self, plan_id):
+        if plan_id in self._objects:
+            candidate = self._objects[plan_id]
+            if isinstance(candidate, sy.Plan):
+                return candidate.copy_to_worker(sy.hook.local_worker)
+
+    def _fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         Args:
@@ -773,10 +809,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if plan_id in self._objects:
             candidate = self._objects[plan_id]
             if isinstance(candidate, sy.Plan):
-                plan = candidate.copy()
-                plan.owner = sy.local_worker
-                plan.replace_worker_ids(self.id, plan.owner.id)
-                return plan
+                return candidate.copy()
 
         return None
 
