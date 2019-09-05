@@ -1,4 +1,4 @@
-import torch as th
+import torch
 import syft as sy
 from syft.generic.pointers import PointerTensor
 
@@ -21,7 +21,7 @@ def inv_sym(t):
     n = t.shape[0]
     l, d, inv_d = _ldl(t)
     l_t = l.t()
-    t_inv = th.zeros_like(t)
+    t_inv = torch.zeros_like(t)
     for j in range(n - 1, -1, -1):
         for i in range(j, -1, -1):
             if i == j:
@@ -47,8 +47,8 @@ def _ldl(t):
                computations with division, which is very slow in MPC
     """
     n = t.shape[0]
-    l = th.zeros_like(t)
-    d = th.diag(l).copy()
+    l = torch.zeros_like(t)
+    d = torch.diag(l).copy()
     inv_d = d.copy()
 
     for i in range(n):
@@ -72,8 +72,8 @@ def qr(t, mode="reduced"):
     does not support instances of FixedPrecisionTensor or AdditiveSharedTensor
 
     Args:
-        t: symmetric 2-dim tensor, shape(M, N). It should be whether
-            a local tensor or a pointer to a remote tensor
+        t: 2-dim tensor, shape(M, N). It should be whether a local tensor or a
+            pointer to a remote tensor
 
         mode: {'reduced', 'complete', 'r'}. If K = min(M, N), then
             - 'reduced' : returns q, r with dimensions (M, K), (K, N) (default)
@@ -84,7 +84,7 @@ def qr(t, mode="reduced"):
         q: orthogonal matrix as a 2-dim tensor with same type as t
         r: lower triangular matrix as a 2-dim tensor with same type as t
     """
-    if not isinstance(t, th.Tensor):
+    if not isinstance(t, torch.Tensor):
         raise TypeError("The provided matrix should be a tensor")
 
     if t.has_child() and not isinstance(t.child, PointerTensor):
@@ -101,7 +101,7 @@ def qr(t, mode="reduced"):
     R = t.copy()
 
     # Initiate identity matrix with size (n_rows, n_rows)
-    I = th.diag(th.Tensor([1.0] * n_rows))
+    I = torch.diag(torch.Tensor([1.0] * n_rows))
 
     # Send it to remote worker if t is pointer
     if t.has_child() and isinstance(t.child, PointerTensor):
@@ -117,12 +117,12 @@ def qr(t, mode="reduced"):
         I_i = I[i:, i:]
 
         # Init 1st vector of the canonical base in the same worker as t
-        e = th.zeros_like(t)[i:, 0].view(-1, 1)
+        e = torch.zeros_like(t)[i:, 0].view(-1, 1)
         e[0, 0] += 1.0
 
         # Current vector in R to perform reflection
         x = R[i:, i].view(-1, 1)
-        x_norm = th.sqrt(x.t() @ x).squeeze()
+        x_norm = torch.sqrt(x.t() @ x).squeeze()
 
         # Compute Householder transform
         numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
@@ -132,15 +132,15 @@ def qr(t, mode="reduced"):
         # If it is not the 1st iteration
         # expand matrix H with Identity at diagonal and zero elsewhere
         if i > 0:
-            down_zeros = th.zeros([n_rows - i, i])
-            up_zeros = th.zeros([i, n_rows - i])
+            down_zeros = torch.zeros([n_rows - i, i])
+            up_zeros = torch.zeros([i, n_rows - i])
             # Send them to remote worker if t is pointer
             if t.has_child() and isinstance(t.child, PointerTensor):
                 down_zeros = down_zeros.send(t.child.location)
                 up_zeros = up_zeros.send(t.child.location)
-            left_cat = th.cat((I[:i, :i], down_zeros), dim=0)
-            right_cat = th.cat((up_zeros, H), dim=0)
-            H = th.cat((left_cat, right_cat), dim=1)
+            left_cat = torch.cat((I[:i, :i], down_zeros), dim=0)
+            right_cat = torch.cat((up_zeros, H), dim=0)
+            H = torch.cat((left_cat, right_cat), dim=1)
 
         # Update R
         R = H @ R
@@ -160,5 +160,5 @@ def qr(t, mode="reduced"):
 
 
 def qr_mpc(t):
-    # TODO
+
     pass
