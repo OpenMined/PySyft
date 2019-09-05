@@ -628,7 +628,8 @@ class TorchTensor(AbstractTensor):
         return attr_val
 
     def enc_fix_prec(self):
-        return self.child.fix_precision()
+        self.child.fix_precision()
+        return self
 
     def float_prec(self):
         return self.child.float_precision()
@@ -649,6 +650,10 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, storage="auto", field_type="int100", **kwargs):
+
+        if not kwargs.get("owner"):
+            kwargs["owner"] = self.owner
+
         if self.is_wrapper:
             self.child = self.child.fix_prec(*args, **kwargs)
             return self
@@ -694,7 +699,7 @@ class TorchTensor(AbstractTensor):
                     "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
                 )
                 del kwargs["internal_type"]
-            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec().wrap()
+            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec()
 
     fix_precision = fix_prec
 
@@ -732,30 +737,33 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
 
-        shared_tensor = self
+        shared_tensor = self.copy()
+
         if self.has_child():
             kwargs = (
                 {"requires_grad": requires_grad}
-                if isinstance(self.child, syft.PointerTensor)
+                if isinstance(shared_tensor.child, syft.PointerTensor)
                 else {}
             )
-            self.child = self.child.share(
+            shared_tensor.child = shared_tensor.child.share(
                 *owners, field=field, crypto_provider=crypto_provider, **kwargs
             )
             if no_wrap:
-                return self.child
+                return shared_tensor.child
         else:
             shared_tensor = (
                 syft.AdditiveSharingTensor(
                     field=field, crypto_provider=crypto_provider, owner=self.owner
                 )
-                .on(self)
+                .on(shared_tensor)
                 .child.init_shares(*owners)
             )
             if not no_wrap:
                 shared_tensor = shared_tensor.wrap()
 
-        if requires_grad and not (self.is_wrapper and isinstance(self.child, syft.PointerTensor)):
+        if requires_grad and not (
+            shared_tensor.is_wrapper and isinstance(shared_tensor.child, syft.PointerTensor)
+        ):
             shared_tensor = syft.AutogradTensor().on(shared_tensor)
 
         return shared_tensor

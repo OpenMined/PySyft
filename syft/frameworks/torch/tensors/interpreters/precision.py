@@ -38,14 +38,13 @@ class FixedPrecisionTensor(AbstractTensor):
         super().__init__(tags, description)
 
         self.owner = owner
-        self.id = id
+        self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
 
         self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -106,8 +105,9 @@ class FixedPrecisionTensor(AbstractTensor):
         one, encoded with floating point precision"""
 
         value = self.child.long() % self.field
+        torch_max_value = torch.tensor(self.field).long()
 
-        gate = value.native_gt(self.torch_max_value / 2).long()
+        gate = value.native_gt(torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -124,7 +124,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            gate = self.child.native_gt(self.torch_max_value / 2).long()
+            torch_max_value = torch.tensor(self.field).long()
+            gate = self.child.native_gt(torch_max_value / 2).long()
             neg_nums = (self.child - self.field) / truncation + self.field
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)

@@ -66,6 +66,9 @@ class AbstractTensor(AbstractObject):
         if self.id is None:
             self.id = sy.ID_PROVIDER.pop()
 
+        if self.owner is not None:
+            self.owner.register_obj(wrapper, obj_id=self.id)
+
         return wrapper
 
     def copy(self):
