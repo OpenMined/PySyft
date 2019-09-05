@@ -9,7 +9,6 @@ def test_bloom(fit_intercept, hook, workers):
     """
     Test BloomRegressor, i.e. distributed linear regression with MPC
     """
-    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
 
     bob = workers["bob"]
     alice = workers["alice"]
@@ -25,11 +24,13 @@ def test_bloom(fit_intercept, hook, workers):
     intercept = 3.0 if fit_intercept else 0  # "real" intercept
 
     # Alice's data
+    torch.manual_seed(0)  # Truncation might not always work so we set the random seed
     N1 = 10000
     X_alice = torch.randn(N1, K).send(alice)
     y_alice = X_alice @ beta.copy().send(alice) + intercept
 
     # Bob's data
+    torch.manual_seed(42)  # Setting another seed to avoid creation of singular matrices
     N2 = 20000
     X_bob = torch.randn(N2, K).send(bob)
     y_bob = X_bob @ beta.copy().send(bob) + intercept
