@@ -25,6 +25,12 @@ base_types = {int, float, str, bool, bytes, bytearray, complex}
 one = lambda _args: 1
 get_child = lambda i: i.child
 
+### Hook Args Registries ###
+# If you have a type that will be fed into hooked functions, you must add it to
+# these registeries using the public functions in the Registration Logic
+# section below.
+# WARNING: Do not attempt to manipulate them by hand. These registries should
+#    not be used outside of this module. Use the helper functions instead.
 
 # dict to specify the action depending of the type found
 type_rule = {
@@ -58,33 +64,11 @@ backward_func = {
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
-ambiguous_methods = {
-    "__getitem__",
-    "_getitem_public",
-    "__setitem__",
-    "view",
-    "permute",
-    "add_",
-    "sub_",
-    "new",
-    "chunk",
-}
-ambiguous_functions = {
-    "torch.unbind",
-    "unbind",
-    "torch.stack",
-    "stack",
-    "torch.cat",
-    "cat",
-    "torch.mean",
-    "torch.sum",
-    "torch.chunk",
-    "chunk",
-    "torch.functional.split",
-    "split",
-}
+ambiguous_methods = set()
+ambiguous_functions = set()
 
 
+### Registration logic ###
 def register_type_rule(new_type_rules: Dict):
     global type_rule
     type_rule = {**type_rule, **new_type_rules}
@@ -100,6 +84,16 @@ def register_backward_func(new_backward_rules: Dict):
     backward_func = {**backward_func, **new_backward_rules}
 
 
+def register_ambiguous_method(*method):
+    global ambiguous_methods
+    ambiguous_methods.update(set(method))
+
+
+def register_ambiguous_function(*function):
+    global ambiguous_functions
+    ambiguous_functions.update(set(function))
+
+
 def default_backward_func(tensorcls):
     return lambda i, **kwargs: tensorcls(**kwargs).on(i, wrap=False)
 
@@ -108,6 +102,9 @@ def default_register_tensor(*tensorcls):
     register_type_rule({t: one for t in tensorcls})
     register_forward_func({t: get_child for t in tensorcls})
     register_backward_func({t: default_backward_func(t) for t in tensorcls})
+
+
+### Main hook args implementation ###
 
 
 def unwrap_args_from_method(attr, method_self, args, kwargs):
