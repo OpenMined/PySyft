@@ -27,10 +27,8 @@ version_message = (
     "(version '{actual_version}' currently installed)."
 )
 
-message = (
-    "Missing optional dependency '{name}'. {extra} "
-    "Use pip or conda to install {name}."
-)
+message = "Missing optional dependency '{name}'. {extra} " "Use pip or conda to install {name}."
+
 
 def _get_version(module: types.ModuleType) -> str:
     version = getattr(module, "__version__", None)
@@ -41,6 +39,7 @@ def _get_version(module: types.ModuleType) -> str:
     if version is None:
         raise ImportError("Can't determine version for {}".format(module.__name__))
     return version
+
 
 def import_optional_dependency(
     name: str, extra: str = "", raise_on_missing: bool = True, on_version: str = "raise"
@@ -103,6 +102,7 @@ def import_optional_dependency(
 
     return module
 
+
 def get_sys_info():
     "Returns system information as a dict"
 
@@ -155,7 +155,7 @@ def get_sys_info():
 
 
 def show_versions(as_json=False):
-    sys_info =get_sys_info()
+    sys_info = get_sys_info()
     deps = [
         "syft",
         "flask",
@@ -171,9 +171,7 @@ def show_versions(as_json=False):
 
     deps_blob = []
     for modname in deps:
-        mod = import_optional_dependency(
-            modname, raise_on_missing=False, on_version="ignore"
-        )
+        mod = import_optional_dependency(modname, raise_on_missing=False, on_version="ignore")
         if mod:
             ver = _get_version(mod)
         else:
