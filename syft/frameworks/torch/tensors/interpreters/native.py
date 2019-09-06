@@ -8,9 +8,9 @@ import numpy as np
 import torch
 
 import syft
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers import PointerTensor
 from syft.workers import BaseWorker
