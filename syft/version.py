@@ -2,6 +2,7 @@ __version__ = "0.1.26a1"
 
 import importlib
 import types
+import codecs
 import distutils
 import locale
 import os
