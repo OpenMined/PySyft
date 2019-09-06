@@ -288,7 +288,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return tensor
 
     def attr(self, attr_name):
-        attr_ptr = syft.PointerTensor(
+        attr_ptr = PointerTensor(
             id=self.id,
             owner=self.owner,
             location=self.location,

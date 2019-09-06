@@ -716,7 +716,6 @@ class FixedPrecisionTensor(AbstractTensor):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
         new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 

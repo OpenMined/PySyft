@@ -334,7 +334,7 @@ class TorchHook(FrameworkHook):
 
             if hasattr(self, "child"):
                 to_return = self.child.attr("grad")
-                if to_return is not None and isinstance(to_return.child, syft.PointerTensor):
+                if to_return is not None and isinstance(to_return.child, PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
 
@@ -704,7 +704,7 @@ class TorchHook(FrameworkHook):
 
             for param_group in optim_self.param_groups:
                 for key, param in param_group.items():
-                    if isinstance(param, syft.FixedPrecisionTensor) and key != "params":
+                    if isinstance(param, FixedPrecisionTensor) and key != "params":
                         param_group[key] = param.float_precision().item()
 
             return optim_self

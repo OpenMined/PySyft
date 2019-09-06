@@ -297,7 +297,6 @@ class FrameworkHook(ABC):
             """
             Operate the hooking
             """
-            # TODO: I can't manage the import issue, can you?
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs

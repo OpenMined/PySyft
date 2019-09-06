@@ -7,14 +7,13 @@ from typing import Union
 import numpy as np
 
 import syft
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
 
-from syft.exceptions import PureFrameworkTensorFoundError
-from syft.exceptions import ResponseSignatureError
+from syft import exceptions
 
 
 hook_method_args_functions = {}
@@ -39,7 +38,7 @@ type_rule = {
     LargePrecisionTensor: one,
 }
 
-# Dict to return the proper lambda function for the right torch or syft tensor type
+# Dict to return the proper lambda function for the right framework or syft tensor type
 forward_func = {
     LoggingTensor: get_child,
     AutogradTensor: get_child,
@@ -47,7 +46,7 @@ forward_func = {
     "my_syft_tensor_type": get_child,
 }
 
-# Dict to return the proper lambda function for the right torch or syft tensor type
+# Dict to return the proper lambda function for the right framework or syft tensor type
 backward_func = {
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
@@ -112,8 +111,8 @@ def default_register_tensor(*tensorcls):
 
 
 def unwrap_args_from_method(attr, method_self, args, kwargs):
-    """Method arguments are sometimes simple types (such as strings or ints) but
-    sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
+    """Method arguments are sometimes simple types (such as strings or ints) but sometimes
+    they are custom Syft tensors such as wrappers (i.e. FrameworkTensor), LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
     have arguments converted from the arg to arg.child so that the types match as the
     method is being called down the chain. To make this efficient, we cache which args
@@ -203,7 +202,7 @@ def build_unwrap_args_from_function(args, return_tuple=False):
     """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the args object, with 1 where there was
-    # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+    # (framework or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(args)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
@@ -217,11 +216,11 @@ def build_unwrap_args_from_function(args, return_tuple=False):
 def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     """
     When executing a command, arguments are inspected and all tensors are replaced
-    with their child attribute until a pointer or a torch tensor is found (for
-    example an argument could be a torch wrapper with a child being a LoggingTensor, with
-    a child being a torch tensor). When the result of the command is calculated,
+    with their child attribute until a pointer or a framework tensor is found (for
+    example an argument could be a framework wrapper with a child being a LoggingTensor, with
+    a child being a framework tensor). When the result of the command is calculated,
     we need to rebuild this chain in the reverse order (in our example put back
-    a LoggingTensor on top of the result and then a torch wrapper).
+    a LoggingTensor on top of the result and then a framework wrapper).
     To make this efficient, we cache which elements of the response (which can be more
     complicated with nested tuples for example) need to be wrapped in a dictionary called
     hook_method_response_functions. However, sometimes a method (an attr) has multiple
@@ -259,7 +258,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         # Try running it
         new_response = response_hook_function(response)
 
-    except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
+    except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         response_hook_function = build_wrap_reponse_from_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
@@ -284,7 +283,7 @@ def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
     """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the response object, with 1 where there was
-    # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+    # (framework or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
@@ -294,9 +293,9 @@ def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
 
 def build_rule(args):
     """
-    Inspect the args object to find torch or syft tensor arguments and
+    Inspect the args object to find framework or syft tensor arguments and
     return a rule whose structure is the same as the args object,
-    with 1 where there was (torch or syft) tensors and 0 when
+    with 1 where there was (framework or syft) tensors and 0 when
     not (ex: number, str, ...)
 
     Example:
@@ -323,7 +322,7 @@ def build_unwrap_args_with_rules(args, rules, return_tuple=False):
     """
     Build a function given some rules to efficiently replace in the args object
     syft tensors with their child (but not pointer as they don't have .child),
-    and do nothing for other type of object including torch tensors, str,
+    and do nothing for other type of object including framework tensors, str,
     numbers, bool, etc.
     Pointers trigger an error which can be caught to get the location for
     forwarding the call.
@@ -444,7 +443,7 @@ def build_get_tensor_type(rules, layer=None):
             # Some functions don't have tensors in their signature so rules is only made of 0s,
             # Hence lambdas is empty. Raising PureFrameworkTensorFoundError triggers an execution of
             # the un-hooked (so native) function which is perfect in that case.
-            raise PureFrameworkTensorFoundError
+            raise exceptions.PureFrameworkTensorFoundError
     else:
         return lambdas
 
@@ -472,7 +471,7 @@ get_element_at = {1: one_layer, 2: two_layers, 3: three_layers, 4: four_layers}
 def build_wrap_response_with_rules(response, rules, wrap_type, wrap_args, return_tuple=False):
     """
     Build a function given some rules to efficiently replace in the response object
-    syft or torch tensors with a wrapper, and do nothing for other types of object
+    syft or framework tensors with a wrapper, and do nothing for other types of object
     including , str, numbers, bool, etc.
 
     Args:
@@ -704,7 +703,7 @@ def build_register_response_function(response: object) -> Callable:
     """
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the response object, with 1 where there was
-    # (torch or syft) tensors and 0 when not (ex: number, str, ...)
+    # (framework or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects
@@ -728,14 +727,14 @@ def register_tensor(
     try:
         tensor.id = response_ids.pop(-1)
     except IndexError:
-        raise ResponseSignatureError
+        raise exceptions.ResponseSignatureError
     owner.register_obj(tensor)
 
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
     """
     Build a function given some rules to efficiently replace in the response object
-    torch tensors with a pointer after they are registered, and do nothing for other
+    framework tensors with a pointer after they are registered, and do nothing for other
     types of object including , str, numbers, bool, etc.
 
     Args:

@@ -1,15 +1,13 @@
 import math
 import torch
+
 import syft as sy
+from syft.frameworks.torch.crypto import spdz
+from syft.frameworks.torch.crypto import securenn
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
-
 from syft.workers.abstract import AbstractWorker
-
-# Crypto protocols
-from syft.frameworks.torch.crypto import spdz
-from syft.frameworks.torch.crypto import securenn
 
 no_wrap = {"no_wrap": True}
 
@@ -926,7 +924,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
         new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 

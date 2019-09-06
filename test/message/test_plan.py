@@ -1,16 +1,16 @@
-import syft as sy
+import unittest.mock as mock
 
+import pytest
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+import syft as sy
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.messaging.plan import Plan
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
-from syft.messaging.plan import Plan
-
-import pytest
-import unittest.mock as mock
 
 
 def test_plan_built_automatically():
