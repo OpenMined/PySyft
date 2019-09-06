@@ -15,6 +15,8 @@ def test_is_client_false(hook):
     x = th.tensor([1, 2, 3])
     assert x.id in me._objects
 
+    me.is_client_worker = True
+
 
 def test_in_known_workers(hook):
     # Get local worker

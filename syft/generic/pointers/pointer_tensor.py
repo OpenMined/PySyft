@@ -288,7 +288,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             location=self.location,
             id_at_location=self.id_at_location,
             point_to_attr=self._create_attr_name_string(attr_name),
-        ).wrap()
+        ).wrap(register=False)
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
 

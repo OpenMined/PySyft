@@ -106,7 +106,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     tensor_bin = _serialize_tensor(tensor)
 
-    # note we need to do this expicitly because torch.save does not
+    # note we need to do this explicitly because torch.save does not
     # seem to be including .grad by default
 
     if tensor.grad is not None:
