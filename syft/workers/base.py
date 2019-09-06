@@ -443,7 +443,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         args, command_name = message
         if command_name == "fetch_plan":
-            return self._fetch_plan(*args)
+            return self._fetch_plan_remote(*args)
         elif command_name == "get_ptr":
             return self.get_ptr(*args)
         else:
@@ -792,13 +792,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return sy.hook.create_shape(shape)
 
     def fetch_plan(self, plan_id):
+        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for local execution.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
+        """
         if plan_id in self._objects:
             candidate = self._objects[plan_id]
             if isinstance(candidate, sy.Plan):
                 return candidate.copy_to_worker(sy.hook.local_worker)
 
-    def _fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
+        return None
+
+    def _fetch_plan_remote(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for remote execution.
 
         Args:
             plan_id: A string indicating the plan id.
