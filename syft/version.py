@@ -9,6 +9,7 @@ import platform
 import struct
 import subprocess
 import sys
+import warnings
 
 VERSIONS = {
     "flask": "1.0.2",
