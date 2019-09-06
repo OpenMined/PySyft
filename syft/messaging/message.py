@@ -389,7 +389,7 @@ class PlanCommandMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, message: tuple, command_name: str):
-        """Initialize an operation message
+        """Initialize a PlanCommandMessage.
 
         Args:
             message (Tuple): this is typically the args and kwargs of a method call on the client, but it
@@ -405,7 +405,7 @@ class PlanCommandMessage(Message):
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the operation (backwards compatability)."""
+        """Returns a tuple with the contents of the operation (backwards compatability)."""
         return (self.message, self.command_name)
 
     @staticmethod
@@ -419,8 +419,6 @@ class PlanCommandMessage(Message):
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
-        # NOTE: we can skip calling _simplify on return_ids because they should already be
-        # a list of simple types.
         return (
             ptr.msg_type,
             (sy.serde._simplify(ptr.message), sy.serde._simplify(ptr.command_name)),
