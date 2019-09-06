@@ -8,8 +8,8 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
-from syft.frameworks.types import FrameworkTensor
-from syft.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
 from syft.workers import AbstractWorker
