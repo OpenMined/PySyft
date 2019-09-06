@@ -1,6 +1,7 @@
 import torch
 import syft as sy
 from syft.generic.pointers import PointerTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 
 
 def inv_sym(t):
@@ -159,6 +160,70 @@ def qr(t, mode="reduced"):
     return Q_t.t(), R
 
 
-def qr_mpc(t):
+def qr_mpc(t, mode="r"):
 
-    pass
+    # Check if t is an AST
+    if (
+        t.has_child()
+        and t.child.has_child()
+        and not isinstance(t.child.child, AdditiveSharingTensor)
+    ):
+        raise TypeError("Input is not an AdditiveSharedTensor")
+
+    workers = t.child.child.locations
+    crypto_prov = t.child.child.crypto_provider
+    prec_frac = t.child.precision_fractional
+
+    ######## QR decomposition via Householder Reflection #########
+
+    n_rows, n_cols = t.shape
+
+    # Initiate R matrix from t
+    R = t.copy()
+
+    # Initiate identity matrix with size (n_rows, n_rows) and secret shared it
+    I = torch.diag(torch.Tensor([1.0] * n_rows))
+    I = I.fix_prec(precision_fractional=prec_frac).share(*workers, crypto_provider=crypto_prov)
+
+    if not mode == "r":
+        # Initiate Q_transpose
+        Q_t = I.copy()
+
+    # Iteration via Household Reflection
+    for i in range(min(n_rows, n_cols)):
+        # Identity for this iteration, it has size (n_cols-i, n_cols-i)
+        I_i = I[i:, i:]
+
+        # Init 1st vector of the canonical base in the same worker as t
+        e = torch.zeros_like(t)[i:, 0].view(-1, 1)
+        e[0, 0] += 1
+
+        # Current vector in R to perform reflection
+        x = R[i:, i].view(-1, 1)
+
+        # Compute norm in MPC
+
+
+def _norm_mpc(t):
+    workers = t.child.child.locations
+    crypto_prov = t.child.child.crypto_provider
+    prec_frac = t.child.precision_fractional
+
+    norm_sq = (t * t).sum().squeeze()
+
+    # Random big number
+    Q = 100000000
+    r = (
+        (torch.rand(1) * Q)
+        .long()
+        .fix_prec(precision_fractional=prec_frac)
+        .share(*workers, crypto_provider=crypto_prov)
+    )
+
+    # Compute masked norm
+    masked_norm_sq = r ** 2 * norm_sq
+
+    # Send to crypto_provider and get compute square root
+    # masked_norm_sq = masked_norm_sq.send(crypto_provider)
+    # masked_norm_sq = get().float_prec()
+    # masked_norm = torch.sqrt(masked_norm_sq)
