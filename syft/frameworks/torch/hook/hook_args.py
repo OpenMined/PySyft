@@ -1,26 +1,26 @@
-import torch
-import syft as sy
-from syft.exceptions import RemoteObjectFoundError
-from syft.exceptions import PureTorchTensorFoundError
-
-from syft.exceptions import ResponseSignatureError
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
-from syft.frameworks.torch.pointers import PointerTensor
-from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-
 from typing import Callable
 from typing import Union
 from typing import Tuple
 from typing import List
 
 import numpy as np
+import torch
+
+from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters import TorchTensor
+from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.generic.tensor import AbstractTensor
+from syft.generic.pointers import MultiPointerTensor
+from syft.generic.pointers import PointerTensor
+from syft.workers import AbstractWorker
+
+from syft.exceptions import RemoteObjectFoundError
+from syft.exceptions import PureFrameworkTensorFoundError
+from syft.exceptions import ResponseSignatureError
 
 
 hook_method_args_functions = {}
@@ -55,10 +55,10 @@ forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
     torch.Tensor: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
-    else (_ for _ in ()).throw(PureTorchTensorFoundError),
+    else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
     LoggingTensor: lambda i: i.child,
     FixedPrecisionTensor: lambda i: i.child,
     AutogradTensor: lambda i: i.child,
@@ -89,8 +89,31 @@ backward_func = {
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
-ambiguous_methods = {"__getitem__", "_getitem_public", "view", "permute", "add_", "sub_"}
-ambiguous_functions = {"torch.unbind", "unbind", "torch.stack", "stack", "torch.mean", "torch.sum"}
+ambiguous_methods = {
+    "__getitem__",
+    "_getitem_public",
+    "__setitem__",
+    "view",
+    "permute",
+    "add_",
+    "sub_",
+    "new",
+    "chunk",
+}
+ambiguous_functions = {
+    "torch.unbind",
+    "unbind",
+    "torch.stack",
+    "stack",
+    "torch.cat",
+    "cat",
+    "torch.mean",
+    "torch.sum",
+    "torch.chunk",
+    "chunk",
+    "torch.functional.split",
+    "split",
+}
 
 
 def unwrap_args_from_method(attr, method_self, args, kwargs):
@@ -427,9 +450,9 @@ def build_get_tensor_type(rules, layer=None):
             return lambdas[0]
         except IndexError:
             # Some functions don't have tensors in their signature so rules is only made of 0s,
-            # Hence lambdas is empty. Raising PureTorchTensorFoundError triggers an execution of
+            # Hence lambdas is empty. Raising PureFrameworkTensorFoundError triggers an execution of
             # the un-hooked (so native) function which is perfect in that case.
-            raise PureTorchTensorFoundError
+            raise PureFrameworkTensorFoundError
     else:
         return lambdas
 
@@ -627,7 +650,7 @@ register_response_functions = {}
 
 
 def register_response(
-    attr: str, response: object, response_ids: object, owner: sy.workers.AbstractWorker
+    attr: str, response: object, response_ids: object, owner: AbstractWorker
 ) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
@@ -698,9 +721,7 @@ def build_register_response_function(response: object) -> Callable:
 
 
 def register_tensor(
-    tensor: Union[torch.Tensor, AbstractTensor],
-    owner: sy.workers.AbstractWorker,
-    response_ids: List = list(),
+    tensor: Union[torch.Tensor, AbstractTensor], owner: AbstractWorker, response_ids: List = list()
 ):
     """
     Registers a tensor.

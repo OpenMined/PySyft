@@ -1,4 +1,4 @@
-__version__ = "0.1.22a1"
+__version__ = "0.1.26a1"
 
 import importlib
 import types
