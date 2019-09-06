@@ -11,8 +11,8 @@ from syft import codes
 from syft import messaging
 from syft.generic.tensor import AbstractTensor
 from syft.generic import ObjectStorage
-from syft.frameworks.types import FrameworkTensorType
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError

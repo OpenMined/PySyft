@@ -5,7 +5,7 @@ from six import reraise
 from typing import Tuple
 
 import syft as sy
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensor
 
 
 class PureFrameworkTensorFoundError(BaseException):

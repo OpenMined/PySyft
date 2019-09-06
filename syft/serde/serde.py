@@ -41,7 +41,7 @@ from lz4 import (  # noqa: F401
 import msgpack
 import zstd
 
-import syft as sy
+import syft
 from syft import dependency_check
 from syft import messaging
 from syft.federated import TrainConfig
@@ -65,7 +65,7 @@ else:
     MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = {}
 
 if dependency_check.tensorflow_available:
-    from syft.frameworks.tensorflow import MAP_TF_SIMPLIFIERS_AND_DETAILERS
+    from syft_tensorflow.serde import MAP_TF_SIMPLIFIERS_AND_DETAILERS
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
@@ -308,7 +308,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     """
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
-        worker = sy.framework.hook.local_worker
+        worker = syft.framework.hook.local_worker
 
     # 1) Decompress the binary if needed
     binary = _decompress(binary)
