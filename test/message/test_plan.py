@@ -486,12 +486,14 @@ def test_fetch_stateful_plan_remote(hook, start_remote_worker):
         bias = state.read("bias")
         return data * bias
 
-    server, alice = start_remote_worker(id="test_fetch_stateful_plan_remote", hook=hook, port=8801)
+    server, remote_proxy = start_remote_worker(
+        id="test_fetch_stateful_plan_remote", hook=hook, port=8801
+    )
 
-    sent_plan = plan.send(alice)
+    sent_plan = plan.send(remote_proxy)
 
     # Fetch plan
-    fetched_plan = alice.fetch_plan(sent_plan.id)
+    fetched_plan = remote_proxy.fetch_plan(sent_plan.id)
     get_plan = sent_plan.get()
 
     # Execute it locally
@@ -506,7 +508,7 @@ def test_fetch_stateful_plan_remote(hook, start_remote_worker):
     assert get_plan.forward is not None
 
     hook.local_worker.is_client_worker = True
-    alice.close()
+    remote_proxy.close()
     server.terminate()
 
 
@@ -531,6 +533,9 @@ def test_fetch_plan_remote(hook, start_remote_worker):
     assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
+
+    remote_proxy.close()
+    server.terminate()
 
 
 def test_plan_serde(hook):
