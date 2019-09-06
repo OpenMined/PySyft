@@ -8,6 +8,7 @@ import torch
 
 import syft
 from syft import TorchHook
+from syft.generic.frameworks.hook import hook_args
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 
@@ -87,9 +88,9 @@ def workers(hook):
 
     # Reset the hook and the local worker
     syft.local_worker.clear_objects()
-    syft.generic.frameworks.hook.hook_args.hook_method_args_functions = {}
-    syft.generic.frameworks.hook.hook_args.hook_method_response_functions = {}
-    syft.generic.frameworks.hook.hook_args.get_tensor_type_functions = {}
+    hook_args.hook_method_args_functions = {}
+    hook_args.hook_method_response_functions = {}
+    hook_args.get_tensor_type_functions = {}
 
     # Define 4 virtual workers
     alice = syft.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
