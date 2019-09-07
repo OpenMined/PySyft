@@ -794,7 +794,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.create_shape(shape)
 
-    def fetch_plan(self, plan_id):
+    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         This method is executed for local execution.
