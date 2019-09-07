@@ -84,14 +84,14 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         plan = sy.serde.deserialize(response)
 
-        if plan._state_ids_sent:
+        if plan.state_ids:
             state_ids = []
-            for state_id in plan._state_ids_sent:
+            for state_id in plan.state_ids:
                 ptr = self.get_ptr(state_id)
                 ptr.owner = sy.hook.local_worker
                 sy.hook.local_worker._objects[ptr.id] = ptr
                 state_ids.append(ptr.id)
-            plan.replace_ids(plan._state_ids_sent, state_ids)
+            plan.replace_ids(plan.state_ids, state_ids)
             plan.state_ids = state_ids
 
         plan.replace_worker_ids(self.id, sy.hook.local_worker.id)

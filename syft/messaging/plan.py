@@ -216,7 +216,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         self.arg_ids = arg_ids if arg_ids is not None else []
         self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
-        self._state_ids_sent = None
         self.is_built = is_built
 
         # Pointing info towards a remote plan
@@ -398,11 +397,10 @@ class Plan(ObjectStorage, torch.nn.Module):
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
             is_built=self.is_built,
+            state_ids=self.state_ids,
         )
 
         plan._replace_reference_ids(self.id)
-        # We need these ids to get a copy of the state
-        plan._state_ids_sent = self._state_ids_sent
 
         return plan
 
@@ -425,9 +423,9 @@ class Plan(ObjectStorage, torch.nn.Module):
         )
 
         # Sent state to the new owner
-        if self._state_ids_sent:
+        if self.state_ids:
             state_ids = []
-            for state_id in self._state_ids_sent:
+            for state_id in self.state_ids:
                 state_ids.append(
                     self.owner._objects[state_id]
                     .copy()
@@ -435,7 +433,7 @@ class Plan(ObjectStorage, torch.nn.Module):
                     .id_at_location
                 )
 
-            plan.replace_ids(self._state_ids_sent, state_ids)
+            plan.replace_ids(self.state_ids, state_ids)
             plan.state_ids = state_ids
 
         plan._replace_reference_ids(self.id)
@@ -716,10 +714,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.replace_worker_ids(worker_id, location.id)
 
         state_original = self.state.copy()
+        state_ids_original = self.state_ids.copy()
+
         self.state.send(location, garbage_collect_data=False)
         state_ptr_ids = self.state.get_id_at_location()
         self.replace_ids(self.state_ids, state_ptr_ids)
-        self._state_ids_sent = state_ptr_ids
+        self.state_ids = state_ptr_ids
 
         _ = self.owner.send(self, workers=location)
 
@@ -728,6 +728,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         self.readable_plan = readable_plan_original
         self.state.set_(state_original)
+        self.state_ids = state_ids_original
         return pointer
 
     def get(self) -> "Plan":
@@ -806,7 +807,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
             sy.serde._simplify(plan.state_ids),
-            sy.serde._simplify(plan._state_ids_sent),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -823,14 +823,13 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, state_ids_sent, name, tags, description, is_built = (
+        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
         state_ids = sy.serde._detail(worker, state_ids)
-        state_ids_sent = sy.serde._detail(worker, state_ids_sent)
 
         plan = sy.Plan(
             owner=worker,
@@ -842,7 +841,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         )
 
         plan.state_ids = state_ids
-        plan._state_ids_sent = state_ids_sent
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
