@@ -388,8 +388,21 @@ class Plan(ObjectStorage, torch.nn.Module):
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
             is_built=self.is_built,
-            state_ids=self.state_ids,
         )
+
+        # TODO: we shouldn't use the same state_ids since we want to avoid
+        # strange behaviours such as:
+        #
+        # @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        # def plan(data, state):
+        #   bias = state.read("bias")
+        #   return data * bias
+        #
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # True
+        # plan_copy = plan.copy()
+        # plan_copy.bias = th.tensor([4.0])
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
+        plan.state_ids = self.state_ids
 
         # Replace occurences of the old id to the new plan id
         plan.replace_worker_ids(self.id, plan.id)
