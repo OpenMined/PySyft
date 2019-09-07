@@ -215,39 +215,56 @@ def test_mod():
     assert torch.all(torch.eq(expected, result.float_precision()))
 
 
-@pytest.mark.parametrize(
-    "x, expected",
-    [
-        (torch.tensor([1]), torch.tensor([1.0])),
-        (torch.tensor([1.0]), torch.tensor([1.0])),
-        (torch.tensor([2000.0, 1.0]), torch.tensor([2000.0, 1.0])),
-        (torch.tensor([2000.0, 1]), torch.tensor([2000.0, 1.0])),
-        (torch.tensor([-2000.0]), torch.tensor([-2000.0])),
-        (torch.tensor([-2000.0, -50]), torch.tensor([-2000.0, -50.0])),
-        (torch.tensor([-2000.0, 50]), torch.tensor([-2000.0, 50.0])),
-        (
-            torch.tensor([[-2000.0, 50], [1000.5, -25]]),
-            torch.tensor([[-2000.0, 50.0], [1000.5, -25.0]]),
-        ),
-        (torch.tensor([-2000.0123458910]), torch.tensor([-2000.0123458910])),
-        (torch.tensor([2000.0123458910]), torch.tensor([2000.0123458910])),
-    ],
-)
-class TestParametrized:
-    def test_types(self, x, expected):
-        enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
-        restored = enlarged.float_precision()
-        # And now x and restored must be the same
-        assert torch.all(torch.eq(expected, restored))
+test_data = [
+    (torch.tensor([1]), torch.tensor([1.0])),
+    (torch.tensor([1.0]), torch.tensor([1.0])),
+    (torch.tensor([2000.0, 1.0]), torch.tensor([2000.0, 1.0])),
+    (torch.tensor([2000.0, 1]), torch.tensor([2000.0, 1.0])),
+    (torch.tensor([-2000.0]), torch.tensor([-2000.0])),
+    (torch.tensor([-2000.0, -50]), torch.tensor([-2000.0, -50.0])),
+    (torch.tensor([-2000.0, 50]), torch.tensor([-2000.0, 50.0])),
+    (
+        torch.tensor([[-2000.0, 50], [1000.5, -25]]),
+        torch.tensor([[-2000.0, 50.0], [1000.5, -25.0]]),
+    ),
+    (torch.tensor([-2000.0123458910]), torch.tensor([-2000.0123458910])),
+    (torch.tensor([2000.0123458910]), torch.tensor([2000.0123458910])),
+]
 
-    def test_share_and_get(self, workers, x, expected):
-        alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 
-        enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
-        expected = expected.fix_prec(internal_type=torch.int16, precision_fractional=128)
+@pytest.mark.parametrize("x, expected", test_data)
+def test_types(x, expected):
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    restored = enlarged.float_precision()
+    # And now x and restored must be the same
+    assert torch.all(torch.eq(expected, restored))
 
-        shared = enlarged.share(alice, bob, crypto_provider=james)
 
-        result = shared.get()
+@pytest.mark.parametrize("x, expected", test_data)
+def test_share_and_get(workers, x, expected):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 
-        assert (expected.float_precision() == result.float_precision()).all()
+    enlarged = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    expected = expected.fix_prec(internal_type=torch.int16, precision_fractional=128)
+
+    shared = enlarged.share(alice, bob, crypto_provider=james)
+
+    result = shared.get()
+
+    assert (expected.float_precision() == result.float_precision()).all()
+
+
+def test_share_add(workers):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    x = torch.tensor([5.])
+    expected = x + x
+
+    x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    x_shared = x.share(alice, bob, crypto_provider=james)
+
+    y = x_shared + x_shared
+
+    y = y.get()
+
+    assert torch.all(torch.eq(expected, y))

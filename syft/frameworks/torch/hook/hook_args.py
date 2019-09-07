@@ -50,6 +50,13 @@ type_rule = {
     torch.nn.Parameter: one,
 }
 
+
+def lpt_forward_func(i):
+    if isinstance(i.child, AdditiveSharingTensor):
+        return i.child
+    return i._internal_representation_to_large_ints()
+
+
 # Dict to return the proper lambda function for the right torch or syft tensor type
 forward_func = {
     PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p)),
@@ -65,9 +72,19 @@ forward_func = {
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
     CRTPrecisionTensor: lambda i: i.child,
-    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
+    LargePrecisionTensor: lambda i: lpt_forward_func(i),
     "my_syft_tensor_type": lambda i: i.child,
 }
+
+
+def lpt_backward(i, kwargs):
+    if isinstance(i, AdditiveSharingTensor):
+        return LargePrecisionTensor(**kwargs).on(i, wrap=False)
+
+    return LargePrecisionTensor(**kwargs).on(
+        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
+    )
+
 
 # Dict to return the proper lambda function for the right torch or syft tensor type
 backward_func = {
@@ -77,9 +94,7 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
-    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
-        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
-    ),
+    LargePrecisionTensor: lambda i, **kwargs: lpt_backward(i, kwargs),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),

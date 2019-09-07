@@ -2,6 +2,7 @@ import numpy as np
 import math
 import torch
 
+from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.overload_torch import overloaded
 from syft.generic.tensor import AbstractTensor
 
@@ -56,7 +57,8 @@ class LargePrecisionTensor(AbstractTensor):
             internal_type (dtype): The large tensor will be stored using tensor of this type.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        assert internal_field <= 2 ** 62, "internal_field max value is 2 ** 62"
+        if internal_field is not None:
+            assert internal_field <= 2 ** 62, "internal_field max value is 2 ** 62"
         self.field = field
         self.internal_field = internal_field
         self.base = base
@@ -106,6 +108,13 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, self_, other):
+        # At this point we can have LPT>AST
+        # If that's the case, delegate into AST to do the operation.
+        # TODO I don't like the idea of this dependency here. An LPT should not know about AST
+        if hasattr(self_, "child") and isinstance(self_.child, AdditiveSharingTensor):
+            self_ = self_.child
+        if hasattr(other, "child") and isinstance(other.child, AdditiveSharingTensor):
+            other = other.child
         return self_ + other
 
     __add__ = add
@@ -201,11 +210,11 @@ class LargePrecisionTensor(AbstractTensor):
     def create_tensor_from_numpy(ndarray, **kwargs):
         """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
 
-        Typically this private method is called on the result of an operation.
+        Typically this method is called on the result of an operation.
         """
         # This method is called to rebuild an LTP after operations.
         # The wrapping is done here and not in each operation.
-        ndarray %= kwargs.get("field", 2 ** 512)
+        ndarray %= kwargs.get("field", 2 ** 62)
 
         internal_type = kwargs["internal_type"]
         internal_precision = type_precision[internal_type] - 1
@@ -251,6 +260,7 @@ class LargePrecisionTensor(AbstractTensor):
 
     def _internal_representation_to_large_ints(self) -> np.array:
         """Creates an numpy array containing the objective large numbers."""
+        # At this point we can have LPT>AST
         ndarray = self.child.numpy()
         ndarray = ndarray.reshape(-1, ndarray.shape[-1])
         result = []
