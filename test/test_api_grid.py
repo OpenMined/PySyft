@@ -6,6 +6,7 @@ import json
 import syft as sy
 import torch as th
 from test import PORTS, IDS, GATEWAY_URL
+import torch.nn.functional as F
 
 hook = sy.TorchHook(th)
 
@@ -21,9 +22,12 @@ class GridAPITest(unittest.TestCase):
         nodes = {}
 
         for (node_id, port) in zip(IDS, PORTS):
-            node = gr.WebsocketGridClient(
-                hook, "http://localhost:" + port + "/", id=node_id
-            )
+            if node_id not in sy.hook.local_worker._known_workers:
+                node = gr.WebsocketGridClient(
+                    hook, "http://localhost:" + port + "/", id=node_id
+                )
+            else:
+                node = sy.hook.local_worker._known_workers[node_id]
             node.connect()
             nodes[node_id] = node
 
@@ -38,6 +42,96 @@ class GridAPITest(unittest.TestCase):
         self.assertEqual(len(response["grid-nodes"]), len(IDS))
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
+
+    def test_model_ids_overview(self):
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = th.nn.Linear(2, 1)
+                self.bias = th.tensor([1000.0])
+                self.state += ["fc1", "bias"]
+
+            def forward(self, x):
+                x = self.fc1(x)
+                return F.log_softmax(x, dim=0) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+        model_ids = ["first_model", "second_model", "third_model"]
+
+        # Register models
+        for model_id in model_ids:
+            self.my_grid.serve_model(model, model_id=model_id)
+
+        # Get available models
+        models = json.loads(
+            requests.get(GATEWAY_URL + "/search-available-models").content
+        )
+
+        for model_id in model_ids:
+            assert model_id in models
+
+    def test_grid_host_query_jit_model(self):
+        toy_model = th.nn.Linear(2, 5)
+        data = th.zeros((5, 2))
+        traced_model = th.jit.trace(toy_model, data)
+
+        self.my_grid.serve_model(traced_model, "test")
+        assert self.my_grid.query_model("test")
+        assert self.my_grid.query_model("unregistered-model") is None
+
+    def test_dataset_tags_overview(self):
+        nodes = self.connect_nodes()
+        alice, bob, james = nodes["alice"], nodes["bob"], nodes["james"]
+
+        x = th.tensor([1, 2, 3, 4, 5]).tag("#first-tensor")
+        y = th.tensor([1, 2, 3, 4, 5]).tag("#second-tensor")
+        z = th.tensor([4, 5, 9]).tag(
+            "#generic-tag", "#first-tensor", "#second-tensor"
+        )  # repeat tags
+
+        tensors = [x, y, z]
+        workers = [alice, bob, james]
+        for i in range(len(workers)):
+            tensors[i].send(workers[i])
+            tags = json.loads(
+                requests.get(GATEWAY_URL + "/search-available-tags").content
+            )
+
+            assert i + 1 == len(tags)
+
+            tensor_tags = list(tensors[i].tags)
+            for tag in tensor_tags:
+                assert tag in tags
+
+    def test_host_plan_model(self):
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = th.nn.Linear(2, 1)
+                self.bias = th.tensor([1000.0])
+                self.state += ["fc1", "bias"]
+
+            def forward(self, x):
+                x = self.fc1(x)
+                return F.log_softmax(x, dim=0) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+
+        self.my_grid.serve_model(model, model_id="plan-model")
+
+        # Call one time
+        inference = self.my_grid.run_inference(
+            model_id="plan-model", dataset=th.tensor([1.0, 2])
+        )
+        assert inference == th.tensor([1000.0])
+
+        # Call one more time
+        inference = self.my_grid.run_inference(
+            model_id="plan-model", dataset=th.tensor([1.0, 2])
+        )
+        assert inference == th.tensor([1000.0])
 
     def test_grid_search(self):
         nodes = self.connect_nodes()

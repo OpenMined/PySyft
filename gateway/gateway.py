@@ -8,7 +8,9 @@ import sys
 import os
 
 PORT = os.environ["PORT"]
-app = create_app(debug=False)
+n_replica = os.getenv("REPLICAS", None)
+
+app = create_app(debug=False, n_replica=n_replica)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
