@@ -504,6 +504,8 @@ def test_fetch_plan_remote(hook, start_remote_worker):
     remote_proxy.close()
     server.terminate()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_plan_serde(hook):
     hook.local_worker.is_client_worker = False
