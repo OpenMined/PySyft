@@ -432,7 +432,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             state_ids = []
             for state_id in self.state_ids:
                 state_ids.append(
-                    self.owner._objects[state_id]
+                    self.owner.get_obj(state_id)
                     .copy()
                     .send(worker, garbage_collect_data=False)
                     .id_at_location
