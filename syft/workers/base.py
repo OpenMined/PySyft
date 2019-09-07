@@ -100,7 +100,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.auto_add = auto_add
         self.msg_history = list()
 
-        # For performance, we cache each
+        # For performance, we cache all possible message types
         self._message_router = {
             codes.MSGTYPE.CMD: self.execute_command,
             codes.MSGTYPE.PLAN_CMD: self.execute_plan_command,
@@ -111,6 +111,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+        }
+
+        self._plan_command_router = {
+            codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote,
+            codes.PLAN_CMDS.GET_PTR: self.get_ptr,
         }
 
         self.load_data(data)
@@ -441,12 +446,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Args:
             message: A tuple specifying the command and args.
         """
-        args, command_name = message
-        if command_name == "fetch_plan":
-            return self._fetch_plan_remote(*args)
-        elif command_name == "get_ptr":
-            return self.get_ptr(*args)
-        else:
+        command_name, args = message
+        try:
+            return self._plan_command_router[command_name](*args)
+        except KeyError:
             raise PlanCommandUnknownError(command_name)
 
     def send_command(

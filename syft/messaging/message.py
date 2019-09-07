@@ -439,5 +439,5 @@ class PlanCommandMessage(Message):
         """
         message, command_name = msg_tuple[1]
         return PlanCommandMessage(
-            sy.serde._detail(worker, message), sy.serde._detail(worker, command_name)
+            sy.serde._detail(worker, command_name), sy.serde._detail(worker, message)
         )
