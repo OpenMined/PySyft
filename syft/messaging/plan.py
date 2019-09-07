@@ -378,15 +378,6 @@ class Plan(ObjectStorage, torch.nn.Module):
                     return arg.location
         return sy.framework.hook.local_worker
 
-    def _replace_reference_ids(self, old_id):
-        # Replace ids that reference self.id
-        self.replace_ids(
-            from_ids=self.arg_ids, to_ids=self.arg_ids, from_worker=old_id, to_worker=self.id
-        )
-        self.replace_ids(
-            from_ids=self.result_ids, to_ids=self.result_ids, from_worker=old_id, to_worker=self.id
-        )
-
     def copy(self):
         """Creates a copy of a plan."""
         plan = Plan(
@@ -400,7 +391,8 @@ class Plan(ObjectStorage, torch.nn.Module):
             state_ids=self.state_ids,
         )
 
-        plan._replace_reference_ids(self.id)
+        # Replace occurences of the old id to the new plan id
+        plan.replace_worker_ids(self.id, plan.id)
 
         return plan
 
@@ -436,8 +428,10 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan.replace_ids(self.state_ids, state_ids)
             plan.state_ids = state_ids
 
-        plan._replace_reference_ids(self.id)
-        # Replace old owner id to the new owner id
+        # Replace occurences of the old id to the new plan id
+        plan.replace_worker_ids(self.id, plan.id)
+
+        # Replace ocurrences of the old owner id to the new owner id
         plan.replace_worker_ids(self.owner.id, worker.id)
 
         return plan
