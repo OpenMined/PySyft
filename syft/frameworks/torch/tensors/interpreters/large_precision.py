@@ -3,7 +3,7 @@ import math
 import torch
 
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
 

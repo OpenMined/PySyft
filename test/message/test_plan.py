@@ -431,6 +431,33 @@ def test_fetch_plan(hook):
     hook.local_worker.is_client_worker = True
 
 
+def test_fetch_plan_remote(hook, start_remote_worker):
+    hook.local_worker.is_client_worker = False
+
+    server, remote_proxy = start_remote_worker(id="test_fetch_plan_remote", hook=hook, port=8801)
+
+    @sy.func2plan(args_shape=[(1,)])
+    def plan_mult_3(data):
+        return data * 3
+
+    sent_plan = plan_mult_3.send(remote_proxy)
+
+    # Fetch plan
+    fetched_plan = remote_proxy.fetch_plan(sent_plan.id)
+    get_plan = sent_plan.get()
+
+    # Execute it locally
+    x = th.tensor([-1, 2, 3])
+    assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
+    assert fetched_plan.is_built
+    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+    hook.local_worker.is_client_worker = True
+
+    remote_proxy.close()
+    server.terminate()
+
+
 def test_plan_serde(hook):
     hook.local_worker.is_client_worker = False
 
