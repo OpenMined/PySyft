@@ -71,12 +71,6 @@ class WebsocketClientWorker(BaseWorker):
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
 
-    def get_ptr(self, obj_id):
-        message = messaging.PlanCommandMessage((obj_id,), "get_ptr")
-        serialized_message = sy.serde.serialize(message)
-        response = self._recv_msg(serialized_message)
-        return sy.serde.deserialize(response)
-
     def _send_msg(self, message: bin, location) -> bin:
         raise RuntimeError(
             "_send_msg should never get called on a ",
