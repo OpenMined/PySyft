@@ -417,15 +417,11 @@ class Plan(ObjectStorage, torch.nn.Module):
         Args:
             worker: Owner of the plan copy.
         """
-        plan = Plan(
-            sy.ID_PROVIDER.pop(),
-            worker,
-            self.name,
-            arg_ids=self.arg_ids,
-            result_ids=self.result_ids,
-            readable_plan=self.readable_plan,
-            is_built=self.is_built,
-        )
+        plan = self.copy()
+
+        # Replace ocurrences of the old owner id to the new owner id
+        plan.owner = worker
+        plan.replace_worker_ids(self.owner.id, worker.id)
 
         # Sent state to the new owner
         if self.state_ids:
@@ -440,12 +436,6 @@ class Plan(ObjectStorage, torch.nn.Module):
 
             plan.replace_ids(self.state_ids, state_ids)
             plan.state_ids = state_ids
-
-        # Replace occurences of the old id to the new plan id
-        plan.replace_worker_ids(self.id, plan.id)
-
-        # Replace ocurrences of the old owner id to the new owner id
-        plan.replace_worker_ids(self.owner.id, worker.id)
 
         return plan
 
