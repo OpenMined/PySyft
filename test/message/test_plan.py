@@ -412,20 +412,22 @@ def test_fetch_plan(hook):
 
     device_4 = sy.VirtualWorker(hook, id="device_4")
 
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_mult_3(data):
-        return data * 3
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def plan_mult_3(data, state):
+        bias = state.read("bias")
+        return data * 3 + bias
 
     plan_mult_3.send(device_4)
 
     # Fetch plan
-    fetched_plan = device_4.fetch_plan(plan_mult_3.id)
+    fetched_plan = plan_mult_3.owner.fetch_plan(plan_mult_3.id, device_4)
 
     # Execute it locally
-    x = th.tensor([-1, 2, 3])
-    assert (plan_mult_3(x) == th.tensor([-3, 6, 9])).all()
+    x = th.tensor([-1.0, 2, 3])
+    assert (plan_mult_3(x) == th.tensor([-2.0, 7, 10])).all()
+    assert (fetched_plan(x) == th.tensor([-2.0, 7, 10])).all()
+    assert fetched_plan.forward is None
     assert fetched_plan.is_built
-    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
 
     hook.local_worker.is_client_worker = True
 
@@ -461,7 +463,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
     plan.send(alice)
 
     # Fetch plan
-    fetched_plan = alice.fetch_plan(plan.id)
+    fetched_plan = plan.owner.fetch_plan(plan.id, alice)
 
     # Execute it locally
     x = th.tensor([-1.26])
@@ -483,19 +485,20 @@ def test_fetch_plan_remote(hook, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(id="test_fetch_plan_remote", hook=hook, port=8802)
 
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_mult_3(data):
-        return data * 3
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def plan_mult_3(data, state):
+        bias = state.read("bias")
+        return data * 3 + bias
 
     plan_mult_3.send(remote_proxy)
 
     # Fetch plan
-    fetched_plan = remote_proxy.fetch_plan(plan_mult_3.id)
+    fetched_plan = plan_mult_3.owner.fetch_plan(plan_mult_3.id, remote_proxy)
 
     # Execute it locally
-    x = th.tensor([-1, 2, 3])
-    assert (plan_mult_3(x) == th.tensor([-3, 6, 9])).all()
-    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+    x = th.tensor([-1.0, 2, 3])
+    assert (plan_mult_3(x) == th.tensor([-2.0, 7, 10])).all()
+    assert (fetched_plan(x) == th.tensor([-2.0, 7, 10])).all()
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 

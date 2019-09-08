@@ -794,7 +794,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         shape = self.send_msg(messaging.GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.create_shape(shape)
 
-    def fetch_plan(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
+    def fetch_plan(self, plan_id: Union[str, int], location) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
         This method is executed for local execution.
@@ -805,12 +805,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id in self._objects:
-            candidate = self._objects[plan_id]
-            if isinstance(candidate, sy.Plan):
-                return candidate.copy_to_worker(sy.hook.local_worker)
+        message = messaging.PlanCommandMessage((plan_id,), "fetch_plan")
+        plan = self.send_msg(message, location=location)
 
-        return None
+        plan.replace_worker_ids(location.id, self.id)
+
+        if plan.state_ids:
+            state_ids = []
+            for state_id in plan.state_ids:
+                state_elem = self.request_obj(state_id, location)
+                self.register_obj(state_elem)
+                state_ids.append(state_elem.id)
+            plan.replace_ids(plan.state_ids, state_ids)
+            plan.state_ids = state_ids
+
+        return plan
 
     def _fetch_plan_remote(self, plan_id: Union[str, int]) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
