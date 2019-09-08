@@ -2,13 +2,16 @@ import binascii
 import json
 import os
 import requests
-
+from requests_toolbelt.multipart import encoder
+import sys
 
 import torch as th
 import syft as sy
 from syft.workers import BaseWorker
 
 from grid import utils as gr_utils
+
+MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
 
 
 class GridClient(BaseWorker):
@@ -57,6 +60,26 @@ class GridClient(BaseWorker):
 
         return response
 
+    def _send_streaming_post(self, route, data=None):
+        """ Used to send large models / datasets using stream channel.
+            
+            Args:
+                route : Service endpoint
+                data : tensors / models to be uploaded.
+            Return:
+                response : response from server
+        """
+        # Build URL path
+        url = os.path.join(self.addr, "{}".format(route))
+
+        # Send data
+        session = requests.Session()
+        form = encoder.MultipartEncoder(data)
+        headers = {"Prefer": "respond-async", "Content-Type": form.content_type}
+        resp = session.post(url, headers=headers, data=form)
+        session.close()
+        return json.loads(resp.content)
+
     def _send_post(self, route, data=None, N: int = 10, unhexlify: bool = True):
         return self._send_http_request(
             route, data, requests.post, N=N, unhexlify=unhexlify
@@ -95,15 +118,25 @@ class GridClient(BaseWorker):
             res_model = model
 
         serialized_model = sy.serde.serialize(res_model).decode(self._encoding)
-        return self._send_post(
-            "serve-model/",
-            data={
-                "model": serialized_model,
-                "model_id": model_id,
-                "encoding": self._encoding,
-            },
-            unhexlify=False,
-        )
+        if sys.getsizeof(serialized_model) >= MODEL_LIMIT_SIZE:
+            return self._send_streaming_post(
+                "serve-model/",
+                data={
+                    "model": (model_id, serialized_model, "application/octet-stream"),
+                    "encoding": self._encoding,
+                    "model_id": model_id,
+                },
+            )
+        else:
+            return self._send_post(
+                "serve-model/",
+                data={
+                    "model": serialized_model,
+                    "model_id": model_id,
+                    "encoding": self._encoding,
+                },
+                unhexlify=False,
+            )
 
     def run_inference(self, model_id, data, N: int = 1):
         serialized_data = sy.serde.serialize(data)

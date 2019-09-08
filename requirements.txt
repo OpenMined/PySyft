@@ -11,6 +11,7 @@ syft
 websocket_client
 websockets>=7.0
 eventlet==0.25.0
+requests-toolbelt==0.9.1
 flask_sqlalchemy
 flask_migrate
 flask_testing
