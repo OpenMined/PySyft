@@ -257,7 +257,7 @@ def test_share_and_get(workers, x, expected):
 def test_share_add(workers):
     alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 
-    x = torch.tensor([5.])
+    x = torch.tensor([5.0])
     expected = x + x
 
     x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
