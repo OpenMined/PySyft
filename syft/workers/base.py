@@ -447,9 +447,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A tuple specifying the command and args.
         """
         command_name, args = message
-        try:
+        if command_name in self._plan_command_router:
             return self._plan_command_router[command_name](*args)
-        except KeyError:
+        else:
             raise PlanCommandUnknownError(command_name)
 
     def send_command(
@@ -537,7 +537,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
             raise GetNotPermittedError()
         else:
-            return obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
+            return obj.create_pointer(garbage_collect_data=False).wrap()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
