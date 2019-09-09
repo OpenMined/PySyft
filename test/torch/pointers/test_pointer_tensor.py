@@ -2,7 +2,7 @@ import torch
 import torch as th
 import syft
 
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
 
