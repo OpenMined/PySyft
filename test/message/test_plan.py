@@ -407,25 +407,24 @@ def test_stateful_plan_multiple_workers(workers):
     assert (x_abs == th.tensor([2, 10, 4])).all()
 
 
-def test_fetch_plan(hook):
+def test_fetch_plan(hook, workers):
+    alice = workers["alice"]
+
     hook.local_worker.is_client_worker = False
 
-    device_4 = sy.VirtualWorker(hook, id="device_4")
+    @sy.func2plan(args_shape=[(1,)])
+    def plan(data):
+        return data * 3
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
-    def plan_mult_3(data, state):
-        bias = state.read("bias")
-        return data * 3 + bias
-
-    plan_mult_3.send(device_4)
+    plan.send(alice)
 
     # Fetch plan
-    fetched_plan = plan_mult_3.owner.fetch_plan(plan_mult_3.id, device_4)
+    fetched_plan = plan.owner.fetch_plan(plan.id, alice)
 
     # Execute it locally
     x = th.tensor([-1.0, 2, 3])
-    assert (plan_mult_3(x) == th.tensor([-2.0, 7, 10])).all()
-    assert (fetched_plan(x) == th.tensor([-2.0, 7, 10])).all()
+    assert (plan(x) == th.tensor([-3.0, 6, 9])).all()
+    assert (fetched_plan(x) == th.tensor([-3.0, 6, 9])).all()
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
