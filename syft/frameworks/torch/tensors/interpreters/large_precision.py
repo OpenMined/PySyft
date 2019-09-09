@@ -2,7 +2,12 @@ import numpy as np
 import math
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.generic.frameworks.hook.hook_args import (
+    register_type_rule,
+    two_fold,
+    register_forward_func,
+    register_backward_func,
+)
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
@@ -318,3 +323,10 @@ type_precision = {
     torch.int64: 64,
     torch.long: 64,
 }
+
+# Register the tensor with hook_args.py
+register_type_rule({LargePrecisionTensor: two_fold})
+register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)})
+register_backward_func(
+    {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._lpt_backward_func(i, kwargs)}
+)
