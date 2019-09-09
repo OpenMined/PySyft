@@ -2,8 +2,6 @@ import numpy as np
 import math
 import torch
 
-from syft.frameworks.torch.hook import hook_args
-
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
@@ -319,12 +317,3 @@ type_precision = {
     torch.int64: 64,
     torch.long: 64,
 }
-
-# Register the tensor with hook_args.py
-hook_args.register_type_rule({LargePrecisionTensor: hook_args.one})
-hook_args.register_forward_func(
-    {LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)}
-)
-hook_args.register_backward_func(
-    {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._lpt_backward_func(i, kwargs)}
-)
