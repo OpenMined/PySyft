@@ -4,12 +4,13 @@ from typing import TYPE_CHECKING
 
 import syft
 from syft import exceptions
-from syft import messaging
+from syft.messaging.message import ForceObjectDeleteMessage
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.object import AbstractObject
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers import BaseWorker
+    from syft.workers.base import BaseWorker
 
 
 class ObjectPointer(AbstractObject):
@@ -97,7 +98,7 @@ class ObjectPointer(AbstractObject):
         """
         try:
             cmd, _, args, kwargs = command
-            _ = syft.frameworks.torch.hook_args.unwrap_args_from_function(cmd, args, kwargs)
+            _ = hook_args.unwrap_args_from_function(cmd, args, kwargs)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
@@ -216,9 +217,7 @@ class ObjectPointer(AbstractObject):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(
-                    messaging.ForceObjectDeleteMessage(self.id_at_location), self.location
-                )
+                self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:

@@ -1,4 +1,5 @@
 import syft
+from syft.generic.frameworks.hook import hook_args
 
 
 class Module(object):
@@ -17,9 +18,9 @@ class Overloaded:
         hook args and response for methods that hold the @overloaded.method decorator
         """
 
-        def hook_args(self, *args, **kwargs):
+        def _hook_method_args(self, *args, **kwargs):
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr.__name__, self, args, kwargs
             )
 
@@ -27,13 +28,13 @@ class Overloaded:
             response = attr(self, new_self, *new_args, **new_kwargs)
 
             # Put back SyftTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr.__name__, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
             )
 
             return response
 
-        return hook_args
+        return _hook_method_args
 
     @staticmethod
     def overload_function(attr):
@@ -41,7 +42,7 @@ class Overloaded:
         hook args and response for functions that hold the @overloaded.function decorator
         """
 
-        def hook_args(*args, **kwargs):
+        def _hook_function_args(*args, **kwargs):
 
             # TODO have a better way to infer the type of tensor -> this is implies
             # that the first argument is a tensor (even if this is the case > 99%)
@@ -49,7 +50,7 @@ class Overloaded:
             cls = type(tensor)
 
             # Replace all syft tensor with their child attribute
-            new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
+            new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
                 attr.__name__, args, kwargs
             )
 
@@ -57,13 +58,13 @@ class Overloaded:
             response = attr(*new_args, **new_kwargs)
 
             # Put back SyftTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr.__name__, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
             )
 
             return response
 
-        return hook_args
+        return _hook_function_args
 
     @staticmethod
     def overload_module(attr):

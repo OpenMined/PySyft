@@ -3,6 +3,7 @@ import torch
 
 import syft
 from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from . import gradients
 
@@ -133,16 +134,14 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+                new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                     name, self, args, kwargs
                 )
 
                 result = getattr(new_self, name)(*new_args, **new_kwargs)
 
                 # Put back SyftTensor on the tensors found in the response
-                result = syft.frameworks.torch.hook_args.hook_response(
-                    name, result, wrap_type=type(self)
-                )
+                result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
                 result.grad_fn.result = result
 
@@ -239,11 +238,8 @@ class AutogradTensor(AbstractTensor):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -252,7 +248,7 @@ class AutogradTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back AutogradTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
 

@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 from syft.exceptions import RemoteObjectFoundError
 
@@ -47,8 +47,8 @@ def test_pointer_found_exception(workers):
 
 
 def test_build_get_child_type():
-    from syft.frameworks.torch.hook.hook_args import build_rule
-    from syft.frameworks.torch.hook.hook_args import build_get_tensor_type
+    from syft.generic.frameworks.hook.hook_args import build_rule
+    from syft.generic.frameworks.hook.hook_args import build_get_tensor_type
 
     x = torch.Tensor([1, 2, 3])
     args = (x, [[1, x]])
