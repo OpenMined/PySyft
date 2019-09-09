@@ -12,7 +12,7 @@ import torch
 import websockets
 
 import syft as sy
-from syft.federated import FederatedClient
+from syft.federated.federated_client import FederatedClient
 from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 

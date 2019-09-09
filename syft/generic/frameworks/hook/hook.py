@@ -7,11 +7,12 @@ import types
 from typing import List
 
 import syft
-from syft.generic.pointers import PointerTensor
-from syft.generic.pointers import MultiPointerTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
-from syft.workers import BaseWorker
+from syft.workers.base import BaseWorker
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
@@ -296,9 +297,8 @@ class FrameworkHook(ABC):
             """
             Operate the hooking
             """
-            # TODO: I can't manage the import issue, can you?
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -306,7 +306,7 @@ class FrameworkHook(ABC):
             response = getattr(new_self, attr)(*new_args, **new_kwargs)
 
             # Put back SyftTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
             )
 
@@ -347,7 +347,7 @@ class FrameworkHook(ABC):
             else:  # means that there is a wrapper to remove
                 try:
                     # Replace all torch tensor with their child attribute
-                    new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+                    new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                         method_name, self, args, kwargs
                     )
                 except BaseException as e:
@@ -363,7 +363,7 @@ class FrameworkHook(ABC):
                     return self
 
                 # Put back the wrappers where needed
-                response = syft.frameworks.torch.hook_args.hook_response(
+                response = hook_args.hook_response(
                     method_name, response, wrap_type=type(self), new_self=self
                 )
 
@@ -474,7 +474,7 @@ class FrameworkHook(ABC):
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -483,7 +483,7 @@ class FrameworkHook(ABC):
                 results[k] = v.__getattribute__(attr)(*dispatch(new_args, k), **new_kwargs)
 
             # Put back MultiPointerTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr, results, wrap_type=MultiPointerTensor, wrap_args=self.get_class_attributes()
             )
 
