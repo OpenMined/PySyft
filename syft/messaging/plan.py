@@ -10,9 +10,10 @@ import syft as sy
 from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object_storage import ObjectStorage
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -374,7 +375,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         """
         for arg in args:
             if isinstance(arg, FrameworkTensor):
-                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
                     return arg.location
         return sy.framework.hook.local_worker
 
@@ -594,7 +595,7 @@ class Plan(ObjectStorage, torch.nn.Module):
     def _get_plan_output(self, result_ids, return_ptr=False):
         responses = []
         for return_id in result_ids:
-            response = sy.PointerTensor(
+            response = PointerTensor(
                 location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())

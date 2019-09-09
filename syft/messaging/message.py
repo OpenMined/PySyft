@@ -9,7 +9,7 @@ All Syft message types extend the Message class.
 
 import syft as sy
 from syft import codes
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 
 
 class Message:
