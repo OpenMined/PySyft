@@ -736,29 +736,27 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
 
-        shared_tensor = self.copy()
-
         if self.has_child():
+            chain = self.child.copy()
+            chain.owner = self.child.owner
+
             kwargs = (
-                {"requires_grad": requires_grad}
-                if isinstance(shared_tensor.child, syft.PointerTensor)
-                else {}
+                {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
-            shared_tensor.child = shared_tensor.child.share(
+            shared_tensor = chain.share(
                 *owners, field=field, crypto_provider=crypto_provider, **kwargs
             )
-            if no_wrap:
-                return shared_tensor.child
         else:
             shared_tensor = (
                 syft.AdditiveSharingTensor(
                     field=field, crypto_provider=crypto_provider, owner=self.owner
                 )
-                .on(shared_tensor)
+                .on(self.copy())
                 .child.init_shares(*owners)
             )
-            if not no_wrap:
-                shared_tensor = shared_tensor.wrap()
+
+        if not no_wrap:
+            shared_tensor = shared_tensor.wrap()
 
         if requires_grad and not (
             shared_tensor.is_wrapper and isinstance(shared_tensor.child, syft.PointerTensor)

@@ -28,12 +28,20 @@ def test_pointer_registration(workers, hook):
     me.is_client_worker = True
 
 
+def test_fix_prec_tensor_registration(hook):
+    me = hook.local_worker
+    me.is_client_worker = False
+    x_sh = th.tensor([1.0, 2, 3]).fix_prec()
+    assert x_sh.id in me._objects
+
+    me.is_client_worker = True
+
+
 def test_shared_tensor_registration(workers, hook):
     alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
     me = hook.local_worker
     me.is_client_worker = False
-    # TODO: should we wrap AST internally?
-    x_sh = th.tensor([1, 2, 3]).fix_prec().share(alice, bob, crypto_provider=charlie).wrap()
+    x_sh = th.tensor([1.0, 2, 3]).fix_prec().share(alice, bob, crypto_provider=charlie)
     assert x_sh.id in me._objects
 
     me.is_client_worker = True
@@ -49,8 +57,7 @@ def test_shared_tensor_registration_pointer(workers, hook):
     me = hook.local_worker
     me.is_client_worker = False
     x_ptr = th.tensor([1, 2, 3]).send(alice)
-    # TODO: should we wrap AST internally?
-    x_sh = x_ptr.fix_prec().share(bob, charlie, crypto_provider=james).wrap()
+    x_sh = x_ptr.fix_prec().share(bob, charlie, crypto_provider=james)
     assert x_sh.id in me._objects
 
     me.is_client_worker = True
