@@ -43,17 +43,28 @@ import zstd
 
 import syft
 from syft import dependency_check
-from syft import messaging
-from syft.federated import TrainConfig
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.generic import pointers
+from syft.federated.train_config import TrainConfig
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.messaging.plan import Plan
+from syft.messaging.message import Message
+from syft.messaging.message import Operation
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import ObjectRequestMessage
+from syft.messaging.message import IsNoneMessage
+from syft.messaging.message import GetShapeMessage
+from syft.messaging.message import ForceObjectDeleteMessage
+from syft.messaging.message import SearchMessage
+from syft.messaging.message import FetchPlanMessage
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
-from syft.workers import AbstractWorker
-from syft.workers import BaseWorker
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -82,22 +93,22 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     FixedPrecisionTensor,
     CRTPrecisionTensor,
     LoggingTensor,
-    pointers.MultiPointerTensor,
-    messaging.Plan,
-    pointers.PointerTensor,
-    pointers.ObjectWrapper,
+    MultiPointerTensor,
+    Plan,
+    PointerTensor,
+    ObjectWrapper,
     TrainConfig,
     BaseWorker,
     AutogradTensor,
-    messaging.Message,
-    messaging.Operation,
-    messaging.ObjectMessage,
-    messaging.ObjectRequestMessage,
-    messaging.IsNoneMessage,
-    messaging.GetShapeMessage,
-    messaging.ForceObjectDeleteMessage,
-    messaging.SearchMessage,
-    messaging.FetchPlanMessage,
+    Message,
+    Operation,
+    ObjectMessage,
+    ObjectRequestMessage,
+    IsNoneMessage,
+    GetShapeMessage,
+    ForceObjectDeleteMessage,
+    SearchMessage,
+    FetchPlanMessage,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list

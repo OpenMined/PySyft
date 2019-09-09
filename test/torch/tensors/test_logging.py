@@ -2,7 +2,7 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 
 
 def test_wrap():
