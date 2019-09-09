@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 
 def test_wrap(workers):

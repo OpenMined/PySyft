@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 
 
 def test_wrap(workers):

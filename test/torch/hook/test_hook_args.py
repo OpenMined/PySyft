@@ -1,13 +1,11 @@
-from syft.frameworks.torch.hook import hook_args
-from syft.generic import pointers
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.pointer_tensor import PointerTensor
 import torch
 import numpy as np
 
 
 def test_build_rule_syft_tensors_and_pointers():
-    pointer = pointers.PointerTensor(
-        id=1000, location="location", owner="owner", garbage_collect_data=False
-    )
+    pointer = PointerTensor(id=1000, location="location", owner="owner", garbage_collect_data=False)
     result = hook_args.build_rule(([torch.tensor([1, 2]), pointer], 42))
     assert result == ([1, 1], 0)
 

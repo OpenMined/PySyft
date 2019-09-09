@@ -1,8 +1,5 @@
 from syft.workers.base import BaseWorker
-from syft.federated import FederatedClient
-from syft.workers import AbstractWorker
-import syft as sy
-from syft.generic import pointers
+from syft.federated.federated_client import FederatedClient
 
 
 class VirtualWorker(BaseWorker, FederatedClient):
