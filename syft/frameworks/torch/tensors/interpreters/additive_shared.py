@@ -103,6 +103,12 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return None
 
+    def backward(self, *args, **kwargs):
+        """Calling backward on Additive Shared Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an AST (for example in create_grad_objects), so
+        we just ignore the call."""
+        pass
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
