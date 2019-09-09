@@ -208,22 +208,29 @@ def _norm_mpc(t):
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
+    Q = 10000000
 
     norm_sq = (t * t).sum().squeeze()
 
     # Random big number
-    Q = 100000000
     r = (
-        (torch.rand(1) * Q)
-        .long()
-        .fix_prec(precision_fractional=prec_frac)
+        torch.LongTensor([0])
+        .fix_precision(precision_fractional=prec_frac)
         .share(*workers, crypto_provider=crypto_prov)
+        .random_(0, Q)
     )
 
     # Compute masked norm
     masked_norm_sq = r ** 2 * norm_sq
 
-    # Send to crypto_provider and get compute square root
-    # masked_norm_sq = masked_norm_sq.send(crypto_provider)
-    # masked_norm_sq = get().float_prec()
-    # masked_norm = torch.sqrt(masked_norm_sq)
+    # Get compute square root
+    masked_norm_sq = masked_norm_sq.get().float_precision()
+    masked_norm = torch.sqrt(masked_norm_sq)
+
+    # Secret share and compute unmasked norm in MPC
+    masked_norm = masked_norm.fix_precision(precision_fractional=prec_frac).share(
+        *workers, crypto_provider=crypto_prov
+    )
+    norm = masked_norm / r
+
+    return norm.squeeze()
