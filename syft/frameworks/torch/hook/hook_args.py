@@ -66,7 +66,7 @@ forward_func = {
     AdditiveSharingTensor: lambda i: i.child,
     MultiPointerTensor: lambda i: i.child,
     CRTPrecisionTensor: lambda i: i.child,
-    LargePrecisionTensor: lambda i: _lpt_forward_func(i),
+    LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i),
     "my_syft_tensor_type": lambda i: i.child,
 }
 
@@ -79,28 +79,13 @@ backward_func = {
     PointerTensor: lambda i: i,
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     FixedPrecisionTensor: lambda i, **kwargs: FixedPrecisionTensor(**kwargs).on(i, wrap=False),
-    LargePrecisionTensor: lambda i, **kwargs: _lpt_backward_func(i, kwargs),
+    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._lpt_backward_func(i, kwargs),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     AdditiveSharingTensor: lambda i, **kwargs: AdditiveSharingTensor(**kwargs).on(i, wrap=False),
     MultiPointerTensor: lambda i, **kwargs: MultiPointerTensor(**kwargs).on(i, wrap=False),
     CRTPrecisionTensor: lambda i, **kwargs: CRTPrecisionTensor(**kwargs).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
-
-
-def _lpt_forward_func(i):
-    if isinstance(i.child, AdditiveSharingTensor):
-        return i.child
-    return i._internal_representation_to_large_ints()
-
-
-def _lpt_backward_func(i, kwargs):
-    if isinstance(i, AdditiveSharingTensor):
-        return LargePrecisionTensor(**kwargs).on(i, wrap=False)
-
-    return LargePrecisionTensor(**kwargs).on(
-        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
-    )
 
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because

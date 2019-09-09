@@ -36,7 +36,6 @@ class LargePrecisionTensor(AbstractTensor):
         tags=None,
         description=None,
         field: int = 2 ** 512,
-        internal_field: int = 2 ** 62,
         base: int = 10,
         precision_fractional=0,
         internal_type=torch.int32,
@@ -51,20 +50,18 @@ class LargePrecisionTensor(AbstractTensor):
             tags (list): list of tags for searching.
             description (str): a description of this tensor.
             field (int): size of the arithmetic field used to truncate and scale the large numbers
-            internal_field (int): size of the arithmetic field that is applied when sharing.
             base (int): The base that will be used to to calculate the precision.
             precision_fractional (int): The precision required by the caller.
             internal_type (dtype): The large tensor will be stored using tensor of this type.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        if internal_field is not None:
-            assert internal_field <= 2 ** 62, "internal_field max value is 2 ** 62"
         self.field = field
-        self.internal_field = internal_field
         self.base = base
         self.internal_type = internal_type
         self.precision_fractional = precision_fractional
         self.verbose = verbose
+        # This is the maximum size of the arithmetic field that is applied when sharing
+        self.internal_field = 2 ** 62
 
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
@@ -100,7 +97,6 @@ class LargePrecisionTensor(AbstractTensor):
         """
         return {
             "field": self.field,
-            "internal_field": self.internal_field,
             "base": self.base,
             "internal_type": self.internal_type,
             "precision_fractional": self.precision_fractional,
@@ -108,13 +104,6 @@ class LargePrecisionTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, self_, other):
-        # At this point we can have LPT>AST
-        # If that's the case, delegate into AST to do the operation.
-        # TODO I don't like the idea of this dependency here. An LPT should not know about AST
-        if hasattr(self_, "child") and isinstance(self_.child, AdditiveSharingTensor):
-            self_ = self_.child
-        if hasattr(other, "child") and isinstance(other.child, AdditiveSharingTensor):
-            other = other.child
         return self_ + other
 
     __add__ = add
@@ -147,7 +136,7 @@ class LargePrecisionTensor(AbstractTensor):
     def mul(self, self_, other):
         if isinstance(other, int):
             return self_ * other
-        else:
+        elif isinstance(self_, np.ndarray) and isinstance(other, np.ndarray):
             res = (self_ * other) % self.field
 
             # We need to truncate the result
@@ -158,6 +147,8 @@ class LargePrecisionTensor(AbstractTensor):
             trunc_res = np.where(gate, neg_nums, pos_nums)
 
             return trunc_res
+        else:
+            return self_ + other
 
     __mul__ = mul
 
@@ -260,7 +251,6 @@ class LargePrecisionTensor(AbstractTensor):
 
     def _internal_representation_to_large_ints(self) -> np.array:
         """Creates an numpy array containing the objective large numbers."""
-        # At this point we can have LPT>AST
         ndarray = self.child.numpy()
         ndarray = ndarray.reshape(-1, ndarray.shape[-1])
         result = []
@@ -287,14 +277,29 @@ class LargePrecisionTensor(AbstractTensor):
 
         return _restore_recursive(number_parts, 0, 2 ** bits)
 
+    @staticmethod
+    def _lpt_forward_func(tensor):
+        if hasattr(tensor, "child") and isinstance(tensor.child, torch.Tensor):
+            return tensor._internal_representation_to_large_ints()
+        return tensor.child
+
+    @staticmethod
+    def _lpt_backward_func(tensor, kwargs):
+        if isinstance(tensor, np.ndarray):
+            return LargePrecisionTensor(**kwargs).on(
+                LargePrecisionTensor.create_tensor_from_numpy(tensor, **kwargs), wrap=False
+            )
+        return LargePrecisionTensor(**kwargs).on(tensor, wrap=False)
+
     def share(self, *owners, field=None, crypto_provider=None):
         if field is None:
             field = self.internal_field
         else:
+            assert field <= self.internal_field, "internal_field max value is 2 ** 62"
             assert (
                 field == self.internal_field
             ), "When sharing a LargePrecisionTensor, the field of the resulting AdditiveSharingTensor \
-                must be the same as the one of the original tensor"
+                    must be the same as the one of the original tensor"
 
         self.child = self.child.share(
             *owners, field=field, crypto_provider=crypto_provider, no_wrap=True

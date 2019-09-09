@@ -263,8 +263,48 @@ def test_share_add(workers):
     x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
     x_shared = x.share(alice, bob, crypto_provider=james)
 
-    y = x_shared + x_shared
+    y = (x_shared + x_shared).get()
 
-    y = y.get()
+    assert torch.all(torch.eq(expected, y))
+
+
+def test_share_sub(workers):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    x = torch.tensor([5.0])
+    expected = x - x
+
+    x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    x_shared = x.share(alice, bob, crypto_provider=james)
+
+    y = (x_shared - x_shared).get()
+
+    assert torch.all(torch.eq(expected, y))
+
+
+def test_share_mul(workers):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    x = torch.tensor([5.0])
+    expected = x * x
+
+    x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    x_shared = x.share(alice, bob, crypto_provider=james)
+
+    y = (x_shared * x_shared).get()
+
+    assert torch.all(torch.eq(expected, y))
+
+
+def test_share_mod(workers):
+    alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
+
+    x = torch.tensor([5.0])
+    expected = x % 2
+
+    x = x.fix_prec(internal_type=torch.int16, precision_fractional=128)
+    x_shared = x.share(alice, bob, crypto_provider=james)
+
+    y = (x_shared % 2).get()
 
     assert torch.all(torch.eq(expected, y))
