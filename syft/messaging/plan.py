@@ -775,7 +775,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             Plan.
         """
 
-        if len(self.locations) > 0:
+        if len(self.locations):
             self.locations = []
             self.ptr_plans = {}
         else:
