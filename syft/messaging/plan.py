@@ -441,6 +441,17 @@ class Plan(ObjectStorage):
 
         self.replace_ids(self.result_ids, result_ids)
         self.result_ids = result_ids
+    
+    def has_args_fulfilled(self):
+        """ Check if all the arguments of the plan are ready or not.
+        It might be the case that we still need to wait for some arguments in
+        case some of them are Promises.
+        """
+        for arg_id in self.arg_ids:
+            if arg_id not in self.args_fulfilled:
+                return False
+
+        return True
 
     def _execute_plan(self):
         for message in self.readable_plan:

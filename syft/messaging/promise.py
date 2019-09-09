@@ -75,18 +75,11 @@ class Promise(ABC):
 
             plan.args_fulfilled[self.obj_id] = obj
 
-            plan_missing_arg = False
-            for arg_id in plan.arg_ids:
-                if arg_id not in plan.args_fulfilled:
-                    plan_missing_arg = True
-
-            if not plan_missing_arg:
-
+            if plan.has_args_fulfilled():
                 args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
                 result = plan(*args)
                 self.result_promise.parent().keep(result)
 
-        print(obj)
         if self.id in self.owner._objects:
             self.owner.rm_obj(self.id)
             self.owner.register_obj(obj)
