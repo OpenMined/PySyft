@@ -159,15 +159,51 @@ class State(object):
 
         self.keys = list(dict_state.keys())
 
+    def is_missing_grad(self, t):
+        return isinstance(t, torch.nn.Parameter) and t.grad is None
+
+    def create_grad_objects(self, p):
+        o = p.sum()
+        o.backward()
+        if p.grad is not None:
+            p.grad -= p.grad
+
     def send(self, location, **kwargs):
         for key in self.keys:
             t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
             t.send_(location, **kwargs)
 
     def get(self):
         for key in self.keys:
             t = getattr(self.plan, key)
             t.get_()
+
+    def fix_precision_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            setattr(self.plan, key, t.fix_precision(*args, **kwargs))
+
+    def float_precision_(self):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            t.float_precision_()
+
+    def share_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            t.share_(*args, **kwargs)
 
 
 class Plan(ObjectStorage, torch.nn.Module):
@@ -739,10 +775,33 @@ class Plan(ObjectStorage, torch.nn.Module):
             Plan.
         """
 
-        self.locations = []
-        self.ptr_plans = {}
+        if len(self.locations) > 0:
+            self.locations = []
+            self.ptr_plans = {}
+        else:
+            self.state.get()
 
         return self
+
+    def fix_precision_(self, *args, **kwargs):
+        self.state.fix_precision_(*args, **kwargs)
+        return self
+
+    fix_precision = fix_precision_
+    fix_prec = fix_precision_
+
+    def float_precision_(self):
+        self.state.float_precision_()
+        return self
+
+    float_precision = float_precision_
+    float_prec = float_precision_
+
+    def share_(self, *args, **kwargs):
+        self.state.share_(*args, **kwargs)
+        return self
+
+    share = share_
 
     def describe(self, description: str) -> "Plan":
         self.description = description
