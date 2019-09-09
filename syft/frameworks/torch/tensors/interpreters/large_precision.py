@@ -2,12 +2,8 @@ import numpy as np
 import math
 import torch
 
-from syft.generic.frameworks.hook.hook_args import (
-    register_type_rule,
-    two_fold,
-    register_forward_func,
-    register_backward_func,
-)
+from syft.frameworks.torch.hook import hook_args
+
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
@@ -325,8 +321,8 @@ type_precision = {
 }
 
 # Register the tensor with hook_args.py
-register_type_rule({LargePrecisionTensor: two_fold})
-register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)})
-register_backward_func(
+hook_args.register_type_rule({LargePrecisionTensor: hook_args.one})
+hook_args.register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)})
+hook_args.register_backward_func(
     {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._lpt_backward_func(i, kwargs)}
 )
