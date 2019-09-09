@@ -37,11 +37,15 @@ class AbstractTensor(AbstractObject):
             if not hasattr(tensor, "child"):
                 tensor = tensor.wrap()
 
+            # We usually call .on() on newly created tensor so it's not a sacrilege
+            # to rewrite its id
+            self.id = tensor.id
+
             self.child = tensor.child
             tensor.child = self
             return tensor
 
-    def wrap(self) -> FrameworkTensorType:
+    def wrap(self, register=True) -> FrameworkTensorType:
         """Wraps the class inside torch tensor.
 
         Because PyTorch does not (yet) support functionality for creating
@@ -65,6 +69,9 @@ class AbstractTensor(AbstractObject):
 
         if self.id is None:
             self.id = sy.ID_PROVIDER.pop()
+
+        if self.owner is not None and register:
+            self.owner.register_obj(wrapper, obj_id=self.id)
 
         return wrapper
 
