@@ -1,10 +1,11 @@
 import syft as sy
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 import weakref
 
 from syft.generic.tensor import AbstractTensor
 from syft.generic.tensor import initialize_tensor
 from syft.messaging.promise import Promise
+from syft.generic.frameworks.hook import hook_args
 
 
 class PromiseTensor(AbstractTensor, Promise):
@@ -74,7 +75,7 @@ class PromiseTensor(AbstractTensor, Promise):
         # the remote worker when tracing the operation func above.
         # Thus, we need to remove it.
         sy.local_worker.send_msg(
-            location=args[0], message=sy.messaging.ForceObjectDeleteMessage(operation.result_ids[0])
+            location=args[0], message=sy.messaging.message.ForceObjectDeleteMessage(operation.result_ids[0])
         )
 
         # The object we removed in the last line causes a garbage
@@ -247,3 +248,7 @@ class Promises:
     @staticmethod
     def BoolTensor(shape, args, **kwargs):
         return CreatePromiseTensor(shape, tensor_type="torch.BoolTensor", *args, **kwargs)
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(PromiseTensor)

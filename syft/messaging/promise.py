@@ -6,7 +6,7 @@ the plan has all of the inputs it requires). """
 import syft as sy
 
 from abc import ABC
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 
 
 class Promise(ABC):

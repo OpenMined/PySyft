@@ -12,7 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
-from syft.frameworks.torch.tensors.interpreters import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -472,7 +472,6 @@ class TorchHook(FrameworkHook):
 
         return overloaded_attr
 
-"""
     def _hook_promise_tensor(hook_self):
 
         methods_to_hook = hook_self.to_auto_overload[torch.Tensor]
@@ -488,7 +487,7 @@ class TorchHook(FrameworkHook):
                         arg_shapes.append(arg._shape)
                         arg_ids.append(arg.obj_id)
 
-                    @sy.func2plan(arg_shapes)
+                    @syft.func2plan(arg_shapes)
                     def operation(self, *args, **kwargs):
                         return getattr(self, method_name)(*args, **kwargs)
 
@@ -519,7 +518,6 @@ class TorchHook(FrameworkHook):
                 return method
 
             setattr(PromiseTensor, method_name, generate_method(method_name))
-"""
 
     def _hook_tensor(hook_self):
         """Hooks the function torch.tensor()

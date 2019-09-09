@@ -393,7 +393,7 @@ class TorchTensor(AbstractTensor):
             # so we set to_send to be child if a wrapper exists.
             to_send = self
             if hasattr(self, "child"):
-                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor):
+                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor):
                     to_send = self.child
 
             ptr = self.owner.send(
@@ -404,10 +404,8 @@ class TorchTensor(AbstractTensor):
                 garbage_collect_data=garbage_collect_data,
             )
 
-            print(ptr)
-
             if hasattr(self, "child"):
-                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.PromiseTensor):
+                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor):
                     self.child.create_send_plan(location)
 
             ptr.description = self.description
