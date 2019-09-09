@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from syft.workers import BaseWorker
+from syft.workers.base import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
