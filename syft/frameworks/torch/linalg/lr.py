@@ -12,7 +12,10 @@ import random
 class BloomRegressor:
     """
     Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
-    It performs linear regression using Secured Multi-Party Computation
+    It performs linear regression using Secured Multi-Party Computation.
+    While the training is performed in SMPC, the final regression coefficients
+    are public at the end and predictions are made in clear on local or pointer
+    Tensors.
 
     Reference: Section 2 of https://arxiv.org/abs/1901.09531
 
