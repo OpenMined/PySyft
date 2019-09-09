@@ -322,7 +322,9 @@ type_precision = {
 
 # Register the tensor with hook_args.py
 hook_args.register_type_rule({LargePrecisionTensor: hook_args.one})
-hook_args.register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)})
+hook_args.register_forward_func(
+    {LargePrecisionTensor: lambda i: LargePrecisionTensor._lpt_forward_func(i)}
+)
 hook_args.register_backward_func(
     {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._lpt_backward_func(i, kwargs)}
 )
