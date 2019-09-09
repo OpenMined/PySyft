@@ -10,7 +10,7 @@ def inv_sym(t):
     Algorithm reference: https://arxiv.org/abs/1111.4144 - Section IV
 
     Args:
-        t: symmetric 2d tensor
+        t: symmetric 2-dim tensor
 
     Returns:
         t_inv: inverse of t as 2-dim tensor
@@ -36,7 +36,7 @@ def _ldl(t):
     This function performs the LDLt decomposition of a symmetric matrix (2-dim tensor)
 
     Args:
-        t: symmetric 2d tensor
+        t: symmetric 2-dim tensor
 
     Returns:
         l: lower triangular matrix as a 2-dim tensor with same type as t

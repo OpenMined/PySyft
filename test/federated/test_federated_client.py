@@ -3,8 +3,9 @@ import pytest
 import torch
 
 import syft as sy
-from syft import federated
-from syft.generic import pointers
+from syft.federated.federated_client import FederatedClient
+from syft.federated.train_config import TrainConfig
+from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.frameworks.torch.federated import utils
 
 PRINT_IN_UNITTESTS = False
@@ -18,7 +19,7 @@ torch.backends.cudnn.deterministic = True
 
 
 def test_add_dataset():
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
 
     dataset = "my_dataset"
     fed_client.add_dataset(dataset, "string_dataset")
@@ -27,7 +28,7 @@ def test_add_dataset():
 
 
 def test_add_dataset_with_duplicate_key():
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
 
     dataset = "my_dataset"
     fed_client.add_dataset(dataset, "string_dataset")
@@ -39,7 +40,7 @@ def test_add_dataset_with_duplicate_key():
 
 
 def test_remove_dataset():
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
 
     dataset = "my_dataset"
     key = "string_dataset"
@@ -53,10 +54,10 @@ def test_remove_dataset():
 
 
 def test_set_obj_train_config():
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
     fed_client.optimizer = True
 
-    train_config = federated.TrainConfig(id=100, model=None, loss_fn=None)
+    train_config = TrainConfig(id=100, model=None, loss_fn=None)
 
     fed_client.set_obj(train_config)
 
@@ -65,7 +66,7 @@ def test_set_obj_train_config():
 
 
 def test_set_obj_other():
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
 
     dummy_data = torch.tensor(42)
     dummy_data.id = 43
@@ -103,7 +104,7 @@ def train_model(fed_client, fit_dataset_key, available_dataset_key, nr_rounds): 
 def test_fit(fit_dataset_key, epochs):
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
     dataset = sy.BaseDataset(data, target)
     dataset_key = "gaussian_mixture"
     fed_client.add_dataset(dataset, key=dataset_key)
@@ -128,9 +129,9 @@ def test_fit(fit_dataset_key, epochs):
     model_untraced = Net()
     model = torch.jit.trace(model_untraced, data)
     model_id = 0
-    model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
+    model_ow = ObjectWrapper(obj=model, id=model_id)
     loss_id = 1
-    loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
+    loss_ow = ObjectWrapper(obj=loss_fn, id=loss_id)
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
@@ -178,7 +179,7 @@ def test_fit(fit_dataset_key, epochs):
 def test_evaluate():  # pragma: no cover
     data, target = utils.iris_data_partial()
 
-    fed_client = federated.FederatedClient()
+    fed_client = FederatedClient()
     dataset = sy.BaseDataset(data, target)
     dataset_key = "iris"
     fed_client.add_dataset(dataset, key=dataset_key)
@@ -211,9 +212,9 @@ def test_evaluate():  # pragma: no cover
 
     model = torch.jit.trace(model_untraced, data)
     model_id = 0
-    model_ow = pointers.ObjectWrapper(obj=model, id=model_id)
+    model_ow = ObjectWrapper(obj=model, id=model_id)
     loss_id = 1
-    loss_ow = pointers.ObjectWrapper(obj=loss_fn, id=loss_id)
+    loss_ow = ObjectWrapper(obj=loss_fn, id=loss_id)
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover

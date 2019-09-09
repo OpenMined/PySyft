@@ -3,7 +3,7 @@ import torch
 import syft as sy
 
 # Import Hook
-from syft.frameworks.torch import TorchHook
+from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import grids
 from syft.grid import VirtualGrid

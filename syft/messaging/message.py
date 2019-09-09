@@ -9,7 +9,7 @@ All Syft message types extend the Message class.
 
 import syft as sy
 from syft import codes
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 
 
 class Message:
@@ -380,3 +380,33 @@ class SearchMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         return SearchMessage(sy.serde._detail(worker, msg_tuple[1]))
+
+
+class FetchPlanMessage(Message):
+    """Message used to fetch a plan from another worker."""
+
+    # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
+
+    def __init__(self, contents):
+        """Initialize the message using default Message constructor.
+
+        See Message.__init__ for details."""
+        super().__init__(codes.MSGTYPE.FETCH_PLAN, contents)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "FetchPlanMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an FetchPlanMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (FetchPlanMessage): a FetchPlanMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return FetchPlanMessage(sy.serde._detail(worker, msg_tuple[1]))

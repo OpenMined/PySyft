@@ -1,7 +1,7 @@
 import argparse
 
 import torch as th
-from syft.workers import WebsocketServerWorker
+from syft.workers.websocket_server import WebsocketServerWorker
 
 import syft as sy
 
