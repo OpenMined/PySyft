@@ -3,13 +3,13 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 import syft as sy
-from syft.generic.pointers import create_callable_pointer
-from syft.workers import AbstractWorker
+from syft.generic.pointers.callable_pointer import create_callable_pointer
+from syft.workers.abstract import AbstractWorker
 
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.workers import BaseWorker
+    from syft.workers.base import BaseWorker
 
 # TODO: move this file/class to the generic folder because the functionality is not PyTorch specific
 # https://github.com/OpenMined/PySyft/issues/2517

@@ -1,18 +1,17 @@
 from time import time
 from unittest.mock import patch
 
-import syft as sy
-from syft.exceptions import GetNotPermittedError
-from syft.workers.virtual import VirtualWorker
-from syft import messaging
-from syft import serde
-from syft import messaging
-
-from syft.generic import pointers
-
 import pytest
 import torch
-import torch as th
+
+import syft as sy
+from syft import serde
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import ObjectRequestMessage
+from syft.workers.virtual import VirtualWorker
+
+from syft.exceptions import GetNotPermittedError
 
 
 def test_send_msg():
@@ -34,7 +33,7 @@ def test_send_msg():
     obj_id = obj.id
 
     # Send data to bob
-    me.send_msg(messaging.ObjectMessage(obj), bob)
+    me.send_msg(ObjectMessage(obj), bob)
 
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
@@ -82,7 +81,7 @@ def test_recv_msg():
     obj = torch.Tensor([100, 100])
 
     # create/serialize message
-    message = messaging.ObjectMessage(obj)
+    message = ObjectMessage(obj)
     bin_msg = serde.serialize(message)
 
     # have alice receive message
@@ -94,7 +93,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = messaging.ObjectRequestMessage(obj.id)
+    message = ObjectRequestMessage(obj.id)
 
     # serialize message
     bin_msg = serde.serialize(message)
@@ -198,7 +197,7 @@ def test_obj_not_found(workers):
 
     bob = workers["bob"]
 
-    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
     bob._objects = {}
 
@@ -210,9 +209,9 @@ def test_obj_not_found(workers):
 
 def test_get_not_permitted(workers):
     bob = workers["bob"]
-    with patch.object(th.Tensor, "allowed_to_get") as mock_allowed_to_get:
+    with patch.object(torch.Tensor, "allowed_to_get") as mock_allowed_to_get:
         mock_allowed_to_get.return_value = False
-        x = th.tensor([1, 2, 3, 4, 5]).send(bob)
+        x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
         with pytest.raises(GetNotPermittedError):
             x.get()
         mock_allowed_to_get.assert_called_once()
@@ -224,7 +223,7 @@ def test_spinup_time(hook):
     spun up inside web frameworks are created quickly enough to not cause timeout errors"""
     data = []
     for i in range(10000):
-        data.append(th.Tensor(5, 5).random_(100))
+        data.append(torch.Tensor(5, 5).random_(100))
     start_time = time()
     dummy = sy.VirtualWorker(hook, id="dummy", data=data)
     end_time = time()
@@ -242,7 +241,7 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     def foo(x):
         return x + 2
 
-    foo_wrapper = pointers.ObjectWrapper(obj=foo, id=99)
+    foo_wrapper = ObjectWrapper(obj=foo, id=99)
     foo_ptr = hook.local_worker.send(foo_wrapper, bob)
 
     res = foo_ptr(torch.tensor(4))

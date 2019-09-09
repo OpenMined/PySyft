@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 def test_wrap():
@@ -670,12 +671,16 @@ def test_train_remote_autograd_tensor(workers):
 
     # Remote training, setting autograd for the data and the targets
     data_remote = data_local.send(alice, local_autograd=True)
-    assert isinstance(data_remote.child, syft.PointerTensor)
+    assert isinstance(data_remote.child, syft.AutogradTensor)
+    assert isinstance(data_remote.child.child, PointerTensor)
 
     target_remote = target_local.send(alice, local_autograd=True)
-    assert isinstance(target_remote.child, syft.PointerTensor)
+    assert isinstance(target_remote.child, syft.AutogradTensor)
+    assert isinstance(target_remote.child.child, PointerTensor)
 
     model_remote = model_local.send(alice, local_autograd=True)
+    assert isinstance(model_remote.weight.child, syft.AutogradTensor)
+    assert isinstance(model_remote.weight.child.child, PointerTensor)
 
     assert type(model_remote) == type(model_local)
 

@@ -82,7 +82,7 @@
 
       * syft.frameworks.torch.hook module
 
-      * syft.frameworks.torch.hook_args module
+      * syft.generic.frameworks.hook.hook_args module
 
       * syft.frameworks.torch.overload_torch module
 

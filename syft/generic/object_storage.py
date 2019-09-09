@@ -1,7 +1,7 @@
 from typing import List
 from typing import Union
 
-from syft.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 
 
