@@ -27,7 +27,6 @@ def test_inv_sym(hook, workers):
     diff = (gram_inv - gram.inverse()).abs()
     assert (diff < 1e-3).all()
 
-
 def test_qr(hook, workers):
     """
     Testing QR decomposition with remote matrix

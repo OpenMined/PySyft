@@ -294,7 +294,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             location=self.location,
             id_at_location=self.id_at_location,
             point_to_attr=self._create_attr_name_string(attr_name),
-        ).wrap()
+        ).wrap(register=False)
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
 
@@ -317,6 +317,23 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return response
 
     fix_precision = fix_prec
+
+    def float_prec(self, *args, **kwargs):
+        """
+        Send a command to remote worker to transform a fix_precision tensor back to float_precision
+
+        Returns:
+            A pointer to a Tensor
+        """
+
+        # Send the command
+        command = ("float_prec", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    float_precision = float_prec
 
     def share(self, *args, **kwargs):
         """
