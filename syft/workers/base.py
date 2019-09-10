@@ -799,7 +799,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        message = PlanCommandMessage((plan_id, copy), "fetch_plan")
+        message = PlanCommandMessage("fetch_plan", (plan_id, copy))
         plan = self.send_msg(message, location=location)
 
         plan.replace_worker_ids(location.id, self.id)

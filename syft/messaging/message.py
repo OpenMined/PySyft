@@ -388,25 +388,25 @@ class PlanCommandMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, message: tuple, command_name: str):
+    def __init__(self, command_name: str, message: tuple):
         """Initialize a PlanCommandMessage.
 
         Args:
+            command_name (str): name used to identify the command.
             message (Tuple): this is typically the args and kwargs of a method call on the client, but it
                 can be any information necessary to execute the command properly.
-            command_name (str): name used to identify the command.
         """
 
         # call the parent constructor - setting the type integer correctly
         super().__init__(codes.MSGTYPE.PLAN_CMD)
 
-        self.message = message
         self.command_name = command_name
+        self.message = message
 
     @property
     def contents(self):
         """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.message, self.command_name)
+        return (self.command_name, self.message)
 
     @staticmethod
     def simplify(ptr: "PlanCommandMessage") -> tuple:
@@ -421,7 +421,7 @@ class PlanCommandMessage(Message):
         """
         return (
             ptr.msg_type,
-            (sy.serde._simplify(ptr.message), sy.serde._simplify(ptr.command_name)),
+            (sy.serde._simplify(ptr.command_name), sy.serde._simplify(ptr.message)),
         )
 
     @staticmethod
@@ -437,7 +437,7 @@ class PlanCommandMessage(Message):
         Returns:
             ptr (PlanCommandMessage): a PlanCommandMessage.
         """
-        message, command_name = msg_tuple[1]
+        command_name, message = msg_tuple[1]
         return PlanCommandMessage(
             sy.serde._detail(worker, command_name), sy.serde._detail(worker, message)
         )
