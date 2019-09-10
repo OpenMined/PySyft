@@ -2,7 +2,7 @@ import pytest
 import torch
 
 import syft as sy
-from syft.workers import VirtualWorker
+from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import WorkerNotFoundException
 

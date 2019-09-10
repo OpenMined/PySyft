@@ -3,7 +3,7 @@ import torch as th
 import syft
 
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
 
