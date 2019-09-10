@@ -50,6 +50,7 @@ from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoade
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
+from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
