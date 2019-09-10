@@ -631,6 +631,10 @@ class TorchTensor(AbstractTensor):
         return self
 
     def float_prec(self):
+        if isinstance(self.child, PointerTensor):
+            self.child = self.child.float_precision()
+            return self
+
         return self.child.float_precision()
 
     float_precision = float_prec
