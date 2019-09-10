@@ -28,10 +28,10 @@ def test_backward_multiple_use(workers):
     )
 
     # A Toy Model
-    class Net(nn.Module):
+    class Net(torch.nn.Module):
         def __init__(self):
             super(Net, self).__init__()
-            self.fc = nn.Linear(2, 1)
+            self.fc = torch.nn.Linear(2, 1)
 
         def forward(self, x):
             x = self.fc(x)
@@ -39,15 +39,15 @@ def test_backward_multiple_use(workers):
 
     def federated():
         # A Toy Dataset
-        data = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
-        target = th.tensor([[0], [0], [1], [1.0]])
+        data = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+        target = torch.tensor([[0], [0], [1], [1.0]])
 
         model = Net()
 
         model_weight = model.fc.weight.copy()
 
         # Training Logic
-        opt = optim.SGD(params=model.parameters(), lr=0.1)
+        opt = torch.optim.SGD(params=model.parameters(), lr=0.1)
 
         data = data.send(big_hospital)
         target = target.send(big_hospital)
@@ -74,8 +74,8 @@ def test_backward_multiple_use(workers):
 
     def encrypted():
         # A Toy Dataset
-        data2 = th.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
-        target2 = th.tensor([[0], [0], [1], [1.0]])
+        data2 = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+        target2 = torch.tensor([[0], [0], [1], [1.0]])
 
         model2 = Net()
 
@@ -92,7 +92,7 @@ def test_backward_multiple_use(workers):
             big_hospital, small_hospital, crypto_provider=crypto_provider, requires_grad=True
         )
 
-        opt2 = optim.SGD(params=model2.parameters(), lr=0.1).fix_precision()
+        opt2 = torch.optim.SGD(params=model2.parameters(), lr=0.1).fix_precision()
 
         # 1) erase previous gradients (if they exist)
         opt2.zero_grad()
