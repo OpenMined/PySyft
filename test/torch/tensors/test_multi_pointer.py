@@ -2,7 +2,8 @@ import pytest
 import torch as th
 import syft as sy
 
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 
 def test_multi_pointers(workers):
@@ -48,6 +49,6 @@ def test_simplify(workers):
     a = th.tensor([1, 2, 3, 4, 5]).send(bob, alice)
     ser = sy.serde.serialize(a)
     detail = sy.serde.deserialize(ser).child
-    assert isinstance(detail, sy.MultiPointerTensor)
+    assert isinstance(detail, MultiPointerTensor)
     for key in a.child.child:
         assert key in detail.child

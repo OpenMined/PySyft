@@ -2,11 +2,17 @@ from typing import List
 from typing import Union
 
 import syft
-from syft.frameworks.types import FrameworkShapeType
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.hook.hook_args import one
+from syft.generic.frameworks.hook.hook_args import register_type_rule
+from syft.generic.frameworks.hook.hook_args import register_forward_func
+from syft.generic.frameworks.hook.hook_args import register_backward_func
+from syft.generic.frameworks.types import FrameworkShapeType
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic.pointers import ObjectPointer
-from syft.workers import AbstractWorker
+from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.workers.abstract import AbstractWorker
+
+from syft.exceptions import RemoteObjectFoundError
 
 
 class PointerTensor(ObjectPointer, AbstractTensor):
@@ -282,13 +288,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return tensor
 
     def attr(self, attr_name):
-        attr_ptr = syft.PointerTensor(
+        attr_ptr = PointerTensor(
             id=self.id,
             owner=self.owner,
             location=self.location,
             id_at_location=self.id_at_location,
             point_to_attr=self._create_attr_name_string(attr_name),
-        ).wrap()
+        ).wrap(register=False)
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
 
@@ -311,6 +317,23 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return response
 
     fix_precision = fix_prec
+
+    def float_prec(self, *args, **kwargs):
+        """
+        Send a command to remote worker to transform a fix_precision tensor back to float_precision
+
+        Returns:
+            A pointer to a Tensor
+        """
+
+        # Send the command
+        command = ("float_prec", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    float_precision = float_prec
 
     def share(self, *args, **kwargs):
         """
@@ -445,3 +468,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         #         val = v
         #     new_data[key] = val
         # return PointerTensor(**new_data)
+
+
+### Register the tensor with hook_args.py ###
+register_type_rule({PointerTensor: one})
+register_forward_func({PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p))})
+register_backward_func({PointerTensor: lambda i: i})

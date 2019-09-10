@@ -10,9 +10,11 @@ import ssl
 import time
 
 import syft as sy
-from syft import messaging
+from syft.messaging.message import FetchPlanMessage
+from syft.messaging.message import ObjectRequestMessage
+from syft.messaging.message import SearchMessage
 from syft.generic.tensor import AbstractTensor
-from syft.workers import BaseWorker
+from syft.workers.base import BaseWorker
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +67,15 @@ class WebsocketClientWorker(BaseWorker):
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
-        message = messaging.SearchMessage(query)
+        message = SearchMessage(query)
+        serialized_message = sy.serde.serialize(message)
+        # Send the message and return the deserialized response.
+        response = self._recv_msg(serialized_message)
+        return sy.serde.deserialize(response)
+
+    def fetch_plan(self, plan_id):
+        # Prepare a message requesting the websocket server to search among its objects
+        message = FetchPlanMessage(plan_id)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
@@ -156,7 +166,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = messaging.ObjectRequestMessage(return_ids[0])
+        msg = ObjectRequestMessage(return_ids[0])
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)
 
@@ -179,7 +189,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
 
-        msg = messaging.ObjectRequestMessage(return_ids[0])
+        msg = ObjectRequestMessage(return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._recv_msg(serialized_message)

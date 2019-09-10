@@ -6,10 +6,11 @@ from OpenSSL import crypto, SSL
 import pytest
 import torch
 import syft as sy
+from syft.generic.frameworks.hook import hook_args
 from syft.frameworks.torch.federated import utils
 
-from syft.workers import WebsocketClientWorker
-from syft.workers import WebsocketServerWorker
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.websocket_server import WebsocketServerWorker
 
 from test.conftest import instantiate_websocket_client_worker
 
@@ -237,10 +238,10 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
 def test_evaluate(hook, start_proc):  # pragma: no cover
 
     sy.local_worker.clear_objects()
-    sy.frameworks.torch.hook.hook_args.hook_method_args_functions = {}
-    sy.frameworks.torch.hook.hook_args.hook_method_response_functions = {}
-    sy.frameworks.torch.hook.hook_args.get_tensor_type_functions = {}
-    sy.frameworks.torch.hook.hook_args.register_response_functions = {}
+    sy.generic.frameworks.hook.hook_args.hook_method_args_functions = {}
+    sy.generic.frameworks.hook.hook_args.hook_method_response_functions = {}
+    sy.generic.frameworks.hook.hook_args.get_tensor_type_functions = {}
+    sy.generic.frameworks.hook.hook_args.register_response_functions = {}
 
     data, target = utils.iris_data_partial()
 
