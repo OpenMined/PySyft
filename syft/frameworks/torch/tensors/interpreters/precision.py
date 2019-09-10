@@ -78,6 +78,12 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return None
 
+    def backward(self, *args, **kwargs):
+        """Calling backward on Precision Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an Precision Tensor (for example in
+        create_grad_objects), so we just ignore the call."""
+        pass
+
     def attr(self, attr_name):
         return self.__getattribute__(attr_name)
 
