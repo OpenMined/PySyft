@@ -453,9 +453,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A tuple specifying the command and args.
         """
         command_name, args = message
-        if command_name in self._plan_command_router:
+        try:
             return self._plan_command_router[command_name](*args)
-        else:
+        except KeyError:
             raise PlanCommandUnknownError(command_name)
 
     def send_command(
