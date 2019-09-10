@@ -114,9 +114,7 @@ class TorchHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = workers.VirtualWorker(
-                hook=self, is_client_worker=is_client, id="me"
-            )
+            self.local_worker = VirtualWorker(hook=self, is_client_worker=is_client, id="me")
         else:
             self.local_worker.hook = self
 
@@ -336,7 +334,7 @@ class TorchHook(FrameworkHook):
 
             if hasattr(self, "child"):
                 to_return = self.child.attr("grad")
-                if to_return is not None and isinstance(to_return.child, syft.PointerTensor):
+                if to_return is not None and isinstance(to_return.child, PointerTensor):
                     if to_return.child.is_none():
                         to_return = None
 
@@ -450,7 +448,7 @@ class TorchHook(FrameworkHook):
             """
 
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 attr, self, args, kwargs
             )
 
@@ -459,7 +457,7 @@ class TorchHook(FrameworkHook):
                 results[k] = v.__getattribute__(attr)(*dispatch(new_args, k), **new_kwargs)
 
             # Put back AdditiveSharingTensor on the tensors found in the response
-            response = syft.frameworks.torch.hook_args.hook_response(
+            response = hook_args.hook_response(
                 attr,
                 results,
                 wrap_type=AdditiveSharingTensor,
@@ -706,7 +704,7 @@ class TorchHook(FrameworkHook):
 
             for param_group in optim_self.param_groups:
                 for key, param in param_group.items():
-                    if isinstance(param, syft.FixedPrecisionTensor) and key != "params":
+                    if isinstance(param, FixedPrecisionTensor) and key != "params":
                         param_group[key] = param.float_precision().item()
 
             return optim_self

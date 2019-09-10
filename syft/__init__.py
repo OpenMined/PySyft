@@ -3,12 +3,16 @@ PySyft is a Python library for secure, private Deep Learning.
 PySyft decouples private data from model training, using Federated Learning,
 Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
 """
+# We load these modules first so that syft knows which are available
+from syft import dependency_check
+from syft import frameworks  # Triggers registration of any available frameworks
+
 # Major imports
-from syft import frameworks
-from syft import workers
-from syft import codes
-from syft import federated
-from .version import __version__
+from syft.version import __version__
+
+# This import statement is strictly here to trigger registration of syft
+# tensor types inside hook_args.py.
+import syft.frameworks.torch.hook.hook_args
 
 import logging
 
@@ -21,14 +25,15 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
-from syft import dependency_check
-
 if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
-    from syft.workers import TFECluster
-    from syft.workers import TFEWorker
+    from syft.workers.tfe import TFECluster
+    from syft.workers.tfe import TFEWorker
+
+    __all__ = ["KerasHook", "TFECluster", "TFEWorker"]
 else:
     logger.info("TF Encrypted Keras not available.")
+    __all__ = []
 
 # Pytorch dependencies
 # Import Hook
@@ -103,8 +108,9 @@ __all__.extend(
 
 local_worker = None
 torch = None
+framework = None
 
 if "ID_PROVIDER" not in globals():
-    from syft.generic import IdProvider
+    from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
