@@ -6,24 +6,23 @@ import torch
 from torch import nn
 import types
 
-
 import syft
-from syft import workers
-from syft.generic.frameworks.hook import FrameworkHook
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import TorchTensor
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.generic.pointers import MultiPointerTensor
-from syft.generic.pointers import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
-from syft.workers import BaseWorker
-from syft.messaging import Plan
+from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
+from syft.messaging.plan import Plan
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
