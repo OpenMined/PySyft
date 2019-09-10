@@ -153,7 +153,7 @@ class LargePrecisionTensor(AbstractTensor):
 
             return trunc_res
         else:
-            return self_ + other
+            raise NotImplementedError
 
     __mul__ = mul
 
