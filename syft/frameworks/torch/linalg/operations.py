@@ -160,7 +160,7 @@ def qr(t, mode="reduced"):
     return Q_t.t(), R
 
 
-def qr_mpc(t, mode="r"):
+def qr_mpc(t, norm_factor, mode="r"):
 
     # Check if t is an AST
     if (
@@ -169,6 +169,12 @@ def qr_mpc(t, mode="r"):
         and not isinstance(t.child.child, AdditiveSharingTensor)
     ):
         raise TypeError("Input is not an AdditiveSharedTensor")
+
+    # Check mode
+    if mode not in ["reduced", "complete", "r"]:
+        raise ValueError(
+            "mode should have one of the values in the list:" + str(["reduced", "complete", "r"])
+        )
 
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
@@ -202,15 +208,57 @@ def qr_mpc(t, mode="r"):
         x = R[i:, i].view(-1, 1)
 
         # Compute norm in MPC
+        x_norm = _norm_mpc(x, norm_factor)
+
+        # Compute Householder transform
+        numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
+        denominator = x.t() @ x - x_norm * x[0, 0]
+        H = I_i - numerator / denominator
+
+        # If it is not the 1st iteration
+        # expand matrix H with Identity at diagonal and zero elsewhere
+        if i > 0:
+            down_zeros = torch.zeros([n_rows - i, i])
+            up_zeros = torch.zeros([i, n_rows - i])
+
+            # Secret share
+            down_zeros = down_zeros.fix_prec(precision_fractional=prec_frac).share(
+                *workers, crypto_provider=crypto_prov
+            )
+            up_zeros = up_zeros.fix_prec(precision_fractional=prec_frac).share(
+                *workers, crypto_provider=crypto_prov
+            )
+
+            left_cat = torch.cat((I[:i, :i], down_zeros), dim=0)
+            right_cat = torch.cat((up_zeros, H), dim=0)
+            H = torch.cat((left_cat, right_cat), dim=1)
+
+        # Update R
+        R = H @ R
+        if not mode == "r":
+            # Update Q_transpose
+            Q_t = H @ Q_t
+
+    if mode == "reduced":
+        R = R[:n_cols, :]
+        Q_t = Q_t[:n_cols, :]
+
+    if mode == "r":
+        R = R[:n_cols, :]
+        return R
+
+    return Q_t.t(), R
 
 
-def _norm_mpc(t):
+def _norm_mpc(t, norm_factor):
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
-    Q = 10000000
+    norm_factor = int(norm_factor)
+    t_normalized = t / norm_factor
+    Q = int(1e8)
 
-    norm_sq = (t * t).sum().squeeze()
+    norm_sq = (t_normalized * t_normalized).sum().squeeze()
 
     # Random big number
     r = (
@@ -231,6 +279,6 @@ def _norm_mpc(t):
     masked_norm = masked_norm.fix_precision(precision_fractional=prec_frac).share(
         *workers, crypto_provider=crypto_prov
     )
-    norm = masked_norm / r
+    norm = masked_norm / r * norm_factor
 
     return norm.squeeze()
