@@ -2,19 +2,15 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Union
 
 import numpy as np
 
-import syft
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
 
 from syft import exceptions
-
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -41,23 +37,18 @@ type_rule = {
     # should perhaps be of type ShareDict extending dict or something like this
     LoggingTensor: one,
     AutogradTensor: one,
-    LargePrecisionTensor: one,
 }
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
 forward_func = {
     LoggingTensor: get_child,
     AutogradTensor: get_child,
-    LargePrecisionTensor: lambda i: i._internal_representation_to_large_ints(),
     "my_syft_tensor_type": get_child,
 }
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
 backward_func = {
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor(**kwargs).on(
-        LargePrecisionTensor.create_tensor_from_numpy(i, **kwargs), wrap=False
-    ),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
 }
