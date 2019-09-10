@@ -61,7 +61,7 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
-from syft.messaging.message import FetchPlanMessage
+from syft.messaging.message import PlanCommandMessage
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
@@ -108,7 +108,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     GetShapeMessage,
     ForceObjectDeleteMessage,
     SearchMessage,
-    FetchPlanMessage,
+    PlanCommandMessage,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list

@@ -407,26 +407,239 @@ def test_stateful_plan_multiple_workers(workers):
     assert (x_abs == th.tensor([2, 10, 4])).all()
 
 
-def test_fetch_plan(hook):
+def test_fetch_plan(hook, workers):
+    alice = workers["alice"]
+
     hook.local_worker.is_client_worker = False
 
-    device_4 = sy.VirtualWorker(hook, id="device_4")
-
     @sy.func2plan(args_shape=[(1,)])
-    def plan_mult_3(data):
+    def plan(data):
         return data * 3
 
-    sent_plan = plan_mult_3.send(device_4)
+    plan.send(alice)
 
     # Fetch plan
-    fetched_plan = device_4.fetch_plan(sent_plan.id)
-    get_plan = sent_plan.get()
+    fetched_plan = plan.owner.fetch_plan(plan.id, alice)
 
     # Execute it locally
-    x = th.tensor([-1, 2, 3])
-    assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
+    x = th.tensor([-1.0, 2, 3])
+    assert (plan(x) == th.tensor([-3.0, 6, 9])).all()
+    assert (fetched_plan(x) == th.tensor([-3.0, 6, 9])).all()
+    assert fetched_plan.forward is None
     assert fetched_plan.is_built
-    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
+
+    hook.local_worker.is_client_worker = True
+
+
+@pytest.mark.parametrize("is_func2plan", [True, False])
+def test_fetch_stateful_plan(hook, is_func2plan, workers):
+    hook.local_worker.is_client_worker = False
+
+    if is_func2plan:
+
+        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        def plan(data, state):
+            bias = state.read("bias")
+            return data * bias
+
+    else:
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(1, 1)
+                self.add_to_state(["fc1"])
+
+            def forward(self, x):
+                return self.fc1(x)
+
+        plan = Net()
+        plan.build(th.tensor([1.2]))
+
+    alice = workers["alice"]
+    plan.send(alice)
+
+    # Fetch plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, alice)
+
+    # Execute it locally
+    x = th.tensor([-1.26])
+    assert th.all(th.eq(fetched_plan(x), plan(x)))
+    assert fetched_plan.state_ids != plan.state_ids
+
+    # Make sure fetched_plan is using the readable_plan
+    assert fetched_plan.forward is None
+    assert fetched_plan.is_built
+
+    # Make sure plan is using the blueprint: forward
+    assert plan.forward is not None
+
+    hook.local_worker.is_client_worker = True
+
+
+@pytest.mark.parametrize("is_func2plan", [True, False])
+def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
+    hook.local_worker.is_client_worker = False
+
+    server, remote_proxy = start_remote_worker(
+        id="test_fetch_stateful_plan_remote_{}".format(is_func2plan), hook=hook, port=8802
+    )
+
+    if is_func2plan:
+
+        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        def plan(data, state):
+            bias = state.read("bias")
+            return data * bias
+
+    else:
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(1, 1)
+                self.add_to_state(["fc1"])
+
+            def forward(self, x):
+                return self.fc1(x)
+
+        plan = Net()
+        plan.build(th.tensor([1.2]))
+
+    plan.send(remote_proxy)
+
+    # Fetch plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, remote_proxy)
+
+    # Execute it locally
+    x = th.tensor([-1.26])
+    assert th.all(th.eq(fetched_plan(x), plan(x)))
+    assert fetched_plan.state_ids != plan.state_ids
+
+    # Make sure fetched_plan is using the readable_plan
+    assert fetched_plan.forward is None
+    assert fetched_plan.is_built
+
+    # Make sure plan is using the blueprint: forward
+    assert plan.forward is not None
+
+    remote_proxy.close()
+    server.terminate()
+
+    hook.local_worker.is_client_worker = True
+
+
+@pytest.mark.parametrize("is_func2plan", [True, False])
+def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
+    # TODO: this test is not working properly with remote workers.
+    # We need to investigate why this might be the case.
+    hook.local_worker.is_client_worker = False
+
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    if is_func2plan:
+
+        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        def plan(data, state):
+            bias = state.read("bias")
+            return data * bias
+
+    else:
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(1, 1)
+                self.add_to_state(["fc1"])
+
+            def forward(self, x):
+                return self.fc1(x)
+
+        plan = Net()
+        plan.build(th.tensor([1.2]))
+
+    plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
+
+    # Fetch plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, james)
+
+    # Execute the fetch plan
+    x = th.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
+    decrypted = fetched_plan(x_sh).get().float_prec()
+
+    # Compare with local plan
+    plan.get().get().float_precision()
+    expected = plan(x)
+    assert th.all(decrypted - expected.detach() < 1e-2)
+    assert fetched_plan.state_ids != plan.state_ids
+
+    # Make sure fetched_plan is using the readable_plan
+    assert fetched_plan.forward is None
+    assert fetched_plan.is_built
+
+    # Make sure plan is using the blueprint: forward
+    assert plan.forward is not None
+
+    hook.local_worker.is_client_worker = True
+
+
+@pytest.mark.parametrize("is_func2plan", [True, False])
+def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
+    hook.local_worker.is_client_worker = False
+
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    if is_func2plan:
+
+        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        def plan(data, state):
+            bias = state.read("bias")
+            return data * bias
+
+    else:
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(1, 1)
+                self.add_to_state(["fc1"])
+
+            def forward(self, x):
+                return self.fc1(x)
+
+        plan = Net()
+        plan.build(th.tensor([1.2]))
+
+    plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
+
+    # Fetch plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+
+    # Execute the fetch plan
+    x = th.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
+    decrypted1 = fetched_plan(x_sh).get().float_prec()
+
+    # 2. Re-fetch Plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+
+    # Execute the fetch plan
+    x = th.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
+    decrypted2 = fetched_plan(x_sh).get().float_prec()
+
+    assert th.all(decrypted1 - decrypted2 < 1e-2)
 
     hook.local_worker.is_client_worker = True
 
@@ -434,28 +647,29 @@ def test_fetch_plan(hook):
 def test_fetch_plan_remote(hook, start_remote_worker):
     hook.local_worker.is_client_worker = False
 
-    server, remote_proxy = start_remote_worker(id="test_fetch_plan_remote", hook=hook, port=8801)
+    server, remote_proxy = start_remote_worker(id="test_fetch_plan_remote", hook=hook, port=8803)
 
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_mult_3(data):
-        return data * 3
+    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    def plan_mult_3(data, state):
+        bias = state.read("bias")
+        return data * 3 + bias
 
-    sent_plan = plan_mult_3.send(remote_proxy)
+    plan_mult_3.send(remote_proxy)
 
     # Fetch plan
-    fetched_plan = remote_proxy.fetch_plan(sent_plan.id)
-    get_plan = sent_plan.get()
+    fetched_plan = plan_mult_3.owner.fetch_plan(plan_mult_3.id, remote_proxy)
 
     # Execute it locally
-    x = th.tensor([-1, 2, 3])
-    assert (get_plan(x) == th.tensor([-3, 6, 9])).all()
+    x = th.tensor([-1.0, 2, 3])
+    assert (plan_mult_3(x) == th.tensor([-2.0, 7, 10])).all()
+    assert (fetched_plan(x) == th.tensor([-2.0, 7, 10])).all()
+    assert fetched_plan.forward is None
     assert fetched_plan.is_built
-    assert (fetched_plan(x) == th.tensor([-3, 6, 9])).all()
-
-    hook.local_worker.is_client_worker = True
 
     remote_proxy.close()
     server.terminate()
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_serde(hook):
