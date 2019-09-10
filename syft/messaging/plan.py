@@ -439,6 +439,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         # plan_copy = plan.copy()
         # plan_copy.bias = th.tensor([4.0])
         # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
+        # Issue: https://github.com/OpenMined/PySyft/issues/2601
+
         plan.state_ids = self.state_ids
 
         # Replace occurences of the old id to the new plan id
