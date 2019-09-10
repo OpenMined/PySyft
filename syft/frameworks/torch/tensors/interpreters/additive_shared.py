@@ -177,7 +177,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(secret, random_type):
             secret = secret.type(random_type)
 
-        random_shares = [random_type(secret.shape) for i in range(n_workers - 1)]
+        random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
             share.random_(field)
