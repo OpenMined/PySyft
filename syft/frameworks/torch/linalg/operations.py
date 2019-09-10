@@ -251,6 +251,31 @@ def qr_mpc(t, norm_factor, mode="r"):
 
 
 def _norm_mpc(t, norm_factor):
+    """
+    Computation of a norm of a vector in MPC. The vector should be an AdditiveSharedTensor.
+
+    It performs the norm calculation by masking the tensor with a multiplication
+    by a big random number drawn from a uniform distribution, and computing the
+    square root of the squared norm of the masked tensor, which is computed
+    beforehand with a dot product in MPC.
+
+    In order to maintain stability and avoid overflow, this functions uses a
+    norm_factor that scales the tensor for MPC computations and rescale it at the end.
+    This norm_factor should be of the order of the square root of number of entries
+    in the original matrix used to perform the compression phase of DASH algorithm,
+    assuming the entries in the original matrix are standardized.
+
+    Args:
+        t: 1-dim AdditiveSharedTensor, representing a vector.
+
+        norm_factor
+
+    Returns:
+        q: orthogonal matrix as a 2-dim tensor with same type as t
+        r: lower triangular matrix as a 2-dim tensor with same type as t
+
+    """
+
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
