@@ -11,7 +11,10 @@ MarkupSafe==1.1.1
 gevent==1.4.0
 redis==3.2.1
 Werkzeug==0.15.2
-git+git://github.com/OpenMined/PySyft@dev
+syft
 git+git://github.com/OpenMined/Grid@dev
-torch
+https://download.pytorch.org/whl/cpu/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl; sys_platform == "linux"
+https://download.pytorch.org/whl/cpu/torch-1.0.1-cp36-cp36m-win_amd64.whl; sys_platform == "windows"
+torch; sys_platform == "darwin"
 torchvision
+psycopg2
