@@ -446,36 +446,6 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         return plan
 
-    def copy_to_worker(self, worker: AbstractWorker):
-        """Creates a copy of a plan and gives the worker plan ownership.
-
-        This method is used for local execution only.
-
-        Args:
-            worker: Owner of the plan copy.
-        """
-        plan = self.copy()
-
-        # Replace ocurrences of the old owner id to the new owner id
-        plan.owner = worker
-        plan.replace_worker_ids(self.owner.id, worker.id)
-
-        # Sent state to the new owner
-        if self.state_ids:
-            state_ids = []
-            for state_id in self.state_ids:
-                state_ids.append(
-                    self.owner.get_obj(state_id)
-                    .copy()
-                    .send(worker, garbage_collect_data=False)
-                    .id_at_location
-                )
-
-            plan.replace_ids(self.state_ids, state_ids)
-            plan.state_ids = state_ids
-
-        return plan
-
     def replace_ids(
         self,
         from_ids: List[Union[str, int]],
