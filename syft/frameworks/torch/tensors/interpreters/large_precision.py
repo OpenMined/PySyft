@@ -2,6 +2,12 @@ import numpy as np
 import math
 import torch
 
+from syft.generic.frameworks.hook.hook_args import (
+    register_type_rule,
+    register_forward_func,
+    register_backward_func,
+    one,
+)
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
@@ -277,13 +283,13 @@ class LargePrecisionTensor(AbstractTensor):
         return _restore_recursive(number_parts, 0, 2 ** bits)
 
     @staticmethod
-    def _lpt_forward_func(tensor):
+    def _forward_func(tensor):
         if hasattr(tensor, "child") and isinstance(tensor.child, torch.Tensor):
             return tensor._internal_representation_to_large_ints()
         return tensor.child
 
     @staticmethod
-    def _lpt_backward_func(tensor, kwargs):
+    def _backward_func(tensor, **kwargs):
         if isinstance(tensor, np.ndarray):
             return LargePrecisionTensor(**kwargs).on(
                 LargePrecisionTensor.create_tensor_from_numpy(tensor, **kwargs), wrap=False
@@ -317,3 +323,10 @@ type_precision = {
     torch.int64: 64,
     torch.long: 64,
 }
+
+### Register the tensor with hook_args.py ###
+register_type_rule({LargePrecisionTensor: one})
+register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._forward_func(i)})
+register_backward_func(
+    {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._backward_func(i, **kwargs)}
+)
