@@ -539,6 +539,61 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     hook.local_worker.is_client_worker = True
 
 
+@pytest.mark.parametrize("is_func2plan", [True, False])
+def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
+    hook.local_worker.is_client_worker = False
+
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    if is_func2plan:
+
+        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        def plan(data, state):
+            bias = state.read("bias")
+            return data * bias
+
+    else:
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = nn.Linear(1, 1)
+                self.add_to_state(["fc1"])
+
+            def forward(self, x):
+                return self.fc1(x)
+
+        plan = Net()
+        plan.build(th.tensor([1.2]))
+
+    plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
+
+    # Fetch plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+
+    # Execute the fetch plan
+    x = th.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
+    decrypted1 = fetched_plan(x_sh).get().float_prec()
+
+    # 2. Re-fetch Plan
+    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+
+    # Execute the fetch plan
+    x = th.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
+    decrypted2 = fetched_plan(x_sh).get().float_prec()
+
+    assert th.all(decrypted1 - decrypted2 < 1e-2)
+
+    hook.local_worker.is_client_worker = True
+
+
 def test_fetch_plan_remote(hook, start_remote_worker):
     hook.local_worker.is_client_worker = False
 
