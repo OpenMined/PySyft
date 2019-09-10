@@ -163,6 +163,7 @@ class PolynomialTensor(AbstractTensor):
              approximation of the sigmoid function as a torch tensor
          """
 
+        print("USES POLYNOMIAL TENSOR")
         sigmoid_coeffs = None
         if self.method == "taylor":
 
@@ -359,6 +360,9 @@ class PolynomialTensor(AbstractTensor):
         <no self>, arguments[, kwargs])
         :return: the response of the function command
         """
+
+        print("HANDLING FUNC COMMAND")
+
         cmd, _, args, kwargs = command
 
         tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
@@ -390,6 +394,40 @@ class PolynomialTensor(AbstractTensor):
 
         return response
 
+    @classmethod
+    def on_function_call(cls, command):
+        """
+        Override this to perform a specific action for each call of a torch
+        function with arguments containing syft tensors of the class doing
+        the overloading
+        """
+        cmd, _, args, kwargs = command
+        print("Default log", cmd)
+
+    @overloaded.method
+    def add(self, _self, other):
+        """Add two fixed precision tensors together.
+        """
+        if isinstance(other, int):
+            scaled_int = other * self.base ** self.precision_fractional
+            return getattr(_self, "add")(scaled_int)
+
+        if isinstance(_self, PolynomialTensor) and isinstance(other, torch.Tensor):
+            # If we try to add a FPT>(wrap)>AST and a FPT>torch.tensor,
+            # we want to perform AST + torch.tensor
+            other = other.wrap()
+        elif isinstance(other, PolynomialTensor) and isinstance(_self, PolynomialTensor):
+            # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            _self, other = other, _self.wrap()
+
+        response = getattr(_self, "add")(other)
+        response %= self.field  # Wrap around the field
+
+        return response
+
+    __add__ = add
+
     @staticmethod
     @overloaded.module
     def torch(module):
@@ -417,7 +455,6 @@ class PolynomialTensor(AbstractTensor):
         # Just register it using the module variable
         module.add = add
 
-        @overloaded.function
         def mul(x, y):
             """
             You can also add the @overloaded.function decorator to also
@@ -431,7 +468,22 @@ class PolynomialTensor(AbstractTensor):
         # Just register it using the module variable
         module.mul = mul
 
-        # You can also overload functions in submodules!
+        def matmul(self, other):
+
+            print("CALLING MATMUL")
+            return self.matmul(other)
+
+        module.matmul = matmul
+
+        def addmm(bias, input_tensor, weight):
+
+            print("CALLING addmm")
+            matmul = input_tensor.matmul(weight)
+            result = bias.add(matmul)
+            return result
+
+        module.addmm = addmm
+
         @overloaded.module
         def nn(module):
             """
@@ -441,23 +493,15 @@ class PolynomialTensor(AbstractTensor):
 
             @overloaded.module
             def functional(module):
-                def relu(x):
-                    print("Log function torch.nn.functional.relu")
-                    return x * (x.child > 0)
+                def linear(*args):
+                    """
+                    Un-hook the function to have its detailed behaviour
+                    """
+                    return torch.nn.functional.native_linear(*args)
 
-                module.relu = relu
-
-                def sigmoid(self, x):
-
-                    print("Log function torch.nn.functional.relu")
-                    return self._sigmoid(x)
-
-                module.sigmoid = sigmoid
+                module.linear = linear
 
             module.functional = functional
-
-        # Modules should be registered just like functions
-        module.nn = nn
 
     """def piecewise_linear_eval(self, data, x):
         Get approximated value for a given function. This takes only scalar value.

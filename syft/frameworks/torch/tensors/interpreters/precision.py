@@ -524,7 +524,7 @@ class FixedPrecisionTensor(AbstractTensor):
             x = syft.PolynomialTensor()
             x.child = tensor
 
-            return x
+            return x.sigmoid().child
 
         module.sigmoid = sigmoid
 
@@ -536,7 +536,7 @@ class FixedPrecisionTensor(AbstractTensor):
             x = syft.PolynomialTensor()
             x.child = tensor
 
-            return x.tanh()
+            return x.tanh().child
 
         module.tanh = tanh
 
