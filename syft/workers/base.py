@@ -124,10 +124,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
         }
 
-        self._plan_command_router = {
-            codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote,
-            codes.PLAN_CMDS.GET_PTR: self.get_ptr,
-        }
+        self._plan_command_router = {codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote}
 
         self.load_data(data)
 
@@ -535,18 +532,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             self.de_register_obj(obj)
             return obj
-
-    def get_ptr(self, obj_id: Union[str, int]):
-        """Returns a pointer to an object from the registry.
-
-        Args:
-            obj_id: A string or integer id of an object to look up.
-        """
-        obj = self.get_obj(obj_id)
-        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
-            raise GetNotPermittedError()
-        else:
-            return obj.create_pointer(garbage_collect_data=False).wrap()
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
