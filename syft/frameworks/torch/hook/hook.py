@@ -482,8 +482,11 @@ class TorchHook(FrameworkHook):
                 arg_shapes = list([self._shape])
                 arg_ids = list([self.obj_id])
                 for arg in args:
-                    arg_shapes.append(arg._shape)
-                    arg_ids.append(arg.obj_id)
+                    arg_shapes.append(arg.shape)
+                    if isinstance(arg, PromiseTensor):
+                        arg_ids.append(arg.obj_id)
+                    else:
+                        arg_ids.append(arg.id)
 
                 @syft.func2plan(arg_shapes)
                 def operation(self, *args, **kwargs):
@@ -494,11 +497,12 @@ class TorchHook(FrameworkHook):
                 self.plans.add(operation)
 
                 for arg in args:
-                    arg.plans.add(operation)
+                    if isinstance(arg, PromiseTensor):
+                        arg.plans.add(operation)
 
                 # only need this for use of Promises with the local_worker VirtualWorker
                 # otherwise we would simplty check the ._objects registry
-                operation.args_fulfilled = {}
+                operation.args_fulfilled = {arg.id: arg for arg in args if not isinstance(arg, PromiseTensor)}
 
                 self.result_promise = PromiseTensor(
                     owner=self.owner,
