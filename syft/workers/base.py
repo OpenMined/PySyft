@@ -22,12 +22,14 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
+from syft.messaging.message import PlanCommandMessage
 from syft.messaging.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
+from syft.exceptions import PlanCommandUnknownError
 
 
 # this if statement avoids circular imports between base.py and pointer.py
@@ -109,9 +111,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.auto_add = auto_add
         self.msg_history = list()
 
-        # For performance, we cache each
+        # For performance, we cache all possible message types
         self._message_router = {
             codes.MSGTYPE.CMD: self.execute_command,
+            codes.MSGTYPE.PLAN_CMD: self.execute_plan_command,
             codes.MSGTYPE.OBJ: self.set_obj,
             codes.MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
             codes.MSGTYPE.OBJ_DEL: self.rm_obj,
@@ -119,8 +122,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
             codes.MSGTYPE.SEARCH: self.deserialized_search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
-            codes.MSGTYPE.FETCH_PLAN: self.fetch_plan,
         }
+
+        self._plan_command_router = {codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote}
 
         self.load_data(data)
 
@@ -438,6 +442,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 )
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
+
+    def execute_plan_command(self, message: tuple):
+        """Executes commands related to plans.
+
+        This method is intended to execute all commands related to plans and
+        avoiding having several new message types specific to plans.
+
+        Args:
+            message: A tuple specifying the command and args.
+        """
+        command_name, args = message
+        try:
+            return self._plan_command_router[command_name](*args)
+        except KeyError:
+            raise PlanCommandUnknownError(command_name)
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
@@ -767,8 +786,48 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location)
         return sy.hook.create_shape(shape)
 
-    def fetch_plan(self, plan_id: Union[str, int]) -> Plan:  # noqa: F821
+    def fetch_plan(
+        self, plan_id: Union[str, int], location: "BaseWorker", copy: bool = False
+    ) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for local execution.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
+        """
+        message = PlanCommandMessage("fetch_plan", (plan_id, copy))
+        plan = self.send_msg(message, location=location)
+
+        plan.replace_worker_ids(location.id, self.id)
+
+        if plan.state_ids:
+            state_ids = []
+            for state_id in plan.state_ids:
+                if copy:
+                    state_ptr = PointerTensor(
+                        location=location,
+                        id_at_location=state_id,
+                        owner=self,
+                        garbage_collect_data=False,
+                    )
+                    state_elem = state_ptr.copy().get()
+                else:
+                    state_elem = self.request_obj(state_id, location)
+                self.register_obj(state_elem)
+                state_ids.append(state_elem.id)
+            plan.replace_ids(plan.state_ids, state_ids)
+            plan.state_ids = state_ids
+
+        return plan
+
+    def _fetch_plan_remote(self, plan_id: Union[str, int], copy: bool) -> "Plan":  # noqa: F821
+        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for remote execution.
 
         Args:
             plan_id: A string indicating the plan id.
@@ -779,10 +838,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if plan_id in self._objects:
             candidate = self._objects[plan_id]
             if isinstance(candidate, sy.Plan):
-                plan = candidate.copy()
-                plan.owner = sy.local_worker
-                plan.replace_worker_ids(self.id, plan.owner.id)
-                return plan
+                if copy:
+                    return candidate.copy()
+                else:
+                    return candidate
 
         return None
 
