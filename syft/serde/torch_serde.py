@@ -212,8 +212,7 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     """
 
     tensor = param.data
-
-    tensor_ser = _simplify_torch_tensor(tensor)
+    tensor_ser = syft.serde._simplify(tensor)
 
     grad = param.grad
 
@@ -239,7 +238,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     """
     param_id, tensor_ser, requires_grad, grad_ser = param_tuple
 
-    tensor = _detail_torch_tensor(worker, tensor_ser)
+    tensor = syft.serde._detail(worker, tensor_ser)
 
     if grad_ser is not None:
         grad = _detail_torch_tensor(worker, grad_ser)
