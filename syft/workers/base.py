@@ -277,18 +277,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        msg = sy.serde.deserialize(bin_message, worker=self)
+        try:
+            msg = sy.serde.deserialize(bin_message, worker=self)
+            (msg_type, contents) = (msg.msg_type, msg.contents)
+            if self.verbose:
+                print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+            # Step 1: route message to appropriate function
+            response = self._message_router[msg_type](contents)
 
-        (msg_type, contents) = (msg.msg_type, msg.contents)
-
-        if self.verbose:
-            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
-        # Step 1: route message to appropriate function
-        response = self._message_router[msg_type](contents)
-
-        # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
-
+            # Step 2: Serialize the message to simple python objects
+            bin_response = sy.serde.serialize(response)
+        except:
+            bin_response = sy.serde.serialize(bin_message)
+        
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
