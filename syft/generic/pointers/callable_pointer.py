@@ -3,14 +3,14 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 import syft as sy
-from syft.generic.pointers import object_pointer
+from syft.generic.pointers.object_pointer import ObjectPointer
 
 # this if statement avoids circular imports
 if TYPE_CHECKING:
-    from syft.workers import BaseWorker
+    from syft.workers.base import BaseWorker
 
 
-class CallablePointer(object_pointer.ObjectPointer):
+class CallablePointer(ObjectPointer):
     """ A class of pointers that are callable
 
     A CallablePointer is an ObjectPointer which implements the __call__ function.
@@ -79,7 +79,7 @@ def create_callable_pointer(
     description,
     garbage_collect_data: bool = True,
     register_pointer: bool = True,
-) -> object_pointer.ObjectPointer:
+) -> ObjectPointer:
     """Creates a callable pointer to the object identified by the pair (location, id_at_location).
 
     Note, that there is no check whether an object with this id exists at the location.

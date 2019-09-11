@@ -2,7 +2,13 @@ import numpy as np
 import math
 import torch
 
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.hook.hook_args import (
+    register_type_rule,
+    register_forward_func,
+    register_backward_func,
+    one,
+)
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.tensor import AbstractTensor
 
 
@@ -20,6 +26,10 @@ class LargePrecisionTensor(AbstractTensor):
     is in the range ±2**(size - 1).
 
     By default operations are done with NumPy. This implies unpacking the representation and packing it again.
+
+    Sharing a LPT requires using a arithmetic field where the shares will live. This field cannot bigger than 2 ** 62
+    or the process would trigger a RuntimeError: Overflow when unpacking long. Note that this field will be applied to
+    the internal representation and not to the scaled tensor.
 
     Check the tests to see how to play with the different parameters.
     """
@@ -44,6 +54,7 @@ class LargePrecisionTensor(AbstractTensor):
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
             tags (list): list of tags for searching.
             description (str): a description of this tensor.
+            field (int): size of the arithmetic field used to truncate and scale the large numbers
             base (int): The base that will be used to to calculate the precision.
             precision_fractional (int): The precision required by the caller.
             internal_type (dtype): The large tensor will be stored using tensor of this type.
@@ -54,14 +65,12 @@ class LargePrecisionTensor(AbstractTensor):
         self.internal_type = internal_type
         self.precision_fractional = precision_fractional
         self.verbose = verbose
+        # This is the maximum size of the arithmetic field that is applied when sharing
+        self.internal_field = 2 ** 62
 
     def _create_internal_representation(self):
         """Decompose a tensor into an array of numbers that represent such tensor with the required precision"""
         self_scaled = self.child.numpy() * self.base ** self.precision_fractional
-
-        assert np.all(
-            np.abs(self_scaled) < (self.field / 2)
-        ), f"{self} cannot be correctly embedded: choose bigger field or a lower precision"
 
         # floor is applied otherwise, long float is not accurate
         self_scaled = np.vectorize(math.floor)(self_scaled)
@@ -132,7 +141,7 @@ class LargePrecisionTensor(AbstractTensor):
     def mul(self, self_, other):
         if isinstance(other, int):
             return self_ * other
-        else:
+        elif isinstance(self_, np.ndarray) and isinstance(other, np.ndarray):
             res = (self_ * other) % self.field
 
             # We need to truncate the result
@@ -143,6 +152,8 @@ class LargePrecisionTensor(AbstractTensor):
             trunc_res = np.where(gate, neg_nums, pos_nums)
 
             return trunc_res
+        else:
+            raise NotImplementedError
 
     __mul__ = mul
 
@@ -195,11 +206,11 @@ class LargePrecisionTensor(AbstractTensor):
     def create_tensor_from_numpy(ndarray, **kwargs):
         """Decompose a NumPy array into an array of numbers that represent such tensor with the required precision.
 
-        Typically this private method is called on the result of an operation.
+        Typically this method is called on the result of an operation.
         """
         # This method is called to rebuild an LTP after operations.
         # The wrapping is done here and not in each operation.
-        ndarray %= kwargs.get("field", 2 ** 512)
+        ndarray %= kwargs.get("field", 2 ** 62)
 
         internal_type = kwargs["internal_type"]
         internal_precision = type_precision[internal_type] - 1
@@ -271,6 +282,35 @@ class LargePrecisionTensor(AbstractTensor):
 
         return _restore_recursive(number_parts, 0, 2 ** bits)
 
+    @staticmethod
+    def _forward_func(tensor):
+        if hasattr(tensor, "child") and isinstance(tensor.child, torch.Tensor):
+            return tensor._internal_representation_to_large_ints()
+        return tensor.child
+
+    @staticmethod
+    def _backward_func(tensor, **kwargs):
+        if isinstance(tensor, np.ndarray):
+            return LargePrecisionTensor(**kwargs).on(
+                LargePrecisionTensor.create_tensor_from_numpy(tensor, **kwargs), wrap=False
+            )
+        return LargePrecisionTensor(**kwargs).on(tensor, wrap=False)
+
+    def share(self, *owners, field=None, crypto_provider=None):
+        if field is None:
+            field = self.internal_field
+        else:
+            assert field <= self.internal_field, "internal_field max value is 2 ** 62"
+            assert (
+                field == self.internal_field
+            ), "When sharing a LargePrecisionTensor, the field of the resulting AdditiveSharingTensor \
+                    must be the same as the one of the original tensor"
+
+        self.child = self.child.share(
+            *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
+        )
+        return self
+
 
 # The size of each type
 type_precision = {
@@ -283,3 +323,10 @@ type_precision = {
     torch.int64: 64,
     torch.long: 64,
 }
+
+### Register the tensor with hook_args.py ###
+register_type_rule({LargePrecisionTensor: one})
+register_forward_func({LargePrecisionTensor: lambda i: LargePrecisionTensor._forward_func(i)})
+register_backward_func(
+    {LargePrecisionTensor: lambda i, **kwargs: LargePrecisionTensor._backward_func(i, **kwargs)}
+)

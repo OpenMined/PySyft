@@ -7,7 +7,8 @@ import syft
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook.hook_args import default_register_tensor
 
 
 class CRTPrecisionTensor(AbstractTensor):
@@ -367,3 +368,6 @@ _sizes_for_fields = {
     "int128": 403_323_543_826_671_667_708_586_382_524_878_143_061,
 }
 # Should we also precompute reconstruction coefficients and put them here?
+
+### Register the tensor with hook_args.py ###
+default_register_tensor(CRTPrecisionTensor)

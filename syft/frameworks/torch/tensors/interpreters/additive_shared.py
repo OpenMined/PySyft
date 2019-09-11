@@ -1,14 +1,13 @@
 import math
 import torch
+
 import syft as sy
-from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
-
-from syft.workers import AbstractWorker
-
-# Crypto protocols
 from syft.frameworks.torch.crypto import spdz
 from syft.frameworks.torch.crypto import securenn
+from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 
 no_wrap = {"no_wrap": True}
 
@@ -104,6 +103,12 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         return None
 
+    def backward(self, *args, **kwargs):
+        """Calling backward on Additive Shared Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an AST (for example in create_grad_objects), so
+        we just ignore the call."""
+        pass
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
@@ -178,7 +183,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if not isinstance(secret, random_type):
             secret = secret.type(random_type)
 
-        random_shares = [random_type(secret.shape) for i in range(n_workers - 1)]
+        random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
             share.random_(field)
@@ -925,11 +930,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         results = {}
         for worker, share in new_args[0].items():
@@ -943,7 +945,7 @@ class AdditiveSharingTensor(AbstractTensor):
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back AdditiveSharingTensor on the tensors found in the response
-        response = sy.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
@@ -1002,3 +1004,7 @@ class AdditiveSharingTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(AdditiveSharingTensor)

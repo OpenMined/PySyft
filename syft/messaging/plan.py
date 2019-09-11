@@ -8,11 +8,12 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
-from syft.frameworks.types import FrameworkTensor
-from syft.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object_storage import ObjectStorage
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker  #
+from syft.workers.abstract import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -158,15 +159,51 @@ class State(object):
 
         self.keys = list(dict_state.keys())
 
+    def is_missing_grad(self, t):
+        return isinstance(t, torch.nn.Parameter) and t.grad is None
+
+    def create_grad_objects(self, p):
+        o = p.sum()
+        o.backward()
+        if p.grad is not None:
+            p.grad -= p.grad
+
     def send(self, location, **kwargs):
         for key in self.keys:
             t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
             t.send_(location, **kwargs)
 
     def get(self):
         for key in self.keys:
             t = getattr(self.plan, key)
             t.get_()
+
+    def fix_precision_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            setattr(self.plan, key, t.fix_precision(*args, **kwargs))
+
+    def float_precision_(self):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            t.float_precision_()
+
+    def share_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            t.share_(*args, **kwargs)
 
 
 class Plan(ObjectStorage, torch.nn.Module):
@@ -374,7 +411,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         """
         for arg in args:
             if isinstance(arg, FrameworkTensor):
-                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
                     return arg.location
         return sy.framework.hook.local_worker
 
@@ -389,12 +426,26 @@ class Plan(ObjectStorage, torch.nn.Module):
             readable_plan=self.readable_plan,
             is_built=self.is_built,
         )
-        plan.replace_ids(
-            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
-        )
-        plan.replace_ids(
-            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
-        )
+
+        # TODO: we shouldn't use the same state_ids since we want to avoid
+        # strange behaviours such as:
+        #
+        # @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        # def plan(data, state):
+        #   bias = state.read("bias")
+        #   return data * bias
+        #
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # True
+        # plan_copy = plan.copy()
+        # plan_copy.bias = th.tensor([4.0])
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
+        # Issue: https://github.com/OpenMined/PySyft/issues/2601
+
+        plan.state_ids = self.state_ids
+
+        # Replace occurences of the old id to the new plan id
+        plan.replace_worker_ids(self.id, plan.id)
+
         return plan
 
     def replace_ids(
@@ -552,7 +603,7 @@ class Plan(ObjectStorage, torch.nn.Module):
     def _get_plan_output(self, result_ids, return_ptr=False):
         responses = []
         for return_id in result_ids:
-            response = sy.PointerTensor(
+            response = PointerTensor(
                 location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())
@@ -669,9 +720,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.replace_worker_ids(worker_id, location.id)
 
         state_original = self.state.copy()
+        state_ids_original = self.state_ids.copy()
+
         self.state.send(location, garbage_collect_data=False)
         state_ptr_ids = self.state.get_id_at_location()
         self.replace_ids(self.state_ids, state_ptr_ids)
+        self.state_ids = state_ptr_ids
 
         _ = self.owner.send(self, workers=location)
 
@@ -680,6 +734,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         self.readable_plan = readable_plan_original
         self.state.set_(state_original)
+        self.state_ids = state_ids_original
         return pointer
 
     def get(self) -> "Plan":
@@ -692,10 +747,33 @@ class Plan(ObjectStorage, torch.nn.Module):
             Plan.
         """
 
-        self.locations = []
-        self.ptr_plans = {}
+        if len(self.locations):
+            self.locations = []
+            self.ptr_plans = {}
+        else:
+            self.state.get()
 
         return self
+
+    def fix_precision_(self, *args, **kwargs):
+        self.state.fix_precision_(*args, **kwargs)
+        return self
+
+    fix_precision = fix_precision_
+    fix_prec = fix_precision_
+
+    def float_precision_(self):
+        self.state.float_precision_()
+        return self
+
+    float_precision = float_precision_
+    float_prec = float_precision_
+
+    def share_(self, *args, **kwargs):
+        self.state.share_(*args, **kwargs)
+        return self
+
+    share = share_
 
     def describe(self, description: str) -> "Plan":
         self.description = description

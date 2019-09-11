@@ -5,7 +5,7 @@ from six import reraise
 from typing import Tuple
 
 import syft as sy
-from syft.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensor
 
 
 class PureFrameworkTensorFoundError(BaseException):
@@ -233,6 +233,14 @@ class IdNotUniqueError(Exception):
     """Raised by the ID Provider when setting ids that have already been generated"""
 
     pass
+
+
+class PlanCommandUnknownError(Exception):
+    """Raised when an unknown plan command execution is requested."""
+
+    def __init__(self, command_name: object):
+        message = "Command {} is not implemented.".format(command_name)
+        super().__init__(message)
 
 
 def route_method_exception(exception, self, args, kwargs):

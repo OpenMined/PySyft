@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 def test_wrap():
@@ -472,6 +473,32 @@ def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
     assert (model.bias.grad == bias_grad).all()
 
 
+def test_share_with_requires_grad(workers):
+    """
+    Test calling fix_precision and share(requires_grad=True) on tensors and model
+    """
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    t = torch.Tensor([3.0])
+    t = t.fix_precision()
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.get()
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.float_prec()
+
+    assert t == torch.Tensor([3.0])
+
+
 def test_remote_share_with_requires_grad(workers):
     """
     Test calling fix_precision and share(requires_grad=True) on pointers
@@ -671,15 +698,15 @@ def test_train_remote_autograd_tensor(workers):
     # Remote training, setting autograd for the data and the targets
     data_remote = data_local.send(alice, local_autograd=True)
     assert isinstance(data_remote.child, syft.AutogradTensor)
-    assert isinstance(data_remote.child.child, syft.PointerTensor)
+    assert isinstance(data_remote.child.child, PointerTensor)
 
     target_remote = target_local.send(alice, local_autograd=True)
     assert isinstance(target_remote.child, syft.AutogradTensor)
-    assert isinstance(target_remote.child.child, syft.PointerTensor)
+    assert isinstance(target_remote.child.child, PointerTensor)
 
     model_remote = model_local.send(alice, local_autograd=True)
     assert isinstance(model_remote.weight.child, syft.AutogradTensor)
-    assert isinstance(model_remote.weight.child.child, syft.PointerTensor)
+    assert isinstance(model_remote.weight.child.child, PointerTensor)
 
     assert type(model_remote) == type(model_local)
 
