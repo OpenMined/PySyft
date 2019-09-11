@@ -90,7 +90,10 @@ def make_model(num_classes: int = 2, is_plan=False):
 
     class Net(super_class):
         def __init__(self):
-            super(Net, self).__init__()
+            if is_plan:
+                super(Net, self).__init__(id="convnet")
+            else:
+                super(Net, self).__init__()
             self.conv1 = nn.Conv2d(3, 32, 5, 1)
             self.conv2 = nn.Conv2d(32, 32, 5, 1)
             self.conv3 = nn.Conv2d(32, 32, 5, 1)

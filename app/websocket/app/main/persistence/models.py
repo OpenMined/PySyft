@@ -6,7 +6,7 @@ import syft as sy
 
 class Worker(db.Model):
     """ Database table that represents workers.
-    
+
         Collumns:
             id (primary key) : Worker id, used to recover stored workers (UNIQUE).
             worker_objects : Tensor objects stored.
@@ -19,6 +19,20 @@ class Worker(db.Model):
 
     def __repr__(self):
         return f"<Worker {self.id}>"
+
+
+class TorchModel(db.Model):
+    """ Database table that stores torch models.
+
+        Collumns:
+            id (primary key) : Model id, (UNIQUE).
+            model : Serialized model.
+    """
+
+    __tablename__ = "ml_model"
+
+    id = db.Column(db.String(64), primary_key=True)
+    model = db.Column(db.LargeBinary(128))
 
 
 class WorkerObject(db.Model):
@@ -48,6 +62,26 @@ class WorkerObject(db.Model):
     @object.setter
     def object(self, value):
         self.data = sy.serde.serialize(value, force_full_simplification=True)
+
+    def __repr__(self):
+        return f"<Tensor {self.id}>"
+
+
+class TorchTensor(db.Model):
+    """Database table that stores torch tensors."""
+
+    __tablename__ = "torch_tensors"
+
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(db.LargeBinary(128))
+
+    @property
+    def object(self):
+        return sy.serde.deserialize(self.data)
+
+    @object.setter
+    def object(self, value):
+        self.data = sy.serde.serialize(value)
 
     def __repr__(self):
         return f"<Tensor {self.id}>"

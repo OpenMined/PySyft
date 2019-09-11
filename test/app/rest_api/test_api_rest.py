@@ -3,6 +3,7 @@ import unittest
 import binascii
 import syft as sy
 from syft import codes, TorchHook
+from syft.messaging.message import Message
 import torch as th
 
 from app.pg_rest_api.pg_app import create_app
@@ -59,7 +60,7 @@ class APIRestTests(LiveServerTestCase):
     def test_create_worker_send_tensor(self):
         x = th.tensor([1, 2, 3, 4])
         msg_type = codes.MSGTYPE.OBJ
-        message = sy.Message(msg_type, x)
+        message = Message(msg_type, x)
         bin_message = sy.serde.serialize(message)
         bin_message = str(binascii.hexlify(bin_message))
         rv = requests.post(

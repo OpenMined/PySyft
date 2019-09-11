@@ -62,10 +62,11 @@ def test_host_models_with_the_same_key(connected_node):
     nodes = list(connected_node.values())
     bob = nodes[0]
 
-    # Serve it once with no problems
-    assert "success" in bob.serve_model(model, model_id="2")
+    # Serve model
+    assert bob.serve_model(model, model_id="2")["success"]
+
     # Error when using the same id twice
-    assert "error" in bob.serve_model(model, model_id="2")
+    assert not bob.serve_model(model, model_id="2")["success"]
 
 
 @pytest.mark.skipif(
@@ -84,7 +85,7 @@ def test_host_jit_model(connected_node):
             return F.log_softmax(x, dim=1) + self.bias
 
     model = Net()
-    trace_model = th.jit.trace(model, th.tensor([1.0, 2]))
+    trace_model = th.jit.trace(model, th.tensor([[1.0, 2]]))
 
     nodes = list(connected_node.values())
     bob = nodes[0]
@@ -97,6 +98,76 @@ def test_host_jit_model(connected_node):
     # Call one more time
     prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
     assert th.tensor(prediction) == th.tensor([1000.0])
+
+
+def test_delete_model(connected_node):
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=1) + self.bias
+
+    model = Net()
+    model.build(th.tensor([1.0, 2]))
+
+    nodes = list(connected_node.values())
+    bob = nodes[0]
+
+    # Serve model
+    assert bob.serve_model(model, model_id="test_delete_model")["success"]
+
+    # Delete model
+    assert bob.delete_model("test_delete_model")["success"]
+    assert "test_delete_model" not in bob.models["models"]
+
+    # Error when deleting again
+    assert not bob.delete_model("test_delete_model")["success"]
+
+
+def test_run_encrypted_model(connected_node):
+    sy.hook.local_worker.is_client_worker = False
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.bias = th.tensor([2.0])
+            self.state += ["bias"]
+
+        def forward(self, x):
+            # TODO: we're using a model that does not require
+            # communication between nodes to compute.
+            # Tests are breaking when communication
+            # between nodes is required.
+            return x + self.bias
+
+    plan = Net()
+    plan.build(th.tensor([1.0]))
+
+    nodes = list(connected_node.values())
+
+    bob, alice, james = nodes[:3]
+
+    # Send plan
+    plan.fix_precision().share(bob, james, crypto_provider=alice)
+
+    # Share data
+    x = th.tensor([1.0])
+    x_sh = x.fix_precision().share(bob, james, crypto_provider=alice)
+
+    # Execute the plan
+    decrypted = plan(x_sh).get().float_prec()
+
+    # Compare with local plan
+    plan.get().float_precision()
+    expected = plan(x)
+    assert th.all(decrypted - expected.detach() < 1e-2)
+
+    sy.hook.local_worker.is_client_worker = True
 
 
 @pytest.mark.parametrize(
