@@ -55,7 +55,7 @@ def set_database_config(app, test_config=None, verbose=False):
     return app
 
 
-def create_app(debug=False, tst_config=None):
+def create_app(debug=False, test_config=None):
     """Create flask socket-io application."""
     app = Flask(__name__)
     app.debug = debug
@@ -70,7 +70,7 @@ def create_app(debug=False, tst_config=None):
     CORS(app)
 
     # Set SQLAlchemy configs
-    app = set_database_config(app, test_config=tst_config)
+    app = set_database_config(app, test_config=test_config)
     s = app.app_context().push()
     db.create_all()
     socketio.init_app(app)

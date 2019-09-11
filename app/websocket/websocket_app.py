@@ -2,64 +2,76 @@
 """
     Grid Node is a Socket/HTTP server used to manage / compute data remotely.
 """
-
-from app import create_app, socketio
-import sys
-import requests
 import json
 import os
+import requests
+import sys
+
 import argparse
 
-# These environment variables must be set before starting the application.
-gateway_url = os.environ.get("GRID_NETWORK_URL", None)
-node_id = os.environ.get("ID", None)
-node_address = os.environ.get("ADDRESS", None)
-port = os.environ.get("PORT", None)
-test_config = os.environ.get("TEST_CONFIG", None)
-
-if test_config:
-    app = create_app(debug=False, tst_config={"SQLALCHEMY_DATABASE_URI": test_config})
-else:
-    app = create_app(debug=False)
+from app import create_app, socketio
 
 
-def check_args():
-    parser = argparse.ArgumentParser(description="Run Grid Node application.")
+parser = argparse.ArgumentParser(description="Run Grid Node application.")
 
-    parser.add_argument(
-        "--network",
-        type=str,
-        help="Network url (address used to join at grid network).",
-    )
-    parser.add_argument(
-        "--port",
-        "-p",
-        type=int,
-        help="port number of the socket.io server, e.g. --port 8777.",
-    )
+parser.add_argument(
+    "--id",
+    type=str,
+    help="Grid node ID, e.g. --id=alice. Default is os.environ.get('GRID_WS_ID', None).",
+    default=os.environ.get("GRID_WS_ID", None),
+)
 
-    parser.add_argument("--addr", type=str, help="host for the connection.")
+parser.add_argument(
+    "--port",
+    "-p",
+    type=int,
+    help="Port number of the socket.io server, e.g. --port=8777. Default is os.environ.get('GRID_WS_PORT', None).",
+    default=os.environ.get("GRID_WS_PORT", None),
+)
 
-    parser.add_argument(
-        "--id", type=str, help="name (id) of the grid node, e.g. --id alice."
-    )
-    args = parser.parse_args()
-    return args
+parser.add_argument(
+    "--host",
+    type=str,
+    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_WS_HOST','0.0.0.0').",
+    default=os.environ.get("GRID_WS_HOST", "0.0.0.0"),
+)
+
+parser.add_argument(
+    "--gateway_url",
+    type=str,
+    help="Address used to join a Grid Network. This argument is optional. Default is os.environ.get('GRID_NETWORK_URL', None).",
+    default=os.environ.get("GRID_NETWORK_URL", None),
+)
+
+parser.add_argument(
+    "--use_test_config",
+    dest="use_test_config",
+    action="store_true",
+    help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
+)
+
+parser.set_defaults(use_test_config=False)
 
 
 if __name__ == "__main__":
-    args = check_args()
+    args = parser.parse_args()
 
-    gateway_url = args.network if args.network else gateway_url
-    port = args.port if args.port else port
-    node_address = args.addr if args.addr else node_address
-    node_id = args.id if args.id else node_id
+    if args.use_test_config:
+        db_path = "sqlite:///database{}.db".format(args.id)
+        app = create_app(debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path})
+    else:
+        app = create_app(debug=False)
 
-    # Register request
-    if gateway_url is not None:
+    # If using a Gateway URL start the connection
+    if args.gateway_url is not None:
         requests.post(
-            os.path.join(gateway_url, "join"),
-            data=json.dumps({"node-id": node_id, "node-address": node_address}),
+            os.path.join(args.gateway_url, "join"),
+            data=json.dumps(
+                {
+                    "node-id": args.id,
+                    "node-address": "http://{}:{}".format(args.host, args.port),
+                }
+            ),
         )
 
-    socketio.run(app, host="0.0.0.0", port=port)
+    socketio.run(app, host=args.host, port=args.port)

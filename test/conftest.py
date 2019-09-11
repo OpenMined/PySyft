@@ -77,14 +77,13 @@ def init_nodes(node_infos):
         )
         socketio.async_mode = "threading"
         app = ws_create_app(
-            debug=False, tst_config={"SQLALCHEMY_DATABASE_URI": db_path}
+            debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
         )
         socketio.run(app, host="0.0.0.0", port=port)
 
     jobs = []
     # Init Grid Nodes
     for (node_id, port) in node_infos:
-        config = (node_id, port)
         p = Process(target=setUpNode, args=(port, node_id))
         p.start()
         jobs.append(p)
