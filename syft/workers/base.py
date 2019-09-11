@@ -289,7 +289,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             bin_response = sy.serde.serialize(response)
         except:
             bin_response = sy.serde.serialize(bin_message)
-        
+
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
