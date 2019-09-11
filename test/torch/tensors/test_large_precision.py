@@ -283,6 +283,13 @@ def test_share_sub(workers):
     assert torch.all(torch.eq(expected, y))
 
 
+def test_storage():
+    x = torch.tensor([1.0, 2.0, 3.0])
+    enlarged = x.fix_prec(storage="large")
+    restored = enlarged.float_precision()
+    # And now x and restored must be the same
+    assert torch.all(torch.eq(x, restored))
+
 # def test_share_mul(workers):
 #     alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 #
