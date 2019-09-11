@@ -692,7 +692,8 @@ class TorchTensor(AbstractTensor):
             return (
                 syft.LargePrecisionTensor(*args, **kwargs)
                 .on(self)
-                .child.fix_large_precision()
+                .child
+                .fix_large_precision()
                 .wrap()
             )
         else:
