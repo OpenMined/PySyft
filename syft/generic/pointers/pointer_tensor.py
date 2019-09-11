@@ -451,6 +451,22 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return response
 
+    def keep(self, *args, **kwargs):
+        """
+        Send a command to remote worker to keep a promise
+
+        Returns:
+            A pointer to an Tensor
+        """
+
+        # Send the command
+        print("send keep command")
+        command = ("keep", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
 
