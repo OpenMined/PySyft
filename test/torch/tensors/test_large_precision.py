@@ -290,6 +290,7 @@ def test_storage():
     # And now x and restored must be the same
     assert torch.all(torch.eq(x, restored))
 
+
 # def test_share_mul(workers):
 #     alice, bob, james = (workers["alice"], workers["bob"], workers["james"])
 #
