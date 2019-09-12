@@ -538,7 +538,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Selects an id for the object, assigns a list of owners, and establishes
         whether it's a pointer or not. This method is generally not used by the
-        whether it's a pointer or not. This method is generally not used by the
         client and is instead used by internal processes (hooks and workers).
 
         Args:
