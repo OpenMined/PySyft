@@ -2,6 +2,7 @@ import pytest
 import torch
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
+from syft.frameworks.torch.linalg.operations import _norm_mpc
 from test.efficiency_tests.assertions import assert_time
 
 
@@ -17,3 +18,16 @@ def test_inv_sym(hook, workers):
     x = torch.randn(N, K).fix_precision().share(bob, alice, crypto_provider=crypto_prov)
     gram = x.t().matmul(x)
     gram_inv = inv_sym(gram)
+
+
+@assert_time(max_time=20)
+def test_norm_mpc(hook, workers):
+    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+
+    n = 100
+    t = torch.randn([n])
+    t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
+    norm_sh = _norm_mpc(t_sh, norm_factor=n ** (1 / 2))

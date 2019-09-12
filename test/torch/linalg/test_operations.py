@@ -68,7 +68,9 @@ def test_qr(hook, workers):
 
 
 def test_norm_mpc(hook, workers):
-
+    """
+    Testing computation of vector norm on an AdditiveSharedTensor
+    """
     torch.manual_seed(42)  # Truncation might not always work so we set the random seed
     bob = workers["bob"]
     alice = workers["alice"]
