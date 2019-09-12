@@ -2,7 +2,11 @@ import requests
 import json
 import syft as sy
 from grid.websocket_client import WebsocketGridClient
+from grid.utils import connect_all_nodes
 import torch
+
+
+SMPC_HOST_CHUNK = 4  # Minimum nodes required to host an encrypted model
 
 
 class GridNetwork(object):
@@ -39,6 +43,59 @@ class GridNetwork(object):
             tensor_set.append(worker.search(*query))
         return tensor_set
 
+    def serve_encrypted_model(self, model):
+        """ This method wiil choose some grid nodes at grid network to host an encrypted model.
+
+            Args:
+                model: Model to be hosted.
+            Raise:
+                RuntimeError : If grid network doesn't have enough workers to host an encrypted model.
+        
+        """
+        # Model needs to be a plan
+        if isinstance(model, sy.Plan):
+            response = requests.get(self.gateway_url + "/choose-encrypted-model-host")
+            hosts = json.loads(response.content)
+            if (
+                len(hosts) and len(hosts) % SMPC_HOST_CHUNK == 0
+            ):  # Minimum workers chunk to share and host a model (3 to SMPC operations, 1 to host)
+                for i in range(0, len(hosts), SMPC_HOST_CHUNK):
+                    # Connect with SMPC Workers
+                    smpc_end_interval = i + 2
+                    smpc_workers_info = hosts[i:smpc_end_interval]
+                    smpc_workers = []
+                    for worker in smpc_workers_info:
+                        smpc_workers.append(self.__connect_with_node(*worker))
+
+                    # Connect with crypto provider
+                    crypto_provider = self.__connect_with_node(
+                        *hosts[smpc_end_interval]
+                    )
+
+                    # Connect with host worker
+                    host = self.__connect_with_node(*hosts[smpc_end_interval + 1])
+
+                    # Connect nodes to each other
+                    model_nodes = smpc_workers + [crypto_provider, host]
+                    connect_all_nodes(model_nodes)
+
+                    # SMPC Share
+                    model.fix_precision().share(
+                        *smpc_workers, crypto_provider=crypto_provider
+                    )
+                    # Host model
+                    model.send(host)
+
+                    for node in model_nodes:
+                        node.disconnect()
+                    smpc_initial_interval = i  # Initial index of next chunk
+            # If host's length % SMPC_HOST_CHUNK != 0 or length == 0
+            else:
+                raise RuntimeError("Not enough workers to host an encrypted model!")
+        # If model isn't a plan
+        else:
+            raise RuntimeError("Model needs to be a plan to be encrypted!")
+
     def serve_model(
         self,
         model,
@@ -46,6 +103,7 @@ class GridNetwork(object):
         allow_remote_inference: bool = False,
         allow_download: bool = False,
     ):
+
         """ This method will choose one of grid nodes registered in the grid network to host a plain text model.
             Args:
                 model: Model to be hosted.
@@ -68,19 +126,78 @@ class GridNetwork(object):
             )
             host_worker.disconnect()
 
-    def run_remote_inference(self, model_id, dataset):
+    def run_encrypted_inference(self, model_id, data, copy=True):
+        """ Search for an encrypted model and perform inference.
+            
+            Args:
+                model_id: Model's ID.
+                data: Dataset to be shared/inferred.
+                copy: Boolean flag to perform encrypted inference without lose plan.
+            Returns:
+                Tensor: Inference's result.
+        """
+        # Search for an encrypted model
+        body = json.dumps({"model_id": model_id})
+
+        response = requests.post(
+            self.gateway_url + "/search-encrypted-model", data=body
+        )
+
+        match_nodes = json.loads(response.content)
+        if len(match_nodes):
+            # Host of encrypted plan
+            node_id = list(match_nodes.keys())[0]  # Get the first one
+            node_address = match_nodes[node_id]["address"]
+
+            # Workers with SMPC parameters tensors
+            worker_infos = match_nodes[node_id]["nodes"]["workers"]
+            crypto_provider = match_nodes[node_id]["nodes"]["crypto_provider"]
+
+            # Connect with host node
+            host_node = self.__connect_with_node(node_id, node_address)
+
+            # Connect with SMPC Workers
+            workers = []
+            for worker_id, worker_address in worker_infos:
+                workers.append(self.__connect_with_node(worker_id, worker_address))
+
+            # Connect with SMPC crypto provider
+            crypto_provider_id = crypto_provider[0]
+            crypto_provider_url = crypto_provider[1]
+
+            crypto_node = self.__connect_with_node(
+                crypto_provider_id, crypto_provider_url
+            )
+
+            # Share your dataset to same SMPC Workers
+            shared_data = data.fix_precision().share(
+                *workers, crypto_provider=crypto_node
+            )
+
+            # Perform Inference
+            fetched_plan = sy.hook.local_worker.fetch_plan(
+                model_id, host_node, copy=copy
+            )
+            return fetched_plan(shared_data).get().float_prec()
+        else:
+            raise RuntimeError("Model not found on Grid Network!")
+
+    def run_remote_inference(self, model_id, data):
         """ This method will search for a specific model registered on grid network, if found,
             It will run inference.
             Args:
                 model_id : Model's ID.
                 dataset : Data used to run inference.
             Returns:
-                inference : result of data inference
+                Tensor : Inference's result.
         """
         worker = self.query_model(model_id)
-        response = worker.run_remote_inference(model_id=model_id, data=dataset)
-        worker.disconnect()
-        return torch.tensor(response)
+        if worker:
+            response = worker.run_remote_inference(model_id=model_id, data=data)
+            worker.disconnect()
+            return torch.tensor(response)
+        else:
+            raise RuntimeError("Model not found on Grid Network!")
 
     def query_model(self, model_id):
         """ This method will search for a specific model registered on grid network, if found,

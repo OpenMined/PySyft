@@ -170,6 +170,67 @@ def get_available_tags():
     )
 
 
+@main.route("/search-encrypted-models", methods=["POST"])
+def search_encrypted_models():
+    """ Check if exist some encrypted model hosted on this node using a specific model_id, if found,
+        return JSON with a list of workers/crypto_provider.
+    """
+    try:
+        body = json.loads(request.data)
+    except json.decoder.JSONDecodeError:
+        return Response(
+            json.dumps({"error": "Invalid payload format"}),
+            status=400,
+            mimetype="application/json",
+        )
+
+    # Check json fields
+    if body.get("model_id"):
+        # Search model_id on node objects
+        model = local_worker._objects.get(body.get("model_id"))
+
+        # If found model is a plan
+        if isinstance(model, sy.Plan):
+
+            workers = set()
+            # Check every state used by this plan
+            for state_id in model.state_ids:
+                obj = local_worker._objects.get(state_id)
+                # Decrease in Tensor Hierarchy (we want be a AdditiveSharingTensor to recover workers/crypto_provider addresses)
+                while not isinstance(obj, sy.AdditiveSharingTensor):
+                    obj = obj.child
+
+                # Get a list of tuples (worker_id, worker_address)
+                worker_urls = map(
+                    lambda x: (x, local_worker._known_workers.get(x).uri),
+                    obj.child.keys(),
+                )
+                workers.update(set(worker_urls))
+
+                # Get crypto_provider id/address
+                if obj.crypto_provider:
+                    crypto_provider = [
+                        obj.crypto_provider.id,
+                        local_worker._known_workers.get(obj.crypto_provider.id).uri,
+                    ]
+
+            response = {
+                "workers": list(workers),
+                "crypto_provider": list(crypto_provider),
+            }
+            response_status = 200
+        else:
+            response = {"error": "Model ID not found!"}
+            response_status = 404
+    # JSON without model_id field
+    else:
+        response = {"error": "Invalid payload format"}
+        response_status = 400
+    return Response(
+        json.dumps(response), status=response_status, mimetype="application/json"
+    )
+
+
 @main.route("/search", methods=["POST"])
 def search_dataset_tags():
     body = json.loads(request.data)

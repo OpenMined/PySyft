@@ -43,6 +43,36 @@ class GridAPITest(unittest.TestCase):
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
 
+    def test_host_inference_encrypted_model(self):
+        sy.hook.local_worker.is_client_worker = False
+
+        # Build Model
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__(id="convnet")
+                self.fc1 = th.tensor([2.0, 4.0])
+                self.bias = th.tensor([1000.0])
+                self.state += ["fc1", "bias"]
+
+            def forward(self, x):
+                return self.fc1.matmul(x) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+
+        decrypted_model = Net()
+
+        self.my_grid.serve_encrypted_model(model)
+
+        # Run inference
+        x = th.tensor([1.0, 2])
+        result = self.my_grid.run_encrypted_inference("convnet", x)
+
+        # Compare with local model
+        expected = decrypted_model(th.tensor([1.0, 2]))
+
+        assert th.all(result - expected.detach() < 1e-2)
+
     def test_model_ids_overview(self):
         class Net(sy.Plan):
             def __init__(self):
@@ -125,13 +155,13 @@ class GridAPITest(unittest.TestCase):
 
         # Call one time
         inference = self.my_grid.run_remote_inference(
-            model_id="plan-model", dataset=th.tensor([1.0, 2])
+            model_id="plan-model", data=th.tensor([1.0, 2])
         )
         assert inference == th.tensor([1000.0])
 
         # Call one more time
         inference = self.my_grid.run_remote_inference(
-            model_id="plan-model", dataset=th.tensor([1.0, 2])
+            model_id="plan-model", data=th.tensor([1.0, 2])
         )
         assert inference == th.tensor([1000.0])
 

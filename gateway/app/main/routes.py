@@ -13,6 +13,8 @@ import requests
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
 
+SMPC_HOST_CHUNK = 4  # Minimum nodes required to host an encrypted model
+
 
 @main.route("/", methods=["GET"])
 def index():
@@ -53,6 +55,24 @@ def get_connected_nodes():
     )
 
 
+@main.route("/choose-encrypted-model-host", methods=["GET"])
+def choose_encrypted_model_host():
+    """ Used to choose grid nodes to host an encrypted model
+        PS: currently we perform this randomly
+    """
+
+    n_replica = current_app.config["N_REPLICA"]
+    if not n_replica:
+        n_replica = 1
+    try:
+        hosts = random.sample(list(grid_nodes.keys()), n_replica * SMPC_HOST_CHUNK)
+        hosts_info = [(host, grid_nodes[host]) for host in hosts]
+    # If grid network doesn't have enough grid nodes
+    except ValueError:
+        hosts_info = []
+    return Response(json.dumps(hosts_info), status=200, mimetype="application/json")
+
+
 @main.route("/choose-model-host", methods=["GET"])
 def choose_model_host():
     """ Used to choose some grid node to host a model.
@@ -65,6 +85,33 @@ def choose_model_host():
     hosts = random.sample(list(grid_nodes.keys()), n_replica)
     hosts_info = [(host, grid_nodes[host]) for host in hosts]
     return Response(json.dumps(hosts_info), status=200, mimetype="application/json")
+
+
+@main.route("/search-encrypted-model", methods=["POST"])
+def search_encrypted_model():
+    """ Search for an encrypted plan model on the grid network, if found,
+        returns host id, host address and SMPC workers infos.
+    """
+    body = json.loads(request.data)
+
+    if "model_id" not in body:
+        return Response("", status=400, mimetype="application/json")
+
+    match_nodes = {}
+    for node in grid_nodes:
+        try:
+            response = requests.post(
+                os.path.join(grid_nodes[node], "search-encrypted-models"),
+                data=request.data,
+            )
+        except ConnectionError:
+            continue
+
+        response = json.loads(response.content)
+        # If workers / crypto_provider fields in response dict
+        if not len({"workers", "crypto_provider"} - set(response.keys())):
+            match_nodes[node] = {"address": grid_nodes[node], "nodes": response}
+    return Response(json.dumps(match_nodes), status=200, mimetype="application/json")
 
 
 @main.route("/search-model", methods=["POST"])
