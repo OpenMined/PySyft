@@ -8,35 +8,45 @@ def test__str__():
     assert isinstance(a.__str__(), str)
 
 
-"""
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
-def test_operations_between_promises(cmd):
+def test_operations_between_promises(hook, cmd):
+    hook.local_worker.is_client_worker = False
+    
     a = syft.Promises.FloatTensor(shape=torch.Size((2,2)))
     b = syft.Promises.FloatTensor(shape=torch.Size((2,2)))
 
     actual = getattr(a, cmd)(b)
     
-    a.keep(torch.tensor([[1., 2], [3, 4]]))
-    b.keep(torch.tensor([[-8., -7], [6, 5]]))
+    ta = torch.tensor([[1., 2], [3, 4]])
+    tb = torch.tensor([[-8., -7], [6, 5]])
+    a.keep(ta)
+    b.keep(tb)
 
-    expected = getattr(a, cmd)(b)
+    expected = getattr(ta, cmd)(tb)
 
-    assert (actual == expected).all()
+    assert (actual.value() == expected).all()
+
+    hook.local_worker.is_client_worker = True
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
-def test_operations_with_concrete(cmd):
+def test_operations_with_concrete(hook, cmd):
+    hook.local_worker.is_client_worker = False
+    
     a = syft.Promises.FloatTensor(shape=torch.Size((2,2)))
     b = torch.tensor([[-8., -7], [6, 5]]).wrap()  #TODO fix need to wrap
 
     actual = getattr(a, cmd)(b)
     
-    a.keep(torch.tensor([[1., 2], [3, 4]]))
+    ta = torch.tensor([[1., 2], [3, 4]])
+    a.keep(ta)
 
-    expected = getattr(a, cmd)(b.child)
+    expected = getattr(ta, cmd)(b.child)
 
-    assert (actual == expected).all()
-"""
+    assert (actual.value() == expected).all()
+
+    hook.local_worker.is_client_worker = True
+
 
 # Still doesn't work
 def test_send(workers):
