@@ -3,6 +3,7 @@ import torch
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
+from syft.frameworks.torch.linalg.operations import _norm_mpc
 
 
 def test_inv_sym(hook, workers):
@@ -64,3 +65,19 @@ def test_qr(hook, workers):
 
     R = qr(t.send(bob), mode="r")
     assert R.shape == (n_cols, n_cols)
+
+
+def test_norm_mpc(hook, workers):
+
+    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+
+    n = 100
+    t = torch.randn([n])
+    t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
+    norm_sh = _norm_mpc(t_sh, norm_factor=n ** (1 / 2))
+    norm = norm_sh.copy().get().float_precision()
+
+    assert (norm - torch.norm(t)).abs() < 1e-4
