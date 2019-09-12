@@ -11,6 +11,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -392,9 +393,9 @@ class TorchTensor(AbstractTensor):
             # when we're sending a PromiseTensor, we want to make sure we don't accidentally send the wrapper
             # so we set to_send to be child if a wrapper exists.
             to_send = self
-            if hasattr(self, "child"):
-                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor):
-                    to_send = self.child
+            #if hasattr(self, "child"):
+            #    if isinstance(self.child, PromiseTensor):
+            #        to_send = self.child
 
             ptr = self.owner.send(
                 to_send,
@@ -405,7 +406,7 @@ class TorchTensor(AbstractTensor):
             )
 
             if hasattr(self, "child"):
-                if isinstance(self.child, syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor):
+                if isinstance(self.child, PromiseTensor):
                     self.child.create_send_plan(location)
 
             ptr.description = self.description
@@ -808,15 +809,15 @@ class TorchTensor(AbstractTensor):
     def keep(self, *args, **kwargs):
 
         result = self.child.keep(*args, **kwargs)
+        if hasattr(self, "child") and isinstance(self.child, PromiseTensor):
+            future_id = self.child.obj_id
 
-        future_id = self.child.obj_id
+            self.set_(result)
 
-        self.set_(result)
+            del self.child
+            self.is_wrapper = False
 
-        del self.child
-        self.is_wrapper = False
-
-        self.id = future_id
+            self.id = future_id
 
     def torch_type(self):
 
