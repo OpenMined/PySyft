@@ -7,7 +7,7 @@ import torch
 
 class GridNetwork(object):
     """  The purpose of the Grid Network class is to control the entire communication flow by abstracting operational steps.
-    
+
         Attributes:
             - gateway_url : network address to which you want to connect.
             - connected_grid_nodes : Grid nodes that are connected to the application.
@@ -18,7 +18,7 @@ class GridNetwork(object):
 
     def search(self, *query):
         """ Search a set of tags across the grid network.
-            
+
             Arguments:
                 query : A set of dataset tags.
             Returns:
@@ -39,11 +39,19 @@ class GridNetwork(object):
             tensor_set.append(worker.search(*query))
         return tensor_set
 
-    def serve_model(self, model, model_id):
+    def serve_model(
+        self,
+        model,
+        model_id,
+        allow_remote_inference: bool = False,
+        allow_download: bool = False,
+    ):
         """ This method will choose one of grid nodes registered in the grid network to host a plain text model.
             Args:
-                model : Model to be hosted.
-                model_id : Model's ID.
+                model: Model to be hosted.
+                model_id: Model's ID.
+                allow_remote_inference: Allow workers to run inference in this model.
+                allow_download: Allow workers to copy the model and run it locally.
         """
         # Perform a request to choose model's host
         response = requests.get(self.gateway_url + "/choose-model-host")
@@ -52,10 +60,15 @@ class GridNetwork(object):
         for host_id, host_address in hosts:
             # Host model
             host_worker = self.__connect_with_node(host_id, host_address)
-            host_worker.serve_model(model, model_id=model_id)
+            host_worker.serve_model(
+                model,
+                model_id=model_id,
+                allow_download=allow_download,
+                allow_remote_inference=allow_remote_inference,
+            )
             host_worker.disconnect()
 
-    def run_inference(self, model_id, dataset):
+    def run_remote_inference(self, model_id, dataset):
         """ This method will search for a specific model registered on grid network, if found,
             It will run inference.
             Args:
@@ -65,9 +78,9 @@ class GridNetwork(object):
                 inference : result of data inference
         """
         worker = self.query_model(model_id)
-        response = worker.run_inference(model_id=model_id, data=dataset)
+        response = worker.run_remote_inference(model_id=model_id, data=dataset)
         worker.disconnect()
-        return torch.tensor(response["prediction"])
+        return torch.tensor(response)
 
     def query_model(self, model_id):
         """ This method will search for a specific model registered on grid network, if found,

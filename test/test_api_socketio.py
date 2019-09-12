@@ -4,7 +4,7 @@ import pytest
 from random import randint, sample
 
 import grid as gr
-import syft as sy
+from grid import syft as sy
 import torch as th
 import torch.nn.functional as F
 import numpy as np
@@ -14,6 +14,37 @@ from test import conftest
 
 
 hook = sy.TorchHook(th)
+
+
+def test_host_plan_not_allowed_to_run_ops(connected_node):
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+            self.bias = th.tensor([1000.0])
+            self.state += ["fc1", "bias"]
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return F.log_softmax(x, dim=0) + self.bias
+
+    model = Net()
+    model.build(th.tensor([1.0, 2]))
+
+    nodes = list(connected_node.values())
+    bob = nodes[0]
+    bob.serve_model(
+        model,
+        model_id="not_allowed",
+        allow_remote_inference=False,
+        allow_download=False,
+    )
+
+    with pytest.raises(RuntimeError):
+        bob.run_remote_inference(model_id="not_allowed", data=th.tensor([1.0, 2]))
+
+    with pytest.raises(RuntimeError):
+        bob.download_model(model_id="not_allowed")
 
 
 def test_host_plan_model(connected_node):
@@ -33,14 +64,14 @@ def test_host_plan_model(connected_node):
 
     nodes = list(connected_node.values())
     bob = nodes[0]
-    bob.serve_model(model, model_id="1")
+    bob.serve_model(model, model_id="1", allow_remote_inference=True)
 
     # Call one time
-    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    prediction = bob.run_remote_inference(model_id="1", data=th.tensor([1.0, 2]))
     assert th.tensor(prediction) == th.tensor([1000.0])
 
     # Call one more time
-    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    prediction = bob.run_remote_inference(model_id="1", data=th.tensor([1.0, 2]))
     assert th.tensor(prediction) == th.tensor([1000.0])
 
 
@@ -63,10 +94,11 @@ def test_host_models_with_the_same_key(connected_node):
     bob = nodes[0]
 
     # Serve model
-    assert bob.serve_model(model, model_id="2")["success"]
+    assert bob.serve_model(model, model_id="2")
 
     # Error when using the same id twice
-    assert not bob.serve_model(model, model_id="2")["success"]
+    with pytest.raises(RuntimeError):
+        bob.serve_model(model, model_id="2")
 
 
 @pytest.mark.skipif(
@@ -89,14 +121,14 @@ def test_host_jit_model(connected_node):
 
     nodes = list(connected_node.values())
     bob = nodes[0]
-    bob.serve_model(trace_model, model_id="1")
+    bob.serve_model(trace_model, model_id="1", allow_remote_inference=True)
 
     # Call one time
-    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    prediction = bob.run_remote_inference(model_id="1", data=th.tensor([1.0, 2]))
     assert th.tensor(prediction) == th.tensor([1000.0])
 
     # Call one more time
-    prediction = bob.run_inference(model_id="1", data=th.tensor([1.0, 2]))["prediction"]
+    prediction = bob.run_remote_inference(model_id="1", data=th.tensor([1.0, 2]))
     assert th.tensor(prediction) == th.tensor([1000.0])
 
 
@@ -119,14 +151,15 @@ def test_delete_model(connected_node):
     bob = nodes[0]
 
     # Serve model
-    assert bob.serve_model(model, model_id="test_delete_model")["success"]
+    assert bob.serve_model(model, model_id="test_delete_model")
 
     # Delete model
-    assert bob.delete_model("test_delete_model")["success"]
-    assert "test_delete_model" not in bob.models["models"]
+    assert bob.delete_model("test_delete_model")
+    assert "test_delete_model" not in bob.models
 
     # Error when deleting again
-    assert not bob.delete_model("test_delete_model")["success"]
+    with pytest.raises(RuntimeError):
+        bob.delete_model("test_delete_model")
 
 
 def test_run_encrypted_model(connected_node):
@@ -153,11 +186,14 @@ def test_run_encrypted_model(connected_node):
     bob, alice, james = nodes[:3]
 
     # Send plan
-    plan.fix_precision().share(bob, james, crypto_provider=alice)
+    plan.encrypt(bob, james, crypto_provider=alice)
 
     # Share data
     x = th.tensor([1.0])
-    x_sh = x.fix_precision().share(bob, james, crypto_provider=alice)
+
+    # TODO: figure it out why encrypt is not working here
+    # but is working on the notebooks
+    x_sh = x.fix_prec().share(bob, james, crypto_provider=alice)
 
     # Execute the plan
     decrypted = plan(x_sh).get().float_prec()

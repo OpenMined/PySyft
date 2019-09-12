@@ -3,6 +3,9 @@ from __future__ import print_function  # Only Python 2.x
 import sys
 import subprocess
 import os
+
+import syft
+
 from grid.client import GridClient
 from grid.websocket_client import WebsocketGridClient
 from grid import utils as gr_utils
@@ -11,7 +14,30 @@ from grid.grid_network import GridNetwork
 
 from grid.utils import connect_all_nodes
 
-__all__ = ["workers", "connect_all_nodes"]
+__all__ = ["workers", "connect_all_nodes", "syft"]
+
+
+# ======= Providing a friendly API on top of Syft ===============
+def encrypt(self, worker_1, worker_2, crypto_provider):
+    """tensor.fix_prec().share()"""
+    return self.fix_prec().share(worker_1, worker_2, crypto_provider=crypto_provider)
+
+
+syft.frameworks.torch.tensors.interpreters.native.TorchTensor.encrypt = encrypt
+syft.messaging.plan.Plan.encrypt = encrypt
+
+
+def request_decryption(self):
+    """tensor.get().float_prec()"""
+    return self.get().float_prec()
+
+
+syft.frameworks.torch.tensors.interpreters.native.TorchTensor.request_decryption = (
+    request_decryption
+)
+
+
+# =============== Heroku related functions =======================
 
 
 def run_commands_in(commands, logs, tmp_dir="tmp", cleanup=True, verbose=False):

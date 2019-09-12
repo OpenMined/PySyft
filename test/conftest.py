@@ -11,8 +11,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/../app/pg_rest_api")
 from pg_app import create_app
 
-import syft
-from syft import TorchHook
+from grid import syft
 from test import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
 import time
 import requests
@@ -127,5 +126,5 @@ def grid_network():
 
 @pytest.fixture(scope="session", autouse=True)
 def hook():
-    hook = TorchHook(torch)
+    hook = syft.TorchHook(torch)
     return hook

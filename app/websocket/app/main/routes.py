@@ -3,17 +3,24 @@ This file exists to provide one common place for all grid node http requests.
 """
 import binascii
 import json
+import sys
 
 from flask import render_template
 from flask import Response
 from flask import request
 
 import syft as sy
+from requests_toolbelt import MultipartEncoder
 
 from . import main
 from . import local_worker
 from . import model_manager as mm
 from .local_worker_utils import register_obj, get_objs
+
+
+# Suport for sending big models over the wire back to a
+# worker
+MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
 
 
 @main.route("/identity/")
@@ -42,6 +49,37 @@ def list_models():
     return Response(
         json.dumps(mm.list_models()), status=200, mimetype="application/json"
     )
+
+
+@main.route("/is_model_copy_allowed/<model_id>", methods=["GET"])
+def is_model_copy_allowed(model_id):
+    """Generates a list of models currently saved at the worker"""
+    return Response(
+        json.dumps(mm.is_model_copy_allowed(model_id)),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@main.route("/get_model/<model_id>", methods=["GET"])
+def get_model(model_id):
+    """Generates a list of models currently saved at the worker"""
+    result = mm.get_serialized_model_with_id(model_id)
+
+    if result["success"]:
+        # Use correct encoding
+        response = {"serialized_model": result["serialized_model"].decode("ISO-8859-1")}
+
+        # If model is large split it in multiple parts
+        if sys.getsizeof(response["serialized_model"]) >= MODEL_LIMIT_SIZE:
+            form = MultipartEncoder(response)
+            return Response(form.to_string(), mimetype=form.content_type)
+        else:
+            return Response(
+                json.dumps(response), status=200, mimetype="application/json"
+            )
+    else:
+        return Response(json.dumps(result), status=404, mimetype="application/json")
 
 
 @main.route("/models/<model_id>", methods=["GET"])
@@ -77,13 +115,19 @@ def model_inference(model_id):
             mimetype="application/json",
         )
     else:
-        return Response(json.dumps(response), status=404, mimetype="application/json")
+        return Response(
+            json.dumps(response),
+            status=403 if "not_allowed" in response else 404,
+            mimetype="application/json",
+        )
 
 
 @main.route("/serve-model/", methods=["POST"])
 def serve_model():
     encoding = request.form["encoding"]
     model_id = request.form["model_id"]
+    allow_download = request.form["allow_download"] == "True"
+    allow_remote_inference = request.form["allow_remote_inference"] == "True"
 
     if request.files:
         # If model is large, receive it by a stream channel
@@ -92,10 +136,13 @@ def serve_model():
         # If model is small, receive it by a standard json
         serialized_model = request.form["model"]
 
+    # Encode the model accordingly
     serialized_model = serialized_model.encode(encoding)
 
     # save the model for later usage
-    response = mm.save_model(serialized_model, model_id)
+    response = mm.save_model(
+        serialized_model, model_id, allow_download, allow_remote_inference
+    )
     if response["success"]:
         return Response(json.dumps(response), status=200, mimetype="application/json")
     else:

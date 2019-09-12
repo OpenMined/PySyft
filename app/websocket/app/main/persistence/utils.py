@@ -29,16 +29,15 @@ def snapshot(worker):
     # Add new objects from database
     new_keys = current_keys - last_snapshot_keys
 
-    objects, models = [], []
+    objects = []
     for key in new_keys:
         obj = worker.get_obj(key)
 
-        # If obj is a Plan we save in the database as a model
-        if isinstance(obj, Plan):
-            models.append(TorchModel(id=key, model=sy.serde.serialize(obj)))
-        # If obj is Jit we ignore it
-        elif isinstance(obj, torch.jit.ScriptModule):
+        # If obj is an instance of Plan or TorchScriptModul we ignore it
+        # We only store these objects when explictly sent using the Rest API.
+        if isinstance(obj, (Plan, torch.jit.ScriptModule)):
             continue
+
         # If obj is a parameter we wrap the data and store it in the database
         # as an object
         elif isinstance(obj, torch.nn.Parameter):
@@ -49,7 +48,6 @@ def snapshot(worker):
             objects.append(WorkerObject(worker_id=worker.id, object=obj, id=key))
 
     db.session.add_all(objects)
-    db.session.add_all(models)
     db.session.commit()
     last_snapshot_keys = current_keys
 
