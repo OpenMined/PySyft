@@ -261,9 +261,10 @@ def _norm_mpc(t, norm_factor):
 
     In order to maintain stability and avoid overflow, this functions uses a
     norm_factor that scales the tensor for MPC computations and rescale it at the end.
-    This norm_factor should be of the order of the square root of number of entries
-    in the original matrix used to perform the compression phase of DASH algorithm,
-    assuming the entries in the original matrix are standardized.
+    For example in the case of the DASH algorithm, this norm_factor should be of
+    the order of the square root of number of entries in the original matrix
+    used to perform the compression phase assuming the entries in the original
+    matrix are standardized.
 
     Args:
         t: 1-dim AdditiveSharedTensor, representing a vector.
