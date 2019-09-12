@@ -607,7 +607,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         self.replace_ids(self.result_ids, result_ids)
         self.result_ids = result_ids
-    
+
     def has_args_fulfilled(self):
         """ Check if all the arguments of the plan are ready or not.
         It might be the case that we still need to wait for some arguments in

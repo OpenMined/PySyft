@@ -86,7 +86,6 @@ class Promise(ABC):
 
         return obj
 
-
     @property
     def id(self):
         return self._id

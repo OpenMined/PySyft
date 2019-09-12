@@ -393,7 +393,7 @@ class TorchTensor(AbstractTensor):
             # when we're sending a PromiseTensor, we want to make sure we don't accidentally send the wrapper
             # so we set to_send to be child if a wrapper exists.
             to_send = self
-            #if hasattr(self, "child"):
+            # if hasattr(self, "child"):
             #    if isinstance(self.child, PromiseTensor):
             #        to_send = self.child
 

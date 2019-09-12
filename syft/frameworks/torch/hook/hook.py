@@ -502,7 +502,9 @@ class TorchHook(FrameworkHook):
 
                 # only need this for use of Promises with the local_worker VirtualWorker
                 # otherwise we would simplty check the ._objects registry
-                operation.args_fulfilled = {arg.id: arg for arg in args if not isinstance(arg, PromiseTensor)}
+                operation.args_fulfilled = {
+                    arg.id: arg for arg in args if not isinstance(arg, PromiseTensor)
+                }
 
                 self.result_promise = PromiseTensor(
                     owner=self.owner,

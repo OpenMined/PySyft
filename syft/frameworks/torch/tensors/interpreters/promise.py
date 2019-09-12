@@ -75,7 +75,8 @@ class PromiseTensor(AbstractTensor, Promise):
         # the remote worker when tracing the operation func above.
         # Thus, we need to remove it.
         sy.local_worker.send_msg(
-            location=args[0], message=sy.messaging.message.ForceObjectDeleteMessage(operation.result_ids[0])
+            location=args[0],
+            message=sy.messaging.message.ForceObjectDeleteMessage(operation.result_ids[0]),
         )
 
         # The object we removed in the last line causes a garbage
