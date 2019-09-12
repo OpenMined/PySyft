@@ -809,7 +809,9 @@ class TorchTensor(AbstractTensor):
     def keep(self, *args, **kwargs):
 
         result = self.child.keep(*args, **kwargs)
+        """
         if hasattr(self, "child") and isinstance(self.child, PromiseTensor):
+            print(self)
             future_id = self.child.obj_id
 
             self.set_(result)
@@ -818,6 +820,10 @@ class TorchTensor(AbstractTensor):
             self.is_wrapper = False
 
             self.id = future_id
+        """
+    
+    def value(self):
+        return self.child.value()
 
     def torch_type(self):
 

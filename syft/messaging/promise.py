@@ -81,10 +81,16 @@ class Promise(ABC):
                 self.result_promise.parent().keep(result)
 
         if self.id in self.owner._objects:
-            self.owner.rm_obj(self.id)
+            #self.owner.rm_obj(self.id)
             self.owner.register_obj(obj)
 
         return obj
+
+    def value(self):
+        """ Returns the object the promise points to.
+        """
+        #TODO is there a better way to access to the objects of a worker?
+        return self.owner._objects[self.obj_id]
 
     @property
     def id(self):

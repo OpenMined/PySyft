@@ -460,8 +460,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
 
         # Send the command
-        print("send keep command")
         command = ("keep", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+    
+    def value(self, *args, **kwargs):
+        command = ("value", self, args, kwargs)
 
         response = self.owner.send_command(self.location, command)
 
