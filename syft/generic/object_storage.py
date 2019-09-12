@@ -103,7 +103,7 @@ class ObjectStorage:
         Args:
             obj: A torch or syft tensor with an id.
         """
-
+        """
         if obj.id in self.obj_id2promise_id:
             promise_id = self.obj_id2promise_id[obj.id]
             if promise_id in self._objects:
@@ -112,7 +112,7 @@ class ObjectStorage:
                 promise.keep(obj)
 
             del self.obj_id2promise_id[obj.id]
-
+        """
         self._objects[obj.id] = obj
 
     def rm_obj(self, remote_key: Union[str, int]):
