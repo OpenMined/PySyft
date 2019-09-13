@@ -18,6 +18,7 @@ import torch.nn.functional as F
 
 
 DATASET_PATH = "./skin-cancer-mnist-ham10000"
+test_generator = None
 
 
 def read_skin_cancer_dataset():
@@ -85,30 +86,32 @@ def transform(input_size, mean, std):
     )
 
 
-def make_model(num_classes: int = 2, is_plan=False):
+def make_model(
+    num_classes: int = 2, is_plan=False, model_id="skin-cancer-model-encrypted"
+):
     super_class = sy.Plan if is_plan else nn.Module
 
     class Net(super_class):
+        """Similar to LeNet5 but without pooling."""
+
         def __init__(self):
             if is_plan:
-                super(Net, self).__init__(id="convnet")
+                super(Net, self).__init__(id=model_id)
             else:
                 super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(3, 32, 5, 1)
-            self.conv2 = nn.Conv2d(32, 32, 5, 1)
-            self.conv3 = nn.Conv2d(32, 32, 5, 1)
-            self.fc1 = nn.Linear(12800, 400)
-            self.fc2 = nn.Linear(400, 200)
-            self.fc3 = nn.Linear(200, num_classes)
+            self.conv1 = nn.Conv2d(3, 6, 5, 1)
+            self.conv2 = nn.Conv2d(6, 16, 5, 1)
+            self.fc1 = nn.Linear(9216, 120)
+            self.fc2 = nn.Linear(120, 84)
+            self.fc3 = nn.Linear(84, num_classes)
 
             if is_plan:
-                self.add_to_state(["conv1", "conv2", "conv3", "fc1", "fc2", "fc3"])
+                self.add_to_state(["conv1", "conv2", "ffc1", "fc2", "fc3"])
 
         def forward(self, x):
             x = F.relu(self.conv1(x))
             x = F.relu(self.conv2(x))
-            x = F.relu(self.conv3(x))
-            x = x.view(-1, 12800)
+            x = x.view(-1, 9216)
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
             x = self.fc3(x)
@@ -183,6 +186,29 @@ def plot_confusion_matrix(model, loader):
     df_cm = pd.DataFrame(conf_matrix)
     sn.set(font_scale=1)
     sn.heatmap(df_cm, annot=True, annot_kws={"size": 16})
+
+
+def get_data_sample():
+    global test_generator
+    if not test_generator:
+        df = read_skin_cancer_dataset()
+        _, _, test_df = split_data(df)
+
+        params = {"batch_size": 1, "shuffle": True, "num_workers": 6}
+
+        # These values are from training
+        input_size = 32
+        train_mean, train_std = (
+            torch.tensor([0.6979, 0.5445, 0.5735]),
+            torch.tensor([0.0959, 0.1187, 0.1365]),
+        )
+
+        test_set = Dataset(
+            test_df, transform=transform(input_size, train_mean, train_std)
+        )
+        test_generator = torch.utils.data.DataLoader(test_set, **params)
+
+    return next(iter(test_generator))
 
 
 class Dataset(torch.utils.data.Dataset):

@@ -18,6 +18,17 @@
 
 import torch as th
 import torch.nn.functional as F
+from pytorch_transformers import GPT2Tokenizer
+
+# Load pre-trained model tokenizer (vocabulary)
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+
+def encode_text(text):
+    # Encode a text inputs
+    indexed_tokens = tokenizer.encode(text)
+    # Convert indexed tokens in a PyTorch tensor
+    return th.tensor([indexed_tokens])
 
 
 def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float("Inf")):
