@@ -112,6 +112,13 @@ class HerokuGatewayDeployment(BaseDeployment):
         )
         self.commands.append("heroku create " + self.app_name)
 
+        self.logs.append(
+            "Step 12: Creating Postgres database... (this can take a few seconds)"
+        )
+        self.commands.append(
+            f"heroku addons:create heroku-postgresql:hobby-dev -a {self.app_name}"
+        )
+
         for var in self.env_vars:
             self.logs.append("Setting environment variable: ")
             self.commands.append("heroku config:set " + var + "=" + self.env_vars[var])

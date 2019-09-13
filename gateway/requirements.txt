@@ -11,3 +11,7 @@ MarkupSafe==1.1.1
 gevent==1.4.0
 Werkzeug==0.15.2
 requests
+flask_sqlalchemy
+flask_migrate
+flask_testing
+psycopg2

@@ -9,6 +9,8 @@ import random
 import os
 import requests
 
+from .persistence.manager import register_new_node, connected_nodes
+
 
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
@@ -41,13 +43,14 @@ def join_grid_node():
         )
 
     # Add new grid node to list of known nodes
-    grid_nodes[data["node-id"]] = data["node-address"]
+    register_new_node(data["node-id"], data["node-address"])
     return Response("Successfully Connected!", status=200, mimetype="application/json")
 
 
 @main.route("/connected-nodes", methods=["GET"])
 def get_connected_nodes():
     """ Get a list of connected nodes. """
+    grid_nodes = connected_nodes()
     return Response(
         json.dumps({"grid-nodes": list(grid_nodes.keys())}),
         status=200,
@@ -60,7 +63,7 @@ def choose_encrypted_model_host():
     """ Used to choose grid nodes to host an encrypted model
         PS: currently we perform this randomly
     """
-
+    grid_nodes = connected_nodes()
     n_replica = current_app.config["N_REPLICA"]
     if not n_replica:
         n_replica = 1
@@ -78,6 +81,7 @@ def choose_model_host():
     """ Used to choose some grid node to host a model.
         PS: Currently we perform this randomly.
     """
+    grid_nodes = connected_nodes()
     n_replica = current_app.config["N_REPLICA"]
     if not n_replica:
         n_replica = 1
@@ -97,6 +101,7 @@ def search_encrypted_model():
     if "model_id" not in body:
         return Response("", status=400, mimetype="application/json")
 
+    grid_nodes = connected_nodes()
     match_nodes = {}
     for node in grid_nodes:
         try:
@@ -104,7 +109,7 @@ def search_encrypted_model():
                 os.path.join(grid_nodes[node], "search-encrypted-models"),
                 data=request.data,
             )
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             continue
 
         response = json.loads(response.content)
@@ -123,11 +128,12 @@ def search_model():
     if "model_id" not in body:
         return Response("", status=400, mimetype="application/json")
 
+    grid_nodes = connected_nodes()
     match_nodes = []
     for node in grid_nodes:
         try:
             response = requests.get(grid_nodes[node] + "/models/").content
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             continue
         response = json.loads(response)
         if body["model_id"] in response.get("models", []):
@@ -140,11 +146,12 @@ def search_model():
 @main.route("/search-available-models", methods=["GET"])
 def available_models():
     """ Get all available models on the grid network. Can be useful to know what models our grid network have. """
+    grid_nodes = connected_nodes()
     models = set()
     for node in grid_nodes:
         try:
             response = requests.get(grid_nodes[node] + "/models/").content
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             continue
         response = json.loads(response)
         models.update(set(response.get("models", [])))
@@ -156,11 +163,12 @@ def available_models():
 @main.route("/search-available-tags", methods=["GET"])
 def available_tags():
     """ Returns all available tags stored on grid nodes. Can be useful to know what dataset our grid network have. """
+    grid_nodes = connected_nodes()
     tags = set()
     for node in grid_nodes:
         try:
             response = requests.get(grid_nodes[node] + "/dataset-tags").content
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             continue
         response = json.loads(response)
         tags.update(set(response))
@@ -178,6 +186,7 @@ def search_dataset_tags():
     if "query" not in body:
         return Response("", status=400, mimetype="application/json")
 
+    grid_nodes = connected_nodes()
     # Perform requests (HTTP) to all known nodes looking for the desired data tag
     match_grid_nodes = []
     for node in grid_nodes:
@@ -185,7 +194,7 @@ def search_dataset_tags():
             response = requests.post(
                 grid_nodes[node] + "/search", data=json.dumps({"query": body["query"]})
             ).content
-        except ConnectionError:
+        except requests.exceptions.ConnectionError:
             continue
         response = json.loads(response)
         # If contains

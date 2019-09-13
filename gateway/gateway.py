@@ -34,10 +34,28 @@ parser.add_argument(
     default=os.environ.get("NUM_REPLICAS", None),
 )
 
+parser.add_argument(
+    "--start_local_db",
+    dest="start_local_db",
+    action="store_true",
+    help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
+)
+
+parser.set_defaults(use_test_config=False)
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    app = create_app(debug=False, n_replica=args.num_replicas)
+
+    if args.start_local_db:
+        db_path = "sqlite:///databaseGateway.db"
+        app = create_app(
+            debug=False,
+            n_replica=args.num_replicas,
+            test_config={"SQLALCHEMY_DATABASE_URI": db_path},
+        )
+    else:
+        app = create_app(debug=False, n_replica=args.num_replicas)
+
     app.run(host=args.host, port=args.port)
 else:
     num_replicas = os.environ.get("N_REPLICAS", None)

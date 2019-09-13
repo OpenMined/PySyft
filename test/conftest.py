@@ -42,11 +42,16 @@ def node_infos():
 
 @pytest.fixture(scope="session", autouse=True)
 def init_gateway():
+    BASEDIR = os.path.dirname(os.path.dirname(__file__))
+
     def setUpGateway(port):
         os.environ["SECRET_KEY"] = "Secretkeyhere"
         from gateway.app import create_app
 
-        app = create_app(debug=False)
+        db_path = "sqlite:///" + BASEDIR + "/databaseGateway.db"
+        app = create_app(
+            debug=False, n_replica=1, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
+        )
         app.run(host="0.0.0.0", port=GATEWAY_PORT)
 
     # Init Grid Gateway
