@@ -32,8 +32,8 @@ parser.add_argument(
 parser.add_argument(
     "--host",
     type=str,
-    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_WS_HOST','0.0.0.0').",
-    default=os.environ.get("GRID_WS_HOST", "0.0.0.0"),
+    help="Grid node host, e.g. --host=http://0.0.0.0. Default is os.environ.get('GRID_WS_HOST','http://0.0.0.0').",
+    default=os.environ.get("GRID_WS_HOST", "http://0.0.0.0"),
 )
 
 parser.add_argument(
@@ -44,19 +44,18 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--use_test_config",
-    dest="use_test_config",
+    "--start_local_db",
+    dest="start_local_db",
     action="store_true",
     help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
 )
 
 parser.set_defaults(use_test_config=False)
 
-
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    if args.use_test_config:
+    if args.start_local_db:
         db_path = "sqlite:///database{}.db".format(args.id)
         app = create_app(debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path})
     else:
@@ -69,9 +68,26 @@ if __name__ == "__main__":
             data=json.dumps(
                 {
                     "node-id": args.id,
-                    "node-address": "http://{}:{}".format(args.host, args.port),
+                    "node-address": "{}:{}".format(args.host, args.port),
                 }
             ),
         )
 
     socketio.run(app, host=args.host, port=args.port)
+else:
+    ## DEPLOYMENT MODE (we use gunicorn's eventlet worker to perform load balancing)
+
+    # These environment variables must be set before starting the application.
+    gateway_url = os.environ.get("GRID_NETWORK_URL", None)
+    node_id = os.environ.get("ID", None)
+    node_address = os.environ.get("ADDRESS", None)
+
+    # If using a Gateway URL start the connection
+    if gateway_url:
+        requests.post(
+            os.path.join(gateway_url, "join"),
+            data=json.dumps(
+                {"node-id": node_id, "node-address": "{}".format(node_address)}
+            ),
+        )
+    app = create_app(debug=False)
