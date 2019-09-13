@@ -481,6 +481,12 @@ class TorchHook(FrameworkHook):
 
                 arg_shapes = list([self._shape])
                 arg_ids = list([self.obj_id])
+
+                # Convert scalar arguments to tensors to be able to use them with plans
+                args = list(args)
+                for ia in range(len(args)):
+                    args[ia] = torch.tensor(args[ia])
+
                 for arg in args:
                     arg_shapes.append(arg.shape)
                     if isinstance(arg, PromiseTensor):
