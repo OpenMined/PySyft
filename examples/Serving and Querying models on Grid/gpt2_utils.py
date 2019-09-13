@@ -31,6 +31,17 @@ def encode_text(text):
     return th.tensor([indexed_tokens])
 
 
+def decode_tokens(tokens):
+    return tokenizer.decode(tokens)
+
+
+def decode_response(response):
+    predictions = th.tensor(response[0])
+    predicted_index = th.argmax(predictions[0, -1, :]).item()
+    predicted_text = decode_tokens([predicted_index])
+    return predicted_text
+
+
 def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float("Inf")):
     """ Filter a distribution of logits using top-k and/or nucleus (top-p) filtering
 
@@ -73,25 +84,25 @@ def sample_sequence(
     model=None,
     worker=None,
     model_id="GPT-2",
-    num_samples=1,
     temperature=1,
     top_k=0,
     top_p=0.0,
     device="cpu",
 ):
+    # We expect a list of indexes as input
+    if isinstance(context, th.Tensor):
+        context = context.tolist()[0]
+
     context = th.tensor(context, dtype=th.long, device=device)
-    context = context.unsqueeze(0).repeat(num_samples, 1)
+    context = context.unsqueeze(0).repeat(1, 1)
 
     predicted_indexes = []
-
     generated = context
     with th.no_grad():
         for _ in range(length):
             # Inference
             if worker and model_id:
-                outputs = th.tensor(
-                    worker.run_remote_inference(model_id=model_id, data=generated)
-                )
+                outputs = worker.run_remote_inference(model_id=model_id, data=generated)
             elif model:
                 outputs = model(generated)
             else:
@@ -100,10 +111,11 @@ def sample_sequence(
                 )
 
             # Applying Filter
-            next_token_logits = outputs[0, -1, :] / temperature
+            next_token_logits = outputs[0][0, -1, :] / temperature
             filtered_logits = top_k_top_p_filtering(
                 next_token_logits, top_k=top_k, top_p=top_p
             )
+
             next_token = th.multinomial(
                 F.softmax(filtered_logits, dim=-1), num_samples=1
             )
@@ -114,6 +126,6 @@ def sample_sequence(
             )
 
             # Save predicted word
-            predicted_indexes.append(th.argmax(outputs[0, -1, :]).item())
+            predicted_indexes.append(next_token.item())
 
-    return predicted_indexes
+    return decode_tokens(predicted_indexes)

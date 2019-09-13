@@ -106,7 +106,7 @@ def make_model(
             self.fc3 = nn.Linear(84, num_classes)
 
             if is_plan:
-                self.add_to_state(["conv1", "conv2", "ffc1", "fc2", "fc3"])
+                self.add_to_state(["conv1", "conv2", "fc1", "fc2", "fc3"])
 
         def forward(self, x):
             x = F.relu(self.conv1(x))
