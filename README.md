@@ -16,18 +16,10 @@ Grid is a peer-to-peer network of data owners and data scientists who can collec
 ## How to install
 
 #### Grid library
+Install requirements and make grid library importable in python:
 ```
+$ pip install -r requirements.txt
 $ python setup.py install
-```
-#### Grid Node
-```
-$ cd app/websocket
-$ pip install -r requirements.txt
-```
-#### Grid Gateway
-```
-$ cd gateway
-$ pip install -r requirements.txt
 ```
 
 ## Getting started
