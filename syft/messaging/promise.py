@@ -65,11 +65,7 @@ class Promise(ABC):
             )
 
         obj.id = self.obj_id
-
-        # not necessary since we're about to delete the Promise anyway
-        # but when we have Promises which you can call multiple times
-        # some functionality like this might be necessary.
-        # self.is_kept = True
+        self.is_kept = True
 
         for plan in self.plans:
 
@@ -81,7 +77,6 @@ class Promise(ABC):
                 self.result_promise.parent().keep(result)
 
         if self.id in self.owner._objects:
-            #self.owner.rm_obj(self.id)
             self.owner.register_obj(obj)
 
         return obj
@@ -89,7 +84,11 @@ class Promise(ABC):
     def value(self):
         """ Returns the object the promise points to.
         """
-        #TODO is there a better way to access to the objects of a worker?
+        if not self.is_kept:
+            # If the promise has still not been kept
+            # For later: also if the queue of results for this promise has been emptied
+            return None
+        # TODO something like .pop() and/or .top()
         return self.owner._objects[self.obj_id]
 
     @property
