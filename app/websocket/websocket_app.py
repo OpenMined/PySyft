@@ -32,8 +32,8 @@ parser.add_argument(
 parser.add_argument(
     "--host",
     type=str,
-    help="Grid node host, e.g. --host=http://0.0.0.0. Default is os.environ.get('GRID_WS_HOST','http://0.0.0.0').",
-    default=os.environ.get("GRID_WS_HOST", "http://0.0.0.0"),
+    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_WS_HOST','http://0.0.0.0').",
+    default=os.environ.get("GRID_WS_HOST", "0.0.0.0"),
 )
 
 parser.add_argument(
@@ -63,16 +63,14 @@ if __name__ == "__main__":
 
     # If using a Gateway URL start the connection
     if args.gateway_url is not None:
+        if "http://" in args.host:
+            node_address = "{}:{}".format(args.host, args.port)
+        else:
+            node_address = "http://{}:{}".format(args.host, args.port)
         requests.post(
             os.path.join(args.gateway_url, "join"),
-            data=json.dumps(
-                {
-                    "node-id": args.id,
-                    "node-address": "{}:{}".format(args.host, args.port),
-                }
-            ),
+            data=json.dumps({"node-id": args.id, "node-address": node_address}),
         )
-
     socketio.run(app, host=args.host, port=args.port)
 else:
     ## DEPLOYMENT MODE (we use gunicorn's eventlet worker to perform load balancing)
