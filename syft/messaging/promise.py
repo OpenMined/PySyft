@@ -42,8 +42,12 @@ class Promise(ABC):
 
         if obj_id is None:
             obj_id = sy.ID_PROVIDER.pop()
-
+        #TODO:
+        # In which case would we need to pre-set an id for the object?
+        # Can remove that if no use case
+        # Else is it still ok to generate new id for promises kept several times?
         self.obj_id = obj_id
+        self.queue_obj_ids = []
 
         self.obj_type = obj_type
 
@@ -51,9 +55,6 @@ class Promise(ABC):
             plans = set()
 
         self.plans = plans
-
-        # by default, a Promise has not been kept when it is created.
-        self.is_kept = False
 
         self.owner.obj_id2promise_id[self.obj_id] = self.id
 
@@ -65,7 +66,6 @@ class Promise(ABC):
             )
 
         obj.id = self.obj_id
-        self.is_kept = True
 
         for plan in self.plans:
 
@@ -79,17 +79,25 @@ class Promise(ABC):
         if self.id in self.owner._objects:
             self.owner.register_obj(obj)
 
+        self.queue_obj_ids.append(obj.id)
+        # Generate new id for next time promise is kept
+        self.obj_id = sy.ID_PROVIDER.pop()
+
         return obj
 
     def value(self):
-        """ Returns the object the promise points to.
+        """ Returns the next object in the queue of results.
         """
-        if not self.is_kept:
+        if not self.queue_obj_ids:
             # If the promise has still not been kept
-            # For later: also if the queue of results for this promise has been emptied
+            # or if the queue of results has been emptied
             return None
         # TODO something like .pop() and/or .top()
-        return self.owner._objects[self.obj_id]
+        #return self.owner._objects[self.obj_id]
+        ret_id = self.queue_obj_ids.pop(0)
+        ret = self.owner._objects[ret_id]
+        self.owner.rm_obj(ret_id)
+        return ret
 
     @property
     def id(self):
