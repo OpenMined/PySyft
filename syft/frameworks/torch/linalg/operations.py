@@ -65,7 +65,7 @@ def _ldl(t):
     return l, d, inv_d
 
 
-def qr(t, mode="reduced"):
+def qr(t, mode="reduced", norm_factor=None):
     """
     This function performs the QR decomposition of a matrix (2-dim tensor). The
     decomposition is performed using Householder Reflection.
@@ -85,17 +85,36 @@ def qr(t, mode="reduced"):
         q: orthogonal matrix as a 2-dim tensor with same type as t
         r: lower triangular matrix as a 2-dim tensor with same type as t
     """
-    if not isinstance(t, torch.Tensor):
-        raise TypeError("The provided matrix should be a tensor")
 
-    if t.has_child() and not isinstance(t.child, PointerTensor):
-        raise TypeError("The provided matrix should be a local torch.Tensor or a PointerTensor")
+    # Check if t is a PointerTensor or an AST
+    if t.has_child() and isinstance(t.child, PointerTensor):
+        t_type = "pointer"
+        location = t.child.location
+    elif t.has_child() and isinstance(t.child.child, AdditiveSharingTensor):
+        t_type = "ast"
+        if norm_factor is None:
+            raise ValueError(
+                "You are trying to perform QR decompostion on an ",
+                "AdditiveSharingTensor, please provide a value for the ",
+                "norm_factor argument.",
+            )
+        workers = t.child.child.locations
+        crypto_prov = t.child.child.crypto_provider
+        prec_frac = t.child.precision_fractional
+    elif isinstance(t, torch.Tensor):
+        t_type = "local"
+    else:
+        raise TypeError(
+            "The provided matrix should be a local torch.Tensor, a PointerTensor,",
+            "or an AdditiveSharedTensor",
+        )
 
     if mode not in ["reduced", "complete", "r"]:
         raise ValueError(
             "mode should have one of the values in the list:" + str(["reduced", "complete", "r"])
         )
 
+    ######## QR decomposition via Householder Reflection #########
     n_rows, n_cols = t.shape
 
     # Initiate R matrix from t
@@ -104,9 +123,11 @@ def qr(t, mode="reduced"):
     # Initiate identity matrix with size (n_rows, n_rows)
     I = torch.diag(torch.Tensor([1.0] * n_rows))
 
-    # Send it to remote worker if t is pointer
-    if t.has_child() and isinstance(t.child, PointerTensor):
-        I = I.send(t.child.location)
+    # Send it to remote worker if t is pointer, secret share it if it's an AST
+    if t_type == "pointer":
+        I = I.send(location)
+    if t_type == "ast":
+        I = I.fix_prec(precision_fractional=prec_frac).share(*workers, crypto_provider=crypto_prov)
 
     if not mode == "r":
         # Initiate Q_transpose
@@ -114,89 +135,7 @@ def qr(t, mode="reduced"):
 
     # Iteration via Household Reflection
     for i in range(min(n_rows, n_cols)):
-        # Identity for this iteration, it has size (n_cols-i, n_cols-i)
-        I_i = I[i:, i:]
 
-        # Init 1st vector of the canonical base in the same worker as t
-        e = torch.zeros_like(t)[i:, 0].view(-1, 1)
-        e[0, 0] += 1.0
-
-        # Current vector in R to perform reflection
-        x = R[i:, i].view(-1, 1)
-        x_norm = torch.sqrt(x.t() @ x).squeeze()
-
-        # Compute Householder transform
-        numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
-        denominator = x.t() @ x - x_norm * x[0, 0]
-        H = I_i - numerator / denominator
-
-        # If it is not the 1st iteration
-        # expand matrix H with Identity at diagonal and zero elsewhere
-        if i > 0:
-            down_zeros = torch.zeros([n_rows - i, i])
-            up_zeros = torch.zeros([i, n_rows - i])
-            # Send them to remote worker if t is pointer
-            if t.has_child() and isinstance(t.child, PointerTensor):
-                down_zeros = down_zeros.send(t.child.location)
-                up_zeros = up_zeros.send(t.child.location)
-            left_cat = torch.cat((I[:i, :i], down_zeros), dim=0)
-            right_cat = torch.cat((up_zeros, H), dim=0)
-            H = torch.cat((left_cat, right_cat), dim=1)
-
-        # Update R
-        R = H @ R
-        if not mode == "r":
-            # Update Q_transpose
-            Q_t = H @ Q_t
-
-    if mode == "reduced":
-        R = R[:n_cols, :]
-        Q_t = Q_t[:n_cols, :]
-
-    if mode == "r":
-        R = R[:n_cols, :]
-        return R
-
-    return Q_t.t(), R
-
-
-def qr_mpc(t, norm_factor, mode="r"):
-
-    # Check if t is an AST
-    if (
-        t.has_child()
-        and t.child.has_child()
-        and not isinstance(t.child.child, AdditiveSharingTensor)
-    ):
-        raise TypeError("Input is not an AdditiveSharedTensor")
-
-    # Check mode
-    if mode not in ["reduced", "complete", "r"]:
-        raise ValueError(
-            "mode should have one of the values in the list:" + str(["reduced", "complete", "r"])
-        )
-
-    workers = t.child.child.locations
-    crypto_prov = t.child.child.crypto_provider
-    prec_frac = t.child.precision_fractional
-
-    ######## QR decomposition via Householder Reflection #########
-
-    n_rows, n_cols = t.shape
-
-    # Initiate R matrix from t
-    R = t.copy()
-
-    # Initiate identity matrix with size (n_rows, n_rows) and secret shared it
-    I = torch.diag(torch.Tensor([1.0] * n_rows))
-    I = I.fix_prec(precision_fractional=prec_frac).share(*workers, crypto_provider=crypto_prov)
-
-    if not mode == "r":
-        # Initiate Q_transpose
-        Q_t = I.copy()
-
-    # Iteration via Household Reflection
-    for i in range(min(n_rows, n_cols)):
         # Identity for this iteration, it has size (n_cols-i, n_cols-i)
         I_i = I[i:, i:]
 
@@ -207,13 +146,16 @@ def qr_mpc(t, norm_factor, mode="r"):
         # Current vector in R to perform reflection
         x = R[i:, i].view(-1, 1)
 
-        # Compute norm in MPC
-        x_norm = _norm_mpc(x, norm_factor)
+        # Compute norm in MPC if it's an AST
+        x_norm = _norm_mpc(x, norm_factor) if t_type == "ast" else torch.sqrt(x.t() @ x).squeeze()
 
         # Compute Householder transform
         numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
         denominator = x.t() @ x - x_norm * x[0, 0]
-        H = I_i - numerator / denominator
+        inv_denominator = (
+            0 * denominator + 1
+        ) / denominator  # Need this line to perform inverse of a number in MPC
+        H = I_i - numerator * inv_denominator
 
         # If it is not the 1st iteration
         # expand matrix H with Identity at diagonal and zero elsewhere
@@ -221,14 +163,17 @@ def qr_mpc(t, norm_factor, mode="r"):
             down_zeros = torch.zeros([n_rows - i, i])
             up_zeros = torch.zeros([i, n_rows - i])
 
-            # Secret share
-            down_zeros = down_zeros.fix_prec(precision_fractional=prec_frac).share(
-                *workers, crypto_provider=crypto_prov
-            )
-            up_zeros = up_zeros.fix_prec(precision_fractional=prec_frac).share(
-                *workers, crypto_provider=crypto_prov
-            )
-
+            # Send them to remote worker if t is pointer, secret share it if its an AST
+            if t_type == "pointer":
+                down_zeros = down_zeros.send(t.child.location)
+                up_zeros = up_zeros.send(t.child.location)
+            if t_type == "ast":
+                down_zeros = down_zeros.fix_prec(precision_fractional=prec_frac).share(
+                    *workers, crypto_provider=crypto_prov
+                )
+                up_zeros = up_zeros.fix_prec(precision_fractional=prec_frac).share(
+                    *workers, crypto_provider=crypto_prov
+                )
             left_cat = torch.cat((I[:i, :i], down_zeros), dim=0)
             right_cat = torch.cat((up_zeros, H), dim=0)
             H = torch.cat((left_cat, right_cat), dim=1)
@@ -268,8 +213,7 @@ def _norm_mpc(t, norm_factor):
 
     Args:
         t: 1-dim AdditiveSharedTensor, representing a vector.
-
-        norm_factor
+        norm_factor: float. The normalization factor used to avoir overflow
 
     Returns:
         q: orthogonal matrix as a 2-dim tensor with same type as t
