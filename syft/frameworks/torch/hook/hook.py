@@ -10,6 +10,7 @@ import types
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
@@ -485,7 +486,10 @@ class TorchHook(FrameworkHook):
                 # Convert scalar arguments to tensors to be able to use them with plans
                 args = list(args)
                 for ia in range(len(args)):
-                    args[ia] = torch.tensor(args[ia])
+                    if not isinstance(args[ia], (torch.Tensor, AbstractTensor)):
+                        print(args[ia])
+                        args[ia] = torch.tensor(args[ia])
+                args = tuple(args)
 
                 for arg in args:
                     arg_shapes.append(arg.shape)
