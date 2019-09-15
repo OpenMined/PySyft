@@ -56,8 +56,6 @@ class Promise(ABC):
 
         self.plans = plans
 
-        self.owner.obj_id2promise_id[self.obj_id] = self.id
-
     def keep(self, obj):
         print(f"keep {type(self)} {self.id}")
         if obj.type() != self.obj_type:

@@ -17,14 +17,6 @@ class ObjectStorage:
         # This is the collection of objects being stored.
         self._objects = {}
 
-        # When we receive an object, we need to check to see if
-        # there are any promises waiting on the object to be received.
-        # In order to do this efficiently, we need a lookup table
-        # mapping from the id of the object being received to the id
-        # of a promise waiting to receive said object. obj_id2promise_id
-        # is that lookup table.
-        self.obj_id2promise_id = {}
-
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
 
@@ -102,16 +94,6 @@ class ObjectStorage:
 
         Args:
             obj: A torch or syft tensor with an id.
-        """
-        """
-        if obj.id in self.obj_id2promise_id:
-            promise_id = self.obj_id2promise_id[obj.id]
-            if promise_id in self._objects:
-                promise = self.get_obj(promise_id)
-
-                promise.keep(obj)
-
-            del self.obj_id2promise_id[obj.id]
         """
         self._objects[obj.id] = obj
 
