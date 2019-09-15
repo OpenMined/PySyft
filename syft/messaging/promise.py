@@ -42,7 +42,7 @@ class Promise(ABC):
 
         if obj_id is None:
             obj_id = sy.ID_PROVIDER.pop()
-        #TODO:
+        # TODO:
         # In which case would we need to pre-set an id for the object?
         # Can remove that if no use case
         # Else is it still ok to generate new id for promises kept several times?
@@ -67,21 +67,37 @@ class Promise(ABC):
 
         obj.id = self.obj_id
 
-        for plan in self.plans:
-
-            plan.args_fulfilled[self.obj_id] = obj
-
-            if plan.has_args_fulfilled():
-                args = list(map(lambda arg_id: plan.args_fulfilled[arg_id], plan.arg_ids))
-                result = plan(*args)
-                self.result_promise.parent().keep(result)
-
         if self.id in self.owner._objects:
             self.owner.register_obj(obj)
 
         self.queue_obj_ids.append(obj.id)
         # Generate new id for next time promise is kept
         self.obj_id = sy.ID_PROVIDER.pop()
+
+        # If some plans were waiting for this promise...
+        for plan in self.plans:
+            # ... tell them that the promise has been kept.
+            plan.args_promised[self.id].append(obj)  # TODO should I put obj_id in dict instead?
+
+            # ... and execute them if it was the last argument they were waiting for.
+            if plan.has_args_fulfilled():
+                # Collect args
+                args = [
+                    plan.args_promised[arg_id].pop(0)
+                    if arg_id in plan.args_promised
+                    else self.owner._objects[arg_id]
+                    for arg_id in plan.arg_ids
+                ]
+                """
+                args = []
+                for arg_id in plan.arg_ids:
+                    if arg_id in plan.args_promised:
+                        args.append(plan.args_promised[arg_id].pop(0))
+                    else:
+                        args.append(self.owner._objects[arg_id])
+                """
+                result = plan(*args)
+                plan.output_promise.keep(result)
 
         return obj
 
@@ -91,9 +107,10 @@ class Promise(ABC):
         if not self.queue_obj_ids:
             # If the promise has still not been kept
             # or if the queue of results has been emptied
+            # TODO this doesn't work as I want with pointerTensors
             return None
         # TODO something like .pop() and/or .top()
-        #return self.owner._objects[self.obj_id]
+        # return self.owner._objects[self.obj_id]
         ret_id = self.queue_obj_ids.pop(0)
         ret = self.owner._objects[ret_id]
         self.owner.rm_obj(ret_id)

@@ -481,7 +481,7 @@ class TorchHook(FrameworkHook):
             def method(self, *args, **kwargs):
 
                 arg_shapes = list([self._shape])
-                arg_ids = list([self.obj_id])
+                arg_ids = list([self.id])
 
                 # Convert scalar arguments to tensors to be able to use them with plans
                 args = list(args)
@@ -492,10 +492,7 @@ class TorchHook(FrameworkHook):
 
                 for arg in args:
                     arg_shapes.append(arg.shape)
-                    if isinstance(arg, PromiseTensor):
-                        arg_ids.append(arg.obj_id)
-                    else:
-                        arg_ids.append(arg.id)
+                    arg_ids.append(arg.id)
 
                 @syft.func2plan(arg_shapes)
                 def operation(self, *args, **kwargs):
@@ -511,11 +508,12 @@ class TorchHook(FrameworkHook):
 
                 # only need this for use of Promises with the local_worker VirtualWorker
                 # otherwise we would simplty check the ._objects registry
-                operation.args_fulfilled = {
-                    arg.id: arg for arg in args if not isinstance(arg, PromiseTensor)
-                }
+                operation.args_promised = {self.id: []}
+                for arg in args:
+                    if isinstance(arg, PromiseTensor):
+                        operation.args_promised[arg.id] = []
 
-                self.result_promise = PromiseTensor(
+                operation.output_promise = PromiseTensor(
                     owner=self.owner,
                     shape=operation.output_shape,
                     tensor_id=operation.result_ids[0],
@@ -523,10 +521,7 @@ class TorchHook(FrameworkHook):
                     plans=set(),
                 )
 
-                for arg in args:
-                    arg.result_promise = self.result_promise
-
-                return self.result_promise
+                return operation.output_promise
 
             return method
 
