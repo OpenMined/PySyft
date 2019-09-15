@@ -1,13 +1,14 @@
 import collections
 import pickle
 import os
+import sys
 
 
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import syft as sy
 import torch as th
 
-from .persistence.models import db, TorchModel, TorchTensor
+from .persistence.models import db, TorchModel, TorchTensor, Worker
 from .local_worker_utils import get_obj, register_obj
 
 
@@ -126,6 +127,10 @@ def _save_states_in_db(model):
     db.session.commit()
 
 
+def _get_all_workers_in_db():
+    return db.session.query(Worker).all()
+
+
 def _get_all_models_in_db():
     return db.session.query(TorchModel).all()
 
@@ -149,17 +154,47 @@ def _remove_model_from_db(model_id):
 # ================ Public functions ====================
 
 
-def list_models():
-    """Returns a dict of currently existing models. Will always fetch from db.
+def list_workers():
+    """Returns a dict of currently existing workers. Will always fetch from db.
 
     Returns:
-        A dict with structure: {"success": Bool, "models":[model list]}.
+        A dict with structure: {"success": Bool, "workers": worker list}.
+        On error returns dict: {"success": Bool, "error": error message}.
+    """
+    try:
+        result = _get_all_workers_in_db()
+        worker_ids = [worker.id for worker in result]
+        return {"success": True, "workers": worker_ids}
+    except SQLAlchemyError as e:
+        return {"success": False, "error": str(e)}
+
+
+def list_models(detailed_list: bool = False):
+    """Returns a dict of currently existing models. Will always fetch from db.
+
+    Args:
+        detailed_list (bool): If set to yes, returns a detailed information regarding model.
+
+    Returns:
+        A dict with structure: {"success": Bool, "models": model dict list}.
         On error returns dict: {"success": Bool, "error": error message}.
     """
     try:
         result = _get_all_models_in_db()
-        model_ids = [model.id for model in result]
-        return {"success": True, "models": model_ids}
+        if detailed_list is True:
+            models = [model.__dict__ for model in result]
+            for model in models:
+                model["model_size"] = "{}KB".format(
+                    sys.getsizeof(model["model"]) / 1000
+                )
+                # removing the model object and sqlalchemy instance state.
+                # to return clean dict with relevant model info only.
+                model.pop("model")
+                model.pop("_sa_instance_state")
+            return {"success": True, "models": models}
+        else:
+            model_ids = [model.id for model in result]
+            return {"success": True, "models": model_ids}
     except SQLAlchemyError as e:
         return {"success": False, "error": str(e)}
 

@@ -4,10 +4,11 @@ This file exists to provide one common place for all grid node http requests.
 import binascii
 import json
 import sys
+import os
 
 from flask import render_template
 from flask import Response
-from flask import request
+from flask import request, send_from_directory
 
 import syft as sy
 from requests_toolbelt import MultipartEncoder
@@ -21,6 +22,46 @@ from .local_worker_utils import register_obj, get_objs
 # Suport for sending big models over the wire back to a
 # worker
 MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
+
+# ======= WEB ROUTES ======
+# TODO: Must verify if cores block these calls or not. Should be protected by cors.
+
+
+@main.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(main.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
+
+
+@main.route("/", methods=["GET"])
+def index():
+    """Index page."""
+    return render_template("index.html")
+
+
+@main.route("/detailed_models_list/")
+def list_models_with_details():
+    """Generates a detailed list of models currently saved at the worker"""
+    return Response(
+        json.dumps(mm.list_models(detailed_list=True)),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@main.route("/workers/")
+def list_workers():
+    return Response(
+        json.dumps(mm.list_workers()), status=200, mimetype="application/json"
+    )
+
+
+# ======= WEB ROUTES END ======
+
+# ======= REST API =======
 
 
 @main.route("/identity/")
@@ -149,12 +190,6 @@ def serve_model():
         return Response(json.dumps(response), status=500, mimetype="application/json")
 
 
-@main.route("/", methods=["GET"])
-def index():
-    """Index page."""
-    return render_template("index.html")
-
-
 @main.route("/dataset-tags", methods=["GET"])
 def get_available_tags():
     """ Returns all tags stored in this node. Can be very useful to know what datasets this node contains. """
@@ -247,3 +282,6 @@ def search_dataset_tags():
         body_response["content"] = True
 
     return Response(json.dumps(body_response), status=200, mimetype="application/json")
+
+
+# ======= REST API END =======
