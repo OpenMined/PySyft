@@ -81,3 +81,19 @@ def test_remote_operations(workers, cmd):
     expected = getattr(tx, cmd)(ty)
 
     assert (actual.value().get() == expected).all()
+
+
+def test_bufferized_results(hook):
+    hook.local_worker.is_client_worker = False
+
+    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+
+    a.keep(torch.ones(3, 3))
+    a.keep(2 * torch.ones(3, 3))
+    a.keep(3 * torch.ones(3, 3))
+
+    assert (a.value() == torch.ones(3, 3)).all()
+    assert (a.value() == 2 * torch.ones(3, 3)).all()
+    assert (a.value() == 3 * torch.ones(3, 3)).all()
+
+    hook.local_worker.is_client_worker = True
