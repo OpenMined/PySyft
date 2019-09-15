@@ -465,7 +465,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         response = self.owner.send_command(self.location, command)
 
         return response
-    
+
     def value(self, *args, **kwargs):
         command = ("value", self, args, kwargs)
 

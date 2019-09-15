@@ -821,7 +821,7 @@ class TorchTensor(AbstractTensor):
 
             self.id = future_id
         """
-    
+
     def value(self):
         return self.child.value()
 
