@@ -38,10 +38,10 @@ def test_operations_with_concrete(hook, cmd):
 
     actual = getattr(a, cmd)(b)
 
-    ta = torch.tensor([[1.0, 2], [3, 4]])
+    ta = torch.tensor([[1.0, 2], [3, 4]]).wrap()
     a.keep(ta)
 
-    expected = getattr(ta, cmd)(b.child)
+    expected = getattr(ta, cmd)(b)
 
     assert (actual.value() == expected).all()
 
