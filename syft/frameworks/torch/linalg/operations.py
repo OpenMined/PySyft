@@ -69,17 +69,21 @@ def qr(t, mode="reduced", norm_factor=None):
     """
     This function performs the QR decomposition of a matrix (2-dim tensor). The
     decomposition is performed using Householder Reflection.
-    Please note that this function only supports local or pointer tensors, it
-    does not support instances of FixedPrecisionTensor or AdditiveSharedTensor
 
     Args:
-        t: 2-dim tensor, shape(M, N). It should be whether a local tensor or a
-            pointer to a remote tensor
+        t: 2-dim tensor, shape(M, N). It should be whether a local tensor, a
+            pointer to a remote tensor or an AdditiveSharedTensor
 
         mode: {'reduced', 'complete', 'r'}. If K = min(M, N), then
             - 'reduced' : returns q, r with dimensions (M, K), (K, N) (default)
             - 'complete' : returns q, r with dimensions (M, M), (M, N)
             - 'r' : returns r only with dimensions (K, N)
+
+        norm_factor: float. The normalization factor used to avoid overflow when
+            performing QR decomposition on an AdditiveSharedTensor. For example i
+            n the case of the DASH algorithm, this norm_factor should be of the
+            order of the square root of number of entries in the original matrix
+            used to perform the compression phase assuming the entries are standardized.
 
     Returns:
         q: orthogonal matrix as a 2-dim tensor with same type as t
@@ -152,9 +156,8 @@ def qr(t, mode="reduced", norm_factor=None):
         # Compute Householder transform
         numerator = x @ x.t() - x_norm * (e @ x.t() + x @ e.t()) + (x.t() @ x) * (e @ e.t())
         denominator = x.t() @ x - x_norm * x[0, 0]
-        inv_denominator = (
-            0 * denominator + 1
-        ) / denominator  # Need this line to perform inverse of a number in MPC
+        # Need the line below to perform inverse of a number in MPC
+        inv_denominator = (0 * denominator + 1) / denominator
         H = I_i - numerator * inv_denominator
 
         # If it is not the 1st iteration
@@ -208,12 +211,11 @@ def _norm_mpc(t, norm_factor):
     norm_factor that scales the tensor for MPC computations and rescale it at the end.
     For example in the case of the DASH algorithm, this norm_factor should be of
     the order of the square root of number of entries in the original matrix
-    used to perform the compression phase assuming the entries in the original
-    matrix are standardized.
+    used to perform the compression phase assuming the entries are standardized.
 
     Args:
         t: 1-dim AdditiveSharedTensor, representing a vector.
-        norm_factor: float. The normalization factor used to avoir overflow
+        norm_factor: float. The normalization factor used to avoid overflow
 
     Returns:
         q: orthogonal matrix as a 2-dim tensor with same type as t

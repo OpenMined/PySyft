@@ -67,6 +67,36 @@ def test_qr(hook, workers):
     assert R.shape == (n_cols, n_cols)
 
 
+def test_qr_mpc(hook, workers):
+    """
+    Testing QR decomposition with an AdditiveSharedTensor
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+
+    torch.manual_seed(0)  # Truncation might not always work so we set the random seed
+    n_cols = 3
+    n_rows = 3
+    t = torch.randn([n_rows, n_cols])
+    t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
+
+    Q, R = qr(t_sh, norm_factor=3 ** (1 / 2), mode="complete")
+    Q = Q.get().float_precision()
+    R = R.get().float_precision()
+
+    # Check if Q is orthogonal
+    I = Q @ Q.t()
+    assert ((torch.eye(n_rows) - I).abs() < 1e-2).all()
+
+    # Check if R is upper triangular matrix
+    for col in range(n_cols - 1):
+        assert ((R[col + 1 :, col]).abs() < 1e-2).all()
+
+    # Check if QR == t
+    assert ((Q @ R - t).abs() < 1e-2).all()
+
+
 def test_norm_mpc(hook, workers):
     """
     Testing computation of vector norm on an AdditiveSharedTensor
