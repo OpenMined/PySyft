@@ -73,31 +73,34 @@ class Promise(ABC):
         self.obj_id = sy.ID_PROVIDER.pop()
 
         # If some plans were waiting for this promise...
-        for plan in self.plans:
-            # ... tell them that the promise has been kept.
-            plan.args_promised[self.id].append(obj)  # TODO should I put obj_id in dict instead?
+        for plan_id in self.plans:
+            plan = self.owner._objects[plan_id]
 
-            # ... and execute them if it was the last argument they were waiting for.
+            # ... execute them if it was the last argument they were waiting for.
             if plan.has_args_fulfilled():
                 # Collect args
+                #args = [
+                #    self.owner._objects[self.owner._objects[arg_id].child.queue_obj_ids[0]]  #TODO clean that line
+                #    if arg_id in plan.promised_args
+                #    else self.owner._objects[arg_id]
+                #    for arg_id in plan.arg_ids
+                #]
                 args = [
-                    plan.args_promised[arg_id].pop(0)
-                    if arg_id in plan.args_promised
-                    else self.owner._objects[arg_id]
-                    for arg_id in plan.arg_ids
+                    self.owner._objects[self.owner._objects[promise_id].child.queue_obj_ids[0]]  #TODO clean that line
+                    for promise_id in plan.promised_args
                 ]
-                """
-                args = []
-                for arg_id in plan.arg_ids:
-                    if arg_id in plan.args_promised:
-                        args.append(plan.args_promised[arg_id].pop(0))
-                    else:
-                        args.append(self.owner._objects[arg_id])
-                """
                 result = plan(*args)
-                plan.output_promise.keep(result)
+
+                # Remove objects from queues:
+                for promise_id in plan.promised_args:
+                    to_rm = self.owner._objects[promise_id].child.queue_obj_ids.pop(0)
+                    self.owner.rm_obj(to_rm)
+                self.owner._objects[plan.promise_out_id].keep(result)
 
         return obj
+        
+    def is_kept(self):
+        return self.queue_obj_ids != []
 
     def value(self):
         """ Returns the next object in the queue of results.
@@ -107,8 +110,6 @@ class Promise(ABC):
             # or if the queue of results has been emptied
             # TODO this doesn't work as I want with pointerTensors
             return None
-        # TODO something like .pop() and/or .top()
-        # return self.owner._objects[self.obj_id]
         ret_id = self.queue_obj_ids.pop(0)
         ret = self.owner._objects[ret_id]
         self.owner.rm_obj(ret_id)

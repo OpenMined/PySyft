@@ -613,8 +613,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         It might be the case that we still need to wait for some arguments in
         case some of them are Promises.
         """
-        for promise_id, res_queue in self.args_promised.items():
-            if not res_queue:
+        for promise in self.promised_args:
+            if not self.owner._objects[promise].child.is_kept():
                 return False
 
         return True
@@ -877,7 +877,8 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan.is_built,
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
-            sy.serde._simplify(plan.args_promised) if hasattr(plan, "args_promised") else None,
+            sy.serde._simplify(plan.promised_args) if hasattr(plan, "promised_args") else None,
+            sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,
         )
 
     @staticmethod
@@ -890,14 +891,14 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built, input_shapes, output_shape, args_promised = (
+        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built, input_shapes, output_shape, promised_args, promise_out_id = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
         state_ids = sy.serde._detail(worker, state_ids)
-        args_promised = sy.serde._detail(worker, args_promised)
+        promised_args = sy.serde._detail(worker, promised_args)
 
         plan = sy.Plan(
             owner=worker,
@@ -911,7 +912,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         plan.state_ids = state_ids
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
-        plan.args_promised = args_promised
+        plan.promised_args = promised_args
+        plan.promise_out_id = promise_out_id
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
