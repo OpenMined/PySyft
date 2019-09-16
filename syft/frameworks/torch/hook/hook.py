@@ -487,7 +487,6 @@ class TorchHook(FrameworkHook):
                 args = list(args)
                 for ia in range(len(args)):
                     if not isinstance(args[ia], (torch.Tensor, AbstractTensor)):
-                        print(args[ia])
                         args[ia] = torch.tensor(args[ia])
 
                 for arg in args:

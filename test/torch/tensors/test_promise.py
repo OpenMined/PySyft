@@ -48,7 +48,6 @@ def test_operations_with_concrete(hook, cmd):
     hook.local_worker.is_client_worker = True
 
 
-# Still doesn't work
 def test_send(workers):
     bob = workers["bob"]
 
@@ -59,6 +58,23 @@ def test_send(workers):
     x.keep(torch.ones((2, 2)))
 
     assert (x.value().get() == torch.ones((2, 2))).all()
+
+    """
+    # Send plans
+    @syft.func2plan(args_shape=[(3,3)])
+    def plan_test(data):
+        return 2 * data + 1
+
+    a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
+    x = a.send(bob)
+    
+    ptr_plan = plan_test.send(bob)
+    z = ptr_plan(x)
+
+    a.keep(torch.ones(3,3))
+    
+    assert (z.value().get() == 3 * torch.ones(3, 3)).all()
+    """
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
@@ -97,3 +113,47 @@ def test_bufferized_results(hook):
     assert (a.value() == 3 * torch.ones(3, 3)).all()
 
     hook.local_worker.is_client_worker = True
+
+
+"""
+def test_plan_waiting_promise(hook):
+    hook.local_worker.is_client_worker = False
+
+    @syft.func2plan(args_shape=[(3,3)])
+    def plan_test(data):
+        return 2 * data + 1
+
+    a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
+    
+    z = plan_test(a)
+
+    a.keep(torch.ones(3,3))
+    
+    assert (z.value() == 3 * torch.ones(3, 3)).all()
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_plan_waiting_several_promises(hook):
+    hook.local_worker.is_client_worker = False
+
+    @syft.func2plan(args_shape=[(3,3), (3,3)])
+    def plan_test(in_a, in_b):
+        return in_a + in_b
+
+    a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
+    b = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
+
+    z = plan_test(a, b)
+
+    a.keep(torch.ones(3,3))
+    a.keep(3 * torch.ones(3,3))
+    
+    b.keep(2 * torch.ones(3,3))
+    b.keep(4 * torch.ones(3,3))
+
+    assert (z.value() == 3 * torch.ones(3, 3)).all()
+    assert (z.value() == 7 * torch.ones(3, 3)).all()
+
+    hook.local_worker.is_client_worker = True
+"""
