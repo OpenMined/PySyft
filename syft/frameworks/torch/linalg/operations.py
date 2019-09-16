@@ -80,8 +80,8 @@ def qr(t, mode="reduced", norm_factor=None):
             - 'r' : returns r only with dimensions (K, N)
 
         norm_factor: float. The normalization factor used to avoid overflow when
-            performing QR decomposition on an AdditiveSharedTensor. For example i
-            n the case of the DASH algorithm, this norm_factor should be of the
+            performing QR decomposition on an AdditiveSharedTensor. For example in
+            the case of the DASH algorithm, this norm_factor should be of the
             order of the square root of number of entries in the original matrix
             used to perform the compression phase assuming the entries are standardized.
 
@@ -109,9 +109,12 @@ def qr(t, mode="reduced", norm_factor=None):
         t_type = "local"
     else:
         raise TypeError(
-            "The provided matrix should be a local torch.Tensor, a PointerTensor,",
+            "The provided matrix should be a local torch.Tensor, a PointerTensor, ",
             "or an AdditiveSharedTensor",
         )
+
+    # Check if t is 2-dim
+    assert len(t.shape) == 2
 
     if mode not in ["reduced", "complete", "r"]:
         raise ValueError(
@@ -168,8 +171,8 @@ def qr(t, mode="reduced", norm_factor=None):
 
             # Send them to remote worker if t is pointer, secret share it if its an AST
             if t_type == "pointer":
-                down_zeros = down_zeros.send(t.child.location)
-                up_zeros = up_zeros.send(t.child.location)
+                down_zeros = down_zeros.send(location)
+                up_zeros = up_zeros.send(location)
             if t_type == "ast":
                 down_zeros = down_zeros.fix_prec(precision_fractional=prec_frac).share(
                     *workers, crypto_provider=crypto_prov
@@ -208,7 +211,7 @@ def _norm_mpc(t, norm_factor):
     beforehand with a dot product in MPC.
 
     In order to maintain stability and avoid overflow, this functions uses a
-    norm_factor that scales the tensor for MPC computations and rescale it at the end.
+    norm_factor that scales down the tensor for MPC computations and rescale it at the end.
     For example in the case of the DASH algorithm, this norm_factor should be of
     the order of the square root of number of entries in the original matrix
     used to perform the compression phase assuming the entries are standardized.
@@ -225,11 +228,12 @@ def _norm_mpc(t, norm_factor):
     workers = t.child.child.locations
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
+    field = t.child.child.field
     norm_factor = int(norm_factor)
     t_normalized = t / norm_factor
-    Q = int(1e8)
+    Q = int(field ** (1 / 2) / 10 ** (prec_frac / 2))
 
-    norm_sq = (t_normalized * t_normalized).sum().squeeze()
+    norm_sq = (t_normalized ** 2).sum().squeeze()
 
     # Random big number
     r = (
