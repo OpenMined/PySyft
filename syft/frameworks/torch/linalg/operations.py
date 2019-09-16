@@ -218,8 +218,7 @@ def _norm_mpc(t, norm_factor):
         norm_factor: float. The normalization factor used to avoid overflow
 
     Returns:
-        q: orthogonal matrix as a 2-dim tensor with same type as t
-        r: lower triangular matrix as a 2-dim tensor with same type as t
+        the norm of the vector as an AdditiveSharedTensor
 
     """
 
