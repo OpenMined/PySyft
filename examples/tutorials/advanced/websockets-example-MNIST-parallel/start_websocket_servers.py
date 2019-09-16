@@ -1,8 +1,10 @@
 import subprocess
 
-
 from torchvision import datasets
 from torchvision import transforms
+
+import signal
+import sys
 
 
 # Downloads MNIST dataset
@@ -32,13 +34,25 @@ call_testing = [
 ]
 
 print("Starting server for Alice")
-subprocess.Popen(call_alice)
+process_alice = subprocess.Popen(call_alice)
 
 print("Starting server for Bob")
-subprocess.Popen(call_bob)
+process_bob = subprocess.Popen(call_bob)
 
 print("Starting server for Charlie")
-subprocess.Popen(call_charlie)
+process_charlie = subprocess.Popen(call_charlie)
 
 print("Starting server for Testing")
-subprocess.Popen(call_testing)
+process_testing = subprocess.Popen(call_testing)
+
+
+def signal_handler(sig, frame):
+    print("You pressed Ctrl+C!")
+    for p in [process_alice, process_bob, process_charlie, process_testing]:
+        p.terminate()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+signal.pause()
