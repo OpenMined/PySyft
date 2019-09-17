@@ -1,16 +1,18 @@
+import logging
+
+# 09/2019: Keep call to basicConfig before import syft. Issue due to tf_encrypted, should be solved in next version.
+FORMAT = "%(asctime)s | %(message)s"
+logging.basicConfig(format=FORMAT)
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms, datasets
 
-import logging
 import argparse
 import sys
 import asyncio
 import numpy as np
 
-FORMAT = "%(asctime)s %(message)s"
-logging.basicConfig(format=FORMAT)
 
 import syft as sy
 from syft import workers
@@ -114,9 +116,7 @@ async def fit_model_on_worker(
         optimizer_args={"lr": lr},
     )
     train_config.send(worker)
-    # logger.info("Training round %s, calling fit on worker: %s", curr_round, worker.id)
     loss = await worker.async_fit(dataset_key="mnist", return_ids=[0])
-    # logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_round, worker.id, loss.mean())
     model = train_config.model_ptr.get().obj
     return worker.id, model, loss
 
@@ -148,7 +148,6 @@ def evaluate_model_on_worker(
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
-    # logger.info("%s: Prediction hist.: %s", model_identifier, hist_pred)
     percentage_0_3 = int(100 * sum(hist_pred[0:4]) / len_dataset)
     percentage_4_6 = int(100 * sum(hist_pred[4:7]) / len_dataset)
     percentage_7_9 = int(100 * sum(hist_pred[7:10]) / len_dataset)
@@ -175,7 +174,7 @@ async def main():
 
     hook = sy.TorchHook(torch)
 
-    docker_demo = True
+    docker_demo = False
     if docker_demo:
         kwargs_websocket = {"hook": hook, "verbose": args.verbose}
         alice = workers.WebsocketClientWorker(

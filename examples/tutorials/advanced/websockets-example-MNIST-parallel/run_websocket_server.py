@@ -1,4 +1,9 @@
 import logging
+
+# 09/2019: Keep call to basicConfig before import syft. Issue due to tf_encrypted, should be solved in next version.
+FORMAT = "%(asctime)s | %(message)s"
+logging.basicConfig(format=FORMAT)
+
 import syft as sy
 from syft.workers.websocket_server import WebsocketServerWorker
 import torch

@@ -17,11 +17,38 @@ mnist_trainset = datasets.MNIST(
     ),
 )
 
-call_alice = ["python", "run_websocket_server.py", "--port", "8777", "--id", "alice"]
+call_alice = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8777",
+    "--id",
+    "alice",
+    "--host",
+    "0.0.0.0",
+]
 
-call_bob = ["python", "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_bob = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8778",
+    "--id",
+    "bob",
+    "--host",
+    "0.0.0.0",
+]
 
-call_charlie = ["python", "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_charlie = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8779",
+    "--id",
+    "charlie",
+    "--host",
+    "0.0.0.0",
+]
 
 call_testing = [
     "python",
@@ -31,6 +58,8 @@ call_testing = [
     "--id",
     "testing",
     "--testing",
+    "--host",
+    "0.0.0.0",
 ]
 
 print("Starting server for Alice")
