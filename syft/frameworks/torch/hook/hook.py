@@ -502,6 +502,7 @@ class TorchHook(FrameworkHook):
                         arg.plans.add(operation.id)
 
                 operation.promised_args = {0: self.id}
+                operation.replace_ids(operation.arg_ids, [self.id] + [arg.id for arg in args])  # Hack needed for plans' id gestion
                 operation.arg_ids = [self.id]
                 for i, arg in enumerate(args):
                     operation.arg_ids.append(arg.id)
