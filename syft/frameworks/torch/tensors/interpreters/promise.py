@@ -113,7 +113,6 @@ class PromiseTensor(AbstractTensor, Promise):
         return (
             sy.serde._simplify(self.id),
             sy.serde._simplify(self._shape),
-            #sy.serde._simplify(self.obj_id),
             sy.serde._simplify(self.obj_type),
             sy.serde._simplify(self.plans),
         )
