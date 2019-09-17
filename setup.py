@@ -12,12 +12,16 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+version = {}
+with open("syft/version.py") as fp:
+    exec(fp.read(), version)
+
 requirements = read("requirements.txt").split()
 
 
 setup(
     name="syft",
-    version="0.1.28a1",
+    version=version["__version__"],
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
