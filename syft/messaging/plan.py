@@ -12,6 +12,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
@@ -775,6 +776,14 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     share = share_
 
+    def create_pointer(self, owner, garbage_collect_data):
+        return PointerPlan(
+            location=self.owner,
+            id_at_location=self.id,
+            owner=owner,
+            garbage_collect_data=garbage_collect_data,
+        )
+
     def describe(self, description: str) -> "Plan":
         self.description = description
         return self
@@ -827,7 +836,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-
         return (
             tuple(
                 plan.readable_plan
@@ -844,7 +852,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     @staticmethod
     def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
-        """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+        """This function reconstructs a Plan object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
             plan_tuple: a tuple holding the attributes of the Plan

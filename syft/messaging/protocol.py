@@ -3,6 +3,7 @@ import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 
@@ -64,7 +65,6 @@ class Protocol(AbstractObject):
         if self.location is not None:
             location = Protocol.find_args_location(args)
             if location != self.location:
-                print(location, self.location)
                 raise RuntimeError(
                     f"This protocol has been sent to {self.location.id}, but you provided "
                     f"local arguments or pointers to {location.id}."
@@ -119,7 +119,6 @@ class Protocol(AbstractObject):
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids
         )
-        print("REsponcse", response)
         return response
 
     @staticmethod
@@ -153,7 +152,15 @@ class Protocol(AbstractObject):
         """
         protocol._assert_is_resolved()
 
-        plans_reference = [(worker.id, plan.id) for worker, plan in protocol.plans]
+        plans_reference = []
+        for worker, plan in protocol.plans:
+            if isinstance(plan, sy.Plan):
+                plan_id = plan.id
+            elif isinstance(plan, sy.PointerPlan):
+                plan_id = plan.id_at_location
+            else:
+                raise TypeError("This is not a valid Plan")
+            plans_reference.append((worker.id, plan_id))
 
         return (
             sy.serde._simplify(protocol.id),
@@ -180,13 +187,24 @@ class Protocol(AbstractObject):
         plans = []
         for owner_id, plan_id in plans_reference:
             plan_owner = worker.get_worker(owner_id, fail_hard=True)
-            plan_pointer = worker.fetch_plan(plan_id, plan_owner, copy=True)
+            plan_pointer = worker.request_search([plan_id], location=plan_owner)
+            print(plan_pointer)
+            if isinstance(plan_pointer, list) and len(plan_pointer) == 0:
+                raise MemoryError
             worker.register_obj(plan_pointer)
             plans.append((plan_owner, plan_pointer))
 
         protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
 
         return protocol
+
+    def create_pointer(self, owner, garbage_collect_data):
+        return PointerProtocol(
+            location=self.owner,
+            id_at_location=self.id,
+            owner=owner,
+            garbage_collect_data=garbage_collect_data,
+        )
 
     def __repr__(self):
         repr = f"<Protocol id:{self.id} owner:{self.owner.id}{' resolved' if self.workers_resolved else ''}>"
