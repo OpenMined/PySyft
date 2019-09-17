@@ -24,11 +24,7 @@ def _create_inc_protocol():
     def inc3(x):
         return x + 1
 
-    protocol = sy.Protocol([
-        ('worker1', inc1),
-        ('worker2', inc2),
-        ('worker3', inc3),
-    ])
+    protocol = sy.Protocol([("worker1", inc1), ("worker2", inc2), ("worker3", inc3)])
     return protocol
 
 
@@ -86,9 +82,43 @@ def test_synchronous_run(workers):
 
     protocol.deploy(alice, bob, charlie)
 
-    x = th.tensor([1.])
+    x = th.tensor([1.0])
     r = protocol.run(x)
 
     assert r.location == charlie
 
-    assert r.get() == th.tensor([4.])
+    assert r.get() == th.tensor([4.0])
+
+
+def test_synchronous_remote_run(workers):
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    protocol = _create_inc_protocol()
+
+    protocol.deploy(alice, bob, charlie)
+
+    protocol.send(james)
+
+    x = th.tensor([1.0]).send(james)
+    r = protocol.run(x)
+
+    assert r.location == james
+
+    r = r.get()
+
+    assert r.location == charlie
+
+    r = r.get()
+
+    assert r == th.tensor([4.0])
+
+    # Error case when data is not correctly located
+
+    x = th.tensor([1.0])
+    with pytest.raises(RuntimeError):
+        protocol.run(x)
