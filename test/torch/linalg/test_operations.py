@@ -30,6 +30,25 @@ def test_inv_sym(hook, workers):
     assert (diff < 1e-3).all()
 
 
+@assert_time(max_time=20)
+def test_norm_mpc(hook, workers):
+    """
+    Testing computation of vector norm on an AdditiveSharedTensor
+    """
+    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+
+    n = 100
+    t = torch.randn([n])
+    t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
+    norm_sh = _norm_mpc(t_sh, norm_factor=n ** (1 / 2))
+    norm = norm_sh.copy().get().float_precision()
+
+    assert (norm - torch.norm(t)).abs() < 1e-4
+
+
 def test_qr(hook, workers):
     """
     Testing QR decomposition with remote matrix
@@ -96,22 +115,3 @@ def test_qr_mpc(hook, workers):
 
     # Check if QR == t
     assert ((Q @ R - t).abs() < 1e-2).all()
-
-
-@assert_time(max_time=20)
-def test_norm_mpc(hook, workers):
-    """
-    Testing computation of vector norm on an AdditiveSharedTensor
-    """
-    torch.manual_seed(42)  # Truncation might not always work so we set the random seed
-    bob = workers["bob"]
-    alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
-
-    n = 100
-    t = torch.randn([n])
-    t_sh = t.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
-    norm_sh = _norm_mpc(t_sh, norm_factor=n ** (1 / 2))
-    norm = norm_sh.copy().get().float_precision()
-
-    assert (norm - torch.norm(t)).abs() < 1e-4

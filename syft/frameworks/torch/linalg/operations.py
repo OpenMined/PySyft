@@ -247,12 +247,14 @@ def _norm_mpc(t, norm_factor):
     masked_norm_sq = r ** 2 * norm_sq
 
     # Get compute square root
-    masked_norm_sq = masked_norm_sq.get().float_precision()
+    masked_norm_sq = masked_norm_sq.send(crypto_prov).remote_get().float_precision()
     masked_norm = torch.sqrt(masked_norm_sq)
 
     # Secret share and compute unmasked norm in MPC
-    masked_norm = masked_norm.fix_precision(precision_fractional=prec_frac).share(
-        *workers, crypto_provider=crypto_prov
+    masked_norm = (
+        masked_norm.fix_precision(precision_fractional=prec_frac)
+        .share(*workers, crypto_provider=crypto_prov)
+        .get()
     )
     norm = masked_norm / r * norm_factor
 
