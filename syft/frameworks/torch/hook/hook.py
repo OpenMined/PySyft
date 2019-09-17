@@ -491,36 +491,41 @@ class TorchHook(FrameworkHook):
 
                 for arg in args:
                     arg_shapes.append(arg.shape)
-                    arg_ids.append(arg.id)
 
                 @syft.func2plan(arg_shapes)
                 def operation(self, *args, **kwargs):
                     return getattr(self, method_name)(*args, **kwargs)
 
-                operation.arg_ids = arg_ids
-
-                self.plans.add(operation)
-
+                self.plans.add(operation.id)
                 for arg in args:
                     if isinstance(arg, PromiseTensor):
-                        arg.plans.add(operation)
+                        arg.plans.add(operation.id)
 
-                # only need this for use of Promises with the local_worker VirtualWorker
-                # otherwise we would simplty check the ._objects registry
-                operation.args_promised = {self.id: []}
+                operation.promised_args = [self.id]
                 for arg in args:
                     if isinstance(arg, PromiseTensor):
-                        operation.args_promised[arg.id] = []
+                        operation.promised_args.append(arg.id)
 
-                operation.output_promise = PromiseTensor(
+                promise_out = PromiseTensor(
                     owner=self.owner,
                     shape=operation.output_shape,
                     tensor_id=operation.result_ids[0],
                     tensor_type=self.obj_type,
                     plans=set(),
                 )
+                operation.promise_out_id = promise_out.id
 
-                return operation.output_promise
+                if operation.owner != self.owner:
+                    operation.send(self.owner)
+                else:  #TODO should not be needed
+                    operation.owner.register_obj(operation)
+
+                if promise_out.owner != self.owner:
+                    promise_out.send(self.owner)
+                else:  #TODO should not be needed
+                    promise_out.owner.register_obj(promise_out)
+
+                return promise_out
 
             return method
 
