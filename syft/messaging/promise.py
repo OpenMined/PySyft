@@ -72,9 +72,10 @@ class Promise(ABC):
                 for i, arg_id in enumerate(plan.arg_ids):
                     if i in plan.promised_args:
                         promise_id = plan.promised_args[i]
-                        args.append(self.owner._objects[self.owner._objects[promise_id].child.queue_obj_ids[0]])  #TODO clean that line
+                        id_to_add = self.owner._objects[promise_id].child.queue_obj_ids[0]
                     else:
-                        args.append(self.owner._objects[arg_id])
+                        id_to_add = arg_id
+                    args.append(self.owner._objects[id_to_add])
                 result = plan(*args)
 
                 # Remove objects from queues:
@@ -86,6 +87,8 @@ class Promise(ABC):
         return obj
         
     def is_kept(self):
+        """TODO add doc
+        """
         return self.queue_obj_ids != []
 
     def value(self):
