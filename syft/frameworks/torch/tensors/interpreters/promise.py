@@ -38,7 +38,7 @@ class PromiseTensor(AbstractTensor, Promise):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         # constructor for Promise
-        Promise.__init__(self, owner=owner, obj_id=tensor_id, obj_type=tensor_type, plans=plans)
+        Promise.__init__(self, owner=owner, obj_type=tensor_type, plans=plans)
 
         self._shape = shape
 
@@ -94,7 +94,7 @@ class PromiseTensor(AbstractTensor, Promise):
             return tensor
 
     def __str__(self):
-        return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]}({self.obj_id}) -blocking-> {len(self.plans)} plans]"
+        return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]} -blocking-> {len(self.plans)} plans]"
 
     def __repr__(self):
         return self.__str__()
@@ -113,7 +113,7 @@ class PromiseTensor(AbstractTensor, Promise):
         return (
             sy.serde._simplify(self.id),
             sy.serde._simplify(self._shape),
-            sy.serde._simplify(self.obj_id),
+            #sy.serde._simplify(self.obj_id),
             sy.serde._simplify(self.obj_type),
             sy.serde._simplify(self.plans),
         )
@@ -131,11 +131,10 @@ class PromiseTensor(AbstractTensor, Promise):
                 shared_tensor = detail(data)
             """
 
-        id, shape, tensor_id, tensor_type, plans = tensor_tuple
+        id, shape, tensor_type, plans = tensor_tuple
 
         id = sy.serde._detail(worker, id)
         shape = sy.serde._detail(worker, shape)
-        tensor_id = sy.serde._detail(worker, tensor_id)
         tensor_type = sy.serde._detail(worker, tensor_type)
         plans = sy.serde._detail(worker, plans)
 
@@ -143,7 +142,6 @@ class PromiseTensor(AbstractTensor, Promise):
             owner=worker,
             id=id,
             shape=shape,
-            tensor_id=tensor_id,
             tensor_type=tensor_type,
             plans=plans,
         )

@@ -40,13 +40,6 @@ class Promise(ABC):
 
         self._id = id
 
-        if obj_id is None:
-            obj_id = sy.ID_PROVIDER.pop()
-        # TODO:
-        # In which case would we need to pre-set an id for the object?
-        # Can remove that if no use case
-        # Else is it still ok to generate new id for promises kept several times?
-        self.obj_id = obj_id
         self.queue_obj_ids = []
 
         self.obj_type = obj_type
@@ -63,14 +56,10 @@ class Promise(ABC):
                 "keep() was called with an object of incorrect type (not the type that was promised)"
             )
 
-        obj.id = self.obj_id
-
         if self.id in self.owner._objects:
             self.owner.register_obj(obj)
 
         self.queue_obj_ids.append(obj.id)
-        # Generate new id for next time promise is kept
-        self.obj_id = sy.ID_PROVIDER.pop()
 
         # If some plans were waiting for this promise...
         for plan_id in self.plans:
