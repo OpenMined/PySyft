@@ -502,13 +502,15 @@ class TorchHook(FrameworkHook):
                         arg.plans.add(operation.id)
 
                 operation.promised_args = {0: self.id}
-                operation.replace_ids(operation.arg_ids, [self.id] + [arg.id for arg in args])  # Hack needed for plans' id gestion
+                operation.replace_ids(
+                    operation.arg_ids, [self.id] + [arg.id for arg in args]
+                )  # Hack needed for plans' id gestion
                 operation.arg_ids = [self.id]
                 for i, arg in enumerate(args):
                     operation.arg_ids.append(arg.id)
                     if isinstance(arg, PromiseTensor):
                         # +1 is there because self has index 0
-                        operation.promised_args[i+1] = arg.id
+                        operation.promised_args[i + 1] = arg.id
 
                 promise_out = PromiseTensor(
                     owner=self.owner,
@@ -521,12 +523,12 @@ class TorchHook(FrameworkHook):
 
                 if operation.owner != self.owner:
                     operation.send(self.owner)
-                else:  #TODO should not be needed
+                else:  # TODO should not be needed
                     operation.owner.register_obj(operation)
 
                 if promise_out.owner != self.owner:
                     promise_out.send(self.owner)
-                else:  #TODO should not be needed
+                else:  # TODO should not be needed
                     promise_out.owner.register_obj(promise_out)
 
                 return promise_out

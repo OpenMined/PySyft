@@ -85,7 +85,7 @@ class Promise(ABC):
                 self.owner._objects[plan.promise_out_id].keep(result)
 
         return obj
-        
+
     def is_kept(self):
         """TODO add doc
         """

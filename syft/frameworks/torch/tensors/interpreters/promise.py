@@ -138,11 +138,7 @@ class PromiseTensor(AbstractTensor, Promise):
         plans = sy.serde._detail(worker, plans)
 
         tensor = PromiseTensor(
-            owner=worker,
-            id=id,
-            shape=shape,
-            tensor_type=tensor_type,
-            plans=plans,
+            owner=worker, id=id, shape=shape, tensor_type=tensor_type, plans=plans
         )
 
         initialize_tensor(
