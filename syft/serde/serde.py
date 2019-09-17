@@ -53,6 +53,7 @@ from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.messaging.plan import Plan
+from syft.messaging.protocol import Protocol
 from syft.messaging.message import Message
 from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage
@@ -95,6 +96,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     LoggingTensor,
     MultiPointerTensor,
     Plan,
+    Protocol,
     PointerTensor,
     ObjectWrapper,
     TrainConfig,

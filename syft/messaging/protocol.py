@@ -70,6 +70,10 @@ class Protocol(AbstractObject):
                     f"local arguments or pointers to {location.id}."
                 )
 
+            print("send remote run request to", self.location.id)
+            response = self.request_remote_run(location, args, kwargs)
+            return response
+
         if synchronous:
             previous_worker_id = None
             response = None
@@ -92,6 +96,97 @@ class Protocol(AbstractObject):
 
         else:
             raise NotImplementedError("Promises are not currently supported")
+
+    def request_remote_run(self, location: "sy.workers.BaseWorker", args, kwargs) -> object:
+        """Requests protocol execution.
+
+        Send a request to execute the protocol on the remote location.
+
+        Args:
+            location: to which worker the request should be sent
+            args: Arguments used as input data for the protocol.
+            kwargs: Named arguments used as input data for the protocol.
+
+        Returns:
+            Execution response.
+
+        """
+        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
+
+        # return_ids = kwargs.get("return_ids", {})
+        command = ("run", self.id, args, kwargs)
+
+        response = self.owner.send_command(
+            message=command, recipient=location  # , return_ids=return_ids
+        )
+        print("REsponcse", response)
+        return response
+
+    @staticmethod
+    def find_args_location(args):
+        """
+        Return location if args contain pointers else the local worker
+        """
+        for arg in args:
+            if isinstance(arg, FrameworkTensor):
+                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
+                    return arg.location
+        return sy.framework.hook.local_worker
+
+    def send(self, location):
+        """
+        Send a protocol to a worker, to be fetched by other workers
+        """
+        self.owner.send_obj(obj=self, location=location)
+
+        self.location = location
+
+    @staticmethod
+    def simplify(protocol: "Protocol") -> tuple:
+        """
+        This function takes the attributes of a Protocol and saves them in a tuple
+        Args:
+            protocol (Protocol): a Protocol object
+        Returns:
+            tuple: a tuple holding the unique attributes of the Protocol object
+
+        """
+        protocol._assert_is_resolved()
+
+        plans_reference = [(worker.id, plan.id) for worker, plan in protocol.plans]
+
+        return (
+            sy.serde._simplify(protocol.id),
+            sy.serde._simplify(protocol.tags),
+            sy.serde._simplify(protocol.description),
+            sy.serde._simplify(plans_reference),
+            sy.serde._simplify(protocol.workers_resolved),
+        )
+
+    @staticmethod
+    def detail(worker: BaseWorker, protocol_tuple: tuple) -> "Protocol":
+        """This function reconstructs a Protocol object given its attributes in the form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            protocol_tuple: a tuple holding the attributes of the Protocol
+        Returns:
+            protocol: a Protocol object
+        """
+
+        id, tags, description, plans_reference, workers_resolved = map(
+            lambda o: sy.serde._detail(worker, o), protocol_tuple
+        )
+
+        plans = []
+        for owner_id, plan_id in plans_reference:
+            plan_owner = worker.get_worker(owner_id, fail_hard=True)
+            plan_pointer = worker.fetch_plan(plan_id, plan_owner, copy=True)
+            worker.register_obj(plan_pointer)
+            plans.append((plan_owner, plan_pointer))
+
+        protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
+
+        return protocol
 
     def __repr__(self):
         repr = f"<Protocol id:{self.id} owner:{self.owner.id}{' resolved' if self.workers_resolved else ''}>"
