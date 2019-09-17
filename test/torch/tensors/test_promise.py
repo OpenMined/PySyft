@@ -59,23 +59,6 @@ def test_send(workers):
 
     assert (x.value().get() == torch.ones((2, 2))).all()
 
-    """
-    # Send plans
-    @syft.func2plan(args_shape=[(3,3)])
-    def plan_test(data):
-        return 2 * data + 1
-
-    a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
-    x = a.send(bob)
-    
-    ptr_plan = plan_test.send(bob)
-    z = ptr_plan(x)
-
-    a.keep(torch.ones(3,3))
-    
-    assert (z.value().get() == 3 * torch.ones(3, 3)).all()
-    """
-
 
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
 def test_remote_operations(workers, cmd):
@@ -115,45 +98,42 @@ def test_bufferized_results(hook):
     hook.local_worker.is_client_worker = True
 
 
-"""
-def test_plan_waiting_promise(hook):
+def test_plan_waiting_promise(hook, workers):
     hook.local_worker.is_client_worker = False
 
     @syft.func2plan(args_shape=[(3,3)])
     def plan_test(data):
         return 2 * data + 1
+    # Hack otherwise plan not found on local worker...
+    hook.local_worker.register_obj(plan_test)
 
     a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
     
-    z = plan_test(a)
+    res, _ = plan_test.setup_plan_with_promises({0:a})
 
     a.keep(torch.ones(3,3))
     
-    assert (z.value() == 3 * torch.ones(3, 3)).all()
+    assert (res.value() == 3 * torch.ones(3, 3)).all()
 
-    hook.local_worker.is_client_worker = True
-
-
-def test_plan_waiting_several_promises(hook):
-    hook.local_worker.is_client_worker = False
+    # With several arguments and remote
+    bob = workers["bob"]
 
     @syft.func2plan(args_shape=[(3,3), (3,3)])
-    def plan_test(in_a, in_b):
+    def plan_test_remote(in_a, in_b):
         return in_a + in_b
 
     a = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
     b = syft.Promises.FloatTensor(shape=torch.Size((3,3)))
 
-    z = plan_test(a, b)
+    res_ptr, [x, y] = plan_test_remote.setup_plan_with_promises({0:a, 1:b}, location=bob)
 
-    a.keep(torch.ones(3,3))
-    a.keep(3 * torch.ones(3,3))
+    x.keep(torch.ones(3,3))
+    x.keep(3 * torch.ones(3,3))
     
-    b.keep(2 * torch.ones(3,3))
-    b.keep(4 * torch.ones(3,3))
+    y.keep(2 * torch.ones(3,3))
+    y.keep(4 * torch.ones(3,3))
 
-    assert (z.value() == 3 * torch.ones(3, 3)).all()
-    assert (z.value() == 7 * torch.ones(3, 3)).all()
+    assert (res_ptr.value().get() == 3 * torch.ones(3, 3)).all()
+    assert (res_ptr.value().get() == 7 * torch.ones(3, 3)).all()
 
     hook.local_worker.is_client_worker = True
-"""
