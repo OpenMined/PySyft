@@ -852,6 +852,32 @@ class Plan(ObjectStorage, torch.nn.Module):
     def __repr__(self):
         return self.__str__()
 
+    def setup_plan_with_promises(self, promise_args, location=None):
+        """
+        """
+        # TODO only one location supported for the moment
+        for p in promise_args.values():
+            p.child.plans.add(self.id)
+
+        prom = next(iter(promise_args.values()))
+        res = sy.PromiseTensor(
+            owner=prom.owner,
+            shape=self.output_shape,
+            tensor_id=self.result_ids[0],
+            tensor_type=prom.child.obj_type,
+            plans=set(),
+        )
+
+        self.promised_args = {ind: p.id for ind, p in promise_args.items()}
+        self.promise_out_id = res.id
+
+        if location is not None:
+            res = res.send(location)
+            self.send(location)
+            promise_args = [p.send(location) for p in promise_args.values()]
+
+        return res, promise_args
+
     @staticmethod
     def simplify(plan: "Plan") -> tuple:
         """
