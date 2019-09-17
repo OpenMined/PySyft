@@ -611,6 +611,9 @@ class TorchTensor(AbstractTensor):
 
     def move(self, location):
         self.child = self.child.move(location)
+        # We get the owner from self.child because the owner of a wrapper is
+        # not reliable and sometimes end up being the syft.local_worker
+        self.child.owner.register_obj(self)
         return self
 
     def attr(self, attr_name):
