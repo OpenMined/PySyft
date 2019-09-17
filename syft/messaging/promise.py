@@ -68,20 +68,17 @@ class Promise(ABC):
             # ... execute them if it was the last argument they were waiting for.
             if plan.has_args_fulfilled():
                 # Collect args
-                #args = [
-                #    self.owner._objects[self.owner._objects[arg_id].child.queue_obj_ids[0]]  #TODO clean that line
-                #    if arg_id in plan.promised_args
-                #    else self.owner._objects[arg_id]
-                #    for arg_id in plan.arg_ids
-                #]
-                args = [
-                    self.owner._objects[self.owner._objects[promise_id].child.queue_obj_ids[0]]  #TODO clean that line
-                    for promise_id in plan.promised_args
-                ]
+                args = []
+                for i, arg_id in enumerate(plan.arg_ids):
+                    if i in plan.promised_args:
+                        promise_id = plan.promised_args[i]
+                        args.append(self.owner._objects[self.owner._objects[promise_id].child.queue_obj_ids[0]])  #TODO clean that line
+                    else:
+                        args.append(self.owner._objects[arg_id])
                 result = plan(*args)
 
                 # Remove objects from queues:
-                for promise_id in plan.promised_args:
+                for promise_id in plan.promised_args.values():
                     to_rm = self.owner._objects[promise_id].child.queue_obj_ids.pop(0)
                     self.owner.rm_obj(to_rm)
                 self.owner._objects[plan.promise_out_id].keep(result)

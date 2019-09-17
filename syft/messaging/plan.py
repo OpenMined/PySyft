@@ -613,8 +613,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         It might be the case that we still need to wait for some arguments in
         case some of them are Promises.
         """
-        for promise in self.promised_args:
-            if not self.owner._objects[promise].child.is_kept():
+        for promise_id in self.promised_args.values():
+            if not self.owner._objects[promise_id].child.is_kept():
                 return False
 
         return True

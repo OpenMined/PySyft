@@ -501,10 +501,13 @@ class TorchHook(FrameworkHook):
                     if isinstance(arg, PromiseTensor):
                         arg.plans.add(operation.id)
 
-                operation.promised_args = [self.id]
-                for arg in args:
+                operation.promised_args = {0: self.id}
+                operation.arg_ids = [self.id]
+                for i, arg in enumerate(args):
+                    operation.arg_ids.append(arg.id)
                     if isinstance(arg, PromiseTensor):
-                        operation.promised_args.append(arg.id)
+                        # +1 is there because self has index 0
+                        operation.promised_args[i+1] = arg.id
 
                 promise_out = PromiseTensor(
                     owner=self.owner,
