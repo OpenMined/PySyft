@@ -15,7 +15,7 @@ def test_inv_sym(hook, workers):
 
     bob = workers["bob"]
     alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    crypto_prov = workers["james"]
 
     x = torch.Tensor([[0.4627, 0.8224], [0.8224, 2.4084]])
 
@@ -38,7 +38,7 @@ def test_norm_mpc(hook, workers):
     torch.manual_seed(42)  # Truncation might not always work so we set the random seed
     bob = workers["bob"]
     alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    crypto_prov = workers["james"]
 
     n = 100
     t = torch.randn([n])
@@ -93,7 +93,7 @@ def test_qr_mpc(hook, workers):
     """
     bob = workers["bob"]
     alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    crypto_prov = workers["james"]
 
     torch.manual_seed(0)  # Truncation might not always work so we set the random seed
     n_cols = 3

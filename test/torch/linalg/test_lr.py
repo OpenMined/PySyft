@@ -13,8 +13,8 @@ def test_bloom(fit_intercept, hook, workers):
     bob = workers["bob"]
     alice = workers["alice"]
     james = workers["james"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
-    hbc_worker = sy.VirtualWorker(hook, id="hbc_worker")
+    crypto_prov = workers["james"]
+    hbc_worker = workers["charlie"]
 
     ###### Simulate data ######
 
