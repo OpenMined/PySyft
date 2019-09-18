@@ -514,12 +514,12 @@ class TorchHook(FrameworkHook):
 
                 if operation.owner != self.owner:
                     operation.send(self.owner)
-                else:  # TODO should not be needed
+                else:  # TODO otherwise object not registered on local worker
                     operation.owner.register_obj(operation)
 
                 if promise_out.owner != self.owner:
                     promise_out.send(self.owner)
-                else:  # TODO should not be needed
+                else:  # TODO otherwise object not registered on local worker
                     promise_out.owner.register_obj(promise_out)
 
                 return promise_out

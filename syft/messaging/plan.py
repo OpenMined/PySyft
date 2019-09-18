@@ -855,7 +855,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         return self.__str__()
 
     def setup_plan_with_promises(self, promise_args, location=None):
-        """
+        """ Slightly modifies a plan so that it can work with promises.
+        The plan will also be sent to location with this method.
         """
         # TODO only one location supported for the moment
         for p in promise_args.values():
