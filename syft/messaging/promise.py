@@ -16,18 +16,16 @@ class Promise(ABC):
         A Promise is a data-structure which indicates that "there will be an object
         with this ID at some point, and when you get it, use it to execute these plans".
 
-        As such, the promise has an ID itself and it also has an ID of the tensor it's
-        waiting for. Some promises self-destruct when they're kept, others can be kept
-        multiple times. TODO: add support for promises which can be kept multiple times.
+        As such, the promise has an ID itself and it also has an queue of object ids
+        with which the promise has been kept.
 
         However, it's important to know that some Plans are actually waiting on multiple
         objects before they can be executed. Thus, it's possible that you might call
         .keep() on a promise and nothing will happen because all of the plans are also
-        waiting on other plans to be kept before they execute.
+        waiting on other promises to be kept before they execute.
 
         Args:
             id (int): the id of the promise
-            obj_id (int): the id of the object the promise is waiting for
             plans (set): a set of the plans waiting on the promise to be kept
         Example:
             future_x = Promise()
@@ -37,20 +35,20 @@ class Promise(ABC):
 
         if id is None:
             id = sy.ID_PROVIDER.pop()
-
         self._id = id
 
-        self.queue_obj_ids = []
-
         self.obj_type = obj_type
+        self.queue_obj_ids = []
 
         if plans is None:
             plans = set()
-
         self.plans = plans
 
     def keep(self, obj):
-        print(f"keep {type(self)} {self.id}")
+        """ This method is used to keep a promise.
+        This will register the object on the worker, add its id to the queue of the promise,
+        and every plan waiting for this promise will try to execute if it can.
+        """
         if obj.type() != self.obj_type:
             raise TypeError(
                 "keep() was called with an object of incorrect type (not the type that was promised)"
@@ -87,7 +85,8 @@ class Promise(ABC):
         return obj
 
     def is_kept(self):
-        """TODO add doc
+        """ Check if promise has objects waiting to be used.
+        This returns False if the queue of objects is empty.
         """
         return self.queue_obj_ids != []
 
