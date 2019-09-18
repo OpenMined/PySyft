@@ -16,7 +16,7 @@ def test_rnn_mpc(module, hook, workers):
     th.manual_seed(42)  # Truncation might not always work so we set the random seed
     bob = workers["bob"]
     alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    crypto_prov = workers["james"]
 
     # model hyperparameters
     batch_size = 2

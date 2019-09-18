@@ -12,7 +12,7 @@ def test_activation(activation, hook, workers):
 
     bob = workers["bob"]
     alice = workers["alice"]
-    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    crypto_prov = workers["james"]
 
     x = torch.randn([10, 10]).fix_precision().share(bob, alice, crypto_provider=crypto_prov)
     activation_func(x)
