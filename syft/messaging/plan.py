@@ -15,6 +15,7 @@ from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 
 
 def make_plan(plan_blueprint):
@@ -613,10 +614,11 @@ class Plan(ObjectStorage, torch.nn.Module):
         It might be the case that we still need to wait for some arguments in
         case some of them are Promises.
         """
-        for promise_id in self.promised_args.values():
-            if not self.owner._objects[promise_id].child.is_kept():
-                return False
-
+        for arg_id in self.arg_ids:
+            arg = self.owner._objects[arg_id].child
+            if isinstance(arg, PromiseTensor):
+                if not arg.is_kept():
+                    return False
         return True
 
     def _execute_plan(self):
@@ -868,7 +870,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             plans=set(),
         )
 
-        self.promised_args = {ind: p.id for ind, p in promise_args.items()}
+        self._update_args(list(promise_args.values()), self.result_ids)
         self.promise_out_id = res.id
 
         if location is not None:
@@ -903,7 +905,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan.is_built,
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
-            sy.serde._simplify(plan.promised_args) if hasattr(plan, "promised_args") else None,
             sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,
         )
 
@@ -917,14 +918,13 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built, input_shapes, output_shape, promised_args, promise_out_id = (
+        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built, input_shapes, output_shape, promise_out_id = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
         state_ids = sy.serde._detail(worker, state_ids)
-        promised_args = sy.serde._detail(worker, promised_args)
 
         plan = sy.Plan(
             owner=worker,
@@ -938,7 +938,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         plan.state_ids = state_ids
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
-        plan.promised_args = promised_args
         plan.promise_out_id = promise_out_id
 
         plan.name = sy.serde._detail(worker, name)

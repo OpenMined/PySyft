@@ -66,20 +66,27 @@ class Promise(ABC):
             # ... execute them if it was the last argument they were waiting for.
             if plan.has_args_fulfilled():
                 # Collect args
+                orig_ids = plan.arg_ids
                 args = []
                 for i, arg_id in enumerate(plan.arg_ids):
-                    if i in plan.promised_args:
-                        promise_id = plan.promised_args[i]
-                        id_to_add = self.owner._objects[promise_id].child.queue_obj_ids[0]
+                    if isinstance(self.owner._objects[arg_id].child, Promise):
+                        id_to_add = self.owner._objects[arg_id].child.queue_obj_ids[0]
                     else:
                         id_to_add = arg_id
                     args.append(self.owner._objects[id_to_add])
                 result = plan(*args)
 
+                # ids of promises are changed automatically otherwise
+                plan.replace_ids(plan.arg_ids, orig_ids)
+                plan.arg_ids = orig_ids
+
                 # Remove objects from queues:
-                for promise_id in plan.promised_args.values():
-                    to_rm = self.owner._objects[promise_id].child.queue_obj_ids.pop(0)
-                    self.owner.rm_obj(to_rm)
+                for arg_id in plan.arg_ids:
+                    arg = self.owner._objects[arg_id].child
+                    if isinstance(arg, Promise):
+                        to_rm = arg.queue_obj_ids.pop(0)
+                        self.owner.rm_obj(to_rm)
+
                 self.owner._objects[plan.promise_out_id].keep(result)
 
         return obj
