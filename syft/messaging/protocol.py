@@ -187,7 +187,7 @@ class Protocol(AbstractObject):
         plans = []
         for owner_id, plan_id in plans_reference:
             plan_owner = worker.get_worker(owner_id, fail_hard=True)
-            plan_pointer = worker.request_search([plan_id], location=plan_owner)
+            plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
             print(plan_pointer)
             if isinstance(plan_pointer, list) and len(plan_pointer) == 0:
                 raise MemoryError

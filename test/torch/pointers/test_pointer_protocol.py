@@ -62,7 +62,7 @@ def test_search_protocol(workers):
     protocol.send(james)
     id_at_location = protocol.id
 
-    protocol_ptr = me.request_search([id_at_location], location=james)
+    protocol_ptr = me.request_search([id_at_location], location=james)[0]
 
     x = th.tensor([1.0]).send(james)
 
@@ -88,7 +88,7 @@ def test_get_protocols(workers):
     protocol.send(james)
     id_at_location = protocol.id
 
-    protocol_ptr = me.request_search([id_at_location], location=james)
+    protocol_ptr = me.request_search([id_at_location], location=james)[0]
 
     protocol_back = protocol_ptr.get()
 

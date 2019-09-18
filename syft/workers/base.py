@@ -883,7 +883,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
-    def search(self, query: List[str]) -> List[PointerTensor]:
+    def search(self, query: Union[List[Union[str, int]], str, int]) -> List[PointerTensor]:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -896,6 +896,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A list of PointerTensors.
         """
+        if isinstance(query, (str, int)):
+            query = [query]
+
         results = list()
         for key, obj in self._objects.items():
             found_something = True
@@ -910,7 +913,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 if query_item == str(key):
                     match = True
 
-                if isinstance(obj, AbstractObject):
+                if isinstance(obj, (AbstractObject, FrameworkTensor)):
                     if obj.tags is not None:
                         if query_item in obj.tags:
                             match = True
@@ -929,10 +932,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 ptr = obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
                 results.append(ptr)
 
-        if len(results) == 1:
-            return results[0]
-        else:
-            return results
+        return results
 
     def request_search(self, query: List[str], location: "BaseWorker"):
 

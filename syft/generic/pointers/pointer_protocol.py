@@ -3,6 +3,7 @@ from typing import Union
 
 import syft as sy
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker

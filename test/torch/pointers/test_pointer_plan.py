@@ -36,7 +36,7 @@ def test_search_plan(workers):
     plan.send(alice)
     id_at_location = plan.id
 
-    plan_ptr = me.request_search([id_at_location], location=alice)
+    plan_ptr = me.request_search([id_at_location], location=alice)[0]
 
     assert isinstance(plan_ptr, PointerPlan)
 
@@ -57,7 +57,7 @@ def test_get_plan(workers):
 
     plan.send(alice)
     id_at_location = plan.id
-    plan_ptr = me.request_search([id_at_location], location=alice)
+    plan_ptr = me.request_search([id_at_location], location=alice)[0]
 
     plan = plan_ptr.get()
 
