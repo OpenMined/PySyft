@@ -854,15 +854,18 @@ class Plan(ObjectStorage, torch.nn.Module):
     def __repr__(self):
         return self.__str__()
 
-    def setup_plan_with_promises(self, promise_args, location=None):
+    def setup_plan_with_promises(self, *args, location=None):
         """ Slightly modifies a plan so that it can work with promises.
         The plan will also be sent to location with this method.
         """
         # TODO only one location supported for the moment
-        for p in promise_args.values():
-            p.child.plans.add(self.id)
+        prom = None
+        for p in args:
+            if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
+                p.child.plans.add(self.id)
+                if prom is None:
+                    prom = p
 
-        prom = next(iter(promise_args.values()))
         res = sy.PromiseTensor(
             owner=prom.owner,
             shape=self.output_shape,
@@ -871,15 +874,15 @@ class Plan(ObjectStorage, torch.nn.Module):
             plans=set(),
         )
 
-        self._update_args(list(promise_args.values()), self.result_ids)
+        self._update_args(args, self.result_ids)
         self.promise_out_id = res.id
 
         if location is not None:
             res = res.send(location)
             self.send(location)
-            promise_args = [p.send(location) for p in promise_args.values()]
+            args = [arg.send(location) for arg in args]
 
-        return res, promise_args
+        return res, args
 
     @staticmethod
     def simplify(plan: "Plan") -> tuple:

@@ -110,11 +110,28 @@ def test_plan_waiting_promise(hook, workers):
 
     a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
 
-    res, _ = plan_test.setup_plan_with_promises({0: a})
+    res, _ = plan_test.setup_plan_with_promises(a)
 
     a.keep(torch.ones(3, 3))
 
     assert (res.value() == 3 * torch.ones(3, 3)).all()
+
+    # With non promises
+    @syft.func2plan(args_shape=[(3, 3), (3, 3)])
+    def plan_test(prom, tens):
+        return prom + tens
+
+    # Hack otherwise plan not found on local worker...
+    hook.local_worker.register_obj(plan_test)
+
+    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    b = 2 * torch.ones(3, 3).wrap()
+
+    res, _ = plan_test.setup_plan_with_promises(a, b)
+
+    a.keep(torch.ones(3, 3).wrap())
+
+    assert (res.value().child == 3 * torch.ones(3, 3)).all()
 
     # With several arguments and remote
     bob = workers["bob"]
@@ -126,7 +143,7 @@ def test_plan_waiting_promise(hook, workers):
     a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
     b = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
 
-    res_ptr, [x, y] = plan_test_remote.setup_plan_with_promises({0: a, 1: b}, location=bob)
+    res_ptr, [x, y] = plan_test_remote.setup_plan_with_promises(a, b, location=bob)
 
     x.keep(torch.ones(3, 3))
     x.keep(3 * torch.ones(3, 3))
