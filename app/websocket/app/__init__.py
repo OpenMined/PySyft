@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_socketio import SocketIO
-from flask_cors import CORS
+
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
@@ -70,7 +70,6 @@ def create_app(debug=False, test_config=None):
     global db
 
     app.register_blueprint(main_blueprint)
-    CORS(app)
 
     # Set SQLAlchemy configs
     app = set_database_config(app, test_config=test_config)

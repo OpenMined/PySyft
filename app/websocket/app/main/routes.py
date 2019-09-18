@@ -12,6 +12,7 @@ from flask import request, send_from_directory
 
 import syft as sy
 from requests_toolbelt import MultipartEncoder
+from flask_cors import cross_origin
 
 from . import main
 from . import local_worker
@@ -24,7 +25,6 @@ from .local_worker_utils import register_obj, get_objs
 MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
 
 # ======= WEB ROUTES ======
-# TODO: Must verify if cores block these calls or not. Should be protected by cors.
 
 
 @main.route("/favicon.ico")
@@ -65,6 +65,7 @@ def list_workers():
 
 
 @main.route("/identity/")
+@cross_origin()
 def is_this_an_opengrid_node():
     """This exists because in the automation scripts which deploy nodes,
     there's an edge case where the 'node already exists' but sometimes it
@@ -75,6 +76,7 @@ def is_this_an_opengrid_node():
 
 
 @main.route("/delete_model/", methods=["POST"])
+@cross_origin()
 def delete_model():
     model_id = request.form["model_id"]
     result = mm.delete_model(model_id)
@@ -85,6 +87,7 @@ def delete_model():
 
 
 @main.route("/models/", methods=["GET"])
+@cross_origin()
 def list_models():
     """Generates a list of models currently saved at the worker"""
     return Response(
@@ -93,6 +96,7 @@ def list_models():
 
 
 @main.route("/is_model_copy_allowed/<model_id>", methods=["GET"])
+@cross_origin()
 def is_model_copy_allowed(model_id):
     """Generates a list of models currently saved at the worker"""
     return Response(
@@ -103,6 +107,7 @@ def is_model_copy_allowed(model_id):
 
 
 @main.route("/get_model/<model_id>", methods=["GET"])
+@cross_origin()
 def get_model(model_id):
     """Generates a list of models currently saved at the worker"""
     result = mm.get_serialized_model_with_id(model_id)
@@ -124,6 +129,7 @@ def get_model(model_id):
 
 
 @main.route("/models/<model_id>", methods=["GET"])
+@cross_origin()
 def model_inference(model_id):
     response = mm.get_model_with_id(model_id)
     # check if model exists. Else return a unknown model response.
@@ -164,6 +170,7 @@ def model_inference(model_id):
 
 
 @main.route("/serve-model/", methods=["POST"])
+@cross_origin()
 def serve_model():
     encoding = request.form["encoding"]
     model_id = request.form["model_id"]
@@ -191,6 +198,7 @@ def serve_model():
 
 
 @main.route("/dataset-tags", methods=["GET"])
+@cross_origin()
 def get_available_tags():
     """ Returns all tags stored in this node. Can be very useful to know what datasets this node contains. """
     available_tags = set()
@@ -206,6 +214,7 @@ def get_available_tags():
 
 
 @main.route("/search-encrypted-models", methods=["POST"])
+@cross_origin()
 def search_encrypted_models():
     """ Check if exist some encrypted model hosted on this node using a specific model_id, if found,
         return JSON with a list of workers/crypto_provider.
@@ -267,6 +276,7 @@ def search_encrypted_models():
 
 
 @main.route("/search", methods=["POST"])
+@cross_origin()
 def search_dataset_tags():
     body = json.loads(request.data)
 
