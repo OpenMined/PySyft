@@ -1,14 +1,10 @@
 import pytest
 import torch as th
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
 
 import syft as sy
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.plan import Plan
-from syft.serde.serde import deserialize
-from syft.serde.serde import serialize
 
 
 def _create_inc_protocol():
@@ -29,6 +25,11 @@ def _create_inc_protocol():
 
 
 def test_deploy(workers):
+    """
+    This test validates the following scenario:
+    A creates a protocol
+    A deploys it on workers D, E and F
+    """
     alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
 
     protocol = _create_inc_protocol()
@@ -76,6 +77,12 @@ def test_deploy_with_resolver(workers):
 
 
 def test_synchronous_run(workers):
+    """
+    This test validates the following scenario:
+    A creates a protocol
+    A deploys it on workers D, E and F
+    A runs the protocol
+    """
     alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
 
     protocol = _create_inc_protocol()
@@ -83,14 +90,25 @@ def test_synchronous_run(workers):
     protocol.deploy(alice, bob, charlie)
 
     x = th.tensor([1.0])
-    r = protocol.run(x)
+    ptr = protocol.run(x)
 
-    assert r.location == charlie
+    assert ptr.location == charlie
 
-    assert r.get() == th.tensor([4.0])
+    assert (
+        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
+    )
+
+    assert ptr.get() == th.tensor([4.0])
 
 
 def test_synchronous_remote_run(workers):
+    """
+    This test validates the following scenario:
+    A creates a protocol
+    A deploys it on workers D, E and F
+    A sends the protocol to the cloud C
+    A asks a remote run on C
+    """
     alice, bob, charlie, james = (
         workers["alice"],
         workers["bob"],
@@ -105,20 +123,78 @@ def test_synchronous_remote_run(workers):
     protocol.send(james)
 
     x = th.tensor([1.0]).send(james)
-    r = protocol.run(x)
+    ptr = protocol.run(x)
 
-    assert r.location == james
+    assert ptr.location == james
+    assert isinstance(ptr, FrameworkTensor) and ptr.is_wrapper
 
-    r = r.get()
+    ptr = ptr.get()
 
-    assert r.location == charlie
+    assert ptr.location == charlie
+    assert (
+        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
+    )
 
-    r = r.get()
+    res = ptr.get()
 
-    assert r == th.tensor([4.0])
+    assert res == th.tensor([4.0])
 
-    # Error case when data is not correctly located
+    # BONUS: Error case when data is not correctly located
 
     x = th.tensor([1.0])
     with pytest.raises(RuntimeError):
         protocol.run(x)
+
+
+def test_search_and_deploy(workers):
+    """
+    This test validates the following scenario:
+    A creates a protocol (which is not deployed)
+    A sends it to the cloud C
+    B search C for a protocol and get it back
+    B deploys the protocol on workers D, E and F
+    B runs the protocol
+    """
+    alice, bob, charlie, james, me = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+        workers["me"],
+    )
+
+    protocol = _create_inc_protocol()
+
+    protocol.send(james)
+
+    ptr_protocol = me.request_search([protocol.id], location=james)[0]
+
+    assert isinstance(ptr_protocol, PointerProtocol)
+
+    protocol_back = ptr_protocol.get()
+
+    protocol_back.deploy(alice, bob, charlie)
+
+    x = th.tensor([1.0])
+    ptr = protocol_back.run(x)
+
+    assert ptr.location == charlie
+    assert (
+        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
+    )
+
+    res = ptr.get()
+
+    assert res == th.tensor([4.0])
+
+    # BONUS: Re-send to cloud and run remotely
+
+    james.clear_objects()
+    protocol = protocol_back
+
+    protocol.send(james)
+    ptr_protocol = me.request_search([protocol.id], location=james)[0]
+    x = th.tensor([1.0]).send(james)
+    ptr = ptr_protocol.run(x)
+    res = ptr.get().get()
+    assert res == th.tensor([4.0])
