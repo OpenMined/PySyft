@@ -20,12 +20,10 @@ class Protocol(AbstractObject):
         description: str = None,
         child=None,
     ):
-        if owner is None:
-            owner = sy.framework.hook.local_worker
-
+        owner = owner or sy.framework.hook.local_worker
         super(Protocol, self).__init__(id, owner, tags, description, child)
-        self.plans = plans if plans else list()
 
+        self.plans = plans or list()
         self.workers_resolved = len(self.plans) and all(
             isinstance(w, AbstractWorker) for w, p in self.plans
         )
@@ -40,7 +38,7 @@ class Protocol(AbstractObject):
         """
         n_workers = len(set(abstract_worker for abstract_worker, plan in self.plans))
 
-        if len(workers) != n_workers:
+        if len(self.plans) != len(workers) != n_workers:
             raise RuntimeError(
                 f"This protocol is designed for {n_workers} workers, but {len(workers)} were provided."
             )
@@ -136,6 +134,14 @@ class Protocol(AbstractObject):
         """
         Send a protocol to a worker, to be fetched by other workers
         """
+
+        # If the workers have not been assigned, then the plans are still local
+        # and should be sent together with the protocol to the location
+        if not self.workers_resolved:
+            for _, plan in self.plans:
+                plan.send(location)
+        # Else, the plans are already deployed and we don't move them
+
         self.owner.send_obj(obj=self, location=location)
 
         self.location = location
@@ -150,7 +156,6 @@ class Protocol(AbstractObject):
             tuple: a tuple holding the unique attributes of the Protocol object
 
         """
-        protocol._assert_is_resolved()
 
         plans_reference = []
         for worker, plan in protocol.plans:
@@ -160,7 +165,13 @@ class Protocol(AbstractObject):
                 plan_id = plan.id_at_location
             else:
                 raise TypeError("This is not a valid Plan")
-            plans_reference.append((worker.id, plan_id))
+
+            if isinstance(worker, str):
+                worker_id = worker
+            else:
+                worker_id = worker.id
+
+            plans_reference.append((worker_id, plan_id))
 
         return (
             sy.serde._simplify(protocol.id),
@@ -186,13 +197,19 @@ class Protocol(AbstractObject):
 
         plans = []
         for owner_id, plan_id in plans_reference:
-            plan_owner = worker.get_worker(owner_id, fail_hard=True)
-            plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
-            print(plan_pointer)
-            if isinstance(plan_pointer, list) and len(plan_pointer) == 0:
-                raise MemoryError
-            worker.register_obj(plan_pointer)
-            plans.append((plan_owner, plan_pointer))
+            if workers_resolved:
+                plan_owner = worker.get_worker(owner_id, fail_hard=True)
+                plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
+                worker.register_obj(plan_pointer)
+                plans.append((plan_owner, plan_pointer))
+            else:
+                try:
+                    plan_owner = worker.get_worker(owner_id, fail_hard=True)
+                    plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
+                    plan = plan_pointer.get()
+                except WorkerNotFoundException:
+                    plan = worker.get_obj(plan_id)
+                plans.append((worker.id, plan))
 
         protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
 

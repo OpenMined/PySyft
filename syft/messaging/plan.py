@@ -8,6 +8,7 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.object_storage import ObjectStorage
@@ -672,7 +673,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
