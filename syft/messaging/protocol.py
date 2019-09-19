@@ -13,6 +13,31 @@ from typing import List, Union
 
 
 class Protocol(AbstractObject):
+    """
+    A Protocol coordinates a sequence of Plans, deploys them on distant workers
+    and run them in a single pass.
+
+    It's a high level object which contains the logic of a complex computation
+    distributed across several workers. The main feature of Protocol is the
+    ability to be sent / searched / fetched back between workers, and finally
+    deployed to identified workers. So a user can design a protocol, upload it
+    to a cloud worker, and any other workers will be able to search for it,
+    download it, and apply the computation program it contains on the workers
+    that it is connected to.
+
+
+    Args:
+        plans: a list of pairs (worker, plan). "worker" can be either a real
+            worker or a worker id or a string to represent a fictive worker. This
+            last case can be used at creation to specify that two plans should be
+            owned (or not owned) by the same worker at deployment. "plan" can
+            either be a Plan or a PointerPlan.
+        id: the Protocol id
+        owner: the Protocol owner
+        tags: the Protocol tags (used for search)
+        description: the Protocol description
+    """
+
     def __init__(
         self,
         plans: List = None,
@@ -20,10 +45,9 @@ class Protocol(AbstractObject):
         owner: "sy.workers.AbstractWorker" = None,
         tags: List[str] = None,
         description: str = None,
-        child=None,
     ):
         owner = owner or sy.framework.hook.local_worker
-        super(Protocol, self).__init__(id, owner, tags, description, child)
+        super(Protocol, self).__init__(id, owner, tags, description, child=None)
 
         self.plans = plans or list()
         self.workers_resolved = len(self.plans) and all(
@@ -33,10 +57,14 @@ class Protocol(AbstractObject):
 
     def deploy(self, *workers):
         """
-        Deploy the plans on the designated workers.
+        Calling .deploy() sends the plans to the designated workers.
 
-        Map the abstract workers (named by strings) to the provided workers, and
-        send the corresponding plans to each of them
+        This is done in 2 phases: first, we map the fictive workers provided at creation
+        (named by strings) to the provided workers, and second, we send the corresponding
+        plans to each of them.
+        For the first phase, either there is exactly one real worker per plan or one real
+        worker per fictive_worker. _resolve_workers replaces the fictive workers by the
+        real ones.
         """
         n_workers = len(set(abstract_worker for abstract_worker, plan in self.plans))
 
@@ -52,16 +80,17 @@ class Protocol(AbstractObject):
 
     def run(self, *args, **kwargs):
         """
-        Run the protocol bu executing the plans
+        Run the protocol by executing the plans sequentially
 
-        In synchronous mode, the input args provided is sent to the first plan
-        location. This first plan is run and its output is moved to the second
-        plan location, and so on. The final result is returned after all plans
-        have run.
+        In synchronous mode ie when no promises are provided, the input args provided
+        are sent to the first plan location. This first plan is run and its output is
+        moved to the second plan location, and so on. The final result is returned after
+        all plans have run, and it is composed of pointers to the last plan location.
         """
         synchronous = kwargs.get("synchronous", True)
         self._assert_is_resolved()
 
+        # This is an alternative to having PointerProtocol, when we send the protocol.
         if self.location is not None:
             location = Protocol.find_args_location(args)
             if location != self.location:
@@ -74,6 +103,7 @@ class Protocol(AbstractObject):
             response = self.request_remote_run(location, args, kwargs)
             return response
 
+        # Local and sequential coordination of the plan execution
         if synchronous:
             previous_worker_id = None
             response = None

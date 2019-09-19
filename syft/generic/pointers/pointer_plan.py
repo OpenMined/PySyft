@@ -9,6 +9,17 @@ from syft.workers.abstract import AbstractWorker
 
 
 class PointerPlan(ObjectPointer):
+    """
+    The PointerPlan keeps a reference to a remote Plan.
+
+    It allows to:
+    - __call__ an evaluation of the remote plan
+    - get the remote plan
+
+    It's a simplification compared to the current hybrid state of
+    Plans which can be seen as pointers, which is ambiguous.
+    """
+
     def __init__(
         self,
         location: "AbstractWorker" = None,
@@ -33,6 +44,10 @@ class PointerPlan(ObjectPointer):
         )
 
     def __call__(self, *args, **kwargs):
+        """
+        Transform the call on the pointer in a request to evaluate the
+        remote plan
+        """
         result_ids = [sy.ID_PROVIDER.pop()]
 
         response = self.request_execute_plan(self.location, result_ids, *args)
@@ -46,6 +61,19 @@ class PointerPlan(ObjectPointer):
         *args,
         **kwargs,
     ) -> object:
+        """Requests plan execution.
+
+        Send a request to execute the plan on the remote location.
+
+        Args:
+            location: to which worker the request should be sent
+            response_ids: where the result should be stored
+            args: arguments used as input data for the plan
+            kwargs: named arguments used as input data for the plan
+
+        Returns:
+            Execution response
+        """
         plan_name = f"plan{self.id}"
         # args, _, _ = hook_args.unwrap_args_from_function(
         #     plan_name, args, {}
@@ -62,6 +90,9 @@ class PointerPlan(ObjectPointer):
         return response
 
     def get(self, deregister_ptr: bool = True):
+        """
+        This is an alias to fetch_plan, to behave like a pointer
+        """
         copy = not deregister_ptr
         plan = self.owner.fetch_plan(self.id_at_location, self.location, copy=copy)
         return plan

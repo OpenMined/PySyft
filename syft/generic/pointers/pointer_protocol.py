@@ -11,6 +11,14 @@ from syft.workers.base import BaseWorker
 
 
 class PointerProtocol(ObjectPointer):
+    """
+    The PointerProtocol keeps a reference to a remote Protocol.
+
+    It allows to:
+    - run an evaluation of the remote protocol
+    - get the remote protocol
+    """
+
     def __init__(
         self,
         location: "AbstractWorker" = None,
@@ -35,31 +43,30 @@ class PointerProtocol(ObjectPointer):
         )
 
     def run(self, *args, **kwargs):
-
+        """
+        Call a run on the remote protocol
+        """
         location = sy.Protocol.find_args_location(args)
         if location != self.location:
             raise RuntimeError(
                 f"This protocol has been sent to {self.location.id}, but you provided "
                 f"local arguments or pointers to {location.id}."
             )
-
-        print("send remote run request to", self.location.id)
         response = self.request_remote_run(location, args, kwargs)
         return response
 
     def request_remote_run(self, location: "BaseWorker", args, kwargs) -> object:
-        """Requests protocol execution.
+        """Requests remote protocol execution.
 
         Send a request to execute the protocol on the remote location.
 
         Args:
             location: to which worker the request should be sent
-            args: Arguments used as input data for the protocol.
-            kwargs: Named arguments used as input data for the protocol.
+            args: arguments used as input data for the protocol
+            kwargs: named arguments used as input data for the protocol
 
         Returns:
-            Execution response.
-
+            Execution response
         """
 
         plan_name = f"plan{self.id}"
@@ -75,6 +82,9 @@ class PointerProtocol(ObjectPointer):
         return response
 
     def get(self, deregister_ptr: bool = True):
+        """
+        This is an alias to fetch_protocol, to behave like a pointer
+        """
         copy = not deregister_ptr
         protocol = self.owner.fetch_protocol(self.id_at_location, self.location, copy=copy)
         return protocol

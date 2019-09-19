@@ -855,7 +855,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def fetch_protocol(
         self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
     ) -> "Plan":  # noqa: F821
-        """Fetchs a copy of a the protocol with the given `protocol_id` from the worker registry.
+        """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
 
         This method is executed for local execution.
 
@@ -874,6 +874,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self, protocol_id: Union[str, int], copy: bool
     ) -> "Protocol":  # noqa: F821
         """
+        Target function of fetch_protocol, find and return a protocol
         """
         if protocol_id in self._objects:
 
@@ -939,22 +940,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         result = self.send_msg(SearchMessage(query), location=location)
 
         return result
-
-    # def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
-    #     """
-    #     Called when a message requesting a call to `search` is received.
-    #     The serialized arguments will arrive as a `tuple` and it needs to be
-    #     transformed to an arguments list.
-    #
-    #     Args:
-    #         query_items(tuple(str)): Tuple of items to search for. Should originate from the
-    #         deserialization of a message requesting a search operation.
-    #
-    #     Returns:
-    #         list(PointerTensor): List of matched tensors.
-    #     """
-    #     raise MemoryError
-    #     return self.search(*query_items)
 
     def _get_msg(self, index):
         """Returns a decrypted message from msg_history. Mostly useful for testing.
