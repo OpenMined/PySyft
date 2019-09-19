@@ -1,5 +1,7 @@
 import syft as sy
 
+from syft.exceptions import WorkerNotFoundException
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -109,7 +111,8 @@ class Protocol(AbstractObject):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
+        plan_name = f"plan{self.id}"
+        args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
 
         # return_ids = kwargs.get("return_ids", {})
         command = ("run", self.id, args, kwargs)
@@ -117,6 +120,7 @@ class Protocol(AbstractObject):
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids
         )
+        response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         return response
 
     @staticmethod

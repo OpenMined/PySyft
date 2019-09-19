@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 
 import syft as sy
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.frameworks.types import FrameworkTensor
@@ -60,7 +61,9 @@ class PointerProtocol(ObjectPointer):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
+
+        plan_name = f"plan{self.id}"
+        args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
 
         # return_ids = kwargs.get("return_ids", {})
         command = ("run", self.id_at_location, args, kwargs)
@@ -68,6 +71,7 @@ class PointerProtocol(ObjectPointer):
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids
         )
+        response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         return response
 
     def get(self, deregister_ptr: bool = True):

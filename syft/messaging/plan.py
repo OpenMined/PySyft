@@ -634,11 +634,17 @@ class Plan(ObjectStorage, torch.nn.Module):
             self._build(args)
 
         if len(self.locations):
+            plan_name = f"plan{self.id}"
+            # args, _, _ = hook_args.unwrap_args_from_function(
+            #     plan_name, args, {}
+            # )
+
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
             response = self.request_execute_plan(worker, result_ids, *args)
 
+            response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
             return response
 
         # if the plan is not to be sent then it has been requested to be executed,

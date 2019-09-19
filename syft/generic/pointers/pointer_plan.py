@@ -2,7 +2,9 @@ from typing import List
 from typing import Union
 
 import syft as sy
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers.abstract import AbstractWorker
 
 
@@ -44,6 +46,10 @@ class PointerPlan(ObjectPointer):
         *args,
         **kwargs,
     ) -> object:
+        plan_name = f"plan{self.id}"
+        # args, _, _ = hook_args.unwrap_args_from_function(
+        #     plan_name, args, {}
+        # )
         args = [args, response_ids]
 
         command = ("execute_plan", self.id_at_location, args, kwargs)
@@ -51,6 +57,7 @@ class PointerPlan(ObjectPointer):
         response = self.owner.send_command(
             message=command, recipient=location, return_ids=response_ids
         )
+        response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         response.garbage_collect_data = False
         return response
 
