@@ -242,10 +242,13 @@ def save_model(
 
         return {"success": True, "message": "Model saved with id: " + model_id}
     except (SQLAlchemyError, IntegrityError) as e:
+        # rollback the session in case of error
+        db.session.rollback()
         if type(e) is IntegrityError:
             # The model is already present within the db.
             # But missing from cache. Try to fetch the model and save to cache.
-            return get_model_with_id(model_id)
+            get_model_with_id(model_id)
+            return {"success": False, "error": str(e)}
         return {"success": False, "error": str(e)}
 
 
@@ -382,6 +385,7 @@ def delete_model(model_id: str):
         return {"success": True, "message": MODEL_DELETED_MSG}
     except SQLAlchemyError:
         # probably no model found in db.
+        # flush the db
         return {
             "success": False,
             "error": "Something went wrong while deleting the object, check if the object is listed at worker.models.",
