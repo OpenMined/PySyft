@@ -66,7 +66,12 @@ class Protocol(AbstractObject):
         worker per fictive_worker. _resolve_workers replaces the fictive workers by the
         real ones.
         """
-        n_workers = len(set(abstract_worker for abstract_worker, plan in self.plans))
+        if self.workers_resolved:
+            raise RuntimeError(
+                f"This protocol is already deployed to {', '.join(worker.id for worker, plan in self.plans)}."
+            )
+
+        n_workers = len(set(worker for worker, plan in self.plans))
 
         if len(self.plans) != len(workers) != n_workers:
             raise RuntimeError(
@@ -78,16 +83,17 @@ class Protocol(AbstractObject):
         for worker, plan in self.plans:
             plan.send(worker)
 
+        return self
+
     def run(self, *args, **kwargs):
         """
         Run the protocol by executing the plans sequentially
 
-        In synchronous mode ie when no promises are provided, the input args provided
-        are sent to the first plan location. This first plan is run and its output is
-        moved to the second plan location, and so on. The final result is returned after
-        all plans have run, and it is composed of pointers to the last plan location.
+        The input args provided are sent to the first plan location. This first plan is
+        run and its output is moved to the second plan location, and so on. The final
+        result is returned after all plans have run, and it is composed of pointers to
+        the last plan location.
         """
-        synchronous = kwargs.get("synchronous", True)
         self._assert_is_resolved()
 
         # This is an alternative to having PointerProtocol, when we send the protocol.
@@ -104,28 +110,24 @@ class Protocol(AbstractObject):
             return response
 
         # Local and sequential coordination of the plan execution
-        if synchronous:
-            previous_worker_id = None
-            response = None
-            for worker, plan in self.plans:
-                # Transmit the args to the next worker if it's a different one % the previous
-                if None is not previous_worker_id != worker.id:
-                    print("move", previous_worker_id, " -> ", worker.id)
-                    args = [arg.move(worker) for arg in args]
-                else:
-                    print("send", worker.id)
-                    args = [arg.send(worker) for arg in args]
+        previous_worker_id = None
+        response = None
+        for worker, plan in self.plans:
+            # Transmit the args to the next worker if it's a different one % the previous
+            if None is not previous_worker_id != worker.id:
+                print("move", previous_worker_id, " -> ", worker.id)
+                args = [arg.move(worker) for arg in args]
+            else:
+                print("send", worker.id)
+                args = [arg.send(worker) for arg in args]
 
-                previous_worker_id = worker.id
+            previous_worker_id = worker.id
 
-                response = plan(*args)
+            response = plan(*args)
 
-                args = response if isinstance(response, tuple) else (response,)
+            args = response if isinstance(response, tuple) else (response,)
 
-            return response
-
-        else:
-            raise NotImplementedError("Promises are not currently supported")
+        return response
 
     def request_remote_run(self, location: "sy.workers.BaseWorker", args, kwargs) -> object:
         """Requests protocol execution.
@@ -188,9 +190,7 @@ class Protocol(AbstractObject):
             protocol (Protocol): a Protocol object
         Returns:
             tuple: a tuple holding the unique attributes of the Protocol object
-
         """
-
         plans_reference = []
         for worker, plan in protocol.plans:
             if isinstance(plan, sy.Plan):

@@ -100,6 +100,18 @@ def test_search_protocol(workers):
 
     assert (ptr.get() == th.tensor([4.0])).all()
 
+    # BONUS: Version with tags
+
+    protocol = _create_inc_protocol()
+    protocol.tag("my_protocol", "other_tag")
+    protocol.deploy(alice, bob, charlie)
+    protocol.send(james)
+    protocol_ptr = me.request_search("my_protocol", location=james)[0]
+    x = th.tensor([1.0]).send(james)
+    ptr = protocol_ptr.run(x)
+    ptr = ptr.get()
+    assert (ptr.get() == th.tensor([4.0])).all()
+
 
 def test_get_protocols(workers):
     """

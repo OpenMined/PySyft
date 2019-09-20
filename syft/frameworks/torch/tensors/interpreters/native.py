@@ -56,22 +56,6 @@ class TorchTensor(AbstractTensor):
     def has_child(self):
         return hasattr(self, "child")
 
-    def describe(self, description):
-        self.description = description
-        return self
-
-    def tag(self, *_tags):
-        if self.tags is None:
-            tags = list()
-        else:
-            tags = list(self.tags)
-
-        for new_tag in _tags:
-            tags.append(new_tag)
-
-        self.tags = set(tags)
-        return self
-
     @property
     def tags(self):
         if self.has_child():
