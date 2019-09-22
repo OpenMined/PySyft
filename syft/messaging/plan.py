@@ -574,7 +574,9 @@ class Plan(ObjectStorage, torch.nn.Module):
             raise ValueError("Kwargs are not supported for plan.")
 
         if self.find_location(args) == self.owner:
-            if self.forward is not None:
+            if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
+                return self.setup_plan_with_promises(*args)
+            elif self.forward is not None:
                 if self.include_state:
                     return self.forward(*args, self.state)
                 else:
@@ -582,7 +584,11 @@ class Plan(ObjectStorage, torch.nn.Module):
             else:
                 return self._execute_readable_plan(*args)
         else:
-            if not self.is_built:
+            if any([hasattr(arg, "child") and
+                    isinstance(arg.child.location._objects[arg.child.id_at_location].child, PromiseTensor) for arg in args]):
+            # TODO find a way to know if pointer points to promise
+                return self.setup_plan_with_promises(*args)
+            elif not self.is_built:
                 if self.include_state:
                     self.forward(*args, self.state)
                 else:
@@ -854,11 +860,15 @@ class Plan(ObjectStorage, torch.nn.Module):
     def __repr__(self):
         return self.__str__()
 
-    def setup_plan_with_promises(self, *args, location=None):
+    def setup_plan_with_promises(self, *args):
         """ Slightly modifies a plan so that it can work with promises.
         The plan will also be sent to location with this method.
         """
-        # TODO only one location supported for the moment
+        location = args[0].child.location if isinstance(args[0].child, PointerTensor) else None
+        if location is not None:
+            # Get remote arguments
+            args = [arg.child.location[arg.child.id_at_location] for arg in args]
+
         prom = None
         for p in args:
             if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
@@ -880,9 +890,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         if location is not None:
             res = res.send(location)
             self.send(location)
-            args = [arg.send(location) for arg in args]
 
-        return res, args
+        return res
 
     @staticmethod
     def simplify(plan: "Plan") -> tuple:
