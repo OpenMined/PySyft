@@ -61,7 +61,12 @@ class Promise(ABC):
 
         # If some plans were waiting for this promise...
         for plan_id in self.plans:
-            plan = self.owner._objects[plan_id]
+            # If the promise has been moved, the plan waiting for it might not be on the same worker
+            # TODO is this ok?
+            if plan_id in self.owner._objects:
+                plan = self.owner._objects[plan_id]
+            else:
+                continue
 
             # ... execute them if it was the last argument they were waiting for.
             if plan.has_args_fulfilled():
