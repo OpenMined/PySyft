@@ -110,7 +110,7 @@ def test_plan_waiting_promise(hook, workers):
 
     a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
 
-    res, _ = plan_test.setup_plan_with_promises(a)
+    res = plan_test(a)
 
     a.keep(torch.ones(3, 3))
 
@@ -127,7 +127,7 @@ def test_plan_waiting_promise(hook, workers):
     a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
     b = 2 * torch.ones(3, 3).wrap()
 
-    res, _ = plan_test.setup_plan_with_promises(a, b)
+    res = plan_test(a, b)
 
     a.keep(torch.ones(3, 3).wrap())
 
@@ -143,7 +143,11 @@ def test_plan_waiting_promise(hook, workers):
     a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
     b = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
 
-    res_ptr, [x, y] = plan_test_remote.setup_plan_with_promises(a, b, location=bob)
+    x = b.send(bob)
+    y = a.send(bob)
+    ptr_plan = plan_test_remote.send(bob)
+
+    res_ptr = ptr_plan(x, y)
 
     x.keep(torch.ones(3, 3))
     x.keep(3 * torch.ones(3, 3))
