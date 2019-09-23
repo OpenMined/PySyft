@@ -69,7 +69,7 @@ class BloomRegressor:
                 y_ptrs[i] = y.unsqueeze(1)
 
         if self.fit_intercept:
-            self._add_intercept(X_ptrs)
+            X_ptrs = self._add_intercept(X_ptrs)
             self._dgf -= 1
 
         self.workers = self._get_workers(X_ptrs)
@@ -217,10 +217,12 @@ class BloomRegressor:
         """
         Adds a column-vector of 1's at the beginning of the tensors X_ptrs
         """
+        X_ptrs_new = []
         for i, x in enumerate(X_ptrs):
             ones = torch.ones_like(x[:, :1])
             x = torch.cat((ones, x), 1)
-            X_ptrs[i] = x
+            X_ptrs_new.append(x)
+        return X_ptrs_new
 
     @staticmethod
     def _get_workers(ptrs):
