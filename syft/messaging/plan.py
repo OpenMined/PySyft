@@ -8,10 +8,12 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
@@ -632,11 +634,17 @@ class Plan(ObjectStorage, torch.nn.Module):
             self._build(args)
 
         if len(self.locations):
+            plan_name = f"plan{self.id}"
+            # args, _, _ = hook_args.unwrap_args_from_function(
+            #     plan_name, args, {}
+            # )
+
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
             response = self.request_execute_plan(worker, result_ids, *args)
 
+            response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
             return response
 
         # if the plan is not to be sent then it has been requested to be executed,
@@ -671,7 +679,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
@@ -775,17 +782,13 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     share = share_
 
-    def describe(self, description: str) -> "Plan":
-        self.description = description
-        return self
-
-    def tag(self, *_tags: List) -> "Plan":
-        if self.tags is None:
-            self.tags = set()
-
-        for new_tag in _tags:
-            self.tags.add(new_tag)
-        return self
+    def create_pointer(self, owner, garbage_collect_data):
+        return PointerPlan(
+            location=self.owner,
+            id_at_location=self.id,
+            owner=owner,
+            garbage_collect_data=garbage_collect_data,
+        )
 
     def __str__(self):
         """Returns the string representation of PlanWorker.
@@ -827,7 +830,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-
         return (
             tuple(
                 plan.readable_plan
@@ -844,7 +846,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     @staticmethod
     def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
-        """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+        """This function reconstructs a Plan object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
             plan_tuple: a tuple holding the attributes of the Plan
