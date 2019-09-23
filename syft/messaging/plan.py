@@ -574,7 +574,9 @@ class Plan(ObjectStorage, torch.nn.Module):
             raise ValueError("Kwargs are not supported for plan.")
 
         if self.find_location(args) == self.owner:
-            if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
+            if any(
+                [hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]
+            ):
                 return self.setup_plan_with_promises(*args)
             elif self.forward is not None:
                 if self.include_state:
@@ -584,9 +586,16 @@ class Plan(ObjectStorage, torch.nn.Module):
             else:
                 return self._execute_readable_plan(*args)
         else:
-            if any([hasattr(arg, "child") and
-                    isinstance(arg.child.location._objects[arg.child.id_at_location].child, PromiseTensor) for arg in args]):
-            # TODO find a way to know if pointer points to promise
+            if any(
+                [
+                    hasattr(arg, "child")
+                    and isinstance(
+                        arg.child.location._objects[arg.child.id_at_location].child, PromiseTensor
+                    )
+                    for arg in args
+                ]
+            ):
+                # TODO find a way to know if pointer points to promise
                 return self.setup_plan_with_promises(*args)
             elif not self.is_built:
                 if self.include_state:
