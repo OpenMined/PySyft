@@ -8,6 +8,7 @@ import torch.optim as optim
 
 import syft as sy
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.messaging.plan import Plan
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
@@ -706,7 +707,9 @@ def test_execute_plan_remotely(hook, start_remote_worker):
 
     plan_ptr = my_plan.send(remote_proxy)
     x_ptr = x.send(remote_proxy)
-    plan_res = plan_ptr(x_ptr).get()
+    ptr = plan_ptr(x_ptr)
+    assert isinstance(ptr, FrameworkTensor) and ptr.is_wrapper
+    plan_res = ptr.get()
 
     assert (plan_res == local_res).all()
 
@@ -747,7 +750,9 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
 
     plan_ptr = net.send(remote_proxy)
     x_ptr = x.send(remote_proxy)
-    remote_res = plan_ptr(x_ptr).get()
+    ptr = plan_ptr(x_ptr)
+    assert isinstance(ptr, FrameworkTensor) and ptr.is_wrapper
+    remote_res = ptr.get()
 
     assert (remote_res == local_res).all()
 

@@ -260,7 +260,7 @@ def test_grad_pointer(workers):
 
 
 def test_move(workers):
-    alice, bob = workers["alice"], workers["bob"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
@@ -288,6 +288,16 @@ def test_move(workers):
     x.move(alice)
 
     assert len(alice._objects) == 1
+
+    # Test .move on remote objects
+
+    james.clear_objects()
+    x = th.tensor([1.0]).send(james)
+    remote_x = james._objects[x.id_at_location]
+    remote_ptr = remote_x.send(bob)
+    assert remote_ptr.id in james._objects.keys()
+    remote_ptr2 = remote_ptr.move(alice)
+    assert remote_ptr2.id in james._objects.keys()
 
 
 def test_combine_pointers(workers):

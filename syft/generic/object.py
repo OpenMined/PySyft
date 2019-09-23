@@ -65,6 +65,18 @@ class AbstractObject(ABC):
         except IndexError:
             return 0
 
+    def describe(self, description: str) -> "AbstractObject":
+        self.description = description
+        return self
+
+    def tag(self, *_tags: str) -> "AbstractObject":
+        if self.tags is None:
+            self.tags = set()
+
+        for new_tag in _tags:
+            self.tags.add(new_tag)
+        return self
+
     @property
     def shape(self):
         return self.child.shape
