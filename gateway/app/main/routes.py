@@ -33,18 +33,24 @@ def join_grid_node():
 
     # Invalid body
     if "node-id" not in data or "node-address" not in data:
-        return Response("", status=400, mimetype="application/json")
-    # Grid ID already registered
-    if data["node-id"] in grid_nodes:
         return Response(
-            "This ID has already been registered",
-            status=403,
-            mimetype="appication/json",
+            {"message": "Invalid json."}, status=400, mimetype="application/json"
         )
 
-    # Add new grid node to list of known nodes
-    register_new_node(data["node-id"], data["node-address"])
-    return Response("Successfully Connected!", status=200, mimetype="application/json")
+    # Register new node
+    if register_new_node(data["node-id"], data["node-address"]):
+        return Response(
+            {"message": "Successfully Connected!"},
+            status=200,
+            mimetype="application/json",
+        )
+
+    else:  # Grid ID already registered
+        return Response(
+            {"message": "This ID has already been registered"},
+            status=409,
+            mimetype="appication/json",
+        )
 
 
 @main.route("/connected-nodes", methods=["GET"])
@@ -99,7 +105,9 @@ def search_encrypted_model():
     body = json.loads(request.data)
 
     if "model_id" not in body:
-        return Response("", status=400, mimetype="application/json")
+        return Response(
+            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
+        )
 
     grid_nodes = connected_nodes()
     match_nodes = {}
@@ -126,7 +134,9 @@ def search_model():
 
     # Invalid body
     if "model_id" not in body:
-        return Response("", status=400, mimetype="application/json")
+        return Response(
+            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
+        )
 
     grid_nodes = connected_nodes()
     match_nodes = []
@@ -184,7 +194,9 @@ def search_dataset_tags():
 
     # Invalid body
     if "query" not in body:
-        return Response("", status=400, mimetype="application/json")
+        return Response(
+            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
+        )
 
     grid_nodes = connected_nodes()
     # Perform requests (HTTP) to all known nodes looking for the desired data tag

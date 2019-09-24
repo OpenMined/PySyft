@@ -147,13 +147,14 @@ class GridClient(BaseWorker):
             return "multipart/form-data" in result.headers["Content-Type"]
 
         # Check if we can get a copy of this model
+        # TODO: We should remove this endpoint and verify download permissions during /get_model request / fetch_plan.
+        # If someone performs request/fetch outside of this function context, they'll get the model.
         result = json.loads(
             self._send_get("is_model_copy_allowed/{}".format(model_id), unhexlify=False)
         )
 
         if not result["success"]:
             raise RuntimeError(result["error"])
-
         try:
             # If the model is a plan we can just call fetch
             return sy.hook.local_worker.fetch_plan(model_id, self, copy=True)
@@ -303,7 +304,7 @@ class GridClient(BaseWorker):
     def run_remote_inference(self, model_id, data, N: int = 1):
         serialized_data = sy.serde.serialize(data)
         result = json.loads(
-            self._send_get(
+            self._send_post(
                 "models/{}".format(model_id),
                 data={
                     "data": serialized_data.decode(self._encoding),

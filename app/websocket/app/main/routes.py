@@ -109,7 +109,23 @@ def is_model_copy_allowed(model_id):
 @main.route("/get_model/<model_id>", methods=["GET"])
 @cross_origin()
 def get_model(model_id):
-    """Generates a list of models currently saved at the worker"""
+    """ Try to download a specific model if allowed. """
+
+    # If not Allowed
+    check = mm.is_model_copy_allowed(model_id)
+    response = {}
+    if not check["success"]:  # If not allowed
+        if check["error"] == mm.MODEL_NOT_FOUND_MSG:
+            status_code = 404  # Not Found
+            response["error"] = mm.Model_NOT_FOUND_MSG
+        else:
+            status_code = 403  # Forbidden
+            response["error"] = mm.NOT_ALLOWED_TO_DOWNLOAD_MSG
+        return Response(
+            json.dumps(response), status=status_code, mimetype="application/json"
+        )
+
+    # If allowed
     result = mm.get_serialized_model_with_id(model_id)
 
     if result["success"]:
@@ -124,11 +140,9 @@ def get_model(model_id):
             return Response(
                 json.dumps(response), status=200, mimetype="application/json"
             )
-    else:
-        return Response(json.dumps(result), status=404, mimetype="application/json")
 
 
-@main.route("/models/<model_id>", methods=["GET"])
+@main.route("/models/<model_id>", methods=["POST"])
 @cross_origin()
 def model_inference(model_id):
     response = mm.get_model_with_id(model_id)
@@ -194,7 +208,7 @@ def serve_model():
     if response["success"]:
         return Response(json.dumps(response), status=200, mimetype="application/json")
     else:
-        return Response(json.dumps(response), status=500, mimetype="application/json")
+        return Response(json.dumps(response), status=409, mimetype="application/json")
 
 
 @main.route("/dataset-tags", methods=["GET"])

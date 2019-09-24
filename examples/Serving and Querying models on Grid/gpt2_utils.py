@@ -35,8 +35,15 @@ def decode_tokens(tokens):
     return tokenizer.decode(tokens)
 
 
-def decode_response(response):
+def decode_local_response(response):
     predictions = th.tensor(response[0])
+    predicted_index = th.argmax(predictions[0, -1, :]).item()
+    predicted_text = decode_tokens([predicted_index])
+    return predicted_text
+
+
+def decode_response(response):
+    predictions = th.tensor(response)
     predicted_index = th.argmax(predictions[0, -1, :]).item()
     predicted_text = decode_tokens([predicted_index])
     return predicted_text
@@ -111,7 +118,10 @@ def sample_sequence(
                 )
 
             # Applying Filter
-            next_token_logits = outputs[0][0, -1, :] / temperature
+            if model:
+                next_token_logits = outputs[0][0, -1, :] / temperature
+            else:
+                next_token_logits = outputs[0, -1, :] / temperature
             filtered_logits = top_k_top_p_filtering(
                 next_token_logits, top_k=top_k, top_p=top_p
             )

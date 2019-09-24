@@ -8,9 +8,13 @@ def register_new_node(node_id, node_address):
             node_id (str) : Grid Node ID.
             address (str) : Grid Node Address.
     """
-    new_node = GridNodes(id=node_id, address=node_address)
-    db.session.add(new_node)
-    db.session.commit()
+    registered = False
+    if node_id not in connected_nodes().keys():
+        new_node = GridNodes(id=node_id, address=node_address)
+        db.session.add(new_node)
+        db.session.commit()
+        registered = True
+    return registered
 
 
 def connected_nodes():

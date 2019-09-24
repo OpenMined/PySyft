@@ -72,11 +72,6 @@ class WebsocketGridClient(GridClient, FederatedClient):
             # Tell the wait_for_client_event to clear up and continue execution
             self.wait_for_client_event = False
 
-        @self.__sio.on("/connect-node-response")
-        def connect_node(msg):
-            if self.verbose:
-                print("Connect Grid Node: ", msg)
-
     def _send_msg(self, message: bin) -> bin:
         raise NotImplementedError
 
