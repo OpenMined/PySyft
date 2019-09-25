@@ -10,7 +10,7 @@ from syft.workers.abstract import AbstractWorker
 
 
 class Promise(ABC):
-    def __init__(self, owner=None, id=None, obj_id=None, obj_type=None, plans=None):
+    def __init__(self, owner=None, obj_id=None, obj_type=None, plans=None):
         """Initialize a Promise with a unique ID and a set of (possibly empty) plans
 
         A Promise is a data-structure which indicates that "there will be an object
@@ -32,10 +32,6 @@ class Promise(ABC):
         """
 
         self.owner = owner
-
-        if id is None:
-            id = sy.ID_PROVIDER.pop()
-        self._id = id
 
         self.obj_type = obj_type
         self.queue_obj_ids = []
@@ -113,15 +109,6 @@ class Promise(ABC):
         ret = self.owner.get_obj(ret_id)
         self.owner.rm_obj(ret_id)
         return ret
-
-    @property
-    def id(self):
-        return self._id
-
-    @id.setter
-    def id(self, new_id):
-        self._id = new_id
-        return new_id
 
     def __repr__(self):
         return self.__str__()

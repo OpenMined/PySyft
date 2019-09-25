@@ -31,9 +31,8 @@ class PromiseTensor(AbstractTensor, Promise):
         if owner is None:
             owner = sy.local_worker
 
-        # constructor for AbstractTensor
+        # constructors for AbstractTensor and Promise
         AbstractTensor.__init__(self, id=id, owner=owner, tags=tags, description=description)
-        # constructor for Promise
         Promise.__init__(self, owner=owner, obj_type=tensor_type, plans=plans)
 
         self._shape = shape
@@ -108,7 +107,7 @@ class PromiseTensor(AbstractTensor, Promise):
 
         return (
             sy.serde._simplify(self.id),
-            sy.serde._simplify(self._shape),
+            sy.serde._simplify(self.shape),
             sy.serde._simplify(self.obj_type),
             sy.serde._simplify(self.plans),
         )
@@ -135,16 +134,6 @@ class PromiseTensor(AbstractTensor, Promise):
 
         tensor = PromiseTensor(
             owner=worker, id=id, shape=shape, tensor_type=tensor_type, plans=plans
-        )
-
-        initialize_tensor(
-            hook_self=sy.torch.hook,
-            cls=tensor,
-            is_tensor=True,
-            owner=worker,
-            id=id,
-            init_args=[],
-            kwargs={},
         )
 
         return tensor
