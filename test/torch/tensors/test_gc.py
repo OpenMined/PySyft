@@ -3,9 +3,9 @@ import time
 
 import torch
 
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.workers import WebsocketServerWorker
-from syft.workers import WebsocketClientWorker
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.workers.websocket_server import WebsocketServerWorker
+from syft.workers.websocket_client import WebsocketClientWorker
 
 # TESTING POINTERS
 

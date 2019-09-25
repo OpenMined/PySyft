@@ -265,10 +265,10 @@ get response and “rebuild” the syft tensor wrapper upon all tensors found
     the hooked method
 
 
-## syft.frameworks.torch.hook_args module
+## syft.generic.frameworks.hook.hook_args module
 
 
-#### syft.frameworks.torch.hook_args.build_unwrap_args_with_rules(args, rules, return_tuple=False)
+#### syft.generic.frameworks.hook.hook_args.build_unwrap_args_with_rules(args, rules, return_tuple=False)
 Build a function given some rules to efficiently replace in the args object
 syft tensors with their child (but not pointer as they don’t have .child),
 and do nothing for other type of object including torch tensors, str,
@@ -294,7 +294,7 @@ forwarding the call.
 
 
 
-#### syft.frameworks.torch.hook_args.build_get_tensor_type(rules, layer=None)
+#### syft.generic.frameworks.hook.hook_args.build_get_tensor_type(rules, layer=None)
 Build a function which uses some rules to find efficiently the first tensor in
 the args objects and return the type of its child.
 
@@ -346,12 +346,12 @@ rules = (0, [1, (0, 0), 0)
   return the first (and here unique) function
 
 
-#### syft.frameworks.torch.hook_args.build_unwrap_args_from_function(args, return_tuple=False)
+#### syft.generic.frameworks.hook.hook_args.build_unwrap_args_from_function(args, return_tuple=False)
 Build the function f that hook the arguments:
 f(args) = new_args
 
 
-#### syft.frameworks.torch.hook_args.build_wrap_reponse_from_function(response, wrap_type, wrap_args)
+#### syft.generic.frameworks.hook.hook_args.build_wrap_reponse_from_function(response, wrap_type, wrap_args)
 Build the function that hook the response.
 
 ### Example
@@ -361,7 +361,7 @@ f is the hook_response_function
 then f(p) = (Wrapper)>Pointer
 
 
-#### syft.frameworks.torch.hook_args.build_register_response()
+#### syft.generic.frameworks.hook.hook_args.build_register_response()
 Build a function given some rules to efficiently replace in the response object
 torch tensors with a pointer after they are registered, and do nothing for other
 types of object including , str, numbers, bool, etc.
@@ -383,7 +383,7 @@ types of object including , str, numbers, bool, etc.
 
 
 
-#### syft.frameworks.torch.hook_args.build_register_response_function(response: object)
+#### syft.generic.frameworks.hook.hook_args.build_register_response_function(response: object)
 Build the function that registers the response and replaces tensors with pointers.
 
 ### Example
@@ -393,7 +393,7 @@ f is the register_response_function
 then f(p) = (1, (Wrapper)>Pointer)
 
 
-#### syft.frameworks.torch.hook_args.build_response_hook_with_rule(response, rules, wrap_type, wrap_args, return_tuple=False)
+#### syft.generic.frameworks.hook.hook_args.build_response_hook_with_rule(response, rules, wrap_type, wrap_args, return_tuple=False)
 Build a function given some rules to efficiently replace in the response object
 syft or torch tensors with a wrapper, and do nothing for other types of object
 including , str, numbers, bool, etc.
@@ -414,7 +414,7 @@ Response:
     a function to “wrap” the response
 
 
-#### syft.frameworks.torch.hook_args.build_rule(args)
+#### syft.generic.frameworks.hook.hook_args.build_rule(args)
 Inspect the args object to find torch or syft tensor arguments and
 return a rule whose structure is the same as the args object,
 with 1 where there was (torch or syft) tensors and 0 when
@@ -426,15 +426,15 @@ in: ([tensor(1, 2), [Pointer@bob](mailto:Pointer@bob)], 42)
 out: ([1, 1], 0)
 
 
-#### syft.frameworks.torch.hook_args.eight_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.eight_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.five_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.five_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.four_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.four_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.four_layers(idx1, \*ids)
+#### syft.generic.frameworks.hook.hook_args.four_layers(idx1, \*ids)
 
-#### syft.frameworks.torch.hook_args.unwrap_args_from_function(attr, args, kwargs, return_args_type=False)
+#### syft.generic.frameworks.hook.hook_args.unwrap_args_from_function(attr, args, kwargs, return_args_type=False)
 See unwrap_args_from_method for details
 
 
@@ -464,7 +464,7 @@ See unwrap_args_from_method for details
 
 
 
-#### syft.frameworks.torch.hook_args.unwrap_args_from_method(attr, method_self, args, kwargs)
+#### syft.generic.frameworks.hook.hook_args.unwrap_args_from_method(attr, method_self, args, kwargs)
 Method arguments are sometimes simple types (such as strings or ints) but
 sometimes they are custom Syft tensors such as wrappers (torch.Tensor) or LoggingTensor
 or some other tensor type. Complex types (which have a .child attribute) need to
@@ -491,7 +491,7 @@ which refreshes the cache if the signature triggers an error.
 
 
 
-#### syft.frameworks.torch.hook_args.hook_response(attr, response, wrap_type, wrap_args={}, new_self=None)
+#### syft.generic.frameworks.hook.hook_args.hook_response(attr, response, wrap_type, wrap_args={}, new_self=None)
 When executing a command, arguments are inspected and all tensors are replaced
 with their child attribute until a pointer or a torch tensor is found (for
 example an argument could be a torch wrapper with a child being a LoggingTensor, with
@@ -521,15 +521,15 @@ try/except which refreshes the cache if the signature triggers an error.
 
 
 
-#### syft.frameworks.torch.hook_args.many_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.many_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.one(_args)
+#### syft.generic.frameworks.hook.hook_args.one(_args)
 
-#### syft.frameworks.torch.hook_args.one_fold(return_tuple, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.one_fold(return_tuple, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.one_layer(idx1)
+#### syft.generic.frameworks.hook.hook_args.one_layer(idx1)
 
-#### syft.frameworks.torch.hook_args.register_response(attr: str, response: object, response_ids: object, owner: syft.workers.abstract.AbstractWorker)
+#### syft.generic.frameworks.hook.hook_args.register_response(attr: str, response: object, response_ids: object, owner: syft.workers.abstract.AbstractWorker)
 When a remote worker execute a command sent by someone else, the response is
 inspected: all tensors are stored by this worker and a Pointer tensor is
 made for each of them.
@@ -552,7 +552,7 @@ cache if the signature triggers an error.
 
 
 
-#### syft.frameworks.torch.hook_args.register_tensor(tensor: Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor], response_ids: List = [], owner: syft.workers.abstract.AbstractWorker = None)
+#### syft.generic.frameworks.hook.hook_args.register_tensor(tensor: Union[torch.Tensor, syft.frameworks.torch.tensors.interpreters.abstract.AbstractTensor], response_ids: List = [], owner: syft.workers.abstract.AbstractWorker = None)
 Register a tensor
 
 
@@ -573,26 +573,26 @@ Register a tensor
 
 
 
-#### syft.frameworks.torch.hook_args.seven_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.seven_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.six_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.six_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.three_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.three_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.three_layers(idx1, \*ids)
+#### syft.generic.frameworks.hook.hook_args.three_layers(idx1, \*ids)
 
-#### syft.frameworks.torch.hook_args.two_fold(lambdas, args, \*\*kwargs)
+#### syft.generic.frameworks.hook.hook_args.two_fold(lambdas, args, \*\*kwargs)
 
-#### syft.frameworks.torch.hook_args.two_layers(idx1, idx2)
+#### syft.generic.frameworks.hook.hook_args.two_layers(idx1, idx2)
 
-#### syft.frameworks.torch.hook_args.typed_identity(a)
+#### syft.generic.frameworks.hook.hook_args.typed_identity(a)
 We need to add typed identity for arguments which can be either number
 or tensors. If the argument changes from an int to a tensor, the
 assertion error triggered by typed_identity will be caught and a
 new signature will be computed for the command.
 
 
-#### syft.frameworks.torch.hook_args.zero_fold(\*a, \*\*k)
+#### syft.generic.frameworks.hook.hook_args.zero_fold(\*a, \*\*k)
 ## syft.frameworks.torch.overload_torch module
 
 
