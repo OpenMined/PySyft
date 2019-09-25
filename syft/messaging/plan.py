@@ -487,14 +487,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             # for every message of the plan
             for j, msg in enumerate(self.readable_plan):
                 # look for the old id and replace it with the new one
-                self.readable_plan[j] = list(
-                    Plan._replace_message_ids(
-                        obj=msg,
-                        change_id=from_ids[i],
-                        to_id=to_ids[i],
-                        from_worker=from_worker,
-                        to_worker=to_worker,
-                    )
+                self.readable_plan[j] = Plan._replace_message_ids(
+                    obj=msg,
+                    change_id=from_ids[i],
+                    to_id=to_ids[i],
+                    from_worker=from_worker,
+                    to_worker=to_worker,
                 )
 
         return self
@@ -517,14 +515,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             id_pairs.append((from_worker_id.encode(), to_worker_id_encoded))
 
         for id_pair in id_pairs:
-            self.readable_plan = list(
-                Plan._replace_message_ids(
-                    obj=self.readable_plan,
-                    change_id=-1,
-                    to_id=-1,
-                    from_worker=id_pair[0],
-                    to_worker=id_pair[1],
-                )
+            self.readable_plan = Plan._replace_message_ids(
+                obj=self.readable_plan,
+                change_id=-1,
+                to_id=-1,
+                from_worker=id_pair[0],
+                to_worker=id_pair[1],
             )
 
     @staticmethod
