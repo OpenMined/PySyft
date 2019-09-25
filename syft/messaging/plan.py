@@ -588,18 +588,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             else:
                 return self._execute_readable_plan(*args)
         else:
-            if any(
-                [
-                    hasattr(arg, "child")
-                    and isinstance(
-                        arg.child.location._objects[arg.child.id_at_location].child, PromiseTensor
-                    )
-                    for arg in args
-                ]
-            ):
-                # TODO find a way to know if pointer points to promise
-                return self.setup_plan_with_promises(*args)
-            elif not self.is_built:
+            if not self.is_built:
                 if self.include_state:
                     self.forward(*args, self.state)
                 else:
@@ -876,10 +865,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         """ Slightly modifies a plan so that it can work with promises.
         The plan will also be sent to location with this method.
         """
-        location = args[0].child.location if isinstance(args[0].child, PointerTensor) else None
-        if location is not None:
-            # Get remote arguments
-            args = [arg.child.location[arg.child.id_at_location] for arg in args]
 
         prom = None
         for p in args:
@@ -892,16 +877,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             owner=prom.owner,
             shape=self.output_shape,
             tensor_id=self.result_ids[0],
-            tensor_type=prom.child.obj_type,
+            tensor_type="torch.FloatTensor",  # TODO how to infer result type?
             plans=set(),
         )
 
         self._update_args(args, self.result_ids)
         self.promise_out_id = res.id
-
-        if location is not None:
-            res = res.send(location)
-            self.send(location)
 
         return res
 
