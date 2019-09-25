@@ -39,6 +39,9 @@ def test_inplace_encode_decode(workers):
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
+    x = torch.tensor([3.0]).fix_precision()
+    assert x.float_prec_().is_wrapper is False
+
 
 def test_add_method():
 

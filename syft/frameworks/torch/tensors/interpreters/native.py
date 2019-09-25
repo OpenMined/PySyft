@@ -635,6 +635,7 @@ class TorchTensor(AbstractTensor):
         else:
             del self.child
             self.set_(tensor)
+            self.is_wrapper = False
         return self
 
     float_precision_ = float_prec_
