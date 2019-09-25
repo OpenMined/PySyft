@@ -59,6 +59,7 @@ def test_send(workers):
 
     assert (x.value().get() == torch.ones((2, 2))).all()
 
+
 """
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
 def test_remote_operations(workers, cmd):
@@ -81,6 +82,7 @@ def test_remote_operations(workers, cmd):
 
     assert (actual.value().get() == expected).all()
 """
+
 
 def test_bufferized_results(hook):
     hook.local_worker.is_client_worker = False
