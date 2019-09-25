@@ -783,8 +783,7 @@ class TorchTensor(AbstractTensor):
         return syft.combine_pointers(*ps)
 
     def keep(self, *args, **kwargs):
-
-        result = self.child.keep(*args, **kwargs)
+        return self.child.keep(*args, **kwargs)
 
     def value(self):
         return self.child.value()
