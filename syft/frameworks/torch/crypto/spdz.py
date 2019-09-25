@@ -2,6 +2,7 @@ import torch
 from typing import Callable
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.crypto.beaver import request_triple
 
 no_wrap = {"no_wrap": True}
 
@@ -25,7 +26,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     locations = x_sh.locations
 
     # Get triples
-    a, b, a_mul_b = crypto_provider.generate_triple(cmd, field, x_sh.shape, y_sh.shape, locations)
+    a, b, a_mul_b = request_triple(crypto_provider, cmd, field, x_sh.shape, y_sh.shape, locations)
 
     delta = x_sh - a
     epsilon = y_sh - b

@@ -32,16 +32,15 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-import torch
 import msgpack
 import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
-import numpy
 import zstd
 
 import syft as sy
+from syft import dependency_check
 
 from syft.federated import TrainConfig
 
@@ -59,23 +58,37 @@ from syft.frameworks.torch.tensors.decorators import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
 from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.generic.pointers import MultiPointerTensor
 
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
-from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
+
+if dependency_check.torch_available:
+    from syft.serde.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
+else:
+    MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = {}
+
+if dependency_check.tensorflow_available:
+    from syft.frameworks.tensorflow import MAP_TF_SIMPLIFIERS_AND_DETAILERS
+else:
+    MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
 from syft.serde.proto import proto_type_info
 
 # Maps a type to a tuple containing its simplifier and detailer function
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
+    + list(MAP_TF_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
-# If a object implements its own simplify and detail functions it should be stored in this list
+# If an object implements its own simplify and detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
@@ -98,10 +111,14 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     messaging.SearchMessage,
 ]
 
-# If a object implements its own force_simplify and force_detail functions it should be stored in this list
+# If an object implements its own force_simplify and force_detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
 
-
+# For registering syft objects with custom simplify and detail methods
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -116,6 +133,14 @@ scheme_to_bytes = {
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(obj: object) -> object:
+    """To force a full simplify genrally if the usual _simplify is not suitable.
+
+    Args:
+        The object
+
+    Returns:
+        The simplified object
+    """
     current_type = type(obj)
 
     if current_type in forced_full_simplifiers:
@@ -133,7 +158,19 @@ def _force_full_simplify(obj: object) -> object:
 
 ## SECTION: dinamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers."""
+    """Generate simplifiers, forced full simplifiers and detailers,
+    by registering native and torch types, syft objects with custom
+    simplify and detail methods, or syft objects with custom
+    force_simplify and force_detail methods.
+
+    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
+    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
+    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
+    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
+
+    Returns:
+        The simplifiers, forced_full_simplifiers, detailers
+    """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
     detailers = OrderedDict()
@@ -204,7 +241,6 @@ def serialize(
 
     Returns:
         binary: the serialized form of the object.
-
     """
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
@@ -260,7 +296,8 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
         object: the deserialized form of the binary input.
     """
     if worker is None:
-        worker = sy.torch.hook.local_worker
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = sy.framework.hook.local_worker
 
     # 1) Decompress the binary if needed
     binary = _decompress(binary)
@@ -303,8 +340,10 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
     Apply LZ4 compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, LZ4)
+        decompressed_input_bin: the binary to be compressed
+
+    Returns:
+        a tuple (compressed_result, LZ4)
     """
     return lz4.frame.compress(decompressed_input_bin), LZ4
 
@@ -314,8 +353,10 @@ def apply_zstd_compression(decompressed_input_bin) -> tuple:
     Apply ZSTD compression to the input
 
     Args:
-        :param decompressed_input_bin: the binary to be compressed
-        :return: a tuple (compressed_result, ZSTD)
+        decompressed_input_bin: the binary to be compressed
+
+    Returns:
+        a tuple (compressed_result, ZSTD)
     """
 
     return zstd.compress(decompressed_input_bin), ZSTD
@@ -326,8 +367,10 @@ def apply_no_compression(decompressed_input_bin) -> tuple:
     No compression is applied to the input
 
     Args:
-        :param decompressed_input_bin: the binary
-        :return: a tuple (the binary, LZ4)
+        decompressed_input_bin: the binary
+
+    Returns:
+        a tuple (the binary, LZ4)
     """
 
     return decompressed_input_bin, NO_COMPRESSION

@@ -9,7 +9,7 @@ from syft.serde import torch_serde
 
 import syft
 from syft.exceptions import CompressionNotFoundException
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 import msgpack
 import numpy

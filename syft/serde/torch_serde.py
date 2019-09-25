@@ -3,20 +3,18 @@ This file exists to provide one common place for all serialisation and simplify_
 for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
-from tempfile import TemporaryFile
-from typing import Tuple
-import torch
-
 import io
-import numpy
+from tempfile import TemporaryFile
+from typing import Tuple, List
 import warnings
 
+import numpy
+import torch
+
 import syft
-
+from syft.generic import pointers
+from syft.generic.tensor import initialize_tensor
 from syft.workers import AbstractWorker
-
-from syft.frameworks.torch.tensors.interpreters.abstract import initialize_tensor
-from syft.frameworks.torch import pointers
 
 
 def _serialize_tensor(tensor) -> bin:
@@ -166,7 +164,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     initialize_tensor(
         hook_self=syft.torch.hook,
         cls=tensor,
-        torch_tensor=True,
+        is_tensor=True,
         owner=worker,
         id=tensor_id,
         init_args=[],
@@ -323,6 +321,14 @@ def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.devi
     return torch.device(type=device_type)
 
 
+def _simplify_torch_size(shape: torch.Size) -> Tuple:
+    return (list(shape),)
+
+
+def _detail_torch_size(worker: AbstractWorker, shape: List[int]) -> torch.Size:
+    return torch.Size(*shape)
+
+
 def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
     """Strategy to serialize a script module using Torch.jit"""
     return obj.save_to_buffer()
@@ -344,11 +350,13 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
 
 
 # Maps a type to a tuple containing its simplifier and detailer function
-# IMPORTANT: keep this structure sorted A-Z (by type name)
+# IMPORTANT: serialization constants for these objects need to be defined
+# in `proto.json` file of https://github.com/OpenMined/proto
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
         torch.device: (_simplify_torch_device, _detail_torch_device),
+        torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),

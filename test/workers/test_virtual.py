@@ -4,12 +4,11 @@ from unittest.mock import patch
 import syft as sy
 from syft.exceptions import GetNotPermittedError
 from syft.workers.virtual import VirtualWorker
-from syft.codes import MSGTYPE
 from syft import messaging
 from syft import serde
 from syft import messaging
 
-from syft.frameworks.torch import pointers
+from syft.generic import pointers
 
 import pytest
 import torch
@@ -83,7 +82,7 @@ def test_recv_msg():
     obj = torch.Tensor([100, 100])
 
     # create/serialize message
-    message = messaging.Message(MSGTYPE.OBJ, obj)
+    message = messaging.ObjectMessage(obj)
     bin_msg = serde.serialize(message)
 
     # have alice receive message
@@ -95,7 +94,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = messaging.Message(MSGTYPE.OBJ_REQ, obj.id)
+    message = messaging.ObjectRequestMessage(obj.id)
 
     # serialize message
     bin_msg = serde.serialize(message)
