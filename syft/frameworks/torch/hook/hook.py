@@ -480,7 +480,7 @@ class TorchHook(FrameworkHook):
         def generate_method(method_name):
             def method(self, *args, **kwargs):
 
-                arg_shapes = list([self._shape])
+                arg_shapes = list([self.shape])
                 arg_ids = list([self.id])
 
                 # Convert scalar arguments to tensors to be able to use them with plans
