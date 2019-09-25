@@ -64,7 +64,7 @@ class Promise(ABC):
             # If the promise has been moved, the plan waiting for it might not be on the same worker
             # TODO is this ok?
             if plan_id in self.owner._objects:
-                plan = self.owner._objects[plan_id]
+                plan = self.owner.get_obj(plan_id)
             else:
                 continue
 
@@ -73,12 +73,14 @@ class Promise(ABC):
                 # Collect args
                 orig_ids = plan.arg_ids
                 args = []
+                ids_to_rm = []
                 for i, arg_id in enumerate(plan.arg_ids):
                     if isinstance(self.owner._objects[arg_id].child, Promise):
-                        id_to_add = self.owner._objects[arg_id].child.queue_obj_ids[0]
+                        id_to_add = self.owner.get_obj(arg_id).child.queue_obj_ids.pop(0)
+                        ids_to_rm.append(id_to_add)
                     else:
                         id_to_add = arg_id
-                    args.append(self.owner._objects[id_to_add])
+                    args.append(self.owner.get_obj(id_to_add))
                 result = plan(*args)
 
                 # ids of promises are changed automatically otherwise
@@ -86,13 +88,10 @@ class Promise(ABC):
                 plan.arg_ids = orig_ids
 
                 # Remove objects from queues:
-                for arg_id in plan.arg_ids:
-                    arg = self.owner._objects[arg_id].child
-                    if isinstance(arg, Promise):
-                        to_rm = arg.queue_obj_ids.pop(0)
-                        self.owner.rm_obj(to_rm)
+                for to_rm in ids_to_rm:
+                    self.owner.rm_obj(to_rm)
 
-                self.owner._objects[plan.promise_out_id].keep(result)
+                self.owner.get_obj(plan.promise_out_id).keep(result)
 
         return obj
 
@@ -111,7 +110,7 @@ class Promise(ABC):
             # TODO this doesn't work as I want with pointerTensors
             return None
         ret_id = self.queue_obj_ids.pop(0)
-        ret = self.owner._objects[ret_id]
+        ret = self.owner.get_obj(ret_id)
         self.owner.rm_obj(ret_id)
         return ret
 

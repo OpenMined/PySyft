@@ -31,12 +31,8 @@ class PromiseTensor(AbstractTensor, Promise):
         if owner is None:
             owner = sy.local_worker
 
-        # I did check that the two __init__ methods below only get called once, but it
-        # was exhibiting some strange behavior when I used super() for both of them.
-
         # constructor for AbstractTensor
-        super().__init__(id=id, owner=owner, tags=tags, description=description)
-
+        AbstractTensor.__init__(self, id=id, owner=owner, tags=tags, description=description)
         # constructor for Promise
         Promise.__init__(self, owner=owner, obj_type=tensor_type, plans=plans)
 

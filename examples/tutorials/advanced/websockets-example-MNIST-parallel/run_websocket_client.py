@@ -108,7 +108,7 @@ async def fit_model_on_worker(
         max_nr_batches=max_nr_batches,
         epochs=1,
         optimizer="SGD",
-        optimizer_args={"lr": 0.1},
+        optimizer_args={"lr": lr},
     )
     train_config.send(worker)
     logger.info("Training round %s, calling fit on worker: %s", curr_round, worker.id)

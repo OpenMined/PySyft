@@ -124,8 +124,6 @@ class ObjectStorage:
             if hasattr(obj, "child") and obj.child is not None:
                 if hasattr(obj.child, "garbage_collect_data"):
                     obj.child.garbage_collect_data = True
-            if hasattr(obj, "child") and obj.child is not None:
-                obj.child.garbage_collect_data = True
             del self._objects[remote_key]
 
     def clear_objects(self, return_self: bool = True):
