@@ -8,23 +8,13 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
-from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
-
-
-def make_plan(plan_blueprint):
-    """Creates a plan from a function.
-
-    For folks who would prefer to not use a decorator, they can use this function
-    to create a plan.
-    """
-    return func2plan(plan_blueprint)
 
 
 class func2plan(object):
@@ -33,18 +23,13 @@ class func2plan(object):
     Converts a function containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
 
-    This class should be used only as decorator.
+    This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None, verbose=False):
+    def __init__(self, args_shape=None, state=None):
         self.args_shape = args_shape
-        self.verbose = verbose
-        if state is not None:
-            self.state = state
-            self.include_state = True
-        else:
-            self.state = {}
-            self.include_state = False
+        self.state_dict = state or {}
+        self.include_state = state is not None
 
     def __call__(self, plan_blueprint):
         plan = Plan(
@@ -52,12 +37,13 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
-            state=self.state,
+            state_dict=self.state_dict,
             include_state=self.include_state,
-            verbose=self.verbose,
         )
+        # Build the plan automatically
         if self.args_shape:
-            plan._auto_build(args_shape=self.args_shape)
+            args = Plan._create_placeholders(self.args_shape)
+            plan.build(*args)
         return plan
 
 
@@ -74,9 +60,12 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, plan):
-        self.keys = set()
+    def __init__(self, plan, keys=None, state_ids=None, state_dict=None):
         self.plan = plan
+        self.keys = keys or set()
+        self.state_ids = state_ids or []
+        if state_dict is not None:
+            self.set_(state_dict)
 
     def __repr__(self):
         return "State: " + ", ".join(self.keys)
@@ -120,28 +109,32 @@ class State(object):
     def is_valid_type(self, obj):
         return isinstance(obj, (torch.nn.Module, torch.Tensor))
 
-    def get_id_at_location(self):
+    def get_ids_at_location(self):
         """
         Returns all the id_at_location of the pointers in the state
         """
-        id_at_location = []
+        ids_at_location = []
 
         for key in self.keys:
             ptr = getattr(self.plan, key)
             if isinstance(ptr, torch.nn.Module):
                 for param in ptr.parameters():
-                    id_at_location.append(param.id_at_location)
+                    ids_at_location.append(param.id_at_location)
             else:
-                id_at_location.append(ptr.id_at_location)
+                ids_at_location.append(ptr.id_at_location)
 
-        return id_at_location
+        return ids_at_location
 
-    def copy(self):
+    def copy_state(self):
         copied_state = {}
         for key in self.keys:
             t = getattr(self.plan, key)
             copied_state[key] = t.copy()
         return copied_state
+
+    def copy(self) -> "State":
+        state = State(plan=None, keys=self.keys.copy(), state_ids=self.state_ids.copy())
+        return state
 
     def read(self, key):
         """
@@ -149,17 +142,18 @@ class State(object):
         """
         return getattr(self.plan, key)
 
-    def set_(self, dict_state):
+    def set_(self, state_dict):
         """
         Reset inplace the state by feeding it a dict of tensors or params
         """
         for key in self.keys:
-            delattr(self.plan, key)
+            if hasattr(self.plan, key):
+                delattr(self.plan, key)
 
-        for key in dict_state.keys():
-            setattr(self.plan, key, dict_state[key])
+        for key in state_dict.keys():
+            setattr(self.plan, key, state_dict[key])
 
-        self.keys = list(dict_state.keys())
+        self.keys = list(state_dict.keys())
 
     def is_missing_grad(self, t):
         return isinstance(t, torch.nn.Parameter) and t.grad is None
@@ -207,8 +201,145 @@ class State(object):
 
             t.share_(*args, **kwargs)
 
+    @staticmethod
+    def simplify(state: "State") -> tuple:
+        return (
+            sy.serde._simplify(state.keys),
+            sy.serde._simplify(state.state_ids),
+            sy.serde._simplify([getattr(state.plan, key) for key in state.keys]),
+        )
 
-class Plan(ObjectStorage, torch.nn.Module):
+    @staticmethod
+    def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
+        keys, state_ids, state_elements = state_tuple
+        keys = sy.serde._detail(worker, keys)
+        state_ids = sy.serde._detail(worker, state_ids)
+        state_elements = sy.serde._detail(worker, state_elements)
+        assert isinstance(state_elements, list)
+        for state_id, state_element in zip(state_ids, state_elements):
+            worker.register_obj(state_element, obj_id=state_id)
+
+        state = State(plan=None)
+        state.keys = keys
+        state.state_ids = state_ids
+
+        return state
+
+
+class Command(object):
+    """A command is a serializable object providing instruction to operate designated tensors."""
+
+    def __init__(self, command):
+        self.command = command
+
+    def update_ids(self, from_ids, to_ids):
+        self.command = Command.replace_ids(self.command, from_ids, to_ids)
+
+    @staticmethod
+    def replace_ids(command, from_ids, to_ids):
+
+        assert isinstance(from_ids, (list, tuple))
+        assert isinstance(to_ids, (list, tuple))
+
+        type_obj = type(command)
+        command = list(command)
+        for i, item in enumerate(command):
+            if isinstance(item, (int, str, bytes)) and item in from_ids:
+                command[i] = to_ids[from_ids.index(item)]
+            elif isinstance(item, (list, tuple)):
+                command[i] = Command.replace_ids(command=item, from_ids=from_ids, to_ids=to_ids)
+        return type_obj(command)
+
+
+class Procedure(object):
+    """A Procedure is a list of commands."""
+
+    def __init__(self, commands=None, arg_ids=None, result_ids=None):
+        self.commands = commands or []
+        self.arg_ids = arg_ids or []
+        self.result_ids = result_ids or []
+
+    def update_ids(
+        self,
+        from_ids: Tuple[Union[str, int]] = [],
+        to_ids: Tuple[Union[str, int]] = [],
+        from_worker: Union[str, int] = None,
+        to_worker: Union[str, int] = None,
+    ):
+        """Replaces pairs of tensor ids in the plan stored.
+
+        Args:
+            from_ids: Ids to change.
+            to_ids: Ids to replace with.
+            from_worker: The previous worker that built the plan.
+            to_worker: The new worker that is running the plan.
+        """
+        for idx, command in enumerate(self.commands):
+            if from_worker and to_worker:
+                from_workers, to_workers = [from_worker], [to_worker]
+                if isinstance(from_worker, str):
+                    from_workers.append(from_worker.encode("utf-8"))
+                    to_workers.append(to_worker)
+                command = Command.replace_ids(command, from_workers, to_workers)
+
+            if len(from_ids) and len(to_ids):
+                command = Command.replace_ids(command, from_ids, to_ids)
+
+            self.commands[idx] = command
+
+        return self
+
+    def update_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
+        return self.update_ids([], [], from_worker_id, to_worker_id)
+
+    def update_args(
+        self,
+        args: Tuple[Union[FrameworkTensorType, AbstractTensor]],
+        result_ids: List[Union[str, int]],
+    ):
+        """Replace args and result_ids with the ones given.
+        Updates the arguments ids and result ids used to execute
+        the plan.
+        Args:
+            args: List of tensors.
+            result_ids: Ids where the plan output will be stored.
+        """
+
+        arg_ids = tuple(arg.id for arg in args)
+        self.update_ids(self.arg_ids, arg_ids)
+        self.arg_ids = arg_ids
+
+        self.update_ids(self.result_ids, result_ids)
+        self.result_ids = result_ids
+
+    def copy(self) -> "Procedure":
+        procedure = Procedure(
+            commands=copy.deepcopy(self.commands), arg_ids=self.arg_ids, result_ids=self.result_ids
+        )
+        return procedure
+
+    @staticmethod
+    def simplify(procedure: "Procedure") -> tuple:
+        return (
+            tuple(
+                procedure.commands
+            ),  # We're not simplifying because commands are already simplified
+            sy.serde._simplify(procedure.arg_ids),
+            sy.serde._simplify(procedure.result_ids),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
+        commands, arg_ids, result_ids = procedure_tuple
+        commands = list(commands)
+        arg_ids = sy.serde._detail(worker, arg_ids)
+        result_ids = sy.serde._detail(worker, result_ids)
+
+        procedure = Procedure(commands, arg_ids, result_ids)
+        return procedure
+
+
+class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
     """A Plan stores a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
@@ -220,49 +351,38 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     def __init__(
         self,
-        id: Union[str, int] = None,
-        owner: "sy.workers.BaseWorker" = None,
-        name: str = "",
+        name: str = None,
+        procedure: Procedure = None,
+        state: State = None,
+        include_state: bool = False,
+        is_built: bool = False,
+        # Optional kwargs if commands or state are not provided
         state_ids: List[Union[str, int]] = None,
         arg_ids: List[Union[str, int]] = None,
         result_ids: List[Union[str, int]] = None,
         readable_plan: List = None,
         blueprint=None,
-        state=None,
-        include_state: bool = False,
-        is_built: bool = False,
-        verbose: bool = False,
-        *args,
-        **kwargs,
+        state_dict=None,
+        # General kwargs
+        id: Union[str, int] = None,
+        owner: "sy.workers.BaseWorker" = None,
+        tags: List[str] = None,
+        description: str = None,
     ):
+        owner = owner or sy.local_worker
+        AbstractObject.__init__(self, id, owner, tags, description, child=None)
         ObjectStorage.__init__(self)
         torch.nn.Module.__init__(self)
 
         # Plan instance info
-        self.id = sy.ID_PROVIDER.pop() if id is None else id
-        self.name = self.__class__.__name__ if name == "" else name
-        self._owner = sy.local_worker if owner is None else owner
-        self.verbose = verbose
+        self.name = name or self.__class__.__name__
+        self._owner = owner
 
-        # Info about the plan stored
-        self.plan = list()
-        self.readable_plan = readable_plan if readable_plan is not None else []
-        self.state = State(self)
+        # Info about the plan stored vua the state and the procedure
+        self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
+        self.state = state or State(self, state_dict=state_dict, state_ids=state_ids)
         self.include_state = include_state
-        if state is not None:
-            self.state.set_(state)
-        self.state_ids = state_ids if state_ids is not None else []
-        self.arg_ids = arg_ids if arg_ids is not None else []
-        self.result_ids = result_ids if result_ids is not None else []
-        self.owner_when_built = None
         self.is_built = is_built
-
-        # Pointing info towards a remote plan
-        self.locations = []
-        self.ptr_plans = {}
-
-        self.tags = None
-        self.description = None
 
         if blueprint is not None:
             self.forward = blueprint
@@ -273,11 +393,8 @@ class Plan(ObjectStorage, torch.nn.Module):
         for elem in elements:
             self.state.append(elem)
 
-    def _auto_build(self, args_shape: List[Tuple[int]] = None):
-        args = self._create_placeholders(args_shape)
-        self.build(*args)
-
-    def _create_placeholders(self, args_shape):
+    @staticmethod
+    def _create_placeholders(args_shape):
         # In order to support -1 value in shape to indicate any dimension
         # we map -1 to 1 for shape dimensions.
         # TODO: A more complex strategy could be used
@@ -304,8 +421,13 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     # Override property of nn.Module
     @property
-    def location(nn_self):
+    def location(self):
         raise AttributeError("Plan has no attribute location")
+
+    # For backward compatibility
+    @property
+    def readable_plan(self):
+        return self.procedure.commands
 
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
@@ -333,15 +455,11 @@ class Plan(ObjectStorage, torch.nn.Module):
         """
         (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
 
-        if self.verbose:
-            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
-
         if (
             msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
             and not self.is_built
         ):
-            self.plan.append(bin_message)
-            self.readable_plan.append((some_type, (msg_type, contents)))
+            self.procedure.commands.append((some_type, (msg_type, contents)))
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
@@ -363,190 +481,69 @@ class Plan(ObjectStorage, torch.nn.Module):
         Args:
             args: Input data.
         """
-        args = list(args)
 
         # Move the arguments of the first call to the plan and store their ids
-        # as they will be included in the readable_plan: it should be updated
+        # as they will be included in the commands: it should be updated
         # when the function is called with new args and that's why we keep the
         # refs self.arg_ids
-        self.arg_ids = list()
-        local_args = list()
+        arg_ids = list()
+        build_args = list()
         for arg in args:
             arg = arg.send(self)
-            self.arg_ids.append(arg.id_at_location)
-            local_args.append(arg)
+            arg_ids.append(arg.id_at_location)
+            build_args.append(arg)
+        self.procedure.arg_ids = tuple(arg_ids)
 
         # Same for the state element: we send them to the plan and keep reference
         # to the ids
-        copied_state = self.state.copy()
+        copied_state_dict = self.state.copy_state()
         self.state.send(location=self)
-        self.state_ids = self.state.get_id_at_location()
+        self.state.state_ids = self.state.get_ids_at_location()  # todo is it needed?
 
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
         if self.include_state:
-            res_ptr = self.forward(*local_args, self.state)
+            res_ptr = self.forward(*build_args, self.state)
         else:
-            res_ptr = self.forward(*local_args)
+            res_ptr = self.forward(*build_args)
         res_ptr.child.garbage_collect_data = False
 
         # We put back the original state. There is no need to keep a reference
         # To the element sent to the plan.
-        self.state.set_(copied_state)
+        self.state.set_(copied_state_dict)
 
         # The readable plan is now built, we hide the fact that it was run on
         # the plan and not on the owner by replacing the workers ids
-        worker = self.find_location(local_args)
-        self.replace_worker_ids(worker.id, self.owner.id)
+        self.procedure.update_worker_ids(from_worker_id=self.id, to_worker_id=self.owner.id)
 
         # The id where the result should be stored
-        self.result_ids = tuple([res_ptr.id_at_location])
-
-        # Store owner that built the plan
-        self.owner_when_built = self.owner
+        self.procedure.result_ids = (res_ptr.id_at_location,)
 
         self.is_built = True
-
-    def find_location(self, args):
-        """
-        Return location if args contain pointers else the local worker
-        """
-        for arg in args:
-            if isinstance(arg, FrameworkTensor):
-                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
-                    return arg.location
-        return sy.framework.hook.local_worker
 
     def copy(self):
         """Creates a copy of a plan."""
         plan = Plan(
-            sy.ID_PROVIDER.pop(),
-            self.owner,
-            self.name,
-            arg_ids=self.arg_ids,
-            result_ids=self.result_ids,
-            readable_plan=self.readable_plan,
+            name=self.name,
+            procedure=self.procedure.copy(),
+            state=self.state.copy(),
+            include_state=self.include_state,
             is_built=self.is_built,
+            # General kwargs
+            id=sy.ID_PROVIDER.pop(),
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
         )
 
-        # TODO: we shouldn't use the same state_ids since we want to avoid
-        # strange behaviours such as:
-        #
-        # @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
-        # def plan(data, state):
-        #   bias = state.read("bias")
-        #   return data * bias
-        #
-        # assert plan(th.tensor(1.)) == th.tensor(3.)  # True
-        # plan_copy = plan.copy()
-        # plan_copy.bias = th.tensor([4.0])
-        # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
-        # Issue: https://github.com/OpenMined/PySyft/issues/2601
+        plan.state.plan = plan
 
-        plan.state_ids = self.state_ids
+        plan.state.set_(self.state.copy_state())
 
         # Replace occurences of the old id to the new plan id
-        plan.replace_worker_ids(self.id, plan.id)
+        plan.procedure.update_worker_ids(self.id, plan.id)
 
         return plan
-
-    def replace_ids(
-        self,
-        from_ids: List[Union[str, int]],
-        to_ids: List[Union[str, int]],
-        from_worker: Union[str, int] = None,
-        to_worker: Union[str, int] = None,
-    ):
-        """Replaces pairs of tensor ids in the plan stored.
-
-        Args:
-            from_ids: Ids to change.
-            to_ids: Ids to replace with.
-            from_worker: The previous worker that built the plan.
-            to_worker: The new worker that is running the plan.
-        """
-        if from_worker is None:
-            from_worker = self.id
-        if to_worker is None:
-            to_worker = self.owner.id
-
-        self.readable_plan = list(self.readable_plan)
-
-        # for every pair of id
-        for i in range(len(from_ids)):
-            # for every message of the plan
-            for j, msg in enumerate(self.readable_plan):
-                # look for the old id and replace it with the new one
-                self.readable_plan[j] = Plan._replace_message_ids(
-                    obj=msg,
-                    change_id=from_ids[i],
-                    to_id=to_ids[i],
-                    from_worker=from_worker,
-                    to_worker=to_worker,
-                )
-
-        return self
-
-    def replace_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
-        """
-        Replace occurrences of from_worker_id by to_worker_id in the plan stored
-        Works also if those ids are encoded in bytes (for string).
-
-        Args:
-            from_worker_id: Id of the the replaced worker.
-            to_worker_id: Id of the new worker.
-        """
-
-        id_pairs = [(from_worker_id, to_worker_id)]
-        if type(from_worker_id) == str:
-            to_worker_id_encoded = (
-                to_worker_id.encode() if type(to_worker_id) == str else to_worker_id
-            )
-            id_pairs.append((from_worker_id.encode(), to_worker_id_encoded))
-
-        for id_pair in id_pairs:
-            self.readable_plan = Plan._replace_message_ids(
-                obj=self.readable_plan,
-                change_id=-1,
-                to_id=-1,
-                from_worker=id_pair[0],
-                to_worker=id_pair[1],
-            )
-
-    @staticmethod
-    def _replace_message_ids(obj, change_id, to_id, from_worker, to_worker):
-        _obj = list()
-
-        for item in obj:
-            if isinstance(item, int) and (item == change_id):
-                _obj.append(to_id)
-
-            elif isinstance(item, type(from_worker)) and (item == from_worker):
-                _obj.append(to_worker)
-
-            elif isinstance(item, (list, tuple)):
-                _obj.append(
-                    Plan._replace_message_ids(
-                        obj=item,
-                        change_id=change_id,
-                        to_id=to_id,
-                        from_worker=from_worker,
-                        to_worker=to_worker,
-                    )
-                )
-
-            else:
-                _obj.append(item)
-
-        return tuple(_obj)
-
-    def _execute_readable_plan(self, *args):
-        # TODO: for now only one value is returned from a plan
-        result_ids = [sy.ID_PROVIDER.pop()]
-
-        plan_res = self.execute_plan(args, result_ids)
-
-        return plan_res
 
     def __call__(self, *args, **kwargs):
         """Calls a plan.
@@ -561,69 +558,36 @@ class Plan(ObjectStorage, torch.nn.Module):
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
-        if self.find_location(args) == self.owner:
-            if self.forward is not None:
-                if self.include_state:
-                    return self.forward(*args, self.state)
-                else:
-                    return self.forward(*args)
-            else:
-                return self._execute_readable_plan(*args)
+        result_ids = [sy.ID_PROVIDER.pop()]
+
+        if self.forward is not None:
+            if self.include_state:
+                args = (*args, self.state)
+            return self.forward(*args)
         else:
-            if not self.is_built:
-                if self.include_state:
-                    self.forward(*args, self.state)
-                else:
-                    self.forward(*args)
-            return self._execute_readable_plan(*args)
+            return self.run(args, result_ids=result_ids)
 
-    def _update_args(
-        self,
-        args: List[Union[FrameworkTensorType, AbstractTensor]],
-        result_ids: List[Union[str, int]],
-    ):
-        """Replace args and result_ids with the ones given.
-        Updates the arguments ids and result ids used to execute
-        the plan.
-        Args:
-            args: List of tensors.
-            result_ids: Ids where the plan output will be stored.
-        """
-
-        arg_ids = [arg.id for arg in args]
-        self.replace_ids(self.arg_ids, arg_ids)
-        self.arg_ids = arg_ids
-
-        self.replace_ids(self.result_ids, result_ids)
-        self.result_ids = result_ids
-
-    def _execute_plan(self):
-        for message in self.readable_plan:
+    def execute_commands(self):
+        for message in self.procedure.commands:
             bin_message = sy.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
-    def _get_plan_output(self, result_ids, return_ptr=False):
-        responses = []
-        for return_id in result_ids:
-            response = PointerTensor(
-                location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
-            )
-            responses.append(response if return_ptr else response.get())
+    # def build_pointer_responses(self, result_ids, return_ptr=False):
+    #     responses = []
+    #     for return_id in result_ids:
+    #         response = PointerTensor(
+    #             location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
+    #         )
+    #         responses.append(response if return_ptr else response.get())
+    #
+    #     return responses
 
-        if len(responses) == 1:
-            return responses[0]
-
-        return responses
-
-    def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
+    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
 
         If the plan doesn't have the plan built, first build it using the blueprint.
-        Then if it has a remote location, send the plan to the remote location only the
-        first time, request a remote plan execution with specific pointers and ids for
-        storing the result, and return a pointer to the result of the execution.
-        If the plan is local: update the plan with the result_ids and args ids given,
-        run the plan and return the None message serialized.
+        Then, update the plan with the result_ids and args ids given, run the plan
+        commands, build pointer(s) to the response(s) and return.
 
         Args:
             args: Arguments used to run plan.
@@ -631,61 +595,16 @@ class Plan(ObjectStorage, torch.nn.Module):
         """
         # We build the plan only if needed
         if not self.is_built:
-            self._build(args)
+            self.build(args)
 
-        if len(self.locations):
-            plan_name = f"plan{self.id}"
-            # args, _, _ = hook_args.unwrap_args_from_function(
-            #     plan_name, args, {}
-            # )
+        self.procedure.update_args(args, result_ids)
 
-            worker = self.find_location(args)
-            if worker.id not in self.ptr_plans.keys():
-                self.ptr_plans[worker.id] = self._send(worker)
-            response = self.request_execute_plan(worker, result_ids, *args)
+        self.execute_commands()
+        responses = [self.owner.get_obj(result_id) for result_id in result_ids]
 
-            response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
-            return response
-
-        # if the plan is not to be sent then it has been requested to be executed,
-        # so we update the plan with the
-        # correct input and output ids and we run it
-        elif not len(self.locations):
-            self._update_args(args, result_ids)
-            self._execute_plan()
-            responses = self._get_plan_output(result_ids)
-            return responses
-
-        return sy.serde.serialize(None)
-
-    def request_execute_plan(
-        self,
-        location: "sy.workers.BaseWorker",
-        response_ids: List[Union[str, int]],
-        *args,
-        **kwargs,
-    ) -> object:
-        """Requests plan execution.
-
-        Send a request to execute the plan on the remote location.
-
-        Args:
-            location: to which worker the request should be sent
-            response_ids: Where the plan result should be stored remotely.
-            args: Arguments used as input data for the plan.
-            kwargs: Named arguments used as input data for the plan.
-
-        Returns:
-            Execution response.
-
-        """
-        args = [args, response_ids]
-        command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
-
-        response = self.owner.send_command(
-            message=command, recipient=location, return_ids=response_ids
-        )
-        return response
+        if len(responses) == 1:
+            return responses[0]
+        return responses
 
     def send(self, *locations, force=False):
         """Send plan to locations.
@@ -696,71 +615,34 @@ class Plan(ObjectStorage, torch.nn.Module):
         Args:
             locations: List of workers.
             force: A boolean indicating if this operation should be forced.
-
-        Args:
-            location: Workers where plan should be sent to.
         """
         if not self.is_built and not force:
             raise RuntimeError("A plan needs to be built before being sent to a worker.")
 
-        self.locations += [self.owner.get_worker(location).id for location in locations]
+        if len(locations) != 1:
+            raise NotImplementedError(
+                "Plans can't be sent to multiple locations. Waiting for MultiPointerPlan."
+            )
+        location = locations[0]
 
-        # rm duplicates
-        self.locations = list(set(self.locations) - set([sy.framework.hook.local_worker.id]))
+        # Might be useless now
+        # state_ptr_ids = remote_state.get_ids_at_location()
+        # remote_commands.update_ids(self.state.state_ids, state_ptr_ids, self.owner.id, location.id)
 
-        for location in locations:
-            self.ptr_plans[location.id] = self._send(location)
+        self.procedure.update_worker_ids(self.owner.id, location.id)
 
-        return self
+        # Send the Plan
+        pointer = self.owner.send(self, workers=location)
 
-    def _send(self, location: "sy.workers.BaseWorker"):
-        """Real send function that sends the Plan instance with its plan to location.
+        self.procedure.update_worker_ids(location.id, self.owner.id)
 
-        Only called when the plan is built and that an execution is called, namely when it is
-        necessary to send it.
-
-        Args:
-            location: Worker where plan should be sent to.
-        """
-        readable_plan_original = copy.deepcopy(self.readable_plan)
-        for worker_id in [self.owner.id] + self.locations:
-            self.replace_worker_ids(worker_id, location.id)
-
-        state_original = self.state.copy()
-        state_ids_original = self.state_ids.copy()
-
-        self.state.send(location, garbage_collect_data=False)
-        state_ptr_ids = self.state.get_id_at_location()
-        self.replace_ids(self.state_ids, state_ptr_ids)
-        self.state_ids = state_ptr_ids
-
-        _ = self.owner.send(self, workers=location)
-
-        # Deep copy the plan without using deep copy
-        pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
-
-        self.readable_plan = readable_plan_original
-        self.state.set_(state_original)
-        self.state_ids = state_ids_original
         return pointer
 
-    def get(self) -> "Plan":
-        """Mock get function.
-
-        No call to remote worker is done, we just erase the
-        information linking this plan to that remote worker.
-
-        Returns:
-            Plan.
-        """
-
-        if len(self.locations):
-            self.locations = []
-            self.ptr_plans = {}
-        else:
-            self.state.get()
-
+    def get(self):
+        self.state.get()
         return self
+        # TODO add the following in a smart way?
+        # raise NotImplementedError("You should call .get() on a PointerPlan, not on a Plan.")
 
     def fix_precision_(self, *args, **kwargs):
         self.state.fix_precision_(*args, **kwargs)
@@ -782,11 +664,11 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     share = share_
 
-    def create_pointer(self, owner, garbage_collect_data):
+    def create_pointer(self, owner, location, id_at_location, garbage_collect_data, **kwargs):
         return PointerPlan(
-            location=self.owner,
-            id_at_location=self.id,
             owner=owner,
+            location=location,
+            id_at_location=id_at_location,
             garbage_collect_data=garbage_collect_data,
         )
 
@@ -800,10 +682,6 @@ class Plan(ObjectStorage, torch.nn.Module):
         out += " " + str(self.name)
         out += " id:" + str(self.id)
         out += " owner:" + str(self.owner.id)
-
-        if len(self.locations):
-            for location in self.locations:
-                out += " location:" + str(location)
 
         if self.tags is not None and len(self.tags):
             out += " Tags:"
@@ -831,17 +709,14 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         """
         return (
-            tuple(
-                plan.readable_plan
-            ),  # We're not simplifying because readable_plan is already simplified
             sy.serde._simplify(plan.id),
-            sy.serde._simplify(plan.arg_ids),
-            sy.serde._simplify(plan.result_ids),
-            sy.serde._simplify(plan.state_ids),
+            sy.serde._simplify(plan.procedure),
+            sy.serde._simplify(plan.state),
+            sy.serde._simplify(plan.include_state),
+            sy.serde._simplify(plan.is_built),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
-            plan.is_built,
         )
 
     @staticmethod
@@ -854,24 +729,19 @@ class Plan(ObjectStorage, torch.nn.Module):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
-            plan_tuple
-        )
+        id, procedure, state, include_state, is_built, name, tags, description = plan_tuple
         id = sy.serde._detail(worker, id)
-        arg_ids = sy.serde._detail(worker, arg_ids)
-        result_ids = sy.serde._detail(worker, result_ids)
-        state_ids = sy.serde._detail(worker, state_ids)
+        procedure = sy.serde._detail(worker, procedure)
+        state = sy.serde._detail(worker, state)
 
-        plan = sy.Plan(
-            owner=worker,
-            id=id,
-            arg_ids=arg_ids,
-            result_ids=result_ids,
-            readable_plan=readable_plan,  # We're not detailing, see simplify() for details
-            is_built=is_built,
-        )
+        plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
-        plan.state_ids = state_ids
+        for key, state_id in zip(state.keys, state.state_ids):
+            setattr(plan, key, worker.get_obj(state_id))
+
+        plan.procedure = procedure
+        plan.state = state
+        state.plan = plan
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)

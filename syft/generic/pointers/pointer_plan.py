@@ -50,11 +50,11 @@ class PointerPlan(ObjectPointer):
         """
         result_ids = [sy.ID_PROVIDER.pop()]
 
-        response = self.request_execute_plan(self.location, result_ids, *args)
+        response = self.request_run_plan(self.location, result_ids, *args)
 
         return response
 
-    def request_execute_plan(
+    def request_run_plan(
         self,
         location: "sy.workers.BaseWorker",
         response_ids: List[Union[str, int]],
@@ -80,7 +80,7 @@ class PointerPlan(ObjectPointer):
         # )
         args = [args, response_ids]
 
-        command = ("execute_plan", self.id_at_location, args, kwargs)
+        command = ("run", self.id_at_location, args, kwargs)
 
         response = self.owner.send_command(
             message=command, recipient=location, return_ids=response_ids

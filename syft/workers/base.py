@@ -356,7 +356,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         worker = self.get_worker(worker)
 
         if hasattr(obj, "create_pointer") and not isinstance(
-            obj, (sy.Plan, sy.Protocol)
+            obj, (sy.Protocol,)
         ):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
@@ -461,9 +461,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         command_name, args = message
         try:
-            return self._plan_command_router[command_name](*args)
+            command = self._plan_command_router[command_name]
         except KeyError:
             raise PlanCommandUnknownError(command_name)
+
+        return command(*args)
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
@@ -555,6 +557,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if not self.is_client_worker:
             super().register_obj(obj, obj_id=obj_id)
+
+    def de_register_obj(self, obj: object, obj_id: Union[str, int] = None):
+        """De-registers the specified object with the current worker node.
+        """
+        if not self.is_client_worker:
+            super().de_register_obj(obj)
 
     # SECTION: convenience methods for constructing frequently used messages
 
@@ -809,25 +817,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = PlanCommandMessage("fetch_plan", (plan_id, copy))
         plan = self.send_msg(message, location=location)
 
-        plan.replace_worker_ids(location.id, self.id)
+        plan.procedure.update_worker_ids(location.id, self.id)
 
-        if plan.state_ids:
-            state_ids = []
-            for state_id in plan.state_ids:
-                if copy:
-                    state_ptr = PointerTensor(
-                        location=location,
-                        id_at_location=state_id,
-                        owner=self,
-                        garbage_collect_data=False,
-                    )
-                    state_elem = state_ptr.copy().get()
-                else:
-                    state_elem = self.request_obj(state_id, location)
-                self.register_obj(state_elem)
-                state_ids.append(state_elem.id)
-            plan.replace_ids(plan.state_ids, state_ids)
-            plan.state_ids = state_ids
+        # Might be useless now
+        # if plan.statestate_ids:
+        #     state_ids = []
+        #     for state_id in plan.state_ids:
+        #         if copy:
+        #             state_ptr = PointerTensor(
+        #                 location=location,
+        #                 id_at_location=state_id,
+        #                 owner=self,
+        #                 garbage_collect_data=False,
+        #             )
+        #             state_elem = state_ptr.copy().get()
+        #         else:
+        #             state_elem = self.request_obj(state_id, location)
+        #         self.register_obj(state_elem)
+        #         state_ids.append(state_elem.id)
+        #     plan.replace_ids(plan.state_ids, state_ids)
+        #     plan.state_ids = state_ids
 
         return plan
 
