@@ -160,6 +160,6 @@ def test_plan_waiting_promise(hook, workers):
 
     assert (res_ptr.value().get() == 3 * torch.ones(3, 3)).all()
     assert (res_ptr.value().get() == 7 * torch.ones(3, 3)).all()
+    """
 
     hook.local_worker.is_client_worker = True
-    """
