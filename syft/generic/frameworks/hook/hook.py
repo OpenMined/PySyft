@@ -280,6 +280,21 @@ class FrameworkHook(ABC):
 
         tensor_type.__init__ = new___init__
 
+    @classmethod
+    def _perform_function_overloading(cls, parent, func):
+
+        # Where the overloading happens
+        # 1. Get native function
+        native_func = getattr(parent, func)
+        # 2. Check it is a proper function
+        if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+            # 3. Build the hooked function
+            new_func = self._get_hooked_func(native_func)
+            # 4. Move the native function
+            setattr(parent, f"native_{func}", native_func)
+            # 5. Put instead the hooked one
+            setattr(parent, func, new_func)
+
     def _get_hooked_syft_method(hook_self, attr):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
@@ -385,9 +400,6 @@ class FrameworkHook(ABC):
         Return:
             the hooked method
         """
-
-        if attr.__module__ is None:
-            attr.__module__ = "torch"
 
         cmd_name = f"{attr.__module__}.{attr.__name__}"
 

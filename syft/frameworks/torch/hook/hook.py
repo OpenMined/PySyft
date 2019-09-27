@@ -381,20 +381,6 @@ class TorchHook(FrameworkHook):
             and :func:`torch.cat` will have our hooking code.
         """
 
-        def perform_overloading(torch_module, func):
-
-            # Where the overloading happens
-            # 1. Get native function
-            native_func = getattr(torch_module, func)
-            # 2. Check it is a proper function
-            if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
-                # 3. Build the hooked function
-                new_func = self._get_hooked_func(native_func)
-                # 4. Move the native function
-                setattr(torch_module, f"native_{func}", native_func)
-                # 5. Put instead the hooked one
-                setattr(torch_module, func, new_func)
-
         if torch.__version__ < "1.0.2":
             # Hard fix for PyTorch versions < 1.0.2
             # usage of torch.jit requires a torch version < torch 1.1, so we still need to support this torch version
@@ -426,7 +412,14 @@ class TorchHook(FrameworkHook):
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                perform_overloading(torch_module, func)
+                self._perform_function_overloading(torch_module, func)
+
+    def _get_hooked_func(hook_self, attr):
+        """Torch-specific implementation. See the subclass for more."""
+        if attr.__module__ is None:
+            attr.__module__ = "torch"
+
+        return super()._get_hooked_func(attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
