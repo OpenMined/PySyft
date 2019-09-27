@@ -2,11 +2,16 @@
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master) [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=torch_1)](https://travis-ci.org/OpenMined/PySyft) [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
 
-PySyft is a Python library for secure, private Deep Learning. PySyft decouples private data from model training, using [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within PyTorch. Join the movement on [Slack](http://slack.openmined.org/).
+PySyft is a Python library for secure, private Deep Learning. PySyft decouples private data from model training, using
+[Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
+[Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
+and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within PyTorch. Join the movement on
+[Slack](http://slack.openmined.org/).
 
 ## PySyft in Detail
 
-A more detailed explanation of PySyft can be found in the [paper on arxiv](https://arxiv.org/abs/1811.04017)
+A more detailed explanation of PySyft can be found in the
+[paper on arxiv](https://arxiv.org/abs/1811.04017)
 
 PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
 
@@ -35,18 +40,31 @@ make venv
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.1.0
+> PySyft supports Python >= 3.6 and PyTorch 1.1
 
 ```bash
-pip install syft
+pip install syft[udacity]
 ```
+
+This will auto-install the PyTorch and TF Encrypted
+dependencies, which are required for running the tutorials
+from Udacity's "Secure & Private AI" course (recommended).
+
+You can install syft without these dependencies with the usual
+`pip install syft`, but you will need to install framework
+dependencies (i.e. PyTorch, TensorFlow, or TF Encrypted)
+yourself. If you feel you've received an unexpected
+installation error related to PyTorch or TF Encrypted, please
+open an issue on Github or reach out to `#team_pysyft` in
+Slack.
 
 If you have an installation error regarding zstd, run this command and then re-try installing syft.
 
 ```bash
 pip install --upgrade --force-reinstall zstd
 ```
-If this still doesn't work, and you happen to be on OSX, make sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
+If this still doesn't work, and you happen to be on OSX, make
+sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
 
 If this still fails, and you are on a Conda environment. It could be
 because conda provides its own compiler and linker tools which might
@@ -72,7 +90,10 @@ kernel.
 
 ## Use the Docker image
 
-Instead of installing all the dependencies on your computer, you can run a notebook server (which comes with Pysyft installed) using [Docker](https://www.docker.com/). All you will have to do is start the container like this:
+Instead of installing all the dependencies on your computer,
+you can run a notebook server (which comes with Pysyft
+installed) using [Docker](https://www.docker.com/). All you
+will have to do is start the container like this:
 
 ```bash
 $ docker container run openmined/pysyft-notebook
@@ -83,7 +104,7 @@ You can use the provided link to access the jupyter notebook (the link is only a
 > **_NOTE:_**
 > If you are using Docker Desktop for Mac, the port needs to be forwarded to localhost. In that case run docker with:
 > ```bash $ docker container run -p 8888:8888 openmined/pysyft-notebook ```
-> to forward port 8888 from the container's interface to port 8888 on localhost and then access the notebook via http://127.0.0.1:8888/?token=... 
+> to forward port 8888 from the container's interface to port 8888 on localhost and then access the notebook via http://127.0.0.1:8888/?token=...
 
 
 You can also set the directory from which the server will serve notebooks (default is /workspace).
@@ -104,9 +125,11 @@ More information about how to use this image can be found [on docker hub](https:
 
 ## Try out the Tutorials
 
-A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
+A comprehensive list of tutorials can be found
+[here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials)
 
-These tutorials cover how to perform techniques such as federated learning and differential privacy using PySyft.
+These tutorials cover how to perform techniques such as
+federated learning and differential privacy using PySyft.
 
 ## High-level Architecture
 

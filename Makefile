@@ -14,14 +14,14 @@ install_hooks: venv
 
 notebook: venv
 	(. venv/bin/activate; \
-		python setup.py install; \
+		python setup.py install udacity; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter notebook;\
 	)
 
 lab: venv
 	(. venv/bin/activate; \
-		python setup.py install; \
+		python setup.py install udacity; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter lab;\
 	)
@@ -45,5 +45,6 @@ docs: venv
 		make markdown; \
         cd ../; \
 	)
+
 clean:
 	rm -rf venv
