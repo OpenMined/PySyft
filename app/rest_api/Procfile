@@ -1,2 +1,0 @@
-pip uninstall syft --y
-web: gunicorn app:app --log-file -

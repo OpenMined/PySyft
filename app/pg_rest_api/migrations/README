@@ -1,4 +1,0 @@
-This implementation assumes a Postgres back-end (although other SQL databases
-should work.) There are two tables: `workers` and `worker_objects`. These tables
-are patterned after the Worker and Worker Objects found in PySyft. Tensor
-serialization included.
