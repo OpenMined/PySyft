@@ -4,6 +4,7 @@ from syft import dependency_check
 
 framework_tensors = []
 framework_shapes = []
+framework_layer_modules = []
 
 if dependency_check.tensorflow_available:
     import tensorflow as tf
@@ -19,6 +20,10 @@ if dependency_check.torch_available:
     framework_tensors.append(torch.nn.Parameter)
     framework_shapes.append(torch.Size)
 
+    framework_layer_module = torch.nn.Module
+    framework_layer_module.named_tensors = torch.nn.Module.named_parameters
+    framework_layer_modules.append(framework_layer_module)
+
 framework_tensors = tuple(framework_tensors)
 FrameworkTensorType = Union[framework_tensors]
 FrameworkTensor = framework_tensors
@@ -26,3 +31,7 @@ FrameworkTensor = framework_tensors
 framework_shapes = tuple(framework_shapes)
 FrameworkShapeType = Union[framework_shapes]
 FrameworkShape = framework_shapes
+
+framework_layer_modules = tuple(framework_layer_modules)
+FrameworkLayerModuleType = Union[framework_layer_modules]
+FrameworkLayerModule = framework_layer_modules
