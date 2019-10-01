@@ -841,7 +841,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return plan
 
     def _fetch_plan_remote(self, plan_id: Union[str, int], copy: bool) -> "Plan":  # noqa: F821
-        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+        """Fetches a copy of a the plan with the given `plan_id` from the worker registry.
 
         This method is executed for remote execution.
 

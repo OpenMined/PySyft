@@ -350,6 +350,21 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return response
 
+    def share_(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share inplace a tensor
+
+        Returns:
+            A pointer to an AdditiveSharingTensor
+        """
+
+        # Send the command
+        command = ("share_", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return self
+
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
 

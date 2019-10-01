@@ -66,12 +66,11 @@ def _detail_collection_list(worker: AbstractWorker, my_collection: Tuple) -> Col
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
+        detailed = serde._detail(worker, part)
         try:
-            pieces.append(
-                serde._detail(worker, part).decode("utf-8")
-            )  # transform bytes back to string
+            pieces.append(detailed.decode("utf-8"))  # transform bytes back to string
         except AttributeError:
-            pieces.append(serde._detail(worker, part))
+            pieces.append(detailed)
 
     return pieces
 

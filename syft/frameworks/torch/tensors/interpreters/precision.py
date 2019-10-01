@@ -740,6 +740,11 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     def share(self, *owners, field=None, crypto_provider=None):
+        """
+        Forward the .share() command to the child tensor, and reconstruct a new
+        FixedPrecisionTensor since the command in not inplace and should return
+        a new chain
+        """
         if field is None:
             field = self.field
         else:
@@ -747,9 +752,15 @@ class FixedPrecisionTensor(AbstractTensor):
                 field == self.field
             ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
-        self.child = self.child.share(
+        tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
+
+        tensor.child = self.child.share(
             *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
         )
+        return tensor
+
+    def share_(self, *args, **kwargs):
+        self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 
     @staticmethod
