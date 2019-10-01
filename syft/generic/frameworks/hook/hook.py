@@ -289,13 +289,14 @@ class FrameworkHook(ABC):
         # 2. Check it is a proper function
         if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
             # 3. Build the hooked function
-            new_func = self._get_hooked_func(native_func)
+            new_func = cls._get_hooked_func(native_func)
             # 4. Move the native function
             setattr(parent, f"native_{func}", native_func)
             # 5. Put instead the hooked one
             setattr(parent, func, new_func)
 
-    def _get_hooked_syft_method(hook_self, attr):
+    @classmethod
+    def _get_hooked_syft_method(cls, attr):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute, forward this method with the new args and new self,
@@ -329,7 +330,8 @@ class FrameworkHook(ABC):
 
         return overloaded_syft_method
 
-    def _get_hooked_method(hook_self, method_name):
+    @classmethod
+    def _get_hooked_method(cls, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -386,7 +388,8 @@ class FrameworkHook(ABC):
 
         return overloaded_native_method
 
-    def _get_hooked_func(hook_self, attr):
+    @classmethod
+    def _get_hooked_func(cls, attr):
         """
         Hook a function in order to inspect its args and search for pointer
         or other syft tensors.
@@ -428,7 +431,8 @@ class FrameworkHook(ABC):
 
         return overloaded_func
 
-    def _get_hooked_pointer_method(hook_self, attr):
+    @classmethod
+    def _get_hooked_pointer_method(cls, attr):
         """
         Hook a method to send it to remote worker
 
@@ -466,7 +470,8 @@ class FrameworkHook(ABC):
 
         return overloaded_pointer_method
 
-    def _get_hooked_multi_pointer_method(hook_self, attr):
+    @classmethod
+    def _get_hooked_multi_pointer_method(cls, attr):
         """
         Hook a method to send it multiple recmote workers
 
