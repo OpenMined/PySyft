@@ -1,12 +1,19 @@
-import torch
+import random
+from typing import List
+
 import numpy as np
+import torch
+
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
-from scipy.stats import t
-from typing import List
-import random
+from syft.exceptions import DependencyError
+
+try:
+    from scipy.stats import t
+except ImportError:
+    raise DependencyError("scipy", "scipy")
 
 
 class EncryptedLinearRegression:
