@@ -13,6 +13,7 @@ class MSGTYPE(object):
 
 class PLAN_CMDS(object):
     FETCH_PLAN = "fetch_plan"
+    FETCH_PROTOCOL = "fetch_protocol"
 
 
 # Build automatically the reverse map from codes to messaging types
