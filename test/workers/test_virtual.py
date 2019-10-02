@@ -188,7 +188,7 @@ def test_search():
     assert len(bob.search("#mnist")) == 1
     assert len(bob.search("#cifar")) == 1
     assert len(bob.search("#not_fun")) == 2
-    assert len(bob.search("#not_fun", "#boston_housing")) == 1
+    assert len(bob.search(["#not_fun", "#boston_housing"])) == 1
 
 
 def test_obj_not_found(workers):

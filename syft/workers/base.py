@@ -13,6 +13,7 @@ from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
 from syft.generic.object_storage import ObjectStorage
+from syft.generic.object import AbstractObject
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -23,6 +24,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
+from syft.messaging.message import SearchMessage
 from syft.messaging.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
@@ -120,11 +122,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             codes.MSGTYPE.OBJ_DEL: self.rm_obj,
             codes.MSGTYPE.IS_NONE: self.is_tensor_none,
             codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            codes.MSGTYPE.SEARCH: self.deserialized_search,
+            codes.MSGTYPE.SEARCH: self.search,
             codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
         }
 
-        self._plan_command_router = {codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote}
+        self._plan_command_router = {
+            codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote,
+            codes.PLAN_CMDS.FETCH_PROTOCOL: self._fetch_protocol_remote,
+        }
 
         self.load_data(data)
 
@@ -350,7 +355,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
-        if hasattr(obj, "create_pointer"):  # TODO: this seems like hack to check a type
+        if hasattr(obj, "create_pointer") and not isinstance(
+            obj, (sy.Plan, sy.Protocol)
+        ):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
 
@@ -845,7 +852,39 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
-    def search(self, *query: List[str]) -> List[PointerTensor]:
+    def fetch_protocol(
+        self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
+    ) -> "Plan":  # noqa: F821
+        """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
+
+        This method is executed for local execution.
+
+        Args:
+            protocol_id: A string indicating the protocol id.
+
+        Returns:
+            A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
+        """
+        message = PlanCommandMessage("fetch_protocol", (protocol_id, copy))
+        protocol = self.send_msg(message, location=location)
+
+        return protocol
+
+    def _fetch_protocol_remote(
+        self, protocol_id: Union[str, int], copy: bool
+    ) -> "Protocol":  # noqa: F821
+        """
+        Target function of fetch_protocol, find and return a protocol
+        """
+        if protocol_id in self._objects:
+
+            candidate = self._objects[protocol_id]
+            if isinstance(candidate, sy.Protocol):
+                return candidate
+
+        return None
+
+    def search(self, query: Union[List[Union[str, int]], str, int]) -> List[PointerTensor]:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -858,6 +897,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A list of PointerTensors.
         """
+        if isinstance(query, (str, int)):
+            query = [query]
+
         results = list()
         for key, obj in self._objects.items():
             found_something = True
@@ -866,12 +908,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # make sure it's turned back to a string or a fair comparison.
                 if isinstance(query_item, bytes):
                     query_item = query_item.decode("ascii")
+                query_item = str(query_item)
 
                 match = False
                 if query_item == str(key):
                     match = True
 
-                if isinstance(obj, FrameworkTensor):
+                if isinstance(obj, (AbstractObject, FrameworkTensor)):
                     if obj.tags is not None:
                         if query_item in obj.tags:
                             match = True
@@ -892,20 +935,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return results
 
-    def deserialized_search(self, query_items: Tuple[str]) -> List[PointerTensor]:
-        """
-        Called when a message requesting a call to `search` is received.
-        The serialized arguments will arrive as a `tuple` and it needs to be
-        transformed to an arguments list.
+    def request_search(self, query: List[str], location: "BaseWorker"):
 
-        Args:
-            query_items(tuple(str)): Tuple of items to search for. Should originate from the
-            deserialization of a message requesting a search operation.
+        result = self.send_msg(SearchMessage(query), location=location)
 
-        Returns:
-            list(PointerTensor): List of matched tensors.
-        """
-        return self.search(*query_items)
+        return result
 
     def _get_msg(self, index):
         """Returns a decrypted message from msg_history. Mostly useful for testing.

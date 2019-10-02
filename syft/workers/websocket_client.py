@@ -64,7 +64,7 @@ class WebsocketClientWorker(BaseWorker):
     def close(self):
         self.ws.shutdown()
 
-    def search(self, *query):
+    def search(self, query):
         # Prepare a message requesting the websocket server to search among its objects
         message = SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
