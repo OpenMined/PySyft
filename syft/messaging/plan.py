@@ -623,22 +623,25 @@ class Plan(AbstractObject, ObjectStorage):
         if not self.is_built and not force:
             raise RuntimeError("A plan needs to be built before being sent to a worker.")
 
-        if len(locations) != 1:
-            raise NotImplementedError(
-                "Plans can't be sent to multiple locations. Waiting for MultiPointerPlan."
-            )
-        location = locations[0]
+        if len(locations) == 1:
+            location = locations[0]
 
-        # Might be useless now
-        # state_ptr_ids = remote_state.get_ids_at_location()
-        # remote_commands.update_ids(self.state.state_ids, state_ptr_ids, self.owner.id, location.id)
+            self.procedure.update_worker_ids(self.owner.id, location.id)
+            # Send the Plan
+            pointer = self.owner.send(self, workers=location)
+            # Revert ids
+            self.procedure.update_worker_ids(location.id, self.owner.id)
+        else:
+            ids_at_location = []
+            for location in locations:
+                self.procedure.update_worker_ids(self.owner.id, location.id)
+                # Send the Plan
+                pointer = self.owner.send(self, workers=location)
+                # Revert ids
+                self.procedure.update_worker_ids(location.id, self.owner.id)
+                ids_at_location.append(pointer.id_at_location)
 
-        self.procedure.update_worker_ids(self.owner.id, location.id)
-
-        # Send the Plan
-        pointer = self.owner.send(self, workers=location)
-
-        self.procedure.update_worker_ids(location.id, self.owner.id)
+            pointer = sy.PointerPlan(location=locations, id_at_location=ids_at_location)
 
         return pointer
 

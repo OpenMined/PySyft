@@ -337,7 +337,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A PointerTensor object representing the pointer to the remote worker(s).
         """
 
-        if not isinstance(workers, list):
+        if not isinstance(workers, (list, tuple)):
             workers = [workers]
 
         assert len(workers) > 0, "Please provide workers to receive the data"
