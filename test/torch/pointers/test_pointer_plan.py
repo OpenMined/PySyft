@@ -5,8 +5,10 @@ from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.messaging.plan import Plan
 
 
-def test_create_pointer_to_plan(workers):
+def test_create_pointer_to_plan(hook, workers):
     alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
+
+    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
     def plan(x, state):
@@ -24,9 +26,13 @@ def test_create_pointer_to_plan(workers):
 
     assert (ptr.get() == th.tensor([2.0])).all()
 
+    hook.local_worker.is_client_worker = True
 
-def test_search_plan(workers):
+
+def test_search_plan(hook, workers):
+
     alice, me = workers["alice"], workers["me"]
+    me.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
     def plan(x, state):
@@ -44,6 +50,8 @@ def test_search_plan(workers):
     ptr = plan_ptr(x)
 
     assert (ptr.get() == th.tensor([2.0])).all()
+
+    me.is_client_worker = True
 
 
 def test_get_plan(workers):

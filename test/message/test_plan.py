@@ -25,7 +25,10 @@ def test_plan_built_automatically():
     assert plan_abs.is_built
 
 
-def test_stateful_plan_built_automatically():
+def test_stateful_plan_built_automatically(hook):
+
+    hook.local_worker.is_client_worker = False
+
     @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
     def foo(x, state):
         bias = state.read("bias")
@@ -40,6 +43,8 @@ def test_stateful_plan_built_automatically():
     x = foo(t)
 
     assert (x == th.tensor([3.0, 5])).all()
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_build():
@@ -218,7 +223,10 @@ def test_add_to_state():
         model = Net()
 
 
-def test_plan_method_execute_locally():
+def test_plan_method_execute_locally(hook):
+
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
@@ -244,8 +252,13 @@ def test_plan_method_execute_locally():
     # Call one more time
     assert model(th.tensor([1.0, 2.1])) == 0
 
+    hook.local_worker.is_client_worker = True
 
-def test_stateful_plan_method_execute_locally():
+
+def test_stateful_plan_method_execute_locally(hook):
+
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
@@ -267,6 +280,8 @@ def test_stateful_plan_method_execute_locally():
 
     # Call one more time
     assert model(th.tensor([1.0, 2.1])) == th.tensor([1000.0])
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_multiple_send(workers):
@@ -292,8 +307,10 @@ def test_plan_multiple_send(workers):
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
-def test_stateful_plan_multiple_send(workers):
+def test_stateful_plan_multiple_send(hook, workers):
     me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
     def plan_abs(x, state):
@@ -316,11 +333,15 @@ def test_stateful_plan_multiple_send(workers):
     res = p.get()
     assert (res == th.tensor([2.0, 3, 4])).all()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_plan_built_on_class(hook):
     """
     Test class Plans and plan send / get / send
     """
+
+    hook.local_worker.is_client_worker = False
 
     x11 = th.tensor([-1, 2.0]).tag("input_data")
     x21 = th.tensor([-1, 2.0]).tag("input_data")
@@ -365,6 +386,8 @@ def test_plan_built_on_class(hook):
     assert isinstance(result, th.Tensor)
     assert result == th.tensor([1000.0])
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_multiple_workers(workers):
     me, bob, alice = workers["me"], workers["bob"], workers["alice"]
@@ -385,8 +408,10 @@ def test_multiple_workers(workers):
     assert (x_abs == th.tensor([1, 9, 3])).all()
 
 
-def test_stateful_plan_multiple_workers(workers):
+def test_stateful_plan_multiple_workers(hook, workers):
     me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+
+    hook.local_worker.is_client_worker = False
 
     @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})
     def plan_abs(x, state):
@@ -404,6 +429,8 @@ def test_stateful_plan_multiple_workers(workers):
     p = plan_abs(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([2, 10, 4])).all()
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_fetch_plan(hook, workers):
@@ -447,7 +474,6 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = nn.Linear(1, 1)
-                self.add_to_state(["fc1"])
 
             def forward(self, x):
                 return self.fc1(x)
@@ -456,10 +482,10 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
         plan.build(th.tensor([1.2]))
 
     alice = workers["alice"]
-    plan.send(alice)
+    plan_ptr = plan.send(alice)
 
     # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan.id, alice)
+    fetched_plan = plan.owner.fetch_plan(plan_ptr.id_at_location, alice)
 
     # Execute it locally
     x = th.tensor([-1.26])
@@ -497,7 +523,6 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = nn.Linear(1, 1)
-                self.add_to_state(["fc1"])
 
             def forward(self, x):
                 return self.fc1(x)
@@ -505,14 +530,15 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
         plan = Net()
         plan.build(th.tensor([1.2]))
 
-    plan.send(remote_proxy)
+    x = th.tensor([-1.26])
+    expected = plan(x)
+    plan_ptr = plan.send(remote_proxy)
 
     # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan.id, remote_proxy)
+    fetched_plan = plan.owner.fetch_plan(plan_ptr.id_at_location, remote_proxy)
 
     # Execute it locally
-    x = th.tensor([-1.26])
-    assert th.all(th.eq(fetched_plan(x), plan(x)))
+    assert th.all(th.eq(fetched_plan(x), expected))
     # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
 
     # Make sure fetched_plan is using the readable_plan
@@ -524,6 +550,65 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_binding_fix_precision_plan(hook):
+    """Here we make sure the attributes of a plan are still binded to state elements when calling fix_precision"""
+
+    hook.local_worker.is_client_worker = False
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(1, 1)
+
+        def forward(self, x):
+            return self.fc1(x)
+
+    plan = Net()
+    plan.build(th.tensor([1.2]))
+    original_weight = plan.fc1.weight.clone()
+
+    plan.fix_precision()
+    weight_id = plan.fc1.weight.id
+    hook.local_worker.get_obj(weight_id).float_prec_()
+
+    assert (plan.fc1.weight - original_weight) < 10e-2
+
+    hook.local_worker.is_client_worker = True
+
+
+def test_binding_encrypted_plan(hook, workers):
+    """Here we make sure the attributes of a plan are still binded to state elements when calling fix_prec + share"""
+
+    hook.local_worker.is_client_worker = False
+
+    alice, bob, charlie, james = (
+        workers["alice"],
+        workers["bob"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(1, 1)
+
+        def forward(self, x):
+            return self.fc1(x)
+
+    plan = Net()
+    plan.build(th.tensor([1.2]))
+    original_weight = plan.fc1.weight.clone()
+
+    plan.fix_precision().share(alice, bob, crypto_provider=charlie)
+    weight_id = plan.fc1.weight.id
+    hook.local_worker.get_obj(weight_id).get_().float_prec_()
+
+    assert (plan.fc1.weight - original_weight) < 10e-2
 
     hook.local_worker.is_client_worker = True
 
@@ -554,7 +639,6 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = nn.Linear(1, 1)
-                self.add_to_state(["fc1"])
 
             def forward(self, x):
                 return self.fc1(x)
@@ -562,11 +646,14 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
         plan = Net()
         plan.build(th.tensor([1.2]))
 
+    x = th.tensor([-1.0])
+    expected = plan(x)
+
     plan.fix_precision().share(alice, bob, crypto_provider=charlie)
     ptr_plan = plan.send(james)
 
     # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan.id, james)
+    fetched_plan = plan.owner.fetch_plan(ptr_plan.id_at_location, james)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
@@ -574,9 +661,6 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     decrypted = fetched_plan(x_sh).get().float_prec()
 
     # Compare with local plan
-    plan.get().float_precision()
-    x = th.tensor([-1.0])
-    expected = plan(x)
     assert th.all(decrypted - expected.detach() < 1e-2)
     # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
 
@@ -614,7 +698,6 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = nn.Linear(1, 1)
-                self.add_to_state(["fc1"])
 
             def forward(self, x):
                 return self.fc1(x)
@@ -622,10 +705,10 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
         plan = Net()
         plan.build(th.tensor([1.2]))
 
-    plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
+    plan_pointer = plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
 
     # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+    fetched_plan = plan_pointer.owner.fetch_plan(plan_pointer.id_at_location, james, copy=True)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
@@ -633,7 +716,7 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
     decrypted1 = fetched_plan(x_sh).get().float_prec()
 
     # 2. Re-fetch Plan
-    fetched_plan = plan.owner.fetch_plan(plan.id, james, copy=True)
+    fetched_plan = plan_pointer.owner.fetch_plan(plan_pointer.id_at_location, james, copy=True)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
@@ -723,6 +806,8 @@ def test_execute_plan_remotely(hook, start_remote_worker):
 def test_execute_plan_module_remotely(hook, start_remote_worker):
     """Test plan execution remotely."""
 
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
@@ -762,9 +847,13 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
     remote_proxy.close()
     server.terminate()
 
+    hook.local_worker.is_client_worker = True
+
 
 def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     """Test training a plan locally and then executing it remotely."""
+
+    hook.local_worker.is_client_worker = False
 
     # Create toy model
     class Net(sy.Plan):
@@ -827,6 +916,8 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
 
     remote_proxy.close()
     server.terminate()
+
+    hook.local_worker.is_client_worker = True
 
 
 # def test_replace_worker_ids_two_strings(hook):

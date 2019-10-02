@@ -80,8 +80,8 @@ class Protocol(AbstractObject):
 
         self._resolve_workers(workers)
 
-        for worker, plan in self.plans:
-            plan.send(worker)
+        for i, (worker, plan) in enumerate(self.plans):
+            self.plans[i] = (worker, plan.send(worker))
 
         return self
 
