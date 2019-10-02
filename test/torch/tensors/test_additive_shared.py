@@ -49,6 +49,29 @@ def test_share_inplace_consistency(workers):
     assert (x1 == x2_sh).get().float_prec()
 
 
+def test_clone(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1.2]).fix_precision().share(alice, bob, crypto_provider=james)
+    original_props = (
+        x.id,
+        x.owner.id,
+        x.child.id,
+        x.child.owner.id,
+        x.child.child.id,
+        x.child.child.owner.id,
+    )
+    xc = x.clone()
+    cloned_props = (
+        xc.id,
+        xc.owner.id,
+        xc.child.id,
+        xc.child.owner.id,
+        xc.child.child.id,
+        xc.child.child.owner.id,
+    )
+    assert original_props == cloned_props
+
+
 def test_virtual_get(workers):
     t = torch.tensor([1, 2, 3])
     x = t.share(workers["bob"], workers["alice"], workers["james"])

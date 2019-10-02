@@ -620,11 +620,11 @@ class TorchTensor(AbstractTensor):
         """
         cloned_tensor = self.native_clone()
         cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
         cloned_tensor.is_wrapper = self.is_wrapper
 
-        # TODO Change copy -> clone
         if self.has_child():
-            cloned_tensor.child = self.child.copy()
+            cloned_tensor.child = self.child.clone()
 
         return cloned_tensor
 

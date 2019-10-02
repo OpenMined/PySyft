@@ -149,6 +149,30 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             enough remote error handling yet to do anything better."""
             return True
 
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy.
+        We make the choice that a clone operation is local, and can't affect
+        the remote tensors, so garbage_collect_data is always False, both
+        for the tensor cloned and the clone.
+        """
+        self.garbage_collect_data = False
+        cloned_tensor = type(self)(**self.get_class_attributes())
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+
+        return cloned_tensor
+
+    def get_class_attributes(self):
+        """
+        Used for cloning (see AbtractTensor)
+        """
+        return {
+            "location": self.location,
+            "id_at_location": self.id_at_location,
+            "garbage_collect_data": self.garbage_collect_data,
+        }
+
     @staticmethod
     def create_pointer(
         tensor,
@@ -216,7 +240,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             owner = tensor.owner
 
         if location is None:
-            location = tensor.owner.id
+            location = tensor.owner
 
         owner = tensor.owner.get_worker(owner)
         location = tensor.owner.get_worker(location)

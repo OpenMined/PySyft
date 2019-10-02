@@ -3,12 +3,15 @@ import functools
 from typing import List
 from typing import Tuple
 from typing import Union
+from typing import Set
 
 import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
