@@ -3,7 +3,7 @@ import functools
 from typing import List
 from typing import Tuple
 from typing import Union
-from typing import Set
+from typing import Dict
 
 import torch
 
@@ -63,12 +63,11 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, plan, keys=None, state_ids=None, state_dict=None):
+    def __init__(self, owner, plan=None, keys=None, state_ids=None):
+        self.owner = owner
         self.plan = plan
         self.keys = keys or set()
         self.state_ids = state_ids or []
-        if state_dict is not None:
-            self.set_(state_dict)
 
     def __repr__(self):
         return "State: " + ", ".join(self.keys)
@@ -96,12 +95,12 @@ class State(object):
                 "Example: if you have self.elem1, call self.add_to_state('elem1')."
             )
         else:
-            t = getattr(self.plan, key)
-            if self.is_valid_type(t):
+            obj = getattr(self.plan, key)
+            if isinstance(obj, (FrameworkTensor, FrameworkLayerModule)):
                 self.keys.add(key)
             else:
                 raise ValueError(
-                    f"Obj of type {type(t)} is not supported in the state.\n"
+                    f"Obj of type {type(obj)} is not supported in the state.\n"
                     "Use instead tensors or parameters."
                 )
         return self
@@ -109,39 +108,32 @@ class State(object):
     def __iadd__(self, other_keys):
         return self.append(other_keys)
 
-    def is_valid_type(self, obj):
-        return isinstance(obj, (torch.nn.Module, torch.Tensor))
-
-    def get_ids_at_location(self):
+    def tensors(self) -> List:
         """
-        Returns all the id_at_location of the pointers in the state
+        Fetch and return all the state elements.
+        Perform a check of consistency on the elements ids.
         """
-        ids_at_location = []
+        tensors = []
+        for state_id in self.state_ids:
+            tensor = self.owner.get_obj(state_id)
+            assert tensor.id == state_id
+            tensors.append(tensor)
+        return tensors
 
-        for key in self.keys:
-            ptr = getattr(self.plan, key)
-            if isinstance(ptr, torch.nn.Module):
-                for param in ptr.parameters():
-                    ids_at_location.append(param.id_at_location)
-            else:
-                ids_at_location.append(ptr.id_at_location)
-
-        return ids_at_location
-
-    def copy_state(self):
-        copied_state = {}
-        for key in self.keys:
-            t = getattr(self.plan, key)
-            copied_state[key] = t.copy()
-        return copied_state
+    def clone_state(self) -> Dict:
+        """
+        Return a clone of the state elements. Tensor ids are kept.
+        """
+        return {tensor.id: tensor.clone() for tensor in self.tensors()}
 
     def copy(self) -> "State":
-        state = State(plan=None, keys=self.keys.copy(), state_ids=self.state_ids.copy())
+        state = State(owner=self.owner, keys=self.keys.copy(), state_ids=self.state_ids.copy())
         return state
 
     def read(self, key):
         """
-        Returns one element referenced by the store
+        Returns one element referenced by the store of keys.
+        Note that this only works for plans built locally
         """
         return getattr(self.plan, key)
 
@@ -149,83 +141,87 @@ class State(object):
         """
         Reset inplace the state by feeding it a dict of tensors or params
         """
-        for key in self.keys:
-            if hasattr(self.plan, key):
-                delattr(self.plan, key)
+        assert list(self.state_ids) == list(state_dict.keys())
 
-        for key in state_dict.keys():
-            setattr(self.plan, key, state_dict[key])
+        for state_id, new_tensor in state_dict.items():
+            tensor = self.owner.get_obj(state_id)
 
-        self.keys = list(state_dict.keys())
+            with torch.no_grad():
+                tensor.set_(new_tensor)
 
-    def is_missing_grad(self, t):
-        return isinstance(t, torch.nn.Parameter) and t.grad is None
+            tensor.child = new_tensor.child if new_tensor.is_wrapper else None
+            tensor.is_wrapper = new_tensor.is_wrapper
+            if tensor.child is None:
+                delattr(tensor, "child")
 
-    def create_grad_objects(self, p):
-        o = p.sum()
-        o.backward()
-        if p.grad is not None:
-            p.grad -= p.grad
+    @staticmethod
+    def create_grad_if_missing(tensor):
+        if isinstance(tensor, torch.nn.Parameter) and tensor.grad is None:
+            o = tensor.sum()
+            o.backward()
+            if tensor.grad is not None:
+                tensor.grad -= tensor.grad
 
-    def send(self, location, **kwargs):
-        for key in self.keys:
-            t = getattr(self.plan, key)
+    def send_for_build(self, location, **kwargs):
+        """
+        Send functionality that can only be used when sending the state for
+        building the plan. Other than this, you shouldn't need to send the
+        state separately.
+        """
+        assert location == self.plan  # ensure this is a send for the build
 
-            if self.is_missing_grad(t):
-                self.create_grad_objects(t)
-
-            t.send_(location, **kwargs)
-
-    def get(self):
-        for key in self.keys:
-            t = getattr(self.plan, key)
-            t.get_()
+        for tensor in self.tensors():
+            self.create_grad_if_missing(tensor)
+            tensor.send_(location, **kwargs)
 
     def fix_precision_(self, *args, **kwargs):
-        for key in self.keys:
-            t = getattr(self.plan, key)
-
-            if self.is_missing_grad(t):
-                self.create_grad_objects(t)
-
-            setattr(self.plan, key, t.fix_precision(*args, **kwargs))
+        for tensor in self.tensors():
+            self.create_grad_if_missing(tensor)
+            tensor.fix_precision_(*args, **kwargs)
 
     def float_precision_(self):
-        for key in self.keys:
-            t = getattr(self.plan, key)
-            t.float_precision_()
+        for tensor in self.tensors():
+            tensor.float_precision_()
 
     def share_(self, *args, **kwargs):
-        for key in self.keys:
-            t = getattr(self.plan, key)
+        for tensor in self.tensors():
+            self.create_grad_if_missing(tensor)
+            tensor.share_(*args, **kwargs)
 
-            if self.is_missing_grad(t):
-                self.create_grad_objects(t)
-
-            t.share_(*args, **kwargs)
+    def get_(self):
+        """
+        Get functionality that can only be used when getting back state
+        elements converted to additive shared tensors. Other than this,
+        you shouldn't need to the get the state separately.
+        """
+        # TODO Make it only valid for AST
+        for tensor in self.tensors():
+            tensor.get_()
 
     @staticmethod
     def simplify(state: "State") -> tuple:
-        return (
-            sy.serde._simplify(state.keys),
-            sy.serde._simplify(state.state_ids),
-            sy.serde._simplify([getattr(state.plan, key) for key in state.keys]),
-        )
+        """
+        Simplify the plan's state when sending a plan
+
+        Note that keys are not sent, as they are only used for locally
+        built plan
+        """
+        return (sy.serde._simplify(state.state_ids), sy.serde._simplify(state.tensors()))
 
     @staticmethod
     def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
-        keys, state_ids, state_elements = state_tuple
-        keys = sy.serde._detail(worker, keys)
+        """
+        Reconstruct the plan's state from the state elements and supposed
+        ids.
+        """
+        state_ids, state_elements = state_tuple
         state_ids = sy.serde._detail(worker, state_ids)
         state_elements = sy.serde._detail(worker, state_elements)
-        assert isinstance(state_elements, list)
+
         for state_id, state_element in zip(state_ids, state_elements):
             worker.register_obj(state_element, obj_id=state_id)
 
-        state = State(plan=None)
-        state.keys = keys
-        state.state_ids = state_ids
-
+        state = State(owner=worker, plan=None, state_ids=state_ids)
         return state
 
 
@@ -261,6 +257,12 @@ class Procedure(object):
         self.commands = commands or []
         self.arg_ids = arg_ids or []
         self.result_ids = result_ids or []
+
+    def __str__(self):
+        return f"<Procedure #commands:{len(self.commands)}>"
+
+    def __repr__(self):
+        return self.__str__()
 
     def update_ids(
         self,
@@ -342,7 +344,7 @@ class Procedure(object):
         return procedure
 
 
-class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
+class Plan(AbstractObject, ObjectStorage):
     """A Plan stores a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
@@ -379,11 +381,14 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
 
         # Plan instance info
         self.name = name or self.__class__.__name__
-        self._owner = owner
+        self.owner = owner
 
         # Info about the plan stored vua the state and the procedure
         self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
-        self.state = state or State(self, state_dict=state_dict, state_ids=state_ids)
+        self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
+        if state_dict is not None:
+            for key, tensor in state_dict.items():
+                setattr(self, key, tensor)
         self.include_state = include_state
         self.is_built = is_built
 
@@ -413,16 +418,6 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
     def _known_workers(self):
         return self.owner._known_workers
 
-    # Override property of nn.Module
-    @property
-    def owner(self):
-        return self._owner
-
-    @owner.setter
-    def owner(self, new_owner):
-        self._owner = new_owner
-
-    # Override property of nn.Module
     @property
     def location(self):
         raise AttributeError("Plan has no attribute location")
@@ -431,6 +426,9 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
     @property
     def readable_plan(self):
         return self.procedure.commands
+
+    def parameters(self):
+        return self.state.tensors()
 
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
@@ -488,7 +486,7 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
         # Move the arguments of the first call to the plan and store their ids
         # as they will be included in the commands: it should be updated
         # when the function is called with new args and that's why we keep the
-        # refs self.arg_ids
+        # refs self.procedure.arg_ids
         arg_ids = list()
         build_args = list()
         for arg in args:
@@ -498,10 +496,10 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
         self.procedure.arg_ids = tuple(arg_ids)
 
         # Same for the state element: we send them to the plan and keep reference
-        # to the ids
-        copied_state_dict = self.state.copy_state()
-        self.state.send(location=self)
-        self.state.state_ids = self.state.get_ids_at_location()  # todo is it needed?
+        # to the remote ids
+        cloned_state = self.state.clone_state()
+        build_state_ids = tuple(self.state.state_ids)  # tuple makes a copy
+        self.state.send_for_build(location=self)
 
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
@@ -509,11 +507,11 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
             res_ptr = self.forward(*build_args, self.state)
         else:
             res_ptr = self.forward(*build_args)
-        res_ptr.child.garbage_collect_data = False
 
-        # We put back the original state. There is no need to keep a reference
-        # To the element sent to the plan.
-        self.state.set_(copied_state_dict)
+        # We put back a copy of the original state
+        self.state.set_(cloned_state)
+        # so we update the procedure
+        self.procedure.update_ids(from_ids=build_state_ids, to_ids=self.state.state_ids)
 
         # The readable plan is now built, we hide the fact that it was run on
         # the plan and not on the owner by replacing the workers ids
@@ -541,12 +539,25 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
 
         plan.state.plan = plan
 
-        plan.state.set_(self.state.copy_state())
+        plan.state.set_(self.state.clone_state())
 
         # Replace occurences of the old id to the new plan id
         plan.procedure.update_worker_ids(self.id, plan.id)
 
         return plan
+
+    def __setattr__(self, name, value):
+        """Add new tensors or parameter attributes to the state and register them
+        in the owner's registry
+        """
+        object.__setattr__(self, name, value)
+
+        if isinstance(value, FrameworkTensor):
+            self.state.state_ids.append(value.id)
+            self.owner.register_obj(value)
+        elif isinstance(value, FrameworkLayerModule):
+            for tensor_name, tensor in value.named_tensors():
+                self.__setattr__(f"{name}_{tensor_name}", tensor)
 
     def __call__(self, *args, **kwargs):
         """Calls a plan.
@@ -575,16 +586,6 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
             bin_message = sy.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
-    # def build_pointer_responses(self, result_ids, return_ptr=False):
-    #     responses = []
-    #     for return_id in result_ids:
-    #         response = PointerTensor(
-    #             location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
-    #         )
-    #         responses.append(response if return_ptr else response.get())
-    #
-    #     return responses
-
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
 
@@ -609,7 +610,7 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
             return responses[0]
         return responses
 
-    def send(self, *locations, force=False):
+    def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
 
         If the plan was not built locally it will raise an exception.
@@ -641,25 +642,23 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
 
         return pointer
 
-    def get(self):
-        self.state.get()
+    def get_(self):
+        self.state.get_()
         return self
-        # TODO add the following in a smart way?
-        # raise NotImplementedError("You should call .get() on a PointerPlan, not on a Plan.")
+
+    get = get_
 
     def fix_precision_(self, *args, **kwargs):
         self.state.fix_precision_(*args, **kwargs)
         return self
 
-    fix_precision = fix_precision_
-    fix_prec = fix_precision_
+    fix_precision = fix_prec_ = fix_prec = fix_precision_
 
     def float_precision_(self):
         self.state.float_precision_()
         return self
 
-    float_precision = float_precision_
-    float_prec = float_precision_
+    float_precision = float_prec_ = float_prec = float_precision_
 
     def share_(self, *args, **kwargs):
         self.state.share_(*args, **kwargs)
@@ -667,19 +666,18 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
 
     share = share_
 
-    def create_pointer(self, owner, location, id_at_location, garbage_collect_data, **kwargs):
+    def create_pointer(
+        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+    ):
         return PointerPlan(
             owner=owner,
-            location=location,
-            id_at_location=id_at_location,
+            location=location or self.owner,
+            id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
         )
 
     def __str__(self):
-        """Returns the string representation of PlanWorker.
-        Note:
-            __repr__ calls this method by default.
-        """
+        """Returns the string representation of Plan."""
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " " + str(self.name)
@@ -738,9 +736,6 @@ class Plan(AbstractObject, ObjectStorage, torch.nn.Module):
         state = sy.serde._detail(worker, state)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
-
-        for key, state_id in zip(state.keys, state.state_ids):
-            setattr(plan, key, worker.get_obj(state_id))
 
         plan.procedure = procedure
         plan.state = state
