@@ -9,7 +9,7 @@ from typing import List
 import random
 
 
-class BloomRegressor:
+class EncryptedLinearRegression:
     """
     Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
     It performs linear regression using Secured Multi-Party Computation.
