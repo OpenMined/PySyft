@@ -472,22 +472,11 @@ class Plan(AbstractObject, ObjectStorage):
             args: Input data.
         """
 
-        # Move the arguments of the first call to the plan and store their ids
-        # as they will be included in the commands: it should be updated
-        # when the function is called with new args and that's why we keep the
-        # refs self.procedure.arg_ids
-        arg_ids = list()
-        build_args = list()
-        for arg in args:
-            arg = arg.send(self)
-            arg_ids.append(arg.id_at_location)
-            build_args.append(arg)
-        self.procedure.arg_ids = tuple(arg_ids)
+        # Move the arguments of the first call to the plan
+        build_args = [arg.send(self) for arg in args]
 
-        # Same for the state element: we send them to the plan and keep reference
-        # to the remote ids
+        # Same for the state element: we send to the plan and keep a clone
         cloned_state = self.state.clone_state()
-        build_state_ids = tuple(self.state.state_ids)  # tuple makes a copy
         self.state.send_for_build(location=self)
 
         # We usually have include_state==True for functions converted to plan
@@ -497,16 +486,18 @@ class Plan(AbstractObject, ObjectStorage):
         else:
             res_ptr = self.forward(*build_args)
 
-        # We put back a clone of the original state
+        # We put back the clone of the original state
         self.state.set_(cloned_state)
-        # and update the procedure
-        self.procedure.update_ids(from_ids=build_state_ids, to_ids=self.state.state_ids)
 
         # The plan is now built, we hide the fact that it was run on
         # the plan and not on the owner by replacing the workers ids
         self.procedure.update_worker_ids(from_worker_id=self.id, to_worker_id=self.owner.id)
 
-        # The id where the result should be stored
+        # Register the ids of the args used for building the plan: as they will be
+        # included in the commands, it should be updated when the function is called
+        # with new args, so that's why we keep the ref ids in self.procedure.arg_ids
+        self.procedure.arg_ids = tuple(arg.id_at_location for arg in build_args)
+        # Also register the id where the result should be stored
         self.procedure.result_ids = (res_ptr.id_at_location,)
 
         self.is_built = True
