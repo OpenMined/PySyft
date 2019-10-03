@@ -1,5 +1,4 @@
 import copy
-import functools
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -15,7 +14,6 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
@@ -31,7 +29,7 @@ class func2plan(object):
 
     def __init__(self, args_shape=None, state=None):
         self.args_shape = args_shape
-        self.state_dict = state or {}
+        self.state_tensors = state or tuple()
         # include_state is used to distinguish if the initial plan a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
         # will be true. And to know if it was indeed a function, we just need to see if a
@@ -44,7 +42,7 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
-            state_dict=self.state_dict,
+            state_tensors=self.state_tensors,
             include_state=self.include_state,
         )
         # Build the plan automatically
@@ -76,55 +74,6 @@ class State(object):
     def __repr__(self):
         return "State: " + ", ".join(self.keys)
 
-    def append(self, key):
-        """Insert element to the store by referencing its name. Note that by default, you don't
-        need to use it when defining parameters in a model because it is done automatically.
-
-        The method is voluntarily flexible to several inputs
-        Example:
-            state.append(('key1, 'key2'))
-            state.append(['key1, 'key2'])
-            state.append('key1, 'key2')
-
-        But it should only be given strings which correspond to plan
-        attributes which are of is_valid_type.
-        Example:
-            'key1' is ok if plan.key1 is a tensor or a parameter
-        """
-        # If the parent is a function, then state.append is not supported
-        if self.plan is not None and self.plan.include_state:
-            return ValueError(
-                "If you use plans on functions, you should add your state elements in the "
-                "decorator directly.\n"
-                "Example:\n"
-                '@sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})\n'
-                "def foo(x, state)\n"
-                '\tbias = state.read("bias")\n'
-                "\treturn x + bias"
-            )
-
-        if isinstance(key, (list, tuple)):
-            for k in key:
-                self.append(k)
-        elif not isinstance(key, str):
-            raise ValueError(
-                "Don't provide the element to the state but just its name:\n"
-                "Example: if you have self.elem1, call self.add_to_state('elem1')."
-            )
-        else:
-            obj = getattr(self.plan, key)
-            if isinstance(obj, (FrameworkTensor, FrameworkLayerModule)):
-                self.keys.add(key)
-            else:
-                raise ValueError(
-                    f"Obj of type {type(obj)} is not supported in the state.\n"
-                    "Use instead tensors or parameters."
-                )
-        return self
-
-    def __iadd__(self, other_keys):
-        return self.append(other_keys)
-
     def tensors(self) -> List:
         """
         Fetch and return all the state elements.
@@ -147,12 +96,15 @@ class State(object):
         state = State(owner=self.owner, keys=self.keys.copy(), state_ids=self.state_ids.copy())
         return state
 
-    def read(self, key):
+    def read(self):
         """
-        Returns one element referenced by the store of keys.
-        Note that this only works for plans built locally
+        Return state elements
         """
-        return getattr(self.plan, key)
+        tensors = []
+        for state_id in self.state_ids:
+            tensor = self.owner.get_obj(state_id)
+            tensors.append(tensor)
+        return tensors
 
     def set_(self, state_dict):
         """
@@ -385,7 +337,7 @@ class Plan(AbstractObject, ObjectStorage):
         result_ids: ids of the last result ids (present in the procedure commands)
         readable_plan: list of commands
         blueprint: the function to be transformed into a plan
-        state_dict: a dict of state elements whose keys will be used to transform them in attributes. It can be used to populate a state
+        state_tensors: a tuple of state elements. It can be used to populate a state
         id: state id
         owner: state owner
         tags: state tags
@@ -405,7 +357,7 @@ class Plan(AbstractObject, ObjectStorage):
         result_ids: List[Union[str, int]] = None,
         readable_plan: List = None,
         blueprint=None,
-        state_dict=None,
+        state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
@@ -423,9 +375,10 @@ class Plan(AbstractObject, ObjectStorage):
         # Info about the plan stored via the state and the procedure
         self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
         self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
-        if state_dict is not None:
-            for key, tensor in state_dict.items():
-                setattr(self, key, tensor)
+        if state_tensors is not None:
+            for tensor in state_tensors:
+                self.state.state_ids.append(tensor.id)
+                self.owner.register_obj(tensor)
         self.include_state = include_state
         self.is_built = is_built
 
@@ -433,10 +386,6 @@ class Plan(AbstractObject, ObjectStorage):
             self.forward = blueprint
         elif self.is_built:
             self.forward = None
-
-    def add_to_state(self, *elements):
-        for elem in elements:
-            self.state.append(elem)
 
     @staticmethod
     def _create_placeholders(args_shape):

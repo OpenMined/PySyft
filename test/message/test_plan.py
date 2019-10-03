@@ -29,9 +29,9 @@ def test_stateful_plan_built_automatically(hook):
 
     hook.local_worker.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def foo(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         x = x * 2
         return x + bias
 
@@ -61,10 +61,12 @@ def test_plan_build():
     assert plan_abs.is_built
 
 
-def test_stateful_plan_build():
-    @sy.func2plan(state={"bias": th.tensor([1.0])})
+def test_stateful_plan_build(hook):
+    hook.local_worker.is_client_worker = False
+
+    @sy.func2plan(state=(th.tensor([1.0]),))
     def foo(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         x = x * 2
         return x + bias
 
@@ -72,6 +74,8 @@ def test_stateful_plan_build():
     x = foo(t)
 
     assert (x == th.tensor([3.0, 5])).all()
+
+    hook.local_worker.is_client_worker = True
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -118,109 +122,16 @@ def test_add_to_state():
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.state += ("fc1", "fc2")
+            self.fc2 = th.tensor([1.0])
 
         def forward(self, x):
             pass  # pragma: no cover
 
     model = Net()
-    assert "fc1" in model.state.keys
-    assert "fc2" in model.state.keys
+    assert model.fc1.bias.id in model.state.state_ids
+    assert model.fc1.weight.id in model.state.state_ids
 
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.state += ["fc1", "fc2"]
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    model = Net()
-    assert "fc1" in model.state.keys
-    assert "fc2" in model.state.keys
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.state.append("fc1")
-            self.state.append("fc2")
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    model = Net()
-    assert "fc1" in model.state.keys
-    assert "fc2" in model.state.keys
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.add_to_state("fc1", "fc2")
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    model = Net()
-    assert "fc1" in model.state.keys
-    assert "fc2" in model.state.keys
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.add_to_state(["fc1", "fc2"])
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    model = Net()
-    assert "fc1" in model.state.keys
-    assert "fc2" in model.state.keys
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = nn.Linear(3, 2)
-            self.state += ["fc3"]
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    with pytest.raises(AttributeError):
-        model = Net()
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.state += [self.fc1]
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    with pytest.raises(ValueError):
-        model = Net()
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.y = "hello"
-            self.state += ["y"]
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    with pytest.raises(ValueError):
-        model = Net()
+    assert model.fc2.id in model.state.state_ids
 
 
 def test_plan_method_execute_locally(hook):
@@ -233,8 +144,6 @@ def test_plan_method_execute_locally(hook):
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
-
-            self.state += ["fc1", "fc2", "fc3"]
 
         def forward(self, x):
             x = F.relu(self.fc1(x))
@@ -264,8 +173,6 @@ def test_stateful_plan_method_execute_locally(hook):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 1)
             self.bias = th.tensor([1000.0])
-
-            self.state += ["fc1", "bias"]
 
         def forward(self, x):
             x = self.fc1(x)
@@ -312,9 +219,9 @@ def test_stateful_plan_multiple_send(hook, workers):
 
     hook.local_worker.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan_abs(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         x = x.abs()
         return x + bias
 
@@ -356,8 +263,6 @@ def test_plan_built_on_class(hook):
             self.fc2 = nn.Linear(3, 1)
 
             self.bias = th.tensor([1000.0])
-
-            self.state += ["fc1", "fc2", "bias"]
 
         def forward(self, x):
             x = F.relu(self.fc1(x))
@@ -413,9 +318,9 @@ def test_stateful_plan_multiple_workers(hook, workers):
 
     hook.local_worker.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
     def plan_abs(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         x = x.abs()
         return x + bias
 
@@ -463,9 +368,9 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 
     if is_func2plan:
 
-        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
         def plan(data, state):
-            bias = state.read("bias")
+            bias, = state.read()
             return data * bias
 
     else:
@@ -512,9 +417,9 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     if is_func2plan:
 
-        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias = state.read("bias")
+            bias, = state.read()
             return data * bias
 
     else:
@@ -555,7 +460,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
 
 def test_binding_fix_precision_plan(hook):
-    """Here we make sure the attributes of a plan are still binded to state elements when calling fix_precision"""
+    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_precision"""
 
     hook.local_worker.is_client_worker = False
 
@@ -581,7 +486,7 @@ def test_binding_fix_precision_plan(hook):
 
 
 def test_binding_encrypted_plan(hook, workers):
-    """Here we make sure the attributes of a plan are still binded to state elements when calling fix_prec + share"""
+    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_prec + share"""
 
     hook.local_worker.is_client_worker = False
 
@@ -628,9 +533,9 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
     if is_func2plan:
 
-        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias = state.read("bias")
+            bias, = state.read()
             return data * bias
 
     else:
@@ -687,9 +592,9 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
 
     if is_func2plan:
 
-        @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias = state.read("bias")
+            bias, = state.read()
             return data * bias
 
     else:
@@ -733,9 +638,9 @@ def test_fetch_plan_remote(hook, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(id="test_fetch_plan_remote", hook=hook, port=8803)
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan_mult_3(data, state):
-        bias = state.read("bias")
+        bias, = state.read()
         return data * 3 + bias
 
     plan_mult_3.send(remote_proxy)
@@ -816,8 +721,6 @@ def test_execute_plan_module_remotely(hook, start_remote_worker):
 
             self.bias = th.tensor([1000.0])
 
-            self.state += ["fc1", "fc2", "bias"]
-
         def forward(self, x):
             x = F.relu(self.fc1(x))
             x = self.fc2(x)
@@ -861,8 +764,6 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
             super(Net, self).__init__()
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
-
-            self.state += ["fc1", "fc2"]
 
         def forward(self, x):
             x = F.relu(self.fc1(x))

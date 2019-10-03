@@ -10,9 +10,9 @@ def test_create_pointer_to_plan(hook, workers):
 
     hook.local_worker.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         return x + bias
 
     plan.send(alice)
@@ -34,9 +34,9 @@ def test_search_plan(hook, workers):
     alice, me = workers["alice"], workers["me"]
     me.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         return x + bias
 
     plan.send(alice)
@@ -58,9 +58,9 @@ def test_get_plan(workers):
     alice, me = workers["alice"], workers["me"]
     me.is_client_worker = False
 
-    @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1.0])})
+    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan(x, state):
-        bias = state.read("bias")
+        bias, = state.read()
         return x + bias
 
     plan.send(alice)

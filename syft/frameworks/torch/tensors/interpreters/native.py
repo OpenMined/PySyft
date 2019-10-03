@@ -541,15 +541,6 @@ class TorchTensor(AbstractTensor):
             Raises:
                 GetNotPermittedError: Raised if get is not permitted on this tensor
         """
-        # Transfer the get() to the child attribute which is a pointer
-
-        # if (self.has_child()):
-        #     if (isinstance(self.child, syft.frameworks.torch.tensors.FixedPrecisionTensor)):
-        #         if (hasattr(self.child, "child")):
-        #             if (hasattr(self.child.child, "child")):
-        #                 if(isinstance(self.child.child.child, syft.frameworks.torch.tensors.AdditiveSharingTensor)):
-        #                     self.child.child =  self.child.child.get()
-        #                     return self
 
         tensor = self.child.get(*args, **kwargs)
 
@@ -654,6 +645,16 @@ class TorchTensor(AbstractTensor):
     float_precision_ = float_prec_
 
     def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
+        """
+        Convert a tensor or syft tensor to fixed precision
+
+        Args:
+            args (tuple): args to transmit to the fixed precision tensor
+            storage (str): code to define the type of fixed precision tensor (values in (auto, crt, large))
+            field_type (str): code to define a storage type (only for CRTPrecisionTensor)
+            no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
+            kwargs (dict): kwargs to transmit to the fixed precision tensor
+        """
 
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
