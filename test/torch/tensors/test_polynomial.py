@@ -3,8 +3,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import PolynomialTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.polynomial import PolynomialTensor
 import syft as sy
 
 
