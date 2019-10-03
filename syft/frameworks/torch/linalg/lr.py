@@ -9,7 +9,7 @@ from typing import List
 import random
 
 
-class BloomRegressor:
+class EncryptedLinearRegression:
     """
     Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
     It performs linear regression using Secured Multi-Party Computation.
@@ -274,3 +274,27 @@ class BloomRegressor:
             self.pvalue_intercept = 2 * t.cdf(-abs(tstat_intercept), self._dgf)
         else:
             self.pvalue_intercept = None
+
+
+class DASH:
+    """
+    TODO : docstring
+    """
+
+    def __init__(
+        self,
+        crypto_provider: BaseWorker,
+        hbc_worker: BaseWorker,
+        precision_fractional: int = 6,
+        fit_intercept: bool = True,
+    ):
+
+        self.crypto_provider = crypto_provider
+        self.hbc_worker = hbc_worker
+        self.precision_fractional = precision_fractional
+        self.fit_intercept = fit_intercept
+
+    def fit(
+        self, X_ptrs: List[torch.Tensor], C_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]
+    ):
+        pass
