@@ -32,6 +32,10 @@ class func2plan(object):
     def __init__(self, args_shape=None, state=None):
         self.args_shape = args_shape
         self.state_dict = state or {}
+        # include_state is used to distinguish if the initial plan a function or a class:
+        # if it's a function, then the state should be provided in the args, so include_state
+        # will be true. And to know if it was indeed a function, we just need to see if a
+        # "manual" state was provided.
         self.include_state = state is not None
 
     def __call__(self, plan_blueprint):
@@ -73,7 +77,8 @@ class State(object):
         return "State: " + ", ".join(self.keys)
 
     def append(self, key):
-        """Insert element to the store by referencing its name.
+        """Insert element to the store by referencing its name. Note that by default, you don't
+        need to use it when defining parameters in a model because it is done automatically.
 
         The method is voluntarily flexible to several inputs
         Example:
@@ -86,6 +91,18 @@ class State(object):
         Example:
             'key1' is ok if plan.key1 is a tensor or a parameter
         """
+        # If the parent is a function, then state.append is not supported
+        if self.plan is not None and self.plan.include_state:
+            return ValueError(
+                "If you use plans on functions, you should add your state elements in the "
+                "decorator directly.\n"
+                "Example:\n"
+                '@sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([1])})\n'
+                "def foo(x, state)\n"
+                '\tbias = state.read("bias")\n'
+                "\treturn x + bias"
+            )
+
         if isinstance(key, (list, tuple)):
             for k in key:
                 self.append(k)
@@ -168,7 +185,7 @@ class State(object):
         building the plan. Other than this, you shouldn't need to send the
         state separately.
         """
-        assert location == self.plan  # ensure this is a send for the build
+        assert location.id == self.plan.id  # ensure this is a send for the build
 
         for tensor in self.tensors():
             self.create_grad_if_missing(tensor)
@@ -345,13 +362,34 @@ class Procedure(object):
 
 
 class Plan(AbstractObject, ObjectStorage):
-    """A Plan stores a sequence of torch operations, just like a function.
+    """
+    A Plan stores a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
     but it allows to send this sequence of operations to remote workers and to keep a
     reference to it. This way, to compute remotely this sequence of operations on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
+
+    All arguments are optional.
+
+    Args:
+        name: the name of the name
+        procedure: stores and manages the plan's commands
+        state: store the plan tensors like model parameters
+        include_state: if true, implies that the plan is a function, else a class. If true, the
+            state is re-integrated in the args to be accessed within the function
+        is_built: state if the plan has already been built.
+        state_ids: ids of the state elements
+        arg_ids: ids of the last argument ids (present in the procedure commands)
+        result_ids: ids of the last result ids (present in the procedure commands)
+        readable_plan: list of commands
+        blueprint: the function to be transformed into a plan
+        state_dict: a dict of state elements whose keys will be used to transform them in attributes. It can be used to populate a state
+        id: state id
+        owner: state owner
+        tags: state tags
+        description: state decription
     """
 
     def __init__(
@@ -377,13 +415,12 @@ class Plan(AbstractObject, ObjectStorage):
         owner = owner or sy.local_worker
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
         ObjectStorage.__init__(self)
-        torch.nn.Module.__init__(self)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
         self.owner = owner
 
-        # Info about the plan stored vua the state and the procedure
+        # Info about the plan stored via the state and the procedure
         self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
         self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
         if state_dict is not None:
@@ -428,6 +465,9 @@ class Plan(AbstractObject, ObjectStorage):
         return self.procedure.commands
 
     def parameters(self):
+        """
+        This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
+        """
         return self.state.tensors()
 
     def send_msg(self, *args, **kwargs):
@@ -508,12 +548,12 @@ class Plan(AbstractObject, ObjectStorage):
         else:
             res_ptr = self.forward(*build_args)
 
-        # We put back a copy of the original state
+        # We put back a clone of the original state
         self.state.set_(cloned_state)
-        # so we update the procedure
+        # and update the procedure
         self.procedure.update_ids(from_ids=build_state_ids, to_ids=self.state.state_ids)
 
-        # The readable plan is now built, we hide the fact that it was run on
+        # The plan is now built, we hide the fact that it was run on
         # the plan and not on the owner by replacing the workers ids
         self.procedure.update_worker_ids(from_worker_id=self.id, to_worker_id=self.owner.id)
 

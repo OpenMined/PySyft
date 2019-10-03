@@ -742,7 +742,7 @@ class FixedPrecisionTensor(AbstractTensor):
     def share(self, *owners, field=None, crypto_provider=None):
         """
         Forward the .share() command to the child tensor, and reconstruct a new
-        FixedPrecisionTensor since the command in not inplace and should return
+        FixedPrecisionTensor since the command is not inplace and should return
         a new chain
         """
         if field is None:

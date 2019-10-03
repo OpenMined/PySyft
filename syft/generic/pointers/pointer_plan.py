@@ -114,15 +114,22 @@ class PointerPlan(ObjectPointer):
             Execution response
         """
         plan_name = f"plan{self.id}"
-        # args, _, _ = hook_args.unwrap_args_from_function(
-        #     plan_name, args, {}
-        # )
+
         args = [args, response_ids]
 
+        if location not in self._locations:
+            raise RuntimeError(
+                f"Requested to run a plan on {location.id} but pointer location(s) is/are",
+                self._locations,
+            )
+
+        # look for the relevant id in the list of ids
         id_at_location = None
         for loc, id_at_loc in zip(self._locations, self._ids_at_location):
             if loc == location:
                 id_at_location = id_at_loc
+                break
+
         command = ("run", id_at_location, args, kwargs)
 
         response = self.owner.send_command(

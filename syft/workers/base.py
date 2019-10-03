@@ -819,25 +819,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         plan.procedure.update_worker_ids(location.id, self.id)
 
-        # Might be useless now
-        # if plan.statestate_ids:
-        #     state_ids = []
-        #     for state_id in plan.state_ids:
-        #         if copy:
-        #             state_ptr = PointerTensor(
-        #                 location=location,
-        #                 id_at_location=state_id,
-        #                 owner=self,
-        #                 garbage_collect_data=False,
-        #             )
-        #             state_elem = state_ptr.copy().get()
-        #         else:
-        #             state_elem = self.request_obj(state_id, location)
-        #         self.register_obj(state_elem)
-        #         state_ids.append(state_elem.id)
-        #     plan.replace_ids(plan.state_ids, state_ids)
-        #     plan.state_ids = state_ids
-
         return plan
 
     def _fetch_plan_remote(self, plan_id: Union[str, int], copy: bool) -> "Plan":  # noqa: F821
