@@ -8,12 +8,14 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
+from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.tensor import AbstractTensor
-from syft.workers.abstract import AbstractWorker  #
+from syft.workers.abstract import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -159,15 +161,51 @@ class State(object):
 
         self.keys = list(dict_state.keys())
 
+    def is_missing_grad(self, t):
+        return isinstance(t, torch.nn.Parameter) and t.grad is None
+
+    def create_grad_objects(self, p):
+        o = p.sum()
+        o.backward()
+        if p.grad is not None:
+            p.grad -= p.grad
+
     def send(self, location, **kwargs):
         for key in self.keys:
             t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
             t.send_(location, **kwargs)
 
     def get(self):
         for key in self.keys:
             t = getattr(self.plan, key)
             t.get_()
+
+    def fix_precision_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            setattr(self.plan, key, t.fix_precision(*args, **kwargs))
+
+    def float_precision_(self):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            t.float_precision_()
+
+    def share_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            t.share_(*args, **kwargs)
 
 
 class Plan(ObjectStorage, torch.nn.Module):
@@ -390,12 +428,26 @@ class Plan(ObjectStorage, torch.nn.Module):
             readable_plan=self.readable_plan,
             is_built=self.is_built,
         )
-        plan.replace_ids(
-            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
-        )
-        plan.replace_ids(
-            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
-        )
+
+        # TODO: we shouldn't use the same state_ids since we want to avoid
+        # strange behaviours such as:
+        #
+        # @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        # def plan(data, state):
+        #   bias = state.read("bias")
+        #   return data * bias
+        #
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # True
+        # plan_copy = plan.copy()
+        # plan_copy.bias = th.tensor([4.0])
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
+        # Issue: https://github.com/OpenMined/PySyft/issues/2601
+
+        plan.state_ids = self.state_ids
+
+        # Replace occurences of the old id to the new plan id
+        plan.replace_worker_ids(self.id, plan.id)
+
         return plan
 
     def replace_ids(
@@ -582,11 +634,17 @@ class Plan(ObjectStorage, torch.nn.Module):
             self._build(args)
 
         if len(self.locations):
+            plan_name = f"plan{self.id}"
+            # args, _, _ = hook_args.unwrap_args_from_function(
+            #     plan_name, args, {}
+            # )
+
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
             response = self.request_execute_plan(worker, result_ids, *args)
 
+            response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
             return response
 
         # if the plan is not to be sent then it has been requested to be executed,
@@ -621,7 +679,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
@@ -670,9 +727,12 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.replace_worker_ids(worker_id, location.id)
 
         state_original = self.state.copy()
+        state_ids_original = self.state_ids.copy()
+
         self.state.send(location, garbage_collect_data=False)
         state_ptr_ids = self.state.get_id_at_location()
         self.replace_ids(self.state_ids, state_ptr_ids)
+        self.state_ids = state_ptr_ids
 
         _ = self.owner.send(self, workers=location)
 
@@ -681,6 +741,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
         self.readable_plan = readable_plan_original
         self.state.set_(state_original)
+        self.state_ids = state_ids_original
         return pointer
 
     def get(self) -> "Plan":
@@ -693,22 +754,41 @@ class Plan(ObjectStorage, torch.nn.Module):
             Plan.
         """
 
-        self.locations = []
-        self.ptr_plans = {}
+        if len(self.locations):
+            self.locations = []
+            self.ptr_plans = {}
+        else:
+            self.state.get()
 
         return self
 
-    def describe(self, description: str) -> "Plan":
-        self.description = description
+    def fix_precision_(self, *args, **kwargs):
+        self.state.fix_precision_(*args, **kwargs)
         return self
 
-    def tag(self, *_tags: List) -> "Plan":
-        if self.tags is None:
-            self.tags = set()
+    fix_precision = fix_precision_
+    fix_prec = fix_precision_
 
-        for new_tag in _tags:
-            self.tags.add(new_tag)
+    def float_precision_(self):
+        self.state.float_precision_()
         return self
+
+    float_precision = float_precision_
+    float_prec = float_precision_
+
+    def share_(self, *args, **kwargs):
+        self.state.share_(*args, **kwargs)
+        return self
+
+    share = share_
+
+    def create_pointer(self, owner, garbage_collect_data):
+        return PointerPlan(
+            location=self.owner,
+            id_at_location=self.id,
+            owner=owner,
+            garbage_collect_data=garbage_collect_data,
+        )
 
     def __str__(self):
         """Returns the string representation of PlanWorker.
@@ -750,7 +830,6 @@ class Plan(ObjectStorage, torch.nn.Module):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-
         return (
             tuple(
                 plan.readable_plan
@@ -767,7 +846,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     @staticmethod
     def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
-        """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+        """This function reconstructs a Plan object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
             plan_tuple: a tuple holding the attributes of the Plan

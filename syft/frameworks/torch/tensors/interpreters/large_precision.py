@@ -74,7 +74,8 @@ class LargePrecisionTensor(AbstractTensor):
 
         # floor is applied otherwise, long float is not accurate
         self_scaled = np.vectorize(math.floor)(self_scaled)
-        self_scaled %= self.field
+        # https://github.com/numpy/numpy/issues/6464
+        self_scaled = np.remainder(self_scaled, np.array(self.field), casting="unsafe")
 
         # self_scaled can be an array of floats. As multiplying an array of int with an int
         # still gives an array of int, I think it should be because self.child is a float tensor at this point.

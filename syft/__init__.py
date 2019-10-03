@@ -50,6 +50,7 @@ from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoade
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
+from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
@@ -67,6 +68,8 @@ from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisio
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 

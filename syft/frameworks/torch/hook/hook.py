@@ -547,7 +547,8 @@ class TorchHook(FrameworkHook):
             for p in model.parameters():
                 o = p.sum()
                 o.backward()
-                p.grad -= p.grad
+                if p.grad is not None:
+                    p.grad -= p.grad
 
         def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
@@ -601,20 +602,21 @@ class TorchHook(FrameworkHook):
 
             return nn_self
 
-        self.torch.nn.Module.get = module_get_
         self.torch.nn.Module.get_ = module_get_
+        self.torch.nn.Module.get = module_get_
 
         def module_share_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""
             # TODO: add .data and .grad to syft tensors
-            # if module_is_missing_grad(nn_self):
-            #    create_grad_objects(nn_self)
+            if module_is_missing_grad(nn_self):
+                create_grad_objects(nn_self)
 
             for p in nn_self.parameters():
                 p.share_(*args, **kwargs)
 
             return nn_self
 
+        self.torch.nn.Module.share_ = module_share_
         self.torch.nn.Module.share = module_share_
 
         def module_fix_precision_(nn_self, *args, **kwargs):
@@ -627,6 +629,7 @@ class TorchHook(FrameworkHook):
 
             return nn_self
 
+        self.torch.nn.Module.fix_precision_ = module_fix_precision_
         self.torch.nn.Module.fix_precision = module_fix_precision_
         self.torch.nn.Module.fix_prec = module_fix_precision_
 
@@ -642,7 +645,9 @@ class TorchHook(FrameworkHook):
 
             return nn_self
 
+        self.torch.nn.Module.float_precision_ = module_float_precision_
         self.torch.nn.Module.float_precision = module_float_precision_
+        self.torch.nn.Module.float_prec = module_float_precision_
 
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""

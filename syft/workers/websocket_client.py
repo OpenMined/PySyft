@@ -10,7 +10,6 @@ import ssl
 import time
 
 import syft as sy
-from syft.messaging.message import FetchPlanMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import SearchMessage
 from syft.generic.tensor import AbstractTensor
@@ -65,17 +64,9 @@ class WebsocketClientWorker(BaseWorker):
     def close(self):
         self.ws.shutdown()
 
-    def search(self, *query):
+    def search(self, query):
         # Prepare a message requesting the websocket server to search among its objects
         message = SearchMessage(query)
-        serialized_message = sy.serde.serialize(message)
-        # Send the message and return the deserialized response.
-        response = self._recv_msg(serialized_message)
-        return sy.serde.deserialize(response)
-
-    def fetch_plan(self, plan_id):
-        # Prepare a message requesting the websocket server to search among its objects
-        message = FetchPlanMessage(plan_id)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)

@@ -92,14 +92,14 @@ def test_websocket_workers_search(hook, start_remote_worker):
     _ = sample_data.send(remote_proxy)
 
     # Search for the tensor located on the server by using its tag
-    results = remote_proxy.search("#sample_data", "#another_tag")
+    results = remote_proxy.search(["#sample_data", "#another_tag"])
 
     assert results
     assert results[0].owner.id == "me"
     assert results[0].location.id == "fed2"
 
     # Search multiple times should still work
-    results = remote_proxy.search("#sample_data", "#another_tag")
+    results = remote_proxy.search(["#sample_data", "#another_tag"])
 
     assert results
     assert results[0].owner.id == "me"

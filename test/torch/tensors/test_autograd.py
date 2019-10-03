@@ -473,6 +473,32 @@ def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
     assert (model.bias.grad == bias_grad).all()
 
 
+def test_share_with_requires_grad(workers):
+    """
+    Test calling fix_precision and share(requires_grad=True) on tensors and model
+    """
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    t = torch.Tensor([3.0])
+    t = t.fix_precision()
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.get()
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.float_prec()
+
+    assert t == torch.Tensor([3.0])
+
+
 def test_remote_share_with_requires_grad(workers):
     """
     Test calling fix_precision and share(requires_grad=True) on pointers

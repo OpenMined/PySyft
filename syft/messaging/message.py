@@ -382,31 +382,62 @@ class SearchMessage(Message):
         return SearchMessage(sy.serde._detail(worker, msg_tuple[1]))
 
 
-class FetchPlanMessage(Message):
-    """Message used to fetch a plan from another worker."""
+class PlanCommandMessage(Message):
+    """Message used to execute a command related to plans."""
 
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, command_name: str, message: tuple):
+        """Initialize a PlanCommandMessage.
 
-        See Message.__init__ for details."""
-        super().__init__(codes.MSGTYPE.FETCH_PLAN, contents)
+        Args:
+            command_name (str): name used to identify the command.
+            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
+                can be any information necessary to execute the command properly.
+        """
+
+        # call the parent constructor - setting the type integer correctly
+        super().__init__(codes.MSGTYPE.PLAN_CMD)
+
+        self.command_name = command_name
+        self.message = message
+
+    @property
+    def contents(self):
+        """Returns a tuple with the contents of the operation (backwards compatability)."""
+        return (self.command_name, self.message)
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "FetchPlanMessage":
+    def simplify(ptr: "PlanCommandMessage") -> tuple:
+        """
+        This function takes the attributes of a PlanCommandMessage and saves them in a tuple
+
+        Args:
+            ptr (PlanCommandMessage): a Message
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        """
+        return (
+            ptr.msg_type,
+            (sy.serde._simplify(ptr.command_name), sy.serde._simplify(ptr.message)),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "PlanCommandMessage":
         """
         This function takes the simplified tuple version of this message and converts
-        it into an FetchPlanMessage. The simplify() method runs the inverse of this method.
+        it into a PlanCommandMessage. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (FetchPlanMessage): a FetchPlanMessage.
-        Examples:
-            message = detail(sy.local_worker, msg_tuple)
+            ptr (PlanCommandMessage): a PlanCommandMessage.
         """
-        return FetchPlanMessage(sy.serde._detail(worker, msg_tuple[1]))
+        command_name, message = msg_tuple[1]
+        return PlanCommandMessage(
+            sy.serde._detail(worker, command_name), sy.serde._detail(worker, message)
+        )

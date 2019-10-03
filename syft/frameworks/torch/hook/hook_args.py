@@ -55,6 +55,7 @@ ambiguous_functions = {
     "chunk",
     "torch.functional.split",
     "split",
+    "backward",
 }
 
 register_ambiguous_method(*ambiguous_methods)

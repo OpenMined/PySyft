@@ -51,8 +51,11 @@ from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisio
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.messaging.plan import Plan
+from syft.messaging.protocol import Protocol
 from syft.messaging.message import Message
 from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage
@@ -61,7 +64,7 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
-from syft.messaging.message import FetchPlanMessage
+from syft.messaging.message import PlanCommandMessage
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
@@ -95,7 +98,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     LoggingTensor,
     MultiPointerTensor,
     Plan,
+    Protocol,
     PointerTensor,
+    PointerPlan,
+    PointerProtocol,
     ObjectWrapper,
     TrainConfig,
     BaseWorker,
@@ -108,7 +114,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     GetShapeMessage,
     ForceObjectDeleteMessage,
     SearchMessage,
-    FetchPlanMessage,
+    PlanCommandMessage,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
