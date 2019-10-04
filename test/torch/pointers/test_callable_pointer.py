@@ -1,6 +1,6 @@
 import torch
-from syft.frameworks.torch.pointers import callable_pointer
-from syft.frameworks.torch import pointers
+from syft.generic.pointers import callable_pointer
+from syft.generic.pointers.object_wrapper import ObjectWrapper
 
 
 def test_create_callable_pointer(workers):
@@ -69,7 +69,7 @@ def test_call_callable_pointer(workers):
 
     id_alice = 100
     id_bob = 200
-    foo_wrapper = pointers.ObjectWrapper(id=id_alice, obj=foo)
+    foo_wrapper = ObjectWrapper(id=id_alice, obj=foo)
 
     alice.register_obj(foo_wrapper, id_alice)
 

@@ -18,7 +18,7 @@ install:
   - pip3 install -r requirements.txt >build.log
   - pip3 install -r requirements_dev.txt >build.log
   - pip3 install flake8
-  - pip3 install flake8-docstrings
+  #- pip3 install flake8-docstrings
   - pip3 install flake8-comprehensions
   - pip3 install pep8-naming
   - python setup.py install >> build.log
@@ -36,7 +36,7 @@ before_script:
   # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
   - mypy syft || echo "Type errors found, continuing build..."
 script:
-  - coverage run -m pytest
+  - coverage run -m pytest test
   - coverage report --fail-under 95 -m
   # ensuring coverage of tests stays at 100 until entire coverage can be 100
   - coverage report --fail-under 100 -m --include="test/*"

@@ -1,7 +1,8 @@
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
-from syft.workers import AbstractWorker
+from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 import syft as sy
 
 
@@ -40,7 +41,7 @@ class LoggingTensor(AbstractTensor):
         some particular behaviour: so here what to start from :)
         """
         # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
             "add", self, args, kwargs
         )
 
@@ -49,9 +50,7 @@ class LoggingTensor(AbstractTensor):
         response = getattr(new_self, "add")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
-            "add", response, wrap_type=type(self)
-        )
+        response = hook_args.hook_response("add", response, wrap_type=type(self))
         return response
 
     # Module & Function overloading

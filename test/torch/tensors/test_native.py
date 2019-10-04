@@ -1,8 +1,8 @@
 import pytest
-
 import torch
 
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
+
 from syft.exceptions import InvalidTensorForRemoteGet
 
 
@@ -146,3 +146,13 @@ def test_requires_large_precision():
     prec_fractional = 256
     max_precision = 62
     assert x._requires_large_precision(max_precision, base, prec_fractional)
+
+
+def test_roll(workers):
+    x = torch.tensor([1.0, 2.0, 3, 4, 5])
+    expected = torch.roll(x, -1)
+
+    index = torch.tensor([-1.0])
+    result = torch.roll(x, index)
+
+    assert (result == expected).all()

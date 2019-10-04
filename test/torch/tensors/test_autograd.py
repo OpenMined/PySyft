@@ -5,7 +5,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import syft
 
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 def test_wrap():
@@ -344,6 +345,36 @@ def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd, bac
     assert (b.grad.get().float_prec() == b_torch.grad).all()
 
 
+@pytest.mark.parametrize("backward_one", [True, False])
+def test_backward_for_additive_shared_div_with_autograd(workers, backward_one):
+    """
+    Test .backward() on Additive Shared Tensor for division with an integer
+    """
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+
+    a = (
+        torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+    b = 2
+
+    a = syft.AutogradTensor().on(a)
+
+    a_torch = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    b_torch = 2
+
+    c = a / b
+    c_torch = a_torch / b_torch
+
+    ones = torch.ones(c.shape).fix_prec().share(alice, bob, crypto_provider=james)
+    ones = syft.AutogradTensor().on(ones)
+    c.backward(ones if backward_one else None)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.get().float_prec() == a_torch.grad).all()
+
+
 def test_addmm_backward_for_additive_shared_with_autograd(workers):
     """
     Test .backward() on Additive Shared Tensor for addmm
@@ -442,6 +473,79 @@ def test_backward_for_linear_model_on_additive_shared_with_autograd(workers):
     assert (model.bias.grad == bias_grad).all()
 
 
+def test_share_with_requires_grad(workers):
+    """
+    Test calling fix_precision and share(requires_grad=True) on tensors and model
+    """
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    t = torch.Tensor([3.0])
+    t = t.fix_precision()
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.get()
+
+    assert t.is_wrapper and isinstance(t.child, AutogradTensor)
+
+    t = t.float_prec()
+
+    assert t == torch.Tensor([3.0])
+
+
+def test_remote_share_with_requires_grad(workers):
+    """
+    Test calling fix_precision and share(requires_grad=True) on pointers
+    to tensors and model
+    """
+    bob, alice, charlie, crypto_provider = (
+        workers["bob"],
+        workers["alice"],
+        workers["charlie"],
+        workers["james"],
+    )
+
+    t = torch.Tensor([3])
+    t = t.send(charlie)
+    t = t.fix_precision()
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    t = t.get()
+
+    assert isinstance(t.child, AutogradTensor)
+
+    t = torch.Tensor([3])
+    t = t.fix_precision()
+    t = t.send(charlie)
+    t = t.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    t = t.get()
+
+    assert isinstance(t.child, AutogradTensor)
+
+    model = nn.Linear(2, 1)
+    model.send(charlie)
+    model.fix_precision()
+    model.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    model.get()
+
+    assert isinstance(model.weight.child, AutogradTensor)
+
+    # See Issue #2546
+
+    # model = nn.Linear(2, 1)
+    # model.fix_precision()
+    # model.send(charlie)
+    # model.share(alice, bob, crypto_provider=crypto_provider, requires_grad=True)
+    # model.get()
+    #
+    # assert isinstance(model.weight.child, AutogradTensor)
+
+
 def test_encrypted_training_with_linear_model(workers):
     """
     Test a minimal example of encrypted training using nn.Linear
@@ -492,7 +596,7 @@ def test_encrypted_training_with_linear_model(workers):
 
     loss = train()
 
-    assert loss.child.child.child.child.virtual_get() < 500
+    assert loss.child.child.child.virtual_get() < 500
 
 
 def test_get_float_prec_on_autograd_tensor(workers):
@@ -511,3 +615,106 @@ def test_get_float_prec_on_autograd_tensor(workers):
     x2 = x.fix_precision()
     x2 = x2.share(bob, alice, crypto_provider=james, requires_grad=True)
     assert (x2.get().float_precision() == x).all()
+
+
+def test_serialize_deserialize_autograd_tensor(workers):
+    # let's try to send an autogradTensor to a remote location and get it back
+    alice = workers["alice"]
+
+    random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    assert isinstance(random_tensor, torch.Tensor)
+
+    remote_tensor = random_tensor.send(alice, local_autograd=True)
+    assert isinstance(remote_tensor.child, syft.AutogradTensor)
+
+    local_tensor = remote_tensor.get()
+    assert isinstance(local_tensor, torch.Tensor)
+
+    # check if the tensor sent is equal to the tensor got from the remote version
+    assert torch.all(torch.eq(local_tensor, random_tensor))
+
+
+def test_types_auto_remote_tensors(workers):
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    random_tensor = torch.tensor([[3.0, 2], [-1, 2]], requires_grad=True)
+    assert isinstance(random_tensor, torch.Tensor)
+
+    remote_tensor_auto = random_tensor.send(alice, local_autograd=True)
+    assert isinstance(remote_tensor_auto.child, syft.AutogradTensor)
+
+    remote_tensor_remote = remote_tensor_auto.send(bob)
+    assert isinstance(remote_tensor_remote, torch.Tensor)
+
+    assert type(remote_tensor_auto) == type(remote_tensor_remote)
+
+
+def test_train_remote_autograd_tensor(workers):
+    # Training procedure to train an input model, be it remote or local
+
+    def train(model_input, data_input, target_input, remote=False):
+        opt = optim.SGD(params=model_input.parameters(), lr=0.1)
+        loss_previous = 99999999999  # just a very big number
+        for iter in range(10):
+            # 1) erase previous gradients (if they exist)
+            opt.zero_grad()
+            # 2) make a prediction
+            predictions = model_input(data_input)
+            # 3) calculate how much we missed
+            loss = ((predictions - target_input) ** 2).sum()
+            # check for monotonic decrease of the loss
+
+            if remote == True:
+                # Remote loss monotonic decrease
+                loss_val_local = loss.copy().get().item()
+                assert loss_val_local < loss_previous
+                loss_previous = loss_val_local
+
+            else:
+                # Local loss monotonic decrease
+                loss_val_local = loss.item()
+                assert loss_val_local < loss_previous
+                loss_previous = loss_val_local
+
+            # 4) Figure out which weights caused us to miss
+            loss.backward()
+            # 5) change those weights
+            opt.step()
+        return (loss, model_input)
+
+    alice = workers["alice"]
+
+    # Some Toy Data
+    data_local = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1.0]])
+    target_local = torch.tensor([[0], [0], [1], [1.0]])
+
+    # Toy local model
+    model_local = nn.Linear(2, 1)
+
+    # Local training
+    loss_local, model_local_trained = train(model_local, data_local, target_local, remote=False)
+
+    # Remote training, setting autograd for the data and the targets
+    data_remote = data_local.send(alice, local_autograd=True)
+    assert isinstance(data_remote.child, syft.AutogradTensor)
+    assert isinstance(data_remote.child.child, PointerTensor)
+
+    target_remote = target_local.send(alice, local_autograd=True)
+    assert isinstance(target_remote.child, syft.AutogradTensor)
+    assert isinstance(target_remote.child.child, PointerTensor)
+
+    model_remote = model_local.send(alice, local_autograd=True)
+    assert isinstance(model_remote.weight.child, syft.AutogradTensor)
+    assert isinstance(model_remote.weight.child.child, PointerTensor)
+
+    assert type(model_remote) == type(model_local)
+
+    loss_remote, model_remote_trained = train(model_remote, data_remote, target_remote, remote=True)
+
+    # let's check if the local version and the remote version have the same weight
+    assert torch.all(
+        torch.eq(
+            model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data
+        )
+    )

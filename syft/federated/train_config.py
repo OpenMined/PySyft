@@ -4,9 +4,9 @@ import weakref
 import torch
 
 import syft as sy
-from syft import workers
-from syft.frameworks.torch import pointers
-from syft.workers import AbstractWorker
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
 
 
 class TrainConfig:
@@ -20,7 +20,7 @@ class TrainConfig:
         self,
         model: torch.jit.ScriptModule,
         loss_fn: torch.jit.ScriptModule,
-        owner: workers.AbstractWorker = None,
+        owner: AbstractWorker = None,
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "SGD",
@@ -93,12 +93,12 @@ class TrainConfig:
 
     def _wrap_and_send_obj(self, obj, location):
         """Wrappers object and send it to location."""
-        obj_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=obj)
+        obj_with_id = ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=obj)
         obj_ptr = self.owner.send(obj_with_id, location)
         obj_id = obj_ptr.id_at_location
         return obj_ptr, obj_id
 
-    def send(self, location: workers.BaseWorker) -> weakref:
+    def send(self, location: BaseWorker) -> weakref:
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes

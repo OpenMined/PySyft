@@ -3,9 +3,9 @@ import time
 
 import torch
 
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.workers import WebsocketServerWorker
-from syft.workers import WebsocketClientWorker
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.workers.websocket_server import WebsocketServerWorker
+from syft.workers.websocket_client import WebsocketClientWorker
 
 # TESTING POINTERS
 
@@ -13,8 +13,6 @@ from syft.workers import WebsocketClientWorker
 def test_explicit_garbage_collect_pointer(workers):
     """Tests whether deleting a PointerTensor garbage collects the remote object too"""
     bob = workers["bob"]
-
-    alice, bob = workers["alice"], workers["bob"]
 
     # create tensor
     x = torch.Tensor([1, 2])
@@ -56,31 +54,29 @@ def test_explicit_garbage_collect_double_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in workers["alice"]._objects
+    # ensure alice's object was garbage collected
+    assert x_ptr.id not in workers["alice"]._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
     x_id = x.id
+
     # send tensor to bob and then pointer to alice
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
     x = x.send(bob).send(alice)
+
     # ensure bob has tensor
     assert x_id in bob._objects
     # delete pointer to pointer to tensor
     del x
     # ensure bob's object was garbage collected
     assert x_id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in workers["alice"]._objects
 
 
 def test_implicit_garbage_collection_pointer(workers):
     """Tests whether GCing a PointerTensor GCs the remote object too."""
     bob = workers["bob"]
-
-    alice, bob = workers["alice"], workers["bob"]
 
     # create tensor
     x = torch.Tensor([1, 2])
@@ -115,6 +111,8 @@ def test_implicit_garbage_collect_double_pointer(workers):
 
     # ensure bob has tensor
     assert x.id in bob._objects
+    # ensure alice has tensor
+    assert x_ptr.id in alice._objects
 
     # delete pointer to pointer to tensor, which should automatically
     # garbage collect the remote object on Bob's machine
@@ -122,24 +120,25 @@ def test_implicit_garbage_collect_double_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in alice._objects
+    # ensure alice's object was garbage collected
+    assert x_ptr.id not in alice._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
     x_id = x.id
     # send tensor to bob and then pointer to alice
+    # overwriting variable names at sending in the test, is on purpose,
+    # to be sure nothing weird happens when people do this
     x = x.send(bob).send(alice)
+
     # ensure bob has tensor
     assert x_id in bob._objects
+
     # delete pointer to pointer to tensor
     x = "asdf"
+
     # ensure bob's object was garbage collected
     assert x_id not in bob._objects
-    # TODO: shouldn't we check that alice's object was
-    # garbage collected as well?
-    # assert x.id not in alice._objects
 
 
 # TESTING IN PLACE METHODS
@@ -195,21 +194,14 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
     assert x_id not in bob._objects
 
 
-def test_websocket_garbage_collection(hook, start_proc):
-    # Args for initializing the websocket server and client
-    base_kwargs = {"id": "ws_gc", "host": "localhost", "port": 8555, "hook": hook}
-    server = start_proc(WebsocketServerWorker, **base_kwargs)
-
-    time.sleep(0.1)
-    client_worker = WebsocketClientWorker(**base_kwargs)
+def test_websocket_garbage_collection(hook, start_remote_worker):
+    server, remote_proxy = start_remote_worker(id="ws_gc", hook=hook, port=8555)
 
     sample_data = torch.tensor([1, 2, 3, 4])
-    sample_ptr = sample_data.send(client_worker)
+    sample_ptr = sample_data.send(remote_proxy)
 
     _ = sample_ptr.get()
-    assert sample_data not in client_worker._objects
+    assert sample_data not in remote_proxy._objects
 
-    client_worker.ws.shutdown()
-    client_worker.ws.close()
-    time.sleep(0.1)
+    remote_proxy.close()
     server.terminate()

@@ -1,18 +1,18 @@
 """Specific Pysyft exceptions."""
-
-import syft as sy
-import torch
 from tblib import Traceback
 import traceback
 from six import reraise
 from typing import Tuple
 
+import syft as sy
+from syft.generic.frameworks.types import FrameworkTensor
 
-class PureTorchTensorFoundError(BaseException):
+
+class PureFrameworkTensorFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a recursive analysis of the args provided as an
-    input of a function, to break the recursion if a TorchTensor is found
-    as it means that _probably_ all the tensors are pure torch tensor and
+    input of a function, to break the recursion if a FrameworkTensor is found
+    as it means that _probably_ all the tensors are pure torch/tensorflow and
     the function can be applied natively on this input.
 
     Attributes:
@@ -25,7 +25,7 @@ class PureTorchTensorFoundError(BaseException):
 
 class RemoteObjectFoundError(BaseException):
     """Exception raised for errors in the input.
-    This error is used in a context similar to PureTorchTensorFoundError but
+    This error is used in a context similar to PureFrameworkTensorFoundError but
     to indicate that a Pointer to a remote tensor was found  in the input
     and thus that the command should be send elsewhere. The pointer retrieved
     by the error gives the location where the command should be sent.
@@ -235,6 +235,14 @@ class IdNotUniqueError(Exception):
     pass
 
 
+class PlanCommandUnknownError(Exception):
+    """Raised when an unknown plan command execution is requested."""
+
+    def __init__(self, command_name: object):
+        message = "Command {} is not implemented.".format(command_name)
+        super().__init__(message)
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:
@@ -247,7 +255,7 @@ def route_method_exception(exception, self, args, kwargs):
                             return TensorsNotCollocatedException(self, args[0])
 
         # if self is a normal tensor
-        elif isinstance(self, torch.Tensor):
+        elif isinstance(self, FrameworkTensor):
             if len(args) > 0:
                 if args[0].is_wrapper:
                     if isinstance(args[0].child, sy.PointerTensor):

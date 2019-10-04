@@ -24,7 +24,7 @@ class VirtualGrid:
 
             worker_tag_ctr: CounterType[int] = Counter()
 
-            worker_results = worker.search(*query)
+            worker_results = worker.search(query)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results
