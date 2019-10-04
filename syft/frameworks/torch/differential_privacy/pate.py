@@ -278,15 +278,15 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
 
 def tensors_to_literals(tensor_list):
     """Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
-    
+
        Args:
-           
+
            tensor_list[List]: List of torch tensors
-           
+
        Returns:
-           
+
            literal_list[List]: List of floats/integers
-           
+
     """
 
     literal_list = []
@@ -334,14 +334,14 @@ def logmgf_exact_torch(q, priv_eps, l):
 def compute_q_noisy_max_torch(counts, noise_eps):
     """Returns ~ Pr[outcome != winner].
        Args:
-           
+
           counts: a list of scores
           noise_eps: privacy parameter for noisy_max
-          
+
        Returns:
-           
+
           q: the probability that outcome is different from true winner.
-          
+
     """
 
     if type(counts) != torch.tensor:
@@ -350,7 +350,8 @@ def compute_q_noisy_max_torch(counts, noise_eps):
 
     _, winner = counts.max(0)
     counts_normalized = noise_eps * (
-        torch.tensor(counts, dtype=torch.float) - torch.tensor(counts[winner], dtype=torch.float)
+        counts.clone().detach().type(torch.float)
+        - torch.tensor(counts[winner].item(), dtype=torch.float)
     )
 
     counts_normalized = tensors_to_literals(counts_normalized)
@@ -387,7 +388,7 @@ def sens_at_k_torch(counts, noise_eps, l, k):
 
     """Return sensitivity at distane k.
       Args:
-        
+
           counts: an array of scores
           noise_eps: noise parameter used
           l: moment whose sensitivity is being computed
@@ -419,7 +420,7 @@ def sens_at_k_torch(counts, noise_eps, l, k):
 def smooth_sens_torch(counts, noise_eps, l, beta):
 
     """Compute beta-smooth sensitivity.
-    
+
      Args:
          counts: array of scors
          noise_eps: noise parameter
