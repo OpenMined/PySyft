@@ -87,7 +87,7 @@ class GridNetwork(object):
                     model.send(host)
 
                     for node in model_nodes:
-                        node.disconnect()
+                        node.close()
                     smpc_initial_interval = i  # Initial index of next chunk
             # If host's length % SMPC_HOST_CHUNK != 0 or length == 0
             else:
@@ -124,7 +124,7 @@ class GridNetwork(object):
                 allow_download=allow_download,
                 allow_remote_inference=allow_remote_inference,
             )
-            host_worker.disconnect()
+            host_worker.close()
 
     def run_encrypted_inference(self, model_id, data, copy=True):
         """ Search for an encrypted model and perform inference.
@@ -144,6 +144,7 @@ class GridNetwork(object):
         )
 
         match_nodes = json.loads(response.content)
+
         if len(match_nodes):
             # Host of encrypted plan
             node_id = list(match_nodes.keys())[0]  # Get the first one
@@ -178,6 +179,7 @@ class GridNetwork(object):
             fetched_plan = sy.hook.local_worker.fetch_plan(
                 model_id, host_node, copy=copy
             )
+
             return fetched_plan(shared_data).get().float_prec()
         else:
             raise RuntimeError("Model not found on Grid Network!")
@@ -194,7 +196,7 @@ class GridNetwork(object):
         worker = self.query_model(model_id)
         if worker:
             response = worker.run_remote_inference(model_id=model_id, data=data)
-            worker.disconnect()
+            worker.close()
             return torch.tensor(response)
         else:
             raise RuntimeError("Model not found on Grid Network!")
@@ -224,7 +226,6 @@ class GridNetwork(object):
     def __connect_with_node(self, node_id, node_url):
         if node_id not in sy.hook.local_worker._known_workers:
             worker = WebsocketGridClient(sy.hook, node_url, node_id)
-            worker.connect()
         else:
             # There is already a connection to this node
             worker = sy.hook.local_worker._known_workers[node_id]
@@ -236,4 +237,4 @@ class GridNetwork(object):
             if isinstance(
                 sy.hook.local_worker._known_workers[node], WebsocketGridClient
             ):
-                sy.hook.local_worker._known_workers[node].disconnect()
+                sy.hook.local_worker._known_workers[node].close()

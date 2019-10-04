@@ -212,7 +212,6 @@ def save_model(
         model_id (str): The unique identifier associated with the model.
         allow_download (bool): If the model can be copied by a worker.
         allow_remote_inference (bool): If a worker can run inference on the given model.
-
     Returns:
         A dict with structure: {"success": Bool, "message": "Model Saved: {model_id}"}.
         On error returns dict: {"success": Bool, "error": error message}.
@@ -240,7 +239,8 @@ def save_model(
         if isinstance(model, sy.Plan):
             _save_states_in_db(model)
 
-        return {"success": True, "message": "Model saved with id: " + model_id}
+        message = "Model saved with id: " + model_id
+        return {"success": True, "message": message}
     except (SQLAlchemyError, IntegrityError) as e:
         # rollback the session in case of error
         db.session.rollback()

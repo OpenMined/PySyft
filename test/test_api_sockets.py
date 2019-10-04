@@ -220,7 +220,7 @@ def test_connect_node(connected_node):
                 if n == node:
                     continue
                 else:
-                    connected_node[node].connect_grid_node(connected_node[n])
+                    connected_node[node].connect_nodes(connected_node[n])
     except:
         unittest.TestCase.fail("test_connect_nodes : Exception raised!")
 

@@ -2,53 +2,56 @@
 This file exists to provide one common place for all websocket events.
 """
 
-from flask import session
-from flask_socketio import emit
-from .. import socketio
-from . import hook, local_worker
+from . import hook, local_worker, ws
+
+from .event_routes import *
+
 from .persistence.utils import recover_objects, snapshot
 
-import grid as gr
-import binascii
 import json
 
+routes = {
+    "get-id": get_node_id,
+    "connect-node": connect_grid_nodes,
+    "syft-command": syft_command,
+    "socket-ping": socket_ping,
+    "host-model": host_model,
+    "run-inference": run_inference,
+    "delete-model": delete_model,
+    "list-models": get_models,
+    "download-model": download_model,
+}
 
-@socketio.on("/set-grid-id")
-def set_grid_name(msg):
-    """ Set Grid node ID. """
-    local_worker.id = msg["id"]
-    local_worker.is_client_worker = False
 
-
-@socketio.on("/connect-node")
-def connect_node(msg):
-    """ Open connection between different grid nodes. """
+def route_requests(message):
+    global routes
     try:
-        if msg["id"] not in local_worker._known_workers:
-            new_worker = gr.WebsocketGridClient(hook, msg["uri"], id=msg["id"])
-            new_worker.connect()
-            emit("/connect-node-response", "Succefully connected!")
+        message = json.loads(message)
+        return routes[message["type"]](message)
     except Exception as e:
-        emit("/connect-node-response", str(e))
+        print("Exception: ", e)
+        return json.dumps({"error": "Invalid JSON format/field!"})
 
 
-@socketio.on("/cmd")
-def cmd(message):
-    """ Forward pysyft command to hook virtual worker. """
-    try:
-        if not local_worker._objects:
-            recover_objects(local_worker)
+@ws.route("/")
+def socket_api(socket):
+    while not socket.closed:
+        message = socket.receive()
+        if not message:
+            continue
+        else:
+            if isinstance(message, bytearray):
+                # Forward syft commands to syft worker
 
-        # Decode Message
-        encoded_message = message["message"]
-        decoded_message = binascii.unhexlify(encoded_message[2:-1])
+                # Load previous database tensors
+                if not local_worker._objects:
+                    recover_objects(local_worker)
 
-        # Process and encode response
-        decoded_response = local_worker._recv_msg(decoded_message)
-        encoded_response = str(binascii.hexlify(decoded_response))
+                decoded_response = local_worker._recv_msg(message)
 
-        snapshot(local_worker)
+                # Save local worker state at database
+                snapshot(local_worker)
 
-        emit("/cmd-response", encoded_response)
-    except Exception as e:
-        emit("/cmd-response", str(e))
+                socket.send(decoded_response, binary=True)
+            else:
+                socket.send(route_requests(message))

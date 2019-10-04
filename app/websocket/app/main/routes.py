@@ -14,8 +14,7 @@ import syft as sy
 from requests_toolbelt import MultipartEncoder
 from flask_cors import cross_origin
 
-from . import main
-from . import local_worker
+from . import html, local_worker
 from . import model_manager as mm
 from .local_worker_utils import register_obj, get_objs
 
@@ -27,22 +26,22 @@ MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
 # ======= WEB ROUTES ======
 
 
-@main.route("/favicon.ico")
+@html.route("/favicon.ico")
 def favicon():
     return send_from_directory(
-        os.path.join(main.root_path, "static"),
+        os.path.join(html.root_path, "static"),
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )
 
 
-@main.route("/", methods=["GET"])
+@html.route("/", methods=["GET"])
 def index():
     """Index page."""
     return render_template("index.html")
 
 
-@main.route("/detailed_models_list/")
+@html.route("/detailed_models_list/")
 def list_models_with_details():
     """Generates a detailed list of models currently saved at the worker"""
     return Response(
@@ -52,7 +51,7 @@ def list_models_with_details():
     )
 
 
-@main.route("/workers/")
+@html.route("/workers/")
 def list_workers():
     return Response(
         json.dumps(mm.list_workers()), status=200, mimetype="application/json"
@@ -64,29 +63,7 @@ def list_workers():
 # ======= REST API =======
 
 
-@main.route("/identity/")
-@cross_origin()
-def is_this_an_opengrid_node():
-    """This exists because in the automation scripts which deploy nodes,
-    there's an edge case where the 'node already exists' but sometimes it
-    can be an app that does something totally different. So we want to have
-    some endpoint which just casually identifies this server as an OpenGrid
-    server."""
-    return "OpenGrid"
-
-
-@main.route("/delete_model/", methods=["POST"])
-@cross_origin()
-def delete_model():
-    model_id = request.form["model_id"]
-    result = mm.delete_model(model_id)
-    if result["success"]:
-        return Response(json.dumps(result), status=200, mimetype="application/json")
-    else:
-        return Response(json.dumps(result), status=404, mimetype="application/json")
-
-
-@main.route("/models/", methods=["GET"])
+@html.route("/models/", methods=["GET"])
 @cross_origin()
 def list_models():
     """Generates a list of models currently saved at the worker"""
@@ -95,7 +72,7 @@ def list_models():
     )
 
 
-@main.route("/is_model_copy_allowed/<model_id>", methods=["GET"])
+@html.route("/is_model_copy_allowed/<model_id>", methods=["GET"])
 @cross_origin()
 def is_model_copy_allowed(model_id):
     """Generates a list of models currently saved at the worker"""
@@ -106,7 +83,8 @@ def is_model_copy_allowed(model_id):
     )
 
 
-@main.route("/get_model/<model_id>", methods=["GET"])
+## Will be removed when sockets can download huge models
+@html.route("/get_model/<model_id>", methods=["GET"])
 @cross_origin()
 def get_model(model_id):
     """ Try to download a specific model if allowed. """
@@ -142,48 +120,8 @@ def get_model(model_id):
             )
 
 
-@main.route("/models/<model_id>", methods=["POST"])
-@cross_origin()
-def model_inference(model_id):
-    response = mm.get_model_with_id(model_id)
-    # check if model exists. Else return a unknown model response.
-    if response["success"]:
-        model = response["model"]
-
-        # serializing the data from GET request
-        encoding = request.form["encoding"]
-        serialized_data = request.form["data"].encode(encoding)
-        data = sy.serde.deserialize(serialized_data)
-
-        # If we're using a Plan we need to register the object
-        # to the local worker in order to execute it
-        register_obj(data)
-
-        # Some models returns tuples (GPT-2 / BERT / ...)
-        # To avoid errors on detach method, we check the type of inference's result
-        model_output = model(data)
-        if isinstance(model_output, tuple):
-            predictions = model_output[0].detach().numpy().tolist()
-        else:
-            predictions = model_output.detach().numpy().tolist()
-
-        # We can now remove data from the objects
-        del data
-
-        return Response(
-            json.dumps({"success": True, "prediction": predictions}),
-            status=200,
-            mimetype="application/json",
-        )
-    else:
-        return Response(
-            json.dumps(response),
-            status=403 if "not_allowed" in response else 404,
-            mimetype="application/json",
-        )
-
-
-@main.route("/serve-model/", methods=["POST"])
+## Will be removed when sockets can upload huge models
+@html.route("/serve-model/", methods=["POST"])
 @cross_origin()
 def serve_model():
     encoding = request.form["encoding"]
@@ -211,7 +149,7 @@ def serve_model():
         return Response(json.dumps(response), status=409, mimetype="application/json")
 
 
-@main.route("/dataset-tags", methods=["GET"])
+@html.route("/dataset-tags", methods=["GET"])
 @cross_origin()
 def get_available_tags():
     """ Returns all tags stored in this node. Can be very useful to know what datasets this node contains. """
@@ -227,7 +165,7 @@ def get_available_tags():
     )
 
 
-@main.route("/search-encrypted-models", methods=["POST"])
+@html.route("/search-encrypted-models", methods=["POST"])
 @cross_origin()
 def search_encrypted_models():
     """ Check if exist some encrypted model hosted on this node using a specific model_id, if found,
@@ -260,7 +198,7 @@ def search_encrypted_models():
 
                 # Get a list of tuples (worker_id, worker_address)
                 worker_urls = map(
-                    lambda x: (x, local_worker._known_workers.get(x).addr),
+                    lambda x: (x, local_worker._known_workers.get(x).address),
                     obj.child.keys(),
                 )
                 workers.update(set(worker_urls))
@@ -269,7 +207,7 @@ def search_encrypted_models():
                 if obj.crypto_provider:
                     crypto_provider = [
                         obj.crypto_provider.id,
-                        local_worker._known_workers.get(obj.crypto_provider.id).addr,
+                        local_worker._known_workers.get(obj.crypto_provider.id).address,
                     ]
 
             response = {
@@ -289,7 +227,7 @@ def search_encrypted_models():
     )
 
 
-@main.route("/search", methods=["POST"])
+@html.route("/search", methods=["POST"])
 @cross_origin()
 def search_dataset_tags():
     body = json.loads(request.data)

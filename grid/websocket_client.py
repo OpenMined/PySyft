@@ -5,15 +5,18 @@ import requests
 from requests_toolbelt.multipart import encoder, decoder
 import sys
 
-from typing import List
-from typing import Union
+from typing import List, Union
+from urllib.parse import urlparse
 
+import websocket
 import torch
+from gevent import monkey
 
 import syft as sy
 from syft.messaging.message import Message, PlanCommandMessage
 from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
+from syft import WebsocketClientWorker
 from syft.federated.federated_client import FederatedClient
 from syft.codes import MSGTYPE
 from syft.messaging.message import Message
@@ -21,25 +24,27 @@ from syft.messaging.message import Message
 from grid import utils as gr_utils
 
 
-MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
+MODEL_LIMIT_SIZE = (1024 ** 2) * 64  # 64MB
 
 
-class WebsocketGridClient(BaseWorker, FederatedClient):
+class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
     """Websocket Grid Client."""
 
     def __init__(
         self,
         hook,
-        addr: str,
+        address,
         id: Union[int, str] = 0,
+        is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
+        chunk_size: int = MODEL_LIMIT_SIZE,
     ):
         """
         Args:
             hook : a normal TorchHook object
-            addr : the address this client connects to
+            address : the address this client connects to
             id : the unique id of the worker (string or int)
             log_msgs : whether or not all messages should be
                 saved locally for later inspection.
@@ -48,60 +53,143 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
             data : any initial tensors the server should be
                 initialized with (such as datasets)
         """
-
-        # Unfortunately, socketio will throw an exception on import if it's in a
-        # thread. This occurs when Flask is in development mode
-        import socketio
-
-        self.addr = addr
-        self.response_from_client = None
-        self.wait_for_client_event = False
-        self._encoding = "ISO-8859-1"
-
-        # Creates the connection with the server
-        self.__sio = socketio.Client()
+        self.address = address
+        self.secure, self.host, self.port = self.parse_address(address)
         super().__init__(
-            hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose
+            hook,
+            self.host,
+            self.port,
+            self.secure,
+            id,
+            is_client_worker,
+            log_msgs,
+            verbose,
+            data,
         )
+        self.id = self.get_node_id()
+        self._encoding = "ISO-8859-1"
+        self._chunk_size = chunk_size
 
-        @self.__sio.on("/cmd-response")
-        def on_client_result(args):
-            if log_msgs:
-                print("Receiving result from client {}".format(args))
-            try:
-                # The server broadcasted the results from another client
-                self.response_from_client = binascii.unhexlify(args[2:-1])
-            except:
-                raise Exception(args)
+    @property
+    def url(self):
+        if self.port:
+            return (
+                f"wss://{self.host}:{self.port}"
+                if self.secure
+                else f"ws://{self.host}:{self.port}"
+            )
+        else:
+            return self.address
 
-            # Tell the wait_for_client_event to clear up and continue execution
-            self.wait_for_client_event = False
+    def parse_address(self, address):
+        url = urlparse(address)
+        secure = True if url.scheme == "wss" else False
+        return (secure, url.hostname, url.port)
 
-    def _send_msg(self, message: bin) -> bin:
-        raise NotImplementedError
+    def get_node_id(self):
+        message = {"type": "get-id"}
+        self.ws.send(json.dumps(message))
+        response = json.loads(self.ws.recv())
+        return response["id"]
 
-    def _recv_msg(self, message: bin) -> bin:
-        if self.__sio.eio.state != "connected":
-            raise ConnectionError("Worker is not connected to the server")
+    def connect_nodes(self, node):
+        message = {"type": "connect-node", "address": node.address, "id": node.id}
+        self.ws.send(json.dumps(message))
+        return json.loads(self.ws.recv())
 
-        message = str(binascii.hexlify(message))
-        # Sends the message to the server
-        self.__sio.emit("/cmd", {"message": message})
+    def _forward_to_websocket_server_worker(self, message: bin) -> bin:
+        self.ws.send_binary(message)
+        response = self.ws.recv()
+        return response
 
-        self.wait_for_client_event = True
-        # Wait until the server gets back with a result or an ACK
-        while self.wait_for_client_event:
-            self.__sio.sleep()
+    def serve_model(
+        self,
+        model,
+        model_id: str = None,
+        allow_download: bool = False,
+        allow_remote_inference: bool = False,
+    ):
+        if model_id is None:
+            if isinstance(model, sy.Plan):
+                model_id = model.id
+            else:
+                raise ValueError("Model id argument is mandatory for jit models.")
 
-        # Return the result
-        if self.response_from_client == "ACK":
-            # Empty result for the serialiser to continue
-            return sy.serde.serialize(b"")
-        return self.response_from_client
+        # If the model is a Plan we send the model
+        # and host the plan version created after
+        # the send operation
+        if isinstance(model, sy.Plan):
+            # We need to use the same id in the model
+            # as in the POST request.
+            model.id = model_id
+            model.send(self)
+            res_model = model.ptr_plans[self.id]
+        else:
+            res_model = model
 
-    def connect_grid_node(self, worker, sleep_time=0.5):
-        self.__sio.emit("/connect-node", {"uri": worker.addr, "id": worker.id})
-        self.__sio.sleep(sleep_time)
+        # Send post
+        serialized_model = sy.serde.serialize(res_model)
+
+        # If the model is smaller than a chunk size
+        if sys.getsizeof(serialized_model) <= self._chunk_size:
+            self.ws.send(
+                json.dumps(
+                    {
+                        "type": "host-model",
+                        "encoding": self._encoding,
+                        "model_id": model_id,
+                        "allow_download": str(allow_download),
+                        "allow_remote_inference": str(allow_remote_inference),
+                        "model": serialized_model.decode(self._encoding),
+                    }
+                )
+            )
+            response = json.loads(self.ws.recv())
+            if response["success"]:
+                return True
+            else:
+                raise RuntimeError(response["error"])
+        else:
+            # HUGE Models
+            # TODO: Replace to websocket protocol
+            response = json.loads(
+                self._send_streaming_post(
+                    "serve-model/",
+                    data={
+                        "model": (
+                            model_id,
+                            serialized_model,
+                            "application/octet-stream",
+                        ),
+                        "encoding": self._encoding,
+                        "model_id": model_id,
+                        "allow_download": str(allow_download),
+                        "allow_remote_inference": str(allow_remote_inference),
+                    },
+                )
+            )
+            return self._return_bool_result(response)
+
+    def _generate_model_chunks(self, serialized_model):
+        return [
+            serialized_model[i : i + self._chunk_size]
+            for i in range(0, len(serialized_model), self._chunk_size)
+        ]
+
+    def run_remote_inference(self, model_id, data, N: int = 1):
+        serialized_data = sy.serde.serialize(data).decode(self._encoding)
+        payload = {
+            "type": "run-inference",
+            "model_id": model_id,
+            "data": serialized_data,
+            "encoding": self._encoding,
+        }
+        self.ws.send(json.dumps(payload))
+        response = json.loads(self.ws.recv())
+        if response["success"]:
+            return torch.tensor(response["prediction"])
+        else:
+            raise RuntimeError(response["error"])
 
     def search(self, *query):
         # Prepare a message requesting the websocket server to search among its objects
@@ -111,14 +199,6 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
         # Send the message and return the deserialized response.
         response = self._recv_msg(serialized_message)
         return sy.serde.deserialize(response)
-
-    def connect(self):
-        if self.__sio.eio.state != "connected":
-            self.__sio.connect(self.addr)
-            self.__sio.emit("/set-grid-id", {"id": self.id})
-
-    def disconnect(self):
-        self.__sio.disconnect()
 
     def _return_bool_result(self, result, return_key=None):
         if result["success"]:
@@ -151,7 +231,12 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
         Returns:
             If return_response_text is True return response.text, return raw response otherwise.
         """
-        url = os.path.join(self.addr, "{}".format(route))
+        url = (
+            f"https://{self.host}:{self.port}"
+            if self.secure
+            else f"http://{self.host}:{self.port}"
+        )
+        url = os.path.join(url, "{}".format(route))
         r = request(url, data=data) if data else request(url)
         r.encoding = self._encoding
         response = r.text if return_response_text else r
@@ -181,7 +266,7 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
                 response : response from server
         """
         # Build URL path
-        url = os.path.join(self.addr, "{}".format(route))
+        url = os.path.join(self.address, "{}".format(route))
 
         # Send data
         session = requests.Session()
@@ -191,31 +276,20 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
         session.close()
         return resp.content
 
-    def _send_post(self, route, data=None, **kwargs):
-        return self._send_http_request(route, data, requests.post, **kwargs)
-
     def _send_get(self, route, data=None, **kwargs):
         return self._send_http_request(route, data, requests.get, **kwargs)
 
-    def destroy(self):
-        grid_name = self.addr.split("//")[1].split(".")[0]
-        gr_utils.execute_command(
-            "heroku destroy " + grid_name + " --confirm " + grid_name
-        )
-        if self.verbose:
-            print("Destroyed node: " + str(grid_name))
-
     @property
     def models(self, N: int = 1):
-        return json.loads(self._send_get("models/", N=N))["models"]
+        self.ws.send(json.dumps({"type": "list-models"}))
+        response = json.loads(self.ws.recv())
+        return response["models"]
 
     def delete_model(self, model_id):
-        result = json.loads(
-            self._send_post(
-                "delete_model/", data={"model_id": model_id}, unhexlify=False
-            )
-        )
-        return self._return_bool_result(result)
+        message = {"type": "delete-model", "model_id": model_id}
+        self.ws.send(json.dumps(message))
+        response = json.loads(self.ws.recv())
+        return self._return_bool_result(response)
 
     def download_model(self, model_id: str):
         """Downloads a model to run it  locally."""
@@ -237,6 +311,18 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
             # If the model is a plan we can just call fetch
             return sy.hook.local_worker.fetch_plan(model_id, self, copy=True)
         except AttributeError:
+            # Try download model by websocket channel
+            self.ws.send(json.dumps({"type": "download-model", "model_id": model_id}))
+            response = json.loads(self.ws.recv())
+
+            # If we can download model (small models) by sockets
+            if response.get("serialized_model", None):
+                serialized_model = result["serialized_model"].encode(self._encoding)
+                model = sy.serde.deserialize(serialized_model)
+                return model
+
+            # If it isn't possible, try download model by HTTP protocol
+            # TODO: This flow need to be removed when sockets can download huge models
             result = self._send_get(
                 "get_model/{}".format(model_id),
                 unhexlify=False,
@@ -264,45 +350,6 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
                     "There was a problem while getting the model, check the server logs for more information."
                 )
 
-    def _send_serve_model_post(
-        self,
-        serialized_model: bytes,
-        model_id: str,
-        allow_download: bool,
-        allow_remote_inference: bool,
-    ):
-        if sys.getsizeof(serialized_model) >= MODEL_LIMIT_SIZE:
-            return json.loads(
-                self._send_streaming_post(
-                    "serve-model/",
-                    data={
-                        "model": (
-                            model_id,
-                            serialized_model,
-                            "application/octet-stream",
-                        ),
-                        "encoding": self._encoding,
-                        "model_id": model_id,
-                        "allow_download": str(allow_download),
-                        "allow_remote_inference": str(allow_remote_inference),
-                    },
-                )
-            )
-        else:
-            return json.loads(
-                self._send_post(
-                    "serve-model/",
-                    data={
-                        "model": serialized_model,
-                        "encoding": self._encoding,
-                        "model_id": model_id,
-                        "allow_download": allow_download,
-                        "allow_remote_inference": allow_remote_inference,
-                    },
-                    unhexlify=False,
-                )
-            )
-
     def serve_encrypted_model(self, encrypted_model: sy.messaging.plan.Plan):
         """Serve a model in a encrypted fashion using SMPC.
 
@@ -320,76 +367,10 @@ class WebsocketGridClient(BaseWorker, FederatedClient):
 
         # Serve the model so we can have a copy saved in the database
         serialized_model = sy.serde.serialize(res_model).decode(self._encoding)
-        result = self._send_serve_model_post(
+        result = self.serve_model(
             serialized_model,
             res_model.id,
             allow_download=True,
             allow_remote_inference=False,
         )
-        return self._return_bool_result(result)
-
-    def serve_model(
-        self,
-        model,
-        model_id: str = None,
-        allow_download: bool = False,
-        allow_remote_inference: bool = False,
-    ):
-        """Hosts the model and optionally serve it using a Rest API.
-
-        Args:
-            model: A jit model or Syft Plan.
-            model_id: An integer or string representing the model id used to retrieve the model
-                later on using the Rest API. If this is not provided and the model is a Plan
-                we use model.id, if the model is a jit model we raise an exception.
-            allow_download: If other workers should be able to fetch a copy of this model to run it locally set this to True.
-            allow_remote_inference: If other workers should be able to run inference using this model through a Rest API interface set this True.
-
-        Returns:
-            True if model was served sucessfully, raises a RunTimeError otherwise.
-
-        Raises:
-            ValueError: if model_id is not provided and model is a jit model (aka does not have an id attribute).
-            RunTimeError: if there was a problem during model serving.
-        """
-        if model_id is None:
-            if isinstance(model, sy.Plan):
-                model_id = model.id
-            else:
-                raise ValueError("Model id argument is mandatory for jit models.")
-
-        # If the model is a Plan we send the model
-        # and host the plan version created after
-        # the send operation
-        if isinstance(model, sy.Plan):
-            # We need to use the same id in the model
-            # as in the POST request.
-            model.id = model_id
-            model.send(self)
-            res_model = model.ptr_plans[self.id]
-        else:
-            res_model = model
-
-        # Send post
-        serialized_model = sy.serde.serialize(res_model).decode(self._encoding)
-        result = self._send_serve_model_post(
-            serialized_model, model_id, allow_download, allow_remote_inference
-        )
-
-        # Return result
-        return self._return_bool_result(result)
-
-    def run_remote_inference(self, model_id, data, N: int = 1):
-        serialized_data = sy.serde.serialize(data)
-        result = json.loads(
-            self._send_post(
-                "models/{}".format(model_id),
-                data={
-                    "data": serialized_data.decode(self._encoding),
-                    "encoding": self._encoding,
-                },
-                N=N,
-            )
-        )
-
-        return self._return_bool_result(result, return_key="prediction")
+        return result

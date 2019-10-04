@@ -69,7 +69,8 @@ def init_nodes(node_infos):
 
     def setUpNode(port, node_id):
         from app.websocket.app import create_app as ws_create_app
-        from app.websocket.app import socketio
+        from gevent import pywsgi
+        from geventwebsocket.handler import WebSocketHandler
 
         db_path = "sqlite:///" + BASEDIR + "/database" + node_id + ".db"
         requests.post(
@@ -78,11 +79,11 @@ def init_nodes(node_infos):
                 {"node-id": node_id, "node-address": "http://localhost:" + port + "/"}
             ),
         )
-        socketio.async_mode = "threading"
         app = ws_create_app(
-            debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
+            node_id, debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
         )
-        socketio.run(app, host="0.0.0.0", port=port)
+        server = pywsgi.WSGIServer(("", int(port)), app, handler_class=WebSocketHandler)
+        server.serve_forever()
 
     jobs = []
     # Init Grid Nodes
@@ -100,8 +101,6 @@ def init_nodes(node_infos):
 
 def create_websocket_client(hook, port, id):
     node = gr.WebsocketGridClient(hook, "http://localhost:" + port + "/", id=id)
-    node.connect()
-    time.sleep(0.1)
     return node
 
 
@@ -115,7 +114,7 @@ def connected_node(hook):
     yield nodes
 
     for node in nodes:
-        nodes[node].disconnect()
+        nodes[node].close()
         time.sleep(0.1)
 
 

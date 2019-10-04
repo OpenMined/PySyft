@@ -6,8 +6,11 @@ import torch as th
 # Global variables must be initialized here.
 hook = sy.TorchHook(th)
 local_worker = hook.local_worker
+hook.local_worker.is_client_worker = False
 
-main = Blueprint("main", __name__)
+html = Blueprint(r"html", __name__)
+ws = Blueprint(r"ws", __name__)
+
 
 from . import routes, events
 from .persistence.models import db

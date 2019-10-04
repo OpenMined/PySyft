@@ -9,8 +9,10 @@ import sys
 
 import argparse
 
-from app import create_app, socketio
+from app import create_app
 
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 
 parser = argparse.ArgumentParser(description="Run Grid Node application.")
 
@@ -57,9 +59,11 @@ if __name__ == "__main__":
 
     if args.start_local_db:
         db_path = "sqlite:///database{}.db".format(args.id)
-        app = create_app(debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path})
+        app = create_app(
+            args.id, debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
+        )
     else:
-        app = create_app(debug=False)
+        app = create_app(args.id, debug=False)
 
     # If using a Gateway URL start the connection
     if args.gateway_url is not None:
@@ -71,7 +75,8 @@ if __name__ == "__main__":
             os.path.join(args.gateway_url, "join"),
             data=json.dumps({"node-id": args.id, "node-address": node_address}),
         )
-    socketio.run(app, host=args.host, port=args.port)
+    server = pywsgi.WSGIServer(("", args.port), app, handler_class=WebSocketHandler)
+    server.serve_forever()
 else:
     ## DEPLOYMENT MODE (we use gunicorn's eventlet worker to perform load balancing)
 
@@ -88,4 +93,4 @@ else:
                 {"node-id": node_id, "node-address": "{}".format(node_address)}
             ),
         )
-    app = create_app(debug=False)
+    app = create_app(node_id, debug=False)

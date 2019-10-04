@@ -1,22 +1,15 @@
 from flask import Flask
-from flask_socketio import SocketIO
-
+from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
+
+from .main import html, ws, db, hook, local_worker
 
 # TODO: define a reasonable ping interval
 # and ping timeout
 PING_INTERVAL = 10000000
 PING_TIMEOUT = 5000
-
-from eventlet import monkey_patch
-
-monkey_patch()  # Turn every blocking module used by this app as much as asynchronous as possible
-
-socketio = SocketIO(
-    async_mode="eventlet", ping_interval=PING_INTERVAL, ping_timeout=PING_TIMEOUT
-)
 
 
 def set_database_config(app, test_config=None, verbose=False):
@@ -58,23 +51,24 @@ def set_database_config(app, test_config=None, verbose=False):
     return app
 
 
-def create_app(debug=False, test_config=None):
+def create_app(node_id, debug=False, test_config=None):
     """Create flask socket-io application."""
     app = Flask(__name__)
     app.debug = debug
     app.config["SECRET_KEY"] = "justasecretkeythatishouldputhere"
 
-    from .main import main as main_blueprint
-    from .main import db
+    sockets = Sockets(app)
 
-    global db
+    # set_node_id(id)
+    local_worker.id = node_id
+    hook.local_worker._known_workers[node_id] = local_worker
 
-    app.register_blueprint(main_blueprint)
+    app.register_blueprint(html, url_prefix=r"/")
+    sockets.register_blueprint(ws, url_prefix=r"/")
 
     # Set SQLAlchemy configs
     app = set_database_config(app, test_config=test_config)
     s = app.app_context().push()
     db.create_all()
-    socketio.init_app(app)
 
     return app

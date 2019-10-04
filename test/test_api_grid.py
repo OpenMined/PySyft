@@ -28,14 +28,14 @@ class GridAPITest(unittest.TestCase):
                 )
             else:
                 node = sy.hook.local_worker._known_workers[node_id]
-            node.connect()
+                node.connect()
             nodes[node_id] = node
 
         return nodes
 
     def disconnect_nodes(self, nodes):
         for node_id in nodes:
-            nodes[node_id].disconnect()
+            nodes[node_id].close()
 
     def test_connected_nodes(self):
         response = json.loads(requests.get(GATEWAY_URL + "/connected-nodes").content)
@@ -166,6 +166,7 @@ class GridAPITest(unittest.TestCase):
         assert inference == th.tensor([1000.0])
 
     def test_grid_search(self):
+        hook.local_worker.is_client_worker = True
         nodes = self.connect_nodes()
         alice, bob, james = nodes["alice"], nodes["bob"], nodes["james"]
 
