@@ -349,10 +349,7 @@ def compute_q_noisy_max_torch(counts, noise_eps):
         counts = torch.tensor(tensors_to_literals(counts), dtype=torch.float)
 
     _, winner = counts.max(0)
-    counts_normalized = noise_eps * (
-        counts.clone().detach().type(torch.float)
-        - torch.tensor(counts[winner].item(), dtype=torch.float)
-    )
+    counts_normalized = noise_eps * (counts.clone().detach().type(torch.float) - counts[winner])
 
     counts_normalized = tensors_to_literals(counts_normalized)
     counts_rest = torch.tensor(
