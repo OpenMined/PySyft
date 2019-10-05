@@ -4,6 +4,10 @@ from typing import Union
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 
+class ObjectNotFoundException(Exception):
+    """ A syft specific exception for object not found in object list of a worker
+    """
+    pass
 
 class ObjectStorage:
     """A storage of objects identifiable by their id.
@@ -81,7 +85,7 @@ class ObjectStorage:
                     "the remote object and sends it to the pointer). Check your code to "
                     "make sure you haven't already called .get() on this pointer!!!"
                 )
-                raise KeyError(msg)
+                raise ObjectNotFoundException(msg)
             else:
                 raise e
 
