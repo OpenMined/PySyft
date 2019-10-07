@@ -65,14 +65,13 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, plan=None, keys=None, state_ids=None):
+    def __init__(self, owner, plan=None, state_ids=None):
         self.owner = owner
         self.plan = plan
-        self.keys = keys or set()
         self.state_ids = state_ids or []
 
     def __repr__(self):
-        return "State: " + ", ".join(self.keys)
+        return "State: " + ", ".join(self.state_ids)
 
     def tensors(self) -> List:
         """
@@ -93,7 +92,7 @@ class State(object):
         return {tensor.id: tensor.clone() for tensor in self.tensors()}
 
     def copy(self) -> "State":
-        state = State(owner=self.owner, keys=self.keys.copy(), state_ids=self.state_ids.copy())
+        state = State(owner=self.owner, state_ids=self.state_ids.copy())
         return state
 
     def read(self):
@@ -171,9 +170,6 @@ class State(object):
     def simplify(state: "State") -> tuple:
         """
         Simplify the plan's state when sending a plan
-
-        Note that keys are not sent, as they are only used for locally
-        built plan
         """
         return (sy.serde._simplify(state.state_ids), sy.serde._simplify(state.tensors()))
 
