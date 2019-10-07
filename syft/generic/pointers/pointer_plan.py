@@ -58,10 +58,10 @@ class PointerPlan(ObjectPointer):
 
     @location.setter
     def location(self, new_location: Union[AbstractWorker, List[AbstractWorker]]):
-        if isinstance(new_location, AbstractWorker):
-            self._locations = [new_location]
-        else:
+        if isinstance(new_location, (list, tuple)):
             self._locations = new_location
+        else:
+            self._locations = [new_location]
 
     @property
     def id_at_location(self):
@@ -73,10 +73,10 @@ class PointerPlan(ObjectPointer):
 
     @id_at_location.setter
     def id_at_location(self, new_id_at_location):
-        if isinstance(new_id_at_location, (int, str)):
-            self._ids_at_location = [new_id_at_location]
-        else:
+        if isinstance(new_id_at_location, (list, tuple)):
             self._ids_at_location = new_id_at_location
+        else:
+            self._ids_at_location = [new_id_at_location]
 
     def __call__(self, *args, **kwargs):
         """
@@ -184,8 +184,17 @@ class PointerPlan(ObjectPointer):
 
     def __str__(self):
         """Returns a string version of this pointer.
-        """
 
+        Example:
+            For single pointers:
+            > [PointerPlan | me:33873097403 -> dan:72165846784]
+
+            Or for multi pointers:
+            > [PointerPlan | me:55894304374
+                 -> alice:72165846784
+                 -> bob:72165846784
+            ]
+        """
         type_name = type(self).__name__
         out = f"[" f"{type_name} | " f"{str(self.owner.id)}:{self.id}"
         if len(self._locations) == 1:

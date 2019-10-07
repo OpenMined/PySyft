@@ -1,20 +1,16 @@
-import copy
 from typing import List
 from typing import Tuple
 from typing import Union
-from typing import Dict
-
-import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
-from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.tensor import AbstractTensor
+from syft.messaging.procedure import Procedure
+from syft.messaging.state import State
 from syft.workers.abstract import AbstractWorker
 
 
@@ -30,7 +26,7 @@ class func2plan(object):
     def __init__(self, args_shape=None, state=None):
         self.args_shape = args_shape
         self.state_tensors = state or tuple()
-        # include_state is used to distinguish if the initial plan a function or a class:
+        # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
         # will be true. And to know if it was indeed a function, we just need to see if a
         # "manual" state was provided.
@@ -56,257 +52,6 @@ def method2plan(*args, **kwargs):
     raise SyntaxError(
         "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
     )
-
-
-class State(object):
-    """The State is a Plan attribute and is used to send tensors along functions.
-
-    It references Plan tensor or parameters attributes using their name, and make
-    sure they are provided to remote workers who are sent the Plan.
-    """
-
-    def __init__(self, owner, plan=None, state_ids=None):
-        self.owner = owner
-        self.plan = plan
-        self.state_ids = state_ids or []
-
-    def __repr__(self):
-        return "State: " + ", ".join(self.state_ids)
-
-    def tensors(self) -> List:
-        """
-        Fetch and return all the state elements.
-        Perform a check of consistency on the elements ids.
-        """
-        tensors = []
-        for state_id in self.state_ids:
-            tensor = self.owner.get_obj(state_id)
-            assert tensor.id == state_id
-            tensors.append(tensor)
-        return tensors
-
-    def clone_state(self) -> Dict:
-        """
-        Return a clone of the state elements. Tensor ids are kept.
-        """
-        return {tensor.id: tensor.clone() for tensor in self.tensors()}
-
-    def copy(self) -> "State":
-        state = State(owner=self.owner, state_ids=self.state_ids.copy())
-        return state
-
-    def read(self):
-        """
-        Return state elements
-        """
-        tensors = []
-        for state_id in self.state_ids:
-            tensor = self.owner.get_obj(state_id)
-            tensors.append(tensor)
-        return tensors
-
-    def set_(self, state_dict):
-        """
-        Reset inplace the state by feeding it a dict of tensors or params
-        """
-        assert list(self.state_ids) == list(state_dict.keys())
-
-        for state_id, new_tensor in state_dict.items():
-            tensor = self.owner.get_obj(state_id)
-
-            with torch.no_grad():
-                tensor.set_(new_tensor)
-
-            tensor.child = new_tensor.child if new_tensor.is_wrapper else None
-            tensor.is_wrapper = new_tensor.is_wrapper
-            if tensor.child is None:
-                delattr(tensor, "child")
-
-    @staticmethod
-    def create_grad_if_missing(tensor):
-        if isinstance(tensor, torch.nn.Parameter) and tensor.grad is None:
-            o = tensor.sum()
-            o.backward()
-            if tensor.grad is not None:
-                tensor.grad -= tensor.grad
-
-    def send_for_build(self, location, **kwargs):
-        """
-        Send functionality that can only be used when sending the state for
-        building the plan. Other than this, you shouldn't need to send the
-        state separately.
-        """
-        assert location.id == self.plan.id  # ensure this is a send for the build
-
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.send_(location, **kwargs)
-
-    def fix_precision_(self, *args, **kwargs):
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.fix_precision_(*args, **kwargs)
-
-    def float_precision_(self):
-        for tensor in self.tensors():
-            tensor.float_precision_()
-
-    def share_(self, *args, **kwargs):
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.share_(*args, **kwargs)
-
-    def get_(self):
-        """
-        Get functionality that can only be used when getting back state
-        elements converted to additive shared tensors. Other than this,
-        you shouldn't need to the get the state separately.
-        """
-        # TODO Make it only valid for AST
-        for tensor in self.tensors():
-            tensor.get_()
-
-    @staticmethod
-    def simplify(state: "State") -> tuple:
-        """
-        Simplify the plan's state when sending a plan
-        """
-        return (sy.serde._simplify(state.state_ids), sy.serde._simplify(state.tensors()))
-
-    @staticmethod
-    def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
-        """
-        Reconstruct the plan's state from the state elements and supposed
-        ids.
-        """
-        state_ids, state_elements = state_tuple
-        state_ids = sy.serde._detail(worker, state_ids)
-        state_elements = sy.serde._detail(worker, state_elements)
-
-        for state_id, state_element in zip(state_ids, state_elements):
-            worker.register_obj(state_element, obj_id=state_id)
-
-        state = State(owner=worker, plan=None, state_ids=state_ids)
-        return state
-
-
-class Command(object):
-    """A command is a serializable object providing instruction to operate designated tensors."""
-
-    def __init__(self, command):
-        self.command = command
-
-    def update_ids(self, from_ids, to_ids):
-        self.command = Command.replace_ids(self.command, from_ids, to_ids)
-
-    @staticmethod
-    def replace_ids(command, from_ids, to_ids):
-
-        assert isinstance(from_ids, (list, tuple))
-        assert isinstance(to_ids, (list, tuple))
-
-        type_obj = type(command)
-        command = list(command)
-        for i, item in enumerate(command):
-            if isinstance(item, (int, str, bytes)) and item in from_ids:
-                command[i] = to_ids[from_ids.index(item)]
-            elif isinstance(item, (list, tuple)):
-                command[i] = Command.replace_ids(command=item, from_ids=from_ids, to_ids=to_ids)
-        return type_obj(command)
-
-
-class Procedure(object):
-    """A Procedure is a list of commands."""
-
-    def __init__(self, commands=None, arg_ids=None, result_ids=None):
-        self.commands = commands or []
-        self.arg_ids = arg_ids or []
-        self.result_ids = result_ids or []
-
-    def __str__(self):
-        return f"<Procedure #commands:{len(self.commands)}>"
-
-    def __repr__(self):
-        return self.__str__()
-
-    def update_ids(
-        self,
-        from_ids: Tuple[Union[str, int]] = [],
-        to_ids: Tuple[Union[str, int]] = [],
-        from_worker: Union[str, int] = None,
-        to_worker: Union[str, int] = None,
-    ):
-        """Replaces pairs of tensor ids in the plan stored.
-
-        Args:
-            from_ids: Ids to change.
-            to_ids: Ids to replace with.
-            from_worker: The previous worker that built the plan.
-            to_worker: The new worker that is running the plan.
-        """
-        for idx, command in enumerate(self.commands):
-            if from_worker and to_worker:
-                from_workers, to_workers = [from_worker], [to_worker]
-                if isinstance(from_worker, str):
-                    from_workers.append(from_worker.encode("utf-8"))
-                    to_workers.append(to_worker)
-                command = Command.replace_ids(command, from_workers, to_workers)
-
-            if len(from_ids) and len(to_ids):
-                command = Command.replace_ids(command, from_ids, to_ids)
-
-            self.commands[idx] = command
-
-        return self
-
-    def update_worker_ids(self, from_worker_id: Union[str, int], to_worker_id: Union[str, int]):
-        return self.update_ids([], [], from_worker_id, to_worker_id)
-
-    def update_args(
-        self,
-        args: Tuple[Union[FrameworkTensorType, AbstractTensor]],
-        result_ids: List[Union[str, int]],
-    ):
-        """Replace args and result_ids with the ones given.
-        Updates the arguments ids and result ids used to execute
-        the plan.
-        Args:
-            args: List of tensors.
-            result_ids: Ids where the plan output will be stored.
-        """
-
-        arg_ids = tuple(arg.id for arg in args)
-        self.update_ids(self.arg_ids, arg_ids)
-        self.arg_ids = arg_ids
-
-        self.update_ids(self.result_ids, result_ids)
-        self.result_ids = result_ids
-
-    def copy(self) -> "Procedure":
-        procedure = Procedure(
-            commands=copy.deepcopy(self.commands), arg_ids=self.arg_ids, result_ids=self.result_ids
-        )
-        return procedure
-
-    @staticmethod
-    def simplify(procedure: "Procedure") -> tuple:
-        return (
-            tuple(
-                procedure.commands
-            ),  # We're not simplifying because commands are already simplified
-            sy.serde._simplify(procedure.arg_ids),
-            sy.serde._simplify(procedure.result_ids),
-        )
-
-    @staticmethod
-    def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
-        commands, arg_ids, result_ids = procedure_tuple
-        commands = list(commands)
-        arg_ids = sy.serde._detail(worker, arg_ids)
-        result_ids = sy.serde._detail(worker, result_ids)
-
-        procedure = Procedure(commands, arg_ids, result_ids)
-        return procedure
 
 
 class Plan(AbstractObject, ObjectStorage):

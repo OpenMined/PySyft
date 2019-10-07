@@ -649,11 +649,11 @@ class TorchTensor(AbstractTensor):
         Convert a tensor or syft tensor to fixed precision
 
         Args:
-            args (tuple): args to transmit to the fixed precision tensor
+            *args (tuple): args to transmit to the fixed precision tensor
             storage (str): code to define the type of fixed precision tensor (values in (auto, crt, large))
             field_type (str): code to define a storage type (only for CRTPrecisionTensor)
             no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
-            kwargs (dict): kwargs to transmit to the fixed precision tensor
+            **kwargs (dict): kwargs to transmit to the fixed precision tensor
         """
 
         if not kwargs.get("owner"):
@@ -706,9 +706,9 @@ class TorchTensor(AbstractTensor):
                     "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
                 )
                 del kwargs["internal_type"]
-            fpt_tensor = syft.FixedPrecisionTensor(*args, **kwargs)
-            fpt_tensor.child = self
-            fpt_tensor = fpt_tensor.fix_precision()
+            fpt_tensor = (
+                syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
+            )
 
         if not no_wrap:
             fpt_tensor = fpt_tensor.wrap()
@@ -718,6 +718,17 @@ class TorchTensor(AbstractTensor):
     fix_precision = fix_prec
 
     def fix_prec_(self, *args, **kwargs):
+        """
+        Performs an inplace transformation to fixed precision and change self to
+        be a wrapper
+
+        Args:
+            *args: args to transmit to fix_prec
+            **kwargs: kwargs to transmit to fix_prec
+
+        Returns:
+            self seen as a wrapper
+        """
         # We specify id to make sure the inplace op doesn't change the tensor id
         self.child = self.fix_prec(*args, no_wrap=True, id=self.id, **kwargs)
         self.is_wrapper = True

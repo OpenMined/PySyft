@@ -13,6 +13,8 @@ if dependency_check.tensorflow_available:
     framework_tensors.append(EagerTensor)
     framework_shapes.append(tf.TensorShape)
 
+    framework_layer_module = tf.Module
+
 if dependency_check.torch_available:
     import torch
 

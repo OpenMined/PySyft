@@ -356,7 +356,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         worker = self.get_worker(worker)
 
         if hasattr(obj, "create_pointer") and not isinstance(
-            obj, (sy.Protocol,)
+            obj, sy.Protocol
         ):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
@@ -547,22 +547,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Selects an id for the object, assigns a list of owners, and establishes
         whether it's a pointer or not. This method is generally not used by the
-        whether it's a pointer or not. This method is generally not used by the
         client and is instead used by internal processes (hooks and workers).
 
         Args:
             obj: A torch Tensor or Variable object to be registered.
             obj_id (int or string): random integer between 0 and 1e10 or
-            string uniquely identifying the object.
+                string uniquely identifying the object.
         """
         if not self.is_client_worker:
             super().register_obj(obj, obj_id=obj_id)
 
-    def de_register_obj(self, obj: object, obj_id: Union[str, int] = None):
-        """De-registers the specified object with the current worker node.
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
+        """
+        De-registers the specified object with the current worker node.
+
+        Args:
+            obj: the object to deregister
+            _recurse_torch_objs: A boolean indicating whether the object is
+                more complex and needs to be explored.
         """
         if not self.is_client_worker:
-            super().de_register_obj(obj)
+            super().de_register_obj(obj, _recurse_torch_objs)
 
     # SECTION: convenience methods for constructing frequently used messages
 
