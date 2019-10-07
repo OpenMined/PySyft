@@ -9,7 +9,7 @@ from typing import Tuple
 
 import numpy
 
-from syft.workers import AbstractWorker
+from syft.workers.abstract import AbstractWorker
 from syft import serde
 
 

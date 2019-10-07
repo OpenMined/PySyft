@@ -8,11 +8,14 @@ import torch
 
 import syft as sy
 from syft.codes import MSGTYPE
-from syft.frameworks.types import FrameworkTensor
-from syft.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object_storage import ObjectStorage
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.tensor import AbstractTensor
-from syft.generic import ObjectStorage
-from syft.workers import AbstractWorker  #
+from syft.workers.abstract import AbstractWorker
 
 
 def make_plan(plan_blueprint):
@@ -33,9 +36,15 @@ class func2plan(object):
     This class should be used only as decorator.
     """
 
-    def __init__(self, args_shape=None, verbose=False):
+    def __init__(self, args_shape=None, state=None, verbose=False):
         self.args_shape = args_shape
         self.verbose = verbose
+        if state is not None:
+            self.state = state
+            self.include_state = True
+        else:
+            self.state = {}
+            self.include_state = False
 
     def __call__(self, plan_blueprint):
         plan = Plan(
@@ -43,6 +52,8 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             name=plan_blueprint.__name__,
             blueprint=plan_blueprint,
+            state=self.state,
+            include_state=self.include_state,
             verbose=self.verbose,
         )
         if self.args_shape:
@@ -50,45 +61,155 @@ class func2plan(object):
         return plan
 
 
-def method2plan(plan_blueprint):
-    """Converts a method to a plan.
-    Converts a method containing sequential pytorch code into
-    a plan object which can be sent to any arbitrary worker.
-    """
-    plan = Plan(
-        owner=sy.local_worker,
-        id=sy.ID_PROVIDER.pop(),
-        blueprint=plan_blueprint,
-        name=plan_blueprint.__name__,
-        is_method=True,
+def method2plan(*args, **kwargs):
+    raise SyntaxError(
+        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
     )
 
-    @property
-    def method(self: object) -> Plan:
-        """
-        This property is a way to catch the self of the method and give it to the plan,
-        it will be provided in the future calls as this is not automatic (the structure
-        of @func2plan would not keep the self during the call)
-        Args:
-            self (object): an instance of a class
-        Returns:
-            the plan which is also a callable.
+
+class State(object):
+    """The State is a Plan attribute and is used to send tensors along functions.
+
+    It references Plan tensor or parameters attributes using their name, and make
+    sure they are provided to remote workers who are sent the Plan.
+    """
+
+    def __init__(self, plan):
+        self.keys = set()
+        self.plan = plan
+
+    def __repr__(self):
+        return "State: " + ", ".join(self.keys)
+
+    def append(self, key):
+        """Insert element to the store by referencing its name.
+
+        The method is voluntarily flexible to several inputs
         Example:
-            When you have your plan and that you do
-            > plan(*args)
-            First the property is call with the part "plan" and self is caught, plan is
-            returned
-            Then plan is called with "(*args)" and in the __call__ function of plan the
-            self parameter is re-inserted
+            state.append(('key1, 'key2'))
+            state.append(['key1, 'key2'])
+            state.append('key1, 'key2')
+
+        But it should only be given strings which correspond to plan
+        attributes which are of is_valid_type.
+        Example:
+            'key1' is ok if plan.key1 is a tensor or a parameter
         """
-        plan._self = self
-        return plan
+        if isinstance(key, (list, tuple)):
+            for k in key:
+                self.append(k)
+        elif not isinstance(key, str):
+            raise ValueError(
+                "Don't provide the element to the state but just its name:\n"
+                "Example: if you have self.elem1, call self.add_to_state('elem1')."
+            )
+        else:
+            t = getattr(self.plan, key)
+            if self.is_valid_type(t):
+                self.keys.add(key)
+            else:
+                raise ValueError(
+                    f"Obj of type {type(t)} is not supported in the state.\n"
+                    "Use instead tensors or parameters."
+                )
+        return self
 
-    return method
+    def __iadd__(self, other_keys):
+        return self.append(other_keys)
+
+    def is_valid_type(self, obj):
+        return isinstance(obj, (torch.nn.Module, torch.Tensor))
+
+    def get_id_at_location(self):
+        """
+        Returns all the id_at_location of the pointers in the state
+        """
+        id_at_location = []
+
+        for key in self.keys:
+            ptr = getattr(self.plan, key)
+            if isinstance(ptr, torch.nn.Module):
+                for param in ptr.parameters():
+                    id_at_location.append(param.id_at_location)
+            else:
+                id_at_location.append(ptr.id_at_location)
+
+        return id_at_location
+
+    def copy(self):
+        copied_state = {}
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            copied_state[key] = t.copy()
+        return copied_state
+
+    def read(self, key):
+        """
+        Returns one element referenced by the store
+        """
+        return getattr(self.plan, key)
+
+    def set_(self, dict_state):
+        """
+        Reset inplace the state by feeding it a dict of tensors or params
+        """
+        for key in self.keys:
+            delattr(self.plan, key)
+
+        for key in dict_state.keys():
+            setattr(self.plan, key, dict_state[key])
+
+        self.keys = list(dict_state.keys())
+
+    def is_missing_grad(self, t):
+        return isinstance(t, torch.nn.Parameter) and t.grad is None
+
+    def create_grad_objects(self, p):
+        o = p.sum()
+        o.backward()
+        if p.grad is not None:
+            p.grad -= p.grad
+
+    def send(self, location, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            t.send_(location, **kwargs)
+
+    def get(self):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            t.get_()
+
+    def fix_precision_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            setattr(self.plan, key, t.fix_precision(*args, **kwargs))
+
+    def float_precision_(self):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+            t.float_precision_()
+
+    def share_(self, *args, **kwargs):
+        for key in self.keys:
+            t = getattr(self.plan, key)
+
+            if self.is_missing_grad(t):
+                self.create_grad_objects(t)
+
+            t.share_(*args, **kwargs)
 
 
-class Plan(ObjectStorage):
-    """A Plan store a sequence of torch operations, just like a function.
+class Plan(ObjectStorage, torch.nn.Module):
+    """A Plan stores a sequence of torch operations, just like a function.
 
     A Plan is intended to store a sequence of torch operations, just like a function,
     but it allows to send this sequence of operations to remote workers and to keep a
@@ -99,30 +220,38 @@ class Plan(ObjectStorage):
 
     def __init__(
         self,
-        id: Union[str, int],
-        owner: "sy.workers.BaseWorker",
+        id: Union[str, int] = None,
+        owner: "sy.workers.BaseWorker" = None,
         name: str = "",
+        state_ids: List[Union[str, int]] = None,
         arg_ids: List[Union[str, int]] = None,
         result_ids: List[Union[str, int]] = None,
-        blueprint: callable = None,
         readable_plan: List = None,
-        is_method: bool = False,
+        blueprint=None,
+        state=None,
+        include_state: bool = False,
         is_built: bool = False,
         verbose: bool = False,
         *args,
         **kwargs,
     ):
-        super().__init__()
+        ObjectStorage.__init__(self)
+        torch.nn.Module.__init__(self)
 
         # Plan instance info
-        self.id = id
-        self.name = name
-        self.owner = owner
+        self.id = sy.ID_PROVIDER.pop() if id is None else id
+        self.name = self.__class__.__name__ if name == "" else name
+        self._owner = sy.local_worker if owner is None else owner
         self.verbose = verbose
 
         # Info about the plan stored
         self.plan = list()
         self.readable_plan = readable_plan if readable_plan is not None else []
+        self.state = State(self)
+        self.include_state = include_state
+        if state is not None:
+            self.state.set_(state)
+        self.state_ids = state_ids if state_ids is not None else []
         self.arg_ids = arg_ids if arg_ids is not None else []
         self.result_ids = result_ids if result_ids is not None else []
         self.owner_when_built = None
@@ -134,16 +263,19 @@ class Plan(ObjectStorage):
 
         self.tags = None
         self.description = None
-        self.blueprint = blueprint
 
-        # For methods
-        self.is_method = is_method
-        self._self = None
+        if blueprint is not None:
+            self.forward = blueprint
+        elif self.is_built:
+            self.forward = None
+
+    def add_to_state(self, *elements):
+        for elem in elements:
+            self.state.append(elem)
 
     def _auto_build(self, args_shape: List[Tuple[int]] = None):
-        placeholders = self._create_placeholders(args_shape)
-        args = [self._self] + placeholders if self.is_method else placeholders
-        self._build(args)
+        args = self._create_placeholders(args_shape)
+        self.build(*args)
 
     def _create_placeholders(self, args_shape):
         # In order to support -1 value in shape to indicate any dimension
@@ -161,11 +293,36 @@ class Plan(ObjectStorage):
     def _known_workers(self):
         return self.owner._known_workers
 
+    # Override property of nn.Module
+    @property
+    def owner(self):
+        return self._owner
+
+    @owner.setter
+    def owner(self, new_owner):
+        self._owner = new_owner
+
+    # Override property of nn.Module
+    @property
+    def location(nn_self):
+        raise AttributeError("Plan has no attribute location")
+
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
 
     def request_obj(self, *args, **kwargs):
         return self.owner.request_obj(*args, **kwargs)
+
+    def respond_to_obj_req(self, obj_id: Union[str, int]):
+        """Returns the deregistered object from registry.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+        """
+
+        obj = self.get_obj(obj_id)
+        self.de_register_obj(obj)
+        return obj
 
     def _recv_msg(self, bin_message: bin):
         """Upon reception, a Plan stores all commands which can be executed lazily.
@@ -179,7 +336,10 @@ class Plan(ObjectStorage):
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
 
-        if msg_type != MSGTYPE.OBJ:
+        if (
+            msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
+            and not self.is_built
+        ):
             self.plan.append(bin_message)
             self.readable_plan.append((some_type, (msg_type, contents)))
 
@@ -190,59 +350,53 @@ class Plan(ObjectStorage):
 
         return sy.serde.serialize(None)
 
-    def _prepare_for_running_local_method(self):
-        """Steps needed before running or building a local plan based on a method."""
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.framework.hook.local_worker:
-            self._self.send(sy.framework.hook.local_worker, force_send=True)
-
-    def _after_running_local_method(self):
-        """Steps needed after running or building a local plan based on a method."""
-        # TODO: try to find a better way to deal with local execution
-        # of methods.
-        if self.is_method and not self.locations and self.owner == sy.framework.hook.local_worker:
-            self._self.get()
-
     def build(self, *args):
         """Builds the plan.
 
-        The plan must be built with some input data, here `args`. When they
-        are provided, they are sent to the plan worker, which executes its
-        blueprint: each command of the blueprint is catched by _recv_msg
-        and is used to fill the plan.
+        The build operation is done "on" the plan (which can be seen like a
+        worker), by running the forward function. The plan will therefore
+        execute each command of the function, will cache it using _recv_msg
+        and will use it to fill the plan.
+        To do so, all the arguments provided and the state elements should be
+        moved to the plan, using send().
 
         Args:
             args: Input data.
         """
-        self._prepare_for_running_local_method()
-        self._build(list(args))
-        self._after_running_local_method()
+        args = list(args)
 
-    def _build(self, args: List):
-        if self.is_method:
-            args = tuple([self._self] + args)
-
-        # The ids of args of the first call, which should be updated when
-        # the function is called with new args
+        # Move the arguments of the first call to the plan and store their ids
+        # as they will be included in the readable_plan: it should be updated
+        # when the function is called with new args and that's why we keep the
+        # refs self.arg_ids
         self.arg_ids = list()
         local_args = list()
         for arg in args:
-            # Send only tensors (in particular don't send the "self" for methods)
-            # in the case of a method.
-            if isinstance(arg, FrameworkTensor):
-                self.owner.register_obj(arg)
-                arg = arg.send(self)
-                arg.child.garbage_collect_data = False
-                self.arg_ids.append(arg.id_at_location)
+            arg = arg.send(self)
+            self.arg_ids.append(arg.id_at_location)
             local_args.append(arg)
 
-        res_ptr = self.blueprint(*local_args)
+        # Same for the state element: we send them to the plan and keep reference
+        # to the ids
+        copied_state = self.state.copy()
+        self.state.send(location=self)
+        self.state_ids = self.state.get_id_at_location()
 
+        # We usually have include_state==True for functions converted to plan
+        # using @func2plan and we need therefore to add the state manually
+        if self.include_state:
+            res_ptr = self.forward(*local_args, self.state)
+        else:
+            res_ptr = self.forward(*local_args)
         res_ptr.child.garbage_collect_data = False
 
-        worker = self.find_location(args)
+        # We put back the original state. There is no need to keep a reference
+        # To the element sent to the plan.
+        self.state.set_(copied_state)
 
+        # The readable plan is now built, we hide the fact that it was run on
+        # the plan and not on the owner by replacing the workers ids
+        worker = self.find_location(local_args)
         self.replace_worker_ids(worker.id, self.owner.id)
 
         # The id where the result should be stored
@@ -259,7 +413,7 @@ class Plan(ObjectStorage):
         """
         for arg in args:
             if isinstance(arg, FrameworkTensor):
-                if hasattr(arg, "child") and isinstance(arg.child, sy.PointerTensor):
+                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
                     return arg.location
         return sy.framework.hook.local_worker
 
@@ -272,15 +426,28 @@ class Plan(ObjectStorage):
             arg_ids=self.arg_ids,
             result_ids=self.result_ids,
             readable_plan=self.readable_plan,
-            blueprint=self.blueprint,
             is_built=self.is_built,
         )
-        plan.replace_ids(
-            from_ids=plan.arg_ids, to_ids=plan.arg_ids, from_worker=self.id, to_worker=plan.id
-        )
-        plan.replace_ids(
-            from_ids=plan.result_ids, to_ids=plan.result_ids, from_worker=self.id, to_worker=plan.id
-        )
+
+        # TODO: we shouldn't use the same state_ids since we want to avoid
+        # strange behaviours such as:
+        #
+        # @sy.func2plan(args_shape=[(1,)], state={"bias": th.tensor([3.0])})
+        # def plan(data, state):
+        #   bias = state.read("bias")
+        #   return data * bias
+        #
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # True
+        # plan_copy = plan.copy()
+        # plan_copy.bias = th.tensor([4.0])
+        # assert plan(th.tensor(1.)) == th.tensor(3.)  # False, OMG!!!
+        # Issue: https://github.com/OpenMined/PySyft/issues/2601
+
+        plan.state_ids = self.state_ids
+
+        # Replace occurences of the old id to the new plan id
+        plan.replace_worker_ids(self.id, plan.id)
+
         return plan
 
     def replace_ids(
@@ -377,11 +544,7 @@ class Plan(ObjectStorage):
         # TODO: for now only one value is returned from a plan
         result_ids = [sy.ID_PROVIDER.pop()]
 
-        self._prepare_for_running_local_method()
-
         plan_res = self.execute_plan(args, result_ids)
-
-        self._after_running_local_method()
 
         return plan_res
 
@@ -398,14 +561,21 @@ class Plan(ObjectStorage):
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
-        # Support for method hooked in plans
-        if self.is_method:
-            args = [self._self] + list(args)
-
-        if self.blueprint:
-            return self.blueprint(*args)
-
-        return self._execute_readable_plan(*args)
+        if self.find_location(args) == self.owner:
+            if self.forward is not None:
+                if self.include_state:
+                    return self.forward(*args, self.state)
+                else:
+                    return self.forward(*args)
+            else:
+                return self._execute_readable_plan(*args)
+        else:
+            if not self.is_built:
+                if self.include_state:
+                    self.forward(*args, self.state)
+                else:
+                    self.forward(*args)
+            return self._execute_readable_plan(*args)
 
     def _update_args(
         self,
@@ -419,6 +589,7 @@ class Plan(ObjectStorage):
             args: List of tensors.
             result_ids: Ids where the plan output will be stored.
         """
+
         arg_ids = [arg.id for arg in args]
         self.replace_ids(self.arg_ids, arg_ids)
         self.arg_ids = arg_ids
@@ -434,7 +605,7 @@ class Plan(ObjectStorage):
     def _get_plan_output(self, result_ids, return_ptr=False):
         responses = []
         for return_id in result_ids:
-            response = sy.PointerTensor(
+            response = PointerTensor(
                 location=self.owner, id_at_location=return_id, owner=self, id=sy.ID_PROVIDER.pop()
             )
             responses.append(response if return_ptr else response.get())
@@ -442,15 +613,6 @@ class Plan(ObjectStorage):
         if len(responses) == 1:
             return responses[0]
 
-        return responses
-
-    def _execute_plan_locally(self, result_ids, *args, **kwargs):
-        # If plan is a method the first argument is `self` so we ignore it
-        args = args[1:] if self.is_method else args
-
-        self._update_args(args, result_ids)
-        self._execute_plan()
-        responses = self._get_plan_output(result_ids)
         return responses
 
     def execute_plan(self, args: List, result_ids: List[Union[str, int]]):
@@ -471,22 +633,24 @@ class Plan(ObjectStorage):
         if not self.is_built:
             self._build(args)
 
-        if len(self.locations) > 0:
+        if len(self.locations):
+            plan_name = f"plan{self.id}"
+            # args, _, _ = hook_args.unwrap_args_from_function(
+            #     plan_name, args, {}
+            # )
+
             worker = self.find_location(args)
             if worker.id not in self.ptr_plans.keys():
                 self.ptr_plans[worker.id] = self._send(worker)
             response = self.request_execute_plan(worker, result_ids, *args)
 
+            response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
             return response
 
-        # If the plan is local, we execute the plan and return the response
-        if len(self.locations) == 0 and self.owner == sy.framework.hook.local_worker:
-            return self._execute_plan_locally(result_ids, *args)
-
-        # if the plan is not to be sent but is not local (ie owned by the local worker)
-        # then it has been requested to be executed, so we update the plan with the
+        # if the plan is not to be sent then it has been requested to be executed,
+        # so we update the plan with the
         # correct input and output ids and we run it
-        elif len(self.locations) == 0 and self.owner != sy.framework.hook.local_worker:
+        elif not len(self.locations):
             self._update_args(args, result_ids)
             self._execute_plan()
             responses = self._get_plan_output(result_ids)
@@ -515,7 +679,6 @@ class Plan(ObjectStorage):
             Execution response.
 
         """
-        args = [arg for arg in args if isinstance(arg, FrameworkTensor)]
         args = [args, response_ids]
         command = ("execute_plan", self.ptr_plans[location.id], args, kwargs)
 
@@ -563,13 +726,22 @@ class Plan(ObjectStorage):
         for worker_id in [self.owner.id] + self.locations:
             self.replace_worker_ids(worker_id, location.id)
 
+        state_original = self.state.copy()
+        state_ids_original = self.state_ids.copy()
+
+        self.state.send(location, garbage_collect_data=False)
+        state_ptr_ids = self.state.get_id_at_location()
+        self.replace_ids(self.state_ids, state_ptr_ids)
+        self.state_ids = state_ptr_ids
+
         _ = self.owner.send(self, workers=location)
 
         # Deep copy the plan without using deep copy
         pointer = sy.Plan.detail(self.owner, sy.Plan.simplify(self))
 
-        # readable_plan, id, arg_ids, result_ids, name, tags, description = plan_tuple
         self.readable_plan = readable_plan_original
+        self.state.set_(state_original)
+        self.state_ids = state_ids_original
         return pointer
 
     def get(self) -> "Plan":
@@ -581,24 +753,42 @@ class Plan(ObjectStorage):
         Returns:
             Plan.
         """
-        # self.replace_worker_ids(self.location.id, self.owner.id)
 
-        self.locations = []
-        self.ptr_plans = {}
+        if len(self.locations):
+            self.locations = []
+            self.ptr_plans = {}
+        else:
+            self.state.get()
 
         return self
 
-    def describe(self, description: str) -> "Plan":
-        self.description = description
+    def fix_precision_(self, *args, **kwargs):
+        self.state.fix_precision_(*args, **kwargs)
         return self
 
-    def tag(self, *_tags: List) -> "Plan":
-        if self.tags is None:
-            self.tags = set()
+    fix_precision = fix_precision_
+    fix_prec = fix_precision_
 
-        for new_tag in _tags:
-            self.tags.add(new_tag)
+    def float_precision_(self):
+        self.state.float_precision_()
         return self
+
+    float_precision = float_precision_
+    float_prec = float_precision_
+
+    def share_(self, *args, **kwargs):
+        self.state.share_(*args, **kwargs)
+        return self
+
+    share = share_
+
+    def create_pointer(self, owner, garbage_collect_data):
+        return PointerPlan(
+            location=self.owner,
+            id_at_location=self.id,
+            owner=owner,
+            garbage_collect_data=garbage_collect_data,
+        )
 
     def __str__(self):
         """Returns the string representation of PlanWorker.
@@ -627,6 +817,9 @@ class Plan(ObjectStorage):
 
         return out
 
+    def __repr__(self):
+        return self.__str__()
+
     @staticmethod
     def simplify(plan: "Plan") -> tuple:
         """
@@ -644,6 +837,7 @@ class Plan(ObjectStorage):
             sy.serde._simplify(plan.id),
             sy.serde._simplify(plan.arg_ids),
             sy.serde._simplify(plan.result_ids),
+            sy.serde._simplify(plan.state_ids),
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -652,7 +846,7 @@ class Plan(ObjectStorage):
 
     @staticmethod
     def detail(worker: AbstractWorker, plan_tuple: tuple) -> "Plan":
-        """This function reconstructs a Plan object given it's attributes in the form of a tuple.
+        """This function reconstructs a Plan object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
             plan_tuple: a tuple holding the attributes of the Plan
@@ -660,10 +854,13 @@ class Plan(ObjectStorage):
             plan: a Plan object
         """
 
-        readable_plan, id, arg_ids, result_ids, name, tags, description, is_built = plan_tuple
+        readable_plan, id, arg_ids, result_ids, state_ids, name, tags, description, is_built = (
+            plan_tuple
+        )
         id = sy.serde._detail(worker, id)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
+        state_ids = sy.serde._detail(worker, state_ids)
 
         plan = sy.Plan(
             owner=worker,
@@ -673,6 +870,8 @@ class Plan(ObjectStorage):
             readable_plan=readable_plan,  # We're not detailing, see simplify() for details
             is_built=is_built,
         )
+
+        plan.state_ids = state_ids
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)

@@ -2,7 +2,8 @@ import torch
 import torch as th
 import syft
 
-from syft.generic.pointers import PointerTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
 
@@ -259,7 +260,7 @@ def test_grad_pointer(workers):
 
 
 def test_move(workers):
-    alice, bob = workers["alice"], workers["bob"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
@@ -287,6 +288,16 @@ def test_move(workers):
     x.move(alice)
 
     assert len(alice._objects) == 1
+
+    # Test .move on remote objects
+
+    james.clear_objects()
+    x = th.tensor([1.0]).send(james)
+    remote_x = james._objects[x.id_at_location]
+    remote_ptr = remote_x.send(bob)
+    assert remote_ptr.id in james._objects.keys()
+    remote_ptr2 = remote_ptr.move(alice)
+    assert remote_ptr2.id in james._objects.keys()
 
 
 def test_combine_pointers(workers):
@@ -356,3 +367,77 @@ def test_raising_error_when_item_func_called(workers):
     pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
     with pytest.raises(RuntimeError):
         pointer.item()
+
+
+def test_fix_prec_on_pointer_tensor(workers):
+    """
+    Ensure .fix_precision() works as expected.
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+
+    ptr = ptr.fix_precision()
+    remote_tensor = bob._objects[ptr.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
+
+
+def test_fix_prec_on_pointer_of_pointer(workers):
+    """
+    Ensure .fix_precision() works along a chain of pointers.
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    ptr = ptr.send(alice)
+
+    ptr = ptr.fix_precision()
+
+    alice_tensor = alice._objects[ptr.id_at_location]
+    remote_tensor = bob._objects[alice_tensor.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
+
+
+def test_float_prec_on_pointer_tensor(workers):
+    """
+    Ensure .float_precision() works as expected.
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    ptr = ptr.fix_precision()
+
+    ptr = ptr.float_precision()
+    remote_tensor = bob._objects[ptr.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor, torch.Tensor)
+
+
+def test_float_prec_on_pointer_of_pointer(workers):
+    """
+    Ensure .float_precision() works along a chain of pointers.
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    ptr = ptr.send(alice)
+    ptr = ptr.fix_precision()
+
+    ptr = ptr.float_precision()
+
+    alice_tensor = alice._objects[ptr.id_at_location]
+    remote_tensor = bob._objects[alice_tensor.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor, torch.Tensor)

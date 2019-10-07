@@ -1,7 +1,7 @@
 from typing import List
 from typing import Union
 
-from syft.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 
 
@@ -119,7 +119,7 @@ class ObjectStorage:
         """
         if remote_key in self._objects:
             obj = self._objects[remote_key]
-            if hasattr(obj, "child"):
+            if hasattr(obj, "child") and obj.child is not None:
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
 

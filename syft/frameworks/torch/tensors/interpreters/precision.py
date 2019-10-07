@@ -1,11 +1,12 @@
 import torch
 
 import syft
-from syft.workers import AbstractWorker
-from syft.generic.pointers import MultiPointerTensor
+from syft.workers.abstract import AbstractWorker
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -38,14 +39,13 @@ class FixedPrecisionTensor(AbstractTensor):
         super().__init__(tags, description)
 
         self.owner = owner
-        self.id = id
+        self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
 
         self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -78,6 +78,12 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return None
 
+    def backward(self, *args, **kwargs):
+        """Calling backward on Precision Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an Precision Tensor (for example in
+        create_grad_objects), so we just ignore the call."""
+        pass
+
     def attr(self, attr_name):
         return self.__getattribute__(attr_name)
 
@@ -106,8 +112,9 @@ class FixedPrecisionTensor(AbstractTensor):
         one, encoded with floating point precision"""
 
         value = self.child.long() % self.field
+        torch_max_value = torch.tensor(self.field).long()
 
-        gate = value.native_gt(self.torch_max_value / 2).long()
+        gate = value.native_gt(torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -124,7 +131,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            gate = self.child.native_gt(self.torch_max_value / 2).long()
+            torch_max_value = torch.tensor(self.field).long()
+            gate = self.child.native_gt(torch_max_value / 2).long()
             neg_nums = (self.child - self.field) / truncation + self.field
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
@@ -256,11 +264,18 @@ class FixedPrecisionTensor(AbstractTensor):
                     "Division of a FixedPrecisionTensor by an AdditiveSharingTensor not implemented"
                 )
 
+        elif (
+            cmd == "mul"
+            and isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor))
+            and isinstance(other.child, (AdditiveSharingTensor, MultiPointerTensor))
+        ):
+            # If we try to multiply a FPT>torch.tensor with a FPT>AST,
+            # we swap operators so that we do the same operation as above
+            new_self, new_other, _ = hook_args.unwrap_args_from_method("mul", self, other, None)
+
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
-                cmd, self, other, None
-            )
+            new_self, new_other, _ = hook_args.unwrap_args_from_method(cmd, self, other, None)
 
             # To avoid problems with negative numbers
             # we take absolute value of the operands
@@ -310,7 +325,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, cmd)(new_other)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -408,7 +423,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 "matmul", self, args, kwargs
             )
 
@@ -416,7 +431,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, "matmul")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -426,6 +441,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __matmul__ = matmul
+    mm = matmul
 
     @overloaded.method
     def __gt__(self, _self, other):
@@ -481,6 +497,7 @@ class FixedPrecisionTensor(AbstractTensor):
             return self.matmul(other)
 
         module.matmul = matmul
+        module.mm = matmul
 
         def addmm(bias, input_tensor, weight):
             matmul = input_tensor.matmul(weight)
@@ -492,16 +509,14 @@ class FixedPrecisionTensor(AbstractTensor):
         def sigmoid(tensor):
             """
             Overloads torch.sigmoid to be able to use MPC
-            Approximation with polynomial interpolation of degree 10 over [-10,10]
+            Approximation with polynomial interpolation of degree 5 over [-8,8]
             Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
             """
 
-            weights = [0.5, 0.216578258, -0.0083312848, 0.0001876528, -1.9669e-06, 7.5e-09]
-            degrees = [0, 1, 3, 5, 7, 9]
+            weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
+            degrees = [0, 1, 3, 5]
 
-            # TODO: change to max_degree == degrees[-1] once MPC computations with high exponentials
-            # will be faster
-            max_degree = degrees[2]
+            max_degree = degrees[-1]
             max_idx = degrees.index(max_degree)
 
             # initiate with term of degree 0 to avoid errors with tensor ** 0
@@ -541,8 +556,8 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             """
             Overloads torch.conv2d to be able to use MPC on convolutional networks.
-            The idea is to build new tensors from input and weight to compute a matrix multiplication
-            equivalent to the convolution.
+            The idea is to build new tensors from input and weight to compute a
+            matrix multiplication equivalent to the convolution.
 
             Args:
                 input: input image
@@ -556,6 +571,11 @@ class FixedPrecisionTensor(AbstractTensor):
             Returns:
                 the result of the convolution as an AdditiveSharingTensor
             """
+            # Currently, kwargs are not unwrapped by hook_args
+            # So this needs to be done manually
+            if bias.is_wrapper:
+                bias = bias.child
+
             assert len(input.shape) == 4
             assert len(weight.shape) == 4
 
@@ -566,13 +586,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # Extract a few useful values
             batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
-            nb_channels_out, nb_channels_in_, nb_rows_kernel, nb_cols_kernel = weight.shape
+            nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = weight.shape
 
             if bias is not None:
                 assert len(bias) == nb_channels_out
 
             # Check if inputs are coherent
-            assert nb_channels_in == nb_channels_in_ * groups
+            assert nb_channels_in == nb_channels_kernel * groups
             assert nb_channels_in % groups == 0
             assert nb_channels_out % groups == 0
 
@@ -618,7 +638,7 @@ class FixedPrecisionTensor(AbstractTensor):
                     # For each new output value, we just need to shift the receptive field
                     offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
                     tmp = [ind + offset for ind in pattern_ind]
-                    im_reshaped.append(im_flat[:, tmp].wrap())
+                    im_reshaped.append(im_flat[:, tmp])
             im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
             # The convolution kernels are also reshaped for the matrix multiplication
@@ -626,7 +646,7 @@ class FixedPrecisionTensor(AbstractTensor):
             #                       [weights for out channel 1],
             #                       ...
             #                       [weights for out channel nb_channels_out]].TRANSPOSE()
-            weight_reshaped = weight.view(nb_channels_out // groups, -1).t().wrap()
+            weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
 
             # Now that everything is set up, we can compute the result
             if groups > 1:
@@ -650,7 +670,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
                 .contiguous()
             )
-            return res.child
+            return res
 
         module.conv2d = conv2d
 
@@ -693,7 +713,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        tensor = args[0] if not isinstance(args[0], tuple) else args[0][0]
+        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # Check that the function has not been overwritten
         try:
@@ -703,11 +723,8 @@ class FixedPrecisionTensor(AbstractTensor):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -716,7 +733,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
@@ -791,3 +808,7 @@ class FixedPrecisionTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(FixedPrecisionTensor)

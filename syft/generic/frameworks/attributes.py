@@ -5,7 +5,7 @@ from typing import Union
 from typing import Callable
 from typing import Any
 
-from syft.frameworks.hook import FrameworkHook
+from syft.generic.frameworks.hook.hook import FrameworkHook
 
 
 class FrameworkAttributes(ABC):
@@ -13,12 +13,18 @@ class FrameworkAttributes(ABC):
     def __init__(self, framework: ModuleType, hook: FrameworkHook):
         pass
 
-    # Forcing subclasses to define a class-level ALIAS constant; see
+    # Forcing subclasses to define a class-level constant; see
     # https://stackoverflow.com/a/53417582 for nuance
     @property
     @classmethod
     @abstractmethod
     def ALIAS(cls):
+        pass
+
+    @property
+    @classmethod
+    @abstractmethod
+    def Tensor(cls):
         pass
 
     @abstractmethod

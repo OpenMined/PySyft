@@ -8,8 +8,8 @@ import torch.nn.functional as F
 import syft as sy
 
 import time
-from syft.workers import WebsocketClientWorker
-from syft.workers import WebsocketServerWorker
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.websocket_server import WebsocketServerWorker
 from syft.frameworks.torch.federated import utils
 
 PRINT_IN_UNITTESTS = False
