@@ -6,7 +6,7 @@ from typing import Union
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
-from syft.messaging.state import State
+from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
 
 

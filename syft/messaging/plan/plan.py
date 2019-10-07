@@ -9,8 +9,8 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.messaging.procedure import Procedure
-from syft.messaging.state import State
+from syft.messaging.plan.procedure import Procedure
+from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
 
 
@@ -217,7 +217,7 @@ class Plan(AbstractObject, ObjectStorage):
         build_args = [arg.send(self) for arg in args]
 
         # Same for the state element: we send to the plan and keep a clone
-        cloned_state = self.state.clone_state()
+        cloned_state = self.state.clone_state_dict()
         self.state.send_for_build(location=self)
 
         # We usually have include_state==True for functions converted to plan
@@ -260,7 +260,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         plan.state.plan = plan
 
-        plan.state.set_(self.state.clone_state())
+        plan.state.set_(self.state.clone_state_dict())
 
         # Replace occurences of the old id to the new plan id
         plan.procedure.update_worker_ids(self.id, plan.id)

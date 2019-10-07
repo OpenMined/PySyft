@@ -36,7 +36,7 @@ class State(object):
             tensors.append(tensor)
         return tensors
 
-    def clone_state(self) -> Dict:
+    def clone_state_dict(self) -> Dict:
         """
         Return a clone of the state elements. Tensor ids are kept.
         """
