@@ -420,7 +420,7 @@ class TorchHook(FrameworkHook):
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
-        return super()._get_hooked_func(module_name, attr)
+        return super()._get_hooked_func(public_module_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
