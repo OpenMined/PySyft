@@ -64,7 +64,7 @@ class ObjectPointer(AbstractObject):
                 .grad. Note the string can be a chain (i.e., .child.child.child or
                 .grad.child.child). Defaults to None, which means don't point to any attr,
                 just point to then object corresponding to the id_at_location.
-            object_type: An option FrameworkObjectType to specify the object type which should
+            object_type: An optional FrameworkObjectType to specify the object type which should
                 match the child type (e.g. torch.Tensor, tf.Variable, tf.Tensor). This 
                 attribute can be useful for frameworks using several tensor types, to indicate 
                 how to wrap the ObjectPointer.
