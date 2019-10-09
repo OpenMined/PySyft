@@ -77,6 +77,8 @@ class Promise(ABC):
                     else:
                         id_to_add = arg_id
                     args.append(self.owner.get_obj(id_to_add))
+                    # FIXME Ugly fix because I had id_to_add != self.owner.get_obj(id_to_add).id...
+                    args[-1].id = id_to_add
                 result = plan(*args)
 
                 # ids of promises are changed automatically otherwise
