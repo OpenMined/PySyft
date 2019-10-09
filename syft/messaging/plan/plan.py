@@ -12,6 +12,7 @@ from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 
 
 class func2plan(object):
@@ -122,6 +123,8 @@ class Plan(AbstractObject, ObjectStorage):
                 self.owner.register_obj(tensor)
         self.include_state = include_state
         self.is_built = is_built
+        self.input_shapes = None
+        self._output_shape = None
 
         if blueprint is not None:
             self.forward = blueprint
@@ -159,6 +162,14 @@ class Plan(AbstractObject, ObjectStorage):
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
         return self.state.tensors()
+    
+    @property
+    def output_shape(self):
+        if self._output_shape is None:
+            args = self._create_placeholders(self.input_shapes)
+            output = self(*args)
+            self._output_shape = output.shape
+        return self._output_shape
 
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
@@ -213,6 +224,9 @@ class Plan(AbstractObject, ObjectStorage):
             args: Input data.
         """
 
+        self.input_shapes = [x.shape for x in args]
+        self._output_shape = None
+        
         # Move the arguments of the first call to the plan
         build_args = [arg.send(self) for arg in args]
 
@@ -295,7 +309,11 @@ class Plan(AbstractObject, ObjectStorage):
 
         result_ids = [sy.ID_PROVIDER.pop()]
 
-        if self.forward is not None:
+        if any(
+            [hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]
+         ):
+            return self.setup_plan_with_promises(*args)
+        elif self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
@@ -330,6 +348,43 @@ class Plan(AbstractObject, ObjectStorage):
         if len(responses) == 1:
             return responses[0]
         return responses
+    
+    def has_args_fulfilled(self):
+        """ Check if all the arguments of the plan are ready or not.
+        It might be the case that we still need to wait for some arguments in
+        case some of them are Promises.
+        """
+        for arg_id in self.procedure.arg_ids:
+            arg = self.owner._objects[arg_id].child
+            if isinstance(arg, PromiseTensor):
+                if not arg.is_kept():
+                    return False
+        return True
+    
+    def setup_plan_with_promises(self, *args):
+         """ Slightly modifies a plan so that it can work with promises.
+         The plan will also be sent to location with this method.
+         """
+
+         prom = None
+         for p in args:
+             if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
+                 p.child.plans.add(self.id)
+                 if prom is None:
+                     prom = p
+
+         res = sy.PromiseTensor(
+             owner=prom.owner,
+             shape=self.output_shape,
+             tensor_id=self.procedure.result_ids[0],
+             tensor_type="torch.FloatTensor",  # TODO how to infer result type?
+             plans=set(),
+         )
+
+         self.procedure.update_args(args, self.procedure.result_ids)
+         self.promise_out_id = res.id
+
+         return res
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.

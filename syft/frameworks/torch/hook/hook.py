@@ -495,12 +495,12 @@ class TorchHook(FrameworkHook):
                     if isinstance(arg, PromiseTensor):
                         arg.plans.add(operation.id)
 
-                operation._update_args([self, *args], operation.result_ids)
+                operation.procedure.update_args([self, *args], operation.procedure.result_ids)
 
                 promise_out = PromiseTensor(
                     owner=self.owner,
                     shape=operation.output_shape,
-                    tensor_id=operation.result_ids[0],
+                    tensor_id=operation.procedure.result_ids[0],
                     tensor_type=self.obj_type,
                     plans=set(),
                 )
