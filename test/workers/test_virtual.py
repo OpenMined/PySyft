@@ -12,6 +12,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ObjectNotFoundError
 
 
 def test_send_msg():
@@ -201,10 +202,8 @@ def test_obj_not_found(workers):
 
     bob._objects = {}
 
-    try:
+    with pytest.raises(ObjectNotFoundError):
         y = x + x
-    except KeyError as e:
-        assert "If you think this tensor does exist" in str(e)
 
 
 def test_get_not_permitted(workers):
