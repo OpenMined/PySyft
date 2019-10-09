@@ -182,9 +182,10 @@ class TorchHook(FrameworkHook):
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 
-    def create_wrapper(cls, child_to_wrap):
+    def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
+        assert wrapper_type is None or wrapper_type == torch.Tensor, "TorchHook only uses torch.Tensor wrappers"
         return torch.Tensor()
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
