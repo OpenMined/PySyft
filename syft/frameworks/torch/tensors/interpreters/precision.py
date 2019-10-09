@@ -4,6 +4,7 @@ import syft
 from syft.workers.abstract import AbstractWorker
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.frameworks.torch.tensors.interpreters.polynomial import PolynomialTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.overload import overloaded
@@ -525,8 +526,10 @@ class FixedPrecisionTensor(AbstractTensor):
             for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
                 result += (tensor ** d) * torch.tensor(w).fix_precision().child"""
 
-            x = syft.PolynomialTensor()
+            x = PolynomialTensor()
             x.child = tensor
+
+            print("USING POLYNOMIAL TENSOR")
 
             return x.sigmoid().child
 
@@ -537,8 +540,10 @@ class FixedPrecisionTensor(AbstractTensor):
             Overloads torch.tanh to be able to use MPC
             """
 
-            x = syft.PolynomialTensor()
+            x = PolynomialTensor()
             x.child = tensor
+
+            print("USING POLYNOMIAL TENSOR")
 
             return x.tanh().child
 

@@ -15,6 +15,7 @@ from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.polynomial import PolynomialTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor

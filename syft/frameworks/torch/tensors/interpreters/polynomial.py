@@ -1,6 +1,6 @@
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.overload import overloaded
-from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.generic.frameworks.hook import hook_args
 import torch
 import syft
 import numpy as np
@@ -85,6 +85,8 @@ class PolynomialTensor(AbstractTensor):
         """The method encrypts the coefficients as required by the child tensor"""
 
         tensor = None
+
+        from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 
         if isinstance(self.child, FixedPrecisionTensor):
 
@@ -347,54 +349,6 @@ class PolynomialTensor(AbstractTensor):
     __exp__ = exp
 
     @classmethod
-    def handle_func_command(cls, command):
-        """
-        Receive an instruction for a function to be applied on a FixedPrecision Tensor,
-        Perform some specific action (like logging) which depends of the
-        instruction content, replace in the args all the FPTensors with
-        their child attribute, forward the command instruction to the
-        handle_function_command of the type of the child attributes, get the
-        response and replace a FixedPrecision on top of all tensors found in
-        the response.
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
-        :return: the response of the function command
-        """
-
-        print("HANDLING FUNC COMMAND")
-
-        cmd, _, args, kwargs = command
-
-        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
-
-        # Check that the function has not been overwritten
-        try:
-            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
-        except AttributeError:
-            pass
-
-        # TODO: I can't manage the import issue, can you?
-        # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
-
-        # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
-
-        # Send it to the appropriate class and get the response
-        response = new_type.handle_func_command(new_command)
-
-        # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
-            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
-        )
-
-        return response
-
-    @classmethod
     def on_function_call(cls, command):
         """
         Override this to perform a specific action for each call of a torch
@@ -408,6 +362,8 @@ class PolynomialTensor(AbstractTensor):
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
+
+        print("ADD TWO")
         if isinstance(other, int):
             scaled_int = other * self.base ** self.precision_fractional
             return getattr(_self, "add")(scaled_int)
@@ -419,12 +375,13 @@ class PolynomialTensor(AbstractTensor):
         elif isinstance(other, PolynomialTensor) and isinstance(_self, PolynomialTensor):
             # If we try to add a FPT>torch.tensor and a FPT>(wrap)>AST,
             # we swap operators so that we do the same operation as above
-            _self, other = other, _self.wrap()
+            print("YAAY")
+            response = other.child + _self.child
+            return response
 
-        response = getattr(_self, "add")(other)
-        response %= self.field  # Wrap around the field
+        if isinstance(other, torch.Tensor) and isinstance(_self, torch.Tensor):
 
-        return response
+            return other + _self
 
     __add__ = add
 
@@ -503,104 +460,6 @@ class PolynomialTensor(AbstractTensor):
 
             module.functional = functional
 
-    """def piecewise_linear_eval(self, data, x):
-        Get approximated value for a given function. This takes only scalar value.
-         If you have a Numpy array or torch tensor consider passing it using a lambda
-         or torch.apply_ method.
 
-         Args:
-             data[2D List]: Instance of piecewise linear fit taking values [min_val, max_val,
-                 function approximation method]
-             x[Float or Integer]: Value to be approximated
-         
-
-        for element in data:
-
-            min_val = element[0]
-            max_val = element[1]
-            function = element[2]
-
-            if min_val <= x <= max_val:
-
-                return function(x)
-    """
-
-    """@staticmethod
-    @overloaded.module
-    def torch(module):
-        def exp(self, x):
-            return self.__exp__(x)
-
-        # Just register it using the module variable
-        module.exp = exp
-
-        @overloaded.function
-        def sigmoid(self, x):
-            return self.__sigmoid__(x)
-
-        module.sigmoid = sigmoid
-
-        @overloaded.function
-        def tanh(self, x):
-            return self.__tanh__(x)
-
-        # Just register it using the module variable
-        module.tanh = tanh"""
-
-    """    def piecewise_linear_fit(self, name, array):
-    Fit a piecewise linear function. This can be used to approximate a non-linear function
-         as separate linear functions valid for separate ranges.
-         For instance function approximations are more accurate for exponential when separate instances
-         of interpolation are fit between -10 to 0 and 0 to 10.
-
-         Args:
-             array[2D List]: Each instance of list must take four values [min_val, steps, max_val,
-                 function approximation method]
-
-         Returns:
-             array[2D List]: Each instance of list with four values [min_val,max_val,Approximated function]
-         
-
-        arguments = []
-
-        for element in array:
-
-            min_val = element[0]
-            max_val = element[1]
-            steps = element[2]
-            degree = element[3]
-            function = element[4]
-            arguments.append(
-                [
-                    min_val,
-                    max_val,
-                    function(name, min_val=min_val, max_val=max_val, steps=steps, degree=degree),
-                ]
-            )
-
-        return arguments"""
-
-    """def fit_function(self, name, min_val=0, max_val=10, steps=100, degree=10) -> np.poly1d:
-        Interpolated approximation of given function"
-
-         Args:
-             name: Name of function as defined in self.setting
-             min_val: Minimum range of interpolation fit
-             max_val: Maximum range of interpolation fit
-             steps:   Steps of interpolation fit
-             degree: Degree of interpolation fit
-             function: The function used to encrypt function approximation coefficients
-
-         Returns:
-             f_interpolated (Numpy Poly1d): Approximated function
-         
-
-        fitted_function = self.interpolate(
-            self.function_attr[name + "_" + "function"],
-            np.linspace(min_val, max_val, steps),
-            degree=degree,
-        )
-
-        fitted_function = self.apply_coefs(fitted_function, self.function)
-
-        return np.poly1d(fitted_function)"""
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(PolynomialTensor)

@@ -199,3 +199,13 @@ def test_sigmoid_additiveshared():
     )
 
     assert torch.allclose(result.child.child.child, expected, atol=1e01)
+
+
+# test_sigmoid_additiveshared()
+hook = sy.TorchHook(torch)
+
+k = PolynomialTensor()
+
+k.child = torch.tensor([1, 2, 3, 4]).fix_precision()
+
+print(k + k)

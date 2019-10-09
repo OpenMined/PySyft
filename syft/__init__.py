@@ -68,6 +68,7 @@ from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisio
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.polynomial import PolynomialTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -97,6 +98,7 @@ __all__.extend(
         "AutogradTensor",
         "FixedPrecisionTensor",
         "LargePrecisionTensor",
+        "PolynomialTensor",
         "PointerTensor",
         "MultiPointerTensor",
         "VirtualGrid",
