@@ -165,31 +165,11 @@ async def main():
 
     hook = sy.TorchHook(torch)
 
-    docker_demo = False
-    if docker_demo:
-        kwargs_websocket = {"hook": hook, "verbose": args.verbose}
-        alice = websocket_client.WebsocketClientWorker(
-            id="alice", port=8777, host="alice", **kwargs_websocket
-        )
-        bob = websocket_client.WebsocketClientWorker(
-            id="bob", port=8777, host="bob", **kwargs_websocket
-        )
-        charlie = websocket_client.WebsocketClientWorker(
-            id="charlie", port=8777, host="charlie", **kwargs_websocket
-        )
-        testing = websocket_client.WebsocketClientWorker(
-            id="testing", port=8777, host="testing", **kwargs_websocket
-        )
-    else:
-        kwargs_websocket = {"hook": hook, "verbose": args.verbose, "host": "0.0.0.0"}
-        alice = websocket_client.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-        bob = websocket_client.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-        charlie = websocket_client.WebsocketClientWorker(
-            id="charlie", port=8779, **kwargs_websocket
-        )
-        testing = websocket_client.WebsocketClientWorker(
-            id="testing", port=8780, **kwargs_websocket
-        )
+    kwargs_websocket = {"hook": hook, "verbose": args.verbose, "host": "0.0.0.0"}
+    alice = websocket_client.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
+    bob = websocket_client.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
+    charlie = websocket_client.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+    testing = websocket_client.WebsocketClientWorker(id="testing", port=8780, **kwargs_websocket)
 
     for wcw in [alice, bob, charlie, testing]:
         wcw.clear_objects_remote()
