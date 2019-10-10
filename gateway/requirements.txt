@@ -14,4 +14,4 @@ requests
 flask_sqlalchemy
 flask_migrate
 flask_testing
-psycopg2
+psycopg2-binary
