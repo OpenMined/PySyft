@@ -152,7 +152,7 @@ class Plan(AbstractObject, ObjectStorage):
     # For backward compatibility
     @property
     def readable_plan(self):
-        return self.procedure.commands
+        return self.procedure.operations
 
     def parameters(self):
         """
@@ -190,7 +190,7 @@ class Plan(AbstractObject, ObjectStorage):
             msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
             and not self.is_built
         ):
-            self.procedure.commands.append((some_type, (msg_type, contents)))
+            self.procedure.operations.append((some_type, (msg_type, contents)))
 
         # we can't receive the results of a plan without
         # executing it. So, execute the plan.
@@ -303,7 +303,7 @@ class Plan(AbstractObject, ObjectStorage):
             return self.run(args, result_ids=result_ids)
 
     def execute_commands(self):
-        for message in self.procedure.commands:
+        for message in self.procedure.operations:
             bin_message = sy.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 

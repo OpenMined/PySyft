@@ -897,13 +897,13 @@ def test_procedure_update_ids():
         )
     ]
 
-    procedure = Procedure(commands=commands, arg_ids=[68519530406], result_ids=(75165665059,))
+    procedure = Procedure(operations=commands, arg_ids=[68519530406], result_ids=(75165665059,))
 
     procedure.update_ids(
         from_ids=[27674294093], to_ids=[73570994542], from_worker="me", to_worker="alice"
     )
 
-    assert procedure.commands == [
+    assert procedure.operations == [
         (
             31,
             (
@@ -931,7 +931,7 @@ def test_procedure_update_ids():
     tensor_id = tensor.id
     procedure.update_args(args=(tensor,), result_ids=[8730174527])
 
-    assert procedure.commands == [
+    assert procedure.operations == [
         (
             31,
             (
@@ -955,14 +955,14 @@ def test_procedure_update_ids():
         )
     ]
 
-    procedure.commands = [
+    procedure.operations = [
         (73570994542, 8730174527, b"alice", None, (10, (1,)), True),
         (2843683950, 91383408771, "alice", None, (10, (1,)), True),
     ]
 
     procedure.update_worker_ids(from_worker_id="alice", to_worker_id="me")
 
-    assert procedure.commands == [
+    assert procedure.operations == [
         (73570994542, 8730174527, "me", None, (10, (1,)), True),
         (2843683950, 91383408771, "me", None, (10, (1,)), True),
     ]
