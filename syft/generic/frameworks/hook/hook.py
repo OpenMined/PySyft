@@ -32,15 +32,16 @@ class FrameworkHook(ABC):
 
     @classmethod
     @abstractmethod
-    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
-        """Factory method for creating a generic FrameworkTensor wrapper."""
-        pass
-
-    @classmethod
-    @abstractmethod
     def create_zeros(cls, shape, dtype, **kwargs):
         """Factory method for creating a generic zero FrameworkTensor."""
         pass
+
+    @classmethod
+    def create_wrapper(cls, wrapper_type, *args, **kwargs):
+        """Factory method for creating a generic wrapper of type wrapper_type."""
+        if wrapper_type is None:
+          wrapper_type = syft.framework.Tensor
+        return wrapper_type(*args, **kwargs)
 
     ### Standardized, framework-specific methods ###
     @abstractmethod

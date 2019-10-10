@@ -6,7 +6,6 @@ from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
-from syft.generic.frameworks.types import FrameworkObjectType
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -57,7 +56,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
-        object_type: "FrameworkObjectType" = None,
     ):
         """Initializes a PointerTensor.
 
@@ -83,10 +81,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             tags: an optional set of strings corresponding to this tensor
                 which this tensor should be searchable for.
             description: an optional string describing the purpose of the tensor.
-            object_type: An optional FrameworkObjectType to specify the object type which should
-                match the child type (e.g. torch.Tensor, tf.Variable, tf.Tensor). This 
-                attribute can be useful for frameworks using several tensor types to indicate 
-                how to wrap the PointerTensor.
         """
 
         super().__init__(
@@ -98,7 +92,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             point_to_attr=point_to_attr,
             tags=tags,
             description=description,
-            object_type=object_type,
         )
         self._shape = shape
 
@@ -168,7 +161,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         shape=None,
         local_autograd=False,
         preinitialize_grad=False,
-        object_type=None,
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -215,10 +207,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
-            object_type: An optional FrameworkObjectType to specify the object type which should
-                match the child type (e.g. torch.Tensor, tf.Variable, tf.Tensor). This 
-                attribute can be useful for frameworks using several tensor types to indicate 
-                how to wrap the PointerTensor.
 
         Returns:
             A FrameworkTensor[PointerTensor] pointer to self. Note that this
@@ -246,7 +234,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 shape=shape,
                 tags=tensor.tags,
                 description=tensor.description,
-                object_type=object_type,
             )
 
         return ptr
@@ -450,6 +437,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
                         # by other interfaces
+                        import pdb; pdb.set_trace()
                         tensor = tensor.wrap()
 
             return tensor

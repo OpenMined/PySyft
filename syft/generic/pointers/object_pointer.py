@@ -10,7 +10,6 @@ from syft.generic.object import AbstractObject
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
-    from syft.generic.frameworks.types import FrameworkObjectType
     from syft.workers.base import BaseWorker
 
 
@@ -41,7 +40,6 @@ class ObjectPointer(AbstractObject):
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
-        object_type: "FrameworkObjectType" = None,
     ):
 
         """Initializes a ObjectPointer.
@@ -64,10 +62,6 @@ class ObjectPointer(AbstractObject):
                 .grad. Note the string can be a chain (i.e., .child.child.child or
                 .grad.child.child). Defaults to None, which means don't point to any attr,
                 just point to then object corresponding to the id_at_location.
-            object_type: An optional FrameworkObjectType to specify the object type which should
-                match the child type (e.g. torch.Tensor, tf.Variable, tf.Tensor). This 
-                attribute can be useful for frameworks using several tensor types, to indicate 
-                how to wrap the ObjectPointer.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
@@ -75,7 +69,6 @@ class ObjectPointer(AbstractObject):
         self.id_at_location = id_at_location
         self.garbage_collect_data = garbage_collect_data
         self.point_to_attr = point_to_attr
-        self.object_type = object_type
 
     @classmethod
     def handle_func_command(cls, command):
