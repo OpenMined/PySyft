@@ -1,24 +1,15 @@
 import logging
-
-# 09/2019: Keep call to basicConfig before import syft. Issue due to tf_encrypted, should be solved in next version.
-FORMAT = "%(asctime)s | %(message)s"
-logging.basicConfig(format=FORMAT)
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 import argparse
 import sys
 import asyncio
 import numpy as np
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 import syft as sy
-from syft import workers
+from syft.workers import websocket_client
 from syft.frameworks.torch.federated import utils
-
-logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
@@ -82,7 +73,7 @@ def define_and_get_arguments(args=sys.argv[1:]):
 
 
 async def fit_model_on_worker(
-    worker: workers.WebsocketClientWorker,
+    worker: websocket_client.WebsocketClientWorker,
     traced_model: torch.jit.ScriptModule,
     batch_size: int,
     curr_round: int,
@@ -177,22 +168,28 @@ async def main():
     docker_demo = False
     if docker_demo:
         kwargs_websocket = {"hook": hook, "verbose": args.verbose}
-        alice = workers.WebsocketClientWorker(
+        alice = websocket_client.WebsocketClientWorker(
             id="alice", port=8777, host="alice", **kwargs_websocket
         )
-        bob = workers.WebsocketClientWorker(id="bob", port=8777, host="bob", **kwargs_websocket)
-        charlie = workers.WebsocketClientWorker(
+        bob = websocket_client.WebsocketClientWorker(
+            id="bob", port=8777, host="bob", **kwargs_websocket
+        )
+        charlie = websocket_client.WebsocketClientWorker(
             id="charlie", port=8777, host="charlie", **kwargs_websocket
         )
-        testing = workers.WebsocketClientWorker(
+        testing = websocket_client.WebsocketClientWorker(
             id="testing", port=8777, host="testing", **kwargs_websocket
         )
     else:
         kwargs_websocket = {"hook": hook, "verbose": args.verbose, "host": "0.0.0.0"}
-        alice = workers.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-        bob = workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-        charlie = workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
-        testing = workers.WebsocketClientWorker(id="testing", port=8780, **kwargs_websocket)
+        alice = websocket_client.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
+        bob = websocket_client.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
+        charlie = websocket_client.WebsocketClientWorker(
+            id="charlie", port=8779, **kwargs_websocket
+        )
+        testing = websocket_client.WebsocketClientWorker(
+            id="testing", port=8780, **kwargs_websocket
+        )
 
     for wcw in [alice, bob, charlie, testing]:
         wcw.clear_objects_remote()
@@ -272,6 +269,8 @@ async def main():
 
 if __name__ == "__main__":
     # Logging setup
+    FORMAT = "%(asctime)s | %(message)s"
+    logging.basicConfig(format=FORMAT)
     logger = logging.getLogger("run_websocket_client")
     logger.setLevel(level=logging.DEBUG)
 
