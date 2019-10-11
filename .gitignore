@@ -23,3 +23,7 @@ notebooks/ipfs.log
 .idea/*
 venv/
 test_flask_grid_server.db
+
+# Sphinx documentation
+docs/_build/
+
