@@ -2,6 +2,7 @@ import torch
 import numpy as np
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
+from syft.frameworks.torch.linalg.operations import qr
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 from scipy.stats import t
@@ -172,8 +173,8 @@ class EncryptedLinearRegression:
     def _check_ptrs(self, X_ptrs, y_ptrs):
         """
         Method that check if the lists of pointers corresponding to the explanatory and
-        explained variables has their elements as expected.
-        It also computes parallelly  some Regressor's attributes such as number of features and
+        explained variables have their elements as expected.
+        It also computes parallelly some Regressor's attributes such as number of features and
         total sample size.
         """
         # Set number of features
@@ -281,23 +282,177 @@ class EncryptedLinearRegression:
 
 class DASH:
     """
-    TODO : docstring
+    Distributed Association Scan Hammer (DASH) algorithm based on Jonathan Bloom's algorithm.
+    It uses Secured Multi-Party Computation at combine phase.
+    While the training is performed in SMPC, the final regression coefficients
+    are public at the end.
+
+    Reference: Section 2 of https://arxiv.org/abs/1901.09531
+
+    Args:
+        crypto_provider: a BaseWorker providing crypto elements for ASTs such as
+            Beaver triples
+        hbc_worker: The "Honest but Curious" BaseWorker
+        precision_fractional: precision chosen for FixedPrecisionTensors
+
+    Attributes:
+        coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
+            DASH algorithm.
+        pvalue: numpy.array of shape (n_features, ). Two-sided p-value for a
+            hypothesis test whose null hypothesis is that the each coeff is zero.
+
     """
 
     def __init__(
-        self,
-        crypto_provider: BaseWorker,
-        hbc_worker: BaseWorker,
-        precision_fractional: int = 6,
-        fit_intercept: bool = True,
+        self, crypto_provider: BaseWorker, hbc_worker: BaseWorker, precision_fractional: int = 6
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
-        self.fit_intercept = fit_intercept
 
     def fit(
         self, X_ptrs: List[torch.Tensor], C_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]
     ):
-        pass
+
+        # Checking if the pointers are as expected
+        self._check_ptrs(X_ptrs, C_ptrs, y_ptrs)
+
+        # Check if each y is a 2-dim or 1-dim tensor, unsqueeze it if it's 1-dim
+        for i, y in enumerate(y_ptrs):
+            if len(y.shape) < 2:
+                y_ptrs[i] = y.unsqueeze(1)
+
+        self.workers = self._get_workers(X_ptrs)
+
+        # Computing aggregated pairwise dot products remotelly
+        XX_ptrs, Xy_ptrs, yy_ptrs, CX_ptrs, Cy_ptrs = self._remote_dot_products(
+            X_ptrs, C_ptrs, y_ptrs
+        )
+
+        # Compute remote QR decompositions
+        R_ptrs = self._remote_qr(C_ptrs)
+
+        # Secred share tensors between hbc_worker, crypto_provider and a random worker
+        # and compute aggregates. It corresponds to the Combine stage of DASH's algorithm
+        idx = random.randint(0, len(self.workers) - 1)
+        XX_shared = sum(self._share_ptrs(XX_ptrs, idx))
+        Xy_shared = sum(self._share_ptrs(Xy_ptrs, idx))
+        yy_shared = sum(self._share_ptrs(yy_ptrs, idx))
+        CX_shared = sum(self._share_ptrs(CX_ptrs, idx))
+        Cy_shared = sum(self._share_ptrs(Cy_ptrs, idx))
+        R_shared = torch.cat(self._share_ptrs(Cy_ptrs, idx), dim=0)
+
+    def _check_ptrs(self, X_ptrs, C_ptrs, y_ptrs):
+        """
+        Method that check if the lists of pointers corresponding to the response vector,
+        transient covariate vectors and independent permanent covariate vectors have
+        their elements as expected. It also computes parallelly some Regressor's
+        attributes such as degrees of freedom and total sample size.
+        """
+        # Set number of features
+        self.n_features = X_ptrs[0].shape[1]
+        # Set number of permanent covariate features
+        self.n_permanent = C_ptrs[0].shape[1]
+
+        x_size, c_size, y_size = 0, 0, 0
+        for x, c, y in zip(X_ptrs, C_ptrs, y_ptrs):
+            # Check wrapper
+            if not (x.has_child() and c.has_child() and y.has_child()):
+                raise TypeError(
+                    "Some tensors are not wrapped, please provide a wrapped Pointer Tensor"
+                )
+
+            # Check if x, c and y are pointers
+            if not (
+                isinstance(x.child, PointerTensor)
+                and isinstance(c.child, PointerTensor)
+                and isinstance(y.child, PointerTensor)
+            ):
+                raise TypeError(
+                    "Some tensors are not pointers, please provided a wrapped Pointer Tensor"
+                )
+
+            # Check if both are in the same worker
+            if not (x.child.location == c.child.location and x.child.location == y.child.location):
+                raise RuntimeError("Some tuples (X, C, y) are not located in the same worker")
+
+            # Check if they have the same size
+            x_size += x.shape[0]
+            c_size += c.shape[0]
+            y_size += y.shape[0]
+            if x_size != c_size or x_size != y_size:
+                raise ValueError("Some tuples (X, C, y) do not have the same number of samples")
+
+            # Check if all tensors have the same number of features
+            if x.shape[1] != self.n_features:
+                raise ValueError(
+                    "Transient covariate vectors do not have the same number of features"
+                )
+
+            if c.shape[1] != self.n_permanent:
+                raise ValueError(
+                    "Permanent covariate vectors do not have the same number of features"
+                )
+
+        # Set total size
+        self.total_size = x_size
+
+        # Set degrees of freedom
+        self._dgf = self.total_size - self.n_permanent - 1
+
+    @staticmethod
+    def _get_workers(ptrs):
+        """
+        Method that returns the pool of workers in a tuple
+        """
+        workers = set([])
+        for ptr in ptrs:
+            workers.add(ptr.child.location)
+        return tuple(workers)
+
+    @staticmethod
+    def _remote_dot_products(X_ptrs, C_ptrs, y_ptrs):
+        """
+        This method computes the aggregated dot-products remotely. It corresponds
+        to the Compression stage (or Compression within) of DASH algorithm
+        """
+        XX_ptrs = []
+        Xy_ptrs = []
+        yy_ptrs = []
+        CX_ptrs = []
+        Cy_ptrs = []
+        for x, c, y in zip(X_ptrs, C_ptrs, y_ptrs):
+            XX_ptrs.append(x.t() @ x)
+            Xy_ptrs.append(x.t() @ y)
+            yy_ptrs.append(y.t() @ y)
+            CX_ptrs.append(c.t() @ x)
+            Cy_ptrs.append(c.t() @ y)
+
+        return XX_ptrs, Xy_ptrs, yy_ptrs, CX_ptrs, Cy_ptrs
+
+    @staticmethod
+    def _remote_qr(C_ptrs):
+        """
+        Performs the QR decompositions of permanent covariate matrices remotely.
+        It returns a list with the upper right matrices located in each worker
+        """
+        R_ptrs = []
+        for c in C_ptrs:
+            _, r = qr(c)
+            R_ptrs.append(r)
+        return R_ptrs
+
+    def _share_ptrs(self, ptrs, worker_idx):
+        """
+        Method that secret share a list of remote tensors between a worker of
+        the pool and the 'honest but curious' worker, using a crypto_provider worker
+        """
+        shared_tensors = []
+        for ptr in ptrs:
+            fpt_tensor = ptr.fix_precision(precision_fractional=self.precision_fractional)
+            shared_tensor = fpt_tensor.share(
+                self.workers[worker_idx], self.hbc_worker, crypto_provider=self.crypto_provider
+            ).get()
+            shared_tensors.append(shared_tensor)
+        return shared_tensors
