@@ -16,10 +16,9 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 ## How to install
 
 #### PyGrid library
-Install requirements and make PyGrid library importable in python:
+Make PyGrid library importable in python:
 ```
-$ pip install -r requirements.txt
-$ python setup.py install
+$ pip install .
 ```
 
 ### Common Installation Issues:
