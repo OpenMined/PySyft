@@ -454,7 +454,8 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             iterations (int): number of iterations for limit approximation
         """
-        result = self.div(2 ** iterations) + 1
+        one = torch.tensor([1.0]).fix_precision(**self.get_class_attributes())
+        result = self.div(2 ** iterations) + one
         for _ in range(iterations):
             result = result ** 2
         return result
@@ -478,6 +479,41 @@ class FixedPrecisionTensor(AbstractTensor):
             result += (self ** d) * torch.tensor(w).fix_precision().child
 
         return result
+
+    def log(self, iterations=2, exp_iterations=8):
+        """Approximates the natural logarithm using 6th order modified Householder iterations.
+        Recall that Householder method is an algorithm to solve a non linear equation f(x) = 0.
+        Here  f: x -> 1 - C * exp(-x)  with C = self
+
+        Iterations are computed by:
+            y_0 = some constant
+            h = 1 - self * exp(-y_n)
+            y_{n+1} = y_n - h * (1 + h / 2 + h^2 / 3 + h^3 / 6 + h^4 / 5 + h^5 / 7)
+
+        Args:
+            iterations (int): number of iterations for 6th order modified
+                Householder approximation.
+            exp_iterations (int): number of iterations for limit approximation of exp
+        """
+
+        one = torch.tensor([1.0]).fix_precision(**self.get_class_attributes())
+
+        # Initialization to a decent estimate (found by qualitative inspection):
+        # ln(x) = x/40 - 8exp(-2x - .3) + 1.9
+        c1 = torch.tensor([0.3]).fix_precision(**self.get_class_attributes())
+        c2 = torch.tensor([1.9]).fix_precision(**self.get_class_attributes())
+        y = self / 40 - 8 * (-2 * self - c1).exp() + c2
+
+        # 6th order Householder iterations
+        for i in range(iterations):
+            h = -self * (-y).refresh().exp(iterations=exp_iterations) + one
+            h2 = h ** 2
+            h3 = h2 * h
+            h4 = h2 ** 2
+            h5 = h4 * h
+            y -= h * (h.div(2) + h2.div(3) + h3.div(6) + h4.div(5) + h5.div(7) + one)
+
+        return y
 
     # Binary ops
     @overloaded.method
@@ -552,6 +588,11 @@ class FixedPrecisionTensor(AbstractTensor):
             return tensor.sigmoid()
 
         module.sigmoid = sigmoid
+
+        def log(tensor):
+            return tensor.log()
+
+        module.log = log
 
         def tanh(tensor):
             """

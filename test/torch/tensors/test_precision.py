@@ -319,6 +319,18 @@ def test_torch_exp(workers):
     assert diff < tolerance * norm
 
 
+def test_torch_log(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    tolerance = 5 / 100
+    t = torch.tensor([24.0])
+    t_sh = t.fix_precision().share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.log()
+    r = r_sh.get().float_prec()
+    diff = (r - t.log()).abs()
+    norm = (r + t) / 2
+    assert diff < tolerance * norm
+
+
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     im = torch.Tensor(
