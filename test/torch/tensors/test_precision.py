@@ -40,19 +40,6 @@ def test_inplace_encode_decode(workers):
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
 
-def test_add_method():
-
-    t = torch.tensor([0.1, 0.2, 0.3])
-    x = t.fix_prec()
-
-    y = x + x
-
-    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
-    y = y.float_prec()
-
-    assert (y == t + t).all()
-
-
 @pytest.mark.parametrize("method", ["t", "matmul"])
 @pytest.mark.parametrize("parameter", [False, True])
 def test_methods_for_linear_module(method, parameter):
@@ -74,9 +61,33 @@ def test_methods_for_linear_module(method, parameter):
     assert (result == fp_result.float_precision()).all()
 
 
+def test_add_method():
+
+    t = torch.tensor([0.1, 0.2, 0.3])
+    x = t.fix_prec()
+
+    y = x + x
+
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
+    y = y.float_prec()
+
+    assert (y == t + t).all()
+
+
 def test_torch_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    # Method syntax
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = x + x
+
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
+
+    # Function syntax
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
     y = torch.add(x, x)
@@ -101,14 +112,38 @@ def test_torch_add(workers):
 
     assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
 
-    # with AST
+    # with AdditiveSharingTensor
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec()
     y = t.fix_prec().share(bob, alice, crypto_provider=james)
 
-    z = torch.add(y, x).get().float_prec()
-
+    z = torch.add(x, y).get().float_prec()
     assert (z == torch.add(t, t)).all()
+
+    z = torch.add(y, x).get().float_prec()
+    assert (z == torch.add(t, t)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4
+
+    z = (x + c).float_prec()
+    assert (z == (t + c)).all()
+
+    z = (c + x).float_prec()
+    assert (z == (c + t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4.2
+
+    z = (x + c).float_prec()
+    assert ((z - (t + c)) < 10e-3).all()
+
+    z = (c + x).float_prec()
+    assert ((z - (c + t)) < 10e-3).all()
 
 
 def test_torch_add_():
@@ -132,6 +167,54 @@ def test_torch_add_():
     assert (y == torch.tensor([0.15, 0.3, 0.45])).all()
 
 
+def test_torch_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    z = torch.sub(x, y)
+
+    assert (z.child.child == torch.LongTensor([400, 600, 1000])).all()
+    z = z.float_prec()
+
+    assert (z == torch.tensor([0.4, 0.6, 1.0])).all()
+
+    # with AdditiveSharingTensor
+    tx = torch.tensor([1.0, -2.0, 3.0])
+    ty = torch.tensor([0.1, 0.2, 0.3])
+    x = tx.fix_prec()
+    y = ty.fix_prec().share(bob, alice, crypto_provider=james)
+
+    z1 = torch.sub(y, x).get().float_prec()
+    z2 = torch.sub(x, y).get().float_prec()
+
+    assert (z1 == torch.sub(ty, tx)).all()
+    assert (z2 == torch.sub(tx, ty)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4
+
+    z = (x - c).float_prec()
+    assert (z == (t - c)).all()
+
+    z = (c - x).float_prec()
+    assert (z == (c - t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4.2
+
+    z = (x - c).float_prec()
+    assert ((z - (t - c)) < 10e-3).all()
+
+    z = (c - x).float_prec()
+    assert ((z - (c - t)) < 10e-3).all()
+
+
 def test_torch_sub_():
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
@@ -151,32 +234,6 @@ def test_torch_sub_():
     y = y.float_prec()
 
     assert (y == torch.tensor([0.05, 0.1, 0.15])).all()
-
-
-def test_torch_sub(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()
-    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
-
-    z = torch.sub(x, y)
-
-    assert (z.child.child == torch.LongTensor([400, 600, 1000])).all()
-    z = z.float_prec()
-
-    assert (z == torch.tensor([0.4, 0.6, 1.0])).all()
-
-    # with AST
-    tx = torch.tensor([1.0, -2.0, 3.0])
-    ty = torch.tensor([0.1, 0.2, 0.3])
-    x = tx.fix_prec()
-    y = ty.fix_prec().share(bob, alice, crypto_provider=james)
-
-    z1 = torch.sub(y, x).get().float_prec()
-    z2 = torch.sub(x, y).get().float_prec()
-
-    assert (z1 == torch.sub(ty, tx)).all()
-    assert (z2 == torch.sub(tx, ty)).all()
 
 
 def test_torch_mul(workers):

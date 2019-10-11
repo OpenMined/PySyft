@@ -142,8 +142,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
-        if isinstance(other, int):
-            scaled_int = other * self.base ** self.precision_fractional
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "add")(scaled_int)
 
         if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
@@ -161,6 +161,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __add__ = add
+    __radd__ = add
 
     def add_(self, value_or_tensor, tensor=None):
         if tensor is None:
@@ -182,8 +183,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def sub(self, _self, other):
         """Subtracts a fixed precision tensor from another one.
         """
-        if isinstance(other, int):
-            scaled_int = other * self.base ** self.precision_fractional
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "sub")(scaled_int)
 
         if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
@@ -201,6 +202,9 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __sub__ = sub
+
+    def __rsub__(self, other):
+        return (self - other) * -1
 
     def sub_(self, value_or_tensor, tensor=None):
         if tensor is None:
