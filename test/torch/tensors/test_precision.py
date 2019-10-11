@@ -309,12 +309,14 @@ def test_torch_dot(workers):
 
 def test_torch_exp(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-
+    tolerance = 5 / 100
     t = torch.tensor([1.5])
     t_sh = t.fix_precision().share(alice, bob, crypto_provider=james)
     r_sh = t_sh.exp()
     r = r_sh.get().float_prec()
-    assert (r - t.exp()) < 0.5
+    diff = (r - t.exp()).abs()
+    norm = (r + t) / 2
+    assert diff < tolerance * norm
 
 
 def test_torch_conv2d(workers):
