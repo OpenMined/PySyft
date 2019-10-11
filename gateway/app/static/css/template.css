@@ -1,0 +1,7 @@
+.filter-white{
+    filter: invert(100%) sepia(2%) saturate(197%) hue-rotate(318deg) brightness(114%) contrast(100%);
+}
+
+.round-corners{
+    border-radius: 5px
+}
