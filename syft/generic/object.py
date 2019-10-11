@@ -55,16 +55,6 @@ class AbstractObject(ABC):
         else:
             return type(self).__name__
 
-    def __len__(self) -> int:
-        """Alias .shape[0] with len(), helpful for pointers"""
-        try:
-            if hasattr(self, "child") and not isinstance(self.child, dict):
-                return self.child.shape[0]
-            else:
-                return self.shape[0]
-        except IndexError:
-            return 0
-
     def describe(self, description: str) -> "AbstractObject":
         self.description = description
         return self
@@ -76,10 +66,6 @@ class AbstractObject(ABC):
         for new_tag in _tags:
             self.tags.add(new_tag)
         return self
-
-    @property
-    def shape(self):
-        return self.child.shape
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
         """Serializes the tensor on which it's called.
@@ -183,27 +169,38 @@ class AbstractObject(ABC):
 
         return response
 
-    @classmethod
-    def rgetattr(cls, obj, attr, *args):
-        """
-        Get an attribute recursively
+
+def initialize_object(
+    hook, obj, owner=None, reinitialize=True, id=None, init_args=tuple(), init_kwargs={}
+):
+    """Initializes the tensor.
+
+    Args:
+        hook: A reference to TorchHook class.
+        obj: An object to keep track of id, owner and whether it is a native
+            tensor or a wrapper over pytorch.
+        reinitialize: A boolean parameter (default True) to indicate whether
+            to re-execute __init__.
+        owner: The owner of the tensor being initialised, leave it blank
+            to if you have already provided a reference to TorchHook class.
+        id: The id of tensor, a random id will be generated if there is no id
+            specified.
+    """
+    obj.is_wrapper = False
+
+    if reinitialize:
+        obj.native___init__(*init_args, **init_kwargs)
+
+    _apply_args(hook, obj, owner, id)
 
 
-        Args:
-            obj: the object holding the attribute
-            attr: nested attribute
-            args: optional arguments to provide
+def _apply_args(hook, obj_to_register, owner=None, id=None):
 
-        Returns:
-            the attribute obj.attr
+    if owner is None:
+        owner = hook.local_worker
 
-        Example:
-            >>> rgetattr(obj, 'attr1.attr2.attr3')
-            [Out] obj.attr1.attr2.attr3
+    if id is None:
+        id = sy.ID_PROVIDER.pop()
 
-        """
-
-        def _getattr(obj, attr):
-            return getattr(obj, attr, *args)
-
-        return functools.reduce(_getattr, [obj] + attr.split("."))
+    obj_to_register.id = id
+    obj_to_register.owner = owner

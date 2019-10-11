@@ -159,8 +159,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
-        local_autograd=False,
-        preinitialize_grad=False,
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -204,9 +202,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 Otherwise, it will be set randomly.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
-            local_autograd: Use autograd system on the local machine instead of PyTorch's
-                autograd on the workers.
-            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
 
         Returns:
             A FrameworkTensor[PointerTensor] pointer to self. Note that this

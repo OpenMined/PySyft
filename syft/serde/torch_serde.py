@@ -162,13 +162,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor.grad = _detail_torch_tensor(worker, grad_chain)
 
     initialize_tensor(
-        hook_self=syft.torch.hook,
-        cls=tensor,
-        is_tensor=True,
-        owner=worker,
-        id=tensor_id,
-        init_args=[],
-        kwargs={},
+        hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
     if tags is not None:

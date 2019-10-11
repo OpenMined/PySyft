@@ -185,7 +185,9 @@ class TorchHook(FrameworkHook):
     def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
-        assert wrapper_type is None or wrapper_type == torch.Tensor, "TorchHook only uses torch.Tensor wrappers"
+        assert (
+            wrapper_type is None or wrapper_type == torch.Tensor
+        ), "TorchHook only uses torch.Tensor wrappers"
         return torch.Tensor()
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
@@ -223,7 +225,7 @@ class TorchHook(FrameworkHook):
         # #self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from_native_tensor(tensor_type, syft_type)
+        self._transfer_methods_to_native_tensor(tensor_type, syft_type)
 
         self._hook_native_methods(tensor_type)
 
@@ -484,7 +486,8 @@ class TorchHook(FrameworkHook):
 
         hook_self.torch.tensor = new_tensor
 
-    def _add_methods_from_native_tensor(cls, tensor_type: type, syft_type: type):
+    @classmethod
+    def _transfer_methods_to_native_tensor(cls, tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.
 
         The class TorchTensor is a proxy to avoid extending directly the torch
@@ -521,7 +524,7 @@ class TorchHook(FrameworkHook):
             "__lt__",
             "__le__",
         ]
-        super()._add_methods_from_native_tensor(tensor_type, syft_type, exclude)
+        cls._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module
