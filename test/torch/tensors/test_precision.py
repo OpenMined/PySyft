@@ -307,6 +307,16 @@ def test_torch_dot(workers):
     assert torch.dot(x, y).float_prec() == 45
 
 
+def test_torch_exp(workers):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor([1.5])
+    t_sh = t.fix_precision().share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.exp()
+    r = r_sh.get().float_prec()
+    assert (r - t.exp()) < 0.5
+
+
 def test_torch_conv2d(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     im = torch.Tensor(

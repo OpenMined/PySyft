@@ -443,6 +443,49 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
+    # Approximations:
+    def exp(self, iterations=8):
+        """Approximates the exponential function using a limit approximation:
+
+        .. math::
+
+            exp(x) = \lim_{n \\rightarrow \\infty} (1 + x / n) ^ n
+
+        Here we compute exp by choosing n = 2 ** d for some large d equal to
+        `iterations`. We then compute (1 + x / n) once and square `d` times.
+
+        Args:
+            iterations (int): number of iterations for limit approximation
+        """
+        print(self.child.virtual_get())
+        result = self.div(2 ** iterations) + 1
+        print(result.child.virtual_get())
+        for _ in range(iterations):
+            result = result * result
+            print(result.child.virtual_get())
+        return result
+
+    def sigmoid(self):
+        """
+        Overloads torch.sigmoid to be able to use MPC
+        Approximation with polynomial interpolation of degree 5 over [-8,8]
+        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+        """
+
+        weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
+        degrees = [0, 1, 3, 5]
+
+        max_degree = degrees[-1]
+        max_idx = degrees.index(max_degree)
+
+        # initiate with term of degree 0 to avoid errors with tensor ** 0
+        result = (self * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+        for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
+            result += (self ** d) * torch.tensor(w).fix_precision().child
+
+        return result
+
+    # Binary ops
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
@@ -506,25 +549,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.addmm = addmm
 
+        def exp(tensor):
+            return tensor.exp()
+
+        module.exp = exp
+
         def sigmoid(tensor):
-            """
-            Overloads torch.sigmoid to be able to use MPC
-            Approximation with polynomial interpolation of degree 5 over [-8,8]
-            Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
-            """
-
-            weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
-            degrees = [0, 1, 3, 5]
-
-            max_degree = degrees[-1]
-            max_idx = degrees.index(max_degree)
-
-            # initiate with term of degree 0 to avoid errors with tensor ** 0
-            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
-                result += (tensor ** d) * torch.tensor(w).fix_precision().child
-
-            return result
+            return tensor.sigmoid()
 
         module.sigmoid = sigmoid
 
