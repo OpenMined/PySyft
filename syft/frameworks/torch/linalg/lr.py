@@ -336,12 +336,52 @@ class DASH:
         # Secred share tensors between hbc_worker, crypto_provider and a random worker
         # and compute aggregates. It corresponds to the Combine stage of DASH's algorithm
         idx = random.randint(0, len(self.workers) - 1)
-        XX_shared = sum(self._share_ptrs(XX_ptrs, idx))
+        XX_shared = sum(self._share_ptrs(XX_ptrs, idx)).sum(dim=0)
         Xy_shared = sum(self._share_ptrs(Xy_ptrs, idx))
         yy_shared = sum(self._share_ptrs(yy_ptrs, idx))
         CX_shared = sum(self._share_ptrs(CX_ptrs, idx))
         Cy_shared = sum(self._share_ptrs(Cy_ptrs, idx))
-        R_shared = torch.cat(self._share_ptrs(Cy_ptrs, idx), dim=0)
+        R_shared = torch.cat(self._share_ptrs(R_ptrs, idx), dim=0)
+
+        # QR decomposition of R_shared
+        _, R = qr(R_shared, norm_factor=self.total_size ** (1 / 2))
+
+        # TO DO: implem inverse of AST upper triangular matrix
+        # problem: too many divisions
+        # R_inv = self._inv_upper(R)
+        R = R.get().float_precision()
+        R_inv = torch.inverse(R)
+        R_inv = R_inv.fix_precision(precision_fractional=self.precision_fractional).share(
+            self.workers[idx], self.hbc_worker, crypto_provider=self.crypto_provider
+        )
+
+        Qy = R_inv.t() @ Cy_shared
+        QX = R_inv.t() @ CX_shared
+
+        denominator = XX_shared - (QX ** 2).sum(dim=0)
+        # Need the line below to perform inverse of a number in MPC
+        inv_denominator = ((0 * denominator + 1) / denominator).squeeze()
+
+        coef_shared = (Xy_shared - QX.t() @ Qy).squeeze() * inv_denominator
+
+        sigma2_shared = (
+            (yy_shared - Qy.t() @ Qy).squeeze() * inv_denominator - coef_shared ** 2
+        ) / self._dgf
+
+        self.coef = coef_shared.get().float_precision()
+        self.sigma2 = sigma2_shared.get().float_precision()
+        self.se = self.sigma2 ** (1 / 2)
+
+        self._compute_pvalues()
+
+    def get_coeff(self):
+        return self.coef
+
+    def get_standard_errors(self):
+        return self.se
+
+    def get_p_values(self):
+        return self.pvalue
 
     def _check_ptrs(self, X_ptrs, C_ptrs, y_ptrs):
         """
@@ -443,6 +483,13 @@ class DASH:
             R_ptrs.append(r)
         return R_ptrs
 
+    @staticmethod
+    def _inv_upper(R):
+        # TO DO
+        # problem: too many divisions
+        R_inv = torch.zeros_like(R)
+        return R_inv
+
     def _share_ptrs(self, ptrs, worker_idx):
         """
         Method that secret share a list of remote tensors between a worker of
@@ -456,3 +503,10 @@ class DASH:
             ).get()
             shared_tensors.append(shared_tensor)
         return shared_tensors
+
+    def _compute_pvalues(self):
+        """
+        Compute p-values of coefficients
+        """
+        tstat = self.coef / self.se
+        self.pvalue = 2 * t.cdf(-abs(tstat), self._dgf)
