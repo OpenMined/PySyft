@@ -437,7 +437,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
                         # by other interfaces
-                        import pdb; pdb.set_trace()
                         tensor = tensor.wrap()
 
             return tensor
