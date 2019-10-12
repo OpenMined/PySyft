@@ -8,7 +8,6 @@ import numpy as np
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.generic.frameworks.types import FrameworkTensorType
-from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.abstract import AbstractWorker
 
 from syft import exceptions
@@ -37,14 +36,12 @@ type_rule = {
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
     np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
-    ObjectPointer: one,
     LoggingTensor: one,
     AutogradTensor: one,
 }
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
 forward_func = {
-    ObjectPointer: get_child,
     LoggingTensor: get_child,
     AutogradTensor: get_child,
     "my_syft_tensor_type": get_child,
@@ -52,7 +49,6 @@ forward_func = {
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
 backward_func = {
-    ObjectPointer: lambda i: ObjectPointer.create_pointer(i).wrap(type=i.__class__),
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",

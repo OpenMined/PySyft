@@ -50,6 +50,7 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
@@ -97,6 +98,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
+    ObjectPointer,
     Plan,
     Protocol,
     PointerTensor,

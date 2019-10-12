@@ -5,9 +5,14 @@ import weakref
 
 import syft
 from syft import exceptions
-from syft.messaging.message import ForceObjectDeleteMessage
+from syft.generic.frameworks.hook.hook_args import one
+from syft.generic.frameworks.hook.hook_args import register_type_rule
+from syft.generic.frameworks.hook.hook_args import register_forward_func
+from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
+from syft.messaging.message import ForceObjectDeleteMessage
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -355,3 +360,86 @@ class ObjectPointer(AbstractObject):
         self.owner.send_command(
             message=("__setattr__", self, (name, value), {}), recipient=self.location
         )
+
+    @staticmethod
+    def simplify(ptr: "ObjectPointer") -> tuple:
+        """
+        This function takes the attributes of a ObjectPointer and saves them in a dictionary
+        Args:
+            ptr (ObjectPointer): a ObjectPointer
+        Returns:
+            tuple: a tuple holding the unique attributes of the pointer
+        Examples:
+            data = simplify(ptr)
+        """
+
+        return (
+            ptr.id,
+            ptr.id_at_location,
+            ptr.location.id,
+            ptr.point_to_attr,
+            ptr.garbage_collect_data,
+        )
+
+    @staticmethod
+    def detail(worker: "AbstractWorker", object_tuple: tuple) -> "PointerTensor":
+        """
+        This function reconstructs an ObjectPointer given it's attributes in form of a dictionary.
+        We use the spread operator to pass the dict data as arguments
+        to the init method of ObjectPointer
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the ObjectPointer
+        Returns:
+            ObjectPointer: an ObjectPointer
+        Examples:
+            ptr = detail(data)
+        """
+        # TODO: fix comment for this and simplifier
+        obj_id, id_at_location, worker_id, point_to_attr, garbage_collect_data = object_tuple
+
+        if isinstance(worker_id, bytes):
+            worker_id = worker_id.decode()
+
+        # If the pointer received is pointing at the current worker, we load the tensor instead
+        if worker_id == worker.id:
+            obj = worker.get_obj(id_at_location)
+
+            if point_to_attr is not None and obj is not None:
+
+                point_to_attrs = point_to_attr.decode("utf-8").split(".")
+                for attr in point_to_attrs:
+                    if len(attr) > 0:
+                        obj = getattr(obj, attr)
+
+                if obj is not None:
+
+                    if not obj.is_wrapper and not isinstance(obj, FrameworkTensor):
+                        # if the object is a wrapper then it doesn't need to be wrapped
+                        # i the object isn't a wrapper, BUT it's just a plain torch tensor,
+                        # then it doesn't need to be wrapped.
+                        # if the object is not a wrapper BUT it's also not a framework object,
+                        # then it needs to be wrapped or else it won't be able to be used
+                        # by other interfaces
+                        obj = obj.wrap()
+
+            return obj
+        # Else we keep the same Pointer
+        else:
+
+            location = syft.hook.local_worker.get_worker(worker_id)
+
+            ptr = ObjectPointer(
+                location=location,
+                id_at_location=id_at_location,
+                owner=worker,
+                id=obj_id,
+                garbage_collect_data=garbage_collect_data,
+            )
+
+            return ptr
+
+### Register the object with hook_args.py ###
+register_type_rule({ObjectPointer: one})
+register_forward_func({ObjectPointer: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p))})
+register_backward_func({ObjectPointer: lambda i: i})
