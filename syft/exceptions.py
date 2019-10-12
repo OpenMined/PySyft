@@ -1,14 +1,18 @@
 """Specific Pysyft exceptions."""
+from tblib import Traceback
+import traceback
+from six import reraise
+from typing import Tuple
 
 import syft as sy
-import torch
+from syft.generic.frameworks.types import FrameworkTensor
 
 
-class PureTorchTensorFoundError(BaseException):
+class PureFrameworkTensorFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a recursive analysis of the args provided as an
-    input of a function, to break the recursion if a TorchTensor is found
-    as it means that _probably_ all the tensors are pure torch tensor and
+    input of a function, to break the recursion if a FrameworkTensor is found
+    as it means that _probably_ all the tensors are pure torch/tensorflow and
     the function can be applied natively on this input.
 
     Attributes:
@@ -16,13 +20,12 @@ class PureTorchTensorFoundError(BaseException):
         message -- explanation of the error
     """
 
-    def __init__(self, tensor):
-        self.tensor = tensor
+    pass
 
 
-class RemoteTensorFoundError(BaseException):
+class RemoteObjectFoundError(BaseException):
     """Exception raised for errors in the input.
-    This error is used in a context similar to PureTorchTensorFoundError but
+    This error is used in a context similar to PureFrameworkTensorFoundError but
     to indicate that a Pointer to a remote tensor was found  in the input
     and thus that the command should be send elsewhere. The pointer retrieved
     by the error gives the location where the command should be sent.
@@ -34,6 +37,16 @@ class RemoteTensorFoundError(BaseException):
 
     def __init__(self, pointer):
         self.pointer = pointer
+
+
+class InvalidTensorForRemoteGet(Exception):
+    """Raised when a chain of pointer tensors is not provided for `remote_get`."""
+
+    def __init__(self, tensor: object):
+        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
+            tensor
+        )
+        super().__init__(message)
 
 
 class WorkerNotFoundException(Exception):
@@ -48,9 +61,9 @@ class CompressionNotFoundException(Exception):
     pass
 
 
-class CannotRequestTensorAttribute(Exception):
+class CannotRequestObjectAttribute(Exception):
     """Raised when .get() is called on a pointer which points to an attribute of
-    another tensor."""
+    another object."""
 
     pass
 
@@ -73,8 +86,8 @@ class TensorsNotCollocatedException(Exception):
             message = (
                 "You tried to call "
                 + attr
-                + " involving two tensors which "
-                + "are not on the same machine! One tensor is on "
+                + " involving two tensors which"
+                + " are not on the same machine! One tensor is on "
                 + str(tensor_a.location)
                 + " while the other is on "
                 + str(tensor_b.location)
@@ -85,7 +98,7 @@ class TensorsNotCollocatedException(Exception):
                 "You tried to call "
                 + attr
                 + " involving two tensors where one tensor is actually located"
-                + "on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
+                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
                 + str(tensor_a.location.id)
                 + ") on the other tensor.\n"
                 + "\nTensor A: "
@@ -98,7 +111,7 @@ class TensorsNotCollocatedException(Exception):
                 "You tried to call "
                 + attr
                 + " involving two tensors where one tensor is actually located"
-                + "on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
+                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
                 + str(tensor_b.location.id)
                 + ") on the other tensor.\n"
                 + "\nTensor A: "
@@ -128,6 +141,138 @@ class ResponseSignatureError(Exception):
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
 
+    def get_attributes(self):
+        """
+        Specify all the attributes need to report an error correctly.
+        """
+        return {"ids_generated": self.ids_generated}
+
+    @staticmethod
+    def simplify(e):
+        """
+        Serialize information about an Exception which was raised to forward it
+        """
+        # Get information about the exception: type of error,  traceback
+        tp = type(e)
+        tb = e.__traceback__
+        # Serialize the traceback
+        traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
+        # Include special attributes if relevant
+        try:
+            attributes = e.get_attributes()
+        except AttributeError:
+            attributes = {}
+        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+
+    @staticmethod
+    def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
+        """
+        Detail and re-raise an Exception forwarded by another worker
+        """
+        error_name, traceback_str, attributes = error_tuple
+        error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+        attributes = sy.serde._detail(worker, attributes)
+        # De-serialize the traceback
+        tb = Traceback.from_string(traceback_str)
+        # Check that the error belongs to a valid set of Exceptions
+        if error_name in dir(sy.exceptions):
+            error_type = getattr(sy.exceptions, error_name)
+            error = error_type()
+            # Include special attributes if any
+            for attr_name, attr in attributes.items():
+                setattr(error, attr_name, attr)
+            reraise(error_type, error, tb.as_traceback())
+        else:
+            raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
+
+
+class GetNotPermittedError(Exception):
+    """Raised when calling get on a pointer to a tensor which does not allow
+    get to be called on it. This can happen do to sensitivity being too high"""
+
+    @staticmethod
+    def simplify(e):
+        """
+        Serialize information about an Exception which was raised to forward it
+        """
+        # Get information about the exception: type of error,  traceback
+        tp = type(e)
+        tb = e.__traceback__
+        # Serialize the traceback
+        traceback_str = "Traceback (most recent call last):\n" + "".join(traceback.format_tb(tb))
+        # Include special attributes if relevant
+        try:
+            attributes = e.get_attributes()
+        except AttributeError:
+            attributes = {}
+        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+
+    @staticmethod
+    def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
+        """
+        Detail and re-raise an Exception forwarded by another worker
+        """
+        error_name, traceback_str, attributes = error_tuple
+        error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+        attributes = sy.serde._detail(worker, attributes)
+        # De-serialize the traceback
+        tb = Traceback.from_string(traceback_str)
+        # Check that the error belongs to a valid set of Exceptions
+        if error_name in dir(sy.exceptions):
+            error_type = getattr(sy.exceptions, error_name)
+            error = error_type()
+            # Include special attributes if any
+            for attr_name, attr in attributes.items():
+                setattr(error, attr_name, attr)
+            reraise(error_type, error, tb.as_traceback())
+        else:
+            raise ValueError(f"Invalid Exception returned:\n{traceback_str}")
+
+
+class IdNotUniqueError(Exception):
+    """Raised by the ID Provider when setting ids that have already been generated"""
+
+    pass
+
+
+class PlanCommandUnknownError(Exception):
+    """Raised when an unknown plan command execution is requested."""
+
+    def __init__(self, command_name: object):
+        message = "Command {} is not implemented.".format(command_name)
+        super().__init__(message)
+
+
+class ObjectNotFoundError(Exception):
+    """Raised when object with given object id is not found on worker
+
+    Attributes:
+        obj_id -- id of the object with which the interaction is attempted
+        worker -- virtual worker on which the interaction is attempted
+    """
+
+    def __init__(self, obj_id, worker):
+        message = ""
+        message += 'Object "' + str(obj_id) + '" not found on worker!!! '
+        message += (
+            "You just tried to interact with an object ID:"
+            + str(obj_id)
+            + " on "
+            + str(worker)
+            + " which does not exist!!! "
+        )
+        message += (
+            "Use .send() and .get() on all your tensors to make sure they're"
+            "on the same machines. "
+            "If you think this tensor does exist, check the ._objects dictionary"
+            "on the worker and see for yourself!!! "
+            "The most common reason this error happens is because someone calls"
+            ".get() on the object's pointer without realizing it (which deletes "
+            "the remote object and sends it to the pointer). Check your code to "
+            "make sure you haven't already called .get() on this pointer!!!"
+        )
+        super().__init__(message)
+
 
 def route_method_exception(exception, self, args, kwargs):
     try:
@@ -141,7 +286,7 @@ def route_method_exception(exception, self, args, kwargs):
                             return TensorsNotCollocatedException(self, args[0])
 
         # if self is a normal tensor
-        elif isinstance(self, torch.Tensor):
+        elif isinstance(self, FrameworkTensor):
             if len(args) > 0:
                 if args[0].is_wrapper:
                     if isinstance(args[0].child, sy.PointerTensor):

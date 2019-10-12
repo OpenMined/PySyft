@@ -6,11 +6,12 @@ from syft.frameworks.torch.federated import BaseDataset
 
 
 def test_base_dataset(workers):
-    bob = workers["bob"]
 
+    bob = workers["bob"]
     inputs = th.tensor([1, 2, 3, 4.0])
     targets = th.tensor([1, 2, 3, 4.0])
     dataset = BaseDataset(inputs, targets)
+
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
 
@@ -22,7 +23,27 @@ def test_base_dataset(workers):
     dataset.get()
     with pytest.raises(AttributeError):
         assert dataset.data.location.id == 0
+    with pytest.raises(AttributeError):
         assert dataset.targets.location.id == 0
+
+
+def test_base_dataset_transform():
+
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
+
+    transform_dataset = BaseDataset(inputs, targets)
+
+    def func(x):
+
+        return x * 2
+
+    transform_dataset.transform(func)
+
+    expected_val = th.tensor([2, 4, 6, 8])
+    transformed_val = [val[0].item() for val in transform_dataset]
+
+    assert expected_val.equal(th.tensor(transformed_val).long())
 
 
 def test_federated_dataset(workers):
@@ -62,30 +83,6 @@ def test_dataset_to_federate(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert fed_dataset["bob"].location.id == "bob"
     assert len(fed_dataset) == 6
-
-
-def test_federated_dataloader(workers):
-    bob = workers["bob"]
-    alice = workers["alice"]
-    datasets = [
-        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
-        BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6])).send(alice),
-    ]
-    fed_dataset = sy.FederatedDataset(datasets)
-
-    fdataloader = sy.FederatedDataLoader(fed_dataset, batch_size=2)
-    counter = 0
-    for batch_idx, (data, target) in enumerate(fdataloader):
-        counter += 1
-
-    assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
-
-    fdataloader = sy.FederatedDataLoader(fed_dataset, batch_size=2, drop_last=True)
-    counter = 0
-    for batch_idx, (data, target) in enumerate(fdataloader):
-        counter += 1
-
-    assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
 
 
 def test_federated_dataset_search(workers):

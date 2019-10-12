@@ -1,11 +1,15 @@
 from collections import Counter
+from typing import Tuple
+from typing import Dict
 
 
 class VirtualGrid:
     def __init__(self, *workers):
         self.workers = workers
 
-    def search(self, *query, verbose=True, return_counter=True):
+    def search(
+        self, *query, verbose: bool = True, return_counter: bool = True
+    ) -> Tuple[Dict, Counter]:
         """Searches over a collection of workers, returning pointers to the results
         grouped by worker."""
 
@@ -17,7 +21,7 @@ class VirtualGrid:
 
             worker_tag_ctr = Counter()
 
-            worker_results = worker.search(*query)
+            worker_results = worker.search(query)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results

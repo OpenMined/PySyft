@@ -1,27 +1,22 @@
 import syft
-from syft.frameworks.torch.tensors.interpreters.abstract import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
+import syft as sy
 
 
 class LoggingTensor(AbstractTensor):
-    def __init__(
-        self, parent: AbstractTensor = None, owner=None, id=None, tags=None, description=None
-    ):
+    def __init__(self, owner=None, id=None, tags=None, description=None):
         """Initializes a LoggingTensor, whose behaviour is to log all operations
         applied on it.
 
         Args:
-            parent: An optional AbstractTensor wrapper around the LoggingTensor
-                which makes it so that you can pass this LoggingTensor to all
-                the other methods/functions that PyTorch likes to use, although
-                it can also be other tensors which extend AbstractTensor, such
-                as custom tensors for Secure Multi-Party Computation or
-                Federated Learning.
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id: An optional string or integer id of the LoggingTensor.
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description, parent=parent)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
     # Method overloading
 
@@ -46,7 +41,7 @@ class LoggingTensor(AbstractTensor):
         some particular behaviour: so here what to start from :)
         """
         # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.hook_method_args(
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
             "add", self, args, kwargs
         )
 
@@ -55,9 +50,7 @@ class LoggingTensor(AbstractTensor):
         response = getattr(new_self, "add")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
-            "add", response, wrap_type=type(self)
-        )
+        response = hook_args.hook_response("add", response, wrap_type=type(self))
         return response
 
     # Module & Function overloading
@@ -136,3 +129,42 @@ class LoggingTensor(AbstractTensor):
         """
         cmd, _, args, kwargs = command
         print("Default log", cmd)
+
+    @staticmethod
+    def simplify(tensor: "LoggingTensor") -> tuple:
+        """
+        This function takes the attributes of a LogTensor and saves them in a tuple
+        Args:
+            tensor (LoggingTensor): a LogTensor
+        Returns:
+            tuple: a tuple holding the unique attributes of the log tensor
+        Examples:
+            data = _simplify(tensor)
+        """
+
+        chain = None
+        if hasattr(tensor, "child"):
+            chain = sy.serde._simplify(tensor.child)
+        return (tensor.id, chain)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
+        """
+        This function reconstructs a LogTensor given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the LogTensor
+        Returns:
+            LoggingTensor: a LogTensor
+        Examples:
+            logtensor = detail(data)
+        """
+        obj_id, chain = tensor_tuple
+
+        tensor = LoggingTensor(owner=worker, id=obj_id)
+
+        if chain is not None:
+            chain = sy.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor

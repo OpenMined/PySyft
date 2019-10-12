@@ -3,11 +3,8 @@ you are working on gradients being used by other abstractions, don't
 use this class. Use the abstraction's test class instead. (I.e., if you
 are testing gradients with PointerTensor, use test_pointer.py.)"""
 
-import random
-
 import torch
 import syft as sy
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
 
 
 def test_gradient_serde():

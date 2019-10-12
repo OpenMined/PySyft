@@ -7,9 +7,16 @@ class MSGTYPE(object):
     IS_NONE = 6
     GET_SHAPE = 7
     SEARCH = 8
+    FORCE_OBJ_DEL = 9
+    PLAN_CMD = 10
 
 
-# Build automatically the reverse map from codes to msg types
+class PLAN_CMDS(object):
+    FETCH_PLAN = "fetch_plan"
+    FETCH_PROTOCOL = "fetch_protocol"
+
+
+# Build automatically the reverse map from codes to messaging types
 code2MSGTYPE = {}
 for code in dir(MSGTYPE):
     if "__" not in code:

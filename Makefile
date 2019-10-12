@@ -1,8 +1,8 @@
 venv: venv/bin/activate
 
-venv/bin/activate: requirements.txt
+venv/bin/activate: requirements.txt requirements_dev.txt
 	test -e venv/bin/activate || virtualenv venv
-	. venv/bin/activate; pip install -Ur requirements.txt; python setup.py install
+	. venv/bin/activate; pip install -Ur requirements.txt; pip install -Ur requirements_dev.txt; python setup.py install
 	touch venv/bin/activate
 
 install_hooks: venv
@@ -26,10 +26,11 @@ lab: venv
 test: venv
 	(. venv/bin/activate; \
 		python setup.py install; \
-		venv/bin/coverage run setup.py test;\
-		venv/bin/coverage report --fail-under 100;\
+		venv/bin/coverage run -m pytest test; \
+		venv/bin/coverage report -m --fail-under 95; \
 	)
 
+.PHONY: docs
 docs: venv
 	(. venv/bin/activate; \
     	cd docs; \
@@ -37,7 +38,7 @@ docs: venv
 		rm -rf ./_autosummary; \
 		rm -rf _build; \
 		sphinx-apidoc -o ./_modules ../syft; \
-		make html; \
+		make markdown; \
         cd ../; \
 	)
 clean:
