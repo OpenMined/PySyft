@@ -15,6 +15,7 @@ from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.tensor import AbstractTensor
+from syft.serde import SerDe, SyftSerDe
 from syft.workers.abstract import AbstractWorker
 
 
@@ -232,6 +233,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         include_state: bool = False,
         is_built: bool = False,
         verbose: bool = False,
+        serde: SerDe = SyftSerDe(),
         *args,
         **kwargs,
     ):
@@ -268,6 +270,8 @@ class Plan(ObjectStorage, torch.nn.Module):
             self.forward = blueprint
         elif self.is_built:
             self.forward = None
+
+        self.serde = serde
 
     def add_to_state(self, *elements):
         for elem in elements:
@@ -331,7 +335,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
+        (some_type, (msg_type, contents)) = self.serde.deserialize(bin_message, details=False)
 
         if self.verbose:
             print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
@@ -348,7 +352,7 @@ class Plan(ObjectStorage, torch.nn.Module):
         if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
             return self.__call__()
 
-        return sy.serde.serialize(None)
+        return self.serde.serialize(None)
 
     def build(self, *args):
         """Builds the plan.
@@ -599,7 +603,7 @@ class Plan(ObjectStorage, torch.nn.Module):
 
     def _execute_plan(self):
         for message in self.readable_plan:
-            bin_message = sy.serde.serialize(message, simplified=True)
+            bin_message = self.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
     def _get_plan_output(self, result_ids, return_ptr=False):
@@ -656,7 +660,7 @@ class Plan(ObjectStorage, torch.nn.Module):
             responses = self._get_plan_output(result_ids)
             return responses
 
-        return sy.serde.serialize(None)
+        return self.serde.serialize(None)
 
     def request_execute_plan(
         self,

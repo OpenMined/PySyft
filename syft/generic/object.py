@@ -4,6 +4,7 @@ from typing import List
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
+from syft.serde import SerDe, SyftSerDe
 
 
 class AbstractObject(ABC):
@@ -20,6 +21,7 @@ class AbstractObject(ABC):
         tags: List[str] = None,
         description: str = None,
         child=None,
+        serde: SerDe = SyftSerDe,
     ):
         """Initializer for AbstractTensor
 
@@ -42,6 +44,7 @@ class AbstractObject(ABC):
         self.tags = tags
         self.description = description
         self.child = child
+        self.serde = serde
 
     def __str__(self) -> str:
         if hasattr(self, "child"):
@@ -95,7 +98,7 @@ class AbstractObject(ABC):
                 x = torch.Tensor([1,2,3,4,5])
                 x.serialize() # returns a serialized object
         """
-        return sy.serde.serialize(self)
+        return self.serde.serialize(self)
 
     def ser(self, *args, **kwargs):
         return self.serialize(*args, **kwargs)

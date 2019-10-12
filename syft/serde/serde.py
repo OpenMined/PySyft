@@ -66,6 +66,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
+from syft.serde.serializer import SerDe
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 
@@ -233,6 +234,15 @@ simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_deta
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
 
 
+class SyftSerDe(SerDe):
+
+    def serialize(self, obj, **kwargs) -> object:
+        return syft.serde.serialize(obj, kwargs)
+
+    def deserialize(self, serialized, **kwargs) -> object:
+        return syft.serde.deserialize(serialized, kwargs)
+
+
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
@@ -274,6 +284,7 @@ def serialize(
     # simplify difficult-to-serialize objects. See the _simpliy method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
+    print(obj)
     if not simplified:
         if force_full_simplification:
             simple_objects = _force_full_simplify(obj)

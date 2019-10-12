@@ -26,6 +26,7 @@ from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.plan import Plan
+from syft.serde import SerDe, SyftSerDe
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -91,6 +92,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
+        serde: SerDe = SyftSerDe()
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -159,6 +161,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        self.serde = serde
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -252,13 +256,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {message} to {location}")
 
         # Step 1: serialize the message to a binary
-        bin_message = sy.serde.serialize(message)
+        bin_message = self.serde.serialize(message)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = sy.serde.deserialize(bin_response, worker=self)
+        response = self.serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -282,7 +286,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        msg = sy.serde.deserialize(bin_message, worker=self)
+        msg = self.serde.deserialize(bin_message, worker=self)
 
         (msg_type, contents) = (msg.msg_type, msg.contents)
 
@@ -292,7 +296,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response = self._message_router[msg_type](contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
+        bin_response = self.serde.serialize(response)
 
         return bin_response
 
@@ -952,7 +956,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
 
-        return sy.serde.deserialize(self.msg_history[index], worker=self)
+        return self.serde.deserialize(self.msg_history[index], worker=self)
 
     @staticmethod
     def create_message_execute_command(

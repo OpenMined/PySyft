@@ -13,6 +13,7 @@ import syft as sy
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import SearchMessage
 from syft.generic.tensor import AbstractTensor
+from syft.serde import SerDe, SyftSerDe
 from syft.workers.base import BaseWorker
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class WebsocketClientWorker(BaseWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
+        serde: SerDe = SyftSerDe()
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.
@@ -40,7 +42,7 @@ class WebsocketClientWorker(BaseWorker):
         self.port = port
         self.host = host
 
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose, serde)
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
@@ -67,10 +69,10 @@ class WebsocketClientWorker(BaseWorker):
     def search(self, query):
         # Prepare a message requesting the websocket server to search among its objects
         message = SearchMessage(query)
-        serialized_message = sy.serde.serialize(message)
+        serialized_message = self.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._send_msg(serialized_message)
-        return sy.serde.deserialize(response)
+        return self.serde.deserialize(response)
 
     def _send_msg(self, message: bin, location=None) -> bin:
         return self._recv_msg(message)
@@ -105,9 +107,9 @@ class WebsocketClientWorker(BaseWorker):
         )
 
         # Send the message and return the deserialized response.
-        serialized_message = sy.serde.serialize(message)
+        serialized_message = self.serde.serialize(message)
         response = self._send_msg(serialized_message)
-        return sy.serde.deserialize(response)
+        return self.serde.deserialize(response)
 
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
@@ -145,7 +147,7 @@ class WebsocketClientWorker(BaseWorker):
             )
 
             # Send the message and return the deserialized response.
-            serialized_message = sy.serde.serialize(message)
+            serialized_message = self.serde.serialize(message)
             await websocket.send(str(binascii.hexlify(serialized_message)))
             await websocket.recv()  # returned value will be None, so don't care
 
@@ -154,11 +156,11 @@ class WebsocketClientWorker(BaseWorker):
 
         # Send an object request message to retrieve the result tensor of the fit() method
         msg = ObjectRequestMessage(return_ids[0])
-        serialized_message = sy.serde.serialize(msg)
+        serialized_message = self.serde.serialize(msg)
         response = self._send_msg(serialized_message)
 
         # Return the deserialized response.
-        return sy.serde.deserialize(response)
+        return self.serde.deserialize(response)
 
     def fit(self, dataset_key: str, **kwargs):
         """Call the fit() method on the remote worker (WebsocketServerWorker instance).
@@ -178,9 +180,9 @@ class WebsocketClientWorker(BaseWorker):
 
         msg = ObjectRequestMessage(return_ids[0])
         # Send the message and return the deserialized response.
-        serialized_message = sy.serde.serialize(msg)
+        serialized_message = self.serde.serialize(msg)
         response = self._send_msg(serialized_message)
-        return sy.serde.deserialize(response)
+        return self.serde.deserialize(response)
 
     def evaluate(
         self,

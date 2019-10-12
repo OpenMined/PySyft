@@ -14,6 +14,7 @@ import websockets
 import syft as sy
 from syft.federated.federated_client import FederatedClient
 from syft.generic.tensor import AbstractTensor
+from syft.serde import SerDe, SyftSerDe
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -35,6 +36,7 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
         loop=None,
         cert_path: str = None,
         key_path: str = None,
+        serde: SerDe = SyftSerDe()
     ):
         """This is a simple extension to normal workers wherein
         all messages are passed over websockets. Note that because
@@ -74,7 +76,7 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
         self.loop = loop
 
         # call BaseWorker constructor
-        super().__init__(hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose)
+        super().__init__(hook=hook, id=id, data=data, log_msgs=log_msgs, verbose=verbose, serde=serde)
 
     async def _consumer_handler(self, websocket: websockets.WebSocketCommonProtocol):
         """This handler listens for messages from WebsocketClientWorker
@@ -120,7 +122,7 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
         try:
             return self.recv_msg(message)
         except (ResponseSignatureError, GetNotPermittedError) as e:
-            return sy.serde.serialize(e)
+            return self.serde.serialize(e)
 
     async def _handler(self, websocket: websockets.WebSocketCommonProtocol, *unused_args):
         """Setup the consumer and producer response handlers with asyncio.
