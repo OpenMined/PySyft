@@ -6,5 +6,5 @@ WORKDIR /app
 RUN pip3 install -r requirements.txt
 COPY . /app
 WORKDIR /app
-ENTRYPOINT ["python3"]
-CMD ["gateway.py"]
+ENTRYPOINT ["gunicorn"]
+CMD ["gateway:app"]
