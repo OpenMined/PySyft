@@ -1,129 +1,157 @@
 
 var getUrl = window.location;
-var baseUrl = getUrl .protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1];
+var baseUrl = getUrl.protocol + "//" + getUrl.host + "/" + getUrl.pathname.split('/')[1];
 
 // AXIOS API Functions:
 axios.baseUrl = baseUrl
 
-async function get_identity_from_server(){
-  try{
+async function get_identity_from_server() {
+  try {
     const response = await axios.get('/identity/');
-      return Promise.resolve(response)
-    } catch (error) {
-      console.error(error);
-      return Promise.resolve(error)
-    }
+    return Promise.resolve(response)
+  } catch (error) {
+    console.error(error);
+    return Promise.resolve(error)
+  }
 }
 
-async function get_models_from_server(){
-  try{
+async function get_models_from_server() {
+  try {
     const response = await axios.get('/detailed_models_list/');
-      return Promise.resolve(response)
-    } catch (error) {
-      console.error(error);
-      return Promise.resolve(error)
-    }
+    return Promise.resolve(response)
+  } catch (error) {
+    console.error(error);
+    return Promise.resolve(error)
+  }
 }
 
-async function get_workers_from_server(){
-  try{
+async function get_dataset_tags() {
+  try {
+    const response = await axios.get('/dataset-tags');
+    return Promise.resolve(response);
+  } catch (error) {
+    console.log(error);
+    return Promise.resolve(error);
+  }
+}
+
+async function get_workers_from_server() {
+  try {
     const response = await axios.get('/workers/');
-      return Promise.resolve(response)
-    } catch (error) {
-      console.error(error);
-      return Promise.resolve(error)
-    }
+    return Promise.resolve(response)
+  } catch (error) {
+    console.error(error);
+    return Promise.resolve(error)
+  }
 }
 
 // Vue Variable Setters:
 
-function set_online_status(status){
+function set_online_status(status) {
   online_status.status = status
 }
 
-function set_name_of_node(name){
+function set_name_of_node(name) {
   name_of_node.name = name
 }
 
-function set_models_in_table(models){
+function set_models_in_table(models) {
   models_list.models = models
 }
 
-function set_workers_in_table(workers){
+function set_workers_in_table(workers) {
   workers_list.workers = workers
+}
+
+function set_tags_in_table(data_tags) {
+  tags_list.data_tags = data_tags
 }
 
 // VUE OBJECT BINDINGS:
 var models_list = new Vue({
   el: '#m-for-models-list',
-  delimiters : ['[[', ']]'],
+  delimiters: ['[[', ']]'],
   data: {
     models: []
   }
 })
 
+var tags_list = new Vue({
+  el: '#v-for-tags-list',
+  delimiters: ['[[', ']]'],
+  data: {
+    data_tags: ['oi']
+  }
+})
+
 var workers_list = new Vue({
   el: '#v-for-workers-list',
-  delimiters : ['[[', ']]'],
+  delimiters: ['[[', ']]'],
   data: {
     workers: []
   }
 })
 
-var name_of_node = new Vue({ 
+var name_of_node = new Vue({
   el: '#name_of_node',
-  delimiters : ['[[', ']]'],
+  delimiters: ['[[', ']]'],
   data: {
-      name: ""
+    name: ""
   }
 });
 
-var online_status = new Vue({ 
+var online_status = new Vue({
   el: '#online_status',
-  delimiters : ['[[', ']]'],
+  delimiters: ['[[', ']]'],
   data: {
-      status: ""
+    status: ""
   }
 });
 
 var server_ip = new Vue({
   el: '#server_ip',
-  delimiters : ['[[', ']]'],
+  delimiters: ['[[', ']]'],
   data: {
-      ip: baseUrl
+    ip: baseUrl
   }
 });
 
 // MAIN LOGIC
-async function update_server_status(){
+async function update_server_status() {
   // just doing a identity check to see if server is online
   var identity = await get_identity_from_server()
-  if(identity["data"] == "OpenGrid"){
+  if (identity["data"] == "OpenGrid") {
     set_online_status("Online")
     set_name_of_node("Bob")
-  }else{
+  } else {
     set_online_status("Offline")
   }
   //set_online_status(identity)
 }
 
-async function update_models_list(){
+async function update_models_list() {
   var response = await get_models_from_server()
   set_models_in_table(response["data"]["models"])
 }
 
-async function update_workers_list(){
+async function update_workers_list() {
   var response = await get_workers_from_server()
   console.log(response)
   set_workers_in_table(response["data"]["workers"])
-
 }
 
-async function sync_with_server(){
+async function update_dataset_tags() {
+  let response = await get_dataset_tags()
+  console.log(response)
+  set_tags_in_table(response["data"])
+}
+
+async function sync_with_server() {
   console.log("syncing with server")
   await update_server_status()
   await update_models_list()
   await update_workers_list()
+  await update_dataset_tags()
   setTimeout(sync_with_server, 5000)
 }
 
