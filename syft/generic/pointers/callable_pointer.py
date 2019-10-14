@@ -9,9 +9,6 @@ from syft.generic.pointers.object_pointer import ObjectPointer
 if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
-# TODO: move this file/class to the generic folder because the functionality is not PyTorch specific
-# https://github.com/OpenMined/PySyft/issues/2517
-
 
 class CallablePointer(ObjectPointer):
     """ A class of pointers that are callable

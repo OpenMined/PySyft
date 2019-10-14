@@ -12,9 +12,6 @@ from syft.generic.object import AbstractObject
 if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
-# TODO: move this file/class to the generic folder because the functionality is not PyTorch specific
-# https://github.com/OpenMined/PySyft/issues/2517
-
 
 class ObjectPointer(AbstractObject):
     """A pointer to a remote object.
