@@ -458,8 +458,7 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             iterations (int): number of iterations for limit approximation
         """
-        one = torch.tensor([1.0]).fix_precision(**self.get_class_attributes())
-        result = self.div(2 ** iterations) + one
+        result = 1 + self.div(2 ** iterations)
         for _ in range(iterations):
             result = result ** 2
         return result
@@ -500,22 +499,18 @@ class FixedPrecisionTensor(AbstractTensor):
             exp_iterations (int): number of iterations for limit approximation of exp
         """
 
-        one = torch.tensor([1.0]).fix_precision(**self.get_class_attributes())
-
         # Initialization to a decent estimate (found by qualitative inspection):
         # ln(x) = x/40 - 8exp(-2x - .3) + 1.9
-        c1 = torch.tensor([0.3]).fix_precision(**self.get_class_attributes())
-        c2 = torch.tensor([1.9]).fix_precision(**self.get_class_attributes())
-        y = self / 40 - 8 * (-2 * self - c1).exp() + c2
+        y = self / 40 - 8 * (-2 * self - 0.3).exp() + 1.9
 
         # 6th order Householder iterations
         for i in range(iterations):
-            h = -self * (-y).refresh().exp(iterations=exp_iterations) + one
+            h = -self * (-y).refresh().exp(iterations=exp_iterations) + 1
             h2 = h ** 2
             h3 = h2 * h
             h4 = h2 ** 2
             h5 = h4 * h
-            y -= h * (h.div(2) + h2.div(3) + h3.div(6) + h4.div(5) + h5.div(7) + one)
+            y -= h * (h.div(2) + h2.div(3) + h3.div(6) + h4.div(5) + h5.div(7) + 1)
 
         return y
 
