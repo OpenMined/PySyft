@@ -79,6 +79,19 @@ class AbstractTensor(AbstractObject):
     def copy(self):
         return self + 0
 
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy
+        """
+        cloned_tensor = type(self)(**self.get_class_attributes())
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+
+        if hasattr(self, "child") and self.child is not None:
+            cloned_tensor.child = self.child.clone()
+
+        return cloned_tensor
+
     def refresh(self):
         """
         Forward to Additive Shared Tensor the call to refresh shares
