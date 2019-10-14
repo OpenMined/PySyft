@@ -60,7 +60,6 @@ def test_send(workers):
     assert (x.value().get() == torch.ones((2, 2))).all()
 
 
-"""
 @pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
 def test_remote_operations(workers, cmd):
     bob = workers["bob"]
@@ -81,7 +80,6 @@ def test_remote_operations(workers, cmd):
     expected = getattr(tx, cmd)(ty)
 
     assert (actual.value().get() == expected).all()
-"""
 
 
 def test_bufferized_results(hook):
@@ -135,7 +133,6 @@ def test_plan_waiting_promise(hook, workers):
 
     assert (res.value().child == 3 * torch.ones(3, 3)).all()
 
-    """
     # With several arguments and remote
     bob = workers["bob"]
 
@@ -160,6 +157,5 @@ def test_plan_waiting_promise(hook, workers):
 
     assert (res_ptr.value().get() == 3 * torch.ones(3, 3)).all()
     assert (res_ptr.value().get() == 7 * torch.ones(3, 3)).all()
-    """
 
     hook.local_worker.is_client_worker = True

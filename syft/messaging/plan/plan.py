@@ -362,29 +362,29 @@ class Plan(AbstractObject, ObjectStorage):
         return True
     
     def setup_plan_with_promises(self, *args):
-         """ Slightly modifies a plan so that it can work with promises.
-         The plan will also be sent to location with this method.
-         """
+        """ Slightly modifies a plan so that it can work with promises.
+        The plan will also be sent to location with this method.
+        """
+        prom = None
+        for p in args:
+            if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
+                p.child.plans.add(self.id)
+                if prom is None:
+                    prom = p
 
-         prom = None
-         for p in args:
-             if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
-                 p.child.plans.add(self.id)
-                 if prom is None:
-                     prom = p
+        res = sy.PromiseTensor(
+            owner=prom.owner,
+            #shape=self.output_shape,  #FIXME compute shape from promise plan
+            shape=self.input_shapes[0],
+            tensor_id=self.procedure.result_ids[0],
+            tensor_type="torch.FloatTensor",  # TODO how to infer result type?
+            plans=set(),
+        )
 
-         res = sy.PromiseTensor(
-             owner=prom.owner,
-             shape=self.output_shape,
-             tensor_id=self.procedure.result_ids[0],
-             tensor_type="torch.FloatTensor",  # TODO how to infer result type?
-             plans=set(),
-         )
-
-         self.procedure.update_args(args, self.procedure.result_ids)
-         self.promise_out_id = res.id
-
-         return res
+        self.procedure.update_args(args, self.procedure.result_ids)
+        self.promise_out_id = res.id  # NOTE should I put this in self.procedure.promise_out_id instead?
+        
+        return res
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -516,6 +516,8 @@ class Plan(AbstractObject, ObjectStorage):
         id = sy.serde._detail(worker, id)
         procedure = sy.serde._detail(worker, procedure)
         state = sy.serde._detail(worker, state)
+        input_shapes = sy.serde._detail(worker, input_shapes)
+        output_shape = sy.serde._detail(worker, output_shape)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
