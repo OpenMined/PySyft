@@ -86,6 +86,18 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return len(share.shape)
 
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy
+        """
+        cloned_tensor = type(self)(**self.get_class_attributes())
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+
+        cloned_tensor.child = {location: share.clone() for location, share in self.child.items()}
+
+        return cloned_tensor
+
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response,

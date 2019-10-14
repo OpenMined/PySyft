@@ -27,7 +27,7 @@ def test__str__(workers):
     assert isinstance(x_sh.__str__(), str)
 
 
-def test_encode_decode(workers):
+def test_share_get(workers):
 
     t = torch.tensor([1, 2, 3])
     x = t.share(workers["bob"], workers["alice"], workers["james"])
@@ -37,6 +37,41 @@ def test_encode_decode(workers):
     assert (x == t).all()
 
 
+def test_share_inplace_consistency(workers):
+    """Verify that share_ produces the same output then share"""
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x1 = torch.tensor([-1.0])
+    x1.fix_precision_().share_(alice, bob, crypto_provider=james)
+
+    x2 = torch.tensor([-1.0])
+    x2_sh = x2.fix_precision().share(alice, bob, crypto_provider=james)
+
+    assert (x1 == x2_sh).get().float_prec()
+
+
+def test_clone(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor([1.2]).fix_precision().share(alice, bob, crypto_provider=james)
+    original_props = (
+        x.id,
+        x.owner.id,
+        x.child.id,
+        x.child.owner.id,
+        x.child.child.id,
+        x.child.child.owner.id,
+    )
+    xc = x.clone()
+    cloned_props = (
+        xc.id,
+        xc.owner.id,
+        xc.child.id,
+        xc.child.owner.id,
+        xc.child.child.id,
+        xc.child.child.owner.id,
+    )
+    assert original_props == cloned_props
+
+
 def test_virtual_get(workers):
     t = torch.tensor([1, 2, 3])
     x = t.share(workers["bob"], workers["alice"], workers["james"])
@@ -44,6 +79,17 @@ def test_virtual_get(workers):
     x = x.child.virtual_get()
 
     assert (x == t).all()
+
+
+def test_non_client_registration(hook, workers):
+    hook.local_worker.is_client_worker = False
+    bob, alice, james = workers["bob"], workers["alice"], workers["james"]
+    x = torch.tensor([-1.0])
+    x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
+
+    assert x_sh.id in hook.local_worker._objects
+    assert (x_sh == hook.local_worker.get_obj(x_sh.id)).get().float_prec()
+    hook.local_worker.is_client_worker = True
 
 
 def test_autograd_kwarg(workers):
