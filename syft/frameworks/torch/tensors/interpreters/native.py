@@ -595,6 +595,10 @@ class TorchTensor(AbstractTensor):
         self.child.owner.register_obj(self)
         return self
 
+    def remote_send(self, location):
+        self.child.remote_send(location)
+        return self
+
     def attr(self, attr_name):
         """"""
 
