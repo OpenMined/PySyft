@@ -365,27 +365,57 @@ def test_torch_dot(workers):
 
 
 def test_torch_exp(workers):
+    """
+    Test the approximate exponential with different tolerance depending on
+    the precision_fractional considered
+    """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    tolerance = 5 / 100
-    t = torch.tensor([1.5])
-    t_sh = t.fix_precision().share(alice, bob, crypto_provider=james)
-    r_sh = t_sh.exp()
-    r = r_sh.get().float_prec()
-    diff = (r - t.exp()).abs()
-    norm = (r + t) / 2
-    assert diff < tolerance * norm
+
+    fix_prec_tolerance = {3: 20 / 100, 4: 5 / 100, 5: 5 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        cumsum = torch.zeros(5)
+        for i in range(10):
+            t = torch.tensor([0.0, 1, 2, 3, 4])
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.exp()
+            r = r_sh.get().float_prec()
+            t = t.exp()
+            diff = (r - t).abs()
+            norm = (r + t) / 2
+            cumsum += diff / (tolerance * norm)
+
+        cumsum /= 10
+        print(cumsum)
+        assert (cumsum < 1).all()
 
 
 def test_torch_log(workers):
+    """
+    Test the approximate logarithm with different tolerance depending on
+    the precision_fractional considered
+    """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    tolerance = 5 / 100
-    t = torch.tensor([24.0])
-    t_sh = t.fix_precision().share(alice, bob, crypto_provider=james)
-    r_sh = t_sh.log()
-    r = r_sh.get().float_prec()
-    diff = (r - t.log()).abs()
-    norm = (r + t) / 2
-    assert diff < tolerance * norm
+    fix_prec_tolerance = {3: 20 / 100, 4: 3 / 100, 5: 2 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        cumsum = torch.zeros(7)
+        for i in range(10):
+            t = torch.tensor([0.5, 2, 5, 10, 20, 50, 100])
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.log()
+            r = r_sh.get().float_prec()
+            t = t.log()
+            diff = (r - t).abs()
+            norm = (r + t) / 2
+            cumsum += diff / (tolerance * norm)
+
+        cumsum /= 10
+        assert (cumsum.abs() < 1).all()
 
 
 def test_torch_conv2d(workers):

@@ -458,10 +458,7 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             iterations (int): number of iterations for limit approximation
         """
-        result = 1 + self.div(2 ** iterations)
-        for _ in range(iterations):
-            result = result ** 2
-        return result
+        return (1 + self / 2 ** iterations) ** (2 ** iterations)
 
     def sigmoid(self):
         """
@@ -505,12 +502,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
         # 6th order Householder iterations
         for i in range(iterations):
-            h = -self * (-y).refresh().exp(iterations=exp_iterations) + 1
-            h2 = h ** 2
-            h3 = h2 * h
-            h4 = h2 ** 2
-            h5 = h4 * h
-            y -= h * (h.div(2) + h2.div(3) + h3.div(6) + h4.div(5) + h5.div(7) + 1)
+            h = [1 - self * (-y).refresh().exp(iterations=exp_iterations)]
+            for i in range(1, 5):
+                h.append(h[-1] * h[0])
+
+            y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 6 + h[3] / 5 + h[4] / 7)
 
         return y
 
