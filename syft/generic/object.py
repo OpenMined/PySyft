@@ -3,6 +3,7 @@ import functools
 from typing import List
 
 import syft as sy
+from syft.generic.frameworks.hook import hook_args
 
 
 class AbstractObject(ABC):
@@ -34,10 +35,7 @@ class AbstractObject(ABC):
                 a chain of tensors
         """
         self.owner = owner
-        if id is None:
-            self.id = sy.ID_PROVIDER.pop()
-        else:
-            self.id = id
+        self.id = id or sy.ID_PROVIDER.pop()
         self.tags = tags
         self.description = description
         self.child = child
@@ -63,6 +61,18 @@ class AbstractObject(ABC):
                 return self.shape[0]
         except IndexError:
             return 0
+
+    def describe(self, description: str) -> "AbstractObject":
+        self.description = description
+        return self
+
+    def tag(self, *_tags: str) -> "AbstractObject":
+        if self.tags is None:
+            self.tags = set()
+
+        for new_tag in _tags:
+            self.tags.add(new_tag)
+        return self
 
     @property
     def shape(self):
@@ -153,13 +163,8 @@ class AbstractObject(ABC):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all LoggingTensor with their child attribute
-        # TODO[jvmancuso]: get rid of these torch references when extending
-        # hook_args (#2530)
-        new_args, new_kwargs, new_type = sy.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -171,7 +176,7 @@ class AbstractObject(ABC):
         response = new_type.handle_func_command(new_command)
 
         # Put back LoggingTensor on the tensors found in the response
-        response = sy.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
 

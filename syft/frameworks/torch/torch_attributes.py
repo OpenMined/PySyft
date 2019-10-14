@@ -3,7 +3,8 @@ from typing import Union
 from typing import Callable
 from typing import Any
 
-from syft.frameworks.attributes import FrameworkAttributes
+from syft.generic.frameworks.attributes import FrameworkAttributes
+from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 
 
 class TorchAttributes(FrameworkAttributes):
@@ -25,7 +26,9 @@ class TorchAttributes(FrameworkAttributes):
         hook: A TorchHook to stash
     """
 
+    ### Subclasses must provide the following class attributes ###
     ALIAS = "torch"
+    Tensor = TorchTensor
 
     def __init__(self, torch: ModuleType, hook: ModuleType) -> None:
         """Initialization of the TorchAttributes class."""
@@ -126,7 +129,7 @@ class TorchAttributes(FrameworkAttributes):
         for key in keys:
             self.guard[f"syft.{key}"] = self.guard[key]
 
-        # Concatenate torch functions and torch methods
+        # Concatenate torch functions
         self.allowed_commands = self._torch_functions
 
         # The equivalent concatenation of native torch function names and native torch method names

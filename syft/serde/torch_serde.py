@@ -12,9 +12,10 @@ import numpy
 import torch
 
 import syft
-from syft.generic import pointers
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
-from syft.workers import AbstractWorker
+from syft.generic.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 
 
 def _serialize_tensor(tensor) -> bin:
@@ -106,12 +107,12 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
 
     tensor_bin = _serialize_tensor(tensor)
 
-    # note we need to do this expicitly because torch.save does not
+    # note we need to do this explicitly because torch.save does not
     # seem to be including .grad by default
 
     if tensor.grad is not None:
         if hasattr(tensor, "child"):
-            if isinstance(tensor.child, pointers.PointerTensor):
+            if isinstance(tensor.child, PointerTensor):
                 grad_chain = None
             else:
                 grad_chain = _simplify_torch_tensor(tensor.grad)
@@ -212,14 +213,11 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     """
 
     tensor = param.data
-
-    tensor_ser = _simplify_torch_tensor(tensor)
+    tensor_ser = syft.serde._simplify(tensor)
 
     grad = param.grad
 
-    if grad is not None and not (
-        hasattr(grad, "child") and isinstance(grad.child, pointers.PointerTensor)
-    ):
+    if grad is not None and not (hasattr(grad, "child") and isinstance(grad.child, PointerTensor)):
         grad_ser = _simplify_torch_tensor(grad)
     else:
         grad_ser = None
@@ -241,12 +239,12 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     """
     param_id, tensor_ser, requires_grad, grad_ser = param_tuple
 
-    tensor = _detail_torch_tensor(worker, tensor_ser)
+    tensor = syft.serde._detail(worker, tensor_ser)
 
     if grad_ser is not None:
         grad = _detail_torch_tensor(worker, grad_ser)
         grad.garbage_collect_data = False
-    elif hasattr(tensor, "child") and isinstance(tensor.child, pointers.PointerTensor):
+    elif hasattr(tensor, "child") and isinstance(tensor.child, PointerTensor):
         grad = tensor.attr("grad")
     else:
         grad = None
@@ -254,6 +252,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param = torch.nn.Parameter(tensor, requires_grad)
     param.id = param_id
     param.grad = grad
+    param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
 
     return param
 
