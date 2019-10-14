@@ -43,10 +43,12 @@ def test_deploy(workers):
     protocol._assert_is_resolved()
 
     # Assert the plan were sent to a consistent worker
-    assert all(plan.locations[0] == worker.id for worker, plan in protocol.plans)
+    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
 
     # Assert the order of the worker was preserved
-    assert all(plan.locations[0] == worker.id for (_, plan), worker in zip(protocol.plans, workers))
+    assert all(
+        plan_ptr.location.id == worker.id for (_, plan_ptr), worker in zip(protocol.plans, workers)
+    )
 
 
 def test_deploy_with_resolver(workers):
@@ -67,7 +69,7 @@ def test_deploy_with_resolver(workers):
     assert protocol.workers_resolved
 
     # Assert the plan were sent to a consistent worker
-    assert all(plan.locations[0] == worker.id for worker, plan in protocol.plans)
+    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
 
     # Now test the error case
     protocol = _create_inc_protocol()
