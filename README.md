@@ -25,14 +25,12 @@ conda activate pysyft # some older version of conda require "source activate pys
 conda install jupyter notebook
 ```
 
-Another alternative is to use a plain python virtual environment. That is
-our preferred environment for development purposes. We provide a direct
-install instructions in our makefile. Jupyter Notebooks are not a
-dependency, are quite a handy tool.
+Another alternative is to use python venvs. Those are our preferred
+environments for development purposes. We provide a direct install
+instructions in our makefile.
 
 ```bash
 make venv
-pip install jupyter
 ```
 
 ## Installation
@@ -50,9 +48,9 @@ pip install --upgrade --force-reinstall zstd
 ```
 If this still doesn't work, and you happen to be on OSX, make sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
 
-If this still fails, and you are on a Conda environment. It is because
-conda provides its own compiler and linker tools which might conflict with
-your system's. In that case we recommend to use a plain virtual enviroment
+If this still fails, and you are on a Conda environment. It could be
+because conda provides its own compiler and linker tools which might
+conflict with your system's. In that case we recommend to use a python venv
 and try again.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
