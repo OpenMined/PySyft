@@ -35,10 +35,7 @@ class AbstractObject(ABC):
                 a chain of tensors
         """
         self.owner = owner
-        if id is None:
-            self.id = sy.ID_PROVIDER.pop()
-        else:
-            self.id = id
+        self.id = id or sy.ID_PROVIDER.pop()
         self.tags = tags
         self.description = description
         self.child = child
