@@ -162,7 +162,7 @@ class Plan(AbstractObject, ObjectStorage):
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
         return self.state.tensors()
-    
+
     @property
     def output_shape(self):
         if self._output_shape is None:
@@ -226,7 +226,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         self.input_shapes = [x.shape for x in args]
         self._output_shape = None
-        
+
         # Move the arguments of the first call to the plan
         build_args = [arg.send(self) for arg in args]
 
@@ -309,9 +309,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         result_ids = [sy.ID_PROVIDER.pop()]
 
-        if any(
-            [hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]
-         ):
+        if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
             return self.setup_plan_with_promises(*args)
         elif self.forward is not None:
             if self.include_state:
@@ -348,7 +346,7 @@ class Plan(AbstractObject, ObjectStorage):
         if len(responses) == 1:
             return responses[0]
         return responses
-    
+
     def has_args_fulfilled(self):
         """ Check if all the arguments of the plan are ready or not.
         It might be the case that we still need to wait for some arguments in
@@ -360,7 +358,7 @@ class Plan(AbstractObject, ObjectStorage):
                 if not arg.is_kept():
                     return False
         return True
-    
+
     def setup_plan_with_promises(self, *args):
         """ Slightly modifies a plan so that it can work with promises.
         The plan will also be sent to location with this method.
@@ -374,7 +372,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         res = sy.PromiseTensor(
             owner=prom.owner,
-            #shape=self.output_shape,  #FIXME compute shape from promise plan
+            # shape=self.output_shape,  #FIXME compute shape from promise plan
             shape=self.input_shapes[0],
             tensor_id=self.procedure.result_ids[0],
             tensor_type="torch.FloatTensor",  # TODO how to infer result type?
@@ -382,8 +380,10 @@ class Plan(AbstractObject, ObjectStorage):
         )
 
         self.procedure.update_args(args, self.procedure.result_ids)
-        self.promise_out_id = res.id  # NOTE should I put this in self.procedure.promise_out_id instead?
-        
+        self.promise_out_id = (
+            res.id
+        )  # NOTE should I put this in self.procedure.promise_out_id instead?
+
         return res
 
     def send(self, *locations, force=False) -> PointerPlan:
@@ -496,7 +496,9 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde._simplify(plan.is_built),
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
-            sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,  # TODO remove when/if promise_out in procedure
+            sy.serde._simplify(plan.promise_out_id)
+            if hasattr(plan, "promise_out_id")
+            else None,  # TODO remove when/if promise_out in procedure
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -512,7 +514,9 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        id, procedure, state, include_state, is_built, input_shapes, output_shape, promise_out_id, name, tags, description = plan_tuple
+        id, procedure, state, include_state, is_built, input_shapes, output_shape, promise_out_id, name, tags, description = (
+            plan_tuple
+        )
         id = sy.serde._detail(worker, id)
         procedure = sy.serde._detail(worker, procedure)
         state = sy.serde._detail(worker, state)
@@ -527,7 +531,7 @@ class Plan(AbstractObject, ObjectStorage):
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
         plan.promise_out_id = promise_out_id
-        
+
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
         plan.description = sy.serde._detail(worker, description)

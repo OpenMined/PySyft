@@ -92,7 +92,7 @@ class PointerPlan(ObjectPointer):
         response = self.request_run_plan(location, result_ids, *args)
 
         return response
-        
+
     def call_on_ptr_promise(self, *args, **kwargs):
         args = [arg.child for arg in args if hasattr(arg, "child")]
         command = ("__call__", self, args, kwargs)
