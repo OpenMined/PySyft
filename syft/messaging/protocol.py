@@ -115,7 +115,7 @@ class Protocol(AbstractObject):
                 args = [arg.send(worker) for arg in args]
 
             if previous_worker_id is None:
-                in_promise_ptrs = args
+                in_promise_ptrs = args[0] if len(args) == 1 else args
             previous_worker_id = worker.id
 
             response = plan.call_on_ptr_promise(*args)

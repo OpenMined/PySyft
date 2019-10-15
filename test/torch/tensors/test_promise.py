@@ -159,3 +159,30 @@ def test_plan_waiting_promise(hook, workers):
     assert (res_ptr.value().get() == 7 * torch.ones(3, 3)).all()
 
     hook.local_worker.is_client_worker = True
+
+
+def test_protocol_waiting_promise(hook, workers):
+    hook.local_worker.is_client_worker = False
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    @syft.func2plan(args_shape=[(1,)])
+    def plan_alice(in_a):
+        return in_a + 1
+
+    @syft.func2plan(args_shape=[(1,)])
+    def plan_bob(in_b):
+        return in_b + 2
+
+    protocol = syft.Protocol([("alice", plan_alice), ("bob", plan_bob)])
+    protocol.deploy(alice, bob)
+
+    x = syft.Promises.FloatTensor(shape=torch.Size((1,)))
+    in_ptr, res_ptr = protocol(x)
+
+    in_ptr.keep(torch.tensor([1.0]))
+
+    assert res_ptr.value().get() == 4
+
+    hook.local_worker.is_client_worker = True
