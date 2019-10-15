@@ -95,7 +95,15 @@ class Protocol(AbstractObject):
             return self.run(*args, **kwargs)
 
     def build_with_promises(self, *args, **kwargs):
-        # TODO docstring
+        """ This method is used to build the graph of computation distributed across the different workers,
+        meaning that output promises are built for plans and these output promises are used as inputs
+        for the next worker.
+
+        The input args (with at least one promise) provided are sent to the first plan location.
+        The output promise(s) is created and linked to this plan and send to the second plan location, and so on.
+        Pointer(s) to the final result(s) on the last worker as well as to the input promise(s)
+        that have to be kept are returned.
+        """
         self._assert_is_resolved()
 
         # TODO if self.location is not None:
@@ -105,13 +113,13 @@ class Protocol(AbstractObject):
         response = None
         for worker, plan in self.plans:
             # Transmit the args to the next worker if it's a different one % the previous
-            if None is not previous_worker_id != worker.id:
+            if previous_worker_id is not None and previous_worker_id != worker.id:
                 args = [arg.remote_send(worker) for arg in args]
                 for arg in args:
                     # Not clean but need to point to promise on next worker from protocol owner
                     # TODO see if a better solution exists
                     arg.child.location = worker
-            else:
+            else:  # TODO what if we stay on the same worker
                 args = [arg.send(worker) for arg in args]
 
             if previous_worker_id is None:
