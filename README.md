@@ -12,12 +12,25 @@ PySyft has also been explained in video form by [Siraj Raval](https://www.youtub
 
 ## Pre-Installation
 
-Optionally, we recommend that you install PySyft within the [Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html) virtual environment. If you are using Windows, I suggest installing [Anaconda and using the Anaconda Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to work from the command line.
+Optionally, we recommend that you install PySyft within the
+[Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/overview.html)
+virtual environment, for its simplicity in installation. If you are using
+Windows, we suggest installing [Anaconda and using the Anaconda
+Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
+work from the command line.
 
 ```bash
 conda create -n pysyft python=3
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
 conda install jupyter notebook
+```
+
+Another alternative is to use python venvs. Those are our preferred
+environments for development purposes. We provide a direct install
+instructions in our makefile.
+
+```bash
+make venv
 ```
 
 ## Installation
@@ -35,6 +48,11 @@ pip install --upgrade --force-reinstall zstd
 ```
 If this still doesn't work, and you happen to be on OSX, make sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
 
+If this still fails, and you are on a Conda environment. It could be
+because conda provides its own compiler and linker tools which might
+conflict with your system's. In that case we recommend to use a python venv
+and try again.
+
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
 ## Run Local Notebook Server
@@ -45,7 +63,12 @@ All the examples can be played with by running the command
 make notebook
 ```
 
-and selecting the pysyft kernel
+This assumes you want to use a local virtual environment. It installs it
+independently to the conda environment in case you installed one, or any
+other virtual environment you might have set up.
+
+Once the jupyter notebook launches on your browser select the pysyft
+kernel.
 
 ## Use the Docker image
 
