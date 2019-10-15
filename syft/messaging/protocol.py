@@ -8,6 +8,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.messaging.promise import Promise
 
 from typing import List, Union
 
@@ -83,6 +84,45 @@ class Protocol(AbstractObject):
         self.plans = [(worker, plan.send(worker)) for (worker, plan) in self.plans]
 
         return self
+
+    def __call__(self, *args, **kwargs):
+        has_promised_inputs = any(
+            [hasattr(arg, "child") and isinstance(arg.child, Promise) for arg in args]
+        )
+        if has_promised_inputs:
+            return self.build_with_promises(*args, **kwargs)
+        else:
+            return self.run(*args, **kwargs)
+
+    def build_with_promises(self, *args, **kwargs):
+        # TODO docstring
+        self._assert_is_resolved()
+
+        # TODO if self.location is not None:
+
+        # Local and sequential coordination of the plan execution
+        previous_worker_id = None
+        response = None
+        for worker, plan in self.plans:
+            # Transmit the args to the next worker if it's a different one % the previous
+            if None is not previous_worker_id != worker.id:
+                args = [arg.remote_send(worker) for arg in args]
+                for arg in args:
+                    # Not clean but need to point to promise on next worker from protocol owner
+                    # TODO see if a better solution exists
+                    arg.child.location = worker
+            else:
+                args = [arg.send(worker) for arg in args]
+
+            if previous_worker_id is None:
+                in_promise_ptrs = args
+            previous_worker_id = worker.id
+
+            response = plan.call_on_ptr_promise(*args)
+
+            args = response if isinstance(response, tuple) else (response,)
+
+        return in_promise_ptrs, response
 
     def run(self, *args, **kwargs):
         """

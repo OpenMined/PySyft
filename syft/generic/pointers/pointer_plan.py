@@ -97,7 +97,7 @@ class PointerPlan(ObjectPointer):
         args = [arg.child for arg in args if hasattr(arg, "child")]
         command = ("__call__", self, args, kwargs)
         response = self.owner.send_command(self.location, command)
-        return response
+        return response.wrap()
 
     def request_run_plan(
         self,
