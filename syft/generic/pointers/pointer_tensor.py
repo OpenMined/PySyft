@@ -275,7 +275,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
         """
-        self.owner.send_command(message=("send", self, (destination,), {"inplace": True}), recipient=self.location)
+        self.owner.send_command(
+            message=("send", self, (destination,), {"inplace": True}), recipient=self.location
+        )
         return self
 
     def remote_get(self):
