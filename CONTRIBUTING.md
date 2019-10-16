@@ -44,7 +44,7 @@ To install the development version of the package, once the `dev` version of the
 cd PySyft
 pip install -e .
 ```
-If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead. 
+If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
 
 ## Contributing
 
@@ -93,6 +93,21 @@ def test_hooked_tensor(self, compress, compressScheme):
         )
     assert (t == t_serialized_deserialized).all()
 ```
+
+### Process for Serde Protocol Changes
+Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/proto](https://github.com/OpenMined/proto).
+All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/proto/blob/master/proto.json) file and have unique code value.
+
+Updating lists of _simplifiers and detailers_ in `syft/serde/native_serde.py`, `syft/serde/serde.py`, `syft/serde/torch_serde.py`
+or renaming/moving related classes can make unit tests fail because `proto.json` won't be in sync with PySyft code anymore.
+
+Use following process:
+ 1. Fork [OpenMined/proto](https://github.com/OpenMined/proto) and create new branch.
+ 1. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>` instead of `git+git://github.com/OpenMined/proto@master`.
+ 1. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
+ 1. Create PRs in both repos.
+ 1. PRs should pass CI checks.
+ 1. After both PRs are merged, `requirements.txt` in PySyft@dev should be updated back to `git+git://github.com/OpenMined/proto@master`.
 
 ### Documentation and Codestyle
 
