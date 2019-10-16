@@ -187,9 +187,13 @@ class TorchHook(FrameworkHook):
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 
-    def create_wrapper(cls, child_to_wrap):
+    def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
+        assert (
+            wrapper_type is None or wrapper_type == torch.Tensor
+        ), "TorchHook only uses torch.Tensor wrappers"
+
         return torch.Tensor()
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
@@ -417,15 +421,15 @@ class TorchHook(FrameworkHook):
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                self._perform_function_overloading(torch_module, func)
+                self._perform_function_overloading(module_name, torch_module, func)
 
     @classmethod
-    def _get_hooked_func(cls, attr):
+    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
         """Torch-specific implementation. See the subclass for more."""
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
-        return super()._get_hooked_func(attr)
+        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
