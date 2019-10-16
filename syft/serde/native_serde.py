@@ -66,12 +66,10 @@ def _detail_collection_list(worker: AbstractWorker, my_collection: Tuple) -> Col
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
-        try:
-            pieces.append(
-                serde._detail(worker, part).decode("utf-8")
-            )  # transform bytes back to string
-        except AttributeError:
-            pieces.append(serde._detail(worker, part))
+        detailed = serde._detail(worker, part)
+        if isinstance(detailed, bytes):
+            detailed = detailed.decode("utf-8")
+        pieces.append(detailed)
 
     return pieces
 
@@ -97,12 +95,10 @@ def _detail_collection_set(worker: AbstractWorker, my_collection: Tuple) -> Coll
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
-        try:
-            pieces.append(
-                serde._detail(worker, part).decode("utf-8")
-            )  # transform bytes back to string
-        except AttributeError:
-            pieces.append(serde._detail(worker, part))
+        detailed = serde._detail(worker, part)
+        if isinstance(detailed, bytes):
+            detailed = detailed.decode("utf-8")
+        pieces.append(detailed)
     return set(pieces)
 
 
@@ -179,17 +175,12 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict:
         detailed_key = serde._detail(worker, key)
-        try:
+        if isinstance(detailed_key, bytes):
             detailed_key = detailed_key.decode("utf-8")
-        except AttributeError:
-            pass
 
         detailed_value = serde._detail(worker, value)
-        try:
+        if isinstance(detailed_value, bytes):
             detailed_value = detailed_value.decode("utf-8")
-        except AttributeError:
-            pass
-
         pieces[detailed_key] = detailed_value
 
     return pieces

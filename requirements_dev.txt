@@ -2,6 +2,7 @@ black>=10.3b0
 bumpversion>=0.5.3
 coverage>=4.5.3
 ipykernel>=5.1.0
+jupyter>=1.0.0
 pre-commit>=1.16.1
 pyopenssl>=19.0.0
 pyshark>=0.4.2.4
