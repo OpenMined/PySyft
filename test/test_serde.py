@@ -3,19 +3,21 @@ This file tests the ability for serde.py to convert complex types into
 simple python types which are serializable by standard serialization tools.
 For more on how/why this works, see serde.py directly.
 """
-from syft.serde import native_serde
-from syft.serde import serde
-from syft.serde import torch_serde
-
-import syft
-from syft.exceptions import CompressionNotFoundException
-from syft.generic import pointers
-
 import msgpack
 import numpy
 import pytest
 import torch
 from torch import Tensor
+
+import syft
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.serde import native_serde
+from syft.serde import serde
+from syft.serde import torch_serde
+
+from syft.exceptions import CompressionNotFoundException
 
 
 def test_tuple_simplify():
@@ -194,7 +196,7 @@ def test_pointer_tensor_simplify():
     """Test the simplification of PointerTensor"""
 
     alice = syft.VirtualWorker(syft.torch.hook, id="alice")
-    input_tensor = pointers.PointerTensor(id=1000, location=alice, owner=alice)
+    input_tensor = PointerTensor(id=1000, location=alice, owner=alice)
 
     output = serde._simplify(input_tensor)
 
@@ -527,7 +529,7 @@ def test_hooked_tensor(compress, compress_scheme):
 
 def test_pointer_tensor(hook, workers):
     serde._apply_compress_scheme = serde.apply_no_compression
-    t = pointers.PointerTensor(
+    t = PointerTensor(
         id=1000, location=workers["alice"], owner=workers["alice"], id_at_location=12345
     )
     t_serialized = serde.serialize(t)
@@ -573,8 +575,8 @@ def test_additive_sharing_tensor_serde(compress, workers):
     x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
 
     additive_sharing_tensor = x.child.child
-    data = syft.AdditiveSharingTensor.simplify(additive_sharing_tensor)
-    additive_sharing_tensor_reconstructed = syft.AdditiveSharingTensor.detail(
+    data = AdditiveSharingTensor.simplify(additive_sharing_tensor)
+    additive_sharing_tensor_reconstructed = AdditiveSharingTensor.detail(
         syft.hook.local_worker, data
     )
 
@@ -607,7 +609,7 @@ def test_fixed_precision_tensor_serde(compress, workers):
 
 def test_serde_object_wrapper_int():
     obj = 4
-    obj_wrapper = pointers.ObjectWrapper(obj, id=100)
+    obj_wrapper = ObjectWrapper(obj, id=100)
     msg = serde.serialize(obj_wrapper)
 
     obj_wrapper_received = serde.deserialize(msg)
@@ -690,7 +692,7 @@ def test_serde_object_wrapper_traced_module():
 
     obj = torch.jit.trace(Net(), data)
 
-    obj_wrapper = pointers.ObjectWrapper(obj, id=200)
+    obj_wrapper = ObjectWrapper(obj, id=200)
     msg = serde.serialize(obj_wrapper)
 
     obj_wrapper_received = serde.deserialize(msg)
@@ -701,3 +703,13 @@ def test_serde_object_wrapper_traced_module():
 
     assert (pred_before == pred_after).all()
     assert obj_wrapper.id == obj_wrapper_received.id
+
+
+def test_no_simplifier_found():
+    """Test that types that can not be simplified are cached."""
+    # Clean cache.
+    serde.no_simplifiers_found = set()
+    x = 1.3
+    assert type(x) not in serde.no_simplifiers_found
+    _ = serde._simplify(x)
+    assert type(x) in serde.no_simplifiers_found

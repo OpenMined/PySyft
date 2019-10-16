@@ -8,8 +8,8 @@ import argparse
 import sys
 
 import syft as sy
-from syft.workers import WebsocketClientWorker
-from syft.workers import VirtualWorker
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.virtual import VirtualWorker
 from syft.frameworks.torch.federated import utils
 
 logger = logging.getLogger(__name__)

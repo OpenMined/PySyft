@@ -3,7 +3,8 @@ import torch
 
 import syft
 from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
 from . import gradients
 
 
@@ -133,16 +134,14 @@ class AutogradTensor(AbstractTensor):
         if grad_fn is not None:
 
             def method_with_grad(*args, **kwargs):
-                new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+                new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                     name, self, args, kwargs
                 )
 
                 result = getattr(new_self, name)(*new_args, **new_kwargs)
 
                 # Put back SyftTensor on the tensors found in the response
-                result = syft.frameworks.torch.hook_args.hook_response(
-                    name, result, wrap_type=type(self)
-                )
+                result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
                 result.grad_fn.result = result
 
@@ -239,11 +238,8 @@ class AutogradTensor(AbstractTensor):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -252,17 +248,26 @@ class AutogradTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back AutogradTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd, response, wrap_type=cls)
 
         return response
 
     def get(self):
         """Just a pass through. This is most commonly used when calling .get() on a
         AutogradTensor which has also been shared."""
-        self.child = self.child.get()
-        # Remove the autograd node if a simple tensor is received
-        if isinstance(self.child, torch.Tensor) and not self.child.is_wrapper:
-            return self.child
+        tensor = self.child.get()
+
+        if isinstance(tensor, torch.Tensor):
+            # Remove the autograd node if a simple tensor is received
+            if not tensor.is_wrapper:
+                return tensor
+            # If it's a wrapper, then insert the autograd under the wrapper
+            else:
+                self.child = tensor.child
+                tensor.child = self
+                return tensor
+
+        self.child = tensor
         return self
 
     def float_precision(self):
