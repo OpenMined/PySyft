@@ -314,9 +314,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         result_ids = [sy.ID_PROVIDER.pop()]
 
-        if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
-            return self.setup_plan_with_promises(*args)
-        elif self.forward is not None:
+        if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
@@ -339,6 +337,10 @@ class Plan(AbstractObject, ObjectStorage):
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
+        # If promises are given to the plan, prepare it to receive values from these promises
+        if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
+            return self.setup_plan_with_promises(*args)
+
         # We build the plan only if needed
         if not self.is_built:
             self.build(args)
@@ -358,9 +360,9 @@ class Plan(AbstractObject, ObjectStorage):
         case some of them are Promises.
         """
         for arg_id in self.procedure.arg_ids:
-            arg = self.owner._objects[arg_id].child
-            if isinstance(arg, PromiseTensor):
-                if not arg.is_kept():
+            arg = self.owner._objects[arg_id]
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                if not arg.child.is_kept():
                     return False
         return True
 

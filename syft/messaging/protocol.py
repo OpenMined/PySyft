@@ -114,19 +114,19 @@ class Protocol(AbstractObject):
         for worker, plan in self.plans:
             # Transmit the args to the next worker if it's a different one % the previous
             if previous_worker_id is not None and previous_worker_id != worker.id:
-                args = [arg.remote_send(worker) for arg in args]
+                args = [arg.remote_send(worker).child for arg in args]
                 for arg in args:
                     # Not clean but need to point to promise on next worker from protocol owner
                     # TODO see if a better solution exists
-                    arg.child.location = worker
+                    arg.location = worker
             else:  # TODO what if we stay on the same worker
-                args = [arg.send(worker) for arg in args]
+                args = [arg.send(worker).child for arg in args]
 
             if previous_worker_id is None:
                 in_promise_ptrs = args[0] if len(args) == 1 else args
             previous_worker_id = worker.id
 
-            response = plan.call_on_ptr_promise(*args)
+            response = plan(*args)
 
             args = response if isinstance(response, tuple) else (response,)
 

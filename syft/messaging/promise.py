@@ -71,8 +71,9 @@ class Promise(ABC):
                 args = []
                 ids_to_rm = []
                 for i, arg_id in enumerate(plan.procedure.arg_ids):
-                    if isinstance(self.owner._objects[arg_id].child, Promise):
-                        id_to_add = self.owner.get_obj(arg_id).child.queue_obj_ids.pop(0)
+                    arg = self.owner._objects[arg_id]
+                    if hasattr(arg, "child") and isinstance(arg.child, Promise):
+                        id_to_add = arg.child.queue_obj_ids.pop(0)
                         ids_to_rm.append(id_to_add)
                     else:
                         id_to_add = arg_id
