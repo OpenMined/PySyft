@@ -8,7 +8,7 @@ def test__str__():
     assert isinstance(a.__str__(), str)
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__"])
 def test_operations_between_promises(hook, cmd):
     hook.local_worker.is_client_worker = False
 
@@ -29,7 +29,7 @@ def test_operations_between_promises(hook, cmd):
     hook.local_worker.is_client_worker = True
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__"])
 def test_operations_with_concrete(hook, cmd):
     hook.local_worker.is_client_worker = False
 
@@ -60,7 +60,7 @@ def test_send(workers):
     assert (x.value().get() == torch.ones((2, 2))).all()
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "sub", "__mul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__"])
 def test_remote_operations(workers, cmd):
     bob = workers["bob"]
 

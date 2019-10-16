@@ -368,12 +368,10 @@ class TorchTensor(AbstractTensor):
 
             location = location[0]
 
-            if hasattr(self, "child"):
-
-                if isinstance(self.child, PointerTensor):
-                    self.child.garbage_collect_data = False
-                    if self._is_parameter():
-                        self.data.child.garbage_collect_data = False
+            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+                self.child.garbage_collect_data = False
+                if self._is_parameter():
+                    self.data.child.garbage_collect_data = False
 
             ptr = self.owner.send(
                 self,
@@ -830,10 +828,16 @@ class TorchTensor(AbstractTensor):
 
         return syft.combine_pointers(*ps)
 
-    def keep(self, *args, **kwargs):
-        return self.child.keep(*args, **kwargs)
+    def keep(self, obj):
+        """ Call .keep() on self's child if the child is a Promise (otherwise an error is raised).
+        .keep() is used to fulfill a promise with a value.
+        """
+        return self.child.keep(obj)
 
     def value(self):
+        """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
+        .value() is used to retrieve the oldest unused value the promise was kept with.
+        """
         return self.child.value()
 
     def torch_type(self):
