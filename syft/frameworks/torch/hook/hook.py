@@ -229,6 +229,11 @@ class TorchHook(FrameworkHook):
 
         self._hook_native_methods(tensor_type)
 
+    def __hook_properties(self, tensor_type):
+        
+        super()._hook_properties(tensor_type)
+        tensor_type.native_shape = tensor_type.shape
+
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
         super()._hook_syft_tensor_methods(tensor_type, syft_type)

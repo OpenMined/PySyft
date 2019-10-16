@@ -160,8 +160,6 @@ class FrameworkHook(ABC):
 
         tensor_type.is_wrapper = is_wrapper
 
-        tensor_type.native_shape = tensor_type.shape
-
         def dim(self):
             return len(self.shape)
 
