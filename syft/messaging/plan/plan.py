@@ -375,8 +375,8 @@ class Plan(AbstractObject, ObjectStorage):
                 if prom is None:
                     prom = p
 
-        # TODO how to infer result type?
-        result_type = args[0].torch_type()
+        # TODO how to infer result type? torch.result_type() in torch 1.3?
+        result_type = args[0].torch_type()  # NOTE torch specfific here
 
         res = sy.PromiseTensor(
             owner=prom.owner,

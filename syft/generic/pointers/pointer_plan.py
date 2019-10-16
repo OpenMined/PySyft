@@ -94,6 +94,7 @@ class PointerPlan(ObjectPointer):
         return response
 
     def call_on_ptr_promise(self, *args, **kwargs):
+        # TODO this shouldn't be needed
         args = [arg.child for arg in args if hasattr(arg, "child")]
         command = ("__call__", self, args, kwargs)
         response = self.owner.send_command(self.location, command)

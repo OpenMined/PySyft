@@ -105,7 +105,8 @@ class Promise(ABC):
         if not self.queue_obj_ids:
             # If the promise has still not been kept
             # or if the queue of results has been emptied
-            # TODO this doesn't work as I want with pointerTensors
+            # TODO this doesn't work as I want when this method is called
+            # on a PointerTensor and that the result needs to be "pointed to"
             return None
         ret_id = self.queue_obj_ids.pop(0)
         ret = self.owner.get_obj(ret_id)

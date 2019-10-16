@@ -15,7 +15,6 @@ class ObjectStorage:
     """
 
     def __init__(self):
-
         # This is the collection of objects being stored.
         self._objects = {}
 
