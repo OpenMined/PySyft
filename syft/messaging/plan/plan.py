@@ -167,7 +167,12 @@ class Plan(AbstractObject, ObjectStorage):
     def output_shape(self):
         if self._output_shape is None:
             args = self._create_placeholders(self.input_shapes)
+            # NOTE do I really need to regiser and them remove objects to use the method?
+            for arg in args:
+                self.owner.register_obj(arg)
             output = self(*args)
+            for arg in args:
+                self.owner.rm_obj(arg)
             self._output_shape = output.shape
         return self._output_shape
 
@@ -370,12 +375,14 @@ class Plan(AbstractObject, ObjectStorage):
                 if prom is None:
                     prom = p
 
+        # TODO how to infer result type?
+        result_type = args[0].torch_type()
+
         res = sy.PromiseTensor(
             owner=prom.owner,
-            # shape=self.output_shape,  #FIXME compute shape from promise plan
-            shape=self.input_shapes[0],
+            shape=self.output_shape,
             tensor_id=self.procedure.result_ids[0],
-            tensor_type="torch.FloatTensor",  # TODO how to infer result type?
+            tensor_type=result_type,
             plans=set(),
         )
 
@@ -496,9 +503,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde._simplify(plan.is_built),
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
-            sy.serde._simplify(plan.promise_out_id)
-            if hasattr(plan, "promise_out_id")
-            else None,  # TODO remove when/if promise_out in procedure
+            sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
