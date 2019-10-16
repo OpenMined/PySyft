@@ -346,14 +346,8 @@ class DASH:
         # QR decomposition of R_shared
         _, R = qr(R_shared, norm_factor=self.total_size ** (1 / 2))
 
-        # TO DO: implem inverse of AST upper triangular matrix
-        # problem: too many divisions
-        # R_inv = self._inv_upper(R)
-        R = R.get().float_precision()
-        R_inv = torch.inverse(R)
-        R_inv = R_inv.fix_precision(precision_fractional=self.precision_fractional).share(
-            self.workers[idx], self.hbc_worker, crypto_provider=self.crypto_provider
-        )
+        # Compute inverse of upper matrix
+        R_inv = self._inv_upper(R)
 
         Qy = R_inv.t() @ Cy_shared
         QX = R_inv.t() @ CX_shared
@@ -485,9 +479,22 @@ class DASH:
 
     @staticmethod
     def _inv_upper(R):
-        # TO DO
-        # problem: too many divisions
+        """
+        Performs the inversion of a right upper matrix (2-dim tensor) in MPC by
+        solving the linear equation R * R_inv = I with backward substitution.
+        """
         R_inv = torch.zeros_like(R)
+        N = R.shape[0]
+
+        # Identity Matrix
+        I = torch.zeros_like(R)
+        for i in range(N):
+            I[i, i] += 1
+
+        for i in range(N - 1, -1, -1):
+            R_inv[i, :] = I[i, :] - (R[i, (i + 1) : N] * R_inv[(i + 1) : N, :]).sum(axis=0)
+            R_inv[i, :] /= R[i, i]
+
         return R_inv
 
     def _share_ptrs(self, ptrs, worker_idx):
