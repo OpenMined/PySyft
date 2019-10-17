@@ -14,6 +14,8 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.messaging.message import ForceObjectDeleteMessage
 
+from syft.exceptions import RemoteObjectFoundError
+
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.workers.abstract import AbstractWorker
@@ -61,7 +63,7 @@ class ObjectPointer(AbstractObject):
                 registered if register is set to True. Note that this is
                 different from the location parameter that specifies where the
                 pointer points to.
-            id: An optional string or integer id of the PointerTensor.
+            id: An optional string or integer id of the ObjectPointer.
             garbage_collect_data: If true (default), delete the remote object when the
                 pointer is deleted.
             point_to_attr: string which can tell a pointer to not point directly to\
@@ -86,7 +88,7 @@ class ObjectPointer(AbstractObject):
         owner: "AbstractWorker" = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
-    ) -> "PointerTensor":
+    ) -> "ObjectPointer":
         """Creates a pointer to the "self" FrameworkTensor object.
 
         This method is called on a FrameworkTensor object, returning a pointer
@@ -134,7 +136,7 @@ class ObjectPointer(AbstractObject):
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
 
         Returns:
-            A FrameworkTensor[PointerTensor] pointer to self. Note that this
+            A FrameworkTensor[ObjectPointer] pointer to self. Note that this
             object itself will likely be wrapped by a FrameworkTensor wrapper.
         """
         if owner is None:
@@ -159,7 +161,7 @@ class ObjectPointer(AbstractObject):
         return ptr
 
     def wrap(self, register=True, type=None, **kwargs):
-        """Wraps the class inside torch tensor.
+        """Wraps the class inside framework tensor.
 
         Because PyTorch/TF do not (yet) support functionality for creating
         arbitrary Tensor types (via subclassing torch.Tensor), in order for our
