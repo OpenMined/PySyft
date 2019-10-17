@@ -382,7 +382,7 @@ class ObjectPointer(AbstractObject):
         )
 
     @staticmethod
-    def detail(worker: "AbstractWorker", object_tuple: tuple) -> "PointerTensor":
+    def detail(worker: "AbstractWorker", object_tuple: tuple) -> "ObjectPointer":
         """
         This function reconstructs an ObjectPointer given it's attributes in form of a dictionary.
         We use the spread operator to pass the dict data as arguments
