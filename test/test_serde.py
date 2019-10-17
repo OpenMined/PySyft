@@ -172,7 +172,7 @@ def test_ndarray_simplify():
     output = serde._simplify(input)
 
     # make sure simplified type ID is correct
-    assert serde.detailers[output[0]] == torch_serde._detail_ndarray
+    assert serde.detailers[output[0]] == native_serde._detail_ndarray
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
