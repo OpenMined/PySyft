@@ -290,7 +290,7 @@ class FrameworkHook(ABC):
                 hook=hook_self,
                 obj=self,
                 id=id,
-                reinitialize=is_tensor,
+                reinitialize=not is_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
