@@ -483,6 +483,7 @@ def _simplify(obj: object) -> object:
 
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
+    #breakpoint()
     current_type = type(obj)
     if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))

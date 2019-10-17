@@ -5,7 +5,9 @@ for all native python objects.
 from collections import OrderedDict
 from typing import Collection
 from typing import Dict
+from typing import Union
 from typing import Tuple
+
 
 import numpy
 
@@ -350,6 +352,62 @@ def _detail_ndarray(
     return res
 
 
+def _simplify_numpy_number(
+        numpy_nb: Union[numpy.int32, 
+                        numpy.int64, 
+                        numpy.float32, 
+                        numpy.float64]
+    ) -> Tuple[bin, Tuple]:
+    """
+    This function gets the byte representation of the numpy number
+        and stores the dtype for reconstruction
+
+    Args:
+        numpy_nb (e.g numpy.float64): a numpy number
+
+    Returns:
+        list: a list holding the byte representation, dtype of the numpy number
+
+    Examples:
+
+        np_representation = _simplify_numpy_number(numpy.float64(2.3)))
+
+    """
+    nb_bytes = numpy_nb.tobytes()
+    nb_dtype = numpy_nb.dtype.name
+
+    return (nb_bytes, nb_dtype)
+
+
+def _detail_numpy_number(
+    worker: AbstractWorker, nb_representation: Tuple[bin, Tuple, str]
+) -> Union[numpy.int32, 
+           numpy.int64, 
+           numpy.float32, 
+           numpy.float64]:
+    """
+    This function reconstruct a numpy number from it's byte data, dtype
+        by first loading the byte data with the appropiate dtype
+
+    Args:
+        worker: the worker doing the deserialization
+        np_representation (tuple): a tuple holding the byte representation
+        and dtype of the numpy number
+
+    Returns:
+        numpy.float or numpy.int: a numpy number
+
+    Examples:
+        nb = _detail_numpy_number(nb_representation)
+
+    """
+    nb = numpy.frombuffer(nb_representation[0], dtype=nb_representation[1])[0]
+
+    assert type(nb) in [numpy.float32, numpy.float64, numpy.int32, numpy.int64]
+
+    return nb
+
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: keep this structure sorted A-Z (by type name)
 MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
@@ -363,5 +421,9 @@ MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         tuple: (_simplify_collection, _detail_collection_tuple),
         type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
         numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
+        numpy.float32: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.float64: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.int32: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.int64: (_simplify_numpy_number, _detail_numpy_number),
     }
 )

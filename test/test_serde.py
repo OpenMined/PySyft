@@ -179,6 +179,24 @@ def test_ndarray_simplify():
     assert output[1][1] == input.shape
     assert output[1][2] == input.dtype.name
 
+def test_numpy_number_simplify():
+    """This tests our ability to simplify numpy.float objects
+
+    At the time of writing, numpy number simplify to an object inside
+    of a tuple where the first value is a byte representation of the number
+    and the second value is the dtype
+    """
+
+    input = numpy.float32(2.0)
+    output = serde._simplify(input)
+
+    # make sure simplified type ID is correct
+    assert serde.detailers[output[0]] == native_serde._detail_numpy_number
+
+    # make sure serialized form is correct
+    assert type(output[1][0]) == bytes
+    assert output[1][1] == input.dtype.name
+
 
 def test_ellipsis_simplify():
     """Make sure ellipsis simplifies correctly."""
