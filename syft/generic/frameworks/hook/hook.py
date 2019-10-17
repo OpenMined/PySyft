@@ -32,15 +32,17 @@ class FrameworkHook(ABC):
 
     @classmethod
     @abstractmethod
-    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
-        """Factory method for creating a generic FrameworkTensor wrapper."""
-        pass
-
-    @classmethod
-    @abstractmethod
     def create_zeros(cls, shape, dtype, **kwargs):
         """Factory method for creating a generic zero FrameworkTensor."""
         pass
+
+    @classmethod
+    def create_wrapper(cls, wrapper_type, *args, **kwargs):
+        """Factory method for creating a generic wrapper of type wrapper_type."""
+        if wrapper_type is None:
+            wrapper_type = syft.framework.Tensor
+
+        return wrapper_type(*args, **kwargs)
 
     ### Standardized, framework-specific methods ###
     @abstractmethod
@@ -281,19 +283,19 @@ class FrameworkHook(ABC):
         tensor_type.__init__ = new___init__
 
     @classmethod
-    def _perform_function_overloading(cls, parent, func):
+    def _perform_function_overloading(cls, parent_module_name, parent_module, func_name):
 
         # Where the overloading happens
         # 1. Get native function
-        native_func = getattr(parent, func)
+        native_func = getattr(parent_module, func_name)
         # 2. Check it is a proper function
         if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
             # 3. Build the hooked function
-            new_func = cls._get_hooked_func(native_func)
+            new_func = cls._get_hooked_func(parent_module_name, func_name, native_func)
             # 4. Move the native function
-            setattr(parent, f"native_{func}", native_func)
+            setattr(parent_module, f"native_{func_name}", native_func)
             # 5. Put instead the hooked one
-            setattr(parent, func, new_func)
+            setattr(parent_module, func_name, new_func)
 
     @classmethod
     def _get_hooked_syft_method(cls, attr):
@@ -389,7 +391,7 @@ class FrameworkHook(ABC):
         return overloaded_native_method
 
     @classmethod
-    def _get_hooked_func(cls, attr):
+    def _get_hooked_func(cls, public_module_name, func_api_name, func):
         """
         Hook a function in order to inspect its args and search for pointer
         or other syft tensors.
@@ -399,14 +401,16 @@ class FrameworkHook(ABC):
         - Calls with syft tensor will in the future trigger specific behaviour
 
         Args:
+            public_module_name (str): the name of the public module you are
+                hooking this function on (ie the same name that the user would import).
             attr (str): the method to hook
         Return:
             the hooked method
         """
 
-        cmd_name = f"{attr.__module__}.{attr.__name__}"
+        cmd_name = f"{public_module_name}.{func_api_name}"
 
-        @wraps(attr)
+        @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
