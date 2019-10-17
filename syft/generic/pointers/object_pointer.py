@@ -185,32 +185,6 @@ class ObjectPointer(AbstractObject):
         return wrapper
 
     @classmethod
-    def rgetattr(cls, obj, attr, *args):
-        """
-        Get an attribute recursively.
-
-        This is a core piece of functionality for the PySyft tensor chain.
-
-        Args:
-            obj: the object holding the attribute
-            attr: nested attribute
-            args: optional arguments to provide
-
-        Returns:
-            the attribute obj.attr
-
-        Example:
-            >>> rgetattr(obj, 'attr1.attr2.attr3')
-            [Out] obj.attr1.attr2.attr3
-
-        """
-
-        def _getattr(obj, attr):
-            return getattr(obj, attr, *args)
-
-        return functools.reduce(_getattr, [obj] + attr.split("."))
-
-    @classmethod
     def handle_func_command(cls, command):
         """
         Receive an instruction for a function to be applied on a Pointer,

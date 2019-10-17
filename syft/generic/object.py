@@ -169,6 +169,32 @@ class AbstractObject(ABC):
 
         return response
 
+    @classmethod
+    def rgetattr(cls, obj, attr, *args):
+        """
+        Get an attribute recursively.
+
+        This is a core piece of functionality for the PySyft tensor chain.
+
+        Args:
+            obj: the object holding the attribute
+            attr: nested attribute
+            args: optional arguments to provide
+
+        Returns:
+            the attribute obj.attr
+
+        Example:
+            >>> rgetattr(obj, 'attr1.attr2.attr3')
+            [Out] obj.attr1.attr2.attr3
+
+        """
+
+        def _getattr(obj, attr):
+            return getattr(obj, attr, *args)
+
+        return functools.reduce(_getattr, [obj] + attr.split("."))
+
 
 def initialize_object(
     hook, obj, owner=None, reinitialize=True, id=None, init_args=tuple(), init_kwargs={}
