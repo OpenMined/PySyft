@@ -14,6 +14,7 @@ import torch
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
+from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 
@@ -245,6 +246,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param = torch.nn.Parameter(tensor, requires_grad)
     param.id = param_id
     param.grad = grad
+    param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
 
     return param
 

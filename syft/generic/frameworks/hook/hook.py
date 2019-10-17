@@ -42,6 +42,7 @@ class FrameworkHook(ABC):
         """Factory method for creating a generic wrapper of type wrapper_type."""
         if wrapper_type is None:
             wrapper_type = syft.framework.Tensor
+
         return wrapper_type(*args, **kwargs)
 
     ### Standardized, framework-specific methods ###

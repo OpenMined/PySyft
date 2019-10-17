@@ -179,6 +179,7 @@ def test_ndarray_simplify():
     assert output[1][1] == input.shape
     assert output[1][2] == input.dtype.name
 
+
 def test_numpy_number_simplify():
     """This tests our ability to simplify numpy.float objects
 

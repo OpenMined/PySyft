@@ -188,6 +188,7 @@ class TorchHook(FrameworkHook):
         assert (
             wrapper_type is None or wrapper_type == torch.Tensor
         ), "TorchHook only uses torch.Tensor wrappers"
+
         return torch.Tensor()
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
@@ -230,7 +231,7 @@ class TorchHook(FrameworkHook):
         self._hook_native_methods(tensor_type)
 
     def __hook_properties(self, tensor_type):
-        
+
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape
 

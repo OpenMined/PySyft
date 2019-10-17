@@ -439,6 +439,7 @@ class ObjectPointer(AbstractObject):
 
             return ptr
 
+
 ### Register the object with hook_args.py ###
 register_type_rule({ObjectPointer: one})
 register_forward_func({ObjectPointer: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p))})
