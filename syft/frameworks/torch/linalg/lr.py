@@ -492,8 +492,13 @@ class DASH:
             I[i, i] += 1
 
         for i in range(N - 1, -1, -1):
-            R_inv[i, :] = I[i, :] - (R[i, (i + 1) : N] * R_inv[(i + 1) : N, :]).sum(axis=0)
-            R_inv[i, :] /= R[i, i]
+            if i == N - 1:
+                R_inv[i, :] = I[i, :] / R[i, i]
+            else:
+                R_inv[i, :] = I[i, :] - (R[i : i + 1, (i + 1) : N].t() * R_inv[(i + 1) : N, :]).sum(
+                    dim=0
+                )
+                R_inv[i, :] /= R[i, i]
 
         return R_inv
 
