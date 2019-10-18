@@ -168,14 +168,24 @@ def test_protocol_waiting_promise(hook, workers):
     bob = workers["bob"]
 
     @syft.func2plan(args_shape=[(1,)])
-    def plan_alice(in_a):
+    def plan_alice1(in_a):
         return in_a + 1
 
     @syft.func2plan(args_shape=[(1,)])
-    def plan_bob(in_b):
+    def plan_bob1(in_b):
         return in_b + 2
 
-    protocol = syft.Protocol([("alice", plan_alice), ("bob", plan_bob)])
+    @syft.func2plan(args_shape=[(1,)])
+    def plan_bob2(in_b):
+        return in_b + 3
+
+    @syft.func2plan(args_shape=[(1,)])
+    def plan_alice2(in_a):
+        return in_a + 4
+
+    protocol = syft.Protocol(
+        [("alice", plan_alice1), ("bob", plan_bob1), ("bob", plan_bob2), ("alice", plan_alice2)]
+    )
     protocol.deploy(alice, bob)
 
     x = syft.Promises.FloatTensor(shape=torch.Size((1,)))
@@ -183,6 +193,6 @@ def test_protocol_waiting_promise(hook, workers):
 
     in_ptr.keep(torch.tensor([1.0]))
 
-    assert res_ptr.value().get() == 4
+    assert res_ptr.value().get() == 11
 
     hook.local_worker.is_client_worker = True

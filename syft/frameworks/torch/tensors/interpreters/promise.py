@@ -71,13 +71,10 @@ class PromiseTensor(AbstractTensor, Promise):
         self.obj_type = tensor.type()
 
         if not wrap:
-
             self.child = tensor
-
             return self
 
         else:
-
             # if tensor is a wrapper
             if not hasattr(tensor, "child"):
                 tensor = tensor.wrap()
