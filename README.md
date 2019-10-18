@@ -110,7 +110,7 @@ These tutorials cover how to perform techniques such as federated learning and d
 
 ## High-level Architecture
 
-![alt text](art/PySyft-Arch.png "High-level Architecture")
+![alt text](art/PySyftArch.png "High-level Architecture")
 
 ## Start Contributing
 
