@@ -481,7 +481,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return result
 
     def log(self, iterations=2, exp_iterations=8):
-        """Approximates the natural logarithm using 6th order modified Householder iterations.
+        """Approximates the natural logarithm using 8th order modified Householder iterations.
         Recall that Householder method is an algorithm to solve a non linear equation f(x) = 0.
         Here  f: x -> 1 - C * exp(-x)  with C = self
 
@@ -497,16 +497,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         # Initialization to a decent estimate (found by qualitative inspection):
-        # ln(x) = x/40 - 8exp(-2x - .3) + 1.9
-        y = self / 40 - 8 * (-2 * self - 0.3).exp() + 1.9
+        # ln(x) = x/120 - 20exp(-2x - 1.0) + 3.0
+        y = self / 120 - 20 * (-2 * self - 1.0).exp() + 3.0
 
-        # 6th order Householder iterations
+        # 8th order Householder iterations
         for i in range(iterations):
             h = [1 - self * (-y).refresh().exp(iterations=exp_iterations)]
             for i in range(1, 5):
                 h.append(h[-1] * h[0])
 
-            y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 6 + h[3] / 5 + h[4] / 7)
+            y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 4 + h[3] / 5 + h[4] / 6)
 
         return y
 
