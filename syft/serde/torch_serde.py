@@ -294,6 +294,7 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         torch.device: (_simplify_torch_device, _detail_torch_device),
         torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
+        torch._C.Function: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
