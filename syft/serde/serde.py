@@ -506,18 +506,19 @@ def _simplify(obj: object) -> object:
     # only objects of class types registered in
     # `OBJ_SIMPLIFIER_AND_DETAILERS`
     # I added this line to break this requirement: Any object that
-    # has a static `simplify()` method can now be simplified using
-    # this function.
-    # However, such `simplify()` method should return a tuple
+    # has a static `_simplify()` method (notice the underscore in the name
+    # to distinguish it from the `simplify()` methods in native PySYft)
+    # can now be simplified using this function.
+    # However, such `_simplify()` method should return a tuple
     # whose last element is what I call the  path of the
     # class whose object we are wishing to simplify.
     # Example: syfertext.tokenizer/Tokenizer
     # where `syfertext.tokenizer` is the name of the module in which
     # the `Tokenizer` class is defined.
-    elif hasattr(current_type, "simplify"):
+    elif hasattr(current_type, "_simplify"):
 
         # Get the tuple returned by the `simplify` method
-        result = current_type.simplify(obj)
+        result = current_type._simplify(obj)
 
         # Get the type path
         type_path = result[-1]
@@ -634,7 +635,7 @@ def _getDetailer(idx_or_path: Union[int, bytes]) -> callable:
         current_type = getattr(module, type_name)
 
         # get the `detail` static method
-        detailer = current_type.detail
+        detailer = current_type._detail
 
     # Else, `idx_or_path` is of type integer referring
     # to the index of the appropriate detailer in
