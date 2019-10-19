@@ -9,8 +9,10 @@ framework_layer_modules = []
 if dependency_check.tensorflow_available:
     import tensorflow as tf
     from tensorflow.python.framework.ops import EagerTensor
+    from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
     framework_tensors.append(EagerTensor)
+    framework_tensors.append(ResourceVariable)
     framework_shapes.append(tf.TensorShape)
 
     framework_layer_module = tf.Module

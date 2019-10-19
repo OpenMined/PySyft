@@ -232,9 +232,14 @@ class TorchHook(FrameworkHook):
         # #self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from_native_tensor(tensor_type, syft_type)
+        self._transfer_methods_to_native_tensor(tensor_type, syft_type)
 
         self._hook_native_methods(tensor_type)
+
+    def __hook_properties(self, tensor_type):
+
+        super()._hook_properties(tensor_type)
+        tensor_type.native_shape = tensor_type.shape
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
@@ -589,7 +594,8 @@ class TorchHook(FrameworkHook):
 
         hook_self.torch.tensor = new_tensor
 
-    def _add_methods_from_native_tensor(cls, tensor_type: type, syft_type: type):
+    @classmethod
+    def _transfer_methods_to_native_tensor(cls, tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.
 
         The class TorchTensor is a proxy to avoid extending directly the torch
@@ -626,7 +632,7 @@ class TorchHook(FrameworkHook):
             "__lt__",
             "__le__",
         ]
-        super()._add_methods_from_native_tensor(tensor_type, syft_type, exclude)
+        cls._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module

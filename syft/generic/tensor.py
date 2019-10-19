@@ -1,9 +1,12 @@
+import functools
 from typing import List
 import weakref
 
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
+from syft.generic.object import initialize_object
 
 
 class AbstractTensor(AbstractObject):
@@ -17,36 +20,8 @@ class AbstractTensor(AbstractObject):
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
-    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
-        """
-        Add a syft(log) tensor on top of the tensor.
-
-        Args:
-            tensor: the tensor to extend
-            wrap: if true, add the syft tensor between the wrapper
-            and the rest of the chain. If false, just add it at the top
-
-        Returns:
-            a syft/torch tensor
-        """
-        if not wrap:
-            self.child = tensor
-            return self
-        else:
-            # if tensor is a wrapper
-            if not hasattr(tensor, "child"):
-                tensor = tensor.wrap()
-
-            # We usually call .on() on newly created tensor so it's not a sacrilege
-            # to rewrite its id
-            self.id = tensor.id
-
-            self.child = tensor.child
-            tensor.child = self
-            return tensor
-
-    def wrap(self, register=True, type=None, **kwargs) -> FrameworkTensorType:
-        """Wraps the class inside torch tensor.
+    def wrap(self, register=True, type=None, **kwargs):
+        """Wraps the class inside an empty object of class `type`.
 
         Because PyTorch/TF do not (yet) support functionality for creating
         arbitrary Tensor types (via subclassing torch.Tensor), in order for our
@@ -76,6 +51,34 @@ class AbstractTensor(AbstractObject):
 
         return wrapper
 
+    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
+        """
+        Add a syft(log) tensor on top of the tensor.
+
+        Args:
+            tensor: the tensor to extend
+            wrap: if true, add the syft tensor between the wrapper
+            and the rest of the chain. If false, just add it at the top
+
+        Returns:
+            a syft/torch tensor
+        """
+        if not wrap:
+            self.child = tensor
+            return self
+        else:
+            # if tensor is a wrapper
+            if not hasattr(tensor, "child"):
+                tensor = tensor.wrap()
+
+            # We usually call .on() on newly created tensor so it's not a sacrilege
+            # to rewrite its id
+            self.id = tensor.id
+
+            self.child = tensor.child
+            tensor.child = self
+            return tensor
+
     def copy(self):
         return self + 0
 
@@ -103,6 +106,20 @@ class AbstractTensor(AbstractObject):
             raise AttributeError("Refresh should only be called on AdditiveSharedTensors")
 
     @property
+    def shape(self):
+        return self.child.shape
+
+    def __len__(self) -> int:
+        """Alias .shape[0] with len(), helpful for pointers"""
+        try:
+            if hasattr(self, "child") and not isinstance(self.child, dict):
+                return self.child.shape[0]
+            else:
+                return self.shape[0]
+        except IndexError:
+            return 0
+
+    @property
     def grad(self):
         child_grad = self.child.grad
         if child_grad is None:
@@ -111,13 +128,11 @@ class AbstractTensor(AbstractObject):
             return child_grad.wrap()
 
 
-def initialize_tensor(
-    hook_self, cls, is_tensor: bool = False, owner=None, id=None, *init_args, **init_kwargs
-):
+def initialize_tensor(hook, obj, owner=None, id=None, init_args=tuple(), init_kwargs={}):
     """Initializes the tensor.
 
     Args:
-        hook_self: A reference to TorchHook class.
+        hook: A reference to TorchHook class.
         cls: An object to keep track of id, owner and whether it is a native
             tensor or a wrapper over pytorch.
         is_tensor: A boolean parameter (default False) to indicate whether
@@ -127,21 +142,12 @@ def initialize_tensor(
         id: The id of tensor, a random id will be generated if there is no id
             specified.
     """
-    cls.is_wrapper = False
-
-    if not is_tensor:
-        cls.native___init__(*init_args, **init_kwargs)
-
-    _apply_args(hook_self=hook_self, new_tensor=cls, owner=owner, id=id)
-
-
-def _apply_args(hook_self, new_tensor, owner=None, id=None):
-
-    if owner is None:
-        owner = hook_self.local_worker
-
-    if id is None:
-        id = sy.ID_PROVIDER.pop()
-
-    new_tensor.id = id
-    new_tensor.owner = owner
+    initialize_object(
+        hook,
+        obj,
+        owner=owner,
+        reinitialize=False,
+        id=id,
+        init_args=init_args,
+        init_kwargs=init_kwargs,
+    )
