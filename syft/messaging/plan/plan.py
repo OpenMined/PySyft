@@ -390,9 +390,7 @@ class Plan(AbstractObject, ObjectStorage):
         )
 
         self.procedure.update_args(args, self.procedure.result_ids)
-        self.promise_out_id = (
-            res.id
-        )  # NOTE should I put this in self.procedure.promise_out_id instead?
+        self.procedure.promise_out_id = res.id
 
         return res.wrap()
 
@@ -506,7 +504,6 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde._simplify(plan.is_built),
             sy.serde._simplify(plan.input_shapes),
             sy.serde._simplify(plan._output_shape),
-            sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),
             sy.serde._simplify(plan.description),
@@ -522,7 +519,7 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        id, procedure, state, include_state, is_built, input_shapes, output_shape, promise_out_id, name, tags, description = (
+        id, procedure, state, include_state, is_built, input_shapes, output_shape, name, tags, description = (
             plan_tuple
         )
         id = sy.serde._detail(worker, id)
@@ -538,7 +535,6 @@ class Plan(AbstractObject, ObjectStorage):
         state.plan = plan
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
-        plan.promise_out_id = promise_out_id
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)

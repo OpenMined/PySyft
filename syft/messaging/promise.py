@@ -85,7 +85,7 @@ class Promise(ABC):
                 for to_rm in ids_to_rm:
                     self.owner.rm_obj(to_rm)
 
-                self.owner.get_obj(plan.promise_out_id).keep(result)
+                self.owner.get_obj(plan.procedure.promise_out_id).keep(result)
 
         return obj
 

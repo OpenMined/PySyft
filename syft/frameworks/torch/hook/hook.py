@@ -497,29 +497,31 @@ class TorchHook(FrameworkHook):
                     arg_shapes.append(arg.shape)
 
                 @syft.func2plan(arg_shapes)
-                def operation(self, *args, **kwargs):
+                def operation_method(self, *args, **kwargs):
                     return getattr(self, method_name)(*args, **kwargs)
 
-                self.plans.add(operation.id)
+                self.plans.add(operation_method.id)
                 for arg in args:
                     if isinstance(arg, PromiseTensor):
-                        arg.plans.add(operation.id)
+                        arg.plans.add(operation_method.id)
 
-                operation.procedure.update_args([self, *args], operation.procedure.result_ids)
+                operation_method.procedure.update_args(
+                    [self, *args], operation_method.procedure.result_ids
+                )
 
                 promise_out = PromiseTensor(
                     owner=self.owner,
-                    shape=operation.output_shape,
-                    tensor_id=operation.procedure.result_ids[0],
+                    shape=operation_method.output_shape,
+                    tensor_id=operation_method.procedure.result_ids[0],
                     tensor_type=self.obj_type,
                     plans=set(),
                 )
-                operation.promise_out_id = promise_out.id
+                operation_method.procedure.promise_out_id = promise_out.id
 
-                if operation.owner != self.owner:
-                    operation.send(self.owner)
+                if operation_method.owner != self.owner:
+                    operation_method.send(self.owner)
                 else:  # otherwise object not registered on local worker
-                    operation.owner.register_obj(operation)
+                    operation_method.owner.register_obj(operation_method)
 
                 return promise_out
 

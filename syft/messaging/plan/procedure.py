@@ -27,6 +27,8 @@ class Procedure(object):
         self.operations = operations or []
         self.arg_ids = arg_ids or []
         self.result_ids = result_ids or []
+        # promise_out_id id used for plan augmented to be used with promises
+        self.promise_out_id = None
 
     def __str__(self):
         return f"<Procedure #operations:{len(self.operations)}>"
@@ -128,14 +130,16 @@ class Procedure(object):
             ),  # We're not simplifying because operations are already simplified
             sy.serde._simplify(procedure.arg_ids),
             sy.serde._simplify(procedure.result_ids),
+            sy.serde._simplify(procedure.promise_out_id),
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
-        operations, arg_ids, result_ids = procedure_tuple
+        operations, arg_ids, result_ids, promise_out_id = procedure_tuple
         operations = list(operations)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
 
         procedure = Procedure(operations, arg_ids, result_ids)
+        procedure.promise_out_id = promise_out_id
         return procedure
