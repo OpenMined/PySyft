@@ -4,7 +4,7 @@ import syft
 
 
 def test__str__():
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
     assert isinstance(a.__str__(), str)
 
 
@@ -12,8 +12,8 @@ def test__str__():
 def test_operations_between_promises(hook, cmd):
     hook.local_worker.is_client_worker = False
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((2, 2)))
-    b = syft.Promises.FloatTensor(shape=torch.Size((2, 2)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((2, 2)))
+    b = syft.Promise.FloatTensor(shape=torch.Size((2, 2)))
 
     actual = getattr(a, cmd)(b)
 
@@ -33,7 +33,7 @@ def test_operations_between_promises(hook, cmd):
 def test_operations_with_concrete(hook, cmd):
     hook.local_worker.is_client_worker = False
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((2, 2)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((2, 2)))
     b = torch.tensor([[-8.0, -7], [6, 5]]).wrap()  # TODO fix need to wrap
 
     actual = getattr(a, cmd)(b)
@@ -51,7 +51,7 @@ def test_operations_with_concrete(hook, cmd):
 def test_send(workers):
     bob = workers["bob"]
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((2, 2)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((2, 2)))
 
     x = a.send(bob)
 
@@ -64,8 +64,8 @@ def test_send(workers):
 def test_remote_operations(workers, cmd):
     bob = workers["bob"]
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
-    b = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
+    b = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
 
     x = a.send(bob)
     y = b.send(bob)
@@ -85,7 +85,7 @@ def test_remote_operations(workers, cmd):
 def test_bufferized_results(hook):
     hook.local_worker.is_client_worker = False
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
 
     a.keep(torch.ones(3, 3))
     a.keep(2 * torch.ones(3, 3))
@@ -108,7 +108,7 @@ def test_plan_waiting_promise(hook, workers):
     # Hack otherwise plan not found on local worker...
     hook.local_worker.register_obj(plan_test)
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
 
     res = plan_test(a)
 
@@ -124,7 +124,7 @@ def test_plan_waiting_promise(hook, workers):
     # Hack otherwise plan not found on local worker...
     hook.local_worker.register_obj(plan_test)
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
     b = 2 * torch.ones(3, 3).wrap()
 
     res = plan_test(a, b)
@@ -140,8 +140,8 @@ def test_plan_waiting_promise(hook, workers):
     def plan_test_remote(in_a, in_b):
         return in_a + in_b
 
-    a = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
-    b = syft.Promises.FloatTensor(shape=torch.Size((3, 3)))
+    a = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
+    b = syft.Promise.FloatTensor(shape=torch.Size((3, 3)))
 
     x = b.send(bob)
     y = a.send(bob)
@@ -188,7 +188,7 @@ def test_protocol_waiting_promise(hook, workers):
     )
     protocol.deploy(alice, bob)
 
-    x = syft.Promises.FloatTensor(shape=torch.Size((1,)))
+    x = syft.Promise.FloatTensor(shape=torch.Size((1,)))
     in_ptr, res_ptr = protocol(x)
 
     in_ptr.keep(torch.tensor([1.0]))

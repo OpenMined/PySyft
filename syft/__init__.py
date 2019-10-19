@@ -54,6 +54,7 @@ from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
+from syft.messaging.promise import Promise
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -67,14 +68,11 @@ from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisio
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.promise import CreatePromiseTensor as PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-
-# Import Promises
-from syft.frameworks.torch.tensors.interpreters.promise import Promises
 
 # Import serialization tools
 from syft import serde

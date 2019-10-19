@@ -338,7 +338,7 @@ class Plan(AbstractObject, ObjectStorage):
             result_ids: List of ids where the results will be stored.
         """
         # If promises are given to the plan, prepare it to receive values from these promises
-        if any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args]):
+        if self.has_promises_args(args):
             return self.setup_plan_with_promises(*args)
 
         # We build the plan only if needed
@@ -360,28 +360,29 @@ class Plan(AbstractObject, ObjectStorage):
         case some of them are Promises.
         """
         for arg_id in self.procedure.arg_ids:
-            arg = self.owner._objects[arg_id]
+            arg = self.owner.get_obj(arg_id)
             if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
                 if not arg.child.is_kept():
                     return False
         return True
 
+    def has_promises_args(self, args):
+        return any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args])
+
     def setup_plan_with_promises(self, *args):
         """ Slightly modifies a plan so that it can work with promises.
         The plan will also be sent to location with this method.
         """
-        prom = None
-        for p in args:
-            if hasattr(p, "child") and isinstance(p.child, PromiseTensor):
-                p.child.plans.add(self.id)
-                if prom is None:
-                    prom = p
+        for arg in args:
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                arg.child.plans.add(self.id)
+                prom_owner = arg.owner
 
         # TODO how to infer result type? torch.result_type() in torch 1.3?
         result_type = args[0].torch_type()  # NOTE torch specfific here
 
-        res = sy.PromiseTensor(
-            owner=prom.owner,
+        res = PromiseTensor(
+            owner=prom_owner,
             shape=self.output_shape,
             tensor_id=self.procedure.result_ids[0],
             tensor_type=result_type,
@@ -393,7 +394,7 @@ class Plan(AbstractObject, ObjectStorage):
             res.id
         )  # NOTE should I put this in self.procedure.promise_out_id instead?
 
-        return res
+        return res.wrap()
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -504,7 +505,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde._simplify(plan.include_state),
             sy.serde._simplify(plan.is_built),
             sy.serde._simplify(plan.input_shapes),
-            sy.serde._simplify(plan._output_shape) if plan._output_shape is not None else None,
+            sy.serde._simplify(plan._output_shape),
             sy.serde._simplify(plan.promise_out_id) if hasattr(plan, "promise_out_id") else None,
             sy.serde._simplify(plan.name),
             sy.serde._simplify(plan.tags),

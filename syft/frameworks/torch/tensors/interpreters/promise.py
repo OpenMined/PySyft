@@ -54,37 +54,6 @@ class PromiseTensor(AbstractTensor, Promise):
         #
         # return self._grad
 
-    def on(self, tensor: "AbstractTensor", wrap: bool = True) -> "AbstractTensor":
-        """
-        Add a syft(log) tensor on top of the tensor.
-
-        Args:
-            tensor: the tensor to extend
-            wrap: if true, add the syft tensor between the wrapper
-            and the rest of the chain. If false, just add it at the top
-
-        Returns:
-            a syft/torch tensor
-        """
-
-        # This is the only difference from AbstractTensor.on()
-        self.obj_type = tensor.type()
-
-        if not wrap:
-            self.child = tensor
-            return self
-
-        else:
-            # if tensor is a wrapper
-            if not hasattr(tensor, "child"):
-                tensor = tensor.wrap()
-
-            self.child = tensor.child
-            tensor.child = self
-
-            tensor.child.parent = weakref.ref(tensor)
-            return tensor
-
     def __str__(self):
         return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]} -blocking-> {len(self.plans)} plans]"
 
@@ -134,48 +103,6 @@ class PromiseTensor(AbstractTensor, Promise):
         )
 
         return tensor
-
-
-def CreatePromiseTensor(shape, tensor_type: str, *args, **kwargs):
-    return PromiseTensor(shape, *args, tensor_type=tensor_type, **kwargs).wrap()
-
-
-class Promises:
-    @staticmethod
-    def FloatTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.FloatTensor", *args, **kwargs)
-
-    @staticmethod
-    def DoubleTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.DoubleTensor", *args, **kwargs)
-
-    @staticmethod
-    def HalfTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.HalfTensor", *args, **kwargs)
-
-    @staticmethod
-    def ByteTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.ByteTensor", *args, **kwargs)
-
-    @staticmethod
-    def CharTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.CharTensor", *args, **kwargs)
-
-    @staticmethod
-    def ShortTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.ShortTensor", *args, **kwargs)
-
-    @staticmethod
-    def IntTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.IntTensor", *args, **kwargs)
-
-    @staticmethod
-    def LongTensor(shape, *args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.LongTensor", *args, **kwargs)
-
-    @staticmethod
-    def BoolTensor(shape, args, **kwargs):
-        return CreatePromiseTensor(shape, tensor_type="torch.BoolTensor", *args, **kwargs)
 
 
 ### Register the tensor with hook_args.py ###

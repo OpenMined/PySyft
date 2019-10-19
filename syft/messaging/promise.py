@@ -57,12 +57,7 @@ class Promise(ABC):
 
         # If some plans were waiting for this promise...
         for plan_id in self.plans:
-            # If the promise has been moved, the plan waiting for it might not be on the same worker
-            # TODO is this ok?
-            if plan_id in self.owner._objects:
-                plan = self.owner.get_obj(plan_id)
-            else:
-                continue
+            plan = self.owner.get_obj(plan_id)
 
             # ... execute them if it was the last argument they were waiting for.
             if plan.has_args_fulfilled():
@@ -71,7 +66,7 @@ class Promise(ABC):
                 args = []
                 ids_to_rm = []
                 for i, arg_id in enumerate(plan.procedure.arg_ids):
-                    arg = self.owner._objects[arg_id]
+                    arg = self.owner.get_obj(arg_id)
                     if hasattr(arg, "child") and isinstance(arg.child, Promise):
                         id_to_add = arg.child.queue_obj_ids.pop(0)
                         ids_to_rm.append(id_to_add)

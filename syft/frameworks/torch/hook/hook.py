@@ -26,6 +26,7 @@ from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.messaging.plan import Plan
+from syft.messaging.promise import Promise
 
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
@@ -521,6 +522,51 @@ class TorchHook(FrameworkHook):
 
         for method_name in methods_to_hook:
             setattr(PromiseTensor, method_name, generate_method(method_name))
+
+        def FloatTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.FloatTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "FloatTensor", FloatTensor)
+
+        def DoubleTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.DoubleTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "DoubleTensor", DoubleTensor)
+
+        def HalfTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.HalfTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "HalfTensor", HalfTensor)
+
+        def ByteTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.ByteTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "ByteTensor", ByteTensor)
+
+        def CharTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.CharTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "CharTensor", CharTensor)
+
+        def ShortTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.ShortTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "ShortTensor", ShortTensor)
+
+        def IntTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.IntTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "IntTensor", IntTensor)
+
+        def LongTensor(shape, *args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.LongTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "LongTensor", LongTensor)
+
+        def BoolTensor(shape, args, **kwargs):
+            return PromiseTensor(shape, tensor_type="torch.BoolTensor", *args, **kwargs).wrap()
+
+        setattr(Promise, "BoolTensor", BoolTensor)
 
     def _hook_tensor(hook_self):
         """Hooks the function torch.tensor()
