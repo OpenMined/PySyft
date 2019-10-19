@@ -3,6 +3,7 @@ from typing import Union
 
 from syft.generic.string import String
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.workers.base import BaseWorker
 
 import abc
 
@@ -115,9 +116,9 @@ class StringPointer(ObjectPointer, metaclass = PointerClassMaker, pointed_type =
     
     def __init__(
         self,
-        location: "BaseWorker" = None,
+        location: BaseWorker = None,
         id_at_location: Union[str, int] = None,
-        owner: "BaseWorker" = None,
+        owner: BaseWorker = None,
         id: Union[str, int] = None,
         garbage_collect_data: bool = True,
         tags: List[str] = None,
