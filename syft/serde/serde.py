@@ -509,12 +509,12 @@ def _simplify(obj: object) -> object:
     # has a static `simplify()` method can now be simplified using
     # this function.
     # However, such `simplify()` method should return a tuple
-    # whose last element is what I call the  path of the 
+    # whose last element is what I call the  path of the
     # class whose object we are wishing to simplify.
     # Example: syfertext.tokenizer/Tokenizer
     # where `syfertext.tokenizer` is the name of the module in which
     # the `Tokenizer` class is defined.
-    elif hasattr(current_type, 'simplify'):
+    elif hasattr(current_type, "simplify"):
 
         # Get the tuple returned by the `simplify` method
         result = current_type.simplify(obj)
@@ -526,7 +526,7 @@ def _simplify(obj: object) -> object:
         simple_obj = result[:-1]
 
         return (type_path, simple_obj)
-    
+
     else:
         # If the object type is not in simplifiers,
         # we check the classes that this object inherits from.
@@ -569,9 +569,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
             deserializing directly.
     """
 
-
     if type(obj) in (list, tuple):
-
 
         # Get the index of of the detailer in `detailers` or
         # the type path in case the object to detail is
@@ -584,7 +582,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
 
         # Get the simplified object
         simple_obj = obj[1]
-        
+
         # Get the detailer
         detailer = _getDetailer(idx_or_path)
 
@@ -592,11 +590,11 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
         obj = detailer(worker, simple_obj)
 
         return obj
-    
+
     else:
         return obj
 
-    
+
 def _getDetailer(idx_or_path: Union[int, bytes]) -> callable:
     """
        This function is used by the `_detail` method.
@@ -622,13 +620,13 @@ def _getDetailer(idx_or_path: Union[int, bytes]) -> callable:
     if isinstance(idx_or_path, bytes):
 
         # Decode the byte object into a str
-        type_path = str(idx_or_path, encoding = 'utf-8')
+        type_path = str(idx_or_path, encoding="utf-8")
 
         # The type path has the following format:
         # <module_name>/<class_name>
         # So split them
-        module_name = type_path.split('/')[0]
-        type_name =  type_path.split('/')[1]
+        module_name = type_path.split("/")[0]
+        type_name = type_path.split("/")[1]
 
         # import the module dynamically and get the
         # class from it. I call it `current_type`
@@ -637,16 +635,13 @@ def _getDetailer(idx_or_path: Union[int, bytes]) -> callable:
 
         # get the `detail` static method
         detailer = current_type.detail
-        
 
     # Else, `idx_or_path` is of type integer referring
     # to the index of the appropriate detailer in
     # the `detailers` list defined in this file.
     else:
-        
-        detailer =  detailers[idx_or_path]
 
+        detailer = detailers[idx_or_path]
 
     # Return the detailer
     return detailer
-    
