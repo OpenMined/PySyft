@@ -1,8 +1,10 @@
 import subprocess
 
-
 from torchvision import datasets
 from torchvision import transforms
+
+import signal
+import sys
 
 
 # Downloads MNIST dataset
@@ -15,17 +17,71 @@ mnist_trainset = datasets.MNIST(
     ),
 )
 
-call_alice = ["python", "run_websocket_server.py", "--port", "8777", "--id", "alice"]
+call_alice = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8777",
+    "--id",
+    "alice",
+    "--host",
+    "0.0.0.0",
+]
 
-call_bob = ["python", "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_bob = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8778",
+    "--id",
+    "bob",
+    "--host",
+    "0.0.0.0",
+]
 
-call_charlie = ["python", "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_charlie = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8779",
+    "--id",
+    "charlie",
+    "--host",
+    "0.0.0.0",
+]
+
+call_testing = [
+    "python",
+    "run_websocket_server.py",
+    "--port",
+    "8780",
+    "--id",
+    "testing",
+    "--testing",
+    "--host",
+    "0.0.0.0",
+]
 
 print("Starting server for Alice")
-subprocess.Popen(call_alice)
+process_alice = subprocess.Popen(call_alice)
 
 print("Starting server for Bob")
-subprocess.Popen(call_bob)
+process_bob = subprocess.Popen(call_bob)
 
 print("Starting server for Charlie")
-subprocess.Popen(call_charlie)
+process_charlie = subprocess.Popen(call_charlie)
+
+print("Starting server for Testing")
+process_testing = subprocess.Popen(call_testing)
+
+
+def signal_handler(sig, frame):
+    print("You pressed Ctrl+C!")
+    for p in [process_alice, process_bob, process_charlie, process_testing]:
+        p.terminate()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
+
+signal.pause()

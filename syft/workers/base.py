@@ -337,7 +337,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A PointerTensor object representing the pointer to the remote worker(s).
         """
 
-        if not isinstance(workers, list):
+        if not isinstance(workers, (list, tuple)):
             workers = [workers]
 
         assert len(workers) > 0, "Please provide workers to receive the data"
@@ -356,7 +356,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         worker = self.get_worker(worker)
 
         if hasattr(obj, "create_pointer") and not isinstance(
-            obj, (sy.Plan, sy.Protocol)
+            obj, sy.Protocol
         ):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
                 ptr_id = sy.ID_PROVIDER.pop()
@@ -461,9 +461,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         command_name, args = message
         try:
-            return self._plan_command_router[command_name](*args)
+            command = self._plan_command_router[command_name]
         except KeyError:
             raise PlanCommandUnknownError(command_name)
+
+        return command(*args)
 
     def send_command(
         self, recipient: "BaseWorker", message: str, return_ids: str = None
@@ -545,16 +547,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Selects an id for the object, assigns a list of owners, and establishes
         whether it's a pointer or not. This method is generally not used by the
-        whether it's a pointer or not. This method is generally not used by the
         client and is instead used by internal processes (hooks and workers).
 
         Args:
             obj: A torch Tensor or Variable object to be registered.
             obj_id (int or string): random integer between 0 and 1e10 or
-            string uniquely identifying the object.
+                string uniquely identifying the object.
         """
         if not self.is_client_worker:
             super().register_obj(obj, obj_id=obj_id)
+
+    def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
+        """
+        De-registers the specified object with the current worker node.
+
+        Args:
+            obj: the object to deregister
+            _recurse_torch_objs: A boolean indicating whether the object is
+                more complex and needs to be explored.
+        """
+        if not self.is_client_worker:
+            super().de_register_obj(obj, _recurse_torch_objs)
 
     # SECTION: convenience methods for constructing frequently used messages
 
@@ -809,30 +822,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = PlanCommandMessage("fetch_plan", (plan_id, copy))
         plan = self.send_msg(message, location=location)
 
-        plan.replace_worker_ids(location.id, self.id)
-
-        if plan.state_ids:
-            state_ids = []
-            for state_id in plan.state_ids:
-                if copy:
-                    state_ptr = PointerTensor(
-                        location=location,
-                        id_at_location=state_id,
-                        owner=self,
-                        garbage_collect_data=False,
-                    )
-                    state_elem = state_ptr.copy().get()
-                else:
-                    state_elem = self.request_obj(state_id, location)
-                self.register_obj(state_elem)
-                state_ids.append(state_elem.id)
-            plan.replace_ids(plan.state_ids, state_ids)
-            plan.state_ids = state_ids
+        plan.procedure.update_worker_ids(location.id, self.id)
 
         return plan
 
     def _fetch_plan_remote(self, plan_id: Union[str, int], copy: bool) -> "Plan":  # noqa: F821
-        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+        """Fetches a copy of a the plan with the given `plan_id` from the worker registry.
 
         This method is executed for remote execution.
 
