@@ -232,10 +232,13 @@ class String(AbstractObject, metaclass = BuiltinTypeWrapper, wrapped_type = str)
                        owner: BaseWorker = None,
                        ptr_id: (str or int) = None,
                        garbage_collect_data: bool = True,
-    ) -> "StringPointer":
+    ):
         """
            Creates a StringPointer object that points to a String object 'obj'
            after sending the latter to the worker 'location'.
+
+           Returns:
+                  a StringPointer object
         """
 
         # I put the import here in order to avoid circular imports
@@ -265,7 +268,7 @@ class String(AbstractObject, metaclass = BuiltinTypeWrapper, wrapped_type = str)
         return string_pointer
     
     @staticmethod
-    def simplify(string: "String"):
+    def simplify(string):
         """
            TODO:
            add docstring
