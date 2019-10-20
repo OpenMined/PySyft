@@ -230,6 +230,7 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     remote_proxy.close()
     server.terminate()
 
+
 # This test seems broken: how is the dataset sent to the remote worker? See issue #2686
 
 # def test_evaluate(hook, start_proc):  # pragma: no cover
