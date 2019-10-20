@@ -11,6 +11,7 @@ from syft.workers.base import BaseWorker
 from syft.messaging.promise import Promise
 
 from typing import List, Union
+import warnings
 
 
 class Protocol(AbstractObject):
@@ -330,9 +331,26 @@ class Protocol(AbstractObject):
     def _resolve_workers(self, workers):
         """Map the abstract workers (named by strings) to the provided workers and
         update the plans accordingly"""
+        dict_workers = {w.id: w for w in workers}
+        set_fake_ids = set(worker for worker, _ in self.plans)
+        set_real_ids = set(dict_workers.keys())
+
+        if 0 < len(set_fake_ids.intersection(set_real_ids)) < len(set_real_ids):
+            # The user chose fake ids that correspond to real ids but not all of them match.
+            # Maybe it's a mistake so we warn the user.
+            warnings.warn(
+                "You are deploying a protocol with workers for which only a subpart"
+                "have ids that match an id chosen for the protocol."
+            )
+
+        # If the "fake" ids manually set by the user when writing the protocol exactly match the ids
+        # of the workers, these fake ids in self.plans are replaced with the real workers.
+        if set_fake_ids == set_real_ids:
+            self.plans = [(dict_workers[w], p) for w, p in self.plans]
+
         # If there is an exact one-to-one mapping, just iterate and keep the order
         # provided when assigning the workers
-        if len(workers) == len(self.plans):
+        elif len(workers) == len(self.plans):
             self.plans = [(worker, plan) for (_, plan), worker in zip(self.plans, workers)]
 
         # Else, there are duplicates in the self.plans keys and we need to build
