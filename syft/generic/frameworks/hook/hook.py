@@ -8,9 +8,10 @@ from typing import List
 
 import syft
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.object import initialize_object
+from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 
@@ -56,28 +57,29 @@ class FrameworkHook(ABC):
         pass
 
     @classmethod
-    @abstractmethod
-    def _add_methods_from_native_tensor(
-        cls, tensor_type: type, syft_type: type, exclude: List[str]
+    def _transfer_methods_to_framework_class(
+        hook_cls, framework_cls: type, from_cls: type, exclude: List[str]
     ):
-        """Adds methods from the syft_type class to the tensor_type class.
+        """Adds methods from the from_cls class to the framework_cls class.
 
-        The class syft_type is a proxy class useful to avoid extending
-        the native tensor class directly.
+        The class from_cls is a proxy class useful to avoid extending
+        the native framework class directly.
 
         Args:
-            tensor_type: The tensor type to which we are adding methods.
-            syft_type: The tensor from which we are adding methods.
+            framework_cls: The class to which we are adding methods, e.g.
+                torch.Tensor or tf.Variable.
+            from_cls: The class from which we are adding methods, e.g.
+                TorchTensor, or TensorFlowVariable.
             exclude: A list of method names to exclude from the hooking process.
         """
         # For all methods defined in syft_type which are not internal methods
         # (like __class__, etc)
-        for attr in dir(syft_type):
+        for attr in dir(from_cls):
             if attr not in exclude:
-                if hasattr(tensor_type, attr):
-                    setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
+                if hasattr(framework_cls, attr):
+                    setattr(framework_cls, f"native_{attr}", getattr(framework_cls, attr))
                 # Add to the native tensor this method
-                setattr(tensor_type, attr, getattr(syft_type, attr))
+                setattr(framework_cls, attr, getattr(from_cls, attr))
 
     ### Generics methods ###
     def _hook_native_methods(self, tensor_type: type):
@@ -159,8 +161,6 @@ class FrameworkHook(ABC):
 
         tensor_type.is_wrapper = is_wrapper
 
-        tensor_type.native_shape = tensor_type.shape
-
         def dim(self):
             return len(self.shape)
 
@@ -190,6 +190,7 @@ class FrameworkHook(ABC):
         for attr in dir(tensor_type):
 
             # Conditions for not overloading the method
+            # TODO[jvmancuso] separate func exclusion from method exclusion
             if attr in syft.framework.exclude:
                 continue
             if not hasattr(tensor_type, attr):
@@ -240,6 +241,19 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
+    def _hook_object_pointer_methods(self, framework_cls):
+        """
+        Add hooked version of all methods of the framework_cls to the
+        ObjectPointer: instead of performing the native object
+        method, it will be sent remotely to the location the pointer
+        is pointing at.
+        """
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[framework_cls]:
+            new_method = self._get_hooked_pointer_method(attr)
+            setattr(ObjectPointer, attr, new_method)
+
     def _hook_multi_pointer_tensor_methods(self, tensor_type):
         """
         Add hooked version of all methods of the torch Tensor to the
@@ -270,12 +284,12 @@ class FrameworkHook(ABC):
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
 
-        def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-            initialize_tensor(
-                hook_self=hook_self,
-                cls=cls,
+        def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
+            initialize_object(
+                hook=hook_self,
+                obj=self,
                 id=id,
-                is_tensor=is_tensor,
+                reinitialize=not is_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
@@ -457,7 +471,7 @@ class FrameworkHook(ABC):
             location = pointer.location
 
             if len(args) > 0:
-                if isinstance(args[0], PointerTensor):
+                if isinstance(args[0], ObjectPointer):
                     if args[0].location.id != location.id:
                         raise TensorsNotCollocatedException(pointer, args[0], attr)
 
