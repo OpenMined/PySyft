@@ -40,7 +40,7 @@ class GridNetwork(object):
         tensor_set = []
         for node_id, node_url in match_nodes:
             worker = self.__connect_with_node(node_id, node_url)
-            tensor_set.append(worker.search(*query))
+            tensor_set.append(worker.search(query))
         return tensor_set
 
     def serve_encrypted_model(self, model):

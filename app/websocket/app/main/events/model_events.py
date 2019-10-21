@@ -1,38 +1,22 @@
-import json
-from . import local_worker, hook
 import syft as sy
 import torch as th
-from . import model_manager as mm
-from .local_worker_utils import register_obj, get_objs
-from grid import WebsocketGridClient
+import json
 import sys
+from grid.grid_codes import RESPONSE_MSG
+from .. import local_worker, hook
+from ..persistence import model_manager as mm
 
-# Suport for sending big models over the wire back to a
-# worker
 MODEL_LIMIT_SIZE = (1024 ** 2) * 64  # 64MB
 
 
-def get_node_id(message):
-    return json.dumps({"id": local_worker.id})
+def host_model(message: dict) -> str:
+    """ Save/Store a model into database.
 
-
-def connect_grid_nodes(message):
-    if message["id"] not in local_worker._known_workers:
-        worker = WebsocketGridClient(hook, address=message["address"], id=message["id"])
-    return json.dumps({"status": "Succesfully connected."})
-
-
-def socket_ping(message):
-    return json.dumps({"alive": "True"})
-
-
-def syft_command(message):
-    response = local_worker._message_router[message["msg_type"]](message["content"])
-    payload = sy.serde.serialize(response, force_no_serialization=True)
-    return json.dumps({"type": "command-response", "response": payload})
-
-
-def host_model(message):
+        Args:
+            message (dict) : Dict containing a serialized model and model's metadata.
+        Response:
+            response (str) : Node's response.
+    """
     encoding = message["encoding"]
     model_id = message["model_id"]
     allow_download = message["allow_download"] == "True"
@@ -50,49 +34,75 @@ def host_model(message):
     return json.dumps(response)
 
 
-def delete_model(message):
+def delete_model(message: dict) -> str:
+    """ Delete a model previously stored at database.
+
+        Args:
+            message (dict) : Model's id.
+        Returns:
+            response (str) : Node's response.
+    """
     model_id = message["model_id"]
     result = mm.delete_model(model_id)
     return json.dumps(result)
 
 
-def get_models(message):
+def get_models(message: dict) -> str:
+    """ Get a list of stored models.
+
+        Returns:
+            response (str) : List of models stored at this node.
+    """
     return json.dumps(mm.list_models())
 
 
-def download_model(message):
+def download_model(message: dict) -> str:
+    """ Download a specific model stored at this node.
+
+        Args:
+            message (dict) : Model's id.
+        Returns:
+            response (str) : Node's response with serialized model.
+    """
     model_id = message["model_id"]
 
     # If not Allowed
     check = mm.is_model_copy_allowed(model_id)
     response = {}
-    if not check["success"]:  # If not allowed
-        if check["error"] == mm.MODEL_NOT_FOUND_MSG:
+    if not check[RESPONSE_MSG.SUCCESS]:  # If not allowed
+        if check[RESPONSE_MSG.ERROR] == mm.MODEL_NOT_FOUND_MSG:
             status_code = 404  # Not Found
-            response["error"] = mm.Model_NOT_FOUND_MSG
+            response[RESPONSE_MSG.ERROR] = mm.Model_NOT_FOUND_MSG
         else:
             status_code = 403  # Forbidden
-            response["error"] = mm.NOT_ALLOWED_TO_DOWNLOAD_MSG
-        response["success"] = False
+            response[RESPONSE_MSG.ERROR] = mm.NOT_ALLOWED_TO_DOWNLOAD_MSG
+        response[RESPONSE_MSG.SUCCESS] = False
         return json.dumps(response)
 
     # If allowed
     result = mm.get_serialized_model_with_id(model_id)
 
-    if result["success"]:
+    if result[RESPONSE_MSG.SUCCESS]:
         # Use correct encoding
         response = {"serialized_model": result["serialized_model"].decode("ISO-8859-1")}
         if sys.getsizeof(response["serialized_model"]) >= MODEL_LIMIT_SIZE:
             # Forward to HTTP method
             # TODO: Implement download of huge models using sockets
-            return json.dumps({"success": False})
+            return json.dumps({RESPONSE_MSG.SUCCESS: False})
         else:
             return json.dumps(response)
 
 
-def run_inference(message):
+def run_inference(message: dict) -> str:
+    """ Run dataset inference with a specifc model stored in this node.
+
+        Args:
+            message (dict) : Serialized dataset, model id and dataset's metadata.
+        Returns:
+            response (str) : Model's inference.
+    """
     response = mm.get_model_with_id(message["model_id"])
-    if response["success"]:
+    if response[RESPONSE_MSG.SUCESS]:
         model = response["model"]
 
         # serializing the data from GET request
@@ -102,7 +112,7 @@ def run_inference(message):
 
         # If we're using a Plan we need to register the object
         # to the local worker in order to execute it
-        register_obj(data)
+        local_worker._objects[data.id] = data
 
         # Some models returns tuples (GPT-2 / BERT / ...)
         # To avoid errors on detach method, we check the type of inference's result
@@ -114,6 +124,8 @@ def run_inference(message):
 
         # We can now remove data from the objects
         del data
-        return json.dumps({"success": True, "prediction": predictions})
+        return json.dumps(
+            {RESPONSE_MSG.SUCCESS: True, RESPONSE_MSG.INFERENCE_RESULT: predictions}
+        )
     else:
         return json.dumps(response)

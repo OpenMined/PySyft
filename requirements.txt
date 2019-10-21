@@ -17,4 +17,5 @@ flask_cors
 gevent
 gevent-websocket
 flask_sockets
+flask_login
 pbr

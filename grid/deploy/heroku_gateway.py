@@ -17,7 +17,8 @@ class HerokuGatewayDeployment(BaseDeployment):
         branch: set = "dev",
         env_vars={},
     ):
-        """
+        """ Initialize Settings to deploy Grid Gateway Deployment on Heroku
+
         Args:
             app_name: Application name
             verbose: Used to define level of verbosity.

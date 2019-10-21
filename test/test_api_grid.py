@@ -43,6 +43,7 @@ class GridAPITest(unittest.TestCase):
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
 
+    @pytest.mark.skip
     def test_host_inference_encrypted_model(self):
         sy.hook.local_worker.is_client_worker = False
 
@@ -73,6 +74,7 @@ class GridAPITest(unittest.TestCase):
 
         assert th.all(result - expected.detach() < 1e-2)
 
+    @pytest.mark.skip
     def test_model_ids_overview(self):
         class Net(sy.Plan):
             def __init__(self):
@@ -123,7 +125,7 @@ class GridAPITest(unittest.TestCase):
         tensors = [x, y, z]
         workers = [alice, bob, james]
         for i in range(len(workers)):
-            tensors[i].send(workers[i])
+            tensors[i].send(workers[i], garbage_collect_data=False)
             tags = json.loads(
                 requests.get(GATEWAY_URL + "/search-available-tags").content
             )
@@ -134,6 +136,7 @@ class GridAPITest(unittest.TestCase):
             for tag in tensor_tags:
                 assert tag in tags
 
+    @pytest.mark.skip
     def test_host_plan_model(self):
         class Net(sy.Plan):
             def __init__(self):
@@ -165,7 +168,6 @@ class GridAPITest(unittest.TestCase):
         )
         assert inference == th.tensor([1000.0])
 
-    @pytest.mark.skip
     def test_grid_search(self):
         hook.local_worker.is_client_worker = True
         nodes = self.connect_nodes()

@@ -8,9 +8,8 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 import syft as sy
 import torch as th
 
-from .persistence.models import db, TorchModel, TorchTensor, Worker
-from .local_worker_utils import get_obj, register_obj
-
+from .models import db, TorchModel, TorchTensor, Worker
+from .. import local_worker
 
 # ============= Global variables ========================
 
@@ -120,7 +119,7 @@ def _save_model_in_db(
 def _save_states_in_db(model):
     tensors = []
     for state_id in model.state_ids:
-        tensor = get_obj(state_id)
+        tensor = local_worker.get_obj(state_id)
         tensors.append(TorchTensor(id=state_id, object=tensor.data))
 
     db.session.add_all(tensors)
@@ -142,7 +141,7 @@ def _get_model_from_db(model_id: str):
 def _retrieve_state_from_db(model):
     for state_id in model.state_ids:
         result = db.session.query(TorchTensor).get(state_id)
-        register_obj(result.object, state_id)
+        local_worker._objects[state_id] = result.object
 
 
 def _remove_model_from_db(model_id):

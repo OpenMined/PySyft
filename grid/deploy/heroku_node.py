@@ -18,7 +18,7 @@ class HerokuNodeDeployment(BaseDeployment):
         branch: set = "dev",
         env_vars={},
     ):
-        """
+        """ Initialize Settings to deploy Grid Node Deployment on Heroku
         Args:
             grid_name: App name used in heroku application.
             verbose: Used to define level of verbosity.

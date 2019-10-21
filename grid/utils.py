@@ -2,16 +2,18 @@
 import os
 
 
-def execute_command(command):
+def execute_command(command: str) -> str:
     """Executes the given command using the os inherent shell.
 
     Args:
         command (str): The command to execute
+    Returns:
+        result (str) : command's result
     """
     return os.popen(command).read()
 
 
-def connect_all_nodes(nodes, sleep_time: float = 0.5):
+def connect_all_nodes(nodes: list):
     """Connect all nodes to each other.
 
     Args:

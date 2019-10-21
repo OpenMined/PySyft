@@ -57,6 +57,7 @@ parser.set_defaults(use_test_config=False)
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    # Start grid node without use a real database
     if args.start_local_db:
         db_path = "sqlite:///database{}.db".format(args.id)
         app = create_app(
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     server = pywsgi.WSGIServer(("", args.port), app, handler_class=WebSocketHandler)
     server.serve_forever()
 else:
-    ## DEPLOYMENT MODE (we use gunicorn's eventlet worker to perform load balancing)
+    ## DEPLOYMENT MODE (we use gunicorn's worker to perform load balancing)
 
     # These environment variables must be set before starting the application.
     gateway_url = os.environ.get("GRID_NETWORK_URL", None)
