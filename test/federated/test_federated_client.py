@@ -84,24 +84,31 @@ def evaluate_model(fed_client, model_id, loss_fn, data, target):  # pragma: no c
     return loss_after
 
 
-def train_model(fed_client, fit_dataset_key, available_dataset_key, nr_rounds):  # pragma: no cover
+def train_model(
+    fed_client, fit_dataset_key, available_dataset_key, nr_rounds, device
+):  # pragma: no cover
     loss = None
     for curr_round in range(nr_rounds):
         if fit_dataset_key == available_dataset_key:
-            loss = fed_client.fit(dataset_key=fit_dataset_key)
+            loss = fed_client.fit(dataset_key=fit_dataset_key, device=device)
         else:
             with pytest.raises(ValueError):
-                loss = fed_client.fit(dataset_key=fit_dataset_key)
+                loss = fed_client.fit(dataset_key=fit_dataset_key, device=device)
         if PRINT_IN_UNITTESTS and curr_round % 2 == 0:  # pragma: no cover
             print("-" * 50)
             print("Iteration %s: alice's loss: %s" % (curr_round, loss))
 
 
 @pytest.mark.parametrize(
-    "fit_dataset_key, epochs",
-    [("gaussian_mixture", 1), ("gaussian_mixture", 10), ("another_dataset", 1)],
+    "fit_dataset_key, epochs, device",
+    [
+        ("gaussian_mixture", 1, "cpu"),
+        ("gaussian_mixture", 10, "cpu"),
+        ("another_dataset", 1, "cpu"),
+        ("gaussian_mixture", 10, "cuda"),
+    ],
 )
-def test_fit(fit_dataset_key, epochs):
+def test_fit(fit_dataset_key, epochs, device):
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
     fed_client = FederatedClient()
@@ -126,14 +133,16 @@ def test_fit(fit_dataset_key, epochs):
             x = torch.nn.functional.relu(self.fc2(x))
             return x
 
-    model_untraced = Net()
-    model = torch.jit.trace(model_untraced, data)
+    data_device = data.to(torch.device(device))
+    target_device = target.to(torch.device(device))
+    model_untraced = Net().to(torch.device(device))
+    model = torch.jit.trace(model_untraced, data_device)
     model_id = 0
     model_ow = ObjectWrapper(obj=model, id=model_id)
     loss_id = 1
     loss_ow = ObjectWrapper(obj=loss_fn, id=loss_id)
-    pred = model(data)
-    loss_before = loss_fn(target=target, pred=pred)
+    pred = model(data_device)
+    loss_before = loss_fn(target=target_device, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
         print("Loss before training: {}".format(loss_before))
 
@@ -153,10 +162,12 @@ def test_fit(fit_dataset_key, epochs):
     fed_client.set_obj(train_config)
     fed_client.optimizer = None
 
-    train_model(fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=3)
+    train_model(
+        fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=3, device=device
+    )
 
     if dataset_key == fit_dataset_key:
-        loss_after = evaluate_model(fed_client, model_id, loss_fn, data, target)
+        loss_after = evaluate_model(fed_client, model_id, loss_fn, data_device, target_device)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
             print("Loss after training: {}".format(loss_after))
 
