@@ -231,10 +231,7 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     server.terminate()
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
+@pytest.mark.skip
 def test_evaluate(hook, start_proc):  # pragma: no cover
 
     sy.local_worker.clear_objects()

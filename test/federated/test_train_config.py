@@ -7,14 +7,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import syft as sy
 
-import time
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 from syft.frameworks.torch.federated import utils
 
 PRINT_IN_UNITTESTS = False
 
-
+# TODO: I'm not sure this is valid torch JIT anyway
 @pytest.mark.skip(reason="fails currently as it needs functions as torch.nn.linear to be unhooked.")
 def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     alice = workers["alice"]
@@ -82,10 +81,6 @@ def test_train_config_with_jit_script_module(hook, workers):  # pragma: no cover
     assert loss_after < loss_before
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     alice = workers["alice"]
 
@@ -145,10 +140,6 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
     assert loss_after < loss_before
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # pragma: no cover
     alice = workers["alice"]
     model, loss_fn, data, target, loss_before, dataset_key = prepare_training(hook, alice)
@@ -285,10 +276,6 @@ def test_send_model_and_loss_fn(workers):
     sy.ID_PROVIDER.pop = orig_func
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 @pytest.mark.asyncio
 async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: no cover
     kwargs = {"id": "async_fit", "host": "localhost", "port": 8777, "hook": hook}
@@ -367,10 +354,6 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     assert loss_after < loss_before
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma: no cover
     data, target = utils.create_gaussian_mixture_toy_data(100)
     dataset = sy.BaseDataset(data, target)
@@ -417,12 +400,24 @@ def test_train_config_with_jit_trace_sync(hook, start_remote_worker):  # pragma:
     new_model = train_config.model_ptr.get()
 
     # assert that the new model has updated (modified) parameters
-    assert not (model.fc1._parameters["weight"] == new_model.obj.fc1._parameters["weight"]).all()
-    assert not (model.fc2._parameters["weight"] == new_model.obj.fc2._parameters["weight"]).all()
-    assert not (model.fc3._parameters["weight"] == new_model.obj.fc3._parameters["weight"]).all()
-    assert not (model.fc1._parameters["bias"] == new_model.obj.fc1._parameters["bias"]).all()
-    assert not (model.fc2._parameters["bias"] == new_model.obj.fc2._parameters["bias"]).all()
-    assert not (model.fc3._parameters["bias"] == new_model.obj.fc3._parameters["bias"]).all()
+    assert not (
+        (model.fc1._parameters["weight"] - new_model.obj.fc1._parameters["weight"]).abs() < 10e-3
+    ).all()
+    assert not (
+        (model.fc2._parameters["weight"] - new_model.obj.fc2._parameters["weight"]).abs() < 10e-3
+    ).all()
+    assert not (
+        (model.fc3._parameters["weight"] - new_model.obj.fc3._parameters["weight"]).abs() < 10e-3
+    ).all()
+    assert not (
+        (model.fc1._parameters["bias"] - new_model.obj.fc1._parameters["bias"]).abs() < 10e-3
+    ).all()
+    assert not (
+        (model.fc2._parameters["bias"] - new_model.obj.fc2._parameters["bias"]).abs() < 10e-3
+    ).all()
+    assert not (
+        (model.fc3._parameters["bias"] - new_model.obj.fc3._parameters["bias"]).abs() < 10e-3
+    ).all()
 
     new_model.obj.eval()
     pred = new_model.obj(data)
