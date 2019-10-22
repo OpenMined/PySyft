@@ -6,6 +6,7 @@ the plan has all of the inputs it requires). """
 import syft as sy
 
 from abc import ABC
+from abc import abstractmethod
 from syft.workers.abstract import AbstractWorker
 
 
@@ -101,8 +102,8 @@ class Promise(ABC):
         if not self.queue_obj_ids:
             # If the promise has still not been kept
             # or if the queue of results has been emptied
-            # TODO this doesn't work as I want when this method is called
-            # on a PointerTensor and that the result needs to be "pointed to"
+            # the user should check if queue_obj_ids is empty on his own when this
+            # method is called on a PointerTensor because None cannot be "pointed to"
             return None
         ret_id = self.queue_obj_ids.pop(0)
         ret = self.owner.get_obj(ret_id)
@@ -117,34 +118,10 @@ class Promise(ABC):
             f"<Promise({self.id}) promises Obj(id:{self.obj_id}) blocking {len(self.plans)} plans>"
         )
 
-    @staticmethod
-    def simplify(promise: "Promise") -> tuple:
-        """
-        This function takes the attributes of a Promise and saves them in a tuple.
-        The detail() method runs the inverse of this method.
-        Args:
-            promise (Promise): a Promise object
-        Returns:
-            tuple: a tuple holding the unique attributes of the promise
-        Examples:
-            data = simplify(promise)
-        """
-        return (promise.id, promise.obj_id, sy.serde._simplify(promise.plans))
+    @abstractmethod
+    def simplify(self):
+        pass
 
-    @staticmethod
-    def detail(worker: AbstractWorker, promise_tuple: tuple) -> "Promise":
-        """
-        This function takes the simplified tuple version of this promise and converts
-        it into a Promise. The simplify() method runs the inverse of this method.
-
-        Args:
-            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
-                syft/serde/serde.py for more information on why this is necessary.
-            promise_tuple (Tuple): the raw information being detailed into a Promise
-        Returns:
-            promise (Promise): a Promise object.
-        Examples:
-            message = detail(sy.local_worker, promise_tuple)
-        """
-        # TODO: probably need to register the Promise
-        return Promise(promise_tuple[0], promise_tuple[1], set(sy.serde._detail(promise_tuple[3])))
+    @abstractmethod
+    def detail(self):
+        pass
