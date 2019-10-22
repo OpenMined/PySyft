@@ -209,7 +209,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.is_client_worker = False
         try:
             yield self
-        except:
+        finally:
             self.is_client_worker = True
 
     def remove_worker_from_registry(self, worker_id):
