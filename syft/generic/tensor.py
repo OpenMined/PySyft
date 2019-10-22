@@ -3,7 +3,6 @@ from typing import List
 import weakref
 
 import syft as sy
-from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
