@@ -453,7 +453,7 @@ def division(x_sh, y_sh, bit_len_max=Q_BITS // 2):
 
     x_shape = x_sh.shape
     y_shape = y_sh.shape
-    assert x_shape == y_shape
+    assert x_shape == y_shape or list(y_shape) == [1]
 
     x_sh = x_sh.view(-1)
     y_sh = y_sh.view(-1)
