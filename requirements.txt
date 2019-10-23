@@ -2,12 +2,12 @@ Flask>=1.0.2
 flask_socketio>=3.3.2
 lz4>=2.1.6
 msgpack>=0.6.1
-numpy>=1.14.0
+numpy>=1.16.0
 scikit-learn>=0.21.0
 tblib>=1.4.0
 tf_encrypted>=0.5.4,!=0.5.7
-torch==1.1
-torchvision==0.3.0
+torch==1.3.0
+torchvision==0.4.1
 websocket_client>=0.56.0
 websockets>=7.0
 zstd>=1.4.0.0
