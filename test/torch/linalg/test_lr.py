@@ -20,8 +20,8 @@ def test_crypto_lr(fit_intercept, hook, workers):
 
     K = 2  # number of features
 
-    beta = torch.Tensor([1.0, 10.0]).view(-1, 1)  # "real" coefficients
-    intercept = 3.0 if fit_intercept else 0  # "real" intercept
+    beta = torch.Tensor([1.0, 2.0]).view(-1, 1)  # "real" coefficients
+    intercept = 0.5 if fit_intercept else 0  # "real" intercept
 
     # Alice's data
     torch.manual_seed(0)  # Truncation might not always work so we set the random seed
