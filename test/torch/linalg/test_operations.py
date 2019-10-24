@@ -1,6 +1,5 @@
 import pytest
 import torch
-import torch.nn as nn
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
