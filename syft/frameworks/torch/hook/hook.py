@@ -433,7 +433,7 @@ class TorchHook(FrameworkHook):
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
-        Hook a method to send it multiple recmote workers
+        Hook a method to send it multiple remote workers
 
         Args:
             attr (str): the method to hook
