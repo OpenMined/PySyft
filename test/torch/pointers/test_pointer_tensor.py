@@ -8,11 +8,12 @@ import pytest
 
 
 def test_init(workers):
-    pointer = PointerTensor(id=1000, location=workers["alice"], owner=workers["me"])
+    alice, me = workers["alice"], workers["me"]
+    pointer = PointerTensor(id=1000, location=alice, owner=me)
     pointer.__str__()
 
 
-def test_create_pointer(workers):
+def test_create_pointer():
     x = torch.Tensor([1, 2])
     x.create_pointer()
 
@@ -22,8 +23,10 @@ def test_send_default_garbage_collector_true(workers):
     Remote tensor should be garbage collected by default on
     deletion of the Pointer tensor pointing to remote tensor
     """
+    alice = workers["alice"]
+
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(workers["alice"])
+    x_ptr = x.send(alice)
     assert x_ptr.child.garbage_collect_data
 
 
@@ -32,8 +35,10 @@ def test_send_garbage_collect_data_false(workers):
     Remote tensor should be not garbage collected on
     deletion of the Pointer tensor pointing to remote tensor
     """
+    alice = workers["alice"]
+
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(workers["alice"])
+    x_ptr = x.send(alice)
     x_ptr.garbage_collection = False
     assert x_ptr.child.garbage_collect_data == False
 
@@ -42,9 +47,10 @@ def test_send_gc_false(workers):
     """
     Remote tensor should be not garbage collected on
     deletion of the Pointer tensor pointing to remote tensor
-     """
+    """
+    alice = workers["alice"]
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(workers["alice"])
+    x_ptr = x.send(alice)
     x_ptr.gc = False
     assert x_ptr.child.garbage_collect_data == False
     assert x_ptr.gc == False, "property GC is not in sync"
@@ -56,16 +62,20 @@ def test_send_gc_true(workers):
     Remote tensor by default is garbage collected on
     deletion of Pointer Tensor
     """
+    alice = workers["alice"]
+
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(workers["alice"])
+    x_ptr = x.send(alice)
 
     assert x_ptr.gc == True
 
 
 def test_send_disable_gc(workers):
     """Pointer tensor should be not garbage collected."""
+    alice = workers["alice"]
+
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(workers["alice"]).disable_gc
+    x_ptr = x.send(alice).disable_gc
     assert x_ptr.child.garbage_collect_data == False
     assert x_ptr.gc == False, "property GC is not in sync"
     assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
@@ -112,8 +122,10 @@ def test_send_get(workers):
 
 
 def test_inplace_send_get(workers):
+    bob = workers["bob"]
+
     tensor = torch.tensor([1.0, -1.0, 3.0, 4.0])
-    tensor_ptr = tensor.send_(workers["bob"])
+    tensor_ptr = tensor.send_(bob)
 
     assert tensor_ptr.id == tensor.id
     assert id(tensor_ptr) == id(tensor)
@@ -134,23 +146,27 @@ def test_repeated_send(workers):
     when .send() was called twice. This test ensures the fix still
     works."""
 
+    bob = workers["bob"]
+
     # create tensor
     x = torch.Tensor([1, 2])
     print(x.id)
 
     # send tensor to bob
-    x_ptr = x.send(workers["bob"])
+    x_ptr = x.send(bob)
 
     # send tensor again
-    x_ptr = x.send(workers["bob"])
+    x_ptr = x.send(bob)
 
     # ensure bob has tensor
-    assert x.id in workers["bob"]._objects
+    assert x.id in bob._objects
 
 
 def test_remote_autograd(workers):
     """Tests the ability to backpropagate gradients on a remote
     worker."""
+
+    bob = workers["bob"]
 
     # TEST: simple remote grad calculation
 
@@ -158,7 +174,7 @@ def test_remote_autograd(workers):
     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
 
     # send tensor to bob
-    x = x.send(workers["bob"])
+    x = x.send(bob)
 
     # do some calculation
     y = (x + x).sum()
@@ -167,14 +183,14 @@ def test_remote_autograd(workers):
     y.backward()
 
     # check that remote gradient is correct
-    x_grad = workers["bob"]._objects[x.id_at_location].grad
+    x_grad = bob._objects[x.id_at_location].grad
     x_grad_target = torch.ones(4).float() + 1
     assert (x_grad == x_grad_target).all()
 
     # TEST: Ensure remote grad calculation gets properly serded
 
     # create tensor
-    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(workers["bob"])
+    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True).send(bob)
 
     # compute function
     y = x.sum()
@@ -183,7 +199,7 @@ def test_remote_autograd(workers):
     y.backward()
 
     # get the gradient created from backpropagation manually
-    x_grad = workers["bob"]._objects[x.id_at_location].grad
+    x_grad = bob._objects[x.id_at_location].grad
 
     # get the entire x tensor (should bring the grad too)
     x = x.get()
@@ -196,17 +212,19 @@ def test_gradient_send_recv(workers):
     """Tests that gradients are properly sent and received along
     with their tensors."""
 
+    bob = workers["bob"]
+
     # create a tensor
     x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
 
     # create gradient on tensor
-    x.sum().backward(torch.ones(1))
+    x.sum().backward(th.tensor(1.0))
 
     # save gradient
     orig_grad = x.grad
 
     # send and get back
-    t = x.send(workers["bob"]).get()
+    t = x.send(bob).get()
 
     # check that gradient was properly serde
     assert (t.grad == orig_grad).all()
@@ -214,9 +232,11 @@ def test_gradient_send_recv(workers):
 
 def test_method_on_attribute(workers):
 
+    bob = workers["bob"]
+
     # create remote object with children
     x = torch.Tensor([1, 2, 3])
-    x = syft.LoggingTensor().on(x).send(workers["bob"])
+    x = syft.LoggingTensor().on(x).send(bob)
 
     # call method on data tensor directly
     x.child.point_to_attr = "child.child"

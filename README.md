@@ -133,7 +133,7 @@ federated learning and differential privacy using PySyft.
 
 ## High-level Architecture
 
-![alt text](art/PySyft-Arch.png "High-level Architecture")
+![alt text](art/PySyftArch.png "High-level Architecture")
 
 ## Start Contributing
 
