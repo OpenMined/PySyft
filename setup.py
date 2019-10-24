@@ -33,7 +33,11 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/OpenMined/PySyft",
     install_requires=core_reqs,
-    extras_require={"udacity": udacity_extras, "sandbox": sandbox_extras, "tensorflow": tensorflow_extras},
+    extras_require={
+        "udacity": udacity_extras,
+        "sandbox": sandbox_extras,
+        "tensorflow": tensorflow_extras,
+    },
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
