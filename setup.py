@@ -15,6 +15,7 @@ def read(fname):
 REQ_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pip-dep")
 core_reqs = read(os.path.join(REQ_DIR, "requirements.txt")).split("\n")
 udacity_extras = read(os.path.join(REQ_DIR, "requirements_udacity.txt")).split("\n")
+udacity_extras = read(os.path.join(REQ_DIR, "requirements_tensorflow.txt")).split("\n")
 sandbox_extras = ["scikit-learn>=0.21.0"]
 
 
@@ -32,7 +33,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/OpenMined/PySyft",
     install_requires=core_reqs,
-    extras_require={"udacity": udacity_extras, "sandbox": sandbox_extras},
+    extras_require={"udacity": udacity_extras, "sandbox": sandbox_extras, "tensorflow": tensorflow_extras},
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
