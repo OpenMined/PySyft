@@ -32,7 +32,7 @@ Get the installation command [here](https://pytorch.org/get-started/locally/) (u
 
 ### 5. Install PySyft
 
-`python setup.py install`
+`python setup.py install udacity`
 
 ### 6. Test your installation
 
@@ -75,7 +75,7 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then, run this to install the PySyft package:
 
-`python setup.py install`
+`python setup.py install udacity`
 
 You can test your installation by running:
 
@@ -157,7 +157,7 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then
 
-`python setup.py install`
+`python setup.py install udacity`
 
 This will install PySyft and its requirements to your system. You should see no errors.
 
