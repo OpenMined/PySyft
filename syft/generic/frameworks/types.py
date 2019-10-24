@@ -15,7 +15,7 @@ if dependency_check.tensorflow_available:
     framework_tensors.append(ResourceVariable)
     framework_shapes.append(tf.TensorShape)
 
-    framework_layer_module = tf.Module
+    framework_layer_modules.append(tf.Module)
 
 if dependency_check.torch_available:
     import torch
