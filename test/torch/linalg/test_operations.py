@@ -1,5 +1,6 @@
 import pytest
 import torch
+import torch.nn as nn
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
@@ -115,3 +116,16 @@ def test_qr_mpc(hook, workers):
 
     # Check if QR == t
     assert ((Q @ R - t).abs() < 1e-2).all()
+
+
+def test_remote_random_number_generation(hook, workers):
+    """
+    Test random number generation on remote worker
+    """
+    alice = workers["alice"]
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0]).send(alice)
+    y = torch.randn_like(x)
+
+    # Check that returned tensor is same size as original
+    assert len(y.get() == len(x))
