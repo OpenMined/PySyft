@@ -15,7 +15,7 @@ class DependencyError(Exception):
         message = (
             f"The {package} dependency is not installed. If you intend"
             " to use it, please install it at your command line with "
-            "`pip install {pypi_alias}`."
+            f"`pip install {pypi_alias}`."
         )
         super().__init__(message)
 
@@ -55,9 +55,7 @@ class InvalidTensorForRemoteGet(Exception):
     """Raised when a chain of pointer tensors is not provided for `remote_get`."""
 
     def __init__(self, tensor: object):
-        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
-            tensor
-        )
+        message = f"Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {tensor}."
         super().__init__(message)
 
 
@@ -148,7 +146,8 @@ class TensorsNotCollocatedException(Exception):
 
 class ResponseSignatureError(Exception):
     """Raised when the return of a hooked function is not correctly predicted
-    (when defining in advance ids for results)"""
+    (when defining in advance ids for results)
+    """
 
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
@@ -251,7 +250,7 @@ class PlanCommandUnknownError(Exception):
     """Raised when an unknown plan command execution is requested."""
 
     def __init__(self, command_name: object):
-        message = "Command {} is not implemented.".format(command_name)
+        message = f"Command {command_name} is not implemented."
         super().__init__(message)
 
 
