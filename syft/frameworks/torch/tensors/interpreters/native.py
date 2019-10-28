@@ -569,7 +569,7 @@ class TorchTensor(AbstractTensor):
         """
         return self.get(*args, inplace=True, **kwargs)
 
-    def allowed_to_get(self) -> bool:
+    def allowed_to_get(self, user) -> bool:
         """This function returns true always currently. Will return false in the future
         if get is not allowed to be called on this tensor
         """
@@ -633,6 +633,35 @@ class TorchTensor(AbstractTensor):
         return self
 
     float_precision_ = float_prec_
+
+    def private_tensor(self, *args, allowed_users: List[str] = [], no_wrap: bool = False, **kwargs):
+        """
+        Convert a tensor or syft tensor to private tensor
+
+        Args:
+            *args (tuple): args to transmit to the private tensor.
+            allowed_users (List): list of allowed users.
+            no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
+            **kwargs (dict): kwargs to transmit to the private tensor
+        """
+
+        if not kwargs.get("owner"):
+            kwargs["owner"] = self.owner
+
+        if self.is_wrapper:
+            self.child = self.child.private_tensor(*args, **kwargs)
+            if no_wrap:
+                return self.child
+            else:
+                return self
+
+        private_tensor = (
+            syft.PrivateTensor(*args, **kwargs).on(self, wrap=False).register_users(allowed_users)
+        )
+        if not no_wrap:
+            private_tensor = private_tensor.wrap()
+
+        return private_tensor
 
     def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
         """
