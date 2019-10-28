@@ -46,6 +46,7 @@ from syft import dependency_check
 from syft.federated.train_config import TrainConfig
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -97,6 +98,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
+    PrivateTensor,
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
