@@ -121,31 +121,37 @@ def test_remote_random_number_generation(hook, workers):
     """
     Test random number generation on remote worker machine
     """
+
     class Model(torch.nn.Module):
         def __init__(self):
-            super(Model, self).__init__()            
+            super(Model, self).__init__()
+
         def add_randn_like(self, x):
             r = torch.randn_like(x)
             return x + r
+
         def get_randint(self, n):
             r = torch.rand(n)
             return r
+
         def get_rand(self, n):
             r = torch.rand(n)
             return r
+
         def get_randn(self, n):
             r = torch.randn(n)
             return r
+
         def get_randperm(self, n):
             r = torch.randperm(n)
             return r
-    
+
     alice = workers["alice"]
     model = Model().to("cpu").send(alice)
-    
+
     x = torch.tensor([1.0, 2.0, 3.0, 4.0]).send(alice)
     y = model.add_randn_like(x)
-    
+
     # Check that returned tensor is same size as original
     assert len(y.get()) == len(x)
 
