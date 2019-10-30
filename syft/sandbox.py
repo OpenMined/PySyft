@@ -1,8 +1,12 @@
+import importlib
+
 import torch
 
 from syft.frameworks.torch.hook.hook import TorchHook
 from syft.workers.virtual import VirtualWorker
 from syft.grid import VirtualGrid
+
+from syft.exceptions import DependencyError
 
 
 def create_sandbox(gbs, verbose=True, download_data=True):
@@ -22,6 +26,9 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     global andy
     global jason
     global jon
+
+    if download_data and importlib.util.find_spec("sklearn") is None:
+        raise DependencyError("sklearn", "scikit-learn")
 
     if download_data:  # pragma: no cover
         from sklearn.datasets import load_boston
