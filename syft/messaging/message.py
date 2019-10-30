@@ -87,7 +87,7 @@ class Message:
         # TODO: as an alternative, this detailer could raise NotImplementedException
         # https://github.com/OpenMined/PySyft/issues/2514
 
-        return Message(sy.serde._detail(worker, msg_tuple[1]))
+        return Message(sy.serde._detail(worker, msg_tuple[0]))
 
     def __str__(self):
         """Return a human readable version of this message"""

@@ -979,7 +979,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Message(codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids])
+        return Operation((command_name, command_owner, args, kwargs), return_ids)
 
     @staticmethod
     def simplify(worker: AbstractWorker) -> tuple:
