@@ -1,4 +1,6 @@
 from abc import abstractmethod
+from contextlib import contextmanager
+
 import logging
 from typing import Callable
 from typing import List
@@ -201,6 +203,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
         raise NotImplementedError  # pragma: no cover
+
+    @contextmanager
+    def registration_enabled(self):
+        self.is_client_worker = False
+        try:
+            yield self
+        finally:
+            self.is_client_worker = True
 
     def remove_worker_from_registry(self, worker_id):
         """Removes a worker from the dictionary of known workers.
