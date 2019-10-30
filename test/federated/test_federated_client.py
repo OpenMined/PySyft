@@ -172,10 +172,6 @@ def test_fit(fit_dataset_key, epochs):
         assert loss_after < loss_before
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_evaluate():  # pragma: no cover
     data, target = utils.iris_data_partial()
 

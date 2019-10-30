@@ -319,7 +319,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If both have the same sign, sgn is 1 else it's 0
             # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
             # we would need to overload the __add__ for operators int and AST.
-            sgn = -(sgn_self - sgn_other) ** 2 + 1
+            sgn = -((sgn_self - sgn_other) ** 2) + 1
             changed_sign = True
 
             if cmd == "div":

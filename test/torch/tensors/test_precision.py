@@ -31,13 +31,11 @@ def test_encode_decode(workers, parameter):
 
 
 def test_fix_prec_registration(hook):
-    hook.local_worker.is_client_worker = False
+    with hook.local_worker.registration_enabled():
+        x = torch.tensor([1.0])
+        x_fpt = x.fix_precision()
 
-    x = torch.tensor([1.0])
-    x_fpt = x.fix_precision()
-    assert hook.local_worker.get_obj(x.id) == x
-
-    hook.local_worker.is_client_worker = True
+        assert hook.local_worker.get_obj(x.id) == x
 
 
 def test_inplace_encode_decode(workers):
@@ -54,13 +52,11 @@ def test_inplace_encode_decode(workers):
 
 
 def test_fix_prec_inplace_registration(hook):
-    hook.local_worker.is_client_worker = False
 
-    x = torch.tensor([1.0])
-    x.fix_precision_()
-    assert hook.local_worker.get_obj(x.id) == torch.tensor([1.0]).fix_precision()
-
-    hook.local_worker.is_client_worker = True
+    with hook.local_worker.registration_enabled():
+        x = torch.tensor([1.0])
+        x.fix_precision_()
+        assert hook.local_worker.get_obj(x.id) == torch.tensor([1.0]).fix_precision()
 
 
 @pytest.mark.parametrize("method", ["t", "matmul"])
