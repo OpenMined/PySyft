@@ -309,6 +309,10 @@ class TorchTensor(AbstractTensor):
                 pass
 
             # TODO: clean this line
+
+            # Change library path to avoid problems with AvgPooling layer
+            cmd = cmd.replace('_C._nn', 'nn.functional')
+
             cmd = (
                 "syft.local_worker.hook."
                 + ".".join(cmd.split(".")[:-1])
