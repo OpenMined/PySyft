@@ -40,8 +40,6 @@ from lz4 import (  # noqa: F401
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import msgpack
 import zstd
-import importlib
-from typing import Union
 
 import syft
 from syft import dependency_check
@@ -54,11 +52,10 @@ from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.object_wrapper import ObjectWrapper
-from syft.generic.string import String
 from syft.messaging.plan import Plan
-
-
 from syft.messaging.plan.state import State
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.protocol import Protocol
@@ -109,6 +106,8 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     Procedure,
     Protocol,
     PointerTensor,
+    PointerPlan,
+    PointerProtocol,
     ObjectWrapper,
     TrainConfig,
     BaseWorker,
@@ -122,7 +121,6 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
-    String,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
@@ -500,34 +498,6 @@ def _simplify(obj: object) -> object:
     elif current_type in no_simplifiers_found:
         return obj
 
-    # This line was added by Alan Aboudib while developing the SyferText
-    # library.
-    # The reason is that this `_simplify` function is able to simplify
-    # only objects of class types registered in
-    # `OBJ_SIMPLIFIER_AND_DETAILERS`
-    # I added this line to break this requirement: Any object that
-    # has a static `_simplify()` method (notice the underscore in the name
-    # to distinguish it from the `simplify()` methods in native PySYft)
-    # can now be simplified using this function.
-    # However, such `_simplify()` method should return a tuple
-    # whose last element is what I call the  path of the
-    # class whose object we are wishing to simplify.
-    # Example: syfertext.tokenizer/Tokenizer
-    # where `syfertext.tokenizer` is the name of the module in which
-    # the `Tokenizer` class is defined.
-    elif hasattr(current_type, "_simplify"):
-
-        # Get the tuple returned by the `simplify` method
-        result = current_type._simplify(obj)
-
-        # Get the type path
-        type_path = result[-1]
-
-        # Get the simple object tuple
-        simple_obj = result[:-1]
-
-        return (type_path, simple_obj)
-
     else:
         # If the object type is not in simplifiers,
         # we check the classes that this object inherits from.
@@ -569,80 +539,7 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
-
     if type(obj) in (list, tuple):
-
-        # Get the index of of the detailer in `detailers` or
-        # the type path in case the object to detail is
-        # of a type not registered in
-        # `OBJ_SIMPLIFIER_AND_DETAILERS`
-        # Check out the explaination for the need of the
-        # `type_path` provided by Alan Aboudib in the
-        # `_simplify` function above
-        idx_or_path = obj[0]
-
-        # Get the simplified object
-        simple_obj = obj[1]
-
-        # Get the detailer
-        detailer = _getDetailer(idx_or_path)
-
-        # Detail the simplified object into a realy object
-        obj = detailer(worker, simple_obj)
-
-        return obj
-
+        return detailers[obj[0]](worker, obj[1])
     else:
         return obj
-
-
-def _getDetailer(idx_or_path: Union[int, bytes]) -> callable:
-    """
-       This function is used by the `_detail` method.
-       it returns the appropriate detailer function.
-
-       Args:
-           idx_or_path: int or bytes
-                        if of type `bytes` then it refers to the full
-                        path of the class that have the appropriate
-                        `detail` method to be used.
-                        if of type `int` then it refers to the index
-                        of the detailer in the `detailer` list defined
-                        in this file
-
-      Returns:
-             detailer: callable
-                       the detailer method to be used
-    """
-
-    # If `idx_or_path` referes to a type path, it will
-    # actually be of type `bytes` since it is the result of
-    # a serialized and deserialized str object.
-    if isinstance(idx_or_path, bytes):
-
-        # Decode the byte object into a str
-        type_path = str(idx_or_path, encoding="utf-8")
-
-        # The type path has the following format:
-        # <module_name>/<class_name>
-        # So split them
-        module_name = type_path.split("/")[0]
-        type_name = type_path.split("/")[1]
-
-        # import the module dynamically and get the
-        # class from it. I call it `current_type`
-        module = importlib.import_module(module_name)
-        current_type = getattr(module, type_name)
-
-        # get the `detail` static method
-        detailer = current_type._detail
-
-    # Else, `idx_or_path` is of type integer referring
-    # to the index of the appropriate detailer in
-    # the `detailers` list defined in this file.
-    else:
-
-        detailer = detailers[idx_or_path]
-
-    # Return the detailer
-    return detailer
