@@ -423,9 +423,8 @@ the response.
 
 * **Parameters**
 
-    * **command** – instruction of a function command: (command name,
-
-    * **self>****, ****arguments****[****, ****kwargs****]****)** (*<no*) –
+    * **command** – instruction of a function command: (command name, <no self>****,
+      ****arguments****[****, ****kwargs****]****)**
 
 
 

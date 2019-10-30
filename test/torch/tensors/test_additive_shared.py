@@ -297,7 +297,7 @@ def test_div(workers):
 
     assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
 
-    # With another encrypted tensor
+    # With another encrypted tensor of same shape
     t1 = torch.tensor([[25, 9], [10, 30]])
     t2 = torch.tensor([[5, 12], [2, 7]])
     x1 = t1.fix_prec().share(bob, alice, crypto_provider=james)
@@ -305,6 +305,15 @@ def test_div(workers):
 
     y = (x1 / x2).get().float_prec()
     assert (y == torch.tensor([[5.0, 0.75], [5.0, 4.285]])).all()
+
+    # With another encrypted single value
+    t1 = torch.tensor([[25.0, 9], [10, 30]])
+    t2 = torch.tensor([5.0])
+    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james)
+    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james)
+
+    y = (x1 / x2).get().float_prec()
+    assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
 
 
 def test_pow(workers):
