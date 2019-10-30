@@ -122,7 +122,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
-            ForceObjectDeleteMessage: self.rm_obj,  # codes.MSGTYPE.OBJ_DEL
+            ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
             IsNoneMessage: self.is_tensor_none,
             GetShapeMessage: self.get_tensor_shape,
             SearchMessage: self.search,
@@ -307,7 +307,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
-        # Each method corresponds to a MsgType enum.
 
     def send(
         self,
@@ -961,7 +960,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def create_message_execute_command(
-        command_name: codes.MSGTYPE, command_owner=None, return_ids=None, *args, **kwargs
+        command_name: str, command_owner=None, return_ids=None, *args, **kwargs
     ):
         """helper function creating a message tuple for the execute_command call
 

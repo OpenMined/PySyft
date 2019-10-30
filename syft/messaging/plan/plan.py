@@ -3,7 +3,6 @@ from typing import Tuple
 from typing import Union
 
 import syft as sy
-from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
