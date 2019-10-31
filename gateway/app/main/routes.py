@@ -9,7 +9,7 @@ import random
 import os
 import requests
 
-from .persistence.manager import register_new_node, connected_nodes
+from .persistence.manager import register_new_node, connected_nodes, delete_node
 
 
 # All grid nodes registered at grid network will be stored here
@@ -62,6 +62,33 @@ def get_connected_nodes():
         status=200,
         mimetype="application/json",
     )
+
+
+@main.route("/delete-node", methods=["DELETE"])
+def delete_grid_note():
+    """ Delete a grid node at grid network"""
+
+    data = json.loads(request.data)
+    # Invalid body
+    if "node-id" not in data or "node-address" not in data:
+        return Response(
+            {"message": "Invalid json."}, status=400, mimetype="application/json"
+        )
+
+    # Register new node
+    if delete_node(data["node-id"], data["node-address"]):
+        return Response(
+            {"message": "Successfully Deleted!"},
+            status=200,
+            mimetype="application/json",
+        )
+
+    else:  # Grid ID already registered
+        return Response(
+            {"message": "This ID was not found in connected nodes"},
+            status=404,
+            mimetype="appication/json",
+        )
 
 
 @main.route("/choose-encrypted-model-host", methods=["GET"])

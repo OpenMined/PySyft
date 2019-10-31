@@ -17,6 +17,24 @@ def register_new_node(node_id, node_address):
     return registered
 
 
+def delete_node(node_id, node_address):
+    """ Delete a grid node at grid network.
+        Args:
+            node_id (str) : Grid Node ID.
+            address (str) : Grid Node Address.
+    """
+    deleted = False
+    if node_id in connected_nodes().keys():
+        node_to_delete = GridNodes.query.filter_by(
+            id=node_id, address=node_address
+        ).first()
+        db.session.delete(node_to_delete)
+        db.session.commit()
+        deleted = True
+
+    return deleted
+
+
 def connected_nodes():
     """ Retrieve all grid nodes connected on grid network.
 
