@@ -160,6 +160,26 @@ def test_torch_tensor_simplify():
     assert type(output[1][1]) == bytes
 
 
+def test_tensor_gradient_serde():
+    # create a tensor
+    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+
+    # create gradient on tensor
+    x.sum().backward(torch.tensor(1.0))
+
+    # save gradient
+    orig_grad = x.grad
+
+    # serialize
+    blob = syft.serde.serialize(x)
+
+    # deserialize
+    t = syft.serde.deserialize(blob)
+
+    # check that gradient was properly serde
+    assert (t.grad == orig_grad).all()
+
+
 def test_ndarray_simplify():
     """This tests our ability to simplify numpy.array objects
 
@@ -623,13 +643,13 @@ def test_fixed_precision_tensor_serde(compress, workers):
     )
 
     serialized_x = serde.serialize(x)
-    deserialied_x = serde.deserialize(serialized_x)
+    deserialized_x = serde.deserialize(serialized_x)
 
-    assert x.id == deserialied_x.child.id
-    assert x.child.field == deserialied_x.child.field
-    assert x.child.kappa == deserialied_x.child.kappa
-    assert x.child.precision_fractional == deserialied_x.child.precision_fractional
-    assert x.child.base == deserialied_x.child.base
+    assert x.id == deserialized_x.child.id
+    assert x.child.field == deserialized_x.child.field
+    assert x.child.kappa == deserialized_x.child.kappa
+    assert x.child.precision_fractional == deserialized_x.child.precision_fractional
+    assert x.child.base == deserialized_x.child.base
 
 
 def test_serde_object_wrapper_int():

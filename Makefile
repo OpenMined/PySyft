@@ -1,8 +1,12 @@
 venv: venv/bin/activate
 
-venv/bin/activate: requirements.txt requirements_dev.txt
-	test -e venv/bin/activate || virtualenv venv
-	. venv/bin/activate; pip install -Ur requirements.txt; pip install -Ur requirements_dev.txt; python setup.py install
+REQ_DIR=pip-dep
+
+reqs: $(REQ_DIR)/requirements.txt $(REQ_DIR)/requirements_dev.txt $(REQ_DIR)/requirements_udacity.txt
+
+venv/bin/activate: reqs
+	test -e venv/bin/activate || python -m venv venv
+	. venv/bin/activate; pip install -Ur $(REQ_DIR)/requirements.txt; pip install -Ur $(REQ_DIR)/requirements_dev.txt; pip install -Ur $(REQ_DIR)/requirements_udacity.txt; python setup.py install
 	touch venv/bin/activate
 
 install_hooks: venv
@@ -10,14 +14,14 @@ install_hooks: venv
 
 notebook: venv
 	(. venv/bin/activate; \
-		python setup.py install; \
+		python setup.py install udacity; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter notebook;\
 	)
 
 lab: venv
 	(. venv/bin/activate; \
-		python setup.py install; \
+		python setup.py install udacity; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter lab;\
 	)
@@ -41,5 +45,6 @@ docs: venv
 		make markdown; \
         cd ../; \
 	)
+
 clean:
 	rm -rf venv

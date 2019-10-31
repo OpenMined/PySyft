@@ -112,7 +112,10 @@ class FrameworkHook(ABC):
 
         @property
         def location(self):
-            return self.child.location
+            if hasattr(self, "child"):
+                return self.child.location
+            else:
+                return None
 
         tensor_type.location = location
 
