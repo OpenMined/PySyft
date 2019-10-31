@@ -311,7 +311,7 @@ class TorchTensor(AbstractTensor):
             # TODO: clean this line
 
             # Change library path to avoid problems with AvgPooling layer
-            cmd = cmd.replace('_C._nn', 'nn.functional')
+            cmd = cmd.replace("_C._nn", "nn.functional")
 
             cmd = (
                 "syft.local_worker.hook."
