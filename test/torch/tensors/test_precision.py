@@ -417,12 +417,12 @@ def test_torch_log(workers):
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    fix_prec_tolerance = {3: 20 / 100, 4: 3 / 100, 5: 2 / 100}
+    fix_prec_tolerance = {3: 100 / 100, 4: 3 / 100, 5: 2 / 100}
 
     for prec_frac, tolerance in fix_prec_tolerance.items():
-        cumsum = torch.zeros(7)
+        cumsum = torch.zeros(9)
         for i in range(10):
-            t = torch.tensor([0.5, 2, 5, 10, 20, 50, 100])
+            t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
             t_sh = t.fix_precision(precision_fractional=prec_frac).share(
                 alice, bob, crypto_provider=james
             )

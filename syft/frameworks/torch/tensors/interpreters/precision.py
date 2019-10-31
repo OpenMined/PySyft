@@ -242,6 +242,10 @@ class FixedPrecisionTensor(AbstractTensor):
         if isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             new_self = self.child
             new_other = other
+        elif isinstance(other, float):
+            raise NotImplementedError(
+                "Can't multiply or divide a FixedPrecisionTensor with a float value"
+            )
 
         elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             other.child, torch.Tensor
@@ -457,6 +461,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Args:
             iterations (int): number of iterations for limit approximation
+
+        Ref: https://github.com/LaRiffle/approximate-models
         """
         return (1 + self / 2 ** iterations) ** (2 ** iterations)
 
@@ -464,6 +470,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         Overloads torch.sigmoid to be able to use MPC
         Approximation with polynomial interpolation of degree 5 over [-8,8]
+
         Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
         """
 
@@ -494,13 +501,13 @@ class FixedPrecisionTensor(AbstractTensor):
             iterations (int): number of iterations for 6th order modified
                 Householder approximation.
             exp_iterations (int): number of iterations for limit approximation of exp
+
+        Ref: https://github.com/LaRiffle/approximate-models
         """
 
-        # Initialization to a decent estimate (found by qualitative inspection):
-        # ln(x) = x/120 - 20exp(-2x - 1.0) + 3.0
-        y = self / 120 - 20 * (-2 * self - 1.0).exp() + 3.0
+        y = self / 31 + 1.59 - 20 * (-2 * self - 1.4).exp(iterations=exp_iterations)
 
-        # 8th order Householder iterations
+        # 6th order Householder iterations
         for i in range(iterations):
             h = [1 - self * (-y).refresh().exp(iterations=exp_iterations)]
             for i in range(1, 5):
