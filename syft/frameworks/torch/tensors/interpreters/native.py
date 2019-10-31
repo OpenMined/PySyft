@@ -309,10 +309,6 @@ class TorchTensor(AbstractTensor):
                 pass
 
             # TODO: clean this line
-
-            # Change library path to avoid problems with AvgPooling layer
-            cmd = cmd.replace("_C._nn", "nn.functional")
-
             cmd = (
                 "syft.local_worker.hook."
                 + ".".join(cmd.split(".")[:-1])
@@ -322,10 +318,23 @@ class TorchTensor(AbstractTensor):
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
-            if isinstance(args, tuple):
-                response = eval(cmd)(*args, **kwargs)
-            else:
-                response = eval(cmd)(args, **kwargs)
+            try:
+                response = cls._get_response(cmd, args, kwargs)
+            except AttributeError:
+                # Change the library path to avoid errors on layers like AvgPooling
+                cmd = cmd.replace("_C._nn", "nn.functional")
+                response = cls._get_response(cmd, args, kwargs)
+
+        return response
+
+    def _get_response(cmd, args, kwargs):
+        """
+            Return the evaluation of the cmd string parameter
+        """
+        if isinstance(args, tuple):
+            response = eval(cmd)(*args, **kwargs)
+        else:
+            response = eval(cmd)(args, **kwargs)
 
         return response
 
