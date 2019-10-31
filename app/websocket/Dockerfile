@@ -6,6 +6,4 @@ WORKDIR /app
 RUN pip3 install -r requirements.txt
 COPY . /app
 WORKDIR /app
-ENTRYPOINT ["/usr/local/bin/gunicorn", "-k", "flask_sockets.worker", "websocket_app:app"]
-
-
+ENTRYPOINT ["sh", "entrypoint.sh"]
