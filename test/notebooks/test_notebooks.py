@@ -3,6 +3,7 @@ import nbformat
 import pytest
 from pathlib import Path
 from torchvision import datasets
+import os
 
 notebooks_to_run = (
     ["examples/tutorials/Part 01 - The Basic Tools of Private Deep Learning.ipynb", {}],
@@ -25,10 +26,8 @@ notebooks_to_run = (
 
 
 @pytest.mark.parametrize("notebook,parameters", notebooks_to_run)
-def test_notebooks(notebook, parameters, tmp_path):
-    d = tmp_path / "temp_notebook"
-    d.mkdir()
-    data = (tmp_path / "data").mkdir()
-    fn = Path(notebook).name
-    res = pm.execute_notebook(notebook, str(d / f"result_{fn}"), parameters=parameters)
+def test_notebooks(notebook, parameters, isolated_filesystem):
+    print(notebook)
+    res = pm.execute_notebook(notebook, "/dev/null", parameters=parameters)
+    print(type(res))
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
