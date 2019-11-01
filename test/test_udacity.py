@@ -1,4 +1,8 @@
+import numpy as np
 import torch
+from torch import nn, optim
+import syft as sy
+from syft.frameworks.torch.differential_privacy import pate
 
 
 def test_section_1_differential_privacy():
@@ -190,8 +194,7 @@ def test_section_1_differential_privacy():
     query(db)
 
     epsilon = 0.0001
-
-    import numpy as np
+    
 
     db, pdbs = create_db_and_parallels(100)
 
@@ -212,7 +215,6 @@ def test_section_1_differential_privacy():
 
     laplacian_mechanism(db, mean_query, 1 / 100)
 
-    import numpy as np
 
     num_teachers = 10  # we're working with 10 partner hospitals
     num_examples = 10000  # the size of OUR dataset
@@ -242,7 +244,6 @@ def test_section_1_differential_privacy():
     query_result = np.argmax(counts)
     query_result
 
-    from syft.frameworks.torch.differential_privacy import pate
 
     num_teachers, num_examples, num_labels = (100, 100, 10)
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds
@@ -285,7 +286,6 @@ def test_section_2_federated_learning(hook):
 
     print(y)
 
-    import syft as sy
 
     # commented out because the test needs to use the global one
     # hook = sy.TorchHook(th)
@@ -436,7 +436,6 @@ def test_section_2_federated_learning(hook):
     # throws error
     # z = x + y
 
-    from torch import nn, optim
 
     # A Toy Dataset
     data = th.tensor([[1.0, 1], [0, 1], [1, 0], [0, 0]], requires_grad=True)
@@ -594,7 +593,6 @@ def test_section_3_securing_fl(hook):
     https://github.com/Udacity/private-ai
     """
 
-    import syft as sy
     import torch as th
 
     # hook = sy.TorchHook(th)
