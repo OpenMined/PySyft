@@ -527,6 +527,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj_id: A string or integer id of an object to look up.
         """
         obj = super().get_obj(obj_id)
+
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
@@ -538,15 +539,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
+    def respond_to_obj_req(self, request_obj: Union[str, int]):
         """Returns the deregistered object from registry.
 
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-
+        obj_id, user, reason = request_obj
         obj = self.get_obj(obj_id)
-        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get(None):
+        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get(user):
             raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
@@ -591,7 +592,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.send_msg(ObjectMessage(obj), location)
 
-    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
+    def request_obj(
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+    ) -> object:
         """Returns the requested object from specified location.
 
         Args:
@@ -602,7 +605,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id), location)
+        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
         return obj
 
     # SECTION: Manage the workers network

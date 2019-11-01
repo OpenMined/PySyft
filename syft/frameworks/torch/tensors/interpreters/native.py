@@ -522,7 +522,7 @@ class TorchTensor(AbstractTensor):
 
         return self
 
-    def get(self, *args, inplace: bool = False, **kwargs):
+    def get(self, *args, inplace: bool = False, user=None, reason: str = "", **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
             Args:
                 args: args to forward to worker
@@ -532,7 +532,11 @@ class TorchTensor(AbstractTensor):
                 GetNotPermittedError: Raised if get is not permitted on this tensor
         """
 
-        tensor = self.child.get(*args, **kwargs)
+        # If it is a local tensor/chain, we don't need to verify permissions
+        if not isinstance(self.child, syft.PointerTensor):
+            tensor = self.child.get(*args, **kwargs)
+        else:  # Remote tensor/chain
+            tensor = self.child.get(*args, user=user, reason=reason, **kwargs)
 
         # Clean the wrapper
         delattr(self, "child")
@@ -573,6 +577,8 @@ class TorchTensor(AbstractTensor):
         """This function returns true always currently. Will return false in the future
         if get is not allowed to be called on this tensor
         """
+        if self.is_wrapper:
+            return self.child.allowed_to_get(user)
         return True
 
     def move(self, location):
@@ -648,13 +654,14 @@ class TorchTensor(AbstractTensor):
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
 
+        """ 
         if self.is_wrapper:
             self.child = self.child.private_tensor(*args, **kwargs)
             if no_wrap:
                 return self.child
             else:
                 return self
-
+        """
         private_tensor = (
             syft.PrivateTensor(*args, **kwargs).on(self, wrap=False).register_users(allowed_users)
         )

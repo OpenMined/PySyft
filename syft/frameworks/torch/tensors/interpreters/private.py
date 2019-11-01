@@ -15,8 +15,7 @@ class PrivateTensor(AbstractTensor):
         self.child = None
         self.allowed_users = list()
 
-    @overloaded.method
-    def allowed_to_get(self, _self, user) -> bool:
+    def allowed_to_get(self, user) -> bool:
         return user in self.allowed_users
 
     def register_users(self, users: List[str] = []) -> "PrivateTensor":
@@ -27,6 +26,13 @@ class PrivateTensor(AbstractTensor):
 
     def add_new_user(self, user: str):
         self.allowed_users.append(user)
+
+    @overloaded.method
+    def t(self, _self, *args, **kwargs):
+        """Transpose a tensor. Hooked is handled by the decorator"""
+        response = getattr(_self, "t")(*args, **kwargs)
+
+        return response
 
     @staticmethod
     def simplify(tensor: "PrivateTensor") -> tuple:
