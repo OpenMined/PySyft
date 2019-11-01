@@ -9,7 +9,7 @@ Flask-Sockets==0.2.1
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 gevent==1.4.0
-Werkzeug==0.15.2
+Werkzeug==0.15.3
 requests
 flask_sqlalchemy
 flask_migrate
