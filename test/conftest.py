@@ -2,6 +2,10 @@ import builtins
 from multiprocessing import Process
 import sys
 import time
+import os
+import shutil
+import contextlib
+import tempfile
 
 import pytest
 import torch
@@ -70,6 +74,26 @@ def start_remote_worker():  # pragma: no cover
         return server, remote_proxy
 
     return _start_remote_worker
+
+
+@pytest.yield_fixture(scope="function")
+def isolated_filesystem():
+    """A context manager that creates a temporary folder and changes
+    the current working directory to it for isolated filesystem tests.
+    """
+    cwd = os.getcwd()
+    t = tempfile.mkdtemp()
+    shutil.copytree("examples/tutorials/", t + "/examples")
+    os.chdir(t + "/examples")
+    os.mkdir("../data")
+    try:
+        yield t
+    finally:
+        os.chdir(cwd)
+        try:
+            shutil.rmtree(t)
+        except (OSError, IOError):
+            pass
 
 
 @pytest.fixture(scope="session", autouse=True)
