@@ -10,37 +10,7 @@ Welcome to PyGrid's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-Web Socket Client
-=====================
-.. automodule:: grid.websocket_client
-   :members:
-
-Deploy
-=====================
-.. automodule:: grid.deploy.base_deployment
-   :members:
-
-.. automodule:: grid.deploy.heroku_gateway
-   :members:
-
-.. automodule:: grid.deploy.heroku_node
-   :members:
-
-
-Workers
-=====================
-.. automodule:: grid.workers.socketio_client
-   :members:
-
-.. automodule:: grid.workers.socketio_server
-   :members:
-
-
-Utils
-=====================
-.. automodule:: grid.utils
-   :members:
-
+   api/index
 
 Indices and tables
 ==================
