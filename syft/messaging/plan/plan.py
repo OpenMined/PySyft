@@ -123,6 +123,9 @@ class Plan(AbstractObject, ObjectStorage):
         self.include_state = include_state
         self.is_built = is_built
 
+        # The plan has not been sent
+        self.location_to_pointer = dict()
+
         if blueprint is not None:
             self.forward = blueprint
         elif self.is_built:
@@ -347,19 +350,31 @@ class Plan(AbstractObject, ObjectStorage):
         if len(locations) == 1:
             location = locations[0]
 
+            # Check if plan was already sent at the location
+            if location in self.location_to_pointer:
+                return self.location_to_pointer[location]
+
             self.procedure.update_worker_ids(self.owner.id, location.id)
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
             # Revert ids
             self.procedure.update_worker_ids(location.id, self.owner.id)
+
+            self.location_to_pointer[location] = pointer
         else:
             ids_at_location = []
             for location in locations:
-                self.procedure.update_worker_ids(self.owner.id, location.id)
-                # Send the Plan
-                pointer = self.owner.send(self, workers=location)
-                # Revert ids
-                self.procedure.update_worker_ids(location.id, self.owner.id)
+                if location in self.location_to_pointer:
+                    # Use the pointer that was already sent
+                    pointer = self.location_to_pointer[location]
+                else:
+                    self.procedure.update_worker_ids(self.owner.id, location.id)
+                    # Send the Plan
+                    pointer = self.owner.send(self, workers=location)
+                    # Revert ids
+                    self.procedure.update_worker_ids(location.id, self.owner.id)
+                    self.location_to_pointer[location] = pointer
+
                 ids_at_location.append(pointer.id_at_location)
 
             pointer = sy.PointerPlan(location=locations, id_at_location=ids_at_location)
