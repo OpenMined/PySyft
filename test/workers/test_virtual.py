@@ -94,7 +94,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = ObjectRequestMessage(obj.id)
+    message = ObjectRequestMessage((obj.id, None, ""))
 
     # serialize message
     bin_msg = serde.serialize(message)
