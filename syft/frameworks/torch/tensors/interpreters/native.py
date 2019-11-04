@@ -573,11 +573,11 @@ class TorchTensor(AbstractTensor):
         """
         return self.get(*args, inplace=True, **kwargs)
 
-    def allowed_to_get(self, user) -> bool:
+    def allowed_to_get(self, user=None) -> bool:
         """This function returns true always currently. Will return false in the future
         if get is not allowed to be called on this tensor
         """
-        if self.is_wrapper:
+        if self.is_wrapper and hasattr(self.child, "allowed_users"):
             return self.child.allowed_to_get(user)
         return True
 
