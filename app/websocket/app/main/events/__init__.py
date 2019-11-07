@@ -21,7 +21,7 @@ routes = {
     REQUEST_MSG.HOST_MODEL: host_model,
     REQUEST_MSG.RUN_INFERENCE: run_inference,
     REQUEST_MSG.DELETE_MODEL: delete_model,
-    REQUEST_MSG.DELETE_MODEL: get_models,
+    REQUEST_MSG.LIST_MODELS: get_models,
     REQUEST_MSG.DOWNLOAD_MODEL: download_model,
     REQUEST_MSG.AUTHENTICATE: authentication,
 }
