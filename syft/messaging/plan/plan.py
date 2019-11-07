@@ -424,24 +424,25 @@ class Plan(AbstractObject, ObjectStorage):
         return self.__str__()
 
     @staticmethod
-    def simplify(plan: "Plan") -> tuple:
+    def simplify(worker: AbstractWorker, plan: "Plan") -> tuple:
         """
         This function takes the attributes of a Plan and saves them in a tuple
         Args:
+            worker (AbstractWorker): the worker doing the serialization
             plan (Plan): a Plan object
         Returns:
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
         return (
-            sy.serde._simplify(plan.id),
-            sy.serde._simplify(plan.procedure),
-            sy.serde._simplify(plan.state),
-            sy.serde._simplify(plan.include_state),
-            sy.serde._simplify(plan.is_built),
-            sy.serde._simplify(plan.name),
-            sy.serde._simplify(plan.tags),
-            sy.serde._simplify(plan.description),
+            sy.serde._simplify(worker, plan.id),
+            sy.serde._simplify(worker, plan.procedure),
+            sy.serde._simplify(worker, plan.state),
+            sy.serde._simplify(worker, plan.include_state),
+            sy.serde._simplify(worker, plan.is_built),
+            sy.serde._simplify(worker, plan.name),
+            sy.serde._simplify(worker, plan.tags),
+            sy.serde._simplify(worker, plan.description),
         )
 
     @staticmethod
