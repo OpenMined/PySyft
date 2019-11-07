@@ -5,6 +5,7 @@ import syft
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 from . import gradients
 
 
@@ -280,7 +281,7 @@ class AutogradTensor(AbstractTensor):
         return self
 
     @staticmethod
-    def simplify(tensor: "AutogradTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "AutogradTensor") -> tuple:
         """Takes the attributes of an AutogradTensor and saves them in a tuple.
             Or simply said, it serializes an AutogradTensor
         Args:
@@ -289,22 +290,22 @@ class AutogradTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the AutogradTensor.
         """
-        chain = syft.serde._simplify(tensor.child) if hasattr(tensor, "child") else None
+        chain = syft.serde._simplify(worker, tensor.child) if hasattr(tensor, "child") else None
 
         return (
             tensor.owner,
-            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(worker, tensor.id),
             chain,
             tensor.requires_grad,
             tensor.preinitialize_grad,
             tensor.grad_fn,
             # tensor.local_autograd,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde._simplify(worker, tensor.tags),
+            syft.serde._simplify(worker, tensor.description),
         )
 
     @staticmethod
-    def detail(worker: AbstractTensor, tensor_tuple: tuple) -> "AutogradTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AutogradTensor":
         """
             This function reconstructs (deserializes) an AutogradTensors given its attributes in form of a tuple.
             Args:
