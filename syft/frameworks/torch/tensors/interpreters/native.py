@@ -242,13 +242,10 @@ class TorchTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def roll(tensor, shifts, **kwargs):
-            print("In roll function")
             int_shifts = int(shifts.item())
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
         def add(a, b):
-            print("in add function")
-            print("torch.add" + a.owner.id)
             return a + b
 
         module.roll = roll
