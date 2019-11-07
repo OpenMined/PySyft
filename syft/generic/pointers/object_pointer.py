@@ -1,15 +1,24 @@
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
+import weakref
 
 import syft
 from syft import exceptions
-from syft.messaging.message import ForceObjectDeleteMessage
+from syft.generic.frameworks.hook.hook_args import one
+from syft.generic.frameworks.hook.hook_args import register_type_rule
+from syft.generic.frameworks.hook.hook_args import register_forward_func
+from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
+from syft.messaging.message import ForceObjectDeleteMessage
+
+from syft.exceptions import RemoteObjectFoundError
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
+    from syft.workers.abstract import AbstractWorker
     from syft.workers.base import BaseWorker
 
 
@@ -54,7 +63,7 @@ class ObjectPointer(AbstractObject):
                 registered if register is set to True. Note that this is
                 different from the location parameter that specifies where the
                 pointer points to.
-            id: An optional string or integer id of the PointerTensor.
+            id: An optional string or integer id of the ObjectPointer.
             garbage_collect_data: If true (default), delete the remote object when the
                 pointer is deleted.
             point_to_attr: string which can tell a pointer to not point directly to\
@@ -69,6 +78,118 @@ class ObjectPointer(AbstractObject):
         self.id_at_location = id_at_location
         self.garbage_collect_data = garbage_collect_data
         self.point_to_attr = point_to_attr
+
+    @staticmethod
+    def create_pointer(
+        obj,
+        location: "AbstractWorker" = None,
+        id_at_location: (str or int) = None,
+        register: bool = False,
+        owner: "AbstractWorker" = None,
+        ptr_id: (str or int) = None,
+        garbage_collect_data=None,
+    ) -> "ObjectPointer":
+        """Creates a pointer to the "self" FrameworkTensor object.
+
+        This method is called on a FrameworkTensor object, returning a pointer
+        to that object. This method is the CORRECT way to create a pointer,
+        and the parameters of this method give all possible attributes that
+        a pointer can be created with.
+
+        Args:
+            location: The AbstractWorker object which points to the worker on which
+                this pointer's object can be found. In nearly all cases, this
+                is self.owner and so this attribute can usually be left blank.
+                Very rarely you may know that you are about to move the Tensor
+                to another worker so you can pre-initialize the location
+                attribute of the pointer to some other worker, but this is a
+                rare exception.
+            id_at_location: A string or integer id of the tensor being pointed
+                to. Similar to location, this parameter is almost always
+                self.id and so you can leave this parameter to None. The only
+                exception is if you happen to know that the ID is going to be
+                something different than self.id, but again this is very rare
+                and most of the time, setting this means that you are probably
+                doing something you shouldn't.
+            register: A boolean parameter (default False) that determines
+                whether to register the new pointer that gets created. This is
+                set to false by default because most of the time a pointer is
+                initialized in this way so that it can be sent to someone else
+                (i.e., "Oh you need to point to my tensor? let me create a
+                pointer and send it to you" ). Thus, when a pointer gets
+                created, we want to skip being registered on the local worker
+                because the pointer is about to be sent elsewhere. However, if
+                you are initializing a pointer you intend to keep, then it is
+                probably a good idea to register it, especially if there is any
+                chance that someone else will initialize a pointer to your
+                pointer.
+            owner: A AbstractWorker parameter to specify the worker on which the
+                pointer is located. It is also where the pointer is registered
+                if register is set to True.
+            ptr_id: A string or integer parameter to specify the id of the pointer
+                in case you wish to set it manually for any special reason.
+                Otherwise, it will be set randomly.
+            garbage_collect_data: If true (default), delete the remote tensor when the
+                pointer is deleted.
+            local_autograd: Use autograd system on the local machine instead of PyTorch's
+                autograd on the workers.
+            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
+
+        Returns:
+            A FrameworkTensor[ObjectPointer] pointer to self. Note that this
+            object itself will likely be wrapped by a FrameworkTensor wrapper.
+        """
+        if owner is None:
+            owner = obj.owner
+
+        if location is None:
+            location = obj.owner.id
+
+        owner = obj.owner.get_worker(owner)
+        location = obj.owner.get_worker(location)
+
+        ptr = ObjectPointer(
+            location=location,
+            id_at_location=id_at_location,
+            owner=owner,
+            id=ptr_id,
+            garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
+            tags=obj.tags,
+            description=obj.description,
+        )
+
+        return ptr
+
+    def wrap(self, register=True, type=None, **kwargs):
+        """Wraps the class inside framework tensor.
+
+        Because PyTorch/TF do not (yet) support functionality for creating
+        arbitrary Tensor types (via subclassing torch.Tensor), in order for our
+        new tensor types (such as PointerTensor) to be usable by the rest of
+        PyTorch/TF (such as PyTorch's layers and loss functions), we need to
+        wrap all of our new tensor types inside of a native PyTorch type.
+
+        This function adds a .wrap() function to all of our tensor types (by
+        adding it to AbstractTensor), such that (on any custom tensor
+        my_tensor), my_tensor.wrap() will return a tensor that is compatible
+        with the rest of the PyTorch/TensorFlow API.
+
+        Returns:
+            A wrapper tensor of class `type`, or whatever is specified as
+            default by the current syft.framework.Tensor.
+        """
+        wrapper = syft.framework.hook.create_wrapper(type, **kwargs)
+        wrapper.child = self
+        wrapper.is_wrapper = True
+        wrapper.child.parent = weakref.ref(wrapper)
+
+        if self.id is None:
+            self.id = syft.ID_PROVIDER.pop()
+
+        if self.owner is not None and register:
+            self.owner.register_obj(wrapper, obj_id=self.id)
+
+        return wrapper
 
     @classmethod
     def handle_func_command(cls, command):
@@ -241,3 +362,87 @@ class ObjectPointer(AbstractObject):
         self.owner.send_command(
             message=("__setattr__", self, (name, value), {}), recipient=self.location
         )
+
+    @staticmethod
+    def simplify(ptr: "ObjectPointer") -> tuple:
+        """
+        This function takes the attributes of a ObjectPointer and saves them in a dictionary
+        Args:
+            ptr (ObjectPointer): a ObjectPointer
+        Returns:
+            tuple: a tuple holding the unique attributes of the pointer
+        Examples:
+            data = simplify(ptr)
+        """
+
+        return (
+            ptr.id,
+            ptr.id_at_location,
+            ptr.location.id,
+            ptr.point_to_attr,
+            ptr.garbage_collect_data,
+        )
+
+    @staticmethod
+    def detail(worker: "AbstractWorker", object_tuple: tuple) -> "ObjectPointer":
+        """
+        This function reconstructs an ObjectPointer given it's attributes in form of a dictionary.
+        We use the spread operator to pass the dict data as arguments
+        to the init method of ObjectPointer
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the ObjectPointer
+        Returns:
+            ObjectPointer: an ObjectPointer
+        Examples:
+            ptr = detail(data)
+        """
+        # TODO: fix comment for this and simplifier
+        obj_id, id_at_location, worker_id, point_to_attr, garbage_collect_data = object_tuple
+
+        if isinstance(worker_id, bytes):
+            worker_id = worker_id.decode()
+
+        # If the pointer received is pointing at the current worker, we load the tensor instead
+        if worker_id == worker.id:
+            obj = worker.get_obj(id_at_location)
+
+            if point_to_attr is not None and obj is not None:
+
+                point_to_attrs = point_to_attr.decode("utf-8").split(".")
+                for attr in point_to_attrs:
+                    if len(attr) > 0:
+                        obj = getattr(obj, attr)
+
+                if obj is not None:
+
+                    if not obj.is_wrapper and not isinstance(obj, FrameworkTensor):
+                        # if the object is a wrapper then it doesn't need to be wrapped
+                        # i the object isn't a wrapper, BUT it's just a plain torch tensor,
+                        # then it doesn't need to be wrapped.
+                        # if the object is not a wrapper BUT it's also not a framework object,
+                        # then it needs to be wrapped or else it won't be able to be used
+                        # by other interfaces
+                        obj = obj.wrap()
+
+            return obj
+        # Else we keep the same Pointer
+        else:
+
+            location = syft.hook.local_worker.get_worker(worker_id)
+
+            ptr = ObjectPointer(
+                location=location,
+                id_at_location=id_at_location,
+                owner=worker,
+                id=obj_id,
+                garbage_collect_data=garbage_collect_data,
+            )
+
+            return ptr
+
+
+### Register the object with hook_args.py ###
+register_type_rule({ObjectPointer: one})
+register_forward_func({ObjectPointer: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p))})
+register_backward_func({ObjectPointer: lambda i: i})

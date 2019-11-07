@@ -1,25 +1,28 @@
 import logging
-import syft as sy
-from syft.workers.websocket_server import WebsocketServerWorker
-import torch
 import argparse
+import numpy as np
+import torch
 from torchvision import datasets
 from torchvision import transforms
-import numpy as np
-from syft.frameworks.torch.federated import utils
+
+import syft as sy
+from syft.workers import websocket_server
 
 KEEP_LABELS_DICT = {
     "alice": [0, 1, 2, 3],
     "bob": [4, 5, 6],
     "charlie": [7, 8, 9],
     "testing": list(range(10)),
+    None: list(range(10)),
 }
 
 
 def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=None, training=True):
     """Helper function for spinning up a websocket server and setting up the local datasets."""
 
-    server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
+    server = websocket_server.WebsocketServerWorker(
+        id=id, host=host, port=port, hook=hook, verbose=verbose
+    )
 
     # Setup toy data (mnist example)
     mnist_dataset = datasets.MNIST(
@@ -55,10 +58,17 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
         key = "mnist_testing"
 
     server.add_dataset(dataset, key=key)
+    count = [0] * 10
+    logger.info(
+        "MNIST dataset (%s set), available numbers on %s: ", "train" if training else "test", id
+    )
+    for i in range(10):
+        count[i] = (dataset.targets == i).sum().item()
+        logger.info("      %s: %s", i, count[i])
 
     logger.info("datasets: %s", server.datasets)
     if training:
-        logger.info("len(datasets[mnist]): %s", len(server.datasets["mnist"]))
+        logger.info("len(datasets[mnist]): %s", len(server.datasets[key]))
 
     server.start()
     return server
@@ -66,9 +76,9 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
 
 if __name__ == "__main__":
     # Logging setup
-    logger = logging.getLogger("run_websocket_server")
-    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
+    FORMAT = "%(asctime)s | %(message)s"
     logging.basicConfig(format=FORMAT)
+    logger = logging.getLogger("run_websocket_server")
     logger.setLevel(level=logging.DEBUG)
 
     # Parse args
