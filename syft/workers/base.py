@@ -138,7 +138,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Declare workers as appropriate
         self._known_workers = {}
         if auto_add:
-            if hook.local_worker is not None:
+            if hook is not None and hook.local_worker is not None:
                 known_workers = self.hook.local_worker._known_workers
                 if self.id in known_workers:
                     if isinstance(known_workers[self.id], type(self)):
@@ -1005,7 +1005,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             workers.append(self)
         else:
             # self is referenced in self.__known_workers
-            workers = [w for _, w in self._known_workers.items()]
+            # NOTE: for some reason self._known_workers may contain a Plan
+            workers = [w for _, w in self._known_workers.items() if isinstance(w, BaseWorker)]
 
         frameworks = set()
         for worker in workers:
