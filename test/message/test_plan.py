@@ -962,7 +962,7 @@ def test_cached_plan_send(workers):
     pointers = plan_abs.get_pointers()
 
     assert len(pointers) == 1
-    assert plan_bob_ptr1 == plan_bob_ptr2
+    assert plan_bob_ptr1 is plan_bob_ptr2
 
 
 def test_cached_multiple_location_plan_send(workers):
