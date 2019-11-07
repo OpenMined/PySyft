@@ -8,6 +8,18 @@ import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 
 
+class DependencyError(Exception):
+    def __init__(self, package, pypi_alias=None):
+        if pypi_alias is None:
+            pypi_alias = package
+        message = (
+            f"The {package} dependency is not installed. If you intend"
+            " to use it, please install it at your command line with "
+            "`pip install {pypi_alias}`."
+        )
+        super().__init__(message)
+
+
 class PureFrameworkTensorFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a recursive analysis of the args provided as an

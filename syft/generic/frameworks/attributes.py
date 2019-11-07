@@ -25,6 +25,7 @@ class FrameworkAttributes(ABC):
     @classmethod
     @abstractmethod
     def Tensor(cls):
+        """Default Tensor wrapper."""
         pass
 
     @abstractmethod

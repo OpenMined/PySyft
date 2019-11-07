@@ -18,7 +18,7 @@ Installing PySyft on Linux is really straight forward. Here are the steps:
 
 ### 1. Make sure you have Python >= 3.6
 
-### 2. Install PyTorch 1.0
+### 2. Install PyTorch 1.1
 
 Get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option) and run it in the terminal.
 
@@ -32,7 +32,7 @@ Get the installation command [here](https://pytorch.org/get-started/locally/) (u
 
 ### 5. Install PySyft
 
-`python setup.py install`
+`python setup.py install udacity`
 
 ### 6. Test your installation
 
@@ -57,7 +57,7 @@ This will install **Homebrew**. Then, install python (version 3.6 or above) by r
 
 `brew install python3`
 
-### 2. Install PyTorch 1.0
+### 2. Install PyTorch 1.1
 
 You should first get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option)
 
@@ -75,7 +75,7 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then, run this to install the PySyft package:
 
-`python setup.py install`
+`python setup.py install udacity`
 
 You can test your installation by running:
 
@@ -121,7 +121,7 @@ In the window that opens, click on `New` and add the installation paths for `pyt
 
 Click on `OK`.
 
-### 3. Install PyTorch 1.0
+### 3. Install PyTorch 1.1
 
 You should first get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option)
 
@@ -157,7 +157,7 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then
 
-`python setup.py install`
+`python setup.py install udacity`
 
 This will install PySyft and its requirements to your system. You should see no errors.
 
