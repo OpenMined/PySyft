@@ -238,6 +238,7 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, torch.nn.Parameter)
 
+    # Fix handle_command_function to correct this. #2637
     @staticmethod
     @overloaded.module
     def torch(module):
@@ -475,8 +476,7 @@ class TorchTensor(AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
-        local_autograd=False,
-        preinitialize_grad=False,
+        **kwargs,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -497,16 +497,7 @@ class TorchTensor(AbstractTensor):
             shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
-            self,
-            location,
-            id_at_location,
-            register,
-            owner,
-            ptr_id,
-            garbage_collect_data,
-            shape,
-            local_autograd,
-            preinitialize_grad,
+            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
         )
 
         return ptr
@@ -540,15 +531,6 @@ class TorchTensor(AbstractTensor):
             Raises:
                 GetNotPermittedError: Raised if get is not permitted on this tensor
         """
-        # Transfer the get() to the child attribute which is a pointer
-
-        # if (self.has_child()):
-        #     if (isinstance(self.child, syft.frameworks.torch.tensors.FixedPrecisionTensor)):
-        #         if (hasattr(self.child, "child")):
-        #             if (hasattr(self.child.child, "child")):
-        #                 if(isinstance(self.child.child.child, syft.frameworks.torch.tensors.AdditiveSharingTensor)):
-        #                     self.child.child =  self.child.child.get()
-        #                     return self
 
         tensor = self.child.get(*args, **kwargs)
 
@@ -613,9 +595,19 @@ class TorchTensor(AbstractTensor):
 
         return attr_val
 
-    def enc_fix_prec(self):
-        self.child.fix_precision()
-        return self
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy
+        """
+        cloned_tensor = self.native_clone()
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+        cloned_tensor.is_wrapper = self.is_wrapper
+
+        if self.has_child():
+            cloned_tensor.child = self.child.clone()
+
+        return cloned_tensor
 
     def float_prec(self):
         if isinstance(self.child, PointerTensor):
@@ -631,22 +623,38 @@ class TorchTensor(AbstractTensor):
         if hasattr(tensor, "child"):
             self.child = tensor.child
         elif self._is_parameter():
+            self.is_wrapper = False
             self.data = tensor
+            self.data.is_wrapper = False
         else:
             del self.child
             self.set_(tensor)
+            self.is_wrapper = False
         return self
 
     float_precision_ = float_prec_
 
-    def fix_prec(self, *args, storage="auto", field_type="int100", **kwargs):
+    def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
+        """
+        Convert a tensor or syft tensor to fixed precision
+
+        Args:
+            *args (tuple): args to transmit to the fixed precision tensor
+            storage (str): code to define the type of fixed precision tensor (values in (auto, crt, large))
+            field_type (str): code to define a storage type (only for CRTPrecisionTensor)
+            no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
+            **kwargs (dict): kwargs to transmit to the fixed precision tensor
+        """
 
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
 
         if self.is_wrapper:
             self.child = self.child.fix_prec(*args, **kwargs)
-            return self
+            if no_wrap:
+                return self.child
+            else:
+                return self
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
@@ -668,19 +676,18 @@ class TorchTensor(AbstractTensor):
             for mod in _moduli_for_fields[field_type]:
                 residues[mod] = (
                     syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
-                    .on(self)
-                    .child.fix_precision(check_range=False)
+                    .on(self, wrap=False)
+                    .fix_precision(check_range=False)
                     .wrap()
                 )
 
-            return syft.CRTPrecisionTensor(residues, *args, **kwargs).wrap()
+            fpt_tensor = syft.CRTPrecisionTensor(residues, *args, **kwargs)
 
-        if need_large_prec or storage == "large":
-            return (
+        elif need_large_prec or storage == "large":
+            fpt_tensor = (
                 syft.LargePrecisionTensor(*args, **kwargs)
-                .on(self)
-                .child.fix_large_precision()
-                .wrap()
+                .on(self, wrap=False)
+                .fix_large_precision()
             )
         else:
             assert not need_large_prec, "This tensor needs large precision to be correctly stored"
@@ -689,13 +696,32 @@ class TorchTensor(AbstractTensor):
                     "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
                 )
                 del kwargs["internal_type"]
-            return syft.FixedPrecisionTensor(*args, **kwargs).on(self).enc_fix_prec()
+            fpt_tensor = (
+                syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
+            )
+
+        if not no_wrap:
+            fpt_tensor = fpt_tensor.wrap()
+
+        return fpt_tensor
 
     fix_precision = fix_prec
 
     def fix_prec_(self, *args, **kwargs):
-        tensor = self.fix_prec(*args, **kwargs)
-        self.child = tensor.child
+        """
+        Performs an inplace transformation to fixed precision and change self to
+        be a wrapper
+
+        Args:
+            *args: args to transmit to fix_prec
+            **kwargs: kwargs to transmit to fix_prec
+
+        Returns:
+            self seen as a wrapper
+        """
+        # We specify id to make sure the inplace op doesn't change the tensor id
+        self.child = self.fix_prec(*args, no_wrap=True, id=self.id, **kwargs)
+        self.is_wrapper = True
         return self
 
     fix_precision_ = fix_prec_
@@ -726,10 +752,8 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
-
         if self.has_child():
-            chain = self.child.copy()
-            chain.owner = self.child.owner
+            chain = self.child
 
             kwargs = (
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
@@ -742,17 +766,15 @@ class TorchTensor(AbstractTensor):
                 syft.AdditiveSharingTensor(
                     field=field, crypto_provider=crypto_provider, owner=self.owner
                 )
-                .on(self.copy())
-                .child.init_shares(*owners)
+                .on(self.copy(), wrap=False)
+                .init_shares(*owners)
             )
+
+        if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
+            shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
 
         if not no_wrap:
             shared_tensor = shared_tensor.wrap()
-
-        if requires_grad and not (
-            shared_tensor.is_wrapper and isinstance(shared_tensor.child, syft.PointerTensor)
-        ):
-            shared_tensor = syft.AutogradTensor().on(shared_tensor)
 
         return shared_tensor
 
@@ -760,9 +782,21 @@ class TorchTensor(AbstractTensor):
         """
         Allows to call .share() as an inplace operation
         """
-        tensor = self.share(*args, **kwargs)
-        self.child = tensor.child
-        return self
+        if self.has_child():
+            requires_grad = kwargs.get("requires_grad", False)
+            # Reset the requires_grad kwargs if the call is local
+            if not isinstance(self.child, syft.PointerTensor):
+                kwargs["requires_grad"] = False
+
+            shared_tensor = self.child.share_(*args, **kwargs)
+
+            if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
+                shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
+
+            self.child = shared_tensor
+            return self
+        else:
+            return self.share(*args, **kwargs)  # TODO change to inplace
 
     def combine(self, *pointers):
         """This method will combine the child pointer with another list of pointers
