@@ -982,7 +982,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return Message(codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids])
 
     @property
-    def serializer(self, workers=None):
+    def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
         """
         Define the serialization strategy to adopt depending on the workers it's connected to.
         This is relevant in particular for Tensors which can be serialized in an efficient way
@@ -1006,7 +1006,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             # self is referenced in self.__known_workers
             # NOTE: for some reason self._known_workers may contain a Plan
-            workers = [w for _, w in self._known_workers.items() if isinstance(w, BaseWorker)]
+            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
 
         frameworks = set()
         for worker in workers:
@@ -1018,9 +1018,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             frameworks.add(framework)
 
         if len(frameworks) == 1 and frameworks == {"torch"}:
-            return "torch"
+            return codes.TENSOR_SERIALIZATION.TORCH
         else:
-            return "all"
+            return codes.TENSOR_SERIALIZATION.ALL
 
     @staticmethod
     def simplify(self: AbstractWorker, worker: AbstractWorker) -> tuple:

@@ -16,6 +16,13 @@ class PLAN_CMDS(object):
     FETCH_PROTOCOL = "fetch_protocol"
 
 
+class TENSOR_SERIALIZATION(object):
+    TORCH = "torch"
+    NUMPY = "numpy"
+    TF = "tf"
+    ALL = "all"
+
+
 # Build automatically the reverse map from codes to messaging types
 code2MSGTYPE = {}
 for code in dir(MSGTYPE):
