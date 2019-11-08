@@ -315,9 +315,16 @@ class AutogradTensor(AbstractTensor):
             Examples:
                 shared_tensor = detail(data)
             """
-        owner, tensor_id, chain, requires_grad, preinitialize_grad, grad_fn, tags, description = (
-            tensor_tuple
-        )
+        (
+            owner,
+            tensor_id,
+            chain,
+            requires_grad,
+            preinitialize_grad,
+            grad_fn,
+            tags,
+            description,
+        ) = tensor_tuple
 
         if chain is not None:
             chain = syft.serde._detail(worker, chain)
