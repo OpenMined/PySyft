@@ -245,11 +245,7 @@ class TorchTensor(AbstractTensor):
             int_shifts = int(shifts.item())
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
-        def add(a, b):
-            return a + b
-
         module.roll = roll
-        module.add = add
 
     @classmethod
     def handle_func_command(cls, command):
@@ -310,14 +306,6 @@ class TorchTensor(AbstractTensor):
             # Put back the wrappers where needed
             response = hook_args.hook_response(cmd, response, wrap_type=args_type)
         except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
-
-            # Check that the function has not been overwritten
-            try:
-                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-                command = cls.rgetattr(cls, cmd)
-                return command(*args, **kwargs)
-            except AttributeError:
-                pass
 
             # TODO: clean this line
             cmd = (
