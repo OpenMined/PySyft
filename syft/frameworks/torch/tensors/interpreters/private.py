@@ -1,10 +1,11 @@
 import torch
 import syft
 from typing import List
+from syft.generic.frameworks.hook import hook_args
+
 
 from syft.workers.abstract import AbstractWorker
 from syft.generic.tensor import AbstractTensor
-from syft.generic.frameworks.overload import overloaded
 
 
 class PrivateTensor(AbstractTensor):
@@ -26,13 +27,6 @@ class PrivateTensor(AbstractTensor):
 
     def add_new_user(self, user: str):
         self.allowed_users.append(user)
-
-    @overloaded.method
-    def t(self, _self, *args, **kwargs):
-        """Transpose a tensor. Hooked is handled by the decorator"""
-        response = getattr(_self, "t")(*args, **kwargs)
-
-        return response
 
     @staticmethod
     def simplify(tensor: "PrivateTensor") -> tuple:
@@ -86,3 +80,7 @@ class PrivateTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(PrivateTensor)
