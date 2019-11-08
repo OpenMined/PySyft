@@ -27,7 +27,7 @@ You will just need to fork once. After that you can call `git fetch upstream` an
 
 PySyft uses the python package `pre-commit` to make sure the correct formatting (black & flake) is applied.
 
-You can install it via `pip install -r requirements_dev.txt` or directly doing `pip install pre-commit`
+You can install it via `pip install -r pip-dep/requirements_dev.txt` or directly doing `pip install pre-commit`
 
 Then you just need to call `pre-commit install`
 

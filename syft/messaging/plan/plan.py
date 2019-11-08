@@ -123,6 +123,9 @@ class Plan(AbstractObject, ObjectStorage):
         self.include_state = include_state
         self.is_built = is_built
 
+        # The plan has not been sent
+        self.pointers = dict()
+
         if blueprint is not None:
             self.forward = blueprint
         elif self.is_built:
@@ -347,19 +350,30 @@ class Plan(AbstractObject, ObjectStorage):
         if len(locations) == 1:
             location = locations[0]
 
+            # Check if plan was already sent at the location
+            if location in self.pointers:
+                return self.pointers[location]
+
             self.procedure.update_worker_ids(self.owner.id, location.id)
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
             # Revert ids
             self.procedure.update_worker_ids(location.id, self.owner.id)
+            self.pointers[location] = pointer
         else:
             ids_at_location = []
             for location in locations:
-                self.procedure.update_worker_ids(self.owner.id, location.id)
-                # Send the Plan
-                pointer = self.owner.send(self, workers=location)
-                # Revert ids
-                self.procedure.update_worker_ids(location.id, self.owner.id)
+                if location in self.pointers:
+                    # Use the pointer that was already sent
+                    pointer = self.pointers[location]
+                else:
+                    self.procedure.update_worker_ids(self.owner.id, location.id)
+                    # Send the Plan
+                    pointer = self.owner.send(self, workers=location)
+                    # Revert ids
+                    self.procedure.update_worker_ids(location.id, self.owner.id)
+                    self.pointers[location] = pointer
+
                 ids_at_location.append(pointer.id_at_location)
 
             pointer = sy.PointerPlan(location=locations, id_at_location=ids_at_location)
@@ -371,6 +385,9 @@ class Plan(AbstractObject, ObjectStorage):
         return self
 
     get = get_
+
+    def get_pointers(self):
+        return self.pointers
 
     def fix_precision_(self, *args, **kwargs):
         self.state.fix_precision_(*args, **kwargs)
