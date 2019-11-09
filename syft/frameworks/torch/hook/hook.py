@@ -152,7 +152,7 @@ class TorchHook(FrameworkHook):
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AutogradTensor)
 
-        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # Add all hooked tensor methods to PrivateTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(PrivateTensor)

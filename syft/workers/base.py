@@ -539,13 +539,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, request_obj: Union[str, int]):
+    def respond_to_obj_req(self, request_msg: tuple):
         """Returns the deregistered object from registry.
 
         Args:
-            obj_id: A string or integer id of an object to look up.
+            request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-        obj_id, user, reason = request_obj
+        obj_id, user, reason = request_msg
         obj = self.get_obj(obj_id)
         if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get(user):
             raise GetNotPermittedError()
@@ -598,10 +598,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Returns the requested object from specified location.
 
         Args:
-            obj_id:  A string or integer id of an object to look up.
-            location: A BaseWorker instance that lets you provide the lookup
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
                 location.
-
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
         Returns:
             A torch Tensor or Variable object.
         """

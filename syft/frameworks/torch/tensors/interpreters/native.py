@@ -574,11 +574,29 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allowed_to_get(self, user=None) -> bool:
-        """This function returns true always currently. Will return false in the future
-        if get is not allowed to be called on this tensor
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allowed_to_get method.
+            
+            Args:
+                user (object,optional): User crendentials to be verified.
+            
+            Returns:
+                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
         """
-        if self.is_wrapper and hasattr(self.child, "allowed_users"):
-            return self.child.allowed_to_get(user)
+        # If it is a wrapper
+        if self.is_wrapper:
+            current_tensor = self.child
+
+            # Verify permissions for each element on the tensor chain.
+            while hasattr(current_tensor, "child"):
+
+                # If it has a list of allowed users, verify permissions, otherwise (public tensors) go to the next.
+                if hasattr(current_tensor, "allowed_users"):
+                    allow = current_tensor.allowed_to_get(user)
+                    if not allow:
+                        return False
+
+                # Go to next element on the tensor chain
+                current_tensor = current_tensor.child
         return True
 
     def move(self, location):
@@ -654,16 +672,21 @@ class TorchTensor(AbstractTensor):
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
 
-        """ 
         if self.is_wrapper:
-            self.child = self.child.private_tensor(*args, **kwargs)
+            self.child = (
+                syft.PrivateTensor(*args, **kwargs)
+                .on(self.child, wrap=False)
+                .register_credentials(allowed_users)
+            )
             if no_wrap:
                 return self.child
             else:
                 return self
-        """
+
         private_tensor = (
-            syft.PrivateTensor(*args, **kwargs).on(self, wrap=False).register_users(allowed_users)
+            syft.PrivateTensor(*args, **kwargs)
+            .on(self, wrap=False)
+            .register_credentials(allowed_users)
         )
         if not no_wrap:
             private_tensor = private_tensor.wrap()

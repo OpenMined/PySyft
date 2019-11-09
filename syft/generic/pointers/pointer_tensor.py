@@ -284,7 +284,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
 
         Args:
-
+            user (obj, optional): user credentials to perform authentication process.
+            reason (str, optional): a description of why the data scientist wants to see it.
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
