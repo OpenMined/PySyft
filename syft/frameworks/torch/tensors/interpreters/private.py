@@ -12,7 +12,14 @@ from syft.generic.tensor import AbstractTensor
 
 
 class PrivateTensor(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
+    def __init__(
+        self,
+        owner=None,
+        id=None,
+        tags: set = None,
+        description: str = None,
+        allowed_users: Union = tuple(),
+    ):
         """ Initialize a Private tensor, which manages permissions restricting get operations.
 
             Args:
@@ -21,12 +28,17 @@ class PrivateTensor(AbstractTensor):
                 id (string or int, optional): An optional string or integer id of the PrivateTensor.
                 tags (set, optional): A set of tags to label this tensor.
                 description (string, optional): A brief description about this tensor.
+                allowed_users (Union, optional): User credentials.
         """
         super().__init__(tags, description)
         self.owner = owner
         self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
-        self.allowed_users = list()
+        self.allowed_users = allowed_users
+
+    def get_class_attributes(self):
+        """ Specify all the attributes need to build a wrapper correctly when returning a response. """
+        return {"allowed_users": self.allowed_users}
 
     def allowed_to_get(self, user) -> bool:
         """ Overwrite native's allowed_to_get to verify if a specific user is allowed to get this tensor.
@@ -39,20 +51,20 @@ class PrivateTensor(AbstractTensor):
         """
         return user in self.allowed_users
 
-    def register_credentials(self, users: Union[object, List[str]] = []) -> "PrivateTensor":
+    def register_credentials(self, users: Union[object, tuple] = []) -> "PrivateTensor":
         """ Register a new user credential(s) into the list of allowed users to get this tensor.
 
             Args:
                 users (object or List): Credential(s) to be registered.
         """
         if not hasattr(self, "allowed_users"):
-            self.allowed_users = list()
+            self.allowed_users = tuple()
 
         # If it's a List of credentials
-        if isinstance(users, List):
+        if isinstance(users, tuple):
             self.allowed_users += users
         else:
-            self.allowed_users.append(users)
+            self.allowed_users = self.allowed_users + tuple([users])
 
         return self
 

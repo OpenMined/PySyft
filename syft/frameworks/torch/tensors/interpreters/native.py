@@ -658,13 +658,15 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def private_tensor(self, *args, allowed_users: List[str] = [], no_wrap: bool = False, **kwargs):
+    def private_tensor(
+        self, *args, allowed_users: Union[str] = [], no_wrap: bool = False, **kwargs
+    ):
         """
         Convert a tensor or syft tensor to private tensor
 
         Args:
             *args (tuple): args to transmit to the private tensor.
-            allowed_users (List): list of allowed users.
+            allowed_users (Union): Tuple of allowed users.
             no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
             **kwargs (dict): kwargs to transmit to the private tensor
         """
