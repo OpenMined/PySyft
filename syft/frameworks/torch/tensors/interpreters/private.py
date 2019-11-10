@@ -116,7 +116,6 @@ class PrivateTensor(AbstractTensor):
 
         module.dot = dot
 
-
         # You can also overload functions in submodules!
         @overloaded.module
         def nn(module):
