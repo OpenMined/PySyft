@@ -5,6 +5,7 @@ from typing import List
 from typing import Union
 
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
 
 
 from syft.workers.abstract import AbstractWorker
@@ -67,6 +68,87 @@ class PrivateTensor(AbstractTensor):
             self.allowed_users = self.allowed_users + tuple([users])
 
         return self
+
+    def float_precision(self):
+        """
+            Forward float_precision method to next child on tensor stack.
+        """
+        return self.child.float_precision()
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def add(self, other):
+            return self.__add__(other)
+
+        module.add = add
+
+        def sub(self, other):
+            return self.__sub__(other)
+
+        module.sub = sub
+
+        def mul(self, other):
+            return self.__mul__(other)
+
+        module.mul = mul
+
+        def div(self, other):
+            return self.__truediv__(other)
+
+        module.div = div
+
+        def matmul(self, other):
+            return self.matmul(other)
+
+        module.matmul = matmul
+        module.mm = matmul
+
+        def addmm(bias, input_tensor, weight):
+            matmul = input_tensor.matmul(weight)
+            result = bias.add(matmul)
+            return result
+
+        module.addmm = addmm
+
+        def dot(self, other):
+            return self.__mul__(other).sum()
+
+        module.dot = dot
+
+        def tanh(tensor):
+            """
+            Overloads torch.tanh to be able to use MPC
+            """
+
+            result = 2 * sigmoid(2 * tensor) - 1
+
+            return result
+
+        module.tanh = tanh
+
+        # You can also overload functions in submodules!
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+                def linear(*args):
+                    """
+                    Un-hook the function to have its detailed behaviour
+                    """
+                    return torch.nn.functional.native_linear(*args)
+
+                module.linear = linear
+
+            module.functional = functional
+
+        # Modules should be registered just like functions
+        module.nn = nn
 
     @staticmethod
     def simplify(tensor: "PrivateTensor") -> tuple:
