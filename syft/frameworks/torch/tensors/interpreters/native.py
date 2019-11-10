@@ -243,6 +243,7 @@ class TorchTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def roll(tensor, shifts, **kwargs):
+            print("overloaded")
             int_shifts = int(shifts.item())
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
