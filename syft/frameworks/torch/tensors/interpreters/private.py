@@ -116,16 +116,6 @@ class PrivateTensor(AbstractTensor):
 
         module.dot = dot
 
-        def tanh(tensor):
-            """
-            Overloads torch.tanh to be able to use MPC
-            """
-
-            result = 2 * sigmoid(2 * tensor) - 1
-
-            return result
-
-        module.tanh = tanh
 
         # You can also overload functions in submodules!
         @overloaded.module
