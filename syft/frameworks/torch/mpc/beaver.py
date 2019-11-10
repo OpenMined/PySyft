@@ -27,7 +27,13 @@ def request_triple(
     a = torch.randint(field, a_size)
     b = torch.randint(field, b_size)
     c = cmd(a, b)
-    a_shared = a.share(*locations, field=field, crypto_provider=crypto_provider).child
-    b_shared = b.share(*locations, field=field, crypto_provider=crypto_provider).child
-    c_shared = c.share(*locations, field=field, crypto_provider=crypto_provider).child
+
+    res = torch.cat((a.view(-1), b.view(-1), c.view(-1)))
+
+    shares = res.share(*locations, field=field, crypto_provider=crypto_provider).child
+
+    a_shared = shares[: a.numel()].reshape(a_size)
+    b_shared = shares[a.numel() : -c.numel()].reshape(b_size)
+    c_shared = shares[-c.numel() :].reshape(c.shape)
+
     return a_shared, b_shared, c_shared
