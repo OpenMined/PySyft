@@ -238,12 +238,11 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, torch.nn.Parameter)
 
-    # Fix handle_command_function to correct this. #2637
     @staticmethod
     @overloaded.module
     def torch(module):
         def roll(tensor, shifts, **kwargs):
-            print("overloaded")
+
             int_shifts = int(shifts.item())
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
@@ -293,21 +292,29 @@ class TorchTensor(AbstractTensor):
             if args_type not in FrameworkTensor:
                 return args_type.handle_func_command(command)
 
-            # Check that the function is not overloaded
+            # build the new command
+            new_command = (cmd, None, new_args, new_kwargs)
+            # Check that the function is not overloaded - for syft tensors
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, new_command)
+                return command(*args, **kwargs)
+            except AttributeError:
+                pass
+
+            # Send it to the appropriate class and get the response
+            response = new_type.handle_func_command(new_command)
+            # Put back the wrappers where needed
+            response = hook_args.hook_response(cmd, response, wrap_type=args_type)
+        except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
+
+            # Check that the function is not overloaded - for pure tensors
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
                 return command(*args, **kwargs)
             except AttributeError:
                 pass
-
-            # build the new command
-            new_command = (cmd, None, new_args, new_kwargs)
-            # Send it to the appropriate class and get the response
-            response = new_type.handle_func_command(new_command)
-            # Put back the wrappers where needed
-            response = hook_args.hook_response(cmd, response, wrap_type=args_type)
-        except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
 
             # TODO: clean this line
             cmd = (
