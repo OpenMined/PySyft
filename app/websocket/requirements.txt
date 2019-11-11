@@ -12,8 +12,6 @@ redis==3.2.1
 Werkzeug==0.15.3
 git+git://github.com/OpenMined/PySyft@dev
 git+git://github.com/OpenMined/Grid@dev
-https://files.pythonhosted.org/packages/4e/ba/d78f35357995297206790fe1af8688bc0403828c90f8e99190035196d56e/torch-1.0.1-cp37-cp37m-manylinux1_x86_64.whl; sys_platform == "linux"
-https://download.pytorch.org/whl/cpu/torch-1.0.1-cp36-cp36m-win_amd64.whl; sys_platform == "windows"
-torch; sys_platform == "darwin"
+torch == 1.3.0
 torchvision
 psycopg2-binary
