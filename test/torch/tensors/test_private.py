@@ -30,10 +30,11 @@ def test_native_private_tensor_method():
     assert isinstance(private_x.child.child, torch.Tensor)
 
 
-def test_allowed_to_get():
+def test_allow_to_get():
     """
-    Test Private Tensor allowed_to_get method.
+    Test native's private_tensor method.
     """
+
     x_tensor = torch.Tensor([1, 2, 3])
 
     # User credentials mockup
@@ -43,17 +44,19 @@ def test_allowed_to_get():
             self.password = password
 
         def __eq__(self, other):
-            return self.login == other.login and self.__password == other.password
+            if isinstance(other, UserAuthMockup):
+                return self.login == other.login and self.__password == other.password
+            else:
+                return False
 
     registered_user = UserAuthMockup("user", "password")
-    registered_user2 = UserAuthMockup("user2", "password1")
-    unregistered_user = UserAuthMockup("user3", "password2")
+    registered_certificate = "encoded_certificate"
+    unregistered_user = UserAuthMockup("example", "password")
 
-    private_x = x_tensor.private_tensor(allowed_users=(registered_user, registered_user2))
-
-    assert x_tensor.allowed_to_get(registered_user)  # Accept
-    assert x_tensor.allowed_to_get(registered_user2)  # Accept
-    assert not x_tensor.allowed_to_get(unregistered_user)  # Deny
+    private_x = x_tensor.private_tensor(allowed_users=(registered_user, registered_certificate))
+    assert private_x.allowed_to_get(registered_user)
+    assert private_x.allowed_to_get(registered_certificate)
+    assert not private_x.allowed_to_get(unregistered_user)
 
 
 def test_get_method(workers):
