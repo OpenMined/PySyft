@@ -11,6 +11,10 @@ Welcome to PyGrid's documentation!
    :caption: Contents:
 
    api/index
+   /api/gateway_api
+   /api/grid_node_rest_api
+   /api/grid_node_websocket_api
+
 
 Indices and tables
 ==================
