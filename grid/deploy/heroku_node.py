@@ -26,7 +26,7 @@ class HerokuNodeDeployment(BaseDeployment):
             app_type: choose different node app types to deploy (websocket, pg_rest_api, rest_api).
             dev_used: Choose an specific Grid repository (standard: OpenMined repositoy).
             branch: Choose an specific Grid branch (standard: dev branch).
-            env_vars: Environment vars used to configure component. 
+            env_vars: Environment vars used to configure component.
         """
         self.app_type = app_type
         self.grid_name = grid_name
@@ -85,7 +85,7 @@ class HerokuNodeDeployment(BaseDeployment):
 
         self.logs.append("Step 5: cloning heroku app code from Github")
         self.commands.append(
-            "git clone -b {} https://github.com/{}/Grid".format(
+            "git clone -b {} https://github.com/{}/PyGrid".format(
                 self.branch, self.dev_user
             )
         )

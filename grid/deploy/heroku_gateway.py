@@ -25,7 +25,7 @@ class HerokuGatewayDeployment(BaseDeployment):
             check_deps: Flag to choose if dependencies will be checked.
             dev_used: Choose an specific Grid repository (standard: OpenMined repositoy).
             branch: Choose an specific Grid branch (standard: dev branch).
-            env_vars: Environment vars used to configure component. 
+            env_vars: Environment vars used to configure component.
         """
         self.app_name = app_name
         self.check_deps = check_deps
@@ -81,7 +81,7 @@ class HerokuGatewayDeployment(BaseDeployment):
 
         self.logs.append("Step 5: cloning heroku app code from Github")
         self.commands.append(
-            "git clone -b {} https://github.com/{}/Grid".format(
+            "git clone -b {} https://github.com/{}/PyGrid".format(
                 self.branch, self.dev_user
             )
         )
