@@ -476,8 +476,7 @@ class TorchTensor(AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
         shape=None,
-        local_autograd=False,
-        preinitialize_grad=False,
+        **kwargs,
     ) -> PointerTensor:
         """Creates a pointer to the "self" torch.Tensor object.
 
@@ -498,16 +497,7 @@ class TorchTensor(AbstractTensor):
             shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
-            self,
-            location,
-            id_at_location,
-            register,
-            owner,
-            ptr_id,
-            garbage_collect_data,
-            shape,
-            local_autograd,
-            preinitialize_grad,
+            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
         )
 
         return ptr

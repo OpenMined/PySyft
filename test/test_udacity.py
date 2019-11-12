@@ -104,7 +104,7 @@ def test_section_1_differential_privacy():
 
     # differencing attack using threshold
 
-    (sum(db).float() > 49) - (sum(pdb).float() > 49)
+    (sum(db).float() > 49).float() - (sum(pdb).float() > 49).float()
 
     def query(db):
 

@@ -163,13 +163,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tensor.grad = _detail_torch_tensor(worker, grad_chain)
 
     initialize_tensor(
-        hook_self=syft.torch.hook,
-        cls=tensor,
-        is_tensor=True,
-        owner=worker,
-        id=tensor_id,
-        init_args=[],
-        kwargs={},
+        hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
     if tags is not None:
@@ -257,61 +251,6 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     return param
 
 
-#   Numpy array
-
-
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
-    """
-    This function gets the byte representation of the array
-        and stores the dtype and shape for reconstruction
-
-    Args:
-        my_array (numpy.ndarray): a numpy array
-
-    Returns:
-        list: a list holding the byte representation, shape and dtype of the array
-
-    Examples:
-
-        arr_representation = _simplify_ndarray(numpy.random.random([1000, 1000])))
-
-    """
-    arr_bytes = my_array.tobytes()
-    arr_shape = my_array.shape
-    arr_dtype = my_array.dtype.name
-
-    return (arr_bytes, arr_shape, arr_dtype)
-
-
-def _detail_ndarray(
-    worker: AbstractWorker, arr_representation: Tuple[bin, Tuple, str]
-) -> numpy.ndarray:
-    """
-    This function reconstruct a numpy array from it's byte data, the shape and the dtype
-        by first loading the byte data with the appropiate dtype and then reshaping it into the
-        original shape
-
-    Args:
-        worker: the worker doing the deserialization
-        arr_representation (tuple): a tuple holding the byte representation, shape
-        and dtype of the array
-
-    Returns:
-        numpy.ndarray: a numpy array
-
-    Examples:
-        arr = _detail_ndarray(arr_representation)
-
-    """
-    res = numpy.frombuffer(arr_representation[0], dtype=arr_representation[2]).reshape(
-        arr_representation[1]
-    )
-
-    assert type(res) == numpy.ndarray
-
-    return res
-
-
 def _simplify_torch_device(device: torch.device) -> Tuple[str]:
     return device.type
 
@@ -353,10 +292,10 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
 # in `proto.json` file of https://github.com/OpenMined/proto
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
-        numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
         torch.device: (_simplify_torch_device, _detail_torch_device),
         torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
+        torch._C.Function: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
