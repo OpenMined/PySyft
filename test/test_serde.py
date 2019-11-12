@@ -16,6 +16,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.serde import native_serde
 from syft.serde import serde
 from syft.serde import torch_serde
+from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import CompressionNotFoundException
 
@@ -138,6 +139,7 @@ def test_range_simplify(workers):
 
 def test_torch_tensor_simplify(workers):
     """This tests our ability to simplify torch.Tensor objects
+    using "torch" serialization strategy.
 
     At the time of writing, tensors simplify to a tuple where the
     first value in the tuple is the tensor's ID and the second
@@ -168,6 +170,61 @@ def test_torch_tensor_simplify(workers):
 
     # make sure tensor data type is correct
     assert type(output[1][1]) == bytes
+
+
+def test_torch_tensor_simplify_generic(workers):
+    """This tests our ability to simplify torch.Tensor objects
+    using "all" serialization strategy
+    """
+
+    worker = VirtualWorker(None, id="non-torch")
+
+    # create a tensor
+    input = Tensor(numpy.random.random((3, 3, 3)))
+
+    # simplify the tensor
+    output = serde._simplify(worker, input)
+
+    # make sure outer type is correct
+    assert type(output) == tuple
+
+    # make sure the object type ID is correct
+    # (0 for torch.Tensor)
+    assert serde.detailers[output[0]] == torch_serde._detail_torch_tensor
+
+    # make sure inner type is correct
+    assert type(output[1]) == tuple
+
+    # make sure ID is correctly encoded
+    assert output[1][0] == input.id
+
+    # make sure tensor data type is correct
+    assert type(output[1][1]) == tuple
+    assert type(output[1][1][1]) == tuple
+
+    # make sure tensor data matches
+    assert output[1][1][1][0][1] == input.size()
+    assert output[1][1][1][2][1] == tuple(input.flatten().tolist())
+
+
+def test_torch_tensor_serde_generic(workers):
+    """This tests our ability to ser-de torch.Tensor objects
+    using "all" serialization strategy
+    """
+
+    worker = VirtualWorker(None, id="non-torch")
+
+    # create a tensor
+    input = Tensor(numpy.random.random((100, 100)))
+
+    # ser-de the tensor
+    output = serde._simplify(worker, input)
+    detailed = serde._detail(worker, output)
+
+    # check tensor contents
+    assert input.size() == detailed.size()
+    assert input.dtype == detailed.dtype
+    assert (input == detailed).all()
 
 
 def test_tensor_gradient_serde():

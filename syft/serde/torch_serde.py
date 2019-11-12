@@ -16,6 +16,28 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft.codes import TENSOR_SERIALIZATION
+
+# Torch dtypes to string (and back) mappers
+TORCH_DTYPE_STR = {
+    torch.uint8: "uint8",
+    torch.int8: "int8",
+    torch.int16: "int16",
+    torch.int32: "int32",
+    torch.int64: "int64",
+    torch.float16: "float16",
+    torch.float32: "float32",
+    torch.float64: "float64",
+    torch.complex32: "complex32",
+    torch.complex64: "complex64",
+    torch.complex128: "complex128",
+    torch.bool: "bool",
+    torch.qint8: "qint8",
+    torch.quint8: "quint8",
+    torch.qint32: "qint32",
+    torch.bfloat16: "bfloat16",
+}
+TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
 
 
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
@@ -29,28 +51,45 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
         A serialized version of the input tensor
 
     """
-    if worker.serializer == "torch":
-        return torch_tensor_serializer(tensor)
-    else:
-        raise NotImplementedError("Can't serialize torch tensor without the torch.pickler")
-        # TODO: add another serializer if worker.serializer == 'all' --> @Vova
-        # TODO: Also good place to call numpy_tensor_serializer if worker.serializer == 'numpy'
+    serializers = {
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
+        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
+        TENSOR_SERIALIZATION.ALL: generic_tensor_serializer,
+    }
+    if worker.serializer not in serializers:
+        raise NotImplementedError(
+            f"Tensor serialization strategy is not supported: {worker.serializer}"
+        )
+    serializer = serializers[worker.serializer]
+    return serializer(worker, tensor)
 
 
-def _deserialize_tensor(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
+def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> torch.Tensor:
     """Deserialize the input tensor passed as parameter into a Torch tensor.
-    This function can be overridden to provide different deserialization strategies
+    `serializer` parameter selects different deserialization strategies
 
     Args
-        tensor_bin: A binary representation of a tensor
+        worker: Worker
+        serializer: Strategy used for tensor deserialization (e.g.: torch, numpy, all)
+        tensor_bin: A simplified representation of a tensor
 
     Returns
         a Torch tensor
     """
-    return torch_tensor_deserializer(tensor_bin)
+    deserializers = {
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
+        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
+        TENSOR_SERIALIZATION.ALL: generic_tensor_deserializer,
+    }
+    if serializer not in deserializers:
+        raise NotImplementedError(
+            f"Cannot deserialize tensor serialized with '{serializer}' strategy"
+        )
+    deserializer = deserializers[serializer]
+    return deserializer(worker, tensor_bin)
 
 
-def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
+def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     """Strategy to serialize a tensor using numpy npy format.
     If tensor requires to calculate gradients, it will be detached.
     """
@@ -69,7 +108,30 @@ def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     return outfile.read()
 
 
-def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
+def generic_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> tuple:
+    """Strategy to serialize a tensor to native python types.
+    If tensor requires to calculate gradients, it will be detached.
+    """
+    if tensor.requires_grad:
+        warnings.warn(
+            "Torch to native serializer can only be used with tensors that do not require grad. "
+            "Detaching tensor to continue"
+        )
+        tensor = tensor.detach()
+
+    tensor_tuple = (tuple(tensor.size()), TORCH_DTYPE_STR[tensor.dtype], tensor.flatten().tolist())
+    return syft.serde._simplify(worker, tensor_tuple)
+
+
+def generic_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
+    """"Strategy to deserialize a simplified tensor into a Torch tensor"""
+
+    size, dtype, data_arr = syft.serde._detail(worker, tensor_tuple)
+    tensor = torch.tensor(data_arr, dtype=TORCH_STR_DTYPE[dtype]).reshape(size)
+    return tensor
+
+
+def numpy_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
     """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
     input_file = TemporaryFile()
     input_file.write(tensor_bin)
@@ -78,14 +140,14 @@ def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
     return torch.from_numpy(numpy.load(input_file))
 
 
-def torch_tensor_serializer(tensor) -> bin:
+def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
     """Strategy to serialize a tensor using Torch saver"""
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     return binary_stream.getvalue()
 
 
-def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
+def torch_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Torch load"""
     bin_tensor_stream = io.BytesIO(tensor_bin)
     return torch.load(bin_tensor_stream)
@@ -140,7 +202,15 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     tags = tensor.tags
     if tags is not None:
         tags = list(tags)
-    return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
+    return (
+        tensor.id,
+        tensor_bin,
+        chain,
+        grad_chain,
+        tags,
+        tensor.description,
+        syft.serde._simplify(worker, worker.serializer),
+    )
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -158,9 +228,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain, tags, description, serializer = tensor_tuple
 
-    tensor = _deserialize_tensor(worker, tensor_bin)
+    tensor = _deserialize_tensor(worker, syft.serde._detail(worker, serializer), tensor_bin)
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino
