@@ -8,6 +8,18 @@ import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 
 
+class DependencyError(Exception):
+    def __init__(self, package, pypi_alias=None):
+        if pypi_alias is None:
+            pypi_alias = package
+        message = (
+            f"The {package} dependency is not installed. If you intend"
+            " to use it, please install it at your command line with "
+            f"`pip install {pypi_alias}`."
+        )
+        super().__init__(message)
+
+
 class PureFrameworkTensorFoundError(BaseException):
     """Exception raised for errors in the input.
     This error is used in a recursive analysis of the args provided as an
@@ -43,9 +55,7 @@ class InvalidTensorForRemoteGet(Exception):
     """Raised when a chain of pointer tensors is not provided for `remote_get`."""
 
     def __init__(self, tensor: object):
-        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
-            tensor
-        )
+        message = f"Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {tensor}."
         super().__init__(message)
 
 
@@ -136,7 +146,8 @@ class TensorsNotCollocatedException(Exception):
 
 class ResponseSignatureError(Exception):
     """Raised when the return of a hooked function is not correctly predicted
-    (when defining in advance ids for results)"""
+    (when defining in advance ids for results)
+    """
 
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
@@ -239,7 +250,7 @@ class PlanCommandUnknownError(Exception):
     """Raised when an unknown plan command execution is requested."""
 
     def __init__(self, command_name: object):
-        message = "Command {} is not implemented.".format(command_name)
+        message = f"Command {command_name} is not implemented."
         super().__init__(message)
 
 
@@ -272,6 +283,24 @@ class ObjectNotFoundError(Exception):
             "make sure you haven't already called .get() on this pointer!!!"
         )
         super().__init__(message)
+
+
+class InvalidProtocolFileError(Exception):
+    """Raised when PySyft protocol file cannot be loaded."""
+
+    pass
+
+
+class UndefinedProtocolTypeError(Exception):
+    """Raised when trying to serialize type that is not defined in protocol file."""
+
+    pass
+
+
+class UndefinedProtocolTypePropertyError(Exception):
+    """Raised when trying to get protocol type property that is not defined in protocol file."""
+
+    pass
 
 
 def route_method_exception(exception, self, args, kwargs):
