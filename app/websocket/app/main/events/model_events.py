@@ -102,7 +102,7 @@ def run_inference(message: dict) -> str:
             response (str) : Model's inference.
     """
     response = mm.get_model_with_id(message["model_id"])
-    if response[RESPONSE_MSG.SUCESS]:
+    if response[RESPONSE_MSG.SUCCESS]:
         model = response["model"]
 
         # serializing the data from GET request
