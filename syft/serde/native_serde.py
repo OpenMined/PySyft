@@ -394,7 +394,8 @@ def _detail_numpy_number(
 
 
 # Maps a type to a tuple containing its simplifier and detailer function
-# IMPORTANT: keep this structure sorted A-Z (by type name)
+# IMPORTANT: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         dict: (_simplify_dictionary, _detail_dictionary),

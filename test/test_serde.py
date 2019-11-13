@@ -30,11 +30,11 @@ def test_tuple_simplify(workers):
 
     me = workers["me"]
     input = ("hello", "world")
-    tuple_detail_index = serde.detailers.index(native_serde._detail_collection_tuple)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
+    tuple_detail_code = serde.proto_type_info(tuple).code
+    str_detail_code = serde.proto_type_info(str).code
     target = (
-        tuple_detail_index,
-        ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))),
+        tuple_detail_code,
+        ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",)))
     )
     assert serde._simplify(me, input) == target
 
@@ -48,9 +48,9 @@ def test_list_simplify(workers):
 
     me = workers["me"]
     input = ["hello", "world"]
-    list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (list_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
+    list_detail_code = serde.proto_type_info(list).code
+    str_detail_code = serde.proto_type_info(str).code
+    target = (list_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
     assert serde._simplify(me, input) == target
 
 
@@ -63,9 +63,9 @@ def test_set_simplify(workers):
 
     me = workers["me"]
     input = set(["hello", "world"])
-    set_detail_index = serde.detailers.index(native_serde._detail_collection_set)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (set_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
+    set_detail_code = serde.proto_type_info(set).code
+    str_detail_code = serde.proto_type_info(str).code
+    target = (set_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
     assert serde._simplify(me, input)[0] == target[0]
     assert set(serde._simplify(me, input)[1]) == set(target[1])
 
@@ -102,7 +102,7 @@ def test_string_simplify(workers):
 
     me = workers["me"]
     input = "hello"
-    target = (serde.detailers.index(native_serde._detail_str), (b"hello",))
+    target = (serde.proto_type_info(str).code, (b"hello",))
     assert serde._simplify(me, input) == target
 
 
@@ -115,11 +115,11 @@ def test_dict_simplify(workers):
 
     me = workers["me"]
     input = {"hello": "world"}
-    detail_dict_index = serde.detailers.index(native_serde._detail_dictionary)
-    detail_str_index = serde.detailers.index(native_serde._detail_str)
+    detail_dict_code = serde.proto_type_info(dict).code
+    detail_str_code = serde.proto_type_info(str).code
     target = (
-        detail_dict_index,
-        (((detail_str_index, (b"hello",)), (detail_str_index, (b"world",))),),
+        detail_dict_code,
+        (((detail_str_code, (b"hello",)), (detail_str_code, (b"world",))),),
     )
     assert serde._simplify(me, input) == target
 
@@ -133,7 +133,7 @@ def test_range_simplify(workers):
 
     me = workers["me"]
     input = range(1, 3, 4)
-    target = (serde.detailers.index(native_serde._detail_range), (1, 3, 4))
+    target = (serde.proto_type_info(range).code, (1, 3, 4))
     assert serde._simplify(me, input) == target
 
 

@@ -12,8 +12,21 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+def get_requirements(req_file):
+    """Read requirements file and return packages and git repos separately"""
+    requirements = []
+    dependency_links = []
+    lines = read(req_file).split("\n")
+    for line in lines:
+        if line.startswith("git+"):
+            dependency_links.append(line)
+        else:
+            requirements.append(line)
+    return requirements, dependency_links
+
+
 REQ_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pip-dep")
-core_reqs = read(os.path.join(REQ_DIR, "requirements.txt")).split("\n")
+core_reqs, core_dependency_links = get_requirements(os.path.join(REQ_DIR, "requirements.txt"))
 udacity_extras = read(os.path.join(REQ_DIR, "requirements_udacity.txt")).split("\n")
 tensorflow_extras = read(os.path.join(REQ_DIR, "requirements_tensorflow.txt")).split("\n")
 sandbox_extras = ["scikit-learn>=0.21.0"]
@@ -38,6 +51,7 @@ setup(
         "sandbox": sandbox_extras,
         "tensorflow": tensorflow_extras,
     },
+    dependency_links=core_dependency_links,
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "pytest-flake8"],
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
