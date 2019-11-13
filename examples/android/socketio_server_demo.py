@@ -28,5 +28,5 @@ def _payload(location):
 
 if __name__ == "__main__":
     hook = sy.TorchHook(torch)
-    server_worker = WebsocketIOServerWorker(hook, "localhost", 5000, log_msgs=True)
+    server_worker = WebsocketIOServerWorker(hook, "0.0.0.0", 5000, log_msgs=True)
     server_worker.start()
