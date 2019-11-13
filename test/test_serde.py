@@ -32,10 +32,7 @@ def test_tuple_simplify(workers):
     input = ("hello", "world")
     tuple_detail_code = serde.proto_type_info(tuple).code
     str_detail_code = serde.proto_type_info(str).code
-    target = (
-        tuple_detail_code,
-        ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",)))
-    )
+    target = (tuple_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
     assert serde._simplify(me, input) == target
 
 
@@ -117,10 +114,7 @@ def test_dict_simplify(workers):
     input = {"hello": "world"}
     detail_dict_code = serde.proto_type_info(dict).code
     detail_str_code = serde.proto_type_info(str).code
-    target = (
-        detail_dict_code,
-        (((detail_str_code, (b"hello",)), (detail_str_code, (b"world",))),),
-    )
+    target = (detail_dict_code, (((detail_str_code, (b"hello",)), (detail_str_code, (b"world",))),))
     assert serde._simplify(me, input) == target
 
 
