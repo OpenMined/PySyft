@@ -86,7 +86,11 @@ if dependency_check.tensorflow_available:
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
+from syft.serde.proto import proto_type_info
+
 # Maps a type to a tuple containing its simplifier and detailer function
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
@@ -94,6 +98,8 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 )
 
 # If an object implements its own simplify and detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
@@ -124,9 +130,13 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 
 # For registering syft objects with custom simplify and detail methods
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -196,24 +206,25 @@ def _generate_simplifiers_and_detailers():
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
 
+    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
+    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
+    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
+    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
     Returns:
         The simplifiers, forced_full_simplifiers, detailers
     """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
-    detailers = []
+    detailers = OrderedDict()
 
     def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
-        if detailer in detailers:
-            curr_index = detailers.index(detailer)
-        else:
-            curr_index = len(detailers)
-            detailers.append(detailer)
-
+        type_info = proto_type_info(curr_type)
         if forced:
-            forced_full_simplifiers[curr_type] = (curr_index, simplifier)
+            forced_full_simplifiers[curr_type] = (type_info.forced_code, simplifier)
+            detailers[type_info.forced_code] = detailer
         else:
-            simplifiers[curr_type] = (curr_index, simplifier)
+            simplifiers[curr_type] = (type_info.code, simplifier)
+            detailers[type_info.code] = detailer
 
     # Register native and torch types
     for curr_type in MAP_TO_SIMPLIFIERS_AND_DETAILERS:
