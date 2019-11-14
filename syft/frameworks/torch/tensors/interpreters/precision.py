@@ -777,10 +777,11 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @staticmethod
-    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "FixedPrecisionTensor") -> tuple:
         """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
+            worker: the worker doing the serialization
             tensor: a FixedPrecisionTensor.
 
         Returns:
@@ -788,16 +789,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(worker, tensor.id),
             tensor.field,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde._simplify(worker, tensor.tags),
+            syft.serde._simplify(worker, tensor.description),
             chain,
         )
 

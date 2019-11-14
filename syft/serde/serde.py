@@ -152,7 +152,7 @@ scheme_to_bytes = {
 }
 
 ## SECTION: High Level Simplification Router
-def _force_full_simplify(obj: object) -> object:
+def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     """To force a full simplify generally if the usual _simplify is not suitable.
 
     If we can not full simplify a object we simplify it as usual instead.
@@ -169,12 +169,12 @@ def _force_full_simplify(obj: object) -> object:
     if current_type in forced_full_simplifiers:
         result = (
             forced_full_simplifiers[current_type][0],
-            forced_full_simplifiers[current_type][1](obj),
+            forced_full_simplifiers[current_type][1](worker, obj),
         )
     # If we already tried to find a full simplifier for this type but failed, we should
     # simplify it instead.
     elif current_type in no_full_simplifiers_found:
-        return _simplify(obj)
+        return _simplify(worker, obj)
     else:
         # If the object type is not in forced_full_simplifiers,
         # we check the classes that this object inherits from.
@@ -255,6 +255,7 @@ no_simplifiers_found, no_full_simplifiers_found = set(), set()
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
+    worker: AbstractWorker = None,
     simplified: bool = False,
     force_no_compression: bool = False,
     force_no_serialization: bool = False,
@@ -289,15 +290,19 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
         if force_full_simplification:
-            simple_objects = _force_full_simplify(obj)
+            simple_objects = _force_full_simplify(worker, obj)
         else:
-            simple_objects = _simplify(obj)
+            simple_objects = _simplify(worker, obj)
     else:
         simple_objects = obj
 
@@ -475,7 +480,7 @@ def _decompress(binary: bin) -> bin:
         )
 
 
-def _simplify(obj: object) -> object:
+def _simplify(worker: AbstractWorker, obj: object) -> object:
     """
     This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
@@ -503,7 +508,7 @@ def _simplify(obj: object) -> object:
     # breakpoint()
     current_type = type(obj)
     if current_type in simplifiers:
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+        result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
         return result
 
     # If we already tried to find a simplifier for this type but failed, we should
@@ -525,7 +530,7 @@ def _simplify(obj: object) -> object:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
                 simplifiers[current_type] = simplifiers[inheritance_type]
-                result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+                result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
                 return result
 
         # if there is not a simplifier for this

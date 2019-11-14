@@ -401,10 +401,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return self.eq(other)
 
     @staticmethod
-    def simplify(ptr: "PointerTensor") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "PointerTensor") -> tuple:
         """
         This function takes the attributes of a PointerTensor and saves them in a dictionary
         Args:
+            worker (AbstractWorker): the worker doing the serialization
             ptr (PointerTensor): a PointerTensor
         Returns:
             tuple: a tuple holding the unique attributes of the pointer
@@ -417,7 +418,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr.id_at_location,
             ptr.location.id,
             ptr.point_to_attr,
-            syft.serde._simplify(ptr._shape),
+            syft.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
         )
 
