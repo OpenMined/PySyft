@@ -140,7 +140,7 @@ class PrivateTensor(AbstractTensor):
         module.nn = nn
 
     @staticmethod
-    def simplify(tensor: "PrivateTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "PrivateTensor") -> tuple:
         """Takes the attributes of a PrivateTensor and saves them in a tuple.
 
         Args:
@@ -152,13 +152,13 @@ class PrivateTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(worker, tensor.id),
             tensor.allowed_users,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde._simplify(worker, tensor.tags),
+            syft.serde._simplify(worker, tensor.description),
             chain,
         )
 
@@ -183,7 +183,6 @@ class PrivateTensor(AbstractTensor):
             tags=syft.serde._detail(worker, tags),
             description=syft.serde._detail(worker, description),
         )
-
         tensor.allowed_users = [user.decode("utf-8") for user in allowed_users]
 
         if chain is not None:
