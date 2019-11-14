@@ -7,6 +7,7 @@ from typing import Tuple
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 
+
 class DependencyError(Exception):
     def __init__(self, package, pypi_alias=None):
         if pypi_alias is None:
