@@ -131,7 +131,7 @@ class LoggingTensor(AbstractTensor):
         print("Default log", cmd)
 
     @staticmethod
-    def simplify(tensor: "LoggingTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "LoggingTensor") -> tuple:
         """
         This function takes the attributes of a LogTensor and saves them in a tuple
         Args:
@@ -144,8 +144,8 @@ class LoggingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
-        return (tensor.id, chain)
+            chain = sy.serde._simplify(worker, tensor.child)
+        return tensor.id, chain
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
