@@ -155,7 +155,7 @@ class TorchHook(FrameworkHook):
         # Add all hooked tensor methods to PrivateTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
-        self._hook_syft_tensor_methods(PrivateTensor)
+        self._hook_private_tensor_methods(PrivateTensor)
 
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
@@ -244,6 +244,10 @@ class TorchHook(FrameworkHook):
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
         super()._hook_syft_tensor_methods(tensor_type, syft_type)
+
+    def _hook_private_tensor_methods(self, syft_type: type):
+        tensor_type = self.torch.Tensor
+        super()._hook_private_tensor_methods(tensor_type, syft_type)
 
     def _hook_additive_shared_tensor_methods(self):
         """
