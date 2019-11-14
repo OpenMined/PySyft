@@ -1023,8 +1023,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             return codes.TENSOR_SERIALIZATION.ALL
 
     @staticmethod
-    def simplify(self: AbstractWorker, worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(worker, worker.id),)
+    def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:

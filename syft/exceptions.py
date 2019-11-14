@@ -7,7 +7,6 @@ from typing import Tuple
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 
-
 class DependencyError(Exception):
     def __init__(self, package, pypi_alias=None):
         if pypi_alias is None:
@@ -159,7 +158,7 @@ class ResponseSignatureError(Exception):
         return {"ids_generated": self.ids_generated}
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -173,7 +172,7 @@ class ResponseSignatureError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -202,7 +201,7 @@ class GetNotPermittedError(Exception):
     get to be called on it. This can happen do to sensitivity being too high"""
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -216,7 +215,7 @@ class GetNotPermittedError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
