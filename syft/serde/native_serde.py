@@ -18,7 +18,7 @@ from syft import serde
 # Simplify/Detail Collections (list, set, tuple, etc.)
 
 
-def _simplify_collection(my_collection: Collection) -> Tuple:
+def _simplify_collection(worker: AbstractWorker, my_collection: Collection) -> Tuple:
     """
     This function is designed to search a collection for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
@@ -41,7 +41,7 @@ def _simplify_collection(my_collection: Collection) -> Tuple:
 
     # Step 1: serialize each part of the collection
     for part in my_collection:
-        pieces.append(serde._simplify(part))
+        pieces.append(serde._simplify(worker, part))
 
     # Step 2: return serialization as tuple of simplified items
     return tuple(pieces)
@@ -132,7 +132,7 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
     return tuple(pieces)
 
 
-def _simplify_dictionary(my_dict: Dict) -> Tuple:
+def _simplify_dictionary(worker: AbstractWorker, my_dict: Dict) -> Tuple:
     """
     This function is designed to search a dict for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
@@ -152,7 +152,7 @@ def _simplify_dictionary(my_dict: Dict) -> Tuple:
     pieces = list()
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
-        pieces.append((serde._simplify(key), serde._simplify(value)))
+        pieces.append((serde._simplify(worker, key), serde._simplify(worker, value)))
 
     return tuple(pieces)
 
@@ -191,7 +191,7 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
 # Simplify/Detail native types
 
 
-def _simplify_str(obj: str) -> tuple:
+def _simplify_str(worker: AbstractWorker, obj: str) -> tuple:
     return (obj.encode("utf-8"),)
 
 
@@ -199,7 +199,7 @@ def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
 
 
-def _simplify_range(my_range: range) -> Tuple[int, int, int]:
+def _simplify_range(worker: AbstractWorker, my_range: range) -> Tuple[int, int, int]:
     """
     This function extracts the start, stop and step from the range.
 
@@ -242,7 +242,7 @@ def _detail_range(worker: AbstractWorker, my_range_params: Tuple[int, int, int])
     return range(my_range_params[0], my_range_params[1], my_range_params[2])
 
 
-def _simplify_ellipsis(e: Ellipsis) -> bytes:
+def _simplify_ellipsis(worker: AbstractWorker, e: Ellipsis) -> bytes:
     return b""
 
 
@@ -250,7 +250,7 @@ def _detail_ellipsis(worker: AbstractWorker, ellipsis: bytes) -> Ellipsis:
     return ...
 
 
-def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
+def _simplify_slice(worker: AbstractWorker, my_slice: slice) -> Tuple[int, int, int]:
     """
     This function creates a list that represents a slice.
 
@@ -291,7 +291,7 @@ def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> sli
 #   Numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
+def _simplify_ndarray(worker: AbstractWorker, my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
@@ -344,7 +344,7 @@ def _detail_ndarray(
 
 
 def _simplify_numpy_number(
-    numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
+    worker: AbstractWorker, numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
 ) -> Tuple[bin, Tuple]:
     """
     This function gets the byte representation of the numpy number
@@ -358,7 +358,7 @@ def _simplify_numpy_number(
 
     Examples:
 
-        np_representation = _simplify_numpy_number(numpy.float64(2.3)))
+        np_representation = _simplify_numpy_number(worker, numpy.float64(2.3)))
 
     """
     nb_bytes = numpy_nb.tobytes()
