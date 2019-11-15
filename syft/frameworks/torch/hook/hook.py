@@ -294,21 +294,18 @@ class TorchHook(FrameworkHook):
 
         # torch.nn.Parameter.__repr__ = hooked__repr__
 
-        # Hook .data to handle chain assignment when needed
-        torch.nn.Parameter.native_param_data = torch.nn.Parameter.data
-
         def get_data(self):
             if hasattr(self, "child"):
                 to_return = self.child.attr("data")
             else:
-                to_return = self.native_param_data
+                to_return = self.native_data
 
                 # good to ensure that the ID stays consistent
                 # not 100% this is required but it's at least
                 # good practice
                 try:
                     to_return.id = self.data_id
-                except:
+                except AttributeError:
                     self.data_id = to_return.id
 
             return to_return
@@ -323,7 +320,7 @@ class TorchHook(FrameworkHook):
                     del self.child
 
                 with torch.no_grad():
-                    self.native_param_data = new_data
+                    self.native_data = new_data
             return self
 
         torch.nn.Parameter.data = property(fget=get_data, fset=set_data)
@@ -523,7 +520,6 @@ class TorchHook(FrameworkHook):
             "__ge__",
             "__lt__",
             "__le__",
-            "data",
         ]
         cls._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
 

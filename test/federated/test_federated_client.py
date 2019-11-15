@@ -271,7 +271,9 @@ def test_evaluate():  # pragma: no cover
         epochs=2,
     )
     fed_client.set_obj(train_config)
-    train_model(fed_client, dataset_key, available_dataset_key=dataset_key, nr_rounds=50)
+    train_model(
+        fed_client, dataset_key, available_dataset_key=dataset_key, nr_rounds=50, device="cpu"
+    )
 
     result = fed_client.evaluate(
         dataset_key=dataset_key, return_histograms=True, nr_bins=3, return_loss=True
