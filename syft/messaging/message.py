@@ -49,11 +49,12 @@ class Message:
         return (self.contents,)
 
     @staticmethod
-    def simplify(ptr: "Message") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "Message") -> tuple:
         """
         This function takes the attributes of a Message and saves them in a tuple.
         The detail() method runs the inverse of this method.
         Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
             ptr (Message): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
@@ -61,7 +62,7 @@ class Message:
             data = simplify(ptr)
         """
 
-        return (sy.serde._simplify(ptr.contents),)
+        return (sy.serde._simplify(worker, ptr.contents),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
@@ -141,10 +142,11 @@ class Operation(Message):
         return (self.message, self.return_ids)
 
     @staticmethod
-    def simplify(ptr: "Operation") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "Operation") -> tuple:
         """
         This function takes the attributes of a Operation and saves them in a tuple
         Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
             ptr (Operation): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
@@ -153,7 +155,7 @@ class Operation(Message):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        return (sy.serde._simplify(ptr.message), ptr.return_ids)
+        return (sy.serde._simplify(worker, ptr.message), ptr.return_ids)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
@@ -407,17 +409,20 @@ class PlanCommandMessage(Message):
         return (self.command_name, self.message)
 
     @staticmethod
-    def simplify(ptr: "PlanCommandMessage") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "PlanCommandMessage") -> tuple:
         """
         This function takes the attributes of a PlanCommandMessage and saves them in a tuple
 
         Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
             ptr (PlanCommandMessage): a Message
 
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
-        return (sy.serde._simplify(ptr.command_name), sy.serde._simplify(ptr.message))
+        return (
+          sy.serde._simplify(worker, ptr.command_name), sy.serde._simplify(worker, ptr.message)
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "PlanCommandMessage":

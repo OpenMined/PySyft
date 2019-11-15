@@ -139,7 +139,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Declare workers as appropriate
         self._known_workers = {}
         if auto_add:
-            if hook.local_worker is not None:
+            if hook is not None and hook.local_worker is not None:
                 known_workers = self.hook.local_worker._known_workers
                 if self.id in known_workers:
                     if isinstance(known_workers[self.id], type(self)):
@@ -263,7 +263,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {message} to {location}")
 
         # Step 1: serialize the message to a binary
-        bin_message = sy.serde.serialize(message)
+        bin_message = sy.serde.serialize(message, worker=self)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
@@ -302,7 +302,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response = self._message_router[type(msg)](msg.contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
+        bin_response = sy.serde.serialize(response, worker=self)
 
         return bin_response
 
@@ -980,9 +980,50 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             return_ids = []
         return Operation((command_name, command_owner, args, kwargs), return_ids)
 
+    @property
+    def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
+        """
+        Define the serialization strategy to adopt depending on the workers it's connected to.
+        This is relevant in particular for Tensors which can be serialized in an efficient way
+        between workers which share the same Deep Learning framework, but must be converted to
+        lists or json-like objects in other cases.
+
+        Args:
+            workers: (Optional) the list of workers involved in the serialization. If not
+                provided, self._known_workers is used.
+
+        Returns:
+            A str code:
+                'all': serialization must be compatible with all kinds of workers
+                'torch': serialization will only work between workers that support PyTorch
+                (more to come: 'tensorflow', 'numpy', etc)
+        """
+        if workers is not None:
+            if not isinstance(workers, list):
+                workers = [workers]
+            workers.append(self)
+        else:
+            # self is referenced in self.__known_workers
+            # NOTE: for some reason self._known_workers may contain a Plan
+            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
+
+        frameworks = set()
+        for worker in workers:
+            if worker.framework is not None:
+                framework = worker.framework.__name__
+            else:
+                framework = "None"
+
+            frameworks.add(framework)
+
+        if len(frameworks) == 1 and frameworks == {"torch"}:
+            return codes.TENSOR_SERIALIZATION.TORCH
+        else:
+            return codes.TENSOR_SERIALIZATION.ALL
+
     @staticmethod
-    def simplify(worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(worker.id),)
+    def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:
@@ -1003,7 +1044,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def force_simplify(worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(worker.id), sy.serde._simplify(worker._objects), worker.auto_add)
+        return (
+            sy.serde._simplify(worker, worker.id),
+            sy.serde._simplify(worker, worker._objects),
+            worker.auto_add,
+        )
 
     @staticmethod
     def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
