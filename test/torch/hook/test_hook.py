@@ -6,7 +6,7 @@ import torch
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda not available")
-def test_to():
+def test_to():  # pragma: no cover
     a = torch.Tensor([1.0, 2.0, 3.0])
     assert a.is_cuda is False
     a = a.to(torch.device("cuda"))
@@ -16,7 +16,7 @@ def test_to():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda not available")
-def test_cuda():
+def test_cuda():  # pragma: no cover
     class Net(torch.nn.Module):
         def __init__(self):
             super(Net, self).__init__()
@@ -33,7 +33,7 @@ def test_cuda():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda not available")
-def test_data():
+def test_data():  # pragma: no cover
     class Net(torch.nn.Module):
         def __init__(self):
             super(Net, self).__init__()
@@ -54,7 +54,7 @@ def test_data():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda not available")
-def test_param_data():
+def test_param_data():  # pragma: no cover
     param = torch.nn.Parameter(data=torch.Tensor([2.0, 3.0]))
     data2 = torch.Tensor([4.0, 5.0]).to("cuda")
     param.data = data2

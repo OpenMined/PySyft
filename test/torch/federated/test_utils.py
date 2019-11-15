@@ -59,7 +59,7 @@ def test_add_model():
 
 
 @pytest.mark.skipif(not th.cuda.is_available(), reason="cuda not available")
-def test_add_model_cuda():
+def test_add_model_cuda():  # pragma: no cover
     class Net(th.nn.Module):
         def __init__(self):
             super(Net, self).__init__()
