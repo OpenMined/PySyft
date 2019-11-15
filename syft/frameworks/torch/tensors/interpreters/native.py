@@ -242,7 +242,6 @@ class TorchTensor(AbstractTensor):
     @overloaded.module
     def torch(module):
         def roll(tensor, shifts, **kwargs):
-
             int_shifts = int(shifts.item())
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
@@ -292,16 +291,16 @@ class TorchTensor(AbstractTensor):
             if args_type not in FrameworkTensor:
                 return args_type.handle_func_command(command)
 
-            # build the new command
-            new_command = (cmd, None, new_args, new_kwargs)
             # Check that the function is not overloaded - for syft tensors
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-                command = cls.rgetattr(cls, new_command)
+                command = cls.rgetattr(cls, cmd)
                 return command(*args, **kwargs)
             except AttributeError:
                 pass
 
+            # build the new command
+            new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
             response = new_type.handle_func_command(new_command)
             # Put back the wrappers where needed
