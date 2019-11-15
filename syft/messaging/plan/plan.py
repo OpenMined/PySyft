@@ -3,12 +3,12 @@ from typing import Tuple
 from typing import Union
 
 import syft as sy
-from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.messaging.message import Operation
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
@@ -187,18 +187,13 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
+        msg = sy.serde.deserialize(bin_message)
 
-        if (
-            msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
-            and not self.is_built
-        ):
-            self.procedure.operations.append((some_type, (msg_type, contents)))
+        if isinstance(msg, Operation):
+            # Re-deserialize without detailing
+            (msg_type, contents) = sy.serde.deserialize(bin_message, details=False)
 
-        # we can't receive the results of a plan without
-        # executing it. So, execute the plan.
-        if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
-            return self.__call__()
+            self.procedure.operations.append((msg_type, contents))
 
         return sy.serde.serialize(None)
 
