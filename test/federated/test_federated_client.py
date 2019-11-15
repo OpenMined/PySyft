@@ -109,6 +109,10 @@ def train_model(
     ],
 )
 def test_fit(fit_dataset_key, epochs, device):
+
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
 
     fed_client = FederatedClient()
