@@ -421,7 +421,8 @@ class PlanCommandMessage(Message):
             tuple: a tuple holding the unique attributes of the message
         """
         return (
-          sy.serde._simplify(worker, ptr.command_name), sy.serde._simplify(worker, ptr.message)
+            sy.serde._simplify(worker, ptr.command_name),
+            sy.serde._simplify(worker, ptr.message),
         )
 
     @staticmethod
