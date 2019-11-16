@@ -73,7 +73,7 @@ class PaillierTensor(AbstractTensor):
 
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
-        print("Log method add")
+        print("Log method __add__")
         response = getattr(_self, "__add__")(*args, **kwargs)
 
         return response
@@ -93,24 +93,6 @@ class PaillierTensor(AbstractTensor):
 
         return response
 
-    def manual_add(self, *args, **kwargs):
-        """
-        Here is the version of the add method without the decorator: as you can see
-        it is much more complicated. However you might need sometimes to specify
-        some particular behaviour: so here what to start from :)
-        """
-        # Replace all syft tensor with their child attribute
-        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
-            "add", self, args, kwargs
-        )
-
-        print("Log method manual_add")
-        # Send it to the appropriate class and get the response
-        response = getattr(new_self, "add")(*new_args, **new_kwargs)
-
-        # Put back SyftTensor on the tensors found in the response
-        response = hook_args.hook_response("add", response, wrap_type=type(self))
-        return response
 
     # Module & Function overloading
 
@@ -144,50 +126,6 @@ class PaillierTensor(AbstractTensor):
 
         # Just register it using the module variable
         module.add = add
-
-        @overloaded.function
-        def mul(x, y):
-            """
-            You can also add the @overloaded.function decorator to also
-            hook arguments, ie all the PaillierTensor are replaced with
-            their child attribute
-            """
-            print("Log function torch.mul")
-            return x * y
-
-        # Just register it using the module variable
-        module.mul = mul
-
-        # You can also overload functions in submodules!
-        @overloaded.module
-        def nn(module):
-            """
-            The syntax is the same, so @overloaded.module handles recursion
-            Note that we don't need to add the @staticmethod decorator
-            """
-
-            @overloaded.module
-            def functional(module):
-                def relu(x):
-                    print("Log function torch.nn.functional.relu")
-                    return x * (x.child > 0)
-
-                module.relu = relu
-
-            module.functional = functional
-
-        # Modules should be registered just like functions
-        module.nn = nn
-
-    @classmethod
-    def on_function_call(cls, command):
-        """
-        Override this to perform a specific action for each call of a torch
-        function with arguments containing syft tensors of the class doing
-        the overloading
-        """
-        cmd, _, args, kwargs = command
-        print("Default log", cmd)
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PaillierTensor") -> tuple:
