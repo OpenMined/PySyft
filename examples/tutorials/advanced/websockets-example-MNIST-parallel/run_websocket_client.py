@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 import syft as sy
 from syft.workers import websocket_client
-from syft.frameworks.torch.fl import utils
+from syft.frameworks.torch.federated import utils
 
 LOG_INTERVAL = 25
 
@@ -42,14 +42,14 @@ class Net(nn.Module):
 
 def define_and_get_arguments(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        description="Run fl learning using websocket client workers."
+        description="Run federated learning using websocket client workers."
     )
     parser.add_argument("--batch_size", type=int, default=32, help="batch size of the training")
     parser.add_argument(
         "--test_batch_size", type=int, default=128, help="batch size used for the test data"
     )
     parser.add_argument(
-        "--training_rounds", type=int, default=40, help="number of fl learning rounds"
+        "--training_rounds", type=int, default=40, help="number of federated learning rounds"
     )
     parser.add_argument(
         "--federate_after_n_batches",
