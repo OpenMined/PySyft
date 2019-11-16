@@ -13,7 +13,7 @@ class TrainConfig:
     """TrainConfig abstraction.
 
     A wrapper object that contains all that is needed to run a training loop
-    remotely on a fl learning setup.
+    remotely on a federated learning setup.
     """
 
     def __init__(
