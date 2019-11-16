@@ -748,7 +748,7 @@ class TorchTensor(AbstractTensor):
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
-            crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
+            crypto_provider (BaseWorker or None): The worker providing the mpc primitives.
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """

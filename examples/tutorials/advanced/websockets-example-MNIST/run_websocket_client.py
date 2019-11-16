@@ -10,7 +10,7 @@ import sys
 import syft as sy
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.virtual import VirtualWorker
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +86,11 @@ def train_on_batches(worker, batches, model_in, device, lr):
 
 
 def get_next_batches(fdataloader: sy.FederatedDataLoader, nr_batches: int):
-    """retrieve next nr_batches of the federated data loader and group
+    """retrieve next nr_batches of the fl data loader and group
     the batches by worker
 
     Args:
-        fdataloader (sy.FederatedDataLoader): federated data loader
+        fdataloader (sy.FederatedDataLoader): fl data loader
         over which the function will iterate
         nr_batches (int): number of batches (per worker) to retrieve
 
@@ -172,7 +172,7 @@ def test(model, device, test_loader):
 
 def define_and_get_arguments(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
-        description="Run federated learning using websocket client workers."
+        description="Run fl learning using websocket client workers."
     )
     parser.add_argument("--batch_size", type=int, default=64, help="batch size of the training")
     parser.add_argument(

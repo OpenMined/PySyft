@@ -46,7 +46,7 @@ from syft.grid import VirtualGrid
 from syft.sandbox import create_sandbox
 
 # Import federate learning objects
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects

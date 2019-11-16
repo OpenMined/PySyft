@@ -2,8 +2,8 @@ import math
 import torch
 
 import syft as sy
-from syft.frameworks.torch.crypto import spdz
-from syft.frameworks.torch.crypto import securenn
+from syft.frameworks.torch.mpc import spdz
+from syft.frameworks.torch.mpc import securenn
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -37,7 +37,7 @@ class AdditiveSharingTensor(AbstractTensor):
             id: An optional string or integer id of the AdditiveSharingTensor.
             field: size of the arithmetic field in which the shares live
             n_bits: linked to the field with the relation (2 ** nbits) == field
-            crypto_provider: an optional BaseWorker providing crypto elements
+            crypto_provider: an optional BaseWorker providing mpc elements
                 such as Beaver triples
             tags: an optional set of hashtags corresponding to this tensor
                 which this tensor should be searchable for
@@ -66,7 +66,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for v in self.child.values():
             out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
-            out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
+            out += "\n\t*mpc provider: {}*".format(self.crypto_provider.id)
         return out
 
     @property
@@ -557,7 +557,7 @@ class AdditiveSharingTensor(AbstractTensor):
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
             # Still no solution to perform a real division on a additive shared tensor
-            # without a heavy crypto protocol.
+            # without a heavy mpc protocol.
             # For now, the solution works in most cases when the tensor is shared between 2 workers
             # The idea is to compute Q - (Q - pointer) / divisor for as many worker
             # as the number of times the sum of shares "crosses" Q/2.

@@ -748,7 +748,7 @@ class FixedPrecisionTensor(AbstractTensor):
         Args:
             *owners: the owners of the shares of the resulting AdditiveSharingTensor
             field: the field size in which the share values live
-            crypto_provider: the worker used to provide the crypto primitives used
+            crypto_provider: the worker used to provide the mpc primitives used
                 to perform some computations on AdditiveSharingTensors
 
         Returns:

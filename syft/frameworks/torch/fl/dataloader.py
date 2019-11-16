@@ -140,7 +140,7 @@ class _DataLoaderOneWorkerIter(object):
             # If nothing is found, stop the iterator
             self.stop()
 
-    # TODO: implement a length function. It should return the number of elements of the federated dataset that are
+    # TODO: implement a length function. It should return the number of elements of the fl dataset that are
     #       located at this worker
     # def __len__(self):
     #    return len(self.federated_dataset)
