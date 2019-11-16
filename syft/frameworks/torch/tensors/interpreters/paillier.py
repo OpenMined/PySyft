@@ -3,6 +3,8 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 import syft as sy
+import numpy as np
+import torch as th
 
 
 class PaillierTensor(AbstractTensor):
@@ -16,10 +18,67 @@ class PaillierTensor(AbstractTensor):
             id: An optional string or integer id of the PaillierTensor.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        print("creating paillier tensor")
+        print("creating paillier tensor 2")
+
+    def encrypt(self, public_key):
+        """This method will encrypt each value in the tensor using Paillier
+        homomorphic encryption.
+
+        Args:
+            *public_key a public key created using
+                syft.frameworks.torch.he.paillier.keygen()
+        """
+
+        output = PaillierTensor()
+        output.child = self.child
+        output.encrypt_(public_key)
+        return output
+
+    def encrypt_(self, public_key):
+        """This method will encrypt each value in the tensor using Paillier
+        homomorphic encryption.
+
+        Args:
+            *public_key a public key created using
+                syft.frameworks.torch.he.paillier.keygen()
+        """
+
+        new_child = list()
+        for x in self.child.flatten().tolist():
+            new_child.append(public_key.encrypt(x))
+        data = np.array(new_child).reshape(self.child.shape)
+        self.child = data
+
+    def decrypt(self, private_key):
+        """This method will decrypt each value in the tensor, returning a normal
+              torch tensor.
+
+              Args:
+                  *private_key a private key created using
+                      syft.frameworks.torch.he.paillier.keygen()
+                  """
+        new_child = list()
+        for x in self.child.flatten().tolist():
+            new_child.append(private_key.decrypt(x))
+
+        return th.tensor(new_child).view(*self.child.shape)
 
     # Method overloading
+    @overloaded.method
+    def __add__(self, _self, *args, **kwargs):
+        """
+        Here is an example of how to use the @overloaded.method decorator. To see
+        what this decorator do, just look at the next method manual_add: it does
+        exactly the same but without the decorator.
 
+        Note the subtlety between self and _self: you should use _self and NOT self.
+        """
+        print("Log method add")
+        response = getattr(_self, "__add__")(*args, **kwargs)
+
+        return response
+
+    # Method overloading
     @overloaded.method
     def add(self, _self, *args, **kwargs):
         """

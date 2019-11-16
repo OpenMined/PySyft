@@ -17,7 +17,13 @@ from syft.generic.frameworks.hook.hook_args import (
 from syft.exceptions import PureFrameworkTensorFoundError
 
 
-type_rule = {torch.Tensor: one, torch.nn.Parameter: one, AutogradTensor: one, LoggingTensor: one, PaillierTensor: one}
+type_rule = {
+    torch.Tensor: one,
+    torch.nn.Parameter: one,
+    AutogradTensor: one,
+    LoggingTensor: one,
+    PaillierTensor: one,
+}
 
 forward_func = {
     torch.Tensor: lambda i: i.child
