@@ -43,23 +43,30 @@ class PaillierTensor(AbstractTensor):
                 syft.frameworks.torch.he.paillier.keygen()
         """
 
-        new_child = list()
-        for x in self.child.flatten().tolist():
-            new_child.append(public_key.encrypt(x))
+
+        import multiprocessing
+        pool = multiprocessing.Pool()
+
+        inputs = self.child.flatten().tolist()
+        new_child = pool.map(public_key.encrypt, inputs)
+
         data = np.array(new_child).reshape(self.child.shape)
         self.child = data
 
     def decrypt(self, private_key):
         """This method will decrypt each value in the tensor, returning a normal
-              torch tensor.
+        torch tensor.
 
-              Args:
-                  *private_key a private key created using
-                      syft.frameworks.torch.he.paillier.keygen()
-                  """
-        new_child = list()
-        for x in self.child.flatten().tolist():
-            new_child.append(private_key.decrypt(x))
+        =Args:
+            *private_key a private key created using
+                syft.frameworks.torch.he.paillier.keygen()
+        """
+
+        import multiprocessing
+        pool = multiprocessing.Pool()
+
+        inputs = self.child.flatten().tolist()
+        new_child = pool.map(private_key.decrypt, inputs)
 
         return th.tensor(new_child).view(*self.child.shape)
 
