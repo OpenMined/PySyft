@@ -7,7 +7,7 @@ from syft.federated.train_config import TrainConfig
 
 
 class FederatedClient(ObjectStorage):
-    """A Client able to execute fl learning in local datasets."""
+    """A Client able to execute federated learning in local datasets."""
 
     def __init__(self, datasets=None):
         super().__init__()
