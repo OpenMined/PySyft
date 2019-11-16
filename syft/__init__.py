@@ -78,6 +78,12 @@ from syft import serde
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
 
+def pool():
+    if(not hasattr(syft, "_pool")):
+        import multiprocessing
+        syft._pool = multiprocessing.Pool()
+    return syft._pool
+
 __all__.extend(
     [
         "frameworks",

@@ -43,12 +43,8 @@ class PaillierTensor(AbstractTensor):
                 syft.frameworks.torch.he.paillier.keygen()
         """
 
-
-        import multiprocessing
-        pool = multiprocessing.Pool()
-
         inputs = self.child.flatten().tolist()
-        new_child = pool.map(public_key.encrypt, inputs)
+        new_child = sy.pool().map(public_key.encrypt, inputs)
 
         data = np.array(new_child).reshape(self.child.shape)
         self.child = data
@@ -62,11 +58,8 @@ class PaillierTensor(AbstractTensor):
                 syft.frameworks.torch.he.paillier.keygen()
         """
 
-        import multiprocessing
-        pool = multiprocessing.Pool()
-
         inputs = self.child.flatten().tolist()
-        new_child = pool.map(private_key.decrypt, inputs)
+        new_child = sy.pool().map(private_key.decrypt, inputs)
 
         return th.tensor(new_child).view(*self.child.shape)
 
