@@ -16,6 +16,7 @@ class PaillierTensor(AbstractTensor):
             id: An optional string or integer id of the PaillierTensor.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
+        print("creating paillier tensor")
 
     # Method overloading
 
