@@ -27,7 +27,7 @@ class EncryptedLinearRegression:
     Reference: Section 2 of https://arxiv.org/abs/1901.09531
 
     Args:
-        crypto_provider: a BaseWorker providing mpc elements for ASTs such as
+        crypto_provider: a BaseWorker providing crypto elements for ASTs such as
             Beaver triples
         hbc_worker: The "Honest but Curious" BaseWorker
         precision_fractional: precision chosen for FixedPrecisionTensors

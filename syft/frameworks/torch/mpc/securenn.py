@@ -131,7 +131,7 @@ def private_compare(x_bit_sh, r, beta):
         x (AdditiveSharedTensor): the private tensor
         r (MultiPointerTensor): the threshold commonly held by alice and bob
         beta (MultiPointerTensor): a boolean commonly held by alice and bob to
-            hide the result of computation for the mpc provider
+            hide the result of computation for the crypto provider
 
     return:
         β′ = β ⊕ (x > r).
