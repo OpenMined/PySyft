@@ -183,9 +183,13 @@ class TorchHook(FrameworkHook):
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 
-    def create_wrapper(cls, child_to_wrap):
+    def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
+        assert (
+            wrapper_type is None or wrapper_type == torch.Tensor
+        ), "TorchHook only uses torch.Tensor wrappers"
+
         return torch.Tensor()
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
@@ -223,9 +227,14 @@ class TorchHook(FrameworkHook):
         # #self._rename_native_functions(tensor_type)
 
         # Overload auto overloaded with Torch methods
-        self._add_methods_from_native_tensor(tensor_type, syft_type)
+        self._transfer_methods_to_native_tensor(tensor_type, syft_type)
 
         self._hook_native_methods(tensor_type)
+
+    def __hook_properties(self, tensor_type):
+
+        super()._hook_properties(tensor_type)
+        tensor_type.native_shape = tensor_type.shape
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
@@ -413,19 +422,19 @@ class TorchHook(FrameworkHook):
                 if "native_" in func or f"native_{func}" in dir(torch_module):
                     continue
 
-                self._perform_function_overloading(torch_module, func)
+                self._perform_function_overloading(module_name, torch_module, func)
 
     @classmethod
-    def _get_hooked_func(cls, attr):
+    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
         """Torch-specific implementation. See the subclass for more."""
         if attr.__module__ is None:
             attr.__module__ = "torch"
 
-        return super()._get_hooked_func(attr)
+        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
-        Hook a method to send it multiple recmote workers
+        Hook a method to send it multiple remote workers
 
         Args:
             attr (str): the method to hook
@@ -484,7 +493,8 @@ class TorchHook(FrameworkHook):
 
         hook_self.torch.tensor = new_tensor
 
-    def _add_methods_from_native_tensor(cls, tensor_type: type, syft_type: type):
+    @classmethod
+    def _transfer_methods_to_native_tensor(cls, tensor_type: type, syft_type: type):
         """Adds methods from the TorchTensor class to the native torch tensor.
 
         The class TorchTensor is a proxy to avoid extending directly the torch
@@ -521,7 +531,7 @@ class TorchHook(FrameworkHook):
             "__lt__",
             "__le__",
         ]
-        super()._add_methods_from_native_tensor(tensor_type, syft_type, exclude)
+        cls._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module

@@ -30,6 +30,14 @@ def test_encode_decode(workers, parameter):
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
 
+def test_fix_prec_registration(hook):
+    with hook.local_worker.registration_enabled():
+        x = torch.tensor([1.0])
+        x_fpt = x.fix_precision()
+
+        assert hook.local_worker.get_obj(x.id) == x
+
+
 def test_inplace_encode_decode(workers):
 
     x = torch.tensor([0.1, 0.2, 0.3])
@@ -38,6 +46,17 @@ def test_inplace_encode_decode(workers):
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
+
+    x = torch.tensor([3.0]).fix_precision()
+    assert x.float_prec_().is_wrapper is False
+
+
+def test_fix_prec_inplace_registration(hook):
+
+    with hook.local_worker.registration_enabled():
+        x = torch.tensor([1.0])
+        x.fix_precision_()
+        assert hook.local_worker.get_obj(x.id) == torch.tensor([1.0]).fix_precision()
 
 
 def test_add_method():

@@ -12,6 +12,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ObjectNotFoundError
 
 
 def test_send_msg():
@@ -201,10 +202,8 @@ def test_obj_not_found(workers):
 
     bob._objects = {}
 
-    try:
+    with pytest.raises(ObjectNotFoundError):
         y = x + x
-    except KeyError as e:
-        assert "If you think this tensor does exist" in str(e)
 
 
 def test_get_not_permitted(workers):
@@ -230,10 +229,6 @@ def test_spinup_time(hook):
     assert (end_time - start_time) < 0.05
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     bob = workers["bob"]
 

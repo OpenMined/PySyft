@@ -1,22 +1,15 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision import transforms, datasets
-
 import logging
 import argparse
 import sys
 import asyncio
 import numpy as np
-
-FORMAT = "%(asctime)s %(message)s"
-logging.basicConfig(format=FORMAT)
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 import syft as sy
-from syft import workers
+from syft.workers import websocket_client
 from syft.frameworks.torch.federated import utils
-
-logger = logging.getLogger(__name__)
 
 LOG_INTERVAL = 25
 
@@ -80,7 +73,7 @@ def define_and_get_arguments(args=sys.argv[1:]):
 
 
 async def fit_model_on_worker(
-    worker: workers.WebsocketClientWorker,
+    worker: websocket_client.WebsocketClientWorker,
     traced_model: torch.jit.ScriptModule,
     batch_size: int,
     curr_round: int,
@@ -114,9 +107,7 @@ async def fit_model_on_worker(
         optimizer_args={"lr": lr},
     )
     train_config.send(worker)
-    logger.info("Training round %s, calling fit on worker: %s", curr_round, worker.id)
     loss = await worker.async_fit(dataset_key="mnist", return_ids=[0])
-    logger.info("Training round: %s, worker: %s, avg_loss: %s", curr_round, worker.id, loss.mean())
     model = train_config.model_ptr.get().obj
     return worker.id, model, loss
 
@@ -148,19 +139,19 @@ def evaluate_model_on_worker(
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
-    logger.info("%s: Prediction hist.: %s", model_identifier, hist_pred)
+    percentage_0_3 = int(100 * sum(hist_pred[0:4]) / len_dataset)
+    percentage_4_6 = int(100 * sum(hist_pred[4:7]) / len_dataset)
+    percentage_7_9 = int(100 * sum(hist_pred[7:10]) / len_dataset)
     logger.info(
-        "%s: Percentage numbers 0-3: %s", model_identifier, sum(hist_pred[0:4]) / len_dataset
-    )
-    logger.info(
-        "%s: Percentage numbers 4-6: %s", model_identifier, sum(hist_pred[4:7]) / len_dataset
-    )
-    logger.info(
-        "%s: Percentage numbers 7-9: %s", model_identifier, sum(hist_pred[7:10]) / len_dataset
+        "%s: Percentage numbers 0-3: %s%%, 4-6: %s%%, 7-9: %s%%",
+        model_identifier,
+        percentage_0_3,
+        percentage_4_6,
+        percentage_7_9,
     )
 
     logger.info(
-        "%s: Test set: Average loss: %s, Accuracy: %s/%s (%s)",
+        "%s: Average loss: %s, Accuracy: %s/%s (%s%%)",
         model_identifier,
         "{:.4f}".format(test_loss),
         correct,
@@ -175,10 +166,13 @@ async def main():
     hook = sy.TorchHook(torch)
 
     kwargs_websocket = {"hook": hook, "verbose": args.verbose, "host": "0.0.0.0"}
-    alice = workers.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
-    bob = workers.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
-    charlie = workers.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
-    testing = workers.WebsocketClientWorker(id="testing", port=8780, **kwargs_websocket)
+    alice = websocket_client.WebsocketClientWorker(id="alice", port=8777, **kwargs_websocket)
+    bob = websocket_client.WebsocketClientWorker(id="bob", port=8778, **kwargs_websocket)
+    charlie = websocket_client.WebsocketClientWorker(id="charlie", port=8779, **kwargs_websocket)
+    testing = websocket_client.WebsocketClientWorker(id="testing", port=8780, **kwargs_websocket)
+
+    for wcw in [alice, bob, charlie, testing]:
+        wcw.clear_objects_remote()
 
     worker_instances = [alice, bob, charlie]
 
@@ -194,7 +188,7 @@ async def main():
     learning_rate = args.lr
 
     for curr_round in range(1, args.training_rounds + 1):
-        logger.info("Starting training round %s/%s", curr_round, args.training_rounds)
+        logger.info("Training round %s/%s", curr_round, args.training_rounds)
 
         results = await asyncio.gather(
             *[
@@ -214,10 +208,11 @@ async def main():
 
         test_models = curr_round % 10 == 1 or curr_round == args.training_rounds
         if test_models:
+            logger.info("Evaluating models")
             np.set_printoptions(formatter={"float": "{: .0f}".format})
             for worker_id, worker_model, _ in results:
                 evaluate_model_on_worker(
-                    model_identifier=worker_id,
+                    model_identifier="Model update " + worker_id,
                     worker=testing,
                     dataset_key="mnist_testing",
                     model=worker_model,
@@ -226,12 +221,14 @@ async def main():
                     print_target_hist=False,
                 )
 
+        # Federate models (note that this will also change the model in models[0]
         for worker_id, worker_model, worker_loss in results:
             if worker_model is not None:
                 models[worker_id] = worker_model
                 loss_values[worker_id] = worker_loss
 
         traced_model = utils.federated_avg(models)
+
         if test_models:
             evaluate_model_on_worker(
                 model_identifier="Federated model",
@@ -240,7 +237,7 @@ async def main():
                 model=traced_model,
                 nr_bins=10,
                 batch_size=128,
-                print_target_hist=True,
+                print_target_hist=False,
             )
 
         # decay learning rate
@@ -252,6 +249,8 @@ async def main():
 
 if __name__ == "__main__":
     # Logging setup
+    FORMAT = "%(asctime)s | %(message)s"
+    logging.basicConfig(format=FORMAT)
     logger = logging.getLogger("run_websocket_client")
     logger.setLevel(level=logging.DEBUG)
 

@@ -86,6 +86,18 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return len(share.shape)
 
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy
+        """
+        cloned_tensor = type(self)(**self.get_class_attributes())
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+
+        cloned_tensor.child = {location: share.clone() for location, share in self.child.items()}
+
+        return cloned_tensor
+
     def get_class_attributes(self):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response,
@@ -957,7 +969,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share.garbage_collect_data = value
 
     @staticmethod
-    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
@@ -970,7 +982,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
+            chain = sy.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
