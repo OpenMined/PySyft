@@ -17,6 +17,7 @@ def test_encrypt_and_decrypt():
 
     assert (x_tensor == y).all()
 
+
 def test_encrypted_encrypted_add():
     """
     Test addition of two encrypted values
@@ -29,7 +30,8 @@ def test_encrypted_encrypted_add():
 
     y = (x + x).decrypt(pri)
 
-    assert ((x_tensor+x_tensor) == y).all()
+    assert ((x_tensor + x_tensor) == y).all()
+
 
 def test_encrypted_decrypted_add():
     """
@@ -43,7 +45,8 @@ def test_encrypted_decrypted_add():
 
     y = (x + x_tensor).decrypt(pri)
 
-    assert ((x_tensor+x_tensor) == y).all()
+    assert ((x_tensor + x_tensor) == y).all()
+
 
 def test_decrypted_encrypted_add():
     """
@@ -57,7 +60,8 @@ def test_decrypted_encrypted_add():
 
     y = (x_tensor + x).decrypt(pri)
 
-    assert ((x_tensor+x_tensor) == y).all()
+    assert ((x_tensor + x_tensor) == y).all()
+
 
 def test_encrypted_encrypted_sub():
 
@@ -71,7 +75,8 @@ def test_encrypted_encrypted_sub():
 
     z = (x - y).decrypt(pri)
 
-    assert ((x_tensor-y_tensor) == z).all()
+    assert ((x_tensor - y_tensor) == z).all()
+
 
 def test_encrypted_decrypted_sub():
 
@@ -85,7 +90,8 @@ def test_encrypted_decrypted_sub():
 
     z = (x - y_tensor).decrypt(pri)
 
-    assert ((x_tensor-y_tensor) == z).all()
+    assert ((x_tensor - y_tensor) == z).all()
+
 
 def test_decrypted_encrypted_sub():
 
@@ -99,7 +105,7 @@ def test_decrypted_encrypted_sub():
 
     z = (x_tensor - y).decrypt(pri)
 
-    assert ((x_tensor-y_tensor) == z).all()
+    assert ((x_tensor - y_tensor) == z).all()
 
 
 def test_encrypted_decrypted_mul():
@@ -114,7 +120,8 @@ def test_encrypted_decrypted_mul():
 
     z = (x * y_tensor).decrypt(pri)
 
-    assert ((x_tensor*y_tensor) == z).all()
+    assert ((x_tensor * y_tensor) == z).all()
+
 
 def test_decrypted_encrypted_mul():
 
@@ -128,7 +135,8 @@ def test_decrypted_encrypted_mul():
 
     z = (x_tensor * y).decrypt(pri)
 
-    assert ((x_tensor*y_tensor) == z).all()
+    assert ((x_tensor * y_tensor) == z).all()
+
 
 def test_encrypted_decrypted_matmul():
 
@@ -143,6 +151,7 @@ def test_encrypted_decrypted_matmul():
     z = (x.mm(y_tensor)).decrypt(pri)
 
     assert (z == 12).all()
+
 
 def test_decrypted_encrypted_matmul():
 

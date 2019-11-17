@@ -59,7 +59,7 @@ class PaillierTensor(AbstractTensor):
                 syft.frameworks.torch.he.paillier.keygen()
         """
 
-        if(not isinstance(self.child, np.ndarray)):
+        if not isinstance(self.child, np.ndarray):
             return th.tensor(private_key.decrypt(self.child))
 
         inputs = self.child.flatten().tolist()
@@ -81,7 +81,7 @@ class PaillierTensor(AbstractTensor):
             obj.child = data
             return obj
 
-        if(isinstance(self.child, th.Tensor)):
+        if isinstance(self.child, th.Tensor):
             self.child = self.child.numpy()
 
         # Replace all syft tensor with their child attribute
@@ -109,7 +109,7 @@ class PaillierTensor(AbstractTensor):
             obj.child = data
             return obj
 
-        if(isinstance(self.child, th.Tensor)):
+        if isinstance(self.child, th.Tensor):
             self.child = self.child.numpy()
 
         # Replace all syft tensor with their child attribute
@@ -137,7 +137,7 @@ class PaillierTensor(AbstractTensor):
             obj.child = data
             return obj
 
-        if(isinstance(self.child, th.Tensor)):
+        if isinstance(self.child, th.Tensor):
             self.child = self.child.numpy()
 
         # Replace all syft tensor with their child attribute
@@ -161,7 +161,7 @@ class PaillierTensor(AbstractTensor):
         out = PaillierTensor()
 
         # if self is not encrypted and args[0] is encrypted
-        if(isinstance(self.child, th.Tensor)):
+        if isinstance(self.child, th.Tensor):
             out.child = self.child.numpy().dot(args[0].child)
 
         # if self is encrypted and args[0] is not encrypted

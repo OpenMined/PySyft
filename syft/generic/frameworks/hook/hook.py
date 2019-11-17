@@ -374,16 +374,15 @@ class FrameworkHook(ABC):
 
                 # if self is a natural tensor but the first argument isn't,
                 # wrap self with the appropriate type and re-run
-                if(len(args)>0 and hasattr(args[0], "child")):
+                if len(args) > 0 and hasattr(args[0], "child"):
 
                     # if we allow this for PointerTensors it opens the potential
                     # that we could accidentally serialize and send a tensor in the
                     # arguments
-                    if(not isinstance(args[0].child, PointerTensor)):
-                        self = (type(args[0].child)().on(self, wrap=True))
+                    if not isinstance(args[0].child, PointerTensor):
+                        self = type(args[0].child)().on(self, wrap=True)
                         args = [args[0]]
                         return overloaded_native_method(self, *args, **kwargs)
-
 
                 method = getattr(self, f"native_{method_name}")
                 # Run the native function with the new args
@@ -403,14 +402,16 @@ class FrameworkHook(ABC):
                         method_name, self, args, kwargs
                     )
 
-                except BaseException as e: # if there's a type mismatch, try to fix it!
+                except BaseException as e:  # if there's a type mismatch, try to fix it!
 
                     try:
                         # if the first argument has no child (meaning it's probably raw data),
                         # try wrapping it with the type of self. We have to except PointerTensor
                         # because otherwise it can lead to inadvertently sending data to another
                         # machine
-                        if (not hasattr(args[0], "child") and not isinstance(self.child, PointerTensor)):
+                        if not hasattr(args[0], "child") and not isinstance(
+                            self.child, PointerTensor
+                        ):
                             # TODO: add check to make sure this isn't getting around a security class
 
                             _args = list()
