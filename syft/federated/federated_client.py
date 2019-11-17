@@ -62,7 +62,7 @@ class FederatedClient(ObjectStorage):
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
 
-    def fit(self, dataset_key: str, **kwargs):
+    def fit(self, dataset_key: str, device: str = "cpu", **kwargs):
         """Fits a model on the local dataset as specified in the local TrainConfig object.
 
         Args:
@@ -84,7 +84,7 @@ class FederatedClient(ObjectStorage):
             self.train_config.optimizer, model, optimizer_args=self.train_config.optimizer_args
         )
 
-        return self._fit(model=model, dataset_key=dataset_key, loss_fn=loss_fn)
+        return self._fit(model=model, dataset_key=dataset_key, loss_fn=loss_fn, device=device)
 
     def _create_data_loader(self, dataset_key: str, shuffle: bool = False):
         data_range = range(len(self.datasets[dataset_key]))
@@ -100,7 +100,7 @@ class FederatedClient(ObjectStorage):
         )
         return data_loader
 
-    def _fit(self, model, dataset_key, loss_fn):
+    def _fit(self, model, dataset_key, loss_fn, device="cpu"):
         model.train()
         data_loader = self._create_data_loader(
             dataset_key=dataset_key, shuffle=self.train_config.shuffle
@@ -115,8 +115,8 @@ class FederatedClient(ObjectStorage):
                 self.optimizer.zero_grad()
 
                 # Update model
-                output = model(data)
-                loss = loss_fn(target=target, pred=output)
+                output = model(data.to(device))
+                loss = loss_fn(target=target.to(device), pred=output)
                 loss.backward()
                 self.optimizer.step()
 
@@ -134,6 +134,7 @@ class FederatedClient(ObjectStorage):
         nr_bins: int = -1,
         return_loss: bool = True,
         return_raw_accuracy: bool = True,
+        device: str = "cpu",
     ):
         """Evaluates a model on the local dataset as specified in the local TrainConfig object.
 
@@ -161,7 +162,7 @@ class FederatedClient(ObjectStorage):
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
         model.eval()
-        device = "cpu"
+        device = "cuda" if device == "cuda" else "cpu"
         data_loader = self._create_data_loader(dataset_key=dataset_key, shuffle=False)
         test_loss = 0.0
         correct = 0
