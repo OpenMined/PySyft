@@ -53,16 +53,6 @@ class TorchTensor(AbstractTensor):
     the native torch tensor API but it's not listed here, you might try
     checking AbstractTensor.
     """
-    #
-    # def __add__(self, other):
-    #     if(hasattr(self, "child") and hasattr(other, "child")):
-    #         return self.child.__add__(other.child)
-    #     elif(hasattr(self, "child") and not hasattr(other, "child")):
-    #         return self.child.__add__(other)
-    #     elif (not hasattr(self, "child") and hasattr(other, "child")):
-    #         return self.__add__(other.child)
-    #     else:
-    #         return self.native___add__(other)
 
     def has_child(self):
         return hasattr(self, "child")
