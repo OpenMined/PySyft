@@ -174,6 +174,9 @@ class TorchHook(FrameworkHook):
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
 
+        # Hook some torch methods such that tensors could be created directy at workers
+        self._hook_worker_methods()
+
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
@@ -238,6 +241,19 @@ class TorchHook(FrameworkHook):
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
         super()._hook_syft_tensor_methods(tensor_type, syft_type)
+
+    def _hook_worker_methods(self):
+        for attr in syft.torch.worker_methods:
+            new_method = self._get_hooked_base_worker_method(attr)
+            setattr(BaseWorker, attr, new_method)
+
+    def _get_hooked_base_worker_method(hook_self, attr):
+        @wraps(attr)
+        def overloaded_attr(self, *args, **kwargs):
+            tensor = getattr(self.torch, attr)(*args)
+            return tensor.send(self)
+
+        return overloaded_attr
 
     def _hook_additive_shared_tensor_methods(self):
         """
@@ -409,7 +425,7 @@ class TorchHook(FrameworkHook):
                 if "__" in func:
                     continue
 
-                # ignore capitalized func values which are Classes not functinos
+                # ignore capitalized func values which are Classes not functions
                 if func[0].isupper():
                     continue
 
