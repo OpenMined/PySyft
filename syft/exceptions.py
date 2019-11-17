@@ -159,7 +159,7 @@ class ResponseSignatureError(Exception):
         return {"ids_generated": self.ids_generated}
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -173,7 +173,7 @@ class ResponseSignatureError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -202,7 +202,7 @@ class GetNotPermittedError(Exception):
     get to be called on it. This can happen do to sensitivity being too high"""
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -216,7 +216,7 @@ class GetNotPermittedError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -283,6 +283,24 @@ class ObjectNotFoundError(Exception):
             "make sure you haven't already called .get() on this pointer!!!"
         )
         super().__init__(message)
+
+
+class InvalidProtocolFileError(Exception):
+    """Raised when PySyft protocol file cannot be loaded."""
+
+    pass
+
+
+class UndefinedProtocolTypeError(Exception):
+    """Raised when trying to serialize type that is not defined in protocol file."""
+
+    pass
+
+
+class UndefinedProtocolTypePropertyError(Exception):
+    """Raised when trying to get protocol type property that is not defined in protocol file."""
+
+    pass
 
 
 def route_method_exception(exception, self, args, kwargs):

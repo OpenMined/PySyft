@@ -93,7 +93,7 @@ def test_raise_exception_for_invalid_shape():
 
 
 def test_raise_exception_when_sending_unbuilt_plan(workers):
-    me, bob = workers["me"], workers["bob"]
+    bob = workers["bob"]
 
     @sy.func2plan()
     def plan(data):
@@ -184,7 +184,7 @@ def test_stateful_plan_method_execute_locally(hook):
 
 
 def test_plan_multiple_send(workers):
-    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+    bob, alice = workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -207,7 +207,7 @@ def test_plan_multiple_send(workers):
 
 
 def test_stateful_plan_multiple_send(hook, workers):
-    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+    bob, alice = workers["bob"], workers["alice"]
 
     with hook.local_worker.registration_enabled():
 
@@ -283,7 +283,7 @@ def test_plan_built_on_class(hook):
 
 
 def test_multiple_workers(workers):
-    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+    bob, alice = workers["bob"], workers["alice"]
 
     @sy.func2plan(args_shape=[(1,)])
     def plan_abs(data):
@@ -302,7 +302,7 @@ def test_multiple_workers(workers):
 
 
 def test_stateful_plan_multiple_workers(hook, workers):
-    me, bob, alice = workers["me"], workers["bob"], workers["alice"]
+    bob, alice = workers["bob"], workers["alice"]
 
     with hook.local_worker.registration_enabled():
 
@@ -948,3 +948,33 @@ def test_send_with_plan(workers):
     assert isinstance(ptr_result.child, sy.PointerTensor)
     result = ptr_result.get()
     assert th.equal(result, expected)
+
+
+def test_cached_plan_send(workers):
+    bob = workers["bob"]
+
+    @sy.func2plan(args_shape=[(1,)])
+    def plan_abs(data):
+        return data.abs()
+
+    plan_bob_ptr1 = plan_abs.send(bob)
+    plan_bob_ptr2 = plan_abs.send(bob)
+    pointers = plan_abs.get_pointers()
+
+    assert len(pointers) == 1
+    assert plan_bob_ptr1 is plan_bob_ptr2
+
+
+def test_cached_multiple_location_plan_send(workers):
+    bob, alice = workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(1,)])
+    def plan_abs(data):
+        return data.abs()
+
+    plan_group_ptr1 = plan_abs.send(bob, alice)
+    plan_group_ptr2 = plan_abs.send(bob, alice)
+
+    pointers = plan_abs.get_pointers()
+
+    assert len(pointers) == 2

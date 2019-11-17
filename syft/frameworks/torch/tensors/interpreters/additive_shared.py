@@ -974,7 +974,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share.garbage_collect_data = value
 
     @staticmethod
-    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
@@ -987,7 +987,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
+            chain = sy.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
