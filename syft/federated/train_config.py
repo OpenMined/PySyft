@@ -172,9 +172,17 @@ class TrainConfig:
             train_config: A TrainConfig object
         """
 
-        model_id, loss_fn_id, batch_size, epochs, optimizer, optimizer_args, id, max_nr_batches, shuffle = (
-            train_config_tuple
-        )
+        (
+            model_id,
+            loss_fn_id,
+            batch_size,
+            epochs,
+            optimizer,
+            optimizer_args,
+            id,
+            max_nr_batches,
+            shuffle,
+        ) = train_config_tuple
 
         id = sy.serde._detail(worker, id)
         detailed_optimizer = sy.serde._detail(worker, optimizer)

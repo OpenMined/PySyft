@@ -31,7 +31,7 @@ def test_stateful_plan_built_automatically(hook):
 
     @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def foo(x, state):
-        bias, = state.read()
+        (bias,) = state.read()
         x = x * 2
         return x + bias
 
@@ -66,7 +66,7 @@ def test_stateful_plan_build(hook):
 
     @sy.func2plan(state=(th.tensor([1.0]),))
     def foo(x, state):
-        bias, = state.read()
+        (bias,) = state.read()
         x = x * 2
         return x + bias
 
@@ -221,7 +221,7 @@ def test_stateful_plan_multiple_send(hook, workers):
 
     @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan_abs(x, state):
-        bias, = state.read()
+        (bias,) = state.read()
         x = x.abs()
         return x + bias
 
@@ -320,7 +320,7 @@ def test_stateful_plan_multiple_workers(hook, workers):
 
     @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
     def plan_abs(x, state):
-        bias, = state.read()
+        (bias,) = state.read()
         x = x.abs()
         return x + bias
 
@@ -370,7 +370,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 
         @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
         def plan(data, state):
-            bias, = state.read()
+            (bias,) = state.read()
             return data * bias
 
     else:
@@ -419,7 +419,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
         @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias, = state.read()
+            (bias,) = state.read()
             return data * bias
 
     else:
@@ -535,7 +535,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
         @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias, = state.read()
+            (bias,) = state.read()
             return data * bias
 
     else:
@@ -594,7 +594,7 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
 
         @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
         def plan(data, state):
-            bias, = state.read()
+            (bias,) = state.read()
             return data * bias
 
     else:
@@ -640,7 +640,7 @@ def test_fetch_plan_remote(hook, start_remote_worker):
 
     @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
     def plan_mult_3(data, state):
-        bias, = state.read()
+        (bias,) = state.read()
         return data * 3 + bias
 
     plan_mult_3.send(remote_proxy)
