@@ -250,8 +250,11 @@ class TorchHook(FrameworkHook):
     def _get_hooked_base_worker_method(hook_self, attr):
         @wraps(attr)
         def overloaded_attr(self, *args, **kwargs):
-            tensor = getattr(self.torch, attr)(*args)
-            return tensor.send(self)
+            ptr = hook_self.local_worker.send_command(
+                recipient=self, message=("{}.{}".format("torch", attr), None, args, kwargs),
+            )
+
+            return ptr.wrap()
 
         return overloaded_attr
 
