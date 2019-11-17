@@ -92,7 +92,10 @@ class PaillierTensor(AbstractTensor):
         """
 
         if isinstance(args[0], th.Tensor):
-            args = [args[0]]
+            data = self.child + args[0].numpy()
+            obj = PaillierTensor()
+            obj.child = data
+            return obj
 
         if(isinstance(self.child, th.Tensor)):
             self.child = self.child.numpy()
@@ -117,7 +120,10 @@ class PaillierTensor(AbstractTensor):
         """
 
         if isinstance(args[0], th.Tensor):
-            args = [args[0]]
+            data = self.child - args[0].numpy()
+            obj = PaillierTensor()
+            obj.child = data
+            return obj
 
         if(isinstance(self.child, th.Tensor)):
             self.child = self.child.numpy()
@@ -142,7 +148,10 @@ class PaillierTensor(AbstractTensor):
         """
 
         if isinstance(args[0], th.Tensor):
-            args = [args[0]]
+            data = self.child * args[0].numpy()
+            obj = PaillierTensor()
+            obj.child = data
+            return obj
 
         if(isinstance(self.child, th.Tensor)):
             self.child = self.child.numpy()
@@ -248,6 +257,20 @@ class PaillierTensor(AbstractTensor):
 
         # Just register it using the module variable
         module.add = add
+
+        def mul(x, y):
+            """
+            You can write the function to overload in the most natural
+            way, so this will be called whenever you call torch.add on
+            Logging Tensors, and the x and y you get are also Logging
+            Tensors, so compared to the @overloaded.method, you see
+            that the @overloaded.module does not hook the arguments.
+            """
+            print("Log function torch.mul")
+            return x * y
+
+        # Just register it using the module variable
+        module.mul = mul
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PaillierTensor") -> tuple:
