@@ -92,22 +92,90 @@ class PaillierTensor(AbstractTensor):
         """
 
         if isinstance(args[0], th.Tensor):
-            args = [args[0].encrypt(self.pubkey).child]
+            args = [args[0]]
 
         if(isinstance(self.child, th.Tensor)):
             self.child = self.child.numpy()
 
         # Replace all syft tensor with their child attribute
         new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
-            "add", self, args, kwargs
+            "__add__", self, args, kwargs
         )
 
-        # Send it to the appropriate class and get the response
+        # Send it to the appropriates class and get the response
         response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
         response = hook_args.hook_response("__add__", response, wrap_type=type(self))
         return response
+
+    def __sub__(self, *args, **kwargs):
+        """
+        Here is the version of the add method without the decorator: as you can see
+        it is much more complicated. However you misght need sometimes to specify
+        some particular behaviour: so here what to start from :)
+        """
+
+        if isinstance(args[0], th.Tensor):
+            args = [args[0]]
+
+        if(isinstance(self.child, th.Tensor)):
+            self.child = self.child.numpy()
+
+        # Replace all syft tensor with their child attribute
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+            "__sub__", self, args, kwargs
+        )
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "__sub__")(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = hook_args.hook_response("__sub__", response, wrap_type=type(self))
+        return response
+
+    def __mul__(self, *args, **kwargs):
+        """
+        Here is the version of the add method without the decorator: as you can see
+        it is much more complicated. However you misght need sometimes to specify
+        some particular behaviour: so here what to start from :)
+        """
+
+        if isinstance(args[0], th.Tensor):
+            args = [args[0]]
+
+        if(isinstance(self.child, th.Tensor)):
+            self.child = self.child.numpy()
+
+        # Replace all syft tensor with their child attribute
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+            "__mul__", self, args, kwargs
+        )
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "__mul__")(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = hook_args.hook_response("__mul__", response, wrap_type=type(self))
+        return response
+
+    def mm(self, *args, **kwargs):
+        """
+        Here is matrix multiplication between an encrypted and unencrypted tensor. Note that
+        we cannot matrix multiply two encrypted tensors because Paillier does not support
+        the multiplication of two encrypted values.
+        """
+        out = PaillierTensor()
+
+        # if self is not encrypted and args[0] is encrypted
+        if(isinstance(self.child, th.Tensor)):
+            out.child = self.child.numpy().dot(args[0].child)
+
+        # if self is encrypted and args[0] is not encrypted
+        else:
+            out.child = self.child.dot(args[0])
+
+        return out
 
     # Method overloading
     @overloaded.method
@@ -119,11 +187,34 @@ class PaillierTensor(AbstractTensor):
 
         Note the subtlety between self and _self: you should use _self and NOT self.
         """
-        print("Log method add")
-        response = getattr(_self, "add")(*args, **kwargs)
 
-        return response
+        return self + args[0]
 
+    # Method overloading
+    @overloaded.method
+    def sub(self, _self, *args, **kwargs):
+        """
+        Here is an example of how to use the @overloaded.method decorator. To see
+        what this decorator do, just look at the next method manual_add: it does
+        exactly the same but without the decorator.
+
+        Note the subtlety between self and _self: you should use _self and NOT self.
+        """
+
+        return self - args[0]
+
+    # Method overloading
+    @overloaded.method
+    def mul(self, _self, *args, **kwargs):
+        """
+        Here is an example of how to use the @overloaded.method decorator. To see
+        what this decorator do, just look at the next method manual_add: it does
+        exactly the same but without the decorator.
+
+        Note the subtlety between self and _self: you should use _self and NOT self.
+        """
+
+        return self * args[0]
 
     # Module & Function overloading
 
