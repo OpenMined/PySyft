@@ -59,30 +59,14 @@ class PaillierTensor(AbstractTensor):
                 syft.frameworks.torch.he.paillier.keygen()
         """
 
+        if(not isinstance(self.child, np.ndarray)):
+            return th.tensor(private_key.decrypt(self.child))
+
         inputs = self.child.flatten().tolist()
+
         new_child = sy.pool().map(private_key.decrypt, inputs)
 
         return th.tensor(new_child).view(*self.child.shape)
-
-    # # Method overloading
-    # @overloaded.method
-    # def __add__(self, _self, *args, **kwargs):
-    #     """
-    #     Here is an example of how to use the @overloaded.method decorator. To see
-    #     what this decorator do, just look at the next method manual_add: it does
-    #     exactly the same but without the decorator.
-    #
-    #     Note the subtlety between self and _self: you should use _self and NOT self.
-    #     """
-    #
-    #     print("self type:" + str(type(_self)))
-    #     for arg in args:
-    #         print("arg:" + str(type(arg)))
-    #
-    #     print("Log method __add__")
-    #     response = getattr(_self, "__add__")(*args, **kwargs)
-    #
-    #     return response
 
     def __add__(self, *args, **kwargs):
         """
