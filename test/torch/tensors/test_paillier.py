@@ -152,15 +152,15 @@ def test_encrypted_decrypted_matmul():
 
     pub, pri = sy.keygen()
 
-    x_tensor = torch.Tensor([1, 2, 3])
+    x_tensor = torch.tensor([1, 2, 3])
     x = x_tensor.encrypt(pub)
 
-    y_tensor = torch.Tensor([2, 2, 2])
+    y_tensor = torch.tensor([2, 2, 2])
     y = y_tensor.encrypt(pub)
 
     z = (x.mm(y_tensor)).decrypt(pri)
 
-    assert ((x_tensor.mm(y_tensor)) == z).all()
+    assert (z == 12).all()
 
 def test_decrypted_encrypted_matmul():
     """
