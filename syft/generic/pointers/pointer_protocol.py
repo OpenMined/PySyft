@@ -90,7 +90,7 @@ class PointerProtocol(ObjectPointer):
         return protocol
 
     @staticmethod
-    def simplify(ptr: "PointerPlan") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "PointerPlan") -> tuple:
 
         return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.garbage_collect_data)
 
