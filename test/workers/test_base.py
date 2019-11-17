@@ -95,3 +95,30 @@ def test_enable_registration_with_ctx(hook):
     with hook.local_worker.registration_enabled():
         hook.local_worker.is_client_worker == False
     assert hook.local_worker.is_client_worker == True
+
+
+def test_send_command_whitelist(hook):
+    bob = sy.VirtualWorker(hook, "bob")
+    whitelisted_methods = {
+        "tensor": [1,2,3],
+        "rand": (2,3),
+        "zeros": (2,3)
+    }
+
+    for method, inp in whitelisted_methods.items():
+        x = getattr(bob, method)(inp)
+
+        if "rand" not in method:
+            assert (x.get() == getattr(th, method)(inp)).all()
+
+
+def test_send_command_not_whitelisted(hook):
+    bob = sy.VirtualWorker(hook, "bob")
+
+    method_not_exist = "openmind"
+
+    with pytest.raises(AttributeError):
+        getattr(bob, method_not_exist)
+
+
+

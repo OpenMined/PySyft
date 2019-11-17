@@ -231,6 +231,19 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     server.terminate()
 
 
+def test_websocket_worker_call_torch_api(hook, start_remote_worker):
+    """Evaluates that you can create tensors directly remote with WebsocketServerWorker."""
+    server, remote_proxy = start_remote_worker(id="worker_call_torch_api", hook=hook, port=8768)
+
+    x_ptr = remote_proxy.tensor([1, 2, 3, 4])
+    x = x_ptr.get()
+
+    assert (x == torch.tensor([1, 2, 3, 4])).all()
+
+    remote_proxy.close()
+    server.terminate()
+
+
 @pytest.mark.skip
 def test_evaluate(hook, start_proc):  # pragma: no cover
 
