@@ -19,7 +19,7 @@ def test_encrypt_and_decrypt():
 
 def test_encrypted_encrypted_add():
     """
-    Test the basic paillier encrypt/decrypt functionality
+    Test addition of two encrypted values
     """
 
     pub, pri = sy.keygen()
@@ -33,7 +33,7 @@ def test_encrypted_encrypted_add():
 
 def test_encrypted_decrypted_add():
     """
-    Test the basic paillier encrypt/decrypt functionality
+    Test addition of an encryptd and decrypted value
     """
 
     pub, pri = sy.keygen()
@@ -47,7 +47,7 @@ def test_encrypted_decrypted_add():
 
 def test_decrypted_encrypted_add():
     """
-    Test the basic paillier encrypt/decrypt functionality
+    Test the addition of a decrypted and encrypted value
     """
 
     pub, pri = sy.keygen()
@@ -60,9 +60,6 @@ def test_decrypted_encrypted_add():
     assert ((x_tensor+x_tensor) == y).all()
 
 def test_encrypted_encrypted_sub():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -77,9 +74,6 @@ def test_encrypted_encrypted_sub():
     assert ((x_tensor-y_tensor) == z).all()
 
 def test_encrypted_decrypted_sub():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -94,9 +88,6 @@ def test_encrypted_decrypted_sub():
     assert ((x_tensor-y_tensor) == z).all()
 
 def test_decrypted_encrypted_sub():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -112,9 +103,6 @@ def test_decrypted_encrypted_sub():
 
 
 def test_encrypted_decrypted_mul():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -129,9 +117,6 @@ def test_encrypted_decrypted_mul():
     assert ((x_tensor*y_tensor) == z).all()
 
 def test_decrypted_encrypted_mul():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -146,9 +131,6 @@ def test_decrypted_encrypted_mul():
     assert ((x_tensor*y_tensor) == z).all()
 
 def test_encrypted_decrypted_matmul():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
@@ -163,9 +145,6 @@ def test_encrypted_decrypted_matmul():
     assert (z == 12).all()
 
 def test_decrypted_encrypted_matmul():
-    """
-    Test the basic paillier encrypt/decrypt functionality
-    """
 
     pub, pri = sy.keygen()
 
