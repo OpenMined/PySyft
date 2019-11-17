@@ -16,7 +16,6 @@ from syft.generic.frameworks.hook.hook_args import (
 
 from syft.exceptions import PureFrameworkTensorFoundError
 
-
 type_rule = {
     torch.Tensor: one,
     torch.nn.Parameter: one,

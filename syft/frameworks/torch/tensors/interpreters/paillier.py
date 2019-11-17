@@ -48,6 +48,7 @@ class PaillierTensor(AbstractTensor):
 
         data = np.array(new_child).reshape(self.child.shape)
         self.child = data
+        self.pubkey = public_key
 
     def decrypt(self, private_key):
         """This method will decrypt each value in the tensor, returning a normal
@@ -63,19 +64,49 @@ class PaillierTensor(AbstractTensor):
 
         return th.tensor(new_child).view(*self.child.shape)
 
-    # Method overloading
-    @overloaded.method
-    def __add__(self, _self, *args, **kwargs):
-        """
-        Here is an example of how to use the @overloaded.method decorator. To see
-        what this decorator do, just look at the next method manual_add: it does
-        exactly the same but without the decorator.
+    # # Method overloading
+    # @overloaded.method
+    # def __add__(self, _self, *args, **kwargs):
+    #     """
+    #     Here is an example of how to use the @overloaded.method decorator. To see
+    #     what this decorator do, just look at the next method manual_add: it does
+    #     exactly the same but without the decorator.
+    #
+    #     Note the subtlety between self and _self: you should use _self and NOT self.
+    #     """
+    #
+    #     print("self type:" + str(type(_self)))
+    #     for arg in args:
+    #         print("arg:" + str(type(arg)))
+    #
+    #     print("Log method __add__")
+    #     response = getattr(_self, "__add__")(*args, **kwargs)
+    #
+    #     return response
 
-        Note the subtlety between self and _self: you should use _self and NOT self.
+    def __add__(self, *args, **kwargs):
         """
-        print("Log method __add__")
-        response = getattr(_self, "__add__")(*args, **kwargs)
+        Here is the version of the add method without the decorator: as you can see
+        it is much more complicated. However you misght need sometimes to specify
+        some particular behaviour: so here what to start from :)
+        """
 
+        if isinstance(args[0], th.Tensor):
+            args = [args[0].encrypt(self.pubkey).child]
+
+        if(isinstance(self.child, th.Tensor)):
+            self.child = self.child.numpy()
+
+        # Replace all syft tensor with their child attribute
+        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+            "add", self, args, kwargs
+        )
+
+        # Send it to the appropriate class and get the response
+        response = getattr(new_self, "__add__")(*new_args, **new_kwargs)
+
+        # Put back SyftTensor on the tensors found in the response
+        response = hook_args.hook_response("__add__", response, wrap_type=type(self))
         return response
 
     # Method overloading
