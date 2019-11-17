@@ -375,6 +375,10 @@ class FrameworkHook(ABC):
                 # if self is a natural tensor but the first argument isn't,
                 # wrap self with the appropriate type and re-run
                 if(len(args)>0 and hasattr(args[0], "child")):
+
+                    # if we allow this for PointerTensors it opens the potential
+                    # that we could accidentally serialize and send a tensor in the
+                    # arguments
                     if(not isinstance(args[0].child, PointerTensor)):
                         self = (type(args[0].child)().on(self, wrap=True))
                         args = [args[0]]
