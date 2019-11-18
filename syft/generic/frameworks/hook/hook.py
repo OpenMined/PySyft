@@ -12,6 +12,8 @@ from syft.generic.object import initialize_object
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.string import String
+from syft.generic.pointers.string_pointer import StringPointer
 from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 
@@ -271,6 +273,53 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_multi_pointer_method(attr)
                 setattr(MultiPointerTensor, attr, new_method)
 
+
+    def _hook_string_pointer_methods(self):
+
+        # Set of magic method to hook/override in case they exist
+        magic_include = set(
+            [
+                "__add__",
+                "__eq__",
+                "__le__",
+                "__ge__",
+                "__gt__",
+                "__lt--",
+                "__ne__",
+                "__len__",
+                "__getitem__"])
+
+        # Set of non-magic methods that should not be hooked and overriden
+        normal_exclude = set(["send",
+                              "get",
+                              "simplify",
+                              "detail",
+                              "create_pointer"])
+
+
+        for attr in dir(String):
+
+            # flag whether to hook the current attribute or not
+            hook = False
+
+            # Get only magic attributes that are not
+            # in the 'normal_exclude' set
+            if attr.startswith("__"):
+
+                hook = True if attr in magic_include else False
+
+            elif attr not in normal_exclude:
+                hook = True
+
+            if hook:
+                
+                # Create the hooked method
+                new_method = self._get_hooked_string_pointer_method(attr)
+
+                # Add the hooked method
+                setattr(StringPointer, attr, new_method)
+
+        
     def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
         """Adds several attributes to the tensor.
 
@@ -524,6 +573,41 @@ class FrameworkHook(ABC):
             response = hook_args.hook_response(
                 attr, results, wrap_type=MultiPointerTensor, wrap_args=self.get_class_attributes()
             )
+
+            return response
+
+        return overloaded_attr
+
+
+    @classmethod
+    def _get_hooked_string_pointer_method(cls, attr):
+        """
+           Hook a `String` method to a corresponding method  of 
+          `StringPointer` with the same name.
+
+           Args:
+               attr (str): the method to hook
+           Return:
+               the hooked method
+
+        """
+
+        @wraps(attr)
+        def overloaded_attr(self, *args, **kwargs):
+            """
+            Operate the hooking
+            """
+
+            owner = self.owner
+            location = self.location
+            id_at_location = self.id_at_location
+            
+            # Create a 'command' variable  that is understood by
+            # the send_command() method of a worker.
+            command = (attr, id_at_location, args, kwargs)
+
+            # send the command
+            response = owner.send_command(location, command)
 
             return response
 
