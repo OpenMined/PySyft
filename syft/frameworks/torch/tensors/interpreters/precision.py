@@ -315,7 +315,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If both have the same sign, sgn is 1 else it's 0
             # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
             # we would need to overload the __add__ for operators int and AST.
-            sgn = -(sgn_self - sgn_other) ** 2 + 1
+            sgn = -((sgn_self - sgn_other) ** 2) + 1
             changed_sign = True
 
             if cmd == "div":
@@ -777,10 +777,11 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @staticmethod
-    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "FixedPrecisionTensor") -> tuple:
         """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
+            worker: the worker doing the serialization
             tensor: a FixedPrecisionTensor.
 
         Returns:
@@ -788,16 +789,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(worker, tensor.id),
             tensor.field,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde._simplify(worker, tensor.tags),
+            syft.serde._simplify(worker, tensor.description),
             chain,
         )
 

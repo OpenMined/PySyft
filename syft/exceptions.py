@@ -15,7 +15,7 @@ class DependencyError(Exception):
         message = (
             f"The {package} dependency is not installed. If you intend"
             " to use it, please install it at your command line with "
-            "`pip install {pypi_alias}`."
+            f"`pip install {pypi_alias}`."
         )
         super().__init__(message)
 
@@ -55,9 +55,7 @@ class InvalidTensorForRemoteGet(Exception):
     """Raised when a chain of pointer tensors is not provided for `remote_get`."""
 
     def __init__(self, tensor: object):
-        message = "Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {}.".format(
-            tensor
-        )
+        message = f"Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {tensor}."
         super().__init__(message)
 
 
@@ -148,7 +146,8 @@ class TensorsNotCollocatedException(Exception):
 
 class ResponseSignatureError(Exception):
     """Raised when the return of a hooked function is not correctly predicted
-    (when defining in advance ids for results)"""
+    (when defining in advance ids for results)
+    """
 
     def __init__(self, ids_generated=None):
         self.ids_generated = ids_generated
@@ -160,7 +159,7 @@ class ResponseSignatureError(Exception):
         return {"ids_generated": self.ids_generated}
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -174,7 +173,7 @@ class ResponseSignatureError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -203,7 +202,7 @@ class GetNotPermittedError(Exception):
     get to be called on it. This can happen do to sensitivity being too high"""
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -217,7 +216,7 @@ class GetNotPermittedError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -251,7 +250,7 @@ class PlanCommandUnknownError(Exception):
     """Raised when an unknown plan command execution is requested."""
 
     def __init__(self, command_name: object):
-        message = "Command {} is not implemented.".format(command_name)
+        message = f"Command {command_name} is not implemented."
         super().__init__(message)
 
 
@@ -284,6 +283,24 @@ class ObjectNotFoundError(Exception):
             "make sure you haven't already called .get() on this pointer!!!"
         )
         super().__init__(message)
+
+
+class InvalidProtocolFileError(Exception):
+    """Raised when PySyft protocol file cannot be loaded."""
+
+    pass
+
+
+class UndefinedProtocolTypeError(Exception):
+    """Raised when trying to serialize type that is not defined in protocol file."""
+
+    pass
+
+
+class UndefinedProtocolTypePropertyError(Exception):
+    """Raised when trying to get protocol type property that is not defined in protocol file."""
+
+    pass
 
 
 def route_method_exception(exception, self, args, kwargs):
