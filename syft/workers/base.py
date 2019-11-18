@@ -20,6 +20,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -117,15 +118,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            codes.MSGTYPE.CMD: self.execute_command,
-            codes.MSGTYPE.PLAN_CMD: self.execute_plan_command,
-            codes.MSGTYPE.OBJ: self.set_obj,
-            codes.MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
-            codes.MSGTYPE.OBJ_DEL: self.rm_obj,
-            codes.MSGTYPE.IS_NONE: self.is_tensor_none,
-            codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            codes.MSGTYPE.SEARCH: self.search,
-            codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            Operation: self.execute_command,
+            PlanCommandMessage: self.execute_plan_command,
+            ObjectMessage: self.set_obj,
+            ObjectRequestMessage: self.respond_to_obj_req,
+            ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
+            IsNoneMessage: self.is_tensor_none,
+            GetShapeMessage: self.get_tensor_shape,
+            SearchMessage: self.search,
+            ForceObjectDeleteMessage: self.force_rm_obj,
         }
 
         self._plan_command_router = {
@@ -294,12 +295,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self)
 
-        (msg_type, contents) = (msg.msg_type, msg.contents)
-
         if self.verbose:
-            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+            print(f"worker {self} received {type(msg).__name__} {msg.contents}")
+
         # Step 1: route message to appropriate function
-        response = self._message_router[msg_type](contents)
+        response = self._message_router[type(msg)](msg.contents)
 
         # Step 2: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
@@ -307,7 +307,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
-        # Each method corresponds to a MsgType enum.
 
     def send(
         self,
@@ -965,7 +964,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def create_message_execute_command(
-        command_name: codes.MSGTYPE, command_owner=None, return_ids=None, *args, **kwargs
+        command_name: str, command_owner=None, return_ids=None, *args, **kwargs
     ):
         """helper function creating a message tuple for the execute_command call
 
@@ -983,7 +982,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Message(codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids])
+        return Operation((command_name, command_owner, args, kwargs), return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
