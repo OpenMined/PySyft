@@ -5,11 +5,12 @@ from math import inf
 import torch
 from torch import nn
 import types
-
+import weakref
 
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
@@ -108,6 +109,9 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        # Hook some torch methods such that tensors could be created directy at workers
+        self._hook_worker_methods()
+
         if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is
             # responsible for interfacing with other workers. The worker
@@ -174,9 +178,6 @@ class TorchHook(FrameworkHook):
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
 
-        # Hook some torch methods such that tensors could be created directy at workers
-        self._hook_worker_methods()
-
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
@@ -234,7 +235,6 @@ class TorchHook(FrameworkHook):
         self._hook_native_methods(tensor_type)
 
     def __hook_properties(self, tensor_type):
-
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape
 
@@ -243,15 +243,24 @@ class TorchHook(FrameworkHook):
         super()._hook_syft_tensor_methods(tensor_type, syft_type)
 
     def _hook_worker_methods(self):
+        class Torch(object):
+            name = "torch"
+
+            def __init__(self, worker, *args, **kwargs):
+                self.worker = weakref.ref(worker)
+
+        Remote.register_framework(Torch)
+
         for attr in syft.torch.worker_methods:
             new_method = self._get_hooked_base_worker_method(attr)
-            setattr(BaseWorker, attr, new_method)
+            setattr(Torch, attr, new_method)
 
     def _get_hooked_base_worker_method(hook_self, attr):
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_attr(self_torch, *args, **kwargs):
             ptr = hook_self.local_worker.send_command(
-                recipient=self, message=("{}.{}".format("torch", attr), None, args, kwargs),
+                recipient=self_torch.worker(),
+                message=("{}.{}".format("torch", attr), None, args, kwargs),
             )
 
             return ptr.wrap()

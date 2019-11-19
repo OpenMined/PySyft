@@ -97,28 +97,28 @@ def test_enable_registration_with_ctx(hook):
     assert hook.local_worker.is_client_worker == True
 
 
-def test_send_command_whitelist(hook):
-    bob = sy.VirtualWorker(hook, "bob")
-    whitelisted_methods = {
-        "tensor": [1,2,3],
-        "rand": (2,3),
-        "zeros": (2,3)
-    }
+def test_send_command_whitelist(hook, workers):
+    bob = workers["bob"]
+    whitelisted_methods = {"torch": {"tensor": [1, 2, 3], "rand": (2, 3), "zeros": (2, 3)}}
 
-    for method, inp in whitelisted_methods.items():
-        x = getattr(bob, method)(inp)
+    for framework, methods in whitelisted_methods.items():
+        attr = getattr(bob.remote, framework)
 
-        if "rand" not in method:
-            assert (x.get() == getattr(th, method)(inp)).all()
+        for method, inp in methods.items():
+            x = getattr(attr, method)(inp)
+
+            if "rand" not in method:
+                assert (x.get() == getattr(th, method)(inp)).all()
 
 
-def test_send_command_not_whitelisted(hook):
-    bob = sy.VirtualWorker(hook, "bob")
+def test_send_command_not_whitelisted(hook, workers):
+    bob = workers["bob"]
 
     method_not_exist = "openmind"
 
-    with pytest.raises(AttributeError):
-        getattr(bob, method_not_exist)
+    for framework in bob.remote.frameworks:
+        if framework in dir(bob.remote):
+            attr = getattr(bob.remote, framework)
 
-
-
+            with pytest.raises(AttributeError):
+                getattr(attr, method_not_exist)
