@@ -6,6 +6,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.exceptions import InvalidTensorForRemoteGet
 import syft
 
+
 def test___str__(workers):
     bob = workers["bob"]
     tensor = torch.Tensor([1, 2, 3, 4])
@@ -157,10 +158,11 @@ def test_roll(workers):
 
     assert (result == expected).all()
 
+
 def test_complex_model(workers):
     hook = syft.TorchHook(torch)
     bob = workers["bob"]
-    tensor_local = torch.rand(1,1,32,32)
+    tensor_local = torch.rand(1, 1, 32, 32)
     tensor_remote = tensor_local.send(bob)
 
     ## Instantiating a model with multiple layer types
@@ -169,9 +171,9 @@ def test_complex_model(workers):
             super(Net, self).__init__()
             self.conv1 = nn.Conv2d(1, 6, 5)
             self.conv2 = nn.Conv2d(6, 16, 5)
-            self.fc1   = nn.Linear(16*5*5, 120)
-            self.fc2   = nn.Linear(120, 84)
-            self.fc3   = nn.Linear(84, 10)
+            self.fc1 = nn.Linear(16 * 5 * 5, 120)
+            self.fc2 = nn.Linear(120, 84)
+            self.fc3 = nn.Linear(84, 10)
 
         def forward(self, x):
             out = self.conv1(x)
@@ -187,9 +189,6 @@ def test_complex_model(workers):
 
     model_net = Net()
     model_net.send(bob)
-    
+
     ## Forward on the remote model
-    pred =  model_net(tensor_remote)
-
-
-
+    pred = model_net(tensor_remote)

@@ -345,12 +345,12 @@ class TorchTensor(AbstractTensor):
             response = eval(cmd)(args, **kwargs)
 
         return response
-    
+
     def _fix_torch_library(cmd):
         """
             Change the cmd string parameter to use nn.functional path to avoid erros.
         """
-        if("_C._nn" in cmd):
+        if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
 
