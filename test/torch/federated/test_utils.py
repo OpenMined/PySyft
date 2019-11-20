@@ -1,8 +1,8 @@
 import torch as th
 import syft as sy
 
-from syft.frameworks.torch.federated import utils
-from syft.frameworks.torch import federated
+from syft.frameworks.torch.fl import utils
+from syft.frameworks.torch import fl
 
 
 def test_extract_batches_per_worker(workers):
@@ -10,8 +10,8 @@ def test_extract_batches_per_worker(workers):
     alice = workers["alice"]
 
     datasets = [
-        federated.BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
-        federated.BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6])).send(alice),
+        fl.BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        fl.BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6])).send(alice),
     ]
     fed_dataset = sy.FederatedDataset(datasets)
 
