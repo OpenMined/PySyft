@@ -6,7 +6,7 @@ import argparse
 from torchvision import datasets
 from torchvision import transforms
 import numpy as np
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 KEEP_LABELS_DICT = {
     "alice": [0, 1, 2, 3],

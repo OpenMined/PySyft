@@ -2,8 +2,8 @@ import math
 import torch
 
 import syft as sy
-from syft.frameworks.torch.crypto import spdz
-from syft.frameworks.torch.crypto import securenn
+from syft.frameworks.torch.mpc import spdz
+from syft.frameworks.torch.mpc import securenn
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded

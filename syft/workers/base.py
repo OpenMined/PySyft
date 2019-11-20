@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
@@ -98,17 +99,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        if hook is None:
-            self.framework = None
-        else:
-            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
-            #     execute_command or command_guard to not expect an attribute named "torch"
-            #     (#2530)
-            self.framework = hook.framework
-            if hasattr(hook, "torch"):
-                self.torch = self.framework
-            elif hasattr(hook, "tensorflow"):
-                self.tensorflow = self.framework
+
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -162,6 +153,20 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+                self.remote = Remote(self, "torch")
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
+                self.remote = Remote(self, "tensorflow")
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
