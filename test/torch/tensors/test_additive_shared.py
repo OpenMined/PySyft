@@ -214,11 +214,23 @@ def test_sub(workers):
 
 def test_mul(workers):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob, alice, james, charlie = (
+        workers["bob"],
+        workers["alice"],
+        workers["james"],
+        workers["charlie"],
+    )
 
     # 2 workers
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, crypto_provider=james)
+    y = (x * x).get()
+
+    assert (y == (t * t)).all()
+
+    # 3 workers
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, charlie, crypto_provider=james)
     y = (x * x).get()
 
     assert (y == (t * t)).all()
@@ -248,10 +260,22 @@ def test_mul(workers):
 
 
 def test_public_mul(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob, alice, james, charlie = (
+        workers["bob"],
+        workers["alice"],
+        workers["james"],
+        workers["charlie"],
+    )
 
     t = torch.tensor([-3.1, 1.0])
     x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    y = 1
+    z = (x * y).get().float_prec()
+    assert (z == (t * y)).all()
+
+    # 3 workers
+    t = torch.tensor([-3.1, 1.0])
+    x = t.fix_prec().share(alice, bob, charlie, crypto_provider=james)
     y = 1
     z = (x * y).get().float_prec()
     assert (z == (t * y)).all()

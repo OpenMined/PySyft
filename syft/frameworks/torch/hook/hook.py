@@ -5,12 +5,15 @@ from math import inf
 import torch
 from torch import nn
 import types
+import weakref
 
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
+from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -108,6 +111,9 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        # Hook some torch methods such that tensors could be created directy at workers
+        self._hook_worker_methods()
+
         if self.local_worker is None:
             # Every TorchHook instance should have a local worker which is
             # responsible for interfacing with other workers. The worker
@@ -140,6 +146,10 @@ class TorchHook(FrameworkHook):
         # Add all hooked tensor methods to Logging tensor but change behaviour to just forward
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(LoggingTensor)
+
+        # Add all hooked tensor methods to Paillier tensor but change behaviour to just forward
+        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
+        self._hook_syft_tensor_methods(PaillierTensor)
 
         # Add all hooked tensor methods to FixedPrecisionTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
@@ -232,13 +242,37 @@ class TorchHook(FrameworkHook):
         self._hook_native_methods(tensor_type)
 
     def __hook_properties(self, tensor_type):
-
         super()._hook_properties(tensor_type)
         tensor_type.native_shape = tensor_type.shape
 
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
         super()._hook_syft_tensor_methods(tensor_type, syft_type)
+
+    def _hook_worker_methods(self):
+        class Torch(object):
+            name = "torch"
+
+            def __init__(self, worker, *args, **kwargs):
+                self.worker = weakref.ref(worker)
+
+        Remote.register_framework(Torch)
+
+        for attr in syft.torch.worker_methods:
+            new_method = self._get_hooked_base_worker_method(attr)
+            setattr(Torch, attr, new_method)
+
+    def _get_hooked_base_worker_method(hook_self, attr):
+        @wraps(attr)
+        def overloaded_attr(self_torch, *args, **kwargs):
+            ptr = hook_self.local_worker.send_command(
+                recipient=self_torch.worker(),
+                message=("{}.{}".format("torch", attr), None, args, kwargs),
+            )
+
+            return ptr.wrap()
+
+        return overloaded_attr
 
     def _hook_additive_shared_tensor_methods(self):
         """
@@ -410,7 +444,7 @@ class TorchHook(FrameworkHook):
                 if "__" in func:
                     continue
 
-                # ignore capitalized func values which are Classes not functinos
+                # ignore capitalized func values which are Classes not functions
                 if func[0].isupper():
                     continue
 

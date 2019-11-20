@@ -11,6 +11,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
+from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -818,3 +819,28 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
+
+    def encrypt(self, public_key):
+        """This method will encrypt each value in the tensor using Paillier
+        homomorphic encryption.
+
+        Args:
+            *public_key a public key created using
+                syft.frameworks.torch.he.paillier.keygen()
+        """
+
+        x = self.copy()
+        x2 = PaillierTensor().on(x)
+        x2.child.encrypt_(public_key)
+        return x2
+
+    def decrypt(self, private_key):
+        """This method will decrypt each value in the tensor, returning a normal
+        torch tensor.
+
+        Args:
+            *private_key a private key created using
+                syft.frameworks.torch.he.paillier.keygen()
+            """
+
+        return self.child.decrypt(private_key)
