@@ -6,7 +6,7 @@ import syft as sy
 from syft.federated.federated_client import FederatedClient
 from syft.federated.train_config import TrainConfig
 from syft.generic.pointers.object_wrapper import ObjectWrapper
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 PRINT_IN_UNITTESTS = False
 

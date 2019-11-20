@@ -4,6 +4,7 @@ from typing import List
 from typing import Tuple
 
 import numpy as np
+import torch as th
 
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
