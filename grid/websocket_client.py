@@ -18,7 +18,6 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
 from syft import WebsocketClientWorker
 from syft.federated.federated_client import FederatedClient
-from syft.codes import MSGTYPE
 from syft.messaging.message import Message
 
 from grid import utils as gr_utils
