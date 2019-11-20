@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 
 import syft as sy
-from syft.frameworks.torch.crypto.beaver import request_triple
+from syft.frameworks.torch.mpc.beaver import request_triple
 from syft.workers.abstract import AbstractWorker
 
 no_wrap = {"no_wrap": True}
