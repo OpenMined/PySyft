@@ -47,8 +47,6 @@ def test_allow_method():
         def __eq__(self, other):
             if isinstance(other, UserAuthMockup):
                 return self.login == other.login and self.__password == other.password
-            else:
-                return False
 
     allowed_user = UserAuthMockup("user", "password")
     second_allowed_user = UserAuthMockup("second_user", "password")
