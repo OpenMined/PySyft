@@ -19,6 +19,7 @@ from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
+from syft.exceptions import SendNotPermittedError
 
 
 def _get_maximum_precision():
@@ -330,6 +331,7 @@ class TorchTensor(AbstractTensor):
         self,
         *location,
         inplace: bool = False,
+        user=None,
         local_autograd=False,
         preinitialize_grad=False,
         no_wrap=False,
@@ -356,7 +358,13 @@ class TorchTensor(AbstractTensor):
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
+        
+        Raises:
+                SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
+
+        if not self.allow(user=user):
+            raise SendNotPermittedError()
 
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
@@ -574,8 +582,8 @@ class TorchTensor(AbstractTensor):
         """
         return self.get(*args, inplace=True, **kwargs)
 
-    def allowed_to_get(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allowed_to_get method.
+    def allow(self, user=None) -> bool:
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
             
             Args:
                 user (object,optional): User crendentials to be verified.
@@ -592,7 +600,7 @@ class TorchTensor(AbstractTensor):
 
                 # If it has a list of allowed users, verify permissions, otherwise (public tensors) go to the next.
                 if hasattr(current_tensor, "allowed_users"):
-                    allow = current_tensor.allowed_to_get(user)
+                    allow = current_tensor.allow(user)
                     if not allow:
                         return False
 

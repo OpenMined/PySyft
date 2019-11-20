@@ -47,8 +47,8 @@ class PrivateTensor(AbstractTensor):
         """ Specify all the attributes need to build a wrapper correctly when returning a response. """
         return {"allowed_users": self.allowed_users}
 
-    def allowed_to_get(self, user) -> bool:
-        """ Overwrite native's allowed_to_get to verify if a specific user is allowed to get this tensor.
+    def allow(self, user) -> bool:
+        """ Overwrite native's allowed to verify if a specific user is allowed to get this tensor.
         
             Args:
                 user (object): user to be verified.
