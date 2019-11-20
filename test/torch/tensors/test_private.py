@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import SendNotPermittedError
 
 
 def test_wrap():
@@ -30,7 +31,7 @@ def test_native_private_tensor_method():
     assert isinstance(private_x.child.child, torch.Tensor)
 
 
-def test_allow_to_get():
+def test_allow_method():
     """
     Test native's private_tensor method.
     """
@@ -49,14 +50,32 @@ def test_allow_to_get():
             else:
                 return False
 
-    registered_user = UserAuthMockup("user", "password")
-    registered_certificate = "encoded_certificate"
-    unregistered_user = UserAuthMockup("example", "password")
+    allowed_user = UserAuthMockup("user", "password")
+    second_allowed_user = UserAuthMockup("second_user", "password")
+    unallowed_user = UserAuthMockup("example", "password")
 
-    private_x = x_tensor.private_tensor(allowed_users=(registered_user, registered_certificate))
-    assert private_x.allowed_to_get(registered_user)
-    assert private_x.allowed_to_get(registered_certificate)
-    assert not private_x.allowed_to_get(unregistered_user)
+    private_x = x_tensor.private_tensor(allowed_users=(allowed_user, second_allowed_user))
+    assert private_x.allow(allowed_user)
+    assert private_x.allow(second_allowed_user)
+    assert not private_x.allow(unallowed_user)
+
+
+def test_send_method(workers):
+    bob = workers["bob"]
+    x_tensor = torch.tensor([4, 5, 6, 7, 8])
+
+    private_x = x_tensor.private_tensor(allowed_users=("User"))
+
+    # Try to call send() without credentials
+    with pytest.raises(SendNotPermittedError):
+        private_x.send(bob)
+
+    # Try to call send() with wrong credentials
+    with pytest.raises(SendNotPermittedError):
+        private_x.send(user="unallowed_user")
+
+    # Try to call send() with allowed credentails
+    private_x_pointer = private_x.send(bob, user="User")
 
 
 def test_get_method(workers):
@@ -65,7 +84,7 @@ def test_get_method(workers):
 
     private_x = x_tensor.private_tensor(allowed_users=("User"))
 
-    private_x_pointer = private_x.send(bob)
+    private_x_pointer = private_x.send(bob, user="User")
 
     # Try to call get() without credentials
     with pytest.raises(GetNotPermittedError):
@@ -89,14 +108,12 @@ def test_private_tensor_registration(hook):
 
 def test_allowed_to_get():
     x = torch.tensor([1, 2, 3, 4, 5, 6])
-    assert x.allowed_to_get("User")  # Public tensors always return true.
+    assert x.allow("User")  # Public tensors always return true.
 
     private_x = x.private_tensor(allowed_users=("User"))
 
-    assert private_x.allowed_to_get("User")  # It Returns true to previously registered user.
-    assert not private_x.allowed_to_get(
-        "AnotherUser"
-    )  # It Returns False to non previously registered user.
+    assert private_x.allow("User")  # It Returns true to previously registered user.
+    assert not private_x.allow("AnotherUser")  # It Returns False to non previously registered user.
 
 
 def test_add_method():
@@ -110,7 +127,7 @@ def test_add_method():
     assert isinstance(x.child, PrivateTensor)
     assert isinstance(x.child.child, torch.Tensor)
 
-    assert x.allowed_to_get("User")  # Test if it preserves the parent user credentials.
+    assert x.allow("User")  # Test if it preserves the parent user credentials.
 
 
 @pytest.mark.parametrize("method", ["t", "matmul"])
@@ -153,8 +170,8 @@ def test_torch_add():
     assert (y_fp == torch.tensor([0.2, 0.4, 0.6])).all()
 
     # Test if it preserves the parent user credentials.
-    assert y.allowed_to_get("User")
-    assert not y.allowed_to_get("NonRegisteredUser")
+    assert y.allow("User")
+    assert not y.allow("NonRegisteredUser")
 
     # With negative numbers
     x = torch.tensor([-0.1, -0.2, 0.3]).fix_prec()
@@ -170,8 +187,8 @@ def test_torch_add():
     assert (z_fp == torch.tensor([0.3, -0.7, -0.3])).all()
 
     # Test if it preserves the parent user credentials.
-    assert z.allowed_to_get("UserCredential")
-    assert not z.allowed_to_get("NonRegisteredUser")
+    assert z.allow("UserCredential")
+    assert not z.allow("NonRegisteredUser")
 
     # When overflow occurs
     x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(field=1e4, precision_fractional=2)
@@ -197,8 +214,8 @@ def test_torch_sub():
     z = torch.sub(x, y)
 
     # Test if it preserves the parent user credentials.
-    assert z.allowed_to_get("User")
-    assert not z.allowed_to_get("NonRegisteredUser")
+    assert z.allow("User")
+    assert not z.allow("NonRegisteredUser")
 
     assert (z.child.child.child == torch.LongTensor([400, 600, 1000])).all()
     z_fp = z.float_prec()
@@ -219,8 +236,8 @@ def test_torch_mul():
     assert y.child.child.precision_fractional == 2
 
     # Test if it preserves the parent user credentials.
-    assert y.allowed_to_get("User")
-    assert not y.allowed_to_get("NonRegisteredUser")
+    assert y.allow("User")
+    assert not y.allow("NonRegisteredUser")
 
     y = y.float_prec()
 
@@ -239,8 +256,8 @@ def test_torch_mul():
     assert z.child.child.precision_fractional == 3
 
     # Test if it preserves the parent user credentials.
-    assert z.allowed_to_get("User")
-    assert not z.allowed_to_get("NonRegisteredUser")
+    assert z.allow("User")
+    assert not z.allow("NonRegisteredUser")
 
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
@@ -281,8 +298,8 @@ def test_operate_with_integer_constants():
     r_fp = x_fp + 10
 
     # Test if it preserves the parent user credentials.
-    assert r_fp.allowed_to_get("User")
-    assert not r_fp.allowed_to_get("NonRegisteredUser")
+    assert r_fp.allow("User")
+    assert not r_fp.allow("NonRegisteredUser")
 
     r = r_fp.float_precision()
     assert r == x + 10
@@ -291,8 +308,8 @@ def test_operate_with_integer_constants():
     r_fp = x_fp - 7
 
     # Test if it preserves the parent user credentials.
-    assert r_fp.allowed_to_get("User")
-    assert not r_fp.allowed_to_get("NonRegisteredUser")
+    assert r_fp.allow("User")
+    assert not r_fp.allow("NonRegisteredUser")
 
     r = r_fp.float_precision()
     assert r == x - 7
@@ -301,8 +318,8 @@ def test_operate_with_integer_constants():
     r_fp = x_fp * 2
 
     # Test if it preserves the parent user credentials.
-    assert r_fp.allowed_to_get("User")
-    assert not r_fp.allowed_to_get("NonRegisteredUser")
+    assert r_fp.allow("User")
+    assert not r_fp.allow("NonRegisteredUser")
 
     assert r_fp.float_precision() == x * 2
 
@@ -310,7 +327,7 @@ def test_operate_with_integer_constants():
     r_fp = x_fp / 5
 
     # Test if it preserves the parent user credentials.
-    assert r_fp.allowed_to_get("User")
-    assert not r_fp.allowed_to_get("NonRegisteredUser")
+    assert r_fp.allow("User")
+    assert not r_fp.allow("NonRegisteredUser")
 
     assert r_fp.float_precision() == x / 5
