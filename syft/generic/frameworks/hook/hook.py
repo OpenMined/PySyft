@@ -533,7 +533,7 @@ class FrameworkHook(ABC):
     @classmethod
     def _get_hooked_multi_pointer_method(cls, attr):
         """
-        Hook a method to send it multiple recmote workers
+        Hook a method to send it multiple remote workers
 
         Args:
             attr (str): the method to hook
