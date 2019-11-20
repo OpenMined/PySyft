@@ -5,9 +5,7 @@ https://eprint.iacr.org/2018/442.pdf
 Note that there is a difference here in that our shares can be
 negative numbers while they are always positive in the paper
 """
-
 import torch
-
 import syft as sy
 
 
@@ -453,7 +451,7 @@ def division(x_sh, y_sh, bit_len_max=Q_BITS // 2):
 
     x_shape = x_sh.shape
     y_shape = y_sh.shape
-    assert x_shape == y_shape
+    assert x_shape == y_shape or list(y_shape) == [1]
 
     x_sh = x_sh.view(-1)
     y_sh = y_sh.view(-1)
@@ -501,12 +499,13 @@ def maxpool(x_sh):
         maximum value as an AdditiveSharingTensor
         index of this value in the flattened tensor as an AdditiveSharingTensor
     """
+    if x_sh.is_wrapper:
+        x_sh = x_sh.child
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
     L = x_sh.field
 
-    input_shape = x_sh.shape
-    x_sh = x_sh.view(-1)
+    x_sh = x_sh.contiguous().view(-1)
 
     # Common Randomness
     u_sh = _shares_of_zero(1, L, crypto_provider, alice, bob)
@@ -583,3 +582,56 @@ def maxpool_deriv(x_sh):
 
     maxpool_d_sh = D_sh + U_sh
     return maxpool_d_sh.view(n1, n2)
+
+
+def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
+    """Applies a 2D max pooling over an input signal composed of several input planes.
+    This interface is similar to torch.nn.MaxPool2D.
+    Args:
+        kernel_size: the size of the window to take a max over
+        stride: the stride of the window
+        padding: implicit zero padding to be added on both sides
+    """
+    assert len(a_sh.shape) == 4
+
+    # Change to tuple if not one
+    kernel = torch.nn.modules.utils._pair(kernel_size)
+    stride = torch.nn.modules.utils._pair(stride)
+    padding = torch.nn.modules.utils._pair(padding)
+
+    # TODO: support dilation.
+    dilation = torch.nn.modules.utils._pair(1)
+
+    # Extract a few useful values
+    batch_size, nb_channels, nb_rows_in, nb_cols_in = a_sh.shape
+
+    # Calculate output shapes
+    nb_rows_out = int(
+        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0] + 1
+    )
+    nb_cols_out = int(
+        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1] + 1
+    )
+
+    # Apply padding to the input
+    if padding != (0, 0):
+        a_sh = torch.nn.functional.pad(
+            a_sh, (padding[1], padding[1], padding[0], padding[0]), "constant"
+        )
+        # Update shape after padding
+        nb_rows_in += 2 * padding[0]
+        nb_cols_in += 2 * padding[1]
+
+    res = []
+    # TODO: make this operation more efficient in order to be used with cnn modules.
+    for batch in range(batch_size):
+        for channel in range(nb_channels):
+            for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
+                for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
+                    m, _ = maxpool(
+                        a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
+                    )
+                    res.append(m.wrap())
+
+    res = torch.stack(res).reshape(batch_size, nb_channels, nb_rows_out, nb_cols_out)
+    return res

@@ -104,7 +104,7 @@ def test_section_1_differential_privacy():
 
     # differencing attack using threshold
 
-    (sum(db).float() > 49) - (sum(pdb).float() > 49)
+    (sum(db).float() > 49).float() - (sum(pdb).float() > 49).float()
 
     def query(db):
 
@@ -242,7 +242,7 @@ def test_section_1_differential_privacy():
     query_result = np.argmax(counts)
     query_result
 
-    from syft.frameworks.torch.differential_privacy import pate
+    from syft.frameworks.torch.dp import pate
 
     num_teachers, num_examples, num_labels = (100, 100, 10)
     preds = (np.random.rand(num_teachers, num_examples) * num_labels).astype(int)  # fake preds

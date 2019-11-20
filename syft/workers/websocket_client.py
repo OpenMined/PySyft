@@ -40,7 +40,14 @@ class WebsocketClientWorker(BaseWorker):
         self.port = port
         self.host = host
 
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+        super().__init__(
+            hook=hook,
+            id=id,
+            data=data,
+            is_client_worker=is_client_worker,
+            log_msgs=log_msgs,
+            verbose=verbose,
+        )
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
@@ -69,15 +76,11 @@ class WebsocketClientWorker(BaseWorker):
         message = SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
         # Send the message and return the deserialized response.
-        response = self._recv_msg(serialized_message)
+        response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
-    def _send_msg(self, message: bin, location) -> bin:
-        raise RuntimeError(
-            "_send_msg should never get called on a ",
-            "WebsocketClientWorker. Did you accidentally "
-            "make hook.local_worker a WebsocketClientWorker?",
-        )
+    def _send_msg(self, message: bin, location=None) -> bin:
+        return self._recv_msg(message)
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         self.ws.send(str(binascii.hexlify(message)))
@@ -86,7 +89,6 @@ class WebsocketClientWorker(BaseWorker):
 
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketServerWorker"""
-
         response = self._forward_to_websocket_server_worker(message)
         if not self.ws.connected:
             logger.warning("Websocket connection closed (worker: %s)", self.id)
@@ -110,7 +112,7 @@ class WebsocketClientWorker(BaseWorker):
 
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(message)
-        response = self._recv_msg(serialized_message)
+        response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
     def list_objects_remote(self):
@@ -159,7 +161,7 @@ class WebsocketClientWorker(BaseWorker):
         # Send an object request message to retrieve the result tensor of the fit() method
         msg = ObjectRequestMessage(return_ids[0])
         serialized_message = sy.serde.serialize(msg)
-        response = self._recv_msg(serialized_message)
+        response = self._send_msg(serialized_message)
 
         # Return the deserialized response.
         return sy.serde.deserialize(response)
@@ -183,7 +185,7 @@ class WebsocketClientWorker(BaseWorker):
         msg = ObjectRequestMessage(return_ids[0])
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
-        response = self._recv_msg(serialized_message)
+        response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
     def evaluate(

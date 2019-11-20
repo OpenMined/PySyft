@@ -2,7 +2,7 @@ import numpy as np
 
 import torch
 
-from syft.frameworks.torch.differential_privacy import pate
+from syft.frameworks.torch.dp import pate
 
 np.random.seed(0)
 
@@ -58,5 +58,5 @@ def test_torch_ref_match():
         preds, indices, noise_eps=0.1, delta=1e-5
     )
 
-    assert torch.isclose(data_dep_eps, torch.tensor(data_dep_eps_ref.item()))
-    assert torch.isclose(data_ind_eps, torch.tensor(data_ind_eps_ref.item()))
+    assert torch.isclose(data_dep_eps, torch.tensor(data_dep_eps_ref))
+    assert torch.isclose(data_ind_eps, torch.tensor(data_ind_eps_ref))

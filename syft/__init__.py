@@ -46,7 +46,7 @@ from syft.grid import VirtualGrid
 from syft.sandbox import create_sandbox
 
 # Import federate learning objects
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
@@ -54,7 +54,6 @@ from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
-from syft.messaging.plan import make_plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -78,6 +77,16 @@ from syft import serde
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
+from syft.frameworks.torch.he.paillier import keygen
+
+
+def pool():
+    if not hasattr(syft, "_pool"):
+        import multiprocessing
+
+        syft._pool = multiprocessing.Pool()
+    return syft._pool
+
 
 __all__.extend(
     [

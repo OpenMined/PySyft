@@ -3,7 +3,7 @@ from typing import Callable
 import torch
 
 import syft as sy
-from syft.frameworks.torch.crypto.beaver import request_triple
+from syft.frameworks.torch.mpc.beaver import request_triple
 from syft.workers.abstract import AbstractWorker
 
 no_wrap = {"no_wrap": True}
@@ -44,7 +44,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     if len(locations) == 2:
         j = sy.MultiPointerTensor(children=[j1, j0])
     else:
-        j = sy.MultiPointerTensor(children=[j1] + j0.child.values())
+        j = sy.MultiPointerTensor(children=[j1] + list(j0.child.values()))
 
     delta_b = cmd(delta, b)
     a_epsilon = cmd(a, epsilon)

@@ -1,15 +1,22 @@
-import torch
+import random
+from typing import List
+
 import numpy as np
+import torch
+
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
-from scipy.stats import t
-from typing import List
-import random
+from syft.exceptions import DependencyError
+
+try:
+    from scipy.stats import t
+except ImportError:
+    raise DependencyError("scipy", "scipy")
 
 
-class BloomRegressor:
+class EncryptedLinearRegression:
     """
     Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
     It performs linear regression using Secured Multi-Party Computation.
@@ -69,7 +76,7 @@ class BloomRegressor:
                 y_ptrs[i] = y.unsqueeze(1)
 
         if self.fit_intercept:
-            self._add_intercept(X_ptrs)
+            X_ptrs = self._add_intercept(X_ptrs)
             self._dgf -= 1
 
         self.workers = self._get_workers(X_ptrs)
@@ -91,12 +98,13 @@ class BloomRegressor:
         # values we are interested in (i.e. the coefficients and std errors) locally at
         # the end in order to make sure the subsequent computations are still precise
 
-        XX_inv_shared = inv_sym(XX_shared / self.total_size)
+        XX_shared = XX_shared / self.total_size
+        XX_inv_shared = inv_sym(XX_shared)
 
         # Compute shared coefficients
         coef_shared = XX_inv_shared @ Xy_shared
 
-        sigma2_shared = yy_shared - coef_shared.t() @ XX_shared @ coef_shared
+        sigma2_shared = yy_shared * self.total_size - coef_shared.t() @ XX_shared @ coef_shared
         sigma2_shared = sigma2_shared / self._dgf
 
         var_diag_shared = torch.diag(XX_inv_shared) * sigma2_shared
@@ -104,10 +112,10 @@ class BloomRegressor:
         # Store results locally and resize by dividing by total_size
         self.coef = coef_shared.get().float_precision() / self.total_size
         self.coef = self.coef.squeeze()
-        self.se_coef = torch.sqrt(var_diag_shared.get().float_precision() / self.total_size)
+        self.se_coef = torch.sqrt(var_diag_shared.get().float_precision()) / self.total_size
         self.se_coef = self.se_coef.squeeze()
 
-        self.sigma_sq = sigma2_shared.get().float_precision().squeeze()
+        self.sigma = torch.sqrt(sigma2_shared.get().float_precision().squeeze() / self.total_size)
 
         if self.fit_intercept:
             self.intercept = self.coef[0]
@@ -217,10 +225,12 @@ class BloomRegressor:
         """
         Adds a column-vector of 1's at the beginning of the tensors X_ptrs
         """
+        X_ptrs_new = []
         for i, x in enumerate(X_ptrs):
             ones = torch.ones_like(x[:, :1])
             x = torch.cat((ones, x), 1)
-            X_ptrs[i] = x
+            X_ptrs_new.append(x)
+        return X_ptrs_new
 
     @staticmethod
     def _get_workers(ptrs):
@@ -266,11 +276,11 @@ class BloomRegressor:
         """
         Compute p-values of coefficients (and intercept if fit_intercept==True)
         """
-        tstat_coef = self.coef / torch.sqrt(self.sigma_sq)
+        tstat_coef = self.coef / self.se_coef
         self.pvalue_coef = 2 * t.cdf(-abs(tstat_coef), self._dgf)
 
         if self.fit_intercept:
-            tstat_intercept = self.intercept / torch.sqrt(self.sigma_sq)
+            tstat_intercept = self.intercept / self.se_intercept
             self.pvalue_intercept = 2 * t.cdf(-abs(tstat_intercept), self._dgf)
         else:
             self.pvalue_intercept = None

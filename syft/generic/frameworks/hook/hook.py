@@ -8,9 +8,10 @@ from typing import List
 
 import syft
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.object import initialize_object
+from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 
@@ -32,15 +33,17 @@ class FrameworkHook(ABC):
 
     @classmethod
     @abstractmethod
-    def create_wrapper(cls, child_to_wrap, *args, **kwargs):
-        """Factory method for creating a generic FrameworkTensor wrapper."""
-        pass
-
-    @classmethod
-    @abstractmethod
     def create_zeros(cls, shape, dtype, **kwargs):
         """Factory method for creating a generic zero FrameworkTensor."""
         pass
+
+    @classmethod
+    def create_wrapper(cls, wrapper_type, *args, **kwargs):
+        """Factory method for creating a generic wrapper of type wrapper_type."""
+        if wrapper_type is None:
+            wrapper_type = syft.framework.Tensor
+
+        return wrapper_type(*args, **kwargs)
 
     ### Standardized, framework-specific methods ###
     @abstractmethod
@@ -54,28 +57,29 @@ class FrameworkHook(ABC):
         pass
 
     @classmethod
-    @abstractmethod
-    def _add_methods_from_native_tensor(
-        cls, tensor_type: type, syft_type: type, exclude: List[str]
+    def _transfer_methods_to_framework_class(
+        hook_cls, framework_cls: type, from_cls: type, exclude: List[str]
     ):
-        """Adds methods from the syft_type class to the tensor_type class.
+        """Adds methods from the from_cls class to the framework_cls class.
 
-        The class syft_type is a proxy class useful to avoid extending
-        the native tensor class directly.
+        The class from_cls is a proxy class useful to avoid extending
+        the native framework class directly.
 
         Args:
-            tensor_type: The tensor type to which we are adding methods.
-            syft_type: The tensor from which we are adding methods.
+            framework_cls: The class to which we are adding methods, e.g.
+                torch.Tensor or tf.Variable.
+            from_cls: The class from which we are adding methods, e.g.
+                TorchTensor, or TensorFlowVariable.
             exclude: A list of method names to exclude from the hooking process.
         """
         # For all methods defined in syft_type which are not internal methods
         # (like __class__, etc)
-        for attr in dir(syft_type):
+        for attr in dir(from_cls):
             if attr not in exclude:
-                if hasattr(tensor_type, attr):
-                    setattr(tensor_type, f"native_{attr}", getattr(tensor_type, attr))
+                if hasattr(framework_cls, attr):
+                    setattr(framework_cls, f"native_{attr}", getattr(framework_cls, attr))
                 # Add to the native tensor this method
-                setattr(tensor_type, attr, getattr(syft_type, attr))
+                setattr(framework_cls, attr, getattr(from_cls, attr))
 
     ### Generics methods ###
     def _hook_native_methods(self, tensor_type: type):
@@ -108,7 +112,10 @@ class FrameworkHook(ABC):
 
         @property
         def location(self):
-            return self.child.location
+            if hasattr(self, "child"):
+                return self.child.location
+            else:
+                return None
 
         tensor_type.location = location
 
@@ -157,8 +164,6 @@ class FrameworkHook(ABC):
 
         tensor_type.is_wrapper = is_wrapper
 
-        tensor_type.native_shape = tensor_type.shape
-
         def dim(self):
             return len(self.shape)
 
@@ -188,6 +193,7 @@ class FrameworkHook(ABC):
         for attr in dir(tensor_type):
 
             # Conditions for not overloading the method
+            # TODO[jvmancuso] separate func exclusion from method exclusion
             if attr in syft.framework.exclude:
                 continue
             if not hasattr(tensor_type, attr):
@@ -238,6 +244,19 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
+    def _hook_object_pointer_methods(self, framework_cls):
+        """
+        Add hooked version of all methods of the framework_cls to the
+        ObjectPointer: instead of performing the native object
+        method, it will be sent remotely to the location the pointer
+        is pointing at.
+        """
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[framework_cls]:
+            new_method = self._get_hooked_pointer_method(attr)
+            setattr(ObjectPointer, attr, new_method)
+
     def _hook_multi_pointer_tensor_methods(self, tensor_type):
         """
         Add hooked version of all methods of the torch Tensor to the
@@ -268,19 +287,35 @@ class FrameworkHook(ABC):
         if "native___init__" not in dir(tensor_type):
             tensor_type.native___init__ = tensor_type.__init__
 
-        def new___init__(cls, *args, owner=None, id=None, register=True, **kwargs):
-            initialize_tensor(
-                hook_self=hook_self,
-                cls=cls,
+        def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
+            initialize_object(
+                hook=hook_self,
+                obj=self,
                 id=id,
-                is_tensor=is_tensor,
+                reinitialize=not is_tensor,
                 init_args=args,
                 init_kwargs=kwargs,
             )
 
         tensor_type.__init__ = new___init__
 
-    def _get_hooked_syft_method(hook_self, attr):
+    @classmethod
+    def _perform_function_overloading(cls, parent_module_name, parent_module, func_name):
+
+        # Where the overloading happens
+        # 1. Get native function
+        native_func = getattr(parent_module, func_name)
+        # 2. Check it is a proper function
+        if type(native_func) in [types.FunctionType, types.BuiltinFunctionType]:
+            # 3. Build the hooked function
+            new_func = cls._get_hooked_func(parent_module_name, func_name, native_func)
+            # 4. Move the native function
+            setattr(parent_module, f"native_{func_name}", native_func)
+            # 5. Put instead the hooked one
+            setattr(parent_module, func_name, new_func)
+
+    @classmethod
+    def _get_hooked_syft_method(cls, attr):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute, forward this method with the new args and new self,
@@ -314,7 +349,8 @@ class FrameworkHook(ABC):
 
         return overloaded_syft_method
 
-    def _get_hooked_method(hook_self, method_name):
+    @classmethod
+    def _get_hooked_method(cls, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -335,24 +371,63 @@ class FrameworkHook(ABC):
             """
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
+
+                # if self is a natural tensor but the first argument isn't,
+                # wrap self with the appropriate type and re-run
+                if len(args) > 0 and hasattr(args[0], "child"):
+
+                    # if we allow this for PointerTensors it opens the potential
+                    # that we could accidentally serialize and send a tensor in the
+                    # arguments
+                    if not isinstance(args[0].child, PointerTensor):
+                        self = type(args[0].child)().on(self, wrap=True)
+                        args = [args[0]]
+                        return overloaded_native_method(self, *args, **kwargs)
+
                 method = getattr(self, f"native_{method_name}")
                 # Run the native function with the new args
 
                 try:
                     response = method(*args, **kwargs)
+
                 except BaseException as e:
                     # we can make some errors more descriptive with this method
                     raise route_method_exception(e, self, args, kwargs)
 
             else:  # means that there is a wrapper to remove
+
                 try:
                     # Replace all torch tensor with their child attribute
                     new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                         method_name, self, args, kwargs
                     )
-                except BaseException as e:
-                    # we can make some errors more descriptive with this method
-                    raise route_method_exception(e, self, args, kwargs)
+
+                except BaseException as e:  # if there's a type mismatch, try to fix it!
+
+                    try:
+                        # if the first argument has no child (meaning it's probably raw data),
+                        # try wrapping it with the type of self. We have to except PointerTensor
+                        # because otherwise it can lead to inadvertently sending data to another
+                        # machine
+                        if not hasattr(args[0], "child") and not isinstance(
+                            self.child, PointerTensor
+                        ):
+                            # TODO: add check to make sure this isn't getting around a security class
+
+                            _args = list()
+                            _args.append(type(self)().on(args[0], wrap=False))
+                            for a in args[1:]:
+                                _args.append(a)
+
+                            args = _args
+
+                        # Replace all torch tensor with their child attribute
+                        new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+                            method_name, self, args, kwargs
+                        )
+                    except BaseException as e:
+                        # we can make some errors more descriptive with this method
+                        raise route_method_exception(e, self, args, kwargs)
 
                 # Send the new command to the appropriate class and get the response
                 method = getattr(new_self, method_name)
@@ -371,7 +446,8 @@ class FrameworkHook(ABC):
 
         return overloaded_native_method
 
-    def _get_hooked_func(hook_self, attr):
+    @classmethod
+    def _get_hooked_func(cls, public_module_name, func_api_name, func):
         """
         Hook a function in order to inspect its args and search for pointer
         or other syft tensors.
@@ -381,17 +457,16 @@ class FrameworkHook(ABC):
         - Calls with syft tensor will in the future trigger specific behaviour
 
         Args:
+            public_module_name (str): the name of the public module you are
+                hooking this function on (ie the same name that the user would import).
             attr (str): the method to hook
         Return:
             the hooked method
         """
 
-        if attr.__module__ is None:
-            attr.__module__ = "torch"
+        cmd_name = f"{public_module_name}.{func_api_name}"
 
-        cmd_name = f"{attr.__module__}.{attr.__name__}"
-
-        @wraps(attr)
+        @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
@@ -416,7 +491,8 @@ class FrameworkHook(ABC):
 
         return overloaded_func
 
-    def _get_hooked_pointer_method(hook_self, attr):
+    @classmethod
+    def _get_hooked_pointer_method(cls, attr):
         """
         Hook a method to send it to remote worker
 
@@ -437,7 +513,7 @@ class FrameworkHook(ABC):
             location = pointer.location
 
             if len(args) > 0:
-                if isinstance(args[0], PointerTensor):
+                if isinstance(args[0], ObjectPointer):
                     if args[0].location.id != location.id:
                         raise TensorsNotCollocatedException(pointer, args[0], attr)
 
@@ -454,9 +530,10 @@ class FrameworkHook(ABC):
 
         return overloaded_pointer_method
 
-    def _get_hooked_multi_pointer_method(hook_self, attr):
+    @classmethod
+    def _get_hooked_multi_pointer_method(cls, attr):
         """
-        Hook a method to send it multiple recmote workers
+        Hook a method to send it multiple remote workers
 
         Args:
             attr (str): the method to hook
