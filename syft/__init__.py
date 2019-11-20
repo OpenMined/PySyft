@@ -1,14 +1,18 @@
 r"""
-PySyft is a Python library for secure, private Deep Learning. 
+PySyft is a Python library for secure, private Deep Learning.
 PySyft decouples private data from model training, using Federated Learning,
 Differential Privacy, and Multi-Party Computation (MPC) within PyTorch.
 """
+# We load these modules first so that syft knows which are available
+from syft import dependency_check
+from syft import frameworks  # Triggers registration of any available frameworks
+
 # Major imports
-from syft import frameworks
-from syft import workers
-from syft import codes
-from syft import federated
-from .version import __version__
+from syft.version import __version__
+
+# This import statement is strictly here to trigger registration of syft
+# tensor types inside hook_args.py.
+import syft.frameworks.torch.hook.hook_args
 
 import logging
 
@@ -21,234 +25,104 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
-from syft import dependency_check
-
-if dependency_check.keras_available:
+if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
-    from syft.workers import TFECluster
-    from syft.workers import TFEWorker
+    from syft.workers.tfe import TFECluster
+    from syft.workers.tfe import TFEWorker
+
+    __all__ = ["KerasHook", "TFECluster", "TFEWorker"]
 else:
-    logger.warning("Keras (Tensorflow) not available.")
+    logger.info("TF Encrypted Keras not available.")
+    __all__ = []
 
 # Pytorch dependencies
 # Import Hook
-from syft.frameworks.torch import TorchHook
-
-# Import Tensor Types
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.pointers import PointerTensor
-
-# import other useful classes
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import grids
 from syft.grid import VirtualGrid
 
+# Import sandbox
+from syft.sandbox import create_sandbox
+
 # Import federate learning objects
-from syft.federated import Plan
-from syft.federated import TrainConfig
-from syft.federated import func2plan
-from syft.federated import method2plan
-from syft.federated import make_plan
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.federated.train_config import TrainConfig
+
+# Import messaging objects
+from syft.messaging.protocol import Protocol
+from syft.messaging.plan import Plan
+from syft.messaging.plan import func2plan
+from syft.messaging.plan import method2plan
 
 # Import Worker Types
-from syft.workers import VirtualWorker
+from syft.workers.virtual import VirtualWorker
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.websocket_server import WebsocketServerWorker
 
-
-# Import Tensor Types
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import MultiPointerTensor
-
-from syft.frameworks.torch.pointers import ObjectPointer
-from syft.frameworks.torch.pointers import CallablePointer
-from syft.frameworks.torch.pointers import ObjectWrapper
+# Import Syft's Public Tensor Types
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 # Import serialization tools
 from syft import serde
-from syft.serde import torch_serde
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
+from syft.frameworks.torch.he.paillier import keygen
 
-__all__ = [
-    "frameworks",
-    "workers",
-    "serde",
-    "torch_serde",
-    "TorchHook",
-    "VirtualWorker",
-    "Plan",
-    "codes",
-    "LoggingTensor",
-    "PointerTensor",
-    "VirtualGrid",
-    "ObjectWrapper",
-    "LargePrecisionTensor",
-]
+
+def pool():
+    if not hasattr(syft, "_pool"):
+        import multiprocessing
+
+        syft._pool = multiprocessing.Pool()
+    return syft._pool
+
+
+__all__.extend(
+    [
+        "frameworks",
+        "serde",
+        "TorchHook",
+        "VirtualWorker",
+        "WebsocketClientWorker",
+        "WebsocketServerWorker",
+        "Plan",
+        "func2plan",
+        "method2plan",
+        "make_plan",
+        "LoggingTensor",
+        "AdditiveSharingTensor",
+        "CRTPrecisionTensor",
+        "AutogradTensor",
+        "FixedPrecisionTensor",
+        "LargePrecisionTensor",
+        "PointerTensor",
+        "MultiPointerTensor",
+        "VirtualGrid",
+        "create_sandbox",
+        "combine_pointers",
+        "FederatedDataset",
+        "FederatedDataLoader",
+        "BaseDataset",
+        "TrainConfig",
+    ]
+)
 
 local_worker = None
 torch = None
+framework = None
 
 if "ID_PROVIDER" not in globals():
-    from syft.generic import IdProvider
+    from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
-
-
-def create_sandbox(gbs, verbose=True, download_data=True):
-    """There's some boilerplate stuff that most people who are
-    just playing around would like to have. This will create
-    that for you"""
-
-    try:
-        torch = gbs["torch"]
-    except:
-        torch = gbs["th"]
-
-    global hook
-    global bob
-    global theo
-    global alice
-    global andy
-    global jason
-    global jon
-
-    if download_data:  # pragma: no cover
-        from sklearn.datasets import load_boston
-        from sklearn.datasets import load_breast_cancer
-        from sklearn.datasets import load_digits
-        from sklearn.datasets import load_diabetes
-        from sklearn.datasets import load_iris
-        from sklearn.datasets import load_wine
-        from sklearn.datasets import load_linnerud
-
-        def load_sklearn(func, *tags):
-            dataset = func()
-            data = (
-                torch.tensor(dataset["data"])
-                .float()
-                .tag(*(list(tags) + ["#data"] + dataset["DESCR"].split("\n")[0].lower().split(" ")))
-                .describe(dataset["DESCR"])
-            )
-            target = (
-                torch.tensor(dataset["target"])
-                .float()
-                .tag(
-                    *(list(tags) + ["#target"] + dataset["DESCR"].split("\n")[0].lower().split(" "))
-                )
-                .describe(dataset["DESCR"])
-            )
-
-            return data, target
-
-        def distribute_dataset(data, workers):
-            batch_size = int(data.shape[0] / len(workers))
-            n_batches = len(workers)
-            for batch_i in range(n_batches - 1):
-                batch = data[batch_i * batch_size : (batch_i + 1) * batch_size]
-                batch.tags = data.tags
-                batch.description = data.description
-                ptr = batch.send(workers[batch_i])
-                ptr.child.garbage_collect_data = False
-
-            batch = data[(n_batches - 1) * batch_size :]
-            batch.tags = data.tags
-            batch.description = data.description
-            ptr = batch.send(workers[n_batches - 1])
-            ptr.child.garbage_collect_data = False
-
-    print("Setting up Sandbox...")
-
-    if verbose:
-        print("\t- Hooking PyTorch")
-    hook = TorchHook(torch)
-
-    if verbose:
-        print("\t- Creating Virtual Workers:")
-        print("\t\t- bob")
-    bob = VirtualWorker(hook, id="bob")
-    if verbose:
-        print("\t\t- theo")
-    theo = VirtualWorker(hook, id="theo")
-    if verbose:
-        print("\t\t- jason")
-    jason = VirtualWorker(hook, id="jason")
-    if verbose:
-        print("\t\t- alice")
-    alice = VirtualWorker(hook, id="alice")
-    if verbose:
-        print("\t\t- andy")
-    andy = VirtualWorker(hook, id="andy")
-    if verbose:
-        print("\t\t- jon")
-    jon = VirtualWorker(hook, id="jon")
-
-    if verbose:
-        print("\tStoring hook and workers as global variables...")
-    gbs["hook"] = hook
-    gbs["bob"] = bob
-    gbs["theo"] = theo
-    gbs["jason"] = jason
-    gbs["alice"] = alice
-    gbs["andy"] = andy
-    gbs["jon"] = jon
-
-    gbs["workers"] = [bob, theo, jason, alice, andy, jon]
-
-    if download_data:  # pragma: no cover
-
-        if verbose:
-            print("\tLoading datasets from SciKit Learn...")
-            print("\t\t- Boston Housing Dataset")
-        boston = load_sklearn(load_boston, *["#boston", "#housing", "#boston_housing"])
-        if verbose:
-            print("\t\t- Diabetes Dataset")
-        diabetes = load_sklearn(load_diabetes, *["#diabetes"])
-        if verbose:
-            print("\t\t- Breast Cancer Dataset")
-        breast_cancer = load_sklearn(load_breast_cancer)
-        if verbose:
-            print("\t- Digits Dataset")
-        digits = load_sklearn(load_digits)
-        if verbose:
-            print("\t\t- Iris Dataset")
-        iris = load_sklearn(load_iris)
-        if verbose:
-            print("\t\t- Wine Dataset")
-        wine = load_sklearn(load_wine)
-        if verbose:
-            print("\t\t- Linnerud Dataset")
-        linnerud = load_sklearn(load_linnerud)
-
-        workers = [bob, theo, jason, alice, andy, jon]
-
-        if verbose:
-            print("\tDistributing Datasets Amongst Workers...")
-        distribute_dataset(boston[0], workers)
-        distribute_dataset(boston[1], workers)
-        distribute_dataset(diabetes[0], workers)
-        distribute_dataset(diabetes[1], workers)
-        distribute_dataset(breast_cancer[0], workers)
-        distribute_dataset(breast_cancer[1], workers)
-        distribute_dataset(digits[0], workers)
-        distribute_dataset(digits[1], workers)
-        distribute_dataset(iris[0], workers)
-        distribute_dataset(iris[1], workers)
-        distribute_dataset(wine[0], workers)
-        distribute_dataset(wine[1], workers)
-        distribute_dataset(linnerud[0], workers)
-        distribute_dataset(linnerud[1], workers)
-
-    if verbose:
-        print("\tCollecting workers into a VirtualGrid...")
-    _grid = VirtualGrid(*gbs["workers"])
-    gbs["grid"] = _grid
-
-    print("Done!")

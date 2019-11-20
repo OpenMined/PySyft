@@ -1,22 +1,25 @@
+import asyncio
 import binascii
+import logging
+import socket
+import ssl
+import sys
 from typing import Union
 from typing import List
 
-import asyncio
+import tblib.pickling_support
 import torch
 import websockets
-import ssl
-import sys
-import tblib.pickling_support
-
-tblib.pickling_support.install()
 
 import syft as sy
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.federated.federated_client import FederatedClient
+from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
+
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
-from syft.federated import FederatedClient
+
+tblib.pickling_support.install()
 
 
 class WebsocketServerWorker(VirtualWorker, FederatedClient):
@@ -82,9 +85,12 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
                 add them into the queue.
 
         """
-        while True:
-            msg = await websocket.recv()
-            await self.broadcast_queue.put(msg)
+        try:
+            while True:
+                msg = await websocket.recv()
+                await self.broadcast_queue.put(msg)
+        except websockets.exceptions.ConnectionClosed:
+            self._consumer_handler(websocket)
 
     async def _producer_handler(self, websocket: websockets.WebSocketCommonProtocol):
         """This handler listens to the queue and processes messages as they
@@ -165,7 +171,11 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
             )
 
         asyncio.get_event_loop().run_until_complete(start_server)
-        asyncio.get_event_loop().run_forever()
+        print("Serving. Press CTRL-C to stop.")
+        try:
+            asyncio.get_event_loop().run_forever()
+        except KeyboardInterrupt:
+            logging.info("Websocket server stopped.")
 
     def list_objects(self, *args):
         return str(self._objects)

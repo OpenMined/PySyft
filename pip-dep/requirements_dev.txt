@@ -1,0 +1,12 @@
+black>=10.3b0
+bumpversion>=0.5.3
+coverage>=4.5.3
+ipykernel>=5.1.0
+jupyter>=1.0.0
+pre-commit>=1.16.1
+pyopenssl>=19.0.0
+pyshark>=0.4.2.4
+pytest>=4.5.0
+setuptools>=41.0.0
+sphinx-markdown-builder>=0.4.1
+Sphinx>=2.1.1

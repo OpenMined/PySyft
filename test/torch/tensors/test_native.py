@@ -1,8 +1,8 @@
 import pytest
-
 import torch
 
-from syft.frameworks.torch.pointers import PointerTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
+
 from syft.exceptions import InvalidTensorForRemoteGet
 
 

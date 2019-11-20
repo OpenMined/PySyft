@@ -1,13 +1,13 @@
 """Tests relative to verifying the hook process behaves properly."""
-
 import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
+from syft.generic.pointers.pointer_tensor import PointerTensor
+
 from syft.exceptions import RemoteObjectFoundError
-from syft.frameworks.torch.pointers import PointerTensor
 
 
 def test___init__(hook):
@@ -17,12 +17,12 @@ def test___init__(hook):
 
 def test_torch_attributes():
     with pytest.raises(RuntimeError):
-        syft.torch._command_guard("false_command", "torch_modules")
+        syft.framework._command_guard("false_command")
 
-    assert syft.torch._is_command_valid_guard("torch.add", "torch_modules")
-    assert not syft.torch._is_command_valid_guard("false_command", "torch_modules")
+    assert syft.framework._is_command_valid_guard("torch.add")
+    assert not syft.framework._is_command_valid_guard("false_command")
 
-    syft.torch._command_guard("torch.add", "torch_modules", get_native=False)
+    syft.framework._command_guard("torch.add", get_native=False)
 
 
 def test_worker_registration(hook, workers):
@@ -47,8 +47,8 @@ def test_pointer_found_exception(workers):
 
 
 def test_build_get_child_type():
-    from syft.frameworks.torch.hook.hook_args import build_rule
-    from syft.frameworks.torch.hook.hook_args import build_get_tensor_type
+    from syft.generic.frameworks.hook.hook_args import build_rule
+    from syft.generic.frameworks.hook.hook_args import build_get_tensor_type
 
     x = torch.Tensor([1, 2, 3])
     args = (x, [[1, x]])
@@ -145,10 +145,8 @@ def test_hook_tensor(workers):
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)
     x.send(workers["bob"])
     x = torch.tensor([1.0, -1.0, 3.0, 4.0], requires_grad=True)[0:2]
-    x.send(workers["bob"])
-
-    # TODO: shouldn't there be an assertion here?
-    # assert True
+    x_ptr = x.send(workers["bob"])
+    assert hasattr(x_ptr, "child")
 
 
 def test_properties():
@@ -159,7 +157,7 @@ def test_properties():
 def test_signature_cache_change():
     """Tests that calls to the same method using a different
     signature works correctly. We cache signatures in the
-    hook.build_hook_args_function dictionary but sometimes they
+    hook.build_unwrap_args_from_function dictionary but sometimes they
     are incorrect if we use the same method with different
     parameter types. So, we need to test to make sure that
     this cache missing fails gracefully. This test tests
@@ -293,3 +291,122 @@ def test_RNN_grad_set_backpropagation(workers):
         # so we better check it beforehand
         assert param.grad.data is not None
         param.data.add_(-learning_rate, param.grad.data)
+
+
+def test_local_remote_gradient_clipping(workers):
+    """
+    Real test case of gradient clipping for the remote and
+    local parameters of an RNN
+    """
+    alice = workers["alice"]
+
+    class RNN(nn.Module):
+        def __init__(self, input_size, hidden_size, output_size):
+            super(RNN, self).__init__()
+            self.hidden_size = hidden_size
+            self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+            self.i2o = nn.Linear(input_size + hidden_size, output_size)
+            self.softmax = nn.LogSoftmax(dim=1)
+
+        def forward(self, input, hidden):
+            combined = torch.cat((input, hidden), 1)
+            hidden = self.i2h(combined)
+            output = self.i2o(combined)
+            output = self.softmax(output)
+            return output, hidden
+
+        def initHidden(self):
+            return torch.zeros(1, self.hidden_size)
+
+    # let's initialize a simple RNN
+    n_hidden = 128
+    n_letters = 57
+    n_categories = 18
+
+    rnn = RNN(n_letters, n_hidden, n_categories)
+
+    # Let's send the model to alice, who will be responsible for the tiny computation
+    alice_model = rnn.copy().send(alice)
+
+    # Simple input for the Recurrent Neural Network
+    input_tensor = torch.zeros(size=(1, 57))
+    # Just set a random category for it
+    input_tensor[0][20] = 1
+    alice_input = input_tensor.copy().send(alice)
+
+    label_tensor = torch.randint(low=0, high=(n_categories - 1), size=(1,))
+    alice_label = label_tensor.send(alice)
+
+    hidden_layer = alice_model.initHidden()
+    alice_hidden_layer = hidden_layer.send(alice)
+    # Forward pass into the NN and its hidden layers, notice how it goes sequentially
+    output, alice_hidden_layer = alice_model(alice_input, alice_hidden_layer)
+    criterion = nn.NLLLoss()
+    loss = criterion(output, alice_label)
+    # time to backpropagate...
+    loss.backward()
+
+    # Remote gradient clipping
+    remote_parameters = alice_model.parameters()
+    total_norm_remote = nn.utils.clip_grad_norm_(remote_parameters, 2)
+
+    # Local gradient clipping
+    local_alice_model = alice_model.get()
+    local_parameters = local_alice_model.parameters()
+    total_norm_local = nn.utils.clip_grad_norm_(local_parameters, 2)
+
+    # Is the output of the remote gradient clipping version equal to
+    # the output of the local gradient clipping version?
+    assert total_norm_remote == total_norm_local
+
+
+# Input: None
+# Output: a local PyTorch tensor with .grad attribute set to [4.5, 4.5, 4.5, 4.5]
+# These operations were taken from this tutorial:
+# https://pytorch.org/tutorials/beginner/blitz/autograd_tutorial.html
+def produce_tensor_with_grad():
+    x = torch.ones(2, 2, requires_grad=True)
+    a = torch.randn(2, 2)
+    a = (a * 3) / (a - 1)
+    a.requires_grad_(True)
+    b = (a * a).sum()
+    y = x + 2
+    z = y * y * 3
+    out = z.mean()
+    # backward function is used for computing the gradient of the tensor 'x'
+    out.backward()
+
+    return x
+
+
+def test_remote_gradient_clipping(workers):
+    """ Vanishing gradient test over
+        gradients of a remote tensor
+    """
+    alice = workers["alice"]
+    local_tensor = produce_tensor_with_grad()
+    remote_tensor = local_tensor.send(alice)
+    # initially, remote_tensor.grad is [4.5, 4.5, 4.5, 4.5]
+    # Method operates in place
+    nn.utils.clip_grad_norm_(remote_tensor, 2)
+    tensor_comparison_grad = torch.Tensor([[4.5, 4.5], [4.5, 4.5]])
+    tensor_comp_grad_remote = tensor_comparison_grad.send(alice)
+    # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
+    smaller_tensor_check_remote = remote_tensor.grad < tensor_comp_grad_remote
+
+    assert 1 == smaller_tensor_check_remote.all().copy().get().item()
+
+
+def test_local_gradient_clipping():
+    """ Vanishing gradient test over
+        gradients of a local tensor
+    """
+    local_tensor = produce_tensor_with_grad()
+    # initially, local_tensor.grad is [4.5, 4.5, 4.5, 4.5]
+    # Method operates in place
+    nn.utils.clip_grad_norm_(local_tensor, 2)
+    tensor_comparison_grad = torch.Tensor([[4.5, 4.5], [4.5, 4.5]])
+    # Has the gradient decreased w.r.t. the initial value (i.e. was it clipped)?
+    smaller_tensor_check = local_tensor.grad < tensor_comparison_grad
+
+    assert 1 == smaller_tensor_check.all().item()

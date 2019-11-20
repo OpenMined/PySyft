@@ -1,9 +1,10 @@
 from typing import List
 from typing import Union
 
-import torch
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.tensor import AbstractTensor
 
-from syft.frameworks.torch.tensors.interpreters import AbstractTensor
+from syft.exceptions import ObjectNotFoundError
 
 
 class ObjectStorage:
@@ -64,31 +65,13 @@ class ObjectStorage:
             obj = self._objects[obj_id]
         except KeyError as e:
             if obj_id not in self._objects:
-                msg = 'Object "' + str(obj_id) + '" not found on worker!!!'
-                msg += (
-                    "You just tried to interact with an object ID:"
-                    + str(obj_id)
-                    + " on "
-                    + str(self)
-                    + " which does not exist!!! "
-                )
-                msg += (
-                    "Use .send() and .get() on all your tensors to make sure they're"
-                    "on the same machines. "
-                    "If you think this tensor does exist, check the ._objects dictionary"
-                    "on the worker and see for yourself!!! "
-                    "The most common reason this error happens is because someone calls"
-                    ".get() on the object's pointer without realizing it (which deletes "
-                    "the remote object and sends it to the pointer). Check your code to "
-                    "make sure you haven't already called .get() on this pointer!!!"
-                )
-                raise KeyError(msg)
+                raise ObjectNotFoundError(obj_id, self)
             else:
                 raise e
 
         return obj
 
-    def set_obj(self, obj: Union[torch.Tensor, AbstractTensor]) -> None:
+    def set_obj(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Adds an object to the registry of objects.
 
         Args:
@@ -120,6 +103,25 @@ class ObjectStorage:
         """
         if remote_key in self._objects:
             obj = self._objects[remote_key]
-            if hasattr(obj, "child"):
+            if hasattr(obj, "child") and obj.child is not None:
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
+
+    def clear_objects(self, return_self: bool = True):
+        """Removes all objects from the object storage.
+
+        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
+
+        Args:
+            return_self: flag, whether to return self as return value
+
+        Returns:
+            self, if return_self if True, else None
+
+        """
+        self._objects.clear()
+        return self if return_self else None
+
+    def current_objects(self):
+        """Returns a copy of the objects in the object storage."""
+        return self._objects.copy()
