@@ -46,6 +46,10 @@ pip install -e .
 ```
 If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
 
+### Deploying Workers
+
+You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
+
 ## Contributing
 
 ### Beginner Issues
