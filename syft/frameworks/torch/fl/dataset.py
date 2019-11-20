@@ -140,22 +140,6 @@ def dataset_federate(dataset, workers):
     # take ceil to have exactly len(workers) sets after splitting
     data_size = math.ceil(len(dataset) / len(workers))
 
-    # Fix for old versions of torchvision
-    if not hasattr(dataset, "data"):
-        if hasattr(dataset, "train_data"):
-            dataset.data = dataset.train_data
-        elif hasattr(dataset, "test_data"):
-            dataset.data = dataset.test_data
-        else:
-            raise AttributeError("Could not find inputs in dataset")
-    if not hasattr(dataset, "targets"):
-        if hasattr(dataset, "train_labels"):
-            dataset.targets = dataset.train_labels
-        elif hasattr(dataset, "test_labels"):
-            dataset.targets = dataset.test_labels
-        else:
-            raise AttributeError("Could not find targets in dataset")
-
     datasets = []
     data_loader = torch.utils.data.DataLoader(dataset, batch_size=data_size)
     for dataset_idx, (data, targets) in enumerate(data_loader):
