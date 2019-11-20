@@ -7,7 +7,7 @@ import pytest
 import torch
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker

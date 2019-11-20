@@ -2,7 +2,7 @@ import torch
 import torch as th
 
 import syft
-from syft.frameworks.torch.crypto.securenn import (
+from syft.frameworks.torch.mpc.securenn import (
     private_compare,
     decompose,
     share_convert,
