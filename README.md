@@ -116,7 +116,7 @@ $ docker container run -e WORKSPACE_DIR=/root openmined/pysyft-notebook
 You could also build the image on your own and run it locally:
 
 ```bash
-$ cd docker-image
+$ cd docker-images/pysyft-notebook/
 $ docker image build -t pysyft-notebook .
 $ docker container run pysyft-notebook
 ```
