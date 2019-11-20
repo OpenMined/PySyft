@@ -292,11 +292,18 @@ class TorchTensor(AbstractTensor):
             # of the syft type of the arguments and returns
             if args_type not in FrameworkTensor:
                 return args_type.handle_func_command(command)
-
             # build the new command
             new_command = (cmd, None, new_args, new_kwargs)
             # Send it to the appropriate class and get the response
-            response = new_type.handle_func_command(new_command)
+            try:
+                response = new_type.handle_func_command(new_command)
+            except RuntimeError:
+                # Change the library path to avoid errors on layers like AvgPooling
+                list_new_command = list(new_command)
+                list_new_command[0] = cls._fix_torch_library(new_command[0])
+                new_command = tuple(list_new_command)
+                response = new_type.handle_func_command(new_command)
+
             # Put back the wrappers where needed
             response = hook_args.hook_response(cmd, response, wrap_type=args_type)
         except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
@@ -323,7 +330,7 @@ class TorchTensor(AbstractTensor):
                 response = cls._get_response(cmd, args, kwargs)
             except AttributeError:
                 # Change the library path to avoid errors on layers like AvgPooling
-                cmd = cmd.replace("_C._nn", "nn.functional")
+                cmd = cls._fix_torch_library(cmd)
                 response = cls._get_response(cmd, args, kwargs)
 
         return response
@@ -338,6 +345,14 @@ class TorchTensor(AbstractTensor):
             response = eval(cmd)(args, **kwargs)
 
         return response
+    
+    def _fix_torch_library(cmd):
+        """
+            Change the cmd string parameter to use nn.functional path to avoid erros.
+        """
+        if("_C._nn" in cmd):
+            cmd = cmd.replace("_C._nn", "nn.functional")
+        return cmd
 
     def send(
         self,
