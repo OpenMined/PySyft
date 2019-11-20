@@ -4,10 +4,11 @@ import numpy as np
 import itertools
 
 import syft
-from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook.hook_args import default_register_tensor
+from syft.generic.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 
 
 class CRTPrecisionTensor(AbstractTensor):
@@ -311,22 +312,23 @@ class CRTPrecisionTensor(AbstractTensor):
         return self.wrap()
 
     @staticmethod
-    def simplify(tensor: "CRTPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "CRTPrecisionTensor") -> tuple:
         """
         This function takes the attributes of a CRTPrecisionTensor and saves them in a tuple
         Args:
+            worker: the worker doing the serialization
             tensor: a CRTPrecisionTensor
         Returns:
             tuple: a tuple holding the unique attributes of the tensor
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde._simplify(worker, tensor.child)
 
         return (tensor.id, tensor.base, tensor.precision_fractional, chain)
 
     @staticmethod
-    def detail(worker, tensor_tuple: tuple) -> "CRTPrecisionTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "CRTPrecisionTensor":
         """
         This function reconstructs a CRTPrecisionTensor given its attributes in form of a tuple.
         Args:
@@ -367,3 +369,6 @@ _sizes_for_fields = {
     "int128": 403_323_543_826_671_667_708_586_382_524_878_143_061,
 }
 # Should we also precompute reconstruction coefficients and put them here?
+
+### Register the tensor with hook_args.py ###
+default_register_tensor(CRTPrecisionTensor)

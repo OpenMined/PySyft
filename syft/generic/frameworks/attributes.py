@@ -5,7 +5,7 @@ from typing import Union
 from typing import Callable
 from typing import Any
 
-from syft.frameworks.hook import FrameworkHook
+from syft.generic.frameworks.hook.hook import FrameworkHook
 
 
 class FrameworkAttributes(ABC):
@@ -25,6 +25,7 @@ class FrameworkAttributes(ABC):
     @classmethod
     @abstractmethod
     def Tensor(cls):
+        """Default Tensor wrapper."""
         pass
 
     @abstractmethod

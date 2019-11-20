@@ -1,17 +1,17 @@
 import syft as sy
 import torch as th
 
-from syft import messaging
+import syft as sy
+from syft.messaging import message
 
 
 def test_message_serde():
 
-    x = messaging.Message(0, [1, 2, 3])
+    x = message.Message([1, 2, 3])
     x_bin = sy.serde.serialize(x)
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
     assert x.contents == y.contents
-    assert x.msg_type == y.msg_type
 
 
 def test_cmd_message(workers):
@@ -23,7 +23,7 @@ def test_cmd_message(workers):
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = x + x  # this is the test
-    assert isinstance(bob._get_msg(-1), sy.messaging.Operation)
+    assert isinstance(bob._get_msg(-1), message.Operation)
 
     y = y.get()
 
@@ -40,7 +40,7 @@ def test_obj_message(workers):
 
     x = th.tensor([1, 2, 3, 4]).send(bob)  # this is the test
 
-    assert isinstance(bob._get_msg(-1), sy.messaging.ObjectMessage)
+    assert isinstance(bob._get_msg(-1), message.ObjectMessage)
 
     y = x + x
 
@@ -62,7 +62,7 @@ def test_obj_req_message(workers):
     y = x + x
 
     y = y.get()  # this is the test
-    assert isinstance(bob._get_msg(-1), sy.messaging.ObjectRequestMessage)
+    assert isinstance(bob._get_msg(-1), message.ObjectRequestMessage)
 
     assert (y == th.tensor([2, 4, 6, 8])).all()
 
@@ -80,7 +80,7 @@ def test_get_shape_message(workers):
     y = x + x
 
     z = y.shape  # this is the test
-    assert isinstance(bob._get_msg(-1), sy.messaging.GetShapeMessage)
+    assert isinstance(bob._get_msg(-1), message.GetShapeMessage)
 
     assert z == th.Size([4])
 
@@ -100,7 +100,7 @@ def test_force_object_delete_message(workers):
     assert id_on_worker in bob._objects
 
     del x  # this is the test
-    assert isinstance(bob._get_msg(-1), sy.messaging.ForceObjectDeleteMessage)
+    assert isinstance(bob._get_msg(-1), message.ForceObjectDeleteMessage)
 
     assert id_on_worker not in bob._objects
 
@@ -119,9 +119,9 @@ def test_is_none_message(workers):
     y.child.id_at_location = x.id_at_location
 
     assert not bob.request_is_remote_tensor_none(x)
-    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
+    assert isinstance(bob._get_msg(-1), message.IsNoneMessage)
     assert not x.child.is_none()
-    assert isinstance(bob._get_msg(-1), sy.messaging.IsNoneMessage)
+    assert isinstance(bob._get_msg(-1), message.IsNoneMessage)
 
     del x
 
@@ -132,10 +132,9 @@ def test_is_none_message(workers):
 
 def test_search_message_serde():
 
-    x = messaging.SearchMessage([1, 2, 3])
+    x = message.SearchMessage([1, 2, 3])
 
     x_bin = sy.serde.serialize(x)
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
     assert x.contents == y.contents
-    assert x.msg_type == y.msg_type

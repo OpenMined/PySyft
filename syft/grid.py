@@ -11,7 +11,8 @@ class VirtualGrid:
         self, *query, verbose: bool = True, return_counter: bool = True
     ) -> Tuple[Dict, Counter]:
         """Searches over a collection of workers, returning pointers to the results
-        grouped by worker."""
+        grouped by worker.
+        """
 
         tag_counter = Counter()
         result_counter = 0
@@ -21,7 +22,7 @@ class VirtualGrid:
 
             worker_tag_ctr = Counter()
 
-            worker_results = worker.search(*query)
+            worker_results = worker.search(query)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results
@@ -33,14 +34,7 @@ class VirtualGrid:
 
                 if verbose:
                     tags = str(worker_tag_ctr.most_common(3))
-                    print(
-                        "Found "
-                        + str(len(worker_results))
-                        + " results on "
-                        + str(worker)
-                        + " - "
-                        + tags
-                    )
+                    print(f"Found {str(len(worker_results))} results on {str(worker)} - {tags}")
 
                 result_counter += len(worker_results)
 

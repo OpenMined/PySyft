@@ -4,9 +4,9 @@ import weakref
 import torch
 
 import syft as sy
-from syft import workers
-from syft.generic import pointers
-from syft.workers import AbstractWorker
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
 
 
 class TrainConfig:
@@ -20,7 +20,7 @@ class TrainConfig:
         self,
         model: torch.jit.ScriptModule,
         loss_fn: torch.jit.ScriptModule,
-        owner: workers.AbstractWorker = None,
+        owner: AbstractWorker = None,
         batch_size: int = 32,
         epochs: int = 1,
         optimizer: str = "SGD",
@@ -93,12 +93,12 @@ class TrainConfig:
 
     def _wrap_and_send_obj(self, obj, location):
         """Wrappers object and send it to location."""
-        obj_with_id = pointers.ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=obj)
+        obj_with_id = ObjectWrapper(id=sy.ID_PROVIDER.pop(), obj=obj)
         obj_ptr = self.owner.send(obj_with_id, location)
         obj_id = obj_ptr.id_at_location
         return obj_ptr, obj_id
 
-    def send(self, location: workers.BaseWorker) -> weakref:
+    def send(self, location: BaseWorker) -> weakref:
         """Gets the pointer to a new remote object.
 
         One of the most commonly used methods in PySyft, this method serializes
@@ -136,7 +136,7 @@ class TrainConfig:
             return self.loss_fn.get()
 
     @staticmethod
-    def simplify(train_config: "TrainConfig") -> tuple:
+    def simplify(worker: AbstractWorker, train_config: "TrainConfig") -> tuple:
         """Takes the attributes of a TrainConfig and saves them in a tuple.
 
         Attention: this function does not serialize the model and loss_fn attributes
@@ -145,6 +145,7 @@ class TrainConfig:
         are serialized here.
 
         Args:
+            worker: the worker doing the serialization
             train_config: a TrainConfig object
         Returns:
             tuple: a tuple holding the unique attributes of the TrainConfig object
@@ -154,9 +155,9 @@ class TrainConfig:
             train_config._loss_fn_id,
             train_config.batch_size,
             train_config.epochs,
-            sy.serde._simplify(train_config.optimizer),
-            sy.serde._simplify(train_config.optimizer_args),
-            sy.serde._simplify(train_config.id),
+            sy.serde._simplify(worker, train_config.optimizer),
+            sy.serde._simplify(worker, train_config.optimizer_args),
+            sy.serde._simplify(worker, train_config.id),
             train_config.max_nr_batches,
             train_config.shuffle,
         )
@@ -172,9 +173,17 @@ class TrainConfig:
             train_config: A TrainConfig object
         """
 
-        model_id, loss_fn_id, batch_size, epochs, optimizer, optimizer_args, id, max_nr_batches, shuffle = (
-            train_config_tuple
-        )
+        (
+            model_id,
+            loss_fn_id,
+            batch_size,
+            epochs,
+            optimizer,
+            optimizer_args,
+            id,
+            max_nr_batches,
+            shuffle,
+        ) = train_config_tuple
 
         id = sy.serde._detail(worker, id)
         detailed_optimizer = sy.serde._detail(worker, optimizer)

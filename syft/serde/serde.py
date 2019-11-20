@@ -41,19 +41,36 @@ from lz4 import (  # noqa: F401
 import msgpack
 import zstd
 
-import syft as sy
+import syft
 from syft import dependency_check
-from syft import messaging
-from syft.federated import TrainConfig
-from syft.frameworks.torch.tensors.decorators import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import CRTPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters import AutogradTensor
-from syft.generic import pointers
+from syft.federated.train_config import TrainConfig
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
+from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.messaging.plan import Plan
+from syft.messaging.plan.state import State
+from syft.messaging.plan.procedure import Procedure
+from syft.messaging.protocol import Protocol
+from syft.messaging.message import Message
+from syft.messaging.message import Operation
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import ObjectRequestMessage
+from syft.messaging.message import IsNoneMessage
+from syft.messaging.message import GetShapeMessage
+from syft.messaging.message import ForceObjectDeleteMessage
+from syft.messaging.message import SearchMessage
+from syft.messaging.message import PlanCommandMessage
 from syft.serde.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
-from syft.workers import AbstractWorker
-from syft.workers import BaseWorker
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
 
 from syft.exceptions import CompressionNotFoundException
 from syft.exceptions import GetNotPermittedError
@@ -65,11 +82,15 @@ else:
     MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = {}
 
 if dependency_check.tensorflow_available:
-    from syft.frameworks.tensorflow import MAP_TF_SIMPLIFIERS_AND_DETAILERS
+    from syft_tensorflow.serde import MAP_TF_SIMPLIFIERS_AND_DETAILERS
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
+from syft.serde.proto import proto_type_info
+
 # Maps a type to a tuple containing its simplifier and detailer function
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
@@ -77,32 +98,45 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 )
 
 # If an object implements its own simplify and detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
     CRTPrecisionTensor,
     LoggingTensor,
-    pointers.MultiPointerTensor,
-    messaging.Plan,
-    pointers.PointerTensor,
-    pointers.ObjectWrapper,
+    MultiPointerTensor,
+    ObjectPointer,
+    Plan,
+    State,
+    Procedure,
+    Protocol,
+    PointerTensor,
+    PointerPlan,
+    PointerProtocol,
+    ObjectWrapper,
     TrainConfig,
     BaseWorker,
     AutogradTensor,
-    messaging.Message,
-    messaging.Operation,
-    messaging.ObjectMessage,
-    messaging.ObjectRequestMessage,
-    messaging.IsNoneMessage,
-    messaging.GetShapeMessage,
-    messaging.ForceObjectDeleteMessage,
-    messaging.SearchMessage,
+    Message,
+    Operation,
+    ObjectMessage,
+    ObjectRequestMessage,
+    IsNoneMessage,
+    GetShapeMessage,
+    ForceObjectDeleteMessage,
+    SearchMessage,
+    PlanCommandMessage,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 
 # For registering syft objects with custom simplify and detail methods
+# NOTE: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
 # COMPRESSION SCHEME INT CODES
@@ -116,7 +150,7 @@ scheme_to_bytes = {
 }
 
 ## SECTION: High Level Simplification Router
-def _force_full_simplify(obj: object) -> object:
+def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     """To force a full simplify generally if the usual _simplify is not suitable.
 
     If we can not full simplify a object we simplify it as usual instead.
@@ -133,12 +167,12 @@ def _force_full_simplify(obj: object) -> object:
     if current_type in forced_full_simplifiers:
         result = (
             forced_full_simplifiers[current_type][0],
-            forced_full_simplifiers[current_type][1](obj),
+            forced_full_simplifiers[current_type][1](worker, obj),
         )
     # If we already tried to find a full simplifier for this type but failed, we should
     # simplify it instead.
     elif current_type in no_full_simplifiers_found:
-        return _simplify(obj)
+        return _simplify(worker, obj)
     else:
         # If the object type is not in forced_full_simplifiers,
         # we check the classes that this object inherits from.
@@ -172,24 +206,25 @@ def _generate_simplifiers_and_detailers():
     simplify and detail methods, or syft objects with custom
     force_simplify and force_detail methods.
 
+    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
+    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
+    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
+    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
     Returns:
         The simplifiers, forced_full_simplifiers, detailers
     """
     simplifiers = OrderedDict()
     forced_full_simplifiers = OrderedDict()
-    detailers = []
+    detailers = OrderedDict()
 
     def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
-        if detailer in detailers:
-            curr_index = detailers.index(detailer)
-        else:
-            curr_index = len(detailers)
-            detailers.append(detailer)
-
+        type_info = proto_type_info(curr_type)
         if forced:
-            forced_full_simplifiers[curr_type] = (curr_index, simplifier)
+            forced_full_simplifiers[curr_type] = (type_info.forced_code, simplifier)
+            detailers[type_info.forced_code] = detailer
         else:
-            simplifiers[curr_type] = (curr_index, simplifier)
+            simplifiers[curr_type] = (type_info.code, simplifier)
+            detailers[type_info.code] = detailer
 
     # Register native and torch types
     for curr_type in MAP_TO_SIMPLIFIERS_AND_DETAILERS:
@@ -218,6 +253,7 @@ no_simplifiers_found, no_full_simplifiers_found = set(), set()
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
+    worker: AbstractWorker = None,
     simplified: bool = False,
     force_no_compression: bool = False,
     force_no_serialization: bool = False,
@@ -252,15 +288,19 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
     # 1) Simplify
     # simplify difficult-to-serialize objects. See the _simpliy method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
         if force_full_simplification:
-            simple_objects = _force_full_simplify(obj)
+            simple_objects = _force_full_simplify(worker, obj)
         else:
-            simple_objects = _simplify(obj)
+            simple_objects = _simplify(worker, obj)
     else:
         simple_objects = obj
 
@@ -307,7 +347,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     """
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
-        worker = sy.framework.hook.local_worker
+        worker = syft.framework.hook.local_worker
 
     # 1) Decompress the binary if needed
     binary = _decompress(binary)
@@ -438,7 +478,7 @@ def _decompress(binary: bin) -> bin:
         )
 
 
-def _simplify(obj: object) -> object:
+def _simplify(worker: AbstractWorker, obj: object) -> object:
     """
     This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
@@ -463,9 +503,10 @@ def _simplify(obj: object) -> object:
 
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
+    # breakpoint()
     current_type = type(obj)
     if current_type in simplifiers:
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+        result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
         return result
 
     # If we already tried to find a simplifier for this type but failed, we should
@@ -487,7 +528,7 @@ def _simplify(obj: object) -> object:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
                 simplifiers[current_type] = simplifiers[inheritance_type]
-                result = (simplifiers[current_type][0], simplifiers[current_type][1](obj))
+                result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
                 return result
 
         # if there is not a simplifier for this

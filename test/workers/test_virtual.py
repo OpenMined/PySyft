@@ -5,13 +5,14 @@ import pytest
 import torch
 
 import syft as sy
-from syft import messaging
 from syft import serde
-from syft import messaging
-from syft.generic import pointers
+from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import ObjectRequestMessage
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ObjectNotFoundError
 
 
 def test_send_msg():
@@ -33,7 +34,7 @@ def test_send_msg():
     obj_id = obj.id
 
     # Send data to bob
-    me.send_msg(messaging.ObjectMessage(obj), bob)
+    me.send_msg(ObjectMessage(obj), bob)
 
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
@@ -81,7 +82,7 @@ def test_recv_msg():
     obj = torch.Tensor([100, 100])
 
     # create/serialize message
-    message = messaging.ObjectMessage(obj)
+    message = ObjectMessage(obj)
     bin_msg = serde.serialize(message)
 
     # have alice receive message
@@ -93,7 +94,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = messaging.ObjectRequestMessage(obj.id)
+    message = ObjectRequestMessage(obj.id)
 
     # serialize message
     bin_msg = serde.serialize(message)
@@ -188,7 +189,7 @@ def test_search():
     assert len(bob.search("#mnist")) == 1
     assert len(bob.search("#cifar")) == 1
     assert len(bob.search("#not_fun")) == 2
-    assert len(bob.search("#not_fun", "#boston_housing")) == 1
+    assert len(bob.search(["#not_fun", "#boston_housing"])) == 1
 
 
 def test_obj_not_found(workers):
@@ -201,10 +202,8 @@ def test_obj_not_found(workers):
 
     bob._objects = {}
 
-    try:
+    with pytest.raises(ObjectNotFoundError):
         y = x + x
-    except KeyError as e:
-        assert "If you think this tensor does exist" in str(e)
 
 
 def test_get_not_permitted(workers):
@@ -230,10 +229,6 @@ def test_spinup_time(hook):
     assert (end_time - start_time) < 0.05
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     bob = workers["bob"]
 
@@ -241,7 +236,7 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     def foo(x):
         return x + 2
 
-    foo_wrapper = pointers.ObjectWrapper(obj=foo, id=99)
+    foo_wrapper = ObjectWrapper(obj=foo, id=99)
     foo_ptr = hook.local_worker.send(foo_wrapper, bob)
 
     res = foo_ptr(torch.tensor(4))

@@ -12,7 +12,7 @@ import torch
 import websockets
 
 import syft as sy
-from syft.federated import FederatedClient
+from syft.federated.federated_client import FederatedClient
 from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
@@ -85,9 +85,12 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
                 add them into the queue.
 
         """
-        while True:
-            msg = await websocket.recv()
-            await self.broadcast_queue.put(msg)
+        try:
+            while True:
+                msg = await websocket.recv()
+                await self.broadcast_queue.put(msg)
+        except websockets.exceptions.ConnectionClosed:
+            self._consumer_handler(websocket)
 
     async def _producer_handler(self, websocket: websockets.WebSocketCommonProtocol):
         """This handler listens to the queue and processes messages as they

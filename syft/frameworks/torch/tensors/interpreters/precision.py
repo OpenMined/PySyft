@@ -1,11 +1,12 @@
 import torch
 
 import syft
-from syft.workers import AbstractWorker
-from syft.generic.pointers import MultiPointerTensor
+from syft.workers.abstract import AbstractWorker
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.overload_torch import overloaded
+from syft.generic.frameworks.overload import overloaded
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -38,14 +39,13 @@ class FixedPrecisionTensor(AbstractTensor):
         super().__init__(tags, description)
 
         self.owner = owner
-        self.id = id
+        self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
 
         self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.torch_max_value = torch.tensor(self.field).long()
 
     def get_class_attributes(self):
         """
@@ -78,6 +78,12 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return None
 
+    def backward(self, *args, **kwargs):
+        """Calling backward on Precision Tensor doesn't make sense, but sometimes a call
+        can be propagated downward the chain to an Precision Tensor (for example in
+        create_grad_objects), so we just ignore the call."""
+        pass
+
     def attr(self, attr_name):
         return self.__getattribute__(attr_name)
 
@@ -106,8 +112,9 @@ class FixedPrecisionTensor(AbstractTensor):
         one, encoded with floating point precision"""
 
         value = self.child.long() % self.field
+        torch_max_value = torch.tensor(self.field).long()
 
-        gate = value.native_gt(self.torch_max_value / 2).long()
+        gate = value.native_gt(torch_max_value / 2).long()
         neg_nums = (value - self.field) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -124,7 +131,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            gate = self.child.native_gt(self.torch_max_value / 2).long()
+            torch_max_value = torch.tensor(self.field).long()
+            gate = self.child.native_gt(torch_max_value / 2).long()
             neg_nums = (self.child - self.field) / truncation + self.field
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
@@ -263,15 +271,11 @@ class FixedPrecisionTensor(AbstractTensor):
         ):
             # If we try to multiply a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
-                "mul", self, other, None
-            )
+            new_self, new_other, _ = hook_args.unwrap_args_from_method("mul", self, other, None)
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_other, _ = syft.frameworks.torch.hook_args.unwrap_args_from_method(
-                cmd, self, other, None
-            )
+            new_self, new_other, _ = hook_args.unwrap_args_from_method(cmd, self, other, None)
 
             # To avoid problems with negative numbers
             # we take absolute value of the operands
@@ -311,7 +315,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If both have the same sign, sgn is 1 else it's 0
             # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
             # we would need to overload the __add__ for operators int and AST.
-            sgn = -(sgn_self - sgn_other) ** 2 + 1
+            sgn = -((sgn_self - sgn_other) ** 2) + 1
             changed_sign = True
 
             if cmd == "div":
@@ -321,7 +325,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, cmd)(new_other)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -419,7 +423,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         else:
             # Replace all syft tensor with their child attribute
-            new_self, new_args, new_kwargs = syft.frameworks.torch.hook_args.unwrap_args_from_method(
+            new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
                 "matmul", self, args, kwargs
             )
 
@@ -427,7 +431,7 @@ class FixedPrecisionTensor(AbstractTensor):
         response = getattr(new_self, "matmul")(*new_args, **new_kwargs)
 
         # Put back SyftTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
@@ -719,11 +723,8 @@ class FixedPrecisionTensor(AbstractTensor):
         except AttributeError:
             pass
 
-        # TODO: I can't manage the import issue, can you?
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = syft.frameworks.torch.hook_args.unwrap_args_from_function(
-            cmd, args, kwargs
-        )
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -732,13 +733,27 @@ class FixedPrecisionTensor(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        response = syft.frameworks.torch.hook_args.hook_response(
+        response = hook_args.hook_response(
             cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
         return response
 
     def share(self, *owners, field=None, crypto_provider=None):
+        """
+        Forward the .share() command to the child tensor, and reconstruct a new
+        FixedPrecisionTensor since the command is not inplace and should return
+        a new chain
+
+        Args:
+            *owners: the owners of the shares of the resulting AdditiveSharingTensor
+            field: the field size in which the share values live
+            crypto_provider: the worker used to provide the crypto primitives used
+                to perform some computations on AdditiveSharingTensors
+
+        Returns:
+            A FixedPrecisionTensor whose child has been shared
+        """
         if field is None:
             field = self.field
         else:
@@ -746,16 +761,27 @@ class FixedPrecisionTensor(AbstractTensor):
                 field == self.field
             ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
-        self.child = self.child.share(
+        tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
+
+        tensor.child = self.child.share(
             *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
         )
+        return tensor
+
+    def share_(self, *args, **kwargs):
+        """
+        Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
+        contrary to the classic share version version
+        """
+        self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 
     @staticmethod
-    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "FixedPrecisionTensor") -> tuple:
         """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
+            worker: the worker doing the serialization
             tensor: a FixedPrecisionTensor.
 
         Returns:
@@ -763,16 +789,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(tensor.id),
+            syft.serde._simplify(worker, tensor.id),
             tensor.field,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde._simplify(worker, tensor.tags),
+            syft.serde._simplify(worker, tensor.description),
             chain,
         )
 
@@ -807,3 +833,7 @@ class FixedPrecisionTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+### Register the tensor with hook_args.py ###
+hook_args.default_register_tensor(FixedPrecisionTensor)

@@ -6,8 +6,8 @@ import torch as th
 from unittest import mock
 from types import MethodType
 
-from syft.workers import WebsocketClientWorker
-from syft.workers import WebsocketServerWorker
+from syft.workers.websocket_client import WebsocketClientWorker
+from syft.workers.websocket_server import WebsocketServerWorker
 
 
 def test_create_already_existing_worker(hook):
@@ -88,3 +88,10 @@ def test_execute_command_self(hook):
     assert response == "bob_mocked_function"
 
     bob.mocked_function.assert_called()
+
+
+def test_enable_registration_with_ctx(hook):
+    assert hook.local_worker.is_client_worker == True
+    with hook.local_worker.registration_enabled():
+        hook.local_worker.is_client_worker == False
+    assert hook.local_worker.is_client_worker == True
