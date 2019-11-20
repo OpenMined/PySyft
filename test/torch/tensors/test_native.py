@@ -3,7 +3,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from syft.generic.pointers.pointer_tensor import PointerTensor
-import logging
 from syft.exceptions import InvalidTensorForRemoteGet
 import syft
 
