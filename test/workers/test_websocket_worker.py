@@ -235,7 +235,9 @@ def test_send_command_whitelist(hook, start_remote_worker):
     server, remote_proxy = start_remote_worker(
         id="worker_call_api_good_methods", hook=hook, port=8772
     )
-    whitelisted_methods = {"torch": {"tensor": [1, 2, 3], "rand": (2, 3), "zeros": (2, 3)}}
+    whitelisted_methods = {
+        "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
+    }
 
     for framework, methods in whitelisted_methods.items():
         attr = getattr(remote_proxy.remote, framework)

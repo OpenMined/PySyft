@@ -99,7 +99,9 @@ def test_enable_registration_with_ctx(hook):
 
 def test_send_command_whitelist(hook, workers):
     bob = workers["bob"]
-    whitelisted_methods = {"torch": {"tensor": [1, 2, 3], "rand": (2, 3), "zeros": (2, 3)}}
+    whitelisted_methods = {
+        "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
+    }
 
     for framework, methods in whitelisted_methods.items():
         attr = getattr(bob.remote, framework)
