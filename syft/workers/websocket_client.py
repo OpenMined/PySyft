@@ -40,7 +40,14 @@ class WebsocketClientWorker(BaseWorker):
         self.port = port
         self.host = host
 
-        super().__init__(hook, id, data, is_client_worker, log_msgs, verbose)
+        super().__init__(
+            hook=hook,
+            id=id,
+            data=data,
+            is_client_worker=is_client_worker,
+            log_msgs=log_msgs,
+            verbose=verbose,
+        )
 
         # creates the connection with the server which gets held open until the
         # WebsocketClientWorker is garbage collected.
@@ -82,7 +89,6 @@ class WebsocketClientWorker(BaseWorker):
 
     def _recv_msg(self, message: bin) -> bin:
         """Forwards a message to the WebsocketServerWorker"""
-
         response = self._forward_to_websocket_server_worker(message)
         if not self.ws.connected:
             logger.warning("Websocket connection closed (worker: %s)", self.id)

@@ -7,12 +7,11 @@ from syft.messaging import message
 
 def test_message_serde():
 
-    x = message.Message(0, [1, 2, 3])
+    x = message.Message([1, 2, 3])
     x_bin = sy.serde.serialize(x)
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
     assert x.contents == y.contents
-    assert x.msg_type == y.msg_type
 
 
 def test_cmd_message(workers):
@@ -139,4 +138,3 @@ def test_search_message_serde():
     y = sy.serde.deserialize(x_bin, sy.local_worker)
 
     assert x.contents == y.contents
-    assert x.msg_type == y.msg_type
