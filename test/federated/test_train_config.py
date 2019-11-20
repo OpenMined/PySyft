@@ -9,7 +9,7 @@ import syft as sy
 
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 PRINT_IN_UNITTESTS = False
 
