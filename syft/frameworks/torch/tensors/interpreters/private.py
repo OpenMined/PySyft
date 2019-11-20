@@ -189,7 +189,7 @@ class PrivateTensor(AbstractTensor):
             tags=syft.serde._detail(worker, tags),
             description=syft.serde._detail(worker, description),
         )
-        tensor.allowed_users = [user.decode("utf-8") for user in allowed_users]
+        tensor.allowed_users = tuple([user.decode("utf-8") for user in allowed_users])
 
         if chain is not None:
             chain = syft.serde._detail(worker, chain)
