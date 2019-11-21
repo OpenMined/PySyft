@@ -84,8 +84,8 @@ def isolated_filesystem():
     cwd = os.getcwd()
     t = tempfile.mkdtemp()
     shutil.copytree("examples/tutorials/", t + "/examples")
+    shutil.copytree("examples/data/BostonHousing/", t + "/data")
     os.chdir(t + "/examples")
-    os.mkdir("../data")
     try:
         yield t
     finally:
