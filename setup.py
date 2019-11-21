@@ -34,7 +34,7 @@ sandbox_extras = ["scikit-learn>=0.21.0"]
 
 setup(
     name="syft",
-    version="0.2.0a2",
+    version="0.2.1a2",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
