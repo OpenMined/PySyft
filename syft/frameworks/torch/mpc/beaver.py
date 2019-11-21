@@ -39,5 +39,4 @@ def request_triple(
     b_shared = shares[a.numel() : -c.numel()].reshape(b_size)
     c_shared = shares[-c.numel() :].reshape(c.shape)
 
-
     return a_shared, b_shared, c_shared
