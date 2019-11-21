@@ -43,7 +43,7 @@ from syft.frameworks.torch.hook.hook import TorchHook
 from syft.grid import VirtualGrid
 
 # Import sandbox
-from syft.sandbox import create_sandbox
+from syft.sandbox import create_sandbox, hook
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -110,6 +110,7 @@ __all__.extend(
         "MultiPointerTensor",
         "VirtualGrid",
         "create_sandbox",
+        "hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",
