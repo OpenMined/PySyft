@@ -162,3 +162,6 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     gbs["grid"] = _grid
 
     print("Done!")
+
+def hook(gbs):
+    return create_sandbox(gbs, False, False)
