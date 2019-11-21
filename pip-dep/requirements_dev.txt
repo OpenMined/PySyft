@@ -4,6 +4,7 @@ coverage>=4.5.3
 ipykernel>=5.1.0
 jupyter>=1.0.0
 papermill>=1.2.1
+mypy>=0.711
 pre-commit>=1.16.1
 pyopenssl>=19.0.0
 pyshark>=0.4.2.4
