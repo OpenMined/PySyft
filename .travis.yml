@@ -46,7 +46,7 @@ script:
   - treon --threads 1 'examples/tutorials/Part 03 - Advanced Remote Execution Tools.ipynb'
   - treon --threads 1 'examples/tutorials/Part 04 - Federated Learning via Trusted Aggregator.ipynb'
   - treon --threads 1 'examples/tutorials/Part 05 - Welcome to the Sandbox.ipynb'
-  - treon --threads 1 'examples/tutorials/Part 06 - Federated Learning on MNIST using a CNN.ipynb'
+  #- treon --threads 1 'examples/tutorials/Part 06 - Federated Learning on MNIST using a CNN.ipynb'
   - treon --threads 1 'examples/tutorials/Part 07 - Federated Learning with Federated Dataset.ipynb'
   - treon --threads 1 'examples/tutorials/Part 08 bis - Introduction to Protocols.ipynb'
   - treon --threads 1 'examples/tutorials/Part 08 - Introduction to Plans.ipynb'
