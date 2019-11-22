@@ -56,8 +56,8 @@ script:
   #- treon --threads 1 'examples/tutorials/Part 12 bis - Encrypted Training on MNIST.ipynb'
   - treon --threads 1 'examples/tutorials/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb'
   - treon --threads 1 'examples/tutorials/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb'
-  - treon --threads 1 'examples/tutorials/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb'
-  - treon --threads 1 'examples/tutorials/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb'
+  #- treon --threads 1 'examples/tutorials/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb'
+  #- treon --threads 1 'examples/tutorials/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb'
 notifications:
   on_success: change
   # `always` will be the setting below once code changes slow down
