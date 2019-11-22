@@ -53,7 +53,7 @@ script:
   - treon --threads 1 'examples/tutorials/Part 09 - Intro to Encrypted Programs.ipynb'
   #- treon --threads 1 'examples/tutorials/Part 10 - Federated Learning with Secure Aggregation.ipynb'
   #- treon --threads 1 'examples/tutorials/Part 11 - Secure Deep Learning Classification.ipynb'
-  - treon --threads 1 'examples/tutorials/Part 12 bis - Encrypted Training on MNIST.ipynb'
+  #- treon --threads 1 'examples/tutorials/Part 12 bis - Encrypted Training on MNIST.ipynb'
   - treon --threads 1 'examples/tutorials/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb'
   - treon --threads 1 'examples/tutorials/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb'
   - treon --threads 1 'examples/tutorials/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb'
