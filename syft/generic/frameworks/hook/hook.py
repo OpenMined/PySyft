@@ -273,27 +273,41 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_multi_pointer_method(attr)
                 setattr(MultiPointerTensor, attr, new_method)
 
-
     def _hook_string_methods(self, owner):
 
         # Set the default owner
         setattr(String, "owner", owner)
 
         # Set of methods to hook/override for 'str' to String
-        attr_include = set(["__add__", "__eq__", "__le__", "__ge__", "__gt__", "__lt__", "__ne__",
-                            "__len__", "__getitem__", "lower", "upper", "__str__", "__repr__", "__format__"])
-            
+        attr_include = set(
+            [
+                "__add__",
+                "__eq__",
+                "__le__",
+                "__ge__",
+                "__gt__",
+                "__lt__",
+                "__ne__",
+                "__len__",
+                "__getitem__",
+                "lower",
+                "upper",
+                "__str__",
+                "__repr__",
+                "__format__",
+            ]
+        )
 
         for attr in dir(str):
 
             if attr in attr_include:
-                
+
                 # Create the hooked method
                 new_method = self._get_hooked_string_method(attr)
 
                 # Add the hooked method
                 setattr(String, attr, new_method)
-                
+
     def _hook_string_pointer_methods(self):
 
         # Set of magic method to hook/override in case they exist
@@ -307,15 +321,12 @@ class FrameworkHook(ABC):
                 "__lt__",
                 "__ne__",
                 "__len__",
-                "__getitem__"])
+                "__getitem__",
+            ]
+        )
 
         # Set of non-magic methods that should not be hooked and overriden
-        normal_exclude = set(["send",
-                              "get",
-                              "simplify",
-                              "detail",
-                              "create_pointer"])
-
+        normal_exclude = set(["send", "get", "simplify", "detail", "create_pointer"])
 
         for attr in dir(String):
 
@@ -332,14 +343,13 @@ class FrameworkHook(ABC):
                 hook = True
 
             if hook:
-                
+
                 # Create the hooked method
                 new_method = self._get_hooked_string_pointer_method(attr)
 
                 # Add the hooked method
                 setattr(StringPointer, attr, new_method)
 
-        
     def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
         """Adds several attributes to the tensor.
 
@@ -674,7 +684,7 @@ class FrameworkHook(ABC):
                 new_args.append(arg)
 
         return new_args
-    
+
     @classmethod
     def _wrap_str_return_value(cls, self, attr: str, value: object):
 
@@ -701,7 +711,7 @@ class FrameworkHook(ABC):
 
         """
 
-        @wraps(attr)        
+        @wraps(attr)
         def overloaded_attr(self, *args, **kwargs):
 
             args = cls._string_input_args_adaptor(args)
@@ -720,7 +730,7 @@ class FrameworkHook(ABC):
             return response
 
         return overloaded_attr
-        
+
     @classmethod
     def _get_hooked_string_pointer_method(cls, attr):
         """
@@ -743,7 +753,7 @@ class FrameworkHook(ABC):
             owner = self.owner
             location = self.location
             id_at_location = self.id_at_location
-            
+
             # Create a 'command' variable  that is understood by
             # the send_command() method of a worker.
             command = (attr, id_at_location, args, kwargs)

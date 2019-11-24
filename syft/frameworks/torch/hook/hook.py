@@ -169,7 +169,7 @@ class TorchHook(FrameworkHook):
         self._hook_syft_tensor_methods(LargePrecisionTensor)
 
         # Add all built-in 'str' methods to String
-        self._hook_string_methods(owner = self.local_worker)
+        self._hook_string_methods(owner=self.local_worker)
 
         # Add all string methods to StringPointer
         # This method call should strictly come after the

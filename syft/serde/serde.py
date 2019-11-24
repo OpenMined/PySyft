@@ -128,7 +128,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
-    String
+    String,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
