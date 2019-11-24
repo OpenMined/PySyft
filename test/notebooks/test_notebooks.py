@@ -2,6 +2,10 @@ import papermill as pm
 import nbformat
 import glob
 from pathlib import Path
+import torch
+import syft as sy
+import os
+from syft.workers.websocket_server import WebsocketServerWorker
 
 # buggy notebooks
 exclusion_list_basic = [
@@ -36,3 +40,16 @@ def test_notebooks_advanced(isolated_filesystem):
         print(notebook)
         res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
         assert isinstance(res, nbformat.notebooknode.NotebookNode)
+
+
+def test_fl_with_trainconfig(isolated_filesystem, start_proc, hook):
+    os.chdir("advanced/Federated Learning with TrainConfig/")
+    kwargs = {"id": "peter", "host": "localhost", "port": 8777, "hook": hook}
+    data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
+    target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
+    dataset = sy.BaseDataset(data, target)
+    process_remote_worker = start_proc(WebsocketServerWorker, dataset=(dataset, "xor"), **kwargs)
+    notebook = "Introduction to TrainConfig.ipynb"
+    res = pm.execute_notebook(notebook, "/dev/null", timeout=300)
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
+    process_remote_worker.terminate()
