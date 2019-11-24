@@ -91,10 +91,7 @@ def isolated_filesystem():
         yield t
     finally:
         os.chdir(cwd)
-        try:
-            shutil.rmtree(t)
-        except (OSError, IOError):
-            pass
+        shutil.rmtree(t)
 
 
 @pytest.fixture(scope="session", autouse=True)
