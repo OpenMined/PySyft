@@ -5,8 +5,8 @@ from syft.workers.base import BaseWorker
 from syft.generic.object import AbstractObject
 import abc
 
+
 class String(AbstractObject):
-    
     def __init__(
         self,
         object: object = None,
@@ -25,7 +25,7 @@ class String(AbstractObject):
 
         # String objects have normally a default owner which is the
         # local worker. So prevent 'None' as owner
-        if self.owner is  None or owner is not None:
+        if self.owner is None or owner is not None:
             self.owner = owner
 
         str_kwargs = {}
@@ -42,7 +42,9 @@ class String(AbstractObject):
         # Create a str instance as the 'child' attribute
         self.child = str(**str_kwargs)
 
-        super(String, self).__init__(id=id, owner=self.owner, tags=tags, description=description, child = self.child)
+        super(String, self).__init__(
+            id=id, owner=self.owner, tags=tags, description=description, child=self.child
+        )
 
     def send(self, location: BaseWorker):
         """
@@ -80,7 +82,6 @@ class String(AbstractObject):
            Returns:
                   a StringPointer object
         """
-
 
         if id_at_location is None:
             id_at_location = obj.id

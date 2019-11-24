@@ -8,7 +8,7 @@ import abc
 
 
 class StringPointer(ObjectPointer):
-    #, metaclass=PointerClassMaker, pointed_type=String):
+    # , metaclass=PointerClassMaker, pointed_type=String):
     """
        This class defines a pointer to a 'String' object that might live
        on a remote machine. In other words, it holds a pointer to a 
