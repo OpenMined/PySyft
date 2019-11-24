@@ -1,6 +1,9 @@
 from collections import Counter
+from typing import Any
 from typing import Tuple
+from typing import Counter as CounterType
 from typing import Dict
+from typing import Union
 
 
 class VirtualGrid:
@@ -9,18 +12,18 @@ class VirtualGrid:
 
     def search(
         self, *query, verbose: bool = True, return_counter: bool = True
-    ) -> Tuple[Dict, Counter]:
+    ) -> Union[Tuple[Dict[Any, Any], CounterType], Dict[Any, Any]]:
         """Searches over a collection of workers, returning pointers to the results
         grouped by worker.
         """
 
-        tag_counter = Counter()
+        tag_counter: CounterType[int] = Counter()
         result_counter = 0
 
         results = {}
         for worker in self.workers:
 
-            worker_tag_ctr = Counter()
+            worker_tag_ctr: CounterType[int] = Counter()
 
             worker_results = worker.search(query)
 
