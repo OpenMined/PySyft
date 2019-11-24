@@ -64,6 +64,7 @@ def proto_type_info(cls):
     Throws an exception when such class does not exists in the `proto.json`.
     """
     type_name = fullname(cls)
+
     if type_name in proto_info["TYPES"]:
         return TypeInfo(name=type_name, obj=proto_info["TYPES"][type_name])
     else:
