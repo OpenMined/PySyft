@@ -27,7 +27,7 @@ You will just need to fork once. After that you can call `git fetch upstream` an
 
 PySyft uses the python package `pre-commit` to make sure the correct formatting (black & flake) is applied.
 
-You can install it via `pip install -r requirements_dev.txt` or directly doing `pip install pre-commit`
+You can install it via `pip install -r pip-dep/requirements_dev.txt` or directly doing `pip install pre-commit`
 
 Then you just need to call `pre-commit install`
 
@@ -44,7 +44,11 @@ To install the development version of the package, once the `dev` version of the
 cd PySyft
 pip install -e .
 ```
-If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead. 
+If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
+
+### Deploying Workers
+
+You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
@@ -94,6 +98,21 @@ def test_hooked_tensor(self, compress, compressScheme):
     assert (t == t_serialized_deserialized).all()
 ```
 
+### Process for Serde Protocol Changes
+Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/proto](https://github.com/OpenMined/proto).
+All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/proto/blob/master/proto.json) file and have unique code value.
+
+Updating lists of _simplifiers and detailers_ in `syft/serde/native_serde.py`, `syft/serde/serde.py`, `syft/serde/torch_serde.py`
+or renaming/moving related classes can make unit tests fail because `proto.json` won't be in sync with PySyft code anymore.
+
+Use following process:
+ 1. Fork [OpenMined/proto](https://github.com/OpenMined/proto) and create new branch.
+ 1. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>` instead of `git+git://github.com/OpenMined/proto@master`.
+ 1. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
+ 1. Create PRs in both repos.
+ 1. PRs should pass CI checks.
+ 1. After both PRs are merged, `requirements.txt` in PySyft@dev should be updated back to `git+git://github.com/OpenMined/proto@master`.
+
 ### Documentation and Codestyle
 
 To ensure code quality and make sure other people can understand your changes, you have to document your code. For documentation we are using the Google Python Style Rules which can be found [here](https://github.com/google/styleguide/blob/gh-pages/pyguide.md). A well wrote example can we viewed [here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
@@ -118,6 +137,16 @@ from syft.serde import deserialize
 ```bash
 sphinx-apidoc -f -o docs/modules/ syft/
 ```
+
+#### Type Checking
+
+The codebase contains [static type hints](https://docs.python.org/3/library/typing.html) for code clarity and catching errors prior to runtime. If you're adding type hints, please run the static type checker to ensure the type annotations you added are correct via:
+
+```bash
+mypy syft
+```
+
+Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ignore existing type issues found by mypy.
 
 ### Keep it DRY (Don't repeat yourself)
 

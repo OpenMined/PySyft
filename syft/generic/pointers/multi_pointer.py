@@ -219,7 +219,7 @@ class MultiPointerTensor(AbstractTensor):
             share.child.garbage_collect_data = value
 
     @staticmethod
-    def simplify(tensor: "MultiPointerTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "MultiPointerTensor") -> tuple:
         """
         This function takes the attributes of a MultiPointerTensor and saves them in a tuple
         Args:
@@ -232,8 +232,8 @@ class MultiPointerTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
-        return (tensor.id, chain)
+            chain = sy.serde._simplify(worker, tensor.child)
+        return tensor.id, chain
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "MultiPointerTensor":

@@ -123,14 +123,14 @@ class Procedure(object):
         return procedure
 
     @staticmethod
-    def simplify(procedure: "Procedure") -> tuple:
+    def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:
         return (
             tuple(
                 procedure.operations
             ),  # We're not simplifying because operations are already simplified
-            sy.serde._simplify(procedure.arg_ids),
-            sy.serde._simplify(procedure.result_ids),
-            sy.serde._simplify(procedure.promise_out_id),
+            sy.serde._simplify(worker, procedure.arg_ids),
+            sy.serde._simplify(worker, procedure.result_ids),
+            sy.serde._simplify(worker, procedure.promise_out_id),
         )
 
     @staticmethod

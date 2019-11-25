@@ -233,10 +233,11 @@ class Protocol(AbstractObject):
         self.location = location
 
     @staticmethod
-    def simplify(protocol: "Protocol") -> tuple:
+    def simplify(worker: AbstractWorker, protocol: "Protocol") -> tuple:
         """
         This function takes the attributes of a Protocol and saves them in a tuple
         Args:
+            worker (AbstractWorker) : the worker doing the serialization
             protocol (Protocol): a Protocol object
         Returns:
             tuple: a tuple holding the unique attributes of the Protocol object
@@ -258,15 +259,15 @@ class Protocol(AbstractObject):
             plans_reference.append((worker_id, plan_id))
 
         return (
-            sy.serde._simplify(protocol.id),
-            sy.serde._simplify(protocol.tags),
-            sy.serde._simplify(protocol.description),
-            sy.serde._simplify(plans_reference),
-            sy.serde._simplify(protocol.workers_resolved),
+            sy.serde._simplify(worker, protocol.id),
+            sy.serde._simplify(worker, protocol.tags),
+            sy.serde._simplify(worker, protocol.description),
+            sy.serde._simplify(worker, plans_reference),
+            sy.serde._simplify(worker, protocol.workers_resolved),
         )
 
     @staticmethod
-    def detail(worker: BaseWorker, protocol_tuple: tuple) -> "Protocol":
+    def detail(worker: AbstractWorker, protocol_tuple: tuple) -> "Protocol":
         """This function reconstructs a Protocol object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
