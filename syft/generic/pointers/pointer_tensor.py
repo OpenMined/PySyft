@@ -272,9 +272,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         args = (destination,)
         kwargs = {"inplace": True}
-        self.owner.send_command(
-            message=("send", self, args, kwargs), recipient=self.location
-        )
+        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
         return self
 
     def remote_get(self):
