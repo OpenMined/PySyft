@@ -61,7 +61,7 @@ class PromiseTensor(AbstractTensor, Promise):
         return self.__str__()
 
     @staticmethod
-    def simplify(self: "PromiseTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "PromiseTensor") -> tuple:
         """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
@@ -72,10 +72,10 @@ class PromiseTensor(AbstractTensor, Promise):
         """
 
         return (
-            sy.serde._simplify(self.id),
-            sy.serde._simplify(self.shape),
-            sy.serde._simplify(self.obj_type),
-            sy.serde._simplify(self.plans),
+            sy.serde._simplify(worker, tensor.id),
+            sy.serde._simplify(worker, tensor.shape),
+            sy.serde._simplify(worker, tensor.obj_type),
+            sy.serde._simplify(worker, tensor.plans),
         )
 
     @staticmethod
