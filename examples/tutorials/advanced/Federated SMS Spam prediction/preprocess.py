@@ -28,9 +28,9 @@ def pad_and_truncate(messages, max_length=30):
     return features
 
 
-if __name__ == "__main__":
+def main():
     data = pd.read_csv(
-        "./data/SMSSpamCollection.txt", sep="\t", header=None, names=["label", "sms"]
+        "SMSSpamCollection", sep="\t", header=None, names=["label", "sms"]
     )
     data.sms = data.sms.apply(clean_text)
     words = set((" ".join(data.sms)).split())
@@ -42,3 +42,6 @@ if __name__ == "__main__":
 
     np.save("./data/labels.npy", labels)
     np.save("./data/inputs.npy", inputs)
+
+if __name__ == "__main__":
+    main()

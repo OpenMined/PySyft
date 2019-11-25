@@ -6,6 +6,10 @@ import torch
 import syft as sy
 import os
 from syft.workers.websocket_server import WebsocketServerWorker
+import urllib.request
+from zipfile import ZipFile
+import pandas as pd
+import numpy as np
 
 # buggy notebooks
 exclusion_list_basic = [
@@ -53,3 +57,17 @@ def test_fl_with_trainconfig(isolated_filesystem, start_proc, hook):
     res = pm.execute_notebook(notebook, "/dev/null", timeout=300)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
     process_remote_worker.terminate()
+
+
+def test_fl_sms(isolated_filesystem):
+    os.chdir("advanced/Federated SMS Spam prediction/")
+    Path('data').mkdir(parents=True, exist_ok=True)
+    url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip'
+    urllib.request.urlretrieve(url, 'data.zip')
+    with ZipFile('data.zip', 'r') as zipObj:
+        # Extract all the contents of the zip file in current directory
+        zipObj.extractall()
+    import preprocess
+    preprocess.main()
+    res = pm.execute_notebook('Federated SMS Spam prediction.ipynb', "/dev/null", parameters={"epochs": 1}, timeout=300)
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
