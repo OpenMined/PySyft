@@ -61,13 +61,16 @@ def test_fl_with_trainconfig(isolated_filesystem, start_proc, hook):
 
 def test_fl_sms(isolated_filesystem):
     os.chdir("advanced/Federated SMS Spam prediction/")
-    Path('data').mkdir(parents=True, exist_ok=True)
-    url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip'
-    urllib.request.urlretrieve(url, 'data.zip')
-    with ZipFile('data.zip', 'r') as zipObj:
+    Path("data").mkdir(parents=True, exist_ok=True)
+    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip"
+    urllib.request.urlretrieve(url, "data.zip")
+    with ZipFile("data.zip", "r") as zipObj:
         # Extract all the contents of the zip file in current directory
         zipObj.extractall()
     import preprocess
+
     preprocess.main()
-    res = pm.execute_notebook('Federated SMS Spam prediction.ipynb', "/dev/null", parameters={"epochs": 1}, timeout=300)
+    res = pm.execute_notebook(
+        "Federated SMS Spam prediction.ipynb", "/dev/null", parameters={"epochs": 1}, timeout=300
+    )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
