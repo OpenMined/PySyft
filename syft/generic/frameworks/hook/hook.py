@@ -340,7 +340,6 @@ class FrameworkHook(ABC):
                 # Add the hooked method
                 setattr(StringPointer, attr, new_method)
 
-
     def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
         """Adds several attributes to the tensor.
 
