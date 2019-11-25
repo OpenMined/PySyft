@@ -39,7 +39,7 @@ from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
 import msgpack
-import zstd
+#import zstd
 
 import syft
 from syft import dependency_check

@@ -326,7 +326,7 @@ class FrameworkHook(ABC):
         )
 
         # Set of non-magic methods that should not be hooked and overriden
-        normal_exclude = set(["send", "get", "simplify", "detail", "create_pointer"])
+        normal_exclude = set(["send", "get", "simplify", "detail", "create_pointer", "_abc_impl"])
 
         for attr in dir(String):
 
