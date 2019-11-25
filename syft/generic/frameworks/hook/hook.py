@@ -290,11 +290,11 @@ class FrameworkHook(ABC):
                 "__ne__",
                 "__len__",
                 "__getitem__",
-                "lower",
-                "upper",
                 "__str__",
                 "__repr__",
                 "__format__",
+                "lower",
+                "upper",
             ]
         )
 
@@ -310,8 +310,8 @@ class FrameworkHook(ABC):
 
     def _hook_string_pointer_methods(self):
 
-        # Set of magic method to hook/override in case they exist
-        magic_include = set(
+        # Set of methods to hook/override for 'str' to String
+        attr_include = set(
             [
                 "__add__",
                 "__eq__",
@@ -322,33 +322,24 @@ class FrameworkHook(ABC):
                 "__ne__",
                 "__len__",
                 "__getitem__",
+                "__str__",
+                "__repr__",
+                "__format__",
+                "lower",
+                "upper",
             ]
         )
 
-        # Set of non-magic methods that should not be hooked and overriden
-        normal_exclude = set(["send", "get", "simplify", "detail", "create_pointer", "_abc_impl"])
-
         for attr in dir(String):
 
-            # flag whether to hook the current attribute or not
-            hook = False
-
-            # Get only magic attributes that are not
-            # in the 'normal_exclude' set
-            if attr.startswith("__"):
-
-                hook = True if attr in magic_include else False
-
-            elif attr not in normal_exclude:
-                hook = True
-
-            if hook:
+            if attr in attr_include:
 
                 # Create the hooked method
                 new_method = self._get_hooked_string_pointer_method(attr)
 
                 # Add the hooked method
                 setattr(StringPointer, attr, new_method)
+
 
     def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
         """Adds several attributes to the tensor.
