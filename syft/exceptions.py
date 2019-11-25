@@ -316,11 +316,11 @@ class ObjectNotFoundError(Exception):
             + " which does not exist!!! "
         )
         message += (
-            "Use .send() and .get() on all your tensors to make sure they're"
+            "Use .send() and .get() on all your tensors to make sure they're "
             "on the same machines. "
-            "If you think this tensor does exist, check the ._objects dictionary"
+            "If you think this tensor does exist, check the ._objects dictionary "
             "on the worker and see for yourself!!! "
-            "The most common reason this error happens is because someone calls"
+            "The most common reason this error happens is because someone calls "
             ".get() on the object's pointer without realizing it (which deletes "
             "the remote object and sends it to the pointer). Check your code to "
             "make sure you haven't already called .get() on this pointer!!!"
