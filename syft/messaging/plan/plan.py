@@ -533,9 +533,18 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        id, procedure, state, include_state, is_built, input_shapes, output_shape, name, tags, description = (
-            plan_tuple
-        )
+        (
+            id,
+            procedure,
+            state,
+            include_state,
+            is_built,
+            input_shapes,
+            output_shape,
+            name,
+            tags,
+            description,
+        ) = plan_tuple
         id = sy.serde._detail(worker, id)
         procedure = sy.serde._detail(worker, procedure)
         state = sy.serde._detail(worker, state)
