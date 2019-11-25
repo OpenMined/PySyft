@@ -10,7 +10,7 @@ import sys
 import syft as sy
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.virtual import VirtualWorker
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 logger = logging.getLogger(__name__)
 

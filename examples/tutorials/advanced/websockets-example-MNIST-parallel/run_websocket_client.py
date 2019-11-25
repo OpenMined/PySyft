@@ -13,12 +13,6 @@ from syft.frameworks.torch.fl import utils
 
 LOG_INTERVAL = 25
 
-# Logging setup
-FORMAT = "%(asctime)s | %(message)s"
-logging.basicConfig(format=FORMAT)
-logger = logging.getLogger("run_websocket_client")
-logger.setLevel(level=logging.DEBUG)
-
 
 # Loss function
 @torch.jit.script
@@ -145,16 +139,16 @@ def evaluate_model_on_worker(
 
     if print_target_hist:
         logger.info("Target histogram: %s", hist_target)
-        percentage_0_3 = int(100 * sum(hist_pred[0:4]) / len_dataset)
-        percentage_4_6 = int(100 * sum(hist_pred[4:7]) / len_dataset)
-        percentage_7_9 = int(100 * sum(hist_pred[7:10]) / len_dataset)
-        logger.info(
-            "%s: Percentage numbers 0-3: %s%%, 4-6: %s%%, 7-9: %s%%",
-            model_identifier,
-            percentage_0_3,
-            percentage_4_6,
-            percentage_7_9,
-        )
+    percentage_0_3 = int(100 * sum(hist_pred[0:4]) / len_dataset)
+    percentage_4_6 = int(100 * sum(hist_pred[4:7]) / len_dataset)
+    percentage_7_9 = int(100 * sum(hist_pred[7:10]) / len_dataset)
+    logger.info(
+        "%s: Percentage numbers 0-3: %s%%, 4-6: %s%%, 7-9: %s%%",
+        model_identifier,
+        percentage_0_3,
+        percentage_4_6,
+        percentage_7_9,
+    )
 
     logger.info(
         "%s: Average loss: %s, Accuracy: %s/%s (%s%%)",
@@ -254,6 +248,12 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Logging setup
+    FORMAT = "%(asctime)s | %(message)s"
+    logging.basicConfig(format=FORMAT)
+    logger = logging.getLogger("run_websocket_client")
+    logger.setLevel(level=logging.DEBUG)
+
     # Websockets setup
     websockets_logger = logging.getLogger("websockets")
     websockets_logger.setLevel(logging.INFO)
