@@ -78,10 +78,12 @@ def test_fl_sms(isolated_filesystem):
 
 def test_fl_with_websockets_and_averaging(isolated_filesystem, start_proc, hook):
     os.chdir("advanced/websockets-example-MNIST/")
-    # kwargs_list = [{"id": "foo", "host": "localhost", "port": 8777, "hook": hook},
-    #           {"id": "bar", "host": "localhost", "port": 8778, "hook": hook},
-    #           {"id": "buzz", "host": "localhost", "port": 8779, "hook": hook}]
-    # processes = [start_proc(WebsocketServerWorker, **kwargs) for kwargs in kwargs_list]
+    kwargs_list = [
+        {"id": "foo", "host": "localhost", "port": 8777, "hook": hook},
+        {"id": "bar", "host": "localhost", "port": 8778, "hook": hook},
+        {"id": "buzz", "host": "localhost", "port": 8779, "hook": hook},
+    ]
+    processes = [start_proc(WebsocketServerWorker, **kwargs) for kwargs in kwargs_list]
     notebook = "Federated learning with websockets and federated averaging.ipynb"
     res = pm.execute_notebook(
         notebook,
