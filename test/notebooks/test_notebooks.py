@@ -83,7 +83,11 @@ def test_fl_with_websockets_and_averaging(isolated_filesystem, start_proc, hook)
     #           {"id": "buzz", "host": "localhost", "port": 8779, "hook": hook}]
     # processes = [start_proc(WebsocketServerWorker, **kwargs) for kwargs in kwargs_list]
     notebook = "Federated learning with websockets and federated averaging.ipynb"
-    res = pm.execute_notebook(notebook, "/dev/null", parameters={'args': ["--epochs", '1', 
-                                                                          "--test_batch_size", '100']}, timeout=300)
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"args": ["--epochs", "1", "--test_batch_size", "100"]},
+        timeout=300,
+    )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
     # [p.terminate() for p in processes]
