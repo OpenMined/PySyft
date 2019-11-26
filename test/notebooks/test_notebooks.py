@@ -92,4 +92,4 @@ def test_fl_with_websockets_and_averaging(isolated_filesystem, start_proc, hook)
         timeout=300,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
-    # [p.terminate() for p in processes]
+    [p.terminate() for p in processes]
