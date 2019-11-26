@@ -14,7 +14,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = 2 ** 62,
+        field: int = 2 ** 63,
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,

@@ -48,7 +48,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
+        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 64 bits
         self.n_bits = (
             n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
         )  # < 63 bits
@@ -198,7 +198,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(field)
+            share.random_(-field, field)
 
         shares = []
         for i in range(n_workers):
