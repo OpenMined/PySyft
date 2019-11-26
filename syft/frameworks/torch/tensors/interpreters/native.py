@@ -584,8 +584,8 @@ class TorchTensor(AbstractTensor):
         self.child.owner.register_obj(self)
         return self
 
-    def remote_send(self, location):
-        self.child.remote_send(location)
+    def remote_send(self, location, change_location=False):
+        self.child.remote_send(location, change_location)
         return self
 
     def attr(self, attr_name):
