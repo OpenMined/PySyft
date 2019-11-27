@@ -377,8 +377,9 @@ class Plan(AbstractObject, ObjectStorage):
                 arg.child.plans.add(self.id)
                 prom_owner = arg.owner
 
-        # TODO how to infer result type? torch.result_type() in torch 1.3?
-        result_type = args[0].torch_type()  # NOTE torch specfific here
+        # As we cannot perform operation between different type of tensors with torch, all the
+        # input tensors should have the same type and the result should also have this same type.
+        result_type = args[0].torch_type()
 
         res = PromiseTensor(
             owner=prom_owner,
