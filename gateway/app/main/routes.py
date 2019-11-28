@@ -16,6 +16,9 @@ from .persistence.manager import register_new_node, connected_nodes, delete_node
 grid_nodes = {}
 
 SMPC_HOST_CHUNK = 4  # Minimum nodes required to host an encrypted model
+INVALID_JSON_FORMAT_MESSAGE = (
+    "Invalid JSON format."  # Default message used to report Invalid JSON format.
+)
 
 
 @main.route("/", methods=["GET"])
@@ -29,28 +32,28 @@ def join_grid_node():
     """ Register a new grid node at grid network. 
         TODO: Add Authentication process.
     """
-    data = json.loads(request.data)
 
-    # Invalid body
-    if "node-id" not in data or "node-address" not in data:
-        return Response(
-            {"message": "Invalid json."}, status=400, mimetype="application/json"
-        )
+    response_body = {"message": None}
+    status_code = None
 
-    # Register new node
-    if register_new_node(data["node-id"], data["node-address"]):
-        return Response(
-            {"message": "Successfully Connected!"},
-            status=200,
-            mimetype="application/json",
-        )
+    try:
+        data = json.loads(request.data)
+        # Register new node
+        if register_new_node(data["node-id"], data["node-address"]):
+            response_body["message"] = "Successfully Connected!"
+            status_code = 200
+        else:  # Grid ID already registered
+            response_body["message"] = "This ID has already been registered"
+            status_code = 409
 
-    else:  # Grid ID already registered
-        return Response(
-            {"message": "This ID has already been registered"},
-            status=409,
-            mimetype="appication/json",
-        )
+    # JSON format not valid.
+    except ValueError or KeyError as e:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        status_code = 400
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/connected-nodes", methods=["GET"])
@@ -68,27 +71,28 @@ def get_connected_nodes():
 def delete_grid_note():
     """ Delete a grid node at grid network"""
 
-    data = json.loads(request.data)
-    # Invalid body
-    if "node-id" not in data or "node-address" not in data:
-        return Response(
-            {"message": "Invalid json."}, status=400, mimetype="application/json"
-        )
+    response_body = {"message": None}
+    status_code = None
 
-    # Register new node
-    if delete_node(data["node-id"], data["node-address"]):
-        return Response(
-            {"message": "Successfully Deleted!"},
-            status=200,
-            mimetype="application/json",
-        )
+    try:
+        data = json.loads(request.data)
 
-    else:  # Grid ID already registered
-        return Response(
-            {"message": "This ID was not found in connected nodes"},
-            status=404,
-            mimetype="appication/json",
-        )
+        # Register new node
+        if delete_node(data["node-id"], data["node-address"]):
+            response_body["message"] = "Successfully Deleted!"
+            status_code = 200
+        else:  # Grid ID was not found
+            response_body["message"] = "This ID was not found in connected nodes"
+            status_code = 409
+
+    # JSON format not valid.
+    except ValueError or KeyError as e:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        status_code = 400
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/choose-encrypted-model-host", methods=["GET"])
@@ -98,6 +102,7 @@ def choose_encrypted_model_host():
     """
     grid_nodes = connected_nodes()
     n_replica = current_app.config["N_REPLICA"]
+
     if not n_replica:
         n_replica = 1
     try:
@@ -106,6 +111,7 @@ def choose_encrypted_model_host():
     # If grid network doesn't have enough grid nodes
     except ValueError:
         hosts_info = []
+
     return Response(json.dumps(hosts_info), status=200, mimetype="application/json")
 
 
@@ -129,55 +135,75 @@ def search_encrypted_model():
     """ Search for an encrypted plan model on the grid network, if found,
         returns host id, host address and SMPC workers infos.
     """
-    body = json.loads(request.data)
 
-    if "model_id" not in body:
-        return Response(
-            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
-        )
+    response_body = {"message": None}
+    status_code = None
 
-    grid_nodes = connected_nodes()
-    match_nodes = {}
-    for node in grid_nodes:
-        try:
-            response = requests.post(
-                os.path.join(grid_nodes[node], "search-encrypted-models"),
-                data=request.data,
-            )
-        except requests.exceptions.ConnectionError:
-            continue
+    try:
+        body = json.loads(request.data)
 
-        response = json.loads(response.content)
-        # If workers / crypto_provider fields in response dict
-        if not len({"workers", "crypto_provider"} - set(response.keys())):
-            match_nodes[node] = {"address": grid_nodes[node], "nodes": response}
-    return Response(json.dumps(match_nodes), status=200, mimetype="application/json")
+        grid_nodes = connected_nodes()
+        match_nodes = {}
+        for node in grid_nodes:
+            try:
+                response = requests.post(
+                    os.path.join(grid_nodes[node], "search-encrypted-models"),
+                    data=request.data,
+                )
+            except requests.exceptions.ConnectionError:
+                continue
+
+            response = json.loads(response.content)
+
+            # If workers / crypto_provider fields in response dict
+            if not len({"workers", "crypto_provider"} - set(response.keys())):
+                match_nodes[node] = {"address": grid_nodes[node], "nodes": response}
+
+            response_body = match_nodes
+            status_code = 200
+
+    # JSON format not valid.
+    except ValueError or KeyError as e:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        status_code = 400
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/search-model", methods=["POST"])
 def search_model():
     """ Search for a plain text model on the grid network. """
-    body = json.loads(request.data)
 
-    # Invalid body
-    if "model_id" not in body:
-        return Response(
-            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
-        )
+    response_body = {"message": None}
+    status_code = None
 
-    grid_nodes = connected_nodes()
-    match_nodes = []
-    for node in grid_nodes:
-        try:
-            response = requests.get(grid_nodes[node] + "/models/").content
-        except requests.exceptions.ConnectionError:
-            continue
-        response = json.loads(response)
-        if body["model_id"] in response.get("models", []):
-            match_nodes.append((node, grid_nodes[node]))
+    try:
+        body = json.loads(request.data)
 
-    # Return a list[ (id, address) ]  with all grid nodes that have the desired model
-    return Response(json.dumps(match_nodes), status=200, mimetype="application/json")
+        grid_nodes = connected_nodes()
+        match_nodes = []
+        for node in grid_nodes:
+            try:
+                response = requests.get(grid_nodes[node] + "/models/").content
+            except requests.exceptions.ConnectionError:
+                continue
+            response = json.loads(response)
+            if body["model_id"] in response.get("models", []):
+                match_nodes.append((node, grid_nodes[node]))
+
+        # It returns a list[ (id, address) ]  with all grid nodes that have the desired model
+        response_body = match_nodes
+        status_code = 200
+
+    except ValueError or KeyError:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        status_code = 400
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/search-available-models", methods=["GET"])
@@ -217,30 +243,35 @@ def available_tags():
 @main.route("/search", methods=["POST"])
 def search_dataset_tags():
     """ Search for information on all known nodes and return a list of the nodes that own it. """
-    body = json.loads(request.data)
 
-    # Invalid body
-    if "query" not in body:
-        return Response(
-            {"message": "Invalid json fields."}, status=400, mimetype="application/json"
-        )
+    response_body = {"message": None}
+    status_code = None
 
-    grid_nodes = connected_nodes()
-    # Perform requests (HTTP) to all known nodes looking for the desired data tag
-    match_grid_nodes = []
-    for node in grid_nodes:
-        try:
-            response = requests.post(
-                grid_nodes[node] + "/search", data=json.dumps({"query": body["query"]})
-            ).content
-        except requests.exceptions.ConnectionError:
-            continue
-        response = json.loads(response)
-        # If contains
-        if response["content"]:
-            match_grid_nodes.append((node, grid_nodes[node]))
+    try:
+        body = json.loads(request.data)
+        grid_nodes = connected_nodes()
 
-    # Return a list[ (id, address) ]  with all grid nodes that have the desired data
-    return Response(
-        json.dumps(match_grid_nodes), status=200, mimetype="application/json"
-    )
+        # Perform requests (HTTP) to all known nodes looking for the desired data tag
+        match_grid_nodes = []
+        for node in grid_nodes:
+            try:
+                response = requests.post(
+                    grid_nodes[node] + "/search",
+                    data=json.dumps({"query": body["query"]}),
+                ).content
+            except requests.exceptions.ConnectionError:
+                continue
+            response = json.loads(response)
+            # If contains
+            if response["content"]:
+                match_grid_nodes.append((node, grid_nodes[node]))
+
+        # It returns a list[ (id, address) ]  with all grid nodes that have the desired data
+        response_body = match_grid_nodes
+        status_code = 200
+
+    except ValueError or KeyError as e:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        status_code = 400
+
+    return Response(json.dumps(response_body), status=200, mimetype="application/json")
