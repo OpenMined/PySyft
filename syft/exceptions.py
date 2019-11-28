@@ -173,7 +173,11 @@ class ResponseSignatureError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return (
+            sy.serde._simplify(tp.__name__),
+            sy.serde._simplify(traceback_str),
+            sy.serde._simplify(attributes),
+        )
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -181,7 +185,8 @@ class ResponseSignatureError(Exception):
         Detail and re-raise an Exception forwarded by another worker
         """
         error_name, traceback_str, attributes = error_tuple
-        error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+        error_name = sy.serde._detail(worker, error_name)
+        traceback_str = sy.serde._detail(worker, traceback_str)
         attributes = sy.serde._detail(worker, attributes)
         # De-serialize the traceback
         tb = Traceback.from_string(traceback_str)
@@ -216,7 +221,11 @@ class GetNotPermittedError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(attributes)
+        return (
+            sy.serde._simplify(tp.__name__),
+            sy.serde._simplify(traceback_str),
+            sy.serde._simplify(attributes),
+        )
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -224,7 +233,8 @@ class GetNotPermittedError(Exception):
         Detail and re-raise an Exception forwarded by another worker
         """
         error_name, traceback_str, attributes = error_tuple
-        error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
+        error_name = sy.serde._detail(worker, error_name)
+        traceback_str = sy.serde._detail(worker, traceback_str)
         attributes = sy.serde._detail(worker, attributes)
         # De-serialize the traceback
         tb = Traceback.from_string(traceback_str)

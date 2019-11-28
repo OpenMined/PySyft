@@ -3,7 +3,8 @@ import pytest
 import io
 import numpy
 import torch
-from pip._internal import req
+from functools import partial
+import traceback
 
 import syft
 from syft.serde import serde
@@ -128,6 +129,12 @@ def make_numpy_ndarray(**kwargs):
     ]
 
 
+# numpy.float32, numpy.float64, numpy.int32, numpy.int64
+def make_numpy_number(dtype, **kwargs):
+    num = numpy.array([2.2], dtype=dtype)[0]
+    return [(num, (CODE[dtype], (num.tobytes(), num.dtype.name)))]  # (bytes)  # (str)
+
+
 ########################################################################
 # PyTorch.
 ########################################################################
@@ -138,9 +145,12 @@ def make_numpy_ndarray(**kwargs):
 def compare_modules(detailed, original):
     """Compare ScriptModule instances"""
     input = torch.randn(10, 3)
-    # NOTE: after serde TopLevelTracedModule becomes ScriptModule (that's what torch.jit.load returns)
+    # NOTE: after serde TopLevelTracedModule or _C.Function become ScriptModule
+    # (that's what torch.jit.load returns in detail function)
     assert isinstance(detailed, torch.jit.ScriptModule)
-    assert detailed.code == original.code
+    # Code changes after torch.jit.load(): function becomes `forward` method
+    if type(original) != torch._C.Function:
+        assert detailed.code == original.code
     # model outputs match
     assert detailed(input).equal(original(input))
     return True
@@ -155,7 +165,7 @@ def save_to_buffer(tensor) -> bin:
 # torch.device
 def make_torch_device(**kwargs):
     torch_device = torch.device("cpu")
-    return [(torch_device, (CODE[type(torch_device)], "cpu"))]
+    return [(torch_device, (CODE[type(torch_device)], "cpu"))]  # [not simplified] (str)
 
 
 # torch.jit.ScriptModule
@@ -170,6 +180,17 @@ def make_torch_scriptmodule(**kwargs):
 
     sm = ScriptModule()
     return [(sm, (CODE[torch.jit.ScriptModule], sm.save_to_buffer()), None, compare_modules)]
+
+
+# torch._C.Function
+def make_torch_cfunction(**kwargs):
+    @torch.jit.script
+    def func(x):
+        return x + 2
+
+    return [
+        (func, (CODE[torch._C.Function], func.save_to_buffer()), None, compare_modules)  # (bytes)
+    ]
 
 
 # torch.jit.TopLevelTracedModule
@@ -207,7 +228,12 @@ def make_torch_parameter(**kwargs):
             param,
             (
                 CODE[torch.nn.Parameter],
-                (param.id, serde._simplify(param.data), param.requires_grad, None),
+                (
+                    param.id,  # (int) id
+                    serde._simplify(param.data),  #
+                    param.requires_grad,  # (bool) requires_grad
+                    None,
+                ),
             ),
             None,
             compare,
@@ -233,7 +259,14 @@ def make_torch_tensor(**kwargs):
             tensor,
             (
                 CODE[torch.Tensor],
-                (tensor.id, save_to_buffer(tensor), None, None, ["tag1", "tag2"], "desc"),
+                (
+                    tensor.id,  # (int) id
+                    save_to_buffer(tensor),  # (bytes) serialized tensor
+                    None,  #
+                    None,  #
+                    ["tag1", "tag2"],  # [not simplified] (list of str) tags
+                    "desc",  # [not simplified] (str) description
+                ),
             ),
             None,
             compare,
@@ -243,7 +276,7 @@ def make_torch_tensor(**kwargs):
 
 # torch.Size
 def make_torch_size(**kwargs):
-    return [(torch.randn(3, 3).size(), (CODE[torch.Size], (3, 3)))]
+    return [(torch.randn(3, 3).size(), (CODE[torch.Size], (3, 3)))]  #  (int)
 
 
 ########################################################################
@@ -274,7 +307,13 @@ def make_additivesharingtensor(**kwargs):
                 CODE[
                     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
                 ],
-                (ast.id, ast.field, ast.crypto_provider.id, serde._simplify(ast.child), 1),
+                (
+                    ast.id,  # (int)
+                    ast.field,  # (int)
+                    ast.crypto_provider.id,  # [not simplified] (str)
+                    serde._simplify(ast.child),  # (Any)
+                    1,  # (int)
+                ),
             ),
             None,
             compare,
@@ -351,7 +390,12 @@ def make_crtprecisiontensor(**kwargs):
             cpt,
             (
                 CODE[syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor],
-                (cpt.id, cpt.base, cpt.precision_fractional, serde._simplify(cpt.child)),
+                (
+                    cpt.id,  # (int)
+                    cpt.base,  # (int)
+                    cpt.precision_fractional,  # (int)
+                    serde._simplify(cpt.child),  #
+                ),
             ),
             None,
             compare,
@@ -375,7 +419,7 @@ def make_loggingtensor(**kwargs):
             lt,
             (
                 CODE[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor],
-                (lt.id, serde._simplify(lt.child)),
+                (lt.id, serde._simplify(lt.child)),  # (int)  # (Tensor)
             ),
             None,
             compare,
@@ -401,7 +445,7 @@ def make_multipointertensor(**kwargs):
             mpt,
             (
                 CODE[syft.generic.pointers.multi_pointer.MultiPointerTensor],
-                (mpt.id, serde._simplify(mpt.child)),
+                (mpt.id, serde._simplify(mpt.child)),  # (int)  # (dict)
             ),
             None,
             compare,
@@ -409,9 +453,9 @@ def make_multipointertensor(**kwargs):
     ]
 
 
-# Plan
+# syft.messaging.plan.plan.Plan
 def make_plan(**kwargs):
-    @syft.func2plan([torch.Size((1, 3))])
+    @syft.func2plan([torch.Size((3,))])
     def plan(x):
         x = x + x
         x = torch.abs(x)
@@ -420,14 +464,22 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
-        # assert detailed.procedure == original.procedure
-        # assert detailed.state == original.state
+        # Procedure
+        assert detailed.procedure.operations == original.procedure.operations
+        assert detailed.procedure.arg_ids == original.procedure.arg_ids
+        assert detailed.procedure.result_ids == original.procedure.result_ids
+        # State
+        assert detailed.state.state_ids == original.state.state_ids
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
-        assert detailed(torch.tensor([1, 2, 3])).equal(original(torch.tensor([1, 2, 3])))
+        with syft.hook.local_worker.registration_enabled():
+            t = torch.tensor([1, -2, 3])
+            res1 = detailed(t)
+            res2 = original(t)
+        assert res1.equal(res2)
         return True
 
     return [
@@ -436,14 +488,14 @@ def make_plan(**kwargs):
             (
                 CODE[syft.messaging.plan.plan.Plan],
                 (
-                    serde._simplify(plan.id),
-                    serde._simplify(plan.procedure),
-                    serde._simplify(plan.state),
-                    serde._simplify(plan.include_state),
-                    serde._simplify(plan.is_built),
-                    serde._simplify(plan.name),
-                    serde._simplify(plan.tags),
-                    serde._simplify(plan.description),
+                    plan.id,  # (int)
+                    serde._simplify(plan.procedure),  # (Procedure)
+                    serde._simplify(plan.state),  # (State)
+                    plan.include_state,  # (bool)
+                    plan.is_built,  # (bool)
+                    serde._simplify(plan.name),  # (str)
+                    serde._simplify(plan.tags),  # (list)
+                    serde._simplify(plan.description),  # (str)
                 ),
             ),
             None,
@@ -454,14 +506,18 @@ def make_plan(**kwargs):
 
 # State
 def make_state(**kwargs):
-    bob = kwargs["workers"]["bob"]
-    t1, t2 = torch.randn(3, 3), torch.randn(3, 3)
-    state = syft.messaging.plan.state.State(owner=bob, state_ids=[t1.id, t2.id])
-    t1.send(bob), t2.send(bob)
+    me = kwargs["workers"]["me"]
+
+    with me.registration_enabled():
+        t1, t2 = torch.randn(3, 3), torch.randn(3, 3)
+        me.register_obj(t1), me.register_obj(t2)
+        state = syft.messaging.plan.state.State(owner=me, state_ids=[t1.id, t2.id])
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.state.State
         assert detailed.state_ids == original.state_ids
+        for i in range(len(original.tensors())):
+            assert detailed.tensors()[i].equal(original.tensors()[i])
         return True
 
     return [
@@ -470,8 +526,8 @@ def make_state(**kwargs):
             (
                 CODE[syft.messaging.plan.state.State],
                 (
-                    (CODE[list], (t1.id, t2.id)),
-                    (CODE[list], (serde._simplify(t1), serde._simplify(t2))),
+                    (CODE[list], (t1.id, t2.id)),  # (list) state_ids
+                    (CODE[list], (serde._simplify(t1), serde._simplify(t2))),  # (list) tensors
                 ),
             ),
             None,
@@ -503,9 +559,12 @@ def make_procedure(**kwargs):
             (
                 CODE[syft.messaging.plan.procedure.Procedure],
                 (
-                    (procedure.operations[0], procedure.operations[1]),
-                    (CODE[tuple], (procedure.arg_ids[0],)),
-                    (CODE[tuple], (procedure.result_ids[0],)),
+                    (
+                        procedure.operations[0],
+                        procedure.operations[1],
+                    ),  # [not simplified] (tuple) operations
+                    (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_ids
+                    (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_ids
                 ),
             ),
             None,
@@ -516,7 +575,7 @@ def make_procedure(**kwargs):
 
 # Protocol
 def make_protocol(**kwargs):
-    alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
+    me = kwargs["workers"]["me"]
 
     @syft.func2plan([torch.Size((1, 3))])
     def plan(x):
@@ -524,8 +583,11 @@ def make_protocol(**kwargs):
         x = torch.abs(x)
         return x
 
+    with me.registration_enabled():
+        me.register_obj(plan)
+
     protocol = syft.messaging.protocol.Protocol(
-        [("worker1", plan), ("worker2", plan)], tags=["aaa", "bbb"], description="desc"
+        [("me", plan), ("me", plan)], tags=["aaa", "bbb"], description="desc"
     )
 
     def compare(detailed, original):
@@ -545,16 +607,20 @@ def make_protocol(**kwargs):
                 CODE[syft.messaging.protocol.Protocol],
                 (
                     protocol.id,  # (int)
-                    (CODE[list], ((CODE[str], (b"aaa",)), (CODE[str], (b"bbb",)))),
-                    (CODE[str], (b"desc",)),
                     (
                         CODE[list],
+                        ((CODE[str], (b"aaa",)), (CODE[str], (b"bbb",))),
+                    ),  # (list of strings) tags
+                    (CODE[str], (b"desc",)),  # (str) description
+                    (
+                        CODE[list],  # (list) plans reference
                         (
-                            (CODE[tuple], ((CODE[str], (b"worker1",)), plan.id)),
-                            (CODE[tuple], ((CODE[str], (b"worker2",)), plan.id)),
+                            # (tuple) reference: worker_id (str), plan_id (int)
+                            (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
+                            (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
                         ),
                     ),
-                    False,  # workers_resolved
+                    False,  # (bool) workers_resolved
                 ),
             ),
             None,
@@ -576,7 +642,7 @@ def make_pointertensor(**kwargs):
         assert detailed.location == original.location
         assert detailed.point_to_attr == original.point_to_attr
         assert detailed.garbage_collect_data == original.garbage_collect_data
-        assert detailed.get().equal(original.get())
+        assert detailed.get().equal(tensor)
         return True
 
     return [
@@ -584,7 +650,14 @@ def make_pointertensor(**kwargs):
             ptr,
             (
                 CODE[syft.generic.pointers.pointer_tensor.PointerTensor],
-                (ptr.id, ptr.id_at_location, "alice", None, (CODE[torch.Size], (3, 3)), True),
+                (
+                    ptr.id,  # (int)
+                    ptr.id_at_location,  # (int)
+                    "alice",  # [not simplified] (str) location.id
+                    None,  # [not simplified] (str) point_to_attr
+                    (CODE[torch.Size], (3, 3)),  # (torch.Size) _shape
+                    True,  # (bool) garbage_collect_data
+                ),
             ),
             None,
             compare,
@@ -693,6 +766,41 @@ def make_objectwrapper(**kwargs):
     ]
 
 
+# syft.generic.pointers.object_pointer.ObjectPointer
+def make_objectpointer(**kwargs):
+    alice = kwargs["workers"]["alice"]
+    obj = torch.randn(3, 3)
+    obj_ptr = obj.send(alice)
+    ptr = syft.generic.pointers.object_pointer.ObjectPointer.create_pointer(obj, alice, obj.id)
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.generic.pointers.object_pointer.ObjectPointer
+        assert detailed.id == original.id
+        assert detailed.id_at_location == original.id_at_location
+        assert detailed.location == original.location
+        assert detailed.point_to_attr == original.point_to_attr
+        assert detailed.garbage_collect_data == original.garbage_collect_data
+        return True
+
+    return [
+        (
+            ptr,
+            (
+                CODE[syft.generic.pointers.object_pointer.ObjectPointer],
+                (
+                    ptr.id,  # [not simplified str] (int or str)
+                    ptr.id_at_location,  # (int)
+                    "alice",  # [not simplified] (str) location.id
+                    None,  # [not simplified] (str) point_to_attr
+                    True,  # (bool) garbage_collect_data
+                ),
+            ),
+            None,
+            compare,
+        )
+    ]
+
+
 # syft.federated.train_config.TrainConfig
 def make_trainconfig(**kwargs):
     class Model(torch.jit.ScriptModule):
@@ -731,8 +839,6 @@ def make_trainconfig(**kwargs):
         assert detailed.optimizer_args == original.optimizer_args
         assert detailed.max_nr_batches == original.max_nr_batches
         assert detailed.shuffle == original.shuffle
-        assert detailed.model == original.model
-        assert detailed.loss_fn == original.loss_fn
         return True
 
     return [
@@ -741,15 +847,15 @@ def make_trainconfig(**kwargs):
             (
                 CODE[syft.federated.train_config.TrainConfig],
                 (
-                    None,  # _model_id (int)
-                    None,  # _loss_fn_id (int)
-                    2,  # batch_size (int)
-                    1,  # epochs (int)
-                    (CODE[str], (b"SGD",)),  # optimizer (str)
-                    (CODE[dict], (((CODE[str], (b"lr",)), 0.1),)),  # optimizer_args (dict)
+                    None,  # (int) _model_id
+                    None,  # (int) _loss_fn_id
+                    2,  # (int) batch_size
+                    1,  # (int) epochs
+                    (CODE[str], (b"SGD",)),  # (str) optimizer
+                    (CODE[dict], (((CODE[str], (b"lr",)), 0.1),)),  # (dict) optimizer_args
                     conf.id,  # (int)
-                    -1,  # max_nr_batches (int)
-                    True,  # shuffle
+                    -1,  # (int) max_nr_batches
+                    True,  # (bool) shuffle
                 ),
             ),
             None,
@@ -781,7 +887,7 @@ def make_baseworker(**kwargs):
 def make_autogradtensor(**kwargs):
     t = torch.tensor([1, 2, 3])
     agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
-    agt.tag("aaa")
+    agt.tags = ["aaa"]
     agt.description = "desc"
 
     def compare(detailed, original):
@@ -802,14 +908,14 @@ def make_autogradtensor(**kwargs):
             (
                 CODE[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor],
                 (
-                    None,  # owner (Any)
+                    None,  # owner
                     agt.id,  # (int)
-                    serde._simplify(agt.child),
-                    True,  # requires_grad
-                    False,  # preinitialize_grad
-                    None,  # grad_fn (always None, ignored in constructor)
-                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # tags (set of str)
-                    (CODE[str], (b"desc",)),  # description (str)
+                    serde._simplify(agt.child),  # (Any) chain
+                    True,  # (bool) requires_grad
+                    False,  # (bool) preinitialize_grad
+                    None,  # [always None, ignored in constructor] grad_fn
+                    (CODE[list], ((CODE[str], (b"aaa",)),)),  # (list of str) tags
+                    (CODE[str], (b"desc",)),  # (str) description
                 ),
             ),
             None,
@@ -841,7 +947,7 @@ def make_message(**kwargs):
     ]
 
 
-# Operation
+# syft.messaging.message.Operation
 def make_operation(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -852,7 +958,11 @@ def make_operation(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.Operation
-        assert detailed.message == original.message
+        for i in range(len(original.message)):
+            if type(original.message[i]) != torch.Tensor:
+                assert detailed.message[i] == original.message[i]
+            else:
+                assert detailed.message[i].equal(original.message[i])
         assert detailed.return_ids == original.return_ids
         return True
 
@@ -863,7 +973,10 @@ def make_operation(**kwargs):
                 CODE[syft.messaging.message.Operation],
                 (
                     codes.MSGTYPE.CMD,
-                    ((serde._simplify(op.message)), op.return_ids),  # tuple  # tuple
+                    (  # [not simplified] (tuple)
+                        serde._simplify(op.message),  #  (Any) message
+                        op.return_ids,  # [not simplified] (tuple) return_ids
+                    ),
                 ),
             ),
             None,
@@ -872,7 +985,7 @@ def make_operation(**kwargs):
     ]
 
 
-# ObjectMessage
+# syft.messaging.message.ObjectMessage
 def make_objectmessage(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -1067,7 +1180,10 @@ def make_plancommandmessage(**kwargs):
                 CODE[syft.messaging.message.PlanCommandMessage],
                 (
                     codes.MSGTYPE.PLAN_CMD,  # (int)
-                    ((CODE[str], (b"fetch_plan",)), (CODE[tuple], (plan.id, False))),  # (int)
+                    (
+                        (CODE[str], (b"fetch_plan",)),  # (str) command
+                        (CODE[tuple], (plan.id, False)),  # (tuple) args
+                    ),
                 ),
             ),
             None,
@@ -1078,33 +1194,67 @@ def make_plancommandmessage(**kwargs):
 
 # syft.exceptions.GetNotPermittedError
 def make_getnotpermittederror(**kwargs):
-    bob = kwargs["workers"]["bob"]
-    bob.log_msgs = True
-
-    # hook.local_worker.is_client_worker = False
-
-    @syft.func2plan(args_shape=[(1,)])
-    def plan(data):
-        return data * 3
-
-    plan.send(bob)
-    plan.owner.fetch_plan(plan.id, bob)
-    fetch_plan_cmd = bob._get_msg(-1)
-    bob.log_msgs = False
+    try:
+        raise syft.exceptions.GetNotPermittedError()
+    except syft.exceptions.GetNotPermittedError as e:
+        err = e
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.PlanCommandMessage
-        assert detailed.contents == original.contents
+        assert type(detailed) == syft.exceptions.GetNotPermittedError
+        assert (
+            traceback.format_tb(detailed.__traceback__)[-1]
+            == traceback.format_tb(original.__traceback__)[-1]
+        )
         return True
 
     return [
         (
-            fetch_plan_cmd,
+            err,
             (
-                CODE[syft.messaging.message.PlanCommandMessage],
+                CODE[syft.exceptions.GetNotPermittedError],
                 (
-                    codes.MSGTYPE.PLAN_CMD,  # (int)
-                    ((CODE[str], (b"fetch_plan",)), (CODE[tuple], (plan.id, False))),  # (int)
+                    (CODE[str], (b"GetNotPermittedError",)),  # (str) __name__
+                    serde._simplify(
+                        "Traceback (most recent call last):\n"
+                        + "".join(traceback.format_tb(err.__traceback__))
+                    ),  # (str) traceback
+                    (CODE[dict], tuple()),  # (dict) attributes
+                ),
+            ),
+            None,
+            compare,
+        )
+    ]
+
+
+# syft.exceptions.ResponseSignatureError
+def make_responsesignatureerror(**kwargs):
+    try:
+        raise syft.exceptions.ResponseSignatureError()
+    except syft.exceptions.ResponseSignatureError as e:
+        err = e
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.exceptions.ResponseSignatureError
+        assert (
+            traceback.format_tb(detailed.__traceback__)[-1]
+            == traceback.format_tb(original.__traceback__)[-1]
+        )
+        assert detailed.get_attributes() == original.get_attributes()
+        return True
+
+    return [
+        (
+            err,
+            (
+                CODE[syft.exceptions.ResponseSignatureError],
+                (
+                    (CODE[str], (b"ResponseSignatureError",)),  # (str) __name__
+                    serde._simplify(
+                        "Traceback (most recent call last):\n"
+                        + "".join(traceback.format_tb(err.__traceback__))
+                    ),  # (str) traceback
+                    serde._simplify(err.get_attributes()),  # (dict) attributes
                 ),
             ),
             None,
@@ -1130,10 +1280,15 @@ samples[type(Ellipsis)] = make_ellipsis
 
 # Numpy
 samples[numpy.ndarray] = make_numpy_ndarray
+samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
+samples[numpy.float64] = partial(make_numpy_number, numpy.float64)
+samples[numpy.int32] = partial(make_numpy_number, numpy.int32)
+samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 
 # PyTorch
 samples[torch.device] = make_torch_device
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
+samples[torch._C.Function] = make_torch_cfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
@@ -1159,6 +1314,7 @@ samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
 samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
+samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
@@ -1174,7 +1330,7 @@ samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
-# samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
+samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 
 
 def test_serde_coverage():
@@ -1190,7 +1346,14 @@ def test_serde_roundtrip(cls, workers):
     _samples = samples[cls](workers=workers)
     for obj, *params in _samples:
         simplified_obj = serde._simplify(obj)
-        detailed_obj = serde._detail(syft.hook.local_worker, simplified_obj)
+        if not isinstance(obj, Exception):
+            detailed_obj = serde._detail(syft.hook.local_worker, simplified_obj)
+        else:
+            try:
+                serde._detail(syft.hook.local_worker, simplified_obj)
+            except Exception as e:
+                detailed_obj = e
+
         if len(params) >= 3 and params[2] is not None:
             # Custom detailed objects comparison function.
             comp_func = params[2]
