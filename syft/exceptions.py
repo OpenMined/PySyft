@@ -159,7 +159,7 @@ class ResponseSignatureError(Exception):
         return {"ids_generated": self.ids_generated}
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -174,9 +174,9 @@ class ResponseSignatureError(Exception):
         except AttributeError:
             attributes = {}
         return (
-            sy.serde._simplify(tp.__name__),
-            sy.serde._simplify(traceback_str),
-            sy.serde._simplify(attributes),
+            sy.serde._simplify(worker, tp.__name__),
+            sy.serde._simplify(worker, traceback_str),
+            sy.serde._simplify(worker, attributes),
         )
 
     @staticmethod
@@ -207,7 +207,7 @@ class GetNotPermittedError(Exception):
     get to be called on it. This can happen do to sensitivity being too high"""
 
     @staticmethod
-    def simplify(e):
+    def simplify(worker: "sy.workers.AbstractWorker", e):
         """
         Serialize information about an Exception which was raised to forward it
         """
@@ -222,9 +222,9 @@ class GetNotPermittedError(Exception):
         except AttributeError:
             attributes = {}
         return (
-            sy.serde._simplify(tp.__name__),
-            sy.serde._simplify(traceback_str),
-            sy.serde._simplify(attributes),
+            sy.serde._simplify(worker, tp.__name__),
+            sy.serde._simplify(worker, traceback_str),
+            sy.serde._simplify(worker, attributes),
         )
 
     @staticmethod
@@ -283,11 +283,11 @@ class ObjectNotFoundError(Exception):
             + " which does not exist!!! "
         )
         message += (
-            "Use .send() and .get() on all your tensors to make sure they're"
+            "Use .send() and .get() on all your tensors to make sure they're "
             "on the same machines. "
-            "If you think this tensor does exist, check the ._objects dictionary"
+            "If you think this tensor does exist, check the ._objects dictionary "
             "on the worker and see for yourself!!! "
-            "The most common reason this error happens is because someone calls"
+            "The most common reason this error happens is because someone calls "
             ".get() on the object's pointer without realizing it (which deletes "
             "the remote object and sends it to the pointer). Check your code to "
             "make sure you haven't already called .get() on this pointer!!!"

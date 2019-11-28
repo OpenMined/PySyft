@@ -2,7 +2,7 @@ import pytest
 import torch as th
 import syft as sy
 
-from syft.frameworks.torch.federated import BaseDataset
+from syft.frameworks.torch.fl import BaseDataset
 
 
 def test_base_dataset(workers):

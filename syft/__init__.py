@@ -43,10 +43,10 @@ from syft.frameworks.torch.hook.hook import TorchHook
 from syft.grid import VirtualGrid
 
 # Import sandbox
-from syft.sandbox import create_sandbox
+from syft.sandbox import create_sandbox, hook
 
 # Import federate learning objects
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
@@ -77,6 +77,16 @@ from syft import serde
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
+from syft.frameworks.torch.he.paillier import keygen
+
+
+def pool():
+    if not hasattr(syft, "_pool"):
+        import multiprocessing
+
+        syft._pool = multiprocessing.Pool()
+    return syft._pool
+
 
 __all__.extend(
     [
@@ -100,6 +110,7 @@ __all__.extend(
         "MultiPointerTensor",
         "VirtualGrid",
         "create_sandbox",
+        "hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",
