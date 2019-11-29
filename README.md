@@ -15,6 +15,12 @@ A more detailed explanation of PySyft can be found in the
 
 PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
 
+Codebase explaination of PySyft can be found in the
+[Intro to PySyft codebase](https://www.youtube.com/watch?v=1Zw08_4ufHw)
+
+
+
+
 ## Pre-Installation
 
 Optionally, we recommend that you install PySyft within the
