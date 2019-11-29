@@ -382,14 +382,17 @@ class FixedPrecisionTensor(AbstractTensor):
         This uses the following trick:
          - Divide power by 2 and multiply base to itself (if the power is even)
          - Decrement power by 1 to make it even and then follow the first step
+
+        Args:
+            power (int): the exponent supposed to be an integer > 0
         """
         base = self
 
-        result = 1
+        result = None
         while power > 0:
             # If power is odd
             if power % 2 == 1:
-                result = result * base
+                result = result * base if result is not None else base
 
             # Divide the power by 2
             power = power // 2
@@ -452,8 +455,26 @@ class FixedPrecisionTensor(AbstractTensor):
     mm = matmul
 
     # Approximations:
+    def inverse(self, iterations=8):
+        """
+        Computes an approximation of the matrix inversion using Newton-Schulz
+        iterations
+        """
+        # TODO: should we add non-approximate version if self.child is a pure tensor?
+
+        assert len(self.shape) >= 2, "Can't compute inverse on non-matrix"
+        assert self.shape[-1] == self.shape[-2], "Must be batches of square matrices"
+
+        inverse = (0.1 * torch.eye(self.shape[-1])).fix_prec(**self.get_class_attributes()).child
+
+        for _ in range(iterations):
+            inverse = 2 * inverse - inverse @ self @ inverse
+
+        return inverse
+
     def exp(self, iterations=8):
-        """Approximates the exponential function using a limit approximation:
+        """
+        Approximates the exponential function using a limit approximation:
         exp(x) = \lim_{n -> infty} (1 + x / n) ^ n
 
         Here we compute exp by choosing n = 2 ** d for some large d equal to
@@ -481,9 +502,13 @@ class FixedPrecisionTensor(AbstractTensor):
         max_idx = degrees.index(max_degree)
 
         # initiate with term of degree 0 to avoid errors with tensor ** 0
-        result = (self * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
+        result = (self * 0 + 1) * torch.tensor(weights[0]).fix_precision(
+            **self.get_class_attributes()
+        ).child
         for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
-            result += (self ** d) * torch.tensor(w).fix_precision().child
+            result += (self ** d) * torch.tensor(w).fix_precision(
+                **self.get_class_attributes()
+            ).child
 
         return result
 
@@ -580,6 +605,11 @@ class FixedPrecisionTensor(AbstractTensor):
             return result
 
         module.addmm = addmm
+
+        def inverse(self):
+            return self.inverse()
+
+        module.inverse = inverse
 
         def exp(tensor):
             return tensor.exp()

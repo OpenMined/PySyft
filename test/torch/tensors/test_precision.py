@@ -383,7 +383,34 @@ def test_torch_dot(workers):
     assert torch.dot(x, y).float_prec() == 45
 
 
-def test_torch_exp(workers):
+def test_torch_inverse_approx(workers):
+    """
+    Test the approximate exponential with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    fix_prec_tolerance = {3: 1 / 100, 4: 1 / 100, 5: 1 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        for t in [
+            torch.tensor([[0.4, -0.1], [-0.4, 2.0]]),
+            torch.tensor([[1, -0.6], [0.4, 4.0]]),
+            torch.tensor([[1, 0.2], [0.4, 4.0]]),
+        ]:
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.inverse()
+            r = r_sh.get().float_prec()
+            t = t.inverse()
+            diff = (r - t).abs().max()
+            norm = (r + t).abs().max() / 2
+
+            assert (diff / (tolerance * norm)) < 1
+
+
+def test_torch_exp_approx(workers):
     """
     Test the approximate exponential with different tolerance depending on
     the precision_fractional considered
@@ -411,7 +438,7 @@ def test_torch_exp(workers):
         assert (cumsum < 1).all()
 
 
-def test_torch_log(workers):
+def test_torch_log_approx(workers):
     """
     Test the approximate logarithm with different tolerance depending on
     the precision_fractional considered
