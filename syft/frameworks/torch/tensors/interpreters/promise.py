@@ -10,22 +10,23 @@ from syft.generic.frameworks.hook import hook_args
 
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
-        self,
-        shape,
-        owner=None,
-        id=None,
-        tags=None,
-        description=None,
-        tensor_id=None,
-        tensor_type=None,
-        plans=None,
+        self, shape, owner=None, id=None, tensor_type=None, plans=None, tags=None, description=None,
     ):
         """Initializes a PromiseTensor
 
         Args:
-            owner: An optional BaseWorker object to specify the worker on which
+            shape: the shape that should have the tensors keeping the promise.
+            owner: an optional BaseWorker object to specify the worker on which
                 the tensor is located.
-            id: An optional string or integer id of the LoggingTensor.
+            id: an optional string or integer id of the PromiseTensor.
+            tensor_type: the type that should have the tensors keeping the promise.
+            plans: the ids of the plans waiting for the promise to be kept. When the promise is
+                kept, all the plans corresponding to these ids will be executed if the other
+                promises they were waiting for are also kept.
+            tags: an optional set of hashtags corresponding to this tensor
+                which this tensor should be searchable for.
+            description: an optional string describing the purpose of the
+                tensor.
         """
 
         if owner is None:
