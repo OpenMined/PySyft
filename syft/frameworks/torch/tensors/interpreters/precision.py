@@ -229,7 +229,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def mul_and_div(self, other, cmd):
         """
-        Hook manually mul and div to add the trucation/rescaling part
+        Hook manually mul and div to add the truncation/rescaling part
         which is inherent to these operations in the fixed precision setting
         """
         changed_sign = False
@@ -487,28 +487,36 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return (1 + self / 2 ** iterations) ** (2 ** iterations)
 
-    def sigmoid(self):
+    def sigmoid(self, method="exp"):
         """
-        Overloads torch.sigmoid to be able to use MPC
-        Approximation with polynomial interpolation of degree 5 over [-8,8]
+        Approximates the sigmoid function
 
-        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+        Args:
+            self: the fixed precision tensor
+            method (str): (default = "exp")
+                "exp": Use the exponential approximation and the sigmoid definition
+                    sigmoid(x) = 1 / (1 + exp(-x))
+                "maclaurin": Use the Maclaurin / Taylor approximation, with polynomial
+                    interpolation of degree 5 over [-8,8]
+                    Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
         """
+        one = self * 0 + 1
 
-        weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
-        degrees = [0, 1, 3, 5]
+        if method == "exp":
+            result = one / (1 + (self * -1).exp())
 
-        max_degree = degrees[-1]
-        max_idx = degrees.index(max_degree)
+        elif method == "maclaurin":
+            weights = (
+                torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
+                .fix_precision(**self.get_class_attributes())
+                .child
+            )
+            degrees = [0, 1, 3, 5]
 
-        # initiate with term of degree 0 to avoid errors with tensor ** 0
-        result = (self * 0 + 1) * torch.tensor(weights[0]).fix_precision(
-            **self.get_class_attributes()
-        ).child
-        for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
-            result += (self ** d) * torch.tensor(w).fix_precision(
-                **self.get_class_attributes()
-            ).child
+            # initiate with term of degree 0 to avoid errors with tensor ** 0
+            result = one * weights[0]
+            for i, d in enumerate(degrees[1:]):
+                result += (self ** d) * weights[i + 1]
 
         return result
 
