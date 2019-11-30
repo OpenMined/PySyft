@@ -1,12 +1,12 @@
 import torch
 
 import syft
-from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 
 
 class FixedPrecisionTensor(AbstractTensor):
