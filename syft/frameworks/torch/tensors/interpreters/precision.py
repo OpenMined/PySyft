@@ -498,6 +498,7 @@ class FixedPrecisionTensor(AbstractTensor):
                     sigmoid(x) = 1 / (1 + exp(-x))
                 "maclaurin": Use the Maclaurin / Taylor approximation, with polynomial
                     interpolation of degree 5 over [-8,8]
+                    NOTE: This method is faster but not as precise as "exp"
                     Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
         """
         one = self * 0 + 1
