@@ -412,7 +412,7 @@ def test_torch_inverse_approx(workers):
             assert (diff / (tolerance * norm)) < 1
 
 
-@assert_time(max_time=8)
+@assert_time(max_time=10)
 def test_torch_exp_approx(workers):
     """
     Test the approximate exponential with different tolerance depending on
@@ -441,7 +441,7 @@ def test_torch_exp_approx(workers):
         assert (cumsum < 1).all()
 
 
-@assert_time(max_time=25)
+@assert_time(max_time=40)
 def test_torch_sigmoid_approx(workers):
     """
     Test the approximate sigmoid with different tolerance depending on
@@ -469,7 +469,7 @@ def test_torch_sigmoid_approx(workers):
             assert (diff / (tolerance * norm)) < 1
 
 
-@assert_time(max_time=25)
+@assert_time(max_time=45)
 def test_torch_log_approx(workers):
     """
     Test the approximate logarithm with different tolerance depending on
