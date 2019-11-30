@@ -7,6 +7,23 @@ import abc
 
 
 class String(AbstractObject):
+    
+    # Set of methods from 'str' to hook/override by String
+    methods_to_hook = set(
+        [
+            "__add__", "__eq__", "__le__", "__ge__", "__gt__", "__lt__",  "__ne__",
+            "__len__", "__getitem__", "__str__", "__repr__", "__format__", "lower",
+            "upper", "capitalize", "casefold", "center", "count", "encode", "endswith",
+            "expandtabs", "find", "format", "format_map", "index", "isalnum", "isalpha",
+            "isascii", "isdecimal", "isdigit", "isidentifier", "islower", "isnumeric",
+            "isprintable", "isspace", "istitle", "isupper", "join", "ljust", "lstrip",
+            "maketrans", "partition", "replace", "rfind", "rindex", "rjust", "rpartition",
+            "rsplit", "rstrip", "split", "splitlines", "startswith", "strip", "swapcase",
+            "title", "translate", "zfill", "__mod__",
+            
+        ]
+    )
+    
     def __init__(
         self,
         object: object = None,

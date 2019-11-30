@@ -278,29 +278,10 @@ class FrameworkHook(ABC):
         # Set the default owner
         setattr(String, "owner", owner)
 
-        # Set of methods to hook/override for 'str' to String
-        attr_include = set(
-            [
-                "__add__",
-                "__eq__",
-                "__le__",
-                "__ge__",
-                "__gt__",
-                "__lt__",
-                "__ne__",
-                "__len__",
-                "__getitem__",
-                "__str__",
-                "__repr__",
-                "__format__",
-                "lower",
-                "upper",
-            ]
-        )
 
         for attr in dir(str):
 
-            if attr in attr_include:
+            if attr in String.methods_to_hook:
 
                 # Create the hooked method
                 new_method = self._get_hooked_string_method(attr)
@@ -310,29 +291,10 @@ class FrameworkHook(ABC):
 
     def _hook_string_pointer_methods(self):
 
-        # Set of methods to hook/override for 'str' to String
-        attr_include = set(
-            [
-                "__add__",
-                "__eq__",
-                "__le__",
-                "__ge__",
-                "__gt__",
-                "__lt__",
-                "__ne__",
-                "__len__",
-                "__getitem__",
-                "__str__",
-                "__repr__",
-                "__format__",
-                "lower",
-                "upper",
-            ]
-        )
 
         for attr in dir(String):
 
-            if attr in attr_include:
+            if attr in String.methods_to_hook:
 
                 # Create the hooked method
                 new_method = self._get_hooked_string_pointer_method(attr)
