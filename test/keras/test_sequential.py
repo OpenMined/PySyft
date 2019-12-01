@@ -97,7 +97,7 @@ def test_share():  # pragma: no cover
     model.serve(num_requests=1)
 
     result_private = client.query_model_join().astype(np.float32)
-    #compares results and raises error if not equal up to 0.001
+    #compares results and raises error if not equal up to 0.01
     np.testing.assert_allclose(result_private, result_public, atol=0.01)
 
     model.stop()
