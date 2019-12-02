@@ -384,7 +384,6 @@ class Plan(AbstractObject, ObjectStorage):
         res = PromiseTensor(
             owner=prom_owner,
             shape=self.output_shape,
-            tensor_id=self.procedure.result_ids[0],
             tensor_type=result_type,
             plans=set(),
         )

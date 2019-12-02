@@ -545,7 +545,6 @@ class TorchHook(FrameworkHook):
                 promise_out = PromiseTensor(
                     owner=self.owner,
                     shape=operation_method.output_shape,
-                    tensor_id=operation_method.procedure.result_ids[0],
                     tensor_type=self.obj_type,
                     plans=set(),
                 )
