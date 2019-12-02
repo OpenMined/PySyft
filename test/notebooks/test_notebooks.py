@@ -10,6 +10,7 @@ import urllib.request
 from zipfile import ZipFile
 import pandas as pd
 import numpy as np
+import time
 
 # buggy notebooks
 exclusion_list_basic = [
@@ -76,14 +77,14 @@ def test_fl_sms(isolated_filesystem):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-def test_fl_with_websockets_and_averaging(isolated_filesystem, start_proc, hook):
+def test_fl_with_websockets_and_averaging(isolated_filesystem, start_remote_server_worker_only, hook):
     os.chdir("advanced/websockets-example-MNIST/")
     kwargs_list = [
-        {"id": "foo", "host": "localhost", "port": 8777, "hook": hook},
-        {"id": "bar", "host": "localhost", "port": 8778, "hook": hook},
-        {"id": "buzz", "host": "localhost", "port": 8779, "hook": hook},
+        {"id": "alice", "host": "localhost", "port": 8777, "hook": hook},
+        {"id": "bob", "host": "localhost", "port": 8778, "hook": hook},
+        {"id": "charlie", "host": "localhost", "port": 8779, "hook": hook},
     ]
-    processes = [start_proc(WebsocketServerWorker, **kwargs) for kwargs in kwargs_list]
+    processes = [start_remote_server_worker_only(**kwargs) for kwargs in kwargs_list]
     notebook = "Federated learning with websockets and federated averaging.ipynb"
     res = pm.execute_notebook(
         notebook,
@@ -92,4 +93,4 @@ def test_fl_with_websockets_and_averaging(isolated_filesystem, start_proc, hook)
         timeout=300,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
-    [p.terminate() for p in processes]
+    [server.terminate() for server in processes]

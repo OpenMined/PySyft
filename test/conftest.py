@@ -76,6 +76,21 @@ def start_remote_worker():  # pragma: no cover
     return _start_remote_worker
 
 
+@pytest.fixture()
+def start_remote_server_worker_only():  # pragma: no cover
+    """Helper function for starting a websocket worker."""
+
+    def _start_remote_worker(
+        id, hook, dataset: str = None, host="localhost", port=8768, max_tries=5, sleep_time=0.01
+    ):
+        kwargs = {"id": id, "host": host, "port": port, "hook": hook}
+        server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
+
+        return server
+
+    return _start_remote_worker
+
+
 @pytest.yield_fixture(scope="function")
 def isolated_filesystem():
     """A context manager that creates a temporary folder and changes
