@@ -90,7 +90,7 @@ def test_federated_dataset_search(workers):
     bob = workers["bob"]
     alice = workers["alice"]
 
-    grid = sy.VirtualGrid(*[bob, alice])
+    grid = sy.GridNetwork(*[bob, alice])
 
     train_bob = th.Tensor(th.zeros(1000, 100)).tag("data").send(bob)
     target_bob = th.Tensor(th.zeros(1000, 100)).tag("target").send(bob)
