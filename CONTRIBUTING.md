@@ -107,11 +107,11 @@ or renaming/moving related classes can make unit tests fail because `proto.json`
 
 Use following process:
  1. Fork [OpenMined/proto](https://github.com/OpenMined/proto) and create new branch.
- 1. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>` instead of `git+git://github.com/OpenMined/proto@master`.
- 1. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
- 1. Create PRs in both repos.
- 1. PRs should pass CI checks.
- 1. After both PRs are merged, `requirements.txt` in PySyft@master should be updated back to `git+git://github.com/OpenMined/proto@master`.
+ 2. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>#egg=proto` instead of `git+git://github.com/OpenMined/proto@master#egg=proto`.
+ 3. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
+ 4. Create PRs in both repos.
+ 5. PRs should pass CI checks.
+ 6. After both PRs are merged, `requirements.txt` in PySyft@master should be updated back to `git+git://github.com/OpenMined/proto@master#egg=proto`.
 
 ### Documentation and Codestyle
 
