@@ -4,8 +4,8 @@ from typing import Union
 from urllib.parse import urlparse
 
 # Syft imports
-from syft import Plan
 from syft.serde import serialize
+from syft.messaging.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
@@ -86,7 +86,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         """
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
         response = self._forward_json_to_websocket_server_worker(message)
-        return response.get(RESPONSE_MSG.MODELS, None)
+        return self._return_bool_result(response, RESPONSE_MSG.MODELS)
 
     def _update_node_reference(self, new_id: str):
         """ Update worker references changing node id references at hook structure.
@@ -179,10 +179,10 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
                 ValueError: model_id isn't provided and model is a jit model.
                 RunTimeError: if there was a problem during model serving.
         """
-
+        print("Model ID: ", model_id)
         if model_id is None and not model.id:
             raise ValueError("Model id argument is mandatory for jit models.")
-        else:  # Syft Plans
+        elif isinstance(model, Plan):
             model_id = model.id
 
         # If the model is a Plan we send the model
@@ -202,11 +202,11 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
         message = {
             REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.HOST_MODEL,
-            "encoding": self._encoding,
+            "encoding": self.encoding,
             "model_id": model_id,
             "allow_download": str(allow_download),
             "allow_remote_inference": str(allow_remote_inference),
-            "model": serialized_model.decode(self._encoding),
+            "model": serialized_model.decode(self.encoding),
         }
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response)
@@ -222,26 +222,15 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
             Raises:
                 RuntimeError : If an unexpected behavior happen.
         """
-        serialized_data = serialize(data).decode(self._encoding)
+        serialized_data = serialize(data).decode(self.encoding)
         message = {
             REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.RUN_INFERENCE,
             "model_id": model_id,
             "data": serialized_data,
-            "encoding": self._encoding,
+            "encoding": self.encoding,
         }
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response, RESPONSE_MSG.INFERENCE_RESULT)
-
-    @property
-    def models(self) -> list:
-        """ Get models stored at remote node.
-
-            Returns:
-                models (List) : List of models stored in this node.
-        """
-        message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
-        response = self._forward_json_to_websocket_server_worker(message)
-        return response.get(RESPONSE_MSG.MODELS, None)
 
     def delete_model(self, model_id: str) -> bool:
         """ Delete a model previously registered.
