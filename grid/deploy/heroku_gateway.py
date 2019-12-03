@@ -87,10 +87,10 @@ class HerokuGatewayDeployment(BaseDeployment):
         )
 
         self.logs.append("Step 6: copying app code from cloned repo")
-        self.commands.append("cp -r Grid/gateway/* ./")
+        self.commands.append("cp -r PyGrid/gateway/* ./")
 
         self.logs.append("Step 7: removing the rest of the cloned code")
-        self.commands.append("rm -rf Grid")
+        self.commands.append("rm -rf PyGrid")
 
         self.logs.append("Step 8: Initializing new github (for Heroku)")
         self.commands.append("git init")
