@@ -412,6 +412,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             data = simplify(ptr)
         """
 
+        if ptr.tags:
+            tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
+        else:
+            tags = ptr.tags
+
         return (
             ptr.id,
             ptr.id_at_location,
@@ -419,6 +424,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr.point_to_attr,
             syft.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
+            tags,
+            ptr.description,
         )
 
         # a more general but slower/more verbose option
@@ -444,7 +451,16 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr = detail(data)
         """
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
+        (
+            obj_id,
+            id_at_location,
+            worker_id,
+            point_to_attr,
+            shape,
+            garbage_collect_data,
+            tags,
+            description,
+        ) = tensor_tuple
 
         if isinstance(worker_id, bytes):
             worker_id = worker_id.decode()
@@ -480,6 +496,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             location = syft.hook.local_worker.get_worker(worker_id)
 
+            if tags:  # Tag != None
+                # Decode binary tags
+                tags = set(map(lambda x: x.decode("utf-8"), tags))
+
+            if description:  # Description != None
+                # Decode binary description
+                description = description.decode("utf-8")
+
             ptr = PointerTensor(
                 location=location,
                 id_at_location=id_at_location,
@@ -487,6 +511,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 id=obj_id,
                 shape=shape,
                 garbage_collect_data=garbage_collect_data,
+                tags=tags,
+                description=description,
             )
 
             return ptr
