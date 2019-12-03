@@ -11,6 +11,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -583,6 +584,10 @@ class TorchTensor(AbstractTensor):
         self.child.owner.register_obj(self)
         return self
 
+    def remote_send(self, location, change_location=False):
+        self.child.remote_send(location, change_location)
+        return self
+
     def attr(self, attr_name):
         """"""
 
@@ -813,6 +818,25 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
+
+    def keep(self, obj):
+        """ Call .keep() on self's child if the child is a Promise (otherwise an error is raised).
+        .keep() is used to fulfill a promise with a value.
+        """
+        return self.child.keep(obj)
+
+    def value(self):
+        """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
+        .value() is used to retrieve the oldest unused value the promise was kept with.
+        """
+        return self.child.value()
+
+    def torch_type(self):
+
+        if isinstance(self, torch.Tensor) and not self.is_wrapper:
+            return self.type()
+        else:
+            return self.child.torch_type()
 
     def encrypt(self, public_key):
         """This method will encrypt each value in the tensor using Paillier
