@@ -333,32 +333,23 @@ class TorchHook(FrameworkHook):
 
         # torch.nn.Parameter.__repr__ = hooked__repr__
 
-        # Hook .data to handle chain assignment when needed
-
-        torch.nn.Parameter.native_param_data = torch.nn.Parameter.data
-
-        @property
-        def data(self):
-
+        def get_data(self):
             if hasattr(self, "child"):
                 to_return = self.child.attr("data")
             else:
-
-                to_return = self.native_param_data
+                to_return = self.native_data
 
                 # good to ensure that the ID stays consistent
                 # not 100% this is required but it's at least
                 # good practice
                 try:
                     to_return.id = self.data_id
-                except:
+                except AttributeError:
                     self.data_id = to_return.id
 
             return to_return
 
-        @data.setter
-        def data(self, new_data):
-
+        def set_data(self, new_data):
             # If data is not a pure torch tensor you need to store the chain in a
             # specific place otherwise it will get deleted
             if not isinstance(new_data, torch.Tensor) or hasattr(new_data, "child"):
@@ -368,10 +359,10 @@ class TorchHook(FrameworkHook):
                     del self.child
 
                 with torch.no_grad():
-                    self.set_(new_data)
+                    self.native_data = new_data
             return self
 
-        torch.nn.Parameter.data = data
+        torch.nn.Parameter.data = property(fget=get_data, fset=set_data)
 
         # Hook .grad to handle chain assignment when needed
 
