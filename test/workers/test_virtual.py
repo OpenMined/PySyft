@@ -94,7 +94,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = ObjectRequestMessage(obj.id)
+    message = ObjectRequestMessage((obj.id, None, ""))
 
     # serialize message
     bin_msg = serde.serialize(message)
@@ -208,9 +208,9 @@ def test_obj_not_found(workers):
 
 def test_get_not_permitted(workers):
     bob = workers["bob"]
-    with patch.object(torch.Tensor, "allowed_to_get") as mock_allowed_to_get:
+    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
+    with patch.object(torch.Tensor, "allow") as mock_allowed_to_get:
         mock_allowed_to_get.return_value = False
-        x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
         with pytest.raises(GetNotPermittedError):
             x.get()
         mock_allowed_to_get.assert_called_once()

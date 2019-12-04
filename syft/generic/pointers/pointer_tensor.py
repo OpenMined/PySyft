@@ -285,7 +285,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
         return self
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -300,7 +300,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
 
         Args:
-
+            user (obj, optional): user credentials to perform authentication process.
+            reason (str, optional): a description of why the data scientist wants to see it.
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
@@ -311,7 +312,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(self, deregister_ptr=deregister_ptr)
+        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
 
         # TODO: remove these 3 lines
         # The fact we have to check this means
