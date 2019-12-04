@@ -20,6 +20,7 @@ from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
+from syft.exceptions import SendNotPermittedError
 
 
 def _get_maximum_precision():
@@ -331,6 +332,7 @@ class TorchTensor(AbstractTensor):
         self,
         *location,
         inplace: bool = False,
+        user=None,
         local_autograd=False,
         preinitialize_grad=False,
         no_wrap=False,
@@ -357,7 +359,13 @@ class TorchTensor(AbstractTensor):
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
+        
+        Raises:
+                SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
+
+        if not self.allow(user=user):
+            raise SendNotPermittedError()
 
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
@@ -524,7 +532,7 @@ class TorchTensor(AbstractTensor):
 
         return self
 
-    def get(self, *args, inplace: bool = False, **kwargs):
+    def get(self, *args, inplace: bool = False, user=None, reason: str = "", **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
             Args:
                 args: args to forward to worker
@@ -534,7 +542,11 @@ class TorchTensor(AbstractTensor):
                 GetNotPermittedError: Raised if get is not permitted on this tensor
         """
 
-        tensor = self.child.get(*args, **kwargs)
+        # If it is a local tensor/chain, we don't need to verify permissions
+        if not isinstance(self.child, syft.PointerTensor):
+            tensor = self.child.get(*args, **kwargs)
+        else:  # Remote tensor/chain
+            tensor = self.child.get(*args, user=user, reason=reason, **kwargs)
 
         # Clean the wrapper
         delattr(self, "child")
@@ -571,10 +583,30 @@ class TorchTensor(AbstractTensor):
         """
         return self.get(*args, inplace=True, **kwargs)
 
-    def allowed_to_get(self) -> bool:
-        """This function returns true always currently. Will return false in the future
-        if get is not allowed to be called on this tensor
+    def allow(self, user=None) -> bool:
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
+            
+            Args:
+                user (object,optional): User crendentials to be verified.
+            
+            Returns:
+                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
         """
+        # If it is a wrapper
+        if self.is_wrapper:
+            current_tensor = self.child
+
+            # Verify permissions for each element on the tensor chain.
+            while hasattr(current_tensor, "child"):
+
+                # If it has a list of allowed users, verify permissions, otherwise (public tensors) go to the next.
+                if hasattr(current_tensor, "allowed_users"):
+                    allow = current_tensor.allow(user)
+                    if not allow:
+                        return False
+
+                # Go to next element on the tensor chain
+                current_tensor = current_tensor.child
         return True
 
     def move(self, location):
@@ -639,6 +671,43 @@ class TorchTensor(AbstractTensor):
         return self
 
     float_precision_ = float_prec_
+
+    def private_tensor(
+        self, *args, allowed_users: Union[str] = [], no_wrap: bool = False, **kwargs
+    ):
+        """
+        Convert a tensor or syft tensor to private tensor
+
+        Args:
+            *args (tuple): args to transmit to the private tensor.
+            allowed_users (Union): Tuple of allowed users.
+            no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
+            **kwargs (dict): kwargs to transmit to the private tensor
+        """
+
+        if not kwargs.get("owner"):
+            kwargs["owner"] = self.owner
+
+        if self.is_wrapper:
+            self.child = (
+                syft.PrivateTensor(*args, **kwargs)
+                .on(self.child, wrap=False)
+                .register_credentials(allowed_users)
+            )
+            if no_wrap:
+                return self.child
+            else:
+                return self
+
+        private_tensor = (
+            syft.PrivateTensor(*args, **kwargs)
+            .on(self, wrap=False)
+            .register_credentials(allowed_users)
+        )
+        if not no_wrap:
+            private_tensor = private_tensor.wrap()
+
+        return private_tensor
 
     def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
         """

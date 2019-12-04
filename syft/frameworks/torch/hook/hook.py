@@ -20,6 +20,7 @@ from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -163,6 +164,11 @@ class TorchHook(FrameworkHook):
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AutogradTensor)
 
+        # Add all hooked tensor methods to PrivateTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_private_tensor_methods(PrivateTensor)
+
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
@@ -252,6 +258,10 @@ class TorchHook(FrameworkHook):
     def _hook_syft_tensor_methods(self, syft_type: type):
         tensor_type = self.torch.Tensor
         super()._hook_syft_tensor_methods(tensor_type, syft_type)
+
+    def _hook_private_tensor_methods(self, syft_type: type):
+        tensor_type = self.torch.Tensor
+        super()._hook_private_tensor_methods(tensor_type, syft_type)
 
     def _hook_worker_methods(self):
         class Torch(object):
