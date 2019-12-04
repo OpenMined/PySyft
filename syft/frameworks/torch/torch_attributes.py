@@ -104,7 +104,7 @@ class TorchAttributes(FrameworkAttributes):
             "zeros",
         ]
 
-        self.worker_methods = ["tensor", "rand", "zeros", "randn"]
+        self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
 
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
