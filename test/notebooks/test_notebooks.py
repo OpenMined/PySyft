@@ -26,11 +26,11 @@ exclusion_list_advanced = [
 
 
 def test_notebooks_basic(isolated_filesystem):
+    """Test Notebooks in the tutorial root folder."""
     notebooks = glob.glob("*.ipynb")
     for notebook in notebooks:
         if Path(notebook).name in exclusion_list_basic:
             continue
-        print(notebook)
         res = pm.execute_notebook(
             notebook, "/dev/null", parameters={"epochs": 1, "n_test_batches": 5}, timeout=300
         )
@@ -77,7 +77,9 @@ def test_fl_sms(isolated_filesystem):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-def test_fl_with_websockets_and_averaging(isolated_filesystem, start_remote_server_worker_only, hook):
+def test_fl_with_websockets_and_averaging(
+    isolated_filesystem, start_remote_server_worker_only, hook
+):
     os.chdir("advanced/websockets-example-MNIST/")
     kwargs_list = [
         {"id": "alice", "host": "localhost", "port": 8777, "hook": hook},
