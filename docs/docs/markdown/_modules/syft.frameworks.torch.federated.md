@@ -27,19 +27,19 @@ single or several iterators over the dataset.
     * **drop_last** (*bool**, **optional*) – set to `True` to drop the last incomplete batch,
       if the dataset size is not divisible by the batch size. If `False` and
       the size of dataset is not divisible by the batch size, then the last batch
-      will be smaller. (default: `False`)
+      will be smaller (default: `False`).
 
     * **num_iterators** (*int*) – number of workers from which to retrieve data in parallel.
       num_iterators <= len(federated_dataset.workers) - 1
       the effect is to retrieve num_iterators epochs of data but at each step data from num_iterators distinct
       workers is returned.
 
-    * **iter_per_worker** (*bool*) – if set to true, __next__() will return a dictionary containing one batch per worker
+    * **iter_per_worker** (*bool*) – if set to true, __next__() will return a dictionary containing one batch per worker.
 
 
 
 #### syft.frameworks.torch.federated.dataloader.default_collate(batch)
-Puts each data field into a tensor with outer dimension batch size
+Puts each data field into a tensor with outer dimension batch size.
 
 ## syft.frameworks.torch.federated.dataset module
 
@@ -55,8 +55,8 @@ the two inputs and label tensors separately.
 
 #### federate(workers)
 Add a method to easily transform a torch.Dataset or a sy.BaseDataset
-into a sy.FederatedDataset. The dataset given is split in len(workers)
-part and sent to each workers
+into a sy.FederatedDataset. The dataset given is split into len(workers)
+parts and sent to each worker.
 
 
 #### fix_prec(\*args, \*\*kwargs)
@@ -83,8 +83,8 @@ Bases: `object`
 
 #### syft.frameworks.torch.federated.dataset.dataset_federate(dataset, workers)
 Add a method to easily transform a torch.Dataset or a sy.BaseDataset
-into a sy.FederatedDataset. The dataset given is split in len(workers)
-part and sent to each workers
+into a sy.FederatedDataset. The dataset given is split into len(workers)
+parts and sent to each worker.
 
 ## syft.frameworks.torch.federated.utils module
 
@@ -95,15 +95,15 @@ Add the parameters of two models.
 
 * **Parameters**
 
-    * **dst_model** (*torch.nn.Module*) – the model to which the src_model will be added
+    * **dst_model** (*torch.nn.Module*) – the model to which the src_model will be added.
 
-    * **src_model** (*torch.nn.Module*) – the model to be added to dst_model
+    * **src_model** (*torch.nn.Module*) – the model to be added to dst_model.
 
 
 
 * **Returns**
 
-    the resulting model of the addition
+    The resulting model of the addition.
 
 
 
@@ -115,10 +115,10 @@ Add the parameters of two models.
 
 #### syft.frameworks.torch.federated.utils.extract_batches_per_worker(federated_train_loader: syft.frameworks.torch.federated.dataloader.FederatedDataLoader)
 Extracts the batches from the federated_train_loader and stores them
-in a dictionary (keys = data.location)
+in a dictionary (keys = data.location).
 
 Args:
-federated_train_loader: the connection object we use to send responses
+federated_train_loader: the connection object we use to send responses.
 
 > back to the client.
 
@@ -129,13 +129,13 @@ Calculate the federated average of a list of models.
 
 * **Parameters**
 
-    **models** (*List**[**torch.nn.Module**]*) – the models of which the federated average is calculated
+    **models** (*List**[**torch.nn.Module**]*) – the models of which the federated average is calculated.
 
 
 
 * **Returns**
 
-    the module with averaged parameters
+    the module with averaged parameters.
 
 
 
@@ -151,15 +151,15 @@ Scale the parameters of a model.
 
 * **Parameters**
 
-    * **model** (*torch.nn.Module*) – the models whose parameters will be scaled
+    * **model** (*torch.nn.Module*) – the models whose parameters will be scaled.
 
-    * **scale** (*float*) – the scaling factor
+    * **scale** (*float*) – the scaling factor.
 
 
 
 * **Returns**
 
-    the module with scaled parameters
+    the module with scaled parameters.
 
 
 
