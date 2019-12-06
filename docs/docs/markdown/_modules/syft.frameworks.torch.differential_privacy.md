@@ -18,9 +18,9 @@ returns ~ Pr[outcome != winner].
 
 * **Parameters**
 
-    * **counts** – a list of scores
+    * **counts** – a list of scores.
 
-    * **noise_eps** – privacy parameter for noisy_max
+    * **noise_eps** – privacy parameter for noisy_max.
 
 
 
@@ -42,9 +42,9 @@ returns ~ Pr[outcome != winner].
 
 * **Parameters**
 
-    * **counts** – a list of scores
+    * **counts** – a list of scores.
 
-    * **noise_eps** – privacy parameter for noisy_max
+    * **noise_eps** – privacy parameter for noisy_max.
 
 
 
@@ -67,7 +67,7 @@ The bound used is the min of three terms. The first term is from
 [https://arxiv.org/pdf/1605.02065.pdf](https://arxiv.org/pdf/1605.02065.pdf).
 The second term is based on the fact that when event has probability (1-q) for
 q close to zero, q can only change by exp(eps), which corresponds to a
-much smaller multiplicative change in (1-q)
+much smaller multiplicative change in (1-q).
 The third term comes directly from the privacy guarantee.
 :param q: pr of non-optimal outcome
 :param priv_eps: eps parameter for DP
@@ -76,7 +76,7 @@ The third term comes directly from the privacy guarantee.
 
 * **Returns**
 
-    Upper bound on logmgf
+    Upper bound on logmgf.
 
 
 
@@ -93,58 +93,58 @@ can go down by 1.
 * **Parameters**
 
     * **teacher_preds** – a numpy array of dim (num_teachers x num_examples). Each value corresponds to the
-      index of the label which a teacher gave for a specific example
+      index of the label which a teacher gave for a specific example.
 
     * **indices** – a numpy array of dim (num_examples) of aggregated examples which were aggregated using
       the noisy max mechanism.
 
-    * **noise_eps** – the epsilon level used to create the indices
+    * **noise_eps** – the epsilon level used to create the indices.
 
-    * **delta** – the desired level of delta
+    * **delta** – the desired level of delta.
 
-    * **moments** – the number of moments to track (see the paper)
+    * **moments** – the number of moments to track (see the paper).
 
-    * **beta** – a smoothing parameter (see the paper)
+    * **beta** – a smoothing parameter (see the paper).
 
 
 
 * **Returns**
 
-    first value is the data dependent epsilon, then the data independent epsilon
+    first value is the data dependent epsilon, then the data independent epsilon.
 
 
 
 * **Return type**
 
-    tuple
+    tuple.
 
 
 
 #### syft.frameworks.torch.differential_privacy.pate.sens_at_k(counts, noise_eps, l, k)
-Return sensitivity at distane k.
+Return sensitivity at distance k.
 
 
 * **Parameters**
 
-    * **counts** – an array of scores
+    * **counts** – an array of scores.
 
-    * **noise_eps** – noise parameter used
+    * **noise_eps** – noise parameter used.
 
-    * **l** – moment whose sensitivity is being computed
+    * **l** – moment whose sensitivity is being computed.
 
-    * **k** – distance
+    * **k** – distance.
 
 
 
 * **Returns**
 
-    at distance k
+    at distance k.
 
 
 
 * **Return type**
 
-    sensitivity
+    sensitivity.
 
 
 
@@ -154,25 +154,25 @@ Compute beta-smooth sensitivity.
 
 * **Parameters**
 
-    * **counts** – array of scors
+    * **counts** – array of scores.
 
-    * **noise_eps** – noise parameter
+    * **noise_eps** – noise parameter.
 
-    * **l** – moment of interest
+    * **l** – moment of interest.
 
-    * **beta** – smoothness parameter
+    * **beta** – smoothness parameter.
 
 
 
 * **Returns**
 
-    a beta smooth upper bound
+    a beta smooth upper bound.
 
 
 
 * **Return type**
 
-    smooth_sensitivity
+    smooth_sensitivity.
 
 
 ## Module contents

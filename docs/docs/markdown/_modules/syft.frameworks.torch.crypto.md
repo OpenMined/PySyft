@@ -12,7 +12,7 @@ negative numbers while they are always positive in the paper
 
 
 #### syft.frameworks.torch.crypto.securenn.decompose(tensor)
-decompose a tensor into its binary representation.
+Decompose a tensor into its binary representation.
 
 
 #### syft.frameworks.torch.crypto.securenn.flip(x, dim)
