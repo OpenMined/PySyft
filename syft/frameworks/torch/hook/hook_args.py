@@ -55,6 +55,7 @@ ambiguous_methods = {
     "sub_",
     "new",
     "chunk",
+    "reshape",
 }
 
 ambiguous_functions = {

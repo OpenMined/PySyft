@@ -1,7 +1,7 @@
 import argparse
 import torch
 import syft as sy
-from syft.workers import WebsocketServerWorker
+from syft import WebsocketServerWorker
 
 
 def get_args():
