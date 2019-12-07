@@ -18,6 +18,7 @@ install:
   - pip3 install -r pip-dep/requirements.txt >build.log
   - pip3 install -r pip-dep/requirements_dev.txt >build.log
   - pip3 install -r pip-dep/requirements_udacity.txt >build.log
+  - pip3 install -r pip-dep/requirements_notebooks.txt >build.log
   - pip3 install scikit-learn >build.log
   - pip3 install flake8
   #- pip3 install flake8-docstrings
