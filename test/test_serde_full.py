@@ -760,6 +760,8 @@ def make_plan(**kwargs):
         assert detailed.state.state_ids == original.state.state_ids
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
+        assert detailed.input_shapes == original.input_shapes
+        assert detailed._output_shape == original._output_shape
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -781,6 +783,9 @@ def make_plan(**kwargs):
                     serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
                     plan.is_built,  # (bool) is_built
+                    (CODE[list], ((CODE[torch.Size], (3,)),)),  # (list of torch.Size) input_shapes
+                    # NOTE: it's uninitialized until plan.output_shape property is used
+                    None,  # (torch.Size) _output_shape
                     serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
                     serde._simplify(syft.hook.local_worker, plan.tags),  # (list) tags
                     serde._simplify(syft.hook.local_worker, plan.description),  # (str) description
@@ -840,6 +845,7 @@ def make_procedure(**kwargs):
         assert detailed.arg_ids == original.arg_ids
         assert detailed.result_ids == original.result_ids
         assert detailed.operations == original.operations
+        assert detailed.promise_out_id == original.promise_out_id
         return True
 
     return [
@@ -854,6 +860,7 @@ def make_procedure(**kwargs):
                     ),
                     (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_ids
                     (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_ids
+                    None  # (int) promise_out_id
                 ),
             ),
             "cmp_detailed": compare,
@@ -1229,6 +1236,85 @@ def make_autogradtensor(**kwargs):
                     None,  # [always None, ignored in constructor] grad_fn
                     (CODE[list], ((CODE[str], (b"aaa",)),)),  # (list of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.frameworks.torch.tensors.interpreters.private.PrivateTensor
+def make_privatetensor(**kwargs):
+    t = torch.tensor([1, 2, 3])
+    pt = t.private_tensor(allowed_users=("test",))
+    pt.tags = ["tag1"]
+    pt.description = "private"
+    pt = pt.child
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.private.PrivateTensor
+        assert detailed.id == original.id
+        assert detailed.allowed_users == original.allowed_users
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        assert detailed.child.equal(original.child)
+        return True
+
+    return [
+        {
+            "value": pt,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor],
+                (
+                    pt.id,  # (int or str) id
+                    (CODE[tuple], ((CODE[str], (b"test",)),)),  # (tuple of ?) allowed_users
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
+                    (CODE[str], (b"private",)),  # (str) description
+                    serde._simplify(syft.hook.local_worker, t),  # (AbstractTensor) chain
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
+def make_promisetensor(**kwargs):
+    pt = syft.Promise.FloatTensor(shape=torch.Size((3, 4)))
+    pt.tags = ["tag1"]
+    pt.description = "I promise"
+
+    @syft.func2plan(args_shape=[(3, 4)])
+    def promising_plan(x):
+        x = x * 2 + 1
+        return x
+
+    # A plan should be added to promise tensor's plans list here
+    res = promising_plan(pt)
+    pt = pt.child
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
+        assert detailed.id == original.id
+        assert detailed.shape == original.shape
+        assert detailed.obj_type == original.obj_type
+        assert detailed.plans == original.plans
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        return True
+
+    return [
+        {
+            "value": pt,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor],
+                (
+                    pt.id,  # (int) id
+                    (CODE[torch.Size], (3, 4)),  # (torch.Size) shape
+                    (CODE[str], (b"torch.FloatTensor",)),  # (str) obj_type (torch tensor type)
+                    (CODE[set], (list(pt.plans)[0],)),  # (set of Plans' id) plans
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
+                    (CODE[str], (b"I promise",)),  # (str) description
                 ),
             ),
             "cmp_detailed": compare,
@@ -1623,6 +1709,8 @@ samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
+samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
+samples[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor] = make_promisetensor
 
 samples[syft.messaging.message.Message] = make_message
 samples[syft.messaging.message.Operation] = make_operation
