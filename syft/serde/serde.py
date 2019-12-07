@@ -200,7 +200,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
         # If there is not a full_simplifier for this
         # object, then we simplify it.
         no_full_simplifiers_found.add(current_type)
-        return _simplify(obj)
+        return _simplify(worker, obj)
 
 
 ## SECTION: dinamically generate simplifiers and detailers
