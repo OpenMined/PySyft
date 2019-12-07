@@ -5,7 +5,6 @@ numpy>=1.14.0
 pre-commit
 pytest
 requests
-syft
 websocket_client
 websockets>=7.0
 eventlet==0.25.0
@@ -19,3 +18,5 @@ gevent-websocket
 flask_sockets
 flask_login
 pbr
+git+https://github.com/OpenMined/PySyft@master#syft
+git+https://github.com/OpenMined/proto

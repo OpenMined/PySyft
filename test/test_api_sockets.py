@@ -246,6 +246,29 @@ def test_send_tensor(connected_node):
     assert th.all(th.eq(x_s.get(), x))
 
 
+def test_send_private_tensor(connected_node):
+    x = th.tensor([1.0, 0.4])
+
+    # Private Tensor
+    _x = x.private_tensor(allowed_users=("user"))
+
+    # Pointer to private tensor.
+    p_x = _x.send(connected_node["alice"], user="user")
+    assert p_x.location.id == "alice"
+
+
+def test_get_private_tensor(connected_node):
+    x = th.tensor([1.0, 0.4])
+
+    # Private Tensor
+    _x = x.private_tensor(allowed_users=("user"))
+
+    # Pointer to private tensor.
+    p_x = _x.send(connected_node["alice"], user="user")
+    with pytest.raises(sy.exceptions.GetNotPermittedError):
+        p_x.get()
+
+
 def test_send_tag_tensor(connected_node):
     tag = "#tensor"
     description = "Tensor Description"

@@ -17,7 +17,6 @@ install:
   - pip3 install flake8-comprehensions
   - pip3 install pep8-naming
   - pip3 install -r dev-requirements.txt >> build.log
-  - python setup.py install >> build.log
 before_script:
   # stop the build if there are Python syntax errors or undefined
   # names

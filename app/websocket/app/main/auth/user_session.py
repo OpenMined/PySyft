@@ -18,6 +18,7 @@ class UserSession(UserMixin):
         """
         self.id = uuid.uuid5(uuid.NAMESPACE_DNS, UserSession.NAMESPACE_DNS)
         self.user = user  # PyGrid UserAuthentication object
+        self.tensor_requests = list()
 
         # If it is the first session of this user at this node.
         if user.username not in hook.local_worker._known_workers:
@@ -34,6 +35,14 @@ class UserSession(UserMixin):
                 ID: Session's ID.
         """
         return self.id
+
+    def save_tensor_request(self, request_msg: tuple):
+        """ Save tensor request at user's request list.
+        
+            Args:
+                request_msg (tuple) : Tuple structure containing tensor id, credentials and reason.
+        """
+        self.tensor_requests.append(request_msg)
 
     @property
     def worker(self) -> sy.VirtualWorker:
