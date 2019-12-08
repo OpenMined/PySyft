@@ -2,6 +2,10 @@ import builtins
 from multiprocessing import Process
 import sys
 import time
+import os
+import shutil
+from pathlib import Path
+import tempfile
 
 import pytest
 import torch
@@ -70,6 +74,39 @@ def start_remote_worker():  # pragma: no cover
         return server, remote_proxy
 
     return _start_remote_worker
+
+
+@pytest.fixture()
+def start_remote_server_worker_only():  # pragma: no cover
+    """Helper function for starting a websocket worker."""
+
+    def _start_remote_worker(
+        id, hook, dataset: str = None, host="localhost", port=8768, max_tries=5, sleep_time=0.01
+    ):
+        kwargs = {"id": id, "host": host, "port": port, "hook": hook}
+        server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
+
+        return server
+
+    return _start_remote_worker
+
+
+@pytest.yield_fixture(scope="function")
+def isolated_filesystem():
+    """A context manager that creates a temporary folder and changes
+    the current working directory to it for isolated filesystem tests.
+    """
+    cwd = os.getcwd()
+    t = tempfile.mkdtemp()
+    shutil.copytree("examples/tutorials/", t + "/examples")
+    # Path(t + "/data/").mkdir(parents=True, exist_ok=True)
+    shutil.copytree("examples/data/", t + "/data/")
+    os.chdir(t + "/examples")
+    try:
+        yield t
+    finally:
+        os.chdir(cwd)
+        shutil.rmtree(t)
 
 
 @pytest.fixture(scope="session", autouse=True)

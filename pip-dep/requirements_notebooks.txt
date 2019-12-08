@@ -1,0 +1,5 @@
+jupyter>=1.0.0
+matplotlib>=3.1.1
+nltk>=3.4.5
+papermill>=1.2.1
+statsmodels>=0.10.1
