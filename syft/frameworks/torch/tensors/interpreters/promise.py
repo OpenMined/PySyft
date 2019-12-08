@@ -10,7 +10,7 @@ from syft.generic.frameworks.hook import hook_args
 
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
-        self, shape, owner=None, id=None, tensor_type=None, plans=None, tags=None, description=None,
+        self, shape, owner=None, id=None, tensor_type=None, plans=None, tags=None, description=None
     ):
         """Initializes a PromiseTensor
 
@@ -63,44 +63,53 @@ class PromiseTensor(AbstractTensor, Promise):
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PromiseTensor") -> tuple:
-        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+        """Takes the attributes of a PromiseTensor and saves them in a tuple.
 
         Args:
-            tensor: a FixedPrecisionTensor.
+            tensor: a PromiseTensor.
 
         Returns:
-            tuple: a tuple holding the unique attributes of the fixed precision tensor.
+            tuple: a tuple holding the unique attributes of the Promise tensor.
         """
-
         return (
             sy.serde._simplify(worker, tensor.id),
             sy.serde._simplify(worker, tensor.shape),
             sy.serde._simplify(worker, tensor.obj_type),
             sy.serde._simplify(worker, tensor.plans),
+            sy.serde._simplify(worker, tensor.tags),
+            sy.serde._simplify(worker, tensor.description),
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PromiseTensor":
         """
-            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
+            This function reconstructs a PromiseTensor given it's attributes in form of a tuple.
             Args:
                 worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+                tensor_tuple: a tuple holding the attributes of the PromiseTensor
             Returns:
-                FixedPrecisionTensor: a FixedPrecisionTensor
+                PromiseTensor: a PromiseTensor
             Examples:
                 shared_tensor = detail(data)
             """
 
-        id, shape, tensor_type, plans = tensor_tuple
+        id, shape, tensor_type, plans, tags, description = tensor_tuple
 
         id = sy.serde._detail(worker, id)
         shape = sy.serde._detail(worker, shape)
         tensor_type = sy.serde._detail(worker, tensor_type)
         plans = sy.serde._detail(worker, plans)
+        tags = sy.serde._detail(worker, tags)
+        description = sy.serde._detail(worker, description)
 
         tensor = PromiseTensor(
-            owner=worker, id=id, shape=shape, tensor_type=tensor_type, plans=plans
+            owner=worker,
+            id=id,
+            shape=shape,
+            tensor_type=tensor_type,
+            plans=plans,
+            tags=tags,
+            description=description,
         )
 
         return tensor

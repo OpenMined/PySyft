@@ -28,10 +28,9 @@ class AutogradTensor(AbstractTensor):
     def __init__(
         self, data=None, requires_grad=True, owner=None, id=None, preinitialize_grad=False, **kwargs
     ):
-        super().__init__()
-
-        self.owner = owner
-        self.id = id
+        super().__init__(
+            id=id, owner=owner, tags=kwargs.get("tags"), description=kwargs.get("description")
+        )
 
         self.child = data
         self.requires_grad = requires_grad
