@@ -1052,10 +1052,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return referenced_worker
 
     @staticmethod
-    def force_simplify(worker: AbstractWorker) -> tuple:
+    def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
-            sy.serde._simplify(worker, worker.id),
-            sy.serde._simplify(worker, worker._objects),
+            sy.serde._simplify(_worker, worker.id),
+            sy.serde._simplify(_worker, worker._objects),
             worker.auto_add,
         )
 

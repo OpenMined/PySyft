@@ -11,5 +11,6 @@ exclude = '''
     | build
     | dist
     | venv\/
+    | test_serde_full\.py
 )
 '''
