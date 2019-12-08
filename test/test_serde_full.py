@@ -395,7 +395,7 @@ def make_torch_scriptmodule(**kwargs):
             super(ScriptModule, self).__init__()
 
         @torch.jit.script_method
-        def forward(self, x):
+        def forward(self, x):  # pragma: no cover
             return x + 2
 
     sm = ScriptModule()
@@ -415,7 +415,7 @@ def make_torch_scriptmodule(**kwargs):
 def make_torch_cfunction(**kwargs):
 
     @torch.jit.script
-    def func(x):
+    def func(x):  # pragma: no cover
         return x + 2
 
     return [
@@ -1110,7 +1110,7 @@ def make_trainconfig(**kwargs):
             self.b1 = torch.nn.Parameter(torch.randn(1), requires_grad=True)
 
         @torch.jit.script_method
-        def forward(self, x):
+        def forward(self, x):  # pragma: no cover
             x = x @ self.w1 + self.b1
             return x
 
@@ -1119,7 +1119,7 @@ def make_trainconfig(**kwargs):
             super(Loss, self).__init__()
 
         @torch.jit.script_method
-        def forward(self, pred, target):
+        def forward(self, pred, target):  # pragma: no cover
             return ((target.view(pred.shape).float() - pred.float()) ** 2).mean()
 
     loss = Loss()
