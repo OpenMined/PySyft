@@ -10,7 +10,7 @@ import sys
 import syft as sy
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.virtual import VirtualWorker
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,9 @@ def get_next_batches(fdataloader: sy.FederatedDataLoader, nr_batches: int):
     return batches
 
 
-def train(model, device, federated_train_loader, lr, federate_after_n_batches):
+def train(
+    model, device, federated_train_loader, lr, federate_after_n_batches, abort_after_one=False
+):
     model.train()
 
     nr_batches = federate_after_n_batches
@@ -144,6 +146,8 @@ def train(model, device, federated_train_loader, lr, federate_after_n_batches):
 
         model = utils.federated_avg(models)
         batches = get_next_batches(federated_train_loader, nr_batches)
+        if abort_after_one:
+            break
     return model
 
 
