@@ -18,5 +18,5 @@ gevent-websocket
 flask_sockets
 flask_login
 pbr
-git+https://github.com/OpenMined/PySyft@master#syft
-git+https://github.com/OpenMined/proto
+git+https://github.com/OpenMined/PySyft@master#egg=syft
+git+https://github.com/OpenMined/proto#egg=pysyft_proto
