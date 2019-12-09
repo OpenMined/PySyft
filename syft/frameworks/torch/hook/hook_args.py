@@ -45,6 +45,8 @@ backward_func = {
     PaillierTensor: lambda i: PaillierTensor().on(i, wrap=False),
 }
 
+# Methods or functions whose signature changes a lot and that we don't want to "cache", because
+# they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = {
     "__getitem__",
     "__setitem__",
