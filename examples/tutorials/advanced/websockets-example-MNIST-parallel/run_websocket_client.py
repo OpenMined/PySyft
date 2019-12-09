@@ -113,7 +113,14 @@ async def fit_model_on_worker(
 
 
 def evaluate_model_on_worker(
-    model_identifier, worker, dataset_key, model, nr_bins, batch_size, print_target_hist=False
+    model_identifier,
+    worker,
+    dataset_key,
+    model,
+    nr_bins,
+    batch_size,
+    device,
+    print_target_hist=False,
 ):
     model.eval()
 
@@ -130,6 +137,7 @@ def evaluate_model_on_worker(
         nr_bins=nr_bins,
         return_loss=True,
         return_raw_accuracy=True,
+        device=device,
     )
     test_loss = result["loss"]
     correct = result["nr_correct_predictions"]
@@ -184,7 +192,7 @@ async def main():
 
     model = Net().to(device)
 
-    traced_model = torch.jit.trace(model, torch.zeros([1, 1, 28, 28], dtype=torch.float))
+    traced_model = torch.jit.trace(model, torch.zeros([1, 1, 28, 28], dtype=torch.float).to(device))
     learning_rate = args.lr
 
     for curr_round in range(1, args.training_rounds + 1):
@@ -218,6 +226,7 @@ async def main():
                     model=worker_model,
                     nr_bins=10,
                     batch_size=128,
+                    device=args.device,
                     print_target_hist=False,
                 )
 
@@ -237,6 +246,7 @@ async def main():
                 model=traced_model,
                 nr_bins=10,
                 batch_size=128,
+                device=args.device,
                 print_target_hist=False,
             )
 
