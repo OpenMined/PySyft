@@ -47,15 +47,16 @@ backward_func = {
 
 ambiguous_methods = {
     "__getitem__",
-    "_getitem_public",
     "__setitem__",
-    "view",
-    "permute",
+    "_getitem_public",
     "add_",
-    "sub_",
-    "new",
+    "backward",
     "chunk",
+    "new",
+    "permute",
     "reshape",
+    "sub_",
+    "view",
 }
 
 ambiguous_functions = {
