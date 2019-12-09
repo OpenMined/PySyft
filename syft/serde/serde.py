@@ -173,6 +173,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
             forced_full_simplifiers[current_type][0],
             forced_full_simplifiers[current_type][1](worker, obj),
         )
+        return result
     # If we already tried to find a full simplifier for this type but failed, we should
     # simplify it instead.
     elif current_type in no_full_simplifiers_found:
@@ -193,7 +194,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
                 forced_full_simplifiers[current_type] = forced_full_simplifiers[inheritance_type]
                 result = (
                     forced_full_simplifiers[current_type][0],
-                    forced_full_simplifiers[current_type][1](obj),
+                    forced_full_simplifiers[current_type][1](worker, obj),
                 )
                 return result
 
