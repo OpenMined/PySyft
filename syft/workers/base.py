@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
@@ -20,6 +21,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -97,17 +99,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        if hook is None:
-            self.framework = None
-        else:
-            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
-            #     execute_command or command_guard to not expect an attribute named "torch"
-            #     (#2530)
-            self.framework = hook.framework
-            if hasattr(hook, "torch"):
-                self.torch = self.framework
-            elif hasattr(hook, "tensorflow"):
-                self.tensorflow = self.framework
+
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -117,15 +109,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            codes.MSGTYPE.CMD: self.execute_command,
-            codes.MSGTYPE.PLAN_CMD: self.execute_plan_command,
-            codes.MSGTYPE.OBJ: self.set_obj,
-            codes.MSGTYPE.OBJ_REQ: self.respond_to_obj_req,
-            codes.MSGTYPE.OBJ_DEL: self.rm_obj,
-            codes.MSGTYPE.IS_NONE: self.is_tensor_none,
-            codes.MSGTYPE.GET_SHAPE: self.get_tensor_shape,
-            codes.MSGTYPE.SEARCH: self.search,
-            codes.MSGTYPE.FORCE_OBJ_DEL: self.force_rm_obj,
+            Operation: self.execute_command,
+            PlanCommandMessage: self.execute_plan_command,
+            ObjectMessage: self.set_obj,
+            ObjectRequestMessage: self.respond_to_obj_req,
+            ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
+            IsNoneMessage: self.is_tensor_none,
+            GetShapeMessage: self.get_tensor_shape,
+            SearchMessage: self.search,
+            ForceObjectDeleteMessage: self.force_rm_obj,
         }
 
         self._plan_command_router = {
@@ -138,7 +130,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Declare workers as appropriate
         self._known_workers = {}
         if auto_add:
-            if hook.local_worker is not None:
+            if hook is not None and hook.local_worker is not None:
                 known_workers = self.hook.local_worker._known_workers
                 if self.id in known_workers:
                     if isinstance(known_workers[self.id], type(self)):
@@ -161,6 +153,20 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+                self.remote = Remote(self, "torch")
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
+                self.remote = Remote(self, "tensorflow")
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -262,7 +268,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {message} to {location}")
 
         # Step 1: serialize the message to a binary
-        bin_message = sy.serde.serialize(message)
+        bin_message = sy.serde.serialize(message, worker=self)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
@@ -294,20 +300,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self)
 
-        (msg_type, contents) = (msg.msg_type, msg.contents)
-
         if self.verbose:
-            print(f"worker {self} received {sy.codes.code2MSGTYPE[msg_type]} {contents}")
+            print(f"worker {self} received {type(msg).__name__} {msg.contents}")
+
         # Step 1: route message to appropriate function
-        response = self._message_router[msg_type](contents)
+        response = self._message_router[type(msg)](msg.contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response)
+        bin_response = sy.serde.serialize(response, worker=self)
 
         return bin_response
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
-        # Each method corresponds to a MsgType enum.
 
     def send(
         self,
@@ -527,6 +531,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj_id: A string or integer id of an object to look up.
         """
         obj = super().get_obj(obj_id)
+
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
@@ -538,15 +543,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
+    def respond_to_obj_req(self, request_msg: tuple):
         """Returns the deregistered object from registry.
 
         Args:
-            obj_id: A string or integer id of an object to look up.
+            request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-
+        obj_id, user, reason = request_msg
         obj = self.get_obj(obj_id)
-        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+        if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
@@ -591,18 +596,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.send_msg(ObjectMessage(obj), location)
 
-    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
+    def request_obj(
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+    ) -> object:
         """Returns the requested object from specified location.
 
         Args:
-            obj_id:  A string or integer id of an object to look up.
-            location: A BaseWorker instance that lets you provide the lookup
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
                 location.
-
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id), location)
+        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -961,7 +969,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def create_message_execute_command(
-        command_name: codes.MSGTYPE, command_owner=None, return_ids=None, *args, **kwargs
+        command_name: str, command_owner=None, return_ids=None, *args, **kwargs
     ):
         """helper function creating a message tuple for the execute_command call
 
@@ -979,11 +987,52 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Message(codes.MSGTYPE.CMD, [[command_name, command_owner, args, kwargs], return_ids])
+        return Operation((command_name, command_owner, args, kwargs), return_ids)
+
+    @property
+    def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
+        """
+        Define the serialization strategy to adopt depending on the workers it's connected to.
+        This is relevant in particular for Tensors which can be serialized in an efficient way
+        between workers which share the same Deep Learning framework, but must be converted to
+        lists or json-like objects in other cases.
+
+        Args:
+            workers: (Optional) the list of workers involved in the serialization. If not
+                provided, self._known_workers is used.
+
+        Returns:
+            A str code:
+                'all': serialization must be compatible with all kinds of workers
+                'torch': serialization will only work between workers that support PyTorch
+                (more to come: 'tensorflow', 'numpy', etc)
+        """
+        if workers is not None:
+            if not isinstance(workers, list):
+                workers = [workers]
+            workers.append(self)
+        else:
+            # self is referenced in self.__known_workers
+            # NOTE: for some reason self._known_workers may contain a Plan
+            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
+
+        frameworks = set()
+        for worker in workers:
+            if worker.framework is not None:
+                framework = worker.framework.__name__
+            else:
+                framework = "None"
+
+            frameworks.add(framework)
+
+        if len(frameworks) == 1 and frameworks == {"torch"}:
+            return codes.TENSOR_SERIALIZATION.TORCH
+        else:
+            return codes.TENSOR_SERIALIZATION.ALL
 
     @staticmethod
-    def simplify(worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(worker.id),)
+    def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
+        return (sy.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:
@@ -1003,8 +1052,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return referenced_worker
 
     @staticmethod
-    def force_simplify(worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(worker.id), sy.serde._simplify(worker._objects), worker.auto_add)
+    def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
+        return (
+            sy.serde._simplify(_worker, worker.id),
+            sy.serde._simplify(_worker, worker._objects),
+            worker.auto_add,
+        )
 
     @staticmethod
     def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:

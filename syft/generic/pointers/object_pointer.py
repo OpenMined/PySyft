@@ -13,6 +13,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.messaging.message import ForceObjectDeleteMessage
+from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
 
@@ -224,7 +225,7 @@ class ObjectPointer(AbstractObject):
             pointer = err.pointer
             return pointer
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
@@ -234,6 +235,8 @@ class ObjectPointer(AbstractObject):
             removed/destroyed.
 
         Args:
+            user (obj, optional) : authenticate/allow user to perform get on remote private objects.
+            reason (str, optional) : a description of why the data scientist wants to see it. 
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
@@ -263,7 +266,7 @@ class ObjectPointer(AbstractObject):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location)
+            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
 
         # Remove this pointer by default
         if deregister_ptr:
@@ -364,7 +367,7 @@ class ObjectPointer(AbstractObject):
         )
 
     @staticmethod
-    def simplify(ptr: "ObjectPointer") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "ObjectPointer") -> tuple:
         """
         This function takes the attributes of a ObjectPointer and saves them in a dictionary
         Args:

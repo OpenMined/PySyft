@@ -8,8 +8,10 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.messaging.promise import Promise
 
 from typing import List, Union
+import warnings
 
 
 class Protocol(AbstractObject):
@@ -83,6 +85,55 @@ class Protocol(AbstractObject):
         self.plans = [(worker, plan.send(worker)) for (worker, plan) in self.plans]
 
         return self
+
+    def __call__(self, *args, **kwargs):
+        has_promised_inputs = any(
+            [hasattr(arg, "child") and isinstance(arg.child, Promise) for arg in args]
+        )
+        if has_promised_inputs:
+            return self.build_with_promises(*args, **kwargs)
+        else:
+            return self.run(*args, **kwargs)
+
+    def build_with_promises(self, *args, **kwargs):
+        """ This method is used to build the graph of computation distributed across the different workers,
+        meaning that output promises are built for plans and these output promises are used as inputs
+        for the next worker.
+
+        The input args (with at least one promise) provided are sent to the first plan location.
+        The output promise(s) is created and linked to this plan and send to the second plan location, and so on.
+        Pointer(s) to the final result(s) on the last worker as well as to the input promise(s)
+        that have to be kept are returned.
+        """
+        self._assert_is_resolved()
+
+        # TODO if self.location is not None:
+
+        # Local and sequential coordination of the plan execution
+        previous_worker_id = None
+        response = None
+        for worker, plan in self.plans:
+            # Transmit the args to the next worker if it's a different one % the previous
+            if previous_worker_id is None:
+                args = [arg.send(worker).child for arg in args]
+            elif previous_worker_id != worker.id:
+                args = [arg.remote_send(worker).child for arg in args]
+                for arg in args:
+                    # Not clean but need to point to promise on next worker from protocol owner
+                    # TODO see if a better solution exists
+                    arg.location = worker
+            else:
+                args = [arg.child for arg in args]
+
+            if previous_worker_id is None:
+                in_promise_ptrs = args[0] if len(args) == 1 else args
+            previous_worker_id = worker.id
+
+            response = plan(*args)
+
+            args = response if isinstance(response, tuple) else (response,)
+
+        return in_promise_ptrs, response
 
     def run(self, *args, **kwargs):
         """
@@ -182,10 +233,11 @@ class Protocol(AbstractObject):
         self.location = location
 
     @staticmethod
-    def simplify(protocol: "Protocol") -> tuple:
+    def simplify(worker: AbstractWorker, protocol: "Protocol") -> tuple:
         """
         This function takes the attributes of a Protocol and saves them in a tuple
         Args:
+            worker (AbstractWorker) : the worker doing the serialization
             protocol (Protocol): a Protocol object
         Returns:
             tuple: a tuple holding the unique attributes of the Protocol object
@@ -207,15 +259,15 @@ class Protocol(AbstractObject):
             plans_reference.append((worker_id, plan_id))
 
         return (
-            sy.serde._simplify(protocol.id),
-            sy.serde._simplify(protocol.tags),
-            sy.serde._simplify(protocol.description),
-            sy.serde._simplify(plans_reference),
-            sy.serde._simplify(protocol.workers_resolved),
+            sy.serde._simplify(worker, protocol.id),
+            sy.serde._simplify(worker, protocol.tags),
+            sy.serde._simplify(worker, protocol.description),
+            sy.serde._simplify(worker, plans_reference),
+            sy.serde._simplify(worker, protocol.workers_resolved),
         )
 
     @staticmethod
-    def detail(worker: BaseWorker, protocol_tuple: tuple) -> "Protocol":
+    def detail(worker: AbstractWorker, protocol_tuple: tuple) -> "Protocol":
         """This function reconstructs a Protocol object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
@@ -280,9 +332,26 @@ class Protocol(AbstractObject):
     def _resolve_workers(self, workers):
         """Map the abstract workers (named by strings) to the provided workers and
         update the plans accordingly"""
+        dict_workers = {w.id: w for w in workers}
+        set_fake_ids = set(worker for worker, _ in self.plans)
+        set_real_ids = set(dict_workers.keys())
+
+        if 0 < len(set_fake_ids.intersection(set_real_ids)) < len(set_real_ids):
+            # The user chose fake ids that correspond to real ids but not all of them match.
+            # Maybe it's a mistake so we warn the user.
+            warnings.warn(
+                "You are deploying a protocol with workers for which only a subpart"
+                "have ids that match an id chosen for the protocol."
+            )
+
+        # If the "fake" ids manually set by the user when writing the protocol exactly match the ids
+        # of the workers, these fake ids in self.plans are replaced with the real workers.
+        if set_fake_ids == set_real_ids:
+            self.plans = [(dict_workers[w], p) for w, p in self.plans]
+
         # If there is an exact one-to-one mapping, just iterate and keep the order
         # provided when assigning the workers
-        if len(workers) == len(self.plans):
+        elif len(workers) == len(self.plans):
             self.plans = [(worker, plan) for (_, plan), worker in zip(self.plans, workers)]
 
         # Else, there are duplicates in the self.plans keys and we need to build
