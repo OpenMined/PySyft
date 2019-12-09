@@ -106,6 +106,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
+        self.plan_building = False
 
         # For performance, we cache all possible message types
         self._message_router = {
@@ -153,6 +154,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        # Used to keep track of a building plan
+        self.init_plan = None
 
         if hook is None:
             self.framework = None
