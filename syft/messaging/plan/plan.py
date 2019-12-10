@@ -12,6 +12,7 @@ from syft.messaging.message import Operation
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 
 
 class func2plan(object):
@@ -122,6 +123,8 @@ class Plan(AbstractObject, ObjectStorage):
                 self.owner.register_obj(tensor)
         self.include_state = include_state
         self.is_built = is_built
+        self.input_shapes = None
+        self._output_shape = None
 
         # The plan has not been sent
         self.pointers = dict()
@@ -162,6 +165,20 @@ class Plan(AbstractObject, ObjectStorage):
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
         return self.state.tensors()
+
+    @property
+    def output_shape(self):
+        if self._output_shape is None:
+            args = self._create_placeholders(self.input_shapes)
+            # NOTE I currently need to regiser and then remove objects to use the method
+            # but a better syntax is being worked on
+            for arg in args:
+                self.owner.register_obj(arg)
+            output = self(*args)
+            for arg in args:
+                self.owner.rm_obj(arg)
+            self._output_shape = output.shape
+        return self._output_shape
 
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
@@ -210,6 +227,9 @@ class Plan(AbstractObject, ObjectStorage):
         Args:
             args: Input data.
         """
+
+        self.input_shapes = [x.shape for x in args]
+        self._output_shape = None
 
         # Move the arguments of the first call to the plan
         build_args = [arg.send(self) for arg in args]
@@ -316,6 +336,10 @@ class Plan(AbstractObject, ObjectStorage):
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
+        # If promises are given to the plan, prepare it to receive values from these promises
+        if self.has_promises_args(args):
+            return self.setup_plan_with_promises(*args)
+
         # We build the plan only if needed
         if not self.is_built:
             self.build(args)
@@ -328,6 +352,43 @@ class Plan(AbstractObject, ObjectStorage):
         if len(responses) == 1:
             return responses[0]
         return responses
+
+    def has_args_fulfilled(self):
+        """ Check if all the arguments of the plan are ready or not.
+        It might be the case that we still need to wait for some arguments in
+        case some of them are Promises.
+        """
+        for arg_id in self.procedure.arg_ids:
+            arg = self.owner.get_obj(arg_id)
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                if not arg.child.is_kept():
+                    return False
+        return True
+
+    def has_promises_args(self, args):
+        return any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args])
+
+    def setup_plan_with_promises(self, *args):
+        """ Slightly modifies a plan so that it can work with promises.
+        The plan will also be sent to location with this method.
+        """
+        for arg in args:
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                arg.child.plans.add(self.id)
+                prom_owner = arg.owner
+
+        # As we cannot perform operation between different type of tensors with torch, all the
+        # input tensors should have the same type and the result should also have this same type.
+        result_type = args[0].torch_type()
+
+        res = PromiseTensor(
+            owner=prom_owner, shape=self.output_shape, tensor_type=result_type, plans=set()
+        )
+
+        self.procedure.update_args(args, self.procedure.result_ids)
+        self.procedure.promise_out_id = res.id
+
+        return res.wrap()
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -452,6 +513,8 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde._simplify(worker, plan.state),
             sy.serde._simplify(worker, plan.include_state),
             sy.serde._simplify(worker, plan.is_built),
+            sy.serde._simplify(worker, plan.input_shapes),
+            sy.serde._simplify(worker, plan._output_shape),
             sy.serde._simplify(worker, plan.name),
             sy.serde._simplify(worker, plan.tags),
             sy.serde._simplify(worker, plan.description),
@@ -467,16 +530,31 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        id, procedure, state, include_state, is_built, name, tags, description = plan_tuple
+        (
+            id,
+            procedure,
+            state,
+            include_state,
+            is_built,
+            input_shapes,
+            output_shape,
+            name,
+            tags,
+            description,
+        ) = plan_tuple
         id = sy.serde._detail(worker, id)
         procedure = sy.serde._detail(worker, procedure)
         state = sy.serde._detail(worker, state)
+        input_shapes = sy.serde._detail(worker, input_shapes)
+        output_shape = sy.serde._detail(worker, output_shape)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
         plan.procedure = procedure
         plan.state = state
         state.plan = plan
+        plan.input_shapes = input_shapes
+        plan._output_shape = output_shape
 
         plan.name = sy.serde._detail(worker, name)
         plan.tags = sy.serde._detail(worker, tags)
