@@ -1,5 +1,4 @@
 from typing import List
-from typing import Tuple
 from typing import Union
 
 import syft as sy
@@ -94,13 +93,13 @@ class PointerPlan(ObjectPointer):
 
         return response
 
-    def parameters(self) -> Tuple:
-        """Return a list of pointers to the plan parameters
-        """
+    def parameters(self) -> List:
+        """Return a list of pointers to the plan parameters"""
 
         assert (
             len(self._locations) == 1
-        ), ".parameters() for PointerPlan with > 1 locations is currently not available."
+        ), ".parameters() for PointerPlan with > 1 locations is currently not implemented."
+        # TODO implement this feature using MultiPointerTensor
 
         location = self._locations[0]
         id_at_location = self._ids_at_location[0]
@@ -108,10 +107,10 @@ class PointerPlan(ObjectPointer):
         command = ("parameters", id_at_location, [], {})
 
         pointers = self.owner.send_command(message=command, recipient=location)
-        # response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
 
         for pointer in pointers:
             pointer.garbage_collect_data = False
+
         return pointers
 
     def request_run_plan(
