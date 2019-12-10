@@ -43,17 +43,18 @@ from syft.frameworks.torch.hook.hook import TorchHook
 from syft.grid import VirtualGrid
 
 # Import sandbox
-from syft.sandbox import create_sandbox
+from syft.sandbox import create_sandbox, hook
 
 # Import federate learning objects
-from syft.frameworks.torch.federated import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
+from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
-from syft.messaging.plan import make_plan
+from syft.messaging.promise import Promise
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -66,7 +67,11 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
@@ -75,6 +80,16 @@ from syft import serde
 
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
+from syft.frameworks.torch.he.paillier import keygen
+
+
+def pool():
+    if not hasattr(syft, "_pool"):
+        import multiprocessing
+
+        syft._pool = multiprocessing.Pool()
+    return syft._pool
+
 
 __all__.extend(
     [
@@ -98,6 +113,7 @@ __all__.extend(
         "MultiPointerTensor",
         "VirtualGrid",
         "create_sandbox",
+        "hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",

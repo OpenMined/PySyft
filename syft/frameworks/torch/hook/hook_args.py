@@ -1,7 +1,11 @@
 import torch
 
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
+from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.generic.frameworks.hook.hook_args import (
+    get_child,
     register_ambiguous_method,
     register_ambiguous_function,
     register_backward_func,
@@ -12,8 +16,13 @@ from syft.generic.frameworks.hook.hook_args import (
 
 from syft.exceptions import PureFrameworkTensorFoundError
 
-
-type_rule = {torch.Tensor: one, torch.nn.Parameter: one}
+type_rule = {
+    torch.Tensor: one,
+    torch.nn.Parameter: one,
+    AutogradTensor: one,
+    LoggingTensor: one,
+    PaillierTensor: one,
+}
 
 forward_func = {
     torch.Tensor: lambda i: i.child
@@ -22,12 +31,18 @@ forward_func = {
     torch.nn.Parameter: lambda i: i.child
     if hasattr(i, "child")
     else (_ for _ in ()).throw(PureFrameworkTensorFoundError),
+    AutogradTensor: get_child,
+    LoggingTensor: get_child,
+    PaillierTensor: get_child,
 }
 
 backward_func = {
     TorchTensor: lambda i: i.wrap(),
     torch.Tensor: lambda i: i.wrap(),
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
+    AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
+    LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
+    PaillierTensor: lambda i: PaillierTensor().on(i, wrap=False),
 }
 
 ambiguous_methods = {
@@ -40,6 +55,7 @@ ambiguous_methods = {
     "sub_",
     "new",
     "chunk",
+    "reshape",
 }
 
 ambiguous_functions = {

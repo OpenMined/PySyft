@@ -12,6 +12,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
+from syft.exceptions import ObjectNotFoundError
 
 
 def test_send_msg():
@@ -93,7 +94,7 @@ def test_recv_msg():
     # Test 2: get tensor back from alice
 
     # Create message: Get tensor from alice
-    message = ObjectRequestMessage(obj.id)
+    message = ObjectRequestMessage((obj.id, None, ""))
 
     # serialize message
     bin_msg = serde.serialize(message)
@@ -188,7 +189,7 @@ def test_search():
     assert len(bob.search("#mnist")) == 1
     assert len(bob.search("#cifar")) == 1
     assert len(bob.search("#not_fun")) == 2
-    assert len(bob.search("#not_fun", "#boston_housing")) == 1
+    assert len(bob.search(["#not_fun", "#boston_housing"])) == 1
 
 
 def test_obj_not_found(workers):
@@ -201,17 +202,15 @@ def test_obj_not_found(workers):
 
     bob._objects = {}
 
-    try:
+    with pytest.raises(ObjectNotFoundError):
         y = x + x
-    except KeyError as e:
-        assert "If you think this tensor does exist" in str(e)
 
 
 def test_get_not_permitted(workers):
     bob = workers["bob"]
-    with patch.object(torch.Tensor, "allowed_to_get") as mock_allowed_to_get:
+    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
+    with patch.object(torch.Tensor, "allow") as mock_allowed_to_get:
         mock_allowed_to_get.return_value = False
-        x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
         with pytest.raises(GetNotPermittedError):
             x.get()
         mock_allowed_to_get.assert_called_once()
@@ -230,10 +229,6 @@ def test_spinup_time(hook):
     assert (end_time - start_time) < 0.05
 
 
-@pytest.mark.skipif(
-    torch.__version__ >= "1.1",
-    reason="bug in pytorch version 1.1.0, jit.trace returns raw C function",
-)
 def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     bob = workers["bob"]
 
@@ -246,3 +241,32 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
 
     res = foo_ptr(torch.tensor(4))
     assert res == torch.tensor(6)
+
+
+def test_send_command_whitelist(hook, workers):
+    bob = workers["bob"]
+    whitelisted_methods = {
+        "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
+    }
+
+    for framework, methods in whitelisted_methods.items():
+        attr = getattr(bob.remote, framework)
+
+        for method, inp in methods.items():
+            x = getattr(attr, method)(inp)
+
+            if "rand" not in method:
+                assert (x.get() == getattr(torch, method)(inp)).all()
+
+
+def test_send_command_not_whitelisted(hook, workers):
+    bob = workers["bob"]
+
+    method_not_exist = "openmind"
+
+    for framework in bob.remote.frameworks:
+        if framework in dir(bob.remote):
+            attr = getattr(bob.remote, framework)
+
+            with pytest.raises(AttributeError):
+                getattr(attr, method_not_exist)

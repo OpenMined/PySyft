@@ -16,120 +16,124 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.serde import native_serde
 from syft.serde import serde
 from syft.serde import torch_serde
+from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import CompressionNotFoundException
 
 
-def test_tuple_simplify():
+def test_tuple_simplify(workers):
     """This tests our ability to simplify tuple types.
 
     This test is pretty simple since tuples just serialize to
     themselves, with a tuple wrapper with the correct ID (1)
     for tuples so that the detailer knows how to interpret it."""
 
+    me = workers["me"]
     input = ("hello", "world")
-    tuple_detail_index = serde.detailers.index(native_serde._detail_collection_tuple)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (
-        tuple_detail_index,
-        ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))),
-    )
-    assert serde._simplify(input) == target
+    tuple_detail_code = serde.proto_type_info(tuple).code
+    str_detail_code = serde.proto_type_info(str).code
+    target = (tuple_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
+    assert serde._simplify(me, input) == target
 
 
-def test_list_simplify():
+def test_list_simplify(workers):
     """This tests our ability to simplify list types.
 
     This test is pretty simple since lists just serialize to
     themselves, with a tuple wrapper with the correct ID (2)
     for lists so that the detailer knows how to interpret it."""
 
+    me = workers["me"]
     input = ["hello", "world"]
-    list_detail_index = serde.detailers.index(native_serde._detail_collection_list)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (list_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
-    assert serde._simplify(input) == target
+    list_detail_code = serde.proto_type_info(list).code
+    str_detail_code = serde.proto_type_info(str).code
+    target = (list_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
+    assert serde._simplify(me, input) == target
 
 
-def test_set_simplify():
+def test_set_simplify(workers):
     """This tests our ability to simplify set objects.
 
     This test is pretty simple since sets just serialize to
     lists, with a tuple wrapper with the correct ID (3)
     for sets so that the detailer knows how to interpret it."""
 
+    me = workers["me"]
     input = set(["hello", "world"])
-    set_detail_index = serde.detailers.index(native_serde._detail_collection_set)
-    str_detail_index = serde.detailers.index(native_serde._detail_str)
-    target = (set_detail_index, ((str_detail_index, (b"hello",)), (str_detail_index, (b"world",))))
-    assert serde._simplify(input)[0] == target[0]
-    assert set(serde._simplify(input)[1]) == set(target[1])
+    set_detail_code = serde.proto_type_info(set).code
+    str_detail_code = serde.proto_type_info(str).code
+    target = (set_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
+    assert serde._simplify(me, input)[0] == target[0]
+    assert set(serde._simplify(me, input)[1]) == set(target[1])
 
 
-def test_float_simplify():
+def test_float_simplify(workers):
     """This tests our ability to simplify float objects.
 
     This test is pretty simple since floats just serialize to
     themselves, with no tuple/id necessary."""
 
+    me = workers["me"]
     input = 5.6
     target = 5.6
-    assert serde._simplify(input) == target
+    assert serde._simplify(me, input) == target
 
 
-def test_int_simplify():
+def test_int_simplify(workers):
     """This tests our ability to simplify int objects.
 
     This test is pretty simple since ints just serialize to
     themselves, with no tuple/id necessary."""
 
+    me = workers["me"]
     input = 5
     target = 5
-    assert serde._simplify(input) == target
+    assert serde._simplify(me, input) == target
 
 
-def test_string_simplify():
+def test_string_simplify(workers):
     """This tests our ability to simplify string objects.
 
     This test is pretty simple since strings just serialize to
     themselves, with no tuple/id necessary."""
 
+    me = workers["me"]
     input = "hello"
-    target = (serde.detailers.index(native_serde._detail_str), (b"hello",))
-    assert serde._simplify(input) == target
+    target = (serde.proto_type_info(str).code, (b"hello",))
+    assert serde._simplify(me, input) == target
 
 
-def test_dict_simplify():
+def test_dict_simplify(workers):
     """This tests our ability to simplify dict objects.
 
     This test is pretty simple since dicts just serialize to
     themselves, with a tuple wrapper with the correct ID
     for dicts so that the detailer knows how to interpret it."""
 
+    me = workers["me"]
     input = {"hello": "world"}
-    detail_dict_index = serde.detailers.index(native_serde._detail_dictionary)
-    detail_str_index = serde.detailers.index(native_serde._detail_str)
-    target = (
-        detail_dict_index,
-        (((detail_str_index, (b"hello",)), (detail_str_index, (b"world",))),),
-    )
-    assert serde._simplify(input) == target
+    detail_dict_code = serde.proto_type_info(dict).code
+    detail_str_code = serde.proto_type_info(str).code
+    target = (detail_dict_code, (((detail_str_code, (b"hello",)), (detail_str_code, (b"world",))),))
+    assert serde._simplify(me, input) == target
 
 
-def test_range_simplify():
+def test_range_simplify(workers):
     """This tests our ability to simplify range objects.
 
     This test is pretty simple since range objs just serialize to
     themselves, with a tuple wrapper with the correct ID (5)
     for dicts so that the detailer knows how to interpret it."""
 
+    me = workers["me"]
     input = range(1, 3, 4)
-    target = (serde.detailers.index(native_serde._detail_range), (1, 3, 4))
-    assert serde._simplify(input) == target
+    target = (serde.proto_type_info(range).code, (1, 3, 4))
+    assert serde._simplify(me, input) == target
 
 
-def test_torch_tensor_simplify():
+def test_torch_tensor_simplify(workers):
     """This tests our ability to simplify torch.Tensor objects
+    using "torch" serialization strategy.
 
     At the time of writing, tensors simplify to a tuple where the
     first value in the tuple is the tensor's ID and the second
@@ -137,11 +141,13 @@ def test_torch_tensor_simplify():
     by PyTorch's torch.save method)
     """
 
+    me = workers["me"]
+
     # create a tensor
     input = Tensor(numpy.random.random((100, 100)))
 
     # simplify the tnesor
-    output = serde._simplify(input)
+    output = serde._simplify(me, input)
 
     # make sure outer type is correct
     assert type(output) == tuple
@@ -160,7 +166,82 @@ def test_torch_tensor_simplify():
     assert type(output[1][1]) == bytes
 
 
-def test_ndarray_simplify():
+def test_torch_tensor_simplify_generic(workers):
+    """This tests our ability to simplify torch.Tensor objects
+    using "all" serialization strategy
+    """
+
+    worker = VirtualWorker(None, id="non-torch")
+
+    # create a tensor
+    input = Tensor(numpy.random.random((3, 3, 3)))
+
+    # simplify the tensor
+    output = serde._simplify(worker, input)
+
+    # make sure outer type is correct
+    assert type(output) == tuple
+
+    # make sure the object type ID is correct
+    # (0 for torch.Tensor)
+    assert serde.detailers[output[0]] == torch_serde._detail_torch_tensor
+
+    # make sure inner type is correct
+    assert type(output[1]) == tuple
+
+    # make sure ID is correctly encoded
+    assert output[1][0] == input.id
+
+    # make sure tensor data type is correct
+    assert type(output[1][1]) == tuple
+    assert type(output[1][1][1]) == tuple
+
+    # make sure tensor data matches
+    assert output[1][1][1][0][1] == input.size()
+    assert output[1][1][1][2][1] == tuple(input.flatten().tolist())
+
+
+def test_torch_tensor_serde_generic(workers):
+    """This tests our ability to ser-de torch.Tensor objects
+    using "all" serialization strategy
+    """
+
+    worker = VirtualWorker(None, id="non-torch")
+
+    # create a tensor
+    input = Tensor(numpy.random.random((100, 100)))
+
+    # ser-de the tensor
+    output = serde._simplify(worker, input)
+    detailed = serde._detail(worker, output)
+
+    # check tensor contents
+    assert input.size() == detailed.size()
+    assert input.dtype == detailed.dtype
+    assert (input == detailed).all()
+
+
+def test_tensor_gradient_serde():
+    # create a tensor
+    x = torch.tensor([1, 2, 3, 4.0], requires_grad=True)
+
+    # create gradient on tensor
+    x.sum().backward(torch.tensor(1.0))
+
+    # save gradient
+    orig_grad = x.grad
+
+    # serialize
+    blob = syft.serde.serialize(x)
+
+    # deserialize
+    t = syft.serde.deserialize(blob)
+
+    # check that gradient was properly serde
+    assert (t.grad == orig_grad).all()
+
+
+def test_ndarray_simplify(workers):
     """This tests our ability to simplify numpy.array objects
 
     At the time of writing, arrays simplify to an object inside
@@ -168,11 +249,12 @@ def test_ndarray_simplify():
     that the detailer knows to turn the simplifed form to a np.array
     """
 
+    me = workers["me"]
     input = numpy.random.random((100, 100))
-    output = serde._simplify(input)
+    output = serde._simplify(me, input)
 
     # make sure simplified type ID is correct
-    assert serde.detailers[output[0]] == torch_serde._detail_ndarray
+    assert serde.detailers[output[0]] == native_serde._detail_ndarray
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -180,31 +262,56 @@ def test_ndarray_simplify():
     assert output[1][2] == input.dtype.name
 
 
-def test_ellipsis_simplify():
+def test_numpy_number_simplify(workers):
+    """This tests our ability to simplify numpy.float objects
+
+    At the time of writing, numpy number simplify to an object inside
+    of a tuple where the first value is a byte representation of the number
+    and the second value is the dtype
+    """
+    me = workers["me"]
+
+    input = numpy.float32(2.0)
+    output = serde._simplify(me, input)
+
+    # make sure simplified type ID is correct
+    assert serde.detailers[output[0]] == native_serde._detail_numpy_number
+
+    # make sure serialized form is correct
+    assert type(output[1][0]) == bytes
+    assert output[1][1] == input.dtype.name
+
+
+def test_ellipsis_simplify(workers):
     """Make sure ellipsis simplifies correctly."""
-    assert serde.detailers[serde._simplify(Ellipsis)[0]] == native_serde._detail_ellipsis
+    me = workers["me"]
+
+    assert serde.detailers[serde._simplify(me, Ellipsis)[0]] == native_serde._detail_ellipsis
 
     # the simplified ellipsis (empty object)
-    assert serde._simplify(Ellipsis)[1] == b""
+    assert serde._simplify(me, Ellipsis)[1] == b""
 
 
-def test_torch_device_simplify():
+def test_torch_device_simplify(workers):
     """Test the simplification of torch.device"""
+
+    me = workers["me"]
     device = torch.device("cpu")
 
-    assert serde.detailers[serde._simplify(device)[0]] == torch_serde._detail_torch_device
+    assert serde.detailers[serde._simplify(me, device)[0]] == torch_serde._detail_torch_device
 
     # the simplified torch.device
-    assert serde._simplify(device)[1] == "cpu"
+    assert serde._simplify(me, device)[1] == "cpu"
 
 
-def test_pointer_tensor_simplify():
+def test_pointer_tensor_simplify(workers):
     """Test the simplification of PointerTensor"""
 
-    alice = syft.VirtualWorker(syft.torch.hook, id="alice")
+    alice, me = workers["alice"], workers["me"]
+
     input_tensor = PointerTensor(id=1000, location=alice, owner=alice)
 
-    output = serde._simplify(input_tensor)
+    output = serde._simplify(me, input_tensor)
 
     assert output[1][0] == input_tensor.id
     assert output[1][1] == input_tensor.id_at_location
@@ -576,15 +683,13 @@ def test_numpy_tensor_serde():
 
 @pytest.mark.parametrize("compress", [True, False])
 def test_additive_sharing_tensor_serde(compress, workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    alice, bob, james, me = workers["alice"], workers["bob"], workers["james"], workers["me"]
 
     x = torch.tensor([[3.1, 4.3]]).fix_prec().share(alice, bob, crypto_provider=james)
 
     additive_sharing_tensor = x.child.child
-    data = AdditiveSharingTensor.simplify(additive_sharing_tensor)
-    additive_sharing_tensor_reconstructed = AdditiveSharingTensor.detail(
-        syft.hook.local_worker, data
-    )
+    data = AdditiveSharingTensor.simplify(me, additive_sharing_tensor)
+    additive_sharing_tensor_reconstructed = AdditiveSharingTensor.detail(me, data)
 
     assert additive_sharing_tensor_reconstructed.field == additive_sharing_tensor.field
 
@@ -604,13 +709,13 @@ def test_fixed_precision_tensor_serde(compress, workers):
     )
 
     serialized_x = serde.serialize(x)
-    deserialied_x = serde.deserialize(serialized_x)
+    deserialized_x = serde.deserialize(serialized_x)
 
-    assert x.id == deserialied_x.child.id
-    assert x.child.field == deserialied_x.child.field
-    assert x.child.kappa == deserialied_x.child.kappa
-    assert x.child.precision_fractional == deserialied_x.child.precision_fractional
-    assert x.child.base == deserialied_x.child.base
+    assert x.id == deserialized_x.child.id
+    assert x.child.field == deserialized_x.child.field
+    assert x.child.kappa == deserialized_x.child.kappa
+    assert x.child.precision_fractional == deserialized_x.child.precision_fractional
+    assert x.child.base == deserialized_x.child.base
 
 
 def test_serde_object_wrapper_int():
@@ -711,11 +816,12 @@ def test_serde_object_wrapper_traced_module():
     assert obj_wrapper.id == obj_wrapper_received.id
 
 
-def test_no_simplifier_found():
+def test_no_simplifier_found(workers):
     """Test that types that can not be simplified are cached."""
+    me = workers["me"]
     # Clean cache.
     serde.no_simplifiers_found = set()
     x = 1.3
     assert type(x) not in serde.no_simplifiers_found
-    _ = serde._simplify(x)
+    _ = serde._simplify(me, x)
     assert type(x) in serde.no_simplifiers_found

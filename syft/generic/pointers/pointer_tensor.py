@@ -149,6 +149,30 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             enough remote error handling yet to do anything better."""
             return True
 
+    def clone(self):
+        """
+        Clone should keep ids unchanged, contrary to copy.
+        We make the choice that a clone operation is local, and can't affect
+        the remote tensors, so garbage_collect_data is always False, both
+        for the tensor cloned and the clone.
+        """
+        self.garbage_collect_data = False
+        cloned_tensor = type(self)(**self.get_class_attributes())
+        cloned_tensor.id = self.id
+        cloned_tensor.owner = self.owner
+
+        return cloned_tensor
+
+    def get_class_attributes(self):
+        """
+        Used for cloning (see AbtractTensor)
+        """
+        return {
+            "location": self.location,
+            "id_at_location": self.id_at_location,
+            "garbage_collect_data": self.garbage_collect_data,
+        }
+
     @staticmethod
     def create_pointer(
         tensor,
@@ -159,8 +183,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
-        local_autograd=False,
-        preinitialize_grad=False,
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -204,9 +226,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 Otherwise, it will be set randomly.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
-            local_autograd: Use autograd system on the local machine instead of PyTorch's
-                autograd on the workers.
-            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
 
         Returns:
             A FrameworkTensor[PointerTensor] pointer to self. Note that this
@@ -216,7 +235,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             owner = tensor.owner
 
         if location is None:
-            location = tensor.owner.id
+            location = tensor.owner
 
         owner = tensor.owner.get_worker(owner)
         location = tensor.owner.get_worker(location)
@@ -246,11 +265,27 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr.garbage_collect_data = False
         return ptr
 
+    def remote_send(self, destination, change_location=False):
+        """ Request the worker where the tensor being pointed to belongs to send it to destination.
+        For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
+        C will hold a pointer to a pointer on A which points to the tensor on B.
+        If change_location is set to True, the original pointer will point to the moved object.
+        Considering the same example as before with ptr.remote_send(B, change_location=True):
+        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer 
+        will have 2 references pointing to it.
+        """
+        args = (destination,)
+        kwargs = {"inplace": True}
+        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
+        if change_location:
+            self.location = destination
+        return self
+
     def remote_get(self):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
         return self
 
-    def get(self, deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -265,7 +300,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
 
         Args:
-
+            user (obj, optional): user credentials to perform authentication process.
+            reason (str, optional): a description of why the data scientist wants to see it.
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
@@ -276,7 +312,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(self, deregister_ptr=deregister_ptr)
+        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
 
         # TODO: remove these 3 lines
         # The fact we have to check this means
@@ -350,6 +386,49 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return response
 
+    def keep(self, *args, **kwargs):
+        """
+        Send a command to remote worker to keep a promise
+
+        Returns:
+            A pointer to a Tensor
+        """
+
+        # Send the command
+        command = ("keep", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    def value(self, *args, **kwargs):
+        """
+        Send a command to remote worker to get the result generated by a promise.
+
+        Returns:
+            A pointer to a Tensor
+        """
+        command = ("value", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return response
+
+    def share_(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share inplace a tensor
+
+        Returns:
+            A pointer to an AdditiveSharingTensor
+        """
+
+        # Send the command
+        command = ("share_", self, args, kwargs)
+
+        response = self.owner.send_command(self.location, command)
+
+        return self
+
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
 
@@ -366,10 +445,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return self.eq(other)
 
     @staticmethod
-    def simplify(ptr: "PointerTensor") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "PointerTensor") -> tuple:
         """
         This function takes the attributes of a PointerTensor and saves them in a dictionary
         Args:
+            worker (AbstractWorker): the worker doing the serialization
             ptr (PointerTensor): a PointerTensor
         Returns:
             tuple: a tuple holding the unique attributes of the pointer
@@ -382,7 +462,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr.id_at_location,
             ptr.location.id,
             ptr.point_to_attr,
-            syft.serde._simplify(ptr._shape),
+            syft.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
         )
 

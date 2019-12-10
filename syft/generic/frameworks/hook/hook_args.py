@@ -4,13 +4,13 @@ from typing import List
 from typing import Tuple
 
 import numpy as np
+import torch as th
 
-from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
 
 from syft import exceptions
+
 
 hook_method_args_functions = {}
 hook_method_response_functions = {}
@@ -35,22 +35,14 @@ type_rule = {
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
     np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
-    LoggingTensor: one,
-    AutogradTensor: one,
 }
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
-forward_func = {
-    LoggingTensor: get_child,
-    AutogradTensor: get_child,
-    "my_syft_tensor_type": get_child,
-}
+forward_func = {"my_syft_tensor_type": get_child}
 
 # Dict to return the proper lambda function for the right framework or syft tensor type
 backward_func = {
-    LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
-    "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)",
+    "my_syft_tensor_type": lambda i, **kwargs: "my_syft_tensor_type(**kwargs).on(i, wrap=False)"
 }
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
@@ -121,7 +113,6 @@ def unwrap_args_from_method(attr, method_self, args, kwargs):
     # Specify an id to distinguish methods from different classes
     # As they won't be used with the same arg types
     attr_id = type(method_self).__name__ + "." + attr
-
     try:
         assert attr not in ambiguous_methods
 
@@ -332,7 +323,7 @@ def build_unwrap_args_with_rules(args, rules, return_tuple=False):
         else build_unwrap_args_with_rules(
             a, r, True
         )  # If not, call recursively build_unwrap_args_with_rules
-        if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
+        if isinstance(r, (tuple, list))
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: forward_func[type(i)](i)
         for a, r in zip(args, rules)  # And do this for all the args / rules provided
@@ -456,7 +447,9 @@ def four_layers(idx1, *ids):
 get_element_at = {1: one_layer, 2: two_layers, 3: three_layers, 4: four_layers}
 
 
-def build_wrap_response_with_rules(response, rules, wrap_type, wrap_args, return_tuple=False):
+def build_wrap_response_with_rules(
+    response, rules, wrap_type, wrap_args, return_tuple=False, return_list=False
+):
     """
     Build a function given some rules to efficiently replace in the response object
     syft or framework tensors with a wrapper, and do nothing for other types of object
@@ -476,10 +469,12 @@ def build_wrap_response_with_rules(response, rules, wrap_type, wrap_args, return
     lambdas = [
         (lambda i: i)  # return the same object
         if not r  # if the rule is a number == 0.
+        else build_wrap_response_with_rules(a, r, wrap_type, wrap_args, True, True)
+        if isinstance(r, list)
         else build_wrap_response_with_rules(
             a, r, wrap_type, wrap_args, True
         )  # If not, call recursively build_wrap_response_with_rules
-        if isinstance(r, (list, tuple))  # if the rule is a list or tuple.
+        if isinstance(r, tuple)
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: backward_func[wrap_type](i, **wrap_args)
         for a, r in zip(response, rules)  # And do this for all the responses / rules provided
@@ -502,6 +497,9 @@ def build_wrap_response_with_rules(response, rules, wrap_type, wrap_args, return
         f = folds[len(lambdas)]
     except KeyError:
         f = many_fold
+
+    if return_list:
+        return lambda x: list(f(lambdas, x))
 
     return lambda x: f(lambdas, x)
 
@@ -716,6 +714,7 @@ def register_tensor(
         tensor.id = response_ids.pop(-1)
     except IndexError:
         raise exceptions.ResponseSignatureError
+
     owner.register_obj(tensor)
 
 

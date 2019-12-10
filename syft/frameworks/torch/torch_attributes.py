@@ -69,6 +69,7 @@ class TorchAttributes(FrameworkAttributes):
             "get_file_path",
             "get_num_threads",
             "get_rng_state",
+            "has_names",
             "int",
             "int16",
             "int32",
@@ -89,11 +90,6 @@ class TorchAttributes(FrameworkAttributes):
             "load",
             "manual_seed",
             "ones",
-            "rand",
-            "randint",
-            "randn",
-            "randn_like",
-            "randperm",
             "range",
             "save",
             "set_",
@@ -107,6 +103,8 @@ class TorchAttributes(FrameworkAttributes):
             "typename",
             "zeros",
         ]
+
+        self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
 
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
@@ -129,7 +127,7 @@ class TorchAttributes(FrameworkAttributes):
         for key in keys:
             self.guard[f"syft.{key}"] = self.guard[key]
 
-        # Concatenate torch functions and torch methods
+        # Concatenate torch functions
         self.allowed_commands = self._torch_functions
 
         # The equivalent concatenation of native torch function names and native torch method names
