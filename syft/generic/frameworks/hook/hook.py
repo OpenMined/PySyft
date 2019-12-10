@@ -278,7 +278,6 @@ class FrameworkHook(ABC):
         # Set the default owner
         setattr(String, "owner", owner)
 
-
         for attr in dir(str):
 
             if attr in String.methods_to_hook:
@@ -290,7 +289,6 @@ class FrameworkHook(ABC):
                 setattr(String, attr, new_method)
 
     def _hook_string_pointer_methods(self):
-
 
         for attr in dir(String):
 
@@ -638,7 +636,7 @@ class FrameworkHook(ABC):
         return new_args
 
     @classmethod
-    def _wrap_str_return_value(cls, self, attr: str, value: object):
+    def _wrap_str_return_value(cls, _self, attr: str, value: object):
 
         # The outputs of the following attributed won't
         # be wrapped
@@ -646,7 +644,7 @@ class FrameworkHook(ABC):
 
         if isinstance(value, str) and attr not in ignored_attr:
 
-            return String(object=value, owner=self.owner)
+            return String(object=value, owner=_self.owner)
 
         return value
 
@@ -664,12 +662,12 @@ class FrameworkHook(ABC):
         """
 
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_attr(_self, *args, **kwargs):
 
             args = cls._string_input_args_adaptor(args)
 
             # Call the method of the core builtin type
-            native_response = getattr(self.child, attr)(*args, **kwargs)
+            native_response = getattr(_self.child, attr)(*args, **kwargs)
 
             # Some return types should be wrapped using the String
             # class. For instance, if 'foo' is an object of type
@@ -677,7 +675,7 @@ class FrameworkHook(ABC):
             # should also be of type 'String' not 'str'.
             # However, the return value of foo.__str__ should
             # be of type 'str'.
-            response = cls._wrap_str_return_value(self, attr, native_response)
+            response = cls._wrap_str_return_value(_self, attr, native_response)
 
             return response
 
@@ -697,18 +695,19 @@ class FrameworkHook(ABC):
         """
 
         @wraps(attr)
-        def overloaded_attr(self, *args, **kwargs):
+        def overloaded_attr(_self, *args, **kwargs):
             """
             Operate the hooking
             """
 
-            owner = self.owner
-            location = self.location
-            id_at_location = self.id_at_location
+            owner = _self.owner
+            location = _self.location
+            # id_at_location = self.id_at_location
 
             # Create a 'command' variable  that is understood by
             # the send_command() method of a worker.
-            command = (attr, id_at_location, args, kwargs)
+            # command = (attr, id_at_location, args, kwargs)
+            command = (attr, _self, args, kwargs)
 
             # send the command
             response = owner.send_command(location, command)

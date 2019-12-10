@@ -1,4 +1,6 @@
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
+from typing import Union
 import syft as sy
 from syft.generic.pointers.string_pointer import StringPointer
 from syft.workers.base import BaseWorker
@@ -7,33 +9,111 @@ import abc
 
 
 class String(AbstractObject):
-    
+    """
+       This is a class that wraps the Python built-in `str` class. In addition to 
+       providing access to most of `str`'s method call API, it allows sending
+       such wrapped string between workers the same way Syft tensors can be
+       moved around among workers.
+    """
+
     # Set of methods from 'str' to hook/override by String
     methods_to_hook = set(
         [
-            "__add__", "__eq__", "__le__", "__ge__", "__gt__", "__lt__",  "__ne__",
-            "__len__", "__getitem__", "__str__", "__repr__", "__format__", "lower",
-            "upper", "capitalize", "casefold", "center", "count", "encode", "endswith",
-            "expandtabs", "find", "format", "format_map", "index", "isalnum", "isalpha",
-            "isascii", "isdecimal", "isdigit", "isidentifier", "islower", "isnumeric",
-            "isprintable", "isspace", "istitle", "isupper", "join", "ljust", "lstrip",
-            "maketrans", "partition", "replace", "rfind", "rindex", "rjust", "rpartition",
-            "rsplit", "rstrip", "split", "splitlines", "startswith", "strip", "swapcase",
-            "title", "translate", "zfill", "__mod__",
-            
+            "__add__",
+            "__eq__",
+            "__le__",
+            "__ge__",
+            "__gt__",
+            "__lt__",
+            "__ne__",
+            "__len__",
+            "__getitem__",
+            "__str__",
+            "__repr__",
+            "__format__",
+            "lower",
+            "upper",
+            "capitalize",
+            "casefold",
+            "center",
+            "count",
+            "encode",
+            "endswith",
+            "expandtabs",
+            "find",
+            "format",
+            "format_map",
+            "index",
+            "isalnum",
+            "isalpha",
+            "isascii",
+            "isdecimal",
+            "isdigit",
+            "isidentifier",
+            "islower",
+            "isnumeric",
+            "isprintable",
+            "isspace",
+            "istitle",
+            "isupper",
+            "join",
+            "ljust",
+            "lstrip",
+            "maketrans",
+            "partition",
+            "replace",
+            "rfind",
+            "rindex",
+            "rjust",
+            "rpartition",
+            "rsplit",
+            "rstrip",
+            "split",
+            "splitlines",
+            "startswith",
+            "strip",
+            "swapcase",
+            "title",
+            "translate",
+            "zfill",
+            "__mod__",
         ]
     )
-    
+
     def __init__(
         self,
         object: object = None,
         encoding: str = None,
         errors: str = None,
-        id: int = None,
+        id: Union[int, str] = None,
         owner: BaseWorker = None,
         tags: List[str] = None,
         description: str = None,
     ):
+        """Initialize a String object.
+
+           Args:
+               object: This could be any object whose string representation,i.e.,
+                   the output of its __str__() method is to be wrapped as a 
+                   String object.
+               encoding: This should be specified if the above `object` argument is
+                   a bytes-like object. It specifies the encoding scheme used to create the
+                   bytes-like object b''. for example, encoding could be 'utf-8'.
+                   For more details on this argument, please  check the official `str` documentation.
+               errors: This should be specified if the above `object` argument is
+                   a bytes-like object. Possible values are 'strict', 'ignore' or
+                   'replace'. For more details on this argument, please
+                   check the official `str` documentation.
+               id: An optional string or integer id of the String object
+               owner: An optional BaseWorker object to specify the worker on which
+                   the String object is located.
+               tags: an optional set of hashtags corresponding to this object.
+                   They are useful when search for this object.
+               description: an optional string describing the purpose of this
+                   String object
+
+        """
+
         # get the specified kwargs for creating the base 'str'
         # class
 
@@ -139,16 +219,11 @@ class String(AbstractObject):
             return str.encode("utf-8") if str else None
 
         # Encode the string into a bytes object
-        simple_core = simplify_str(string.child)
+        simple_child = sy.serde._simplify(worker, string.child)
+        tags = sy.serde._simplify(worker, string.tags)
+        description = sy.serde._simplify(worker, string.description)
 
-        tags = (
-            [simplify_str(tag) if isinstance(tag, str) else tag for tag in string.tags]
-            if string.tags
-            else None
-        )
-        description = simplify_str(string.description)
-
-        return (simple_core, string.id, tags, description)
+        return (simple_child, string.id, tags, description)
 
     @staticmethod
     def detail(worker: BaseWorker, simple_obj: Tuple):
@@ -172,19 +247,17 @@ class String(AbstractObject):
         """
 
         # Get the contents of the tuple represening the simplified object
-        simple_core, id, tags, description = simple_obj
+        simple_child, id, tags, description = simple_obj
 
         def detail_bstr(b_str):
             return str(b_str, encoding="utf-8") if b_str else None
 
         # It appears that all strings are converted to bytes objects
         # after deserialization, convert them back to strings
-        tags = (
-            [detail_bstr(tag) if isinstance(tag, bytes) else tag for tag in tags] if tags else None
-        )
-        description = detail_bstr(description)
+        tags = sy.serde._detail(worker, tags)
+        description = sy.serde._detail(worker, description)
 
-        # Rebuild the str core our of the simplified core (the bytes core)
-        core = str(simple_core, encoding="utf-8", errors="strict")
+        # Rebuild the str child our of the simplified child (the bytes child)
+        child = sy.serde._detail(worker, simple_child)
 
-        return String(object=core, id=id, owner=worker, tags=tags, description=description)
+        return String(object=child, id=id, owner=worker, tags=tags, description=description)
