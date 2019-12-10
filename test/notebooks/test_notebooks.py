@@ -94,6 +94,7 @@ def test_notebooks_basic_translations(isolated_filesystem):
 
 def test_notebooks_advanced(isolated_filesystem):
     notebooks = glob.glob("advanced/*.ipynb")
+    notebooks += glob.glob("advanced/Split Neural Network/*.ipynb")
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
