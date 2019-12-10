@@ -531,6 +531,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj_id: A string or integer id of an object to look up.
         """
         obj = super().get_obj(obj_id)
+
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
@@ -542,15 +543,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
+    def respond_to_obj_req(self, request_msg: tuple):
         """Returns the deregistered object from registry.
 
         Args:
-            obj_id: A string or integer id of an object to look up.
+            request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-
+        obj_id, user, reason = request_msg
         obj = self.get_obj(obj_id)
-        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+        if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
@@ -595,18 +596,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.send_msg(ObjectMessage(obj), location)
 
-    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
+    def request_obj(
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+    ) -> object:
         """Returns the requested object from specified location.
 
         Args:
-            obj_id:  A string or integer id of an object to look up.
-            location: A BaseWorker instance that lets you provide the lookup
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
                 location.
-
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id), location)
+        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -1048,10 +1052,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return referenced_worker
 
     @staticmethod
-    def force_simplify(worker: AbstractWorker) -> tuple:
+    def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
-            sy.serde._simplify(worker, worker.id),
-            sy.serde._simplify(worker, worker._objects),
+            sy.serde._simplify(_worker, worker.id),
+            sy.serde._simplify(_worker, worker._objects),
             worker.auto_add,
         )
 

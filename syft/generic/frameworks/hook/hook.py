@@ -230,6 +230,18 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_syft_method(attr)
                 setattr(syft_type, attr, new_method)
 
+    def _hook_private_tensor_methods(self, tensor_type: type, syft_type: type):
+        """
+        Add hooked version of all methods of the tensor_type to the
+        Private Tensor: It'll add references to its parents and save
+        command/operations history.
+        """
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type]:
+            if attr not in dir(syft_type):
+                new_method = self._get_hooked_private_method(attr)
+                setattr(syft_type, attr, new_method)
+
     def _hook_pointer_tensor_methods(self, tensor_type):
         """
         Add hooked version of all methods of the tensor_type to the
@@ -471,6 +483,73 @@ class FrameworkHook(ABC):
                     method_name, response, wrap_type=type(self), new_self=self
                 )
 
+            return response
+
+        return overloaded_native_method
+
+    @classmethod
+    def _get_hooked_private_method(cls, method_name):
+        """
+        Hook a method in order to replace all args/kwargs syft/torch tensors with
+        their child attribute if they exist
+        If so, forward this method with the new args and new self, get response
+        and "rebuild" the torch tensor wrapper upon all tensors found
+        If not, just execute the native torch methodn
+
+        Args:
+            attr (str): the method to hook
+        Return:
+            the hooked method
+        """
+
+        @wraps(method_name)
+        def overloaded_native_method(self, *args, **kwargs):
+            """
+            Operate the hooking
+            """
+            if not hasattr(self, "child"):  # means that it's not a wrapper
+                method = getattr(self, f"native_{method_name}")
+                # Run the native function with the new args
+
+                try:
+                    response = method(*args, **kwargs)
+                except BaseException as e:
+                    # we can make some errors more descriptive with this method
+                    raise route_method_exception(e, self, args, kwargs)
+
+            else:  # means that there is a wrapper to remove
+                try:
+                    # Replace all torch tensor with their child attribute
+                    new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
+                        method_name, self, args, kwargs
+                    )
+                except BaseException as e:
+                    # we can make some errors more descriptive with this method
+                    raise route_method_exception(e, self, args, kwargs)
+
+                # Send the new command to the appropriate class and get the response
+                method = getattr(new_self, method_name)
+                response = method(*new_args, **new_kwargs)
+
+                response.parents = (self.id, new_self.id)
+
+                # For inplace methods, just directly return self
+                if syft.framework.is_inplace_method(method_name):
+                    return self
+
+                # Put back the wrappers where needed
+                response = hook_args.hook_response(
+                    method_name,
+                    response,
+                    wrap_type=type(self),
+                    new_self=self,
+                    wrap_args=self.get_class_attributes(),
+                )
+                if args:
+                    response.parents = (self, args[0])
+                else:
+                    response.parents = self
+                response.command = method_name
             return response
 
         return overloaded_native_method
