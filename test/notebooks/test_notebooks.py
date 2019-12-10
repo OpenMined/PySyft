@@ -54,14 +54,20 @@ def test_notebooks_basic(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-        not_excluded_notebooks.remove(list_name)
-        res = pm.execute_notebook(
-            notebook,
-            "/dev/null",
-            parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-            timeout=300,
-        )
-        assert isinstance(res, nbformat.notebooknode.NotebookNode)
+        if list_name in not_excluded_notebooks:
+            not_excluded_notebooks.remove(list_name)
+            res = pm.execute_notebook(
+                notebook,
+                "/dev/null",
+                parameters={
+                    "epochs": 1,
+                    "n_test_batches": 5,
+                    "n_train_items": 64,
+                    "n_test_items": 64,
+                },
+                timeout=300,
+            )
+            assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_notebooks_basic_translations(isolated_filesystem):
@@ -70,14 +76,20 @@ def test_notebooks_basic_translations(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-        not_excluded_notebooks.remove(list_name)
-        res = pm.execute_notebook(
-            notebook,
-            "/dev/null",
-            parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-            timeout=300,
-        )
-        assert isinstance(res, nbformat.notebooknode.NotebookNode)
+        if list_name in not_excluded_notebooks:
+            not_excluded_notebooks.remove(list_name)
+            res = pm.execute_notebook(
+                notebook,
+                "/dev/null",
+                parameters={
+                    "epochs": 1,
+                    "n_test_batches": 5,
+                    "n_train_items": 64,
+                    "n_test_items": 64,
+                },
+                timeout=300,
+            )
+            assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_notebooks_advanced(isolated_filesystem):
@@ -85,9 +97,10 @@ def test_notebooks_advanced(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-        not_excluded_notebooks.remove(list_name)
-        res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
-        assert isinstance(res, nbformat.notebooknode.NotebookNode)
+        if list_name in not_excluded_notebooks:
+            not_excluded_notebooks.remove(list_name)
+            res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+            assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
