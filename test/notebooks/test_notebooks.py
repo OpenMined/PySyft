@@ -1,5 +1,6 @@
 import glob
 import os
+import sys
 import time
 import urllib.request
 from pathlib import Path
@@ -53,14 +54,14 @@ def test_notebooks_basic(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
+        not_excluded_notebooks.remove(list_name)
+        res = pm.execute_notebook(
+            notebook,
+            "/dev/null",
             parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+            timeout=300,
+        )
+        assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_notebooks_basic_translations(isolated_filesystem):
@@ -69,14 +70,14 @@ def test_notebooks_basic_translations(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
+        not_excluded_notebooks.remove(list_name)
+        res = pm.execute_notebook(
+            notebook,
+            "/dev/null",
             parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+            timeout=300,
+        )
+        assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_notebooks_advanced(isolated_filesystem):
@@ -84,9 +85,9 @@ def test_notebooks_advanced(isolated_filesystem):
     for notebook in notebooks:
         print(notebook)
         list_name = Path("examples/tutorials/") / notebook
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+        not_excluded_notebooks.remove(list_name)
+        res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+        assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
@@ -108,7 +109,10 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
 
 
 def test_fl_sms(isolated_filesystem):
+    sys.path.append("advanced/Federated SMS Spam prediction/")
     os.chdir("advanced/Federated SMS Spam prediction/")
+    import preprocess
+
     notebook = "Federated SMS Spam prediction.ipynb"
     print(notebook)
     p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
@@ -119,8 +123,6 @@ def test_fl_sms(isolated_filesystem):
     with ZipFile("data.zip", "r") as zipObj:
         # Extract all the contents of the zip file in current directory
         zipObj.extractall()
-    import preprocess
-
     preprocess.main()
     res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
