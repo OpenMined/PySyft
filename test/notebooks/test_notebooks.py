@@ -52,7 +52,6 @@ def test_notebooks_basic(isolated_filesystem):
     """Test Notebooks in the tutorial root folder."""
     notebooks = glob.glob("*.ipynb")
     for notebook in notebooks:
-        print(notebook)
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
             not_excluded_notebooks.remove(list_name)
@@ -74,7 +73,6 @@ def test_notebooks_basic_translations(isolated_filesystem):
     """Test Notebooks in the tutorial root folder."""
     notebooks = glob.glob("translations/**/*.ipynb", recursive=True)
     for notebook in notebooks:
-        print(notebook)
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
             not_excluded_notebooks.remove(list_name)
@@ -96,7 +94,6 @@ def test_notebooks_advanced(isolated_filesystem):
     notebooks = glob.glob("advanced/*.ipynb")
     notebooks += glob.glob("advanced/Split Neural Network/*.ipynb")
     for notebook in notebooks:
-        print(notebook)
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
             not_excluded_notebooks.remove(list_name)
@@ -107,7 +104,6 @@ def test_notebooks_advanced(isolated_filesystem):
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
     os.chdir("advanced/Federated Learning with TrainConfig/")
     notebook = "Introduction to TrainConfig.ipynb"
-    print(notebook)
     p_name = Path("examples/tutorials/advanced/Federated Learning with TrainConfig/")
     not_excluded_notebooks.remove(p_name / notebook)
     hook.local_worker.remove_worker_from_registry("alice")
@@ -128,7 +124,6 @@ def test_fl_sms(isolated_filesystem):
     import preprocess
 
     notebook = "Federated SMS Spam prediction.ipynb"
-    print(notebook)
     p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
     not_excluded_notebooks.remove(p_name / notebook)
     Path("data").mkdir(parents=True, exist_ok=True)
@@ -147,7 +142,6 @@ def test_fl_with_websockets_and_averaging(
 ):
     os.chdir("advanced/websockets-example-MNIST/")
     notebook = "Federated learning with websockets and federated averaging.ipynb"
-    print(notebook)
     p_name = Path("examples/tutorials/advanced/websockets-example-MNIST/")
     not_excluded_notebooks.remove(p_name / notebook)
     for n in ["alice", "bob", "charlie"]:
@@ -172,5 +166,4 @@ def test_fl_with_websockets_and_averaging(
 
 def test_not_tested_notebooks():
     """This test must always be last"""
-    print(not_excluded_notebooks)
-    assert len(not_excluded_notebooks) == 0
+    assert len(not_excluded_notebooks) == 0, not_excluded_notebooks
