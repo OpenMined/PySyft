@@ -382,7 +382,7 @@ class Plan(AbstractObject, ObjectStorage):
         result_type = args[0].torch_type()
 
         res = PromiseTensor(
-            owner=prom_owner, shape=self.output_shape, tensor_type=result_type, plans=set(),
+            owner=prom_owner, shape=self.output_shape, tensor_type=result_type, plans=set()
         )
 
         self.procedure.update_args(args, self.procedure.result_ids)

@@ -873,3 +873,17 @@ def test_cnn_model(workers):
     sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
 
     assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
+
+
+def test_correct_tag_and_description_after_send(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([1, 2, 3]).share(alice, bob, james)
+    x.tags = ["tag_additive_test1", "tag_additive_test2"]
+    x.description = "description_additive_test"
+
+    pointer_x = x.send(alice)
+
+    assert alice.search("tag_additive_test1")
+    assert alice.search("tag_additive_test2")
+    assert alice.search("description_additive_test")
