@@ -241,6 +241,11 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
+    if chain is not None:
+        chain = syft.serde._detail(worker, chain)
+        tensor.child = chain
+        tensor.is_wrapper = True
+
     if tags is not None:
 
         tags = list(tags)
@@ -256,11 +261,6 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         if isinstance(description, bytes):
             description = description.decode("utf-8")
         tensor.description = description
-
-    if chain is not None:
-        chain = syft.serde._detail(worker, chain)
-        tensor.child = chain
-        tensor.is_wrapper = True
 
     return tensor
 
