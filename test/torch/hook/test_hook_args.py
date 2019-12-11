@@ -114,3 +114,13 @@ def test_backward_multiple_use(workers):
 
     federated()
     encrypted()
+
+
+def test_backward_different_signature(workers):
+    bob = workers["bob"]
+    a = torch.tensor([0.0], requires_grad=True).send(bob)
+    b = torch.tensor([0.0], requires_grad=True).send(bob)
+    a.backward()
+    a.backward(b)
+
+    assert a.get().grad == torch.tensor([1.0])

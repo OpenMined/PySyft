@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 import syft as sy
 from syft.workers import websocket_client
-from syft.frameworks.torch.federated import utils
+from syft.frameworks.torch.fl import utils
 
 LOG_INTERVAL = 25
 

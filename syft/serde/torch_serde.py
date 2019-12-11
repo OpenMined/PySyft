@@ -238,13 +238,13 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
-    tensor.tags = syft.serde._detail(worker, tags)
-    tensor.description = syft.serde._detail(worker, description)
-
     if chain is not None:
         chain = syft.serde._detail(worker, chain)
         tensor.child = chain
         tensor.is_wrapper = True
+
+    tensor.tags = syft.serde._detail(worker, tags)
+    tensor.description = syft.serde._detail(worker, description)
 
     return tensor
 
