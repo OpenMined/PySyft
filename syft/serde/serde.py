@@ -483,7 +483,7 @@ def _decompress(binary: bin) -> bin:
         )
 
 
-def _simplify(worker: AbstractWorker, obj: object) -> object:
+def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """
     This function takes an object as input and returns a simple
     Python object which is supported by the chosen serialization
@@ -511,7 +511,7 @@ def _simplify(worker: AbstractWorker, obj: object) -> object:
     # breakpoint()
     current_type = type(obj)
     if current_type in simplifiers:
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
+        result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
         return result
 
     # If we already tried to find a simplifier for this type but failed, we should
@@ -533,7 +533,10 @@ def _simplify(worker: AbstractWorker, obj: object) -> object:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
                 simplifiers[current_type] = simplifiers[inheritance_type]
-                result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj))
+                result = (
+                    simplifiers[current_type][0],
+                    simplifiers[current_type][1](worker, obj, **kwargs),
+                )
                 return result
 
         # if there is not a simplifier for this
@@ -544,7 +547,7 @@ def _simplify(worker: AbstractWorker, obj: object) -> object:
         return obj
 
 
-def _detail(worker: AbstractWorker, obj: object) -> object:
+def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """Reverses the functionality of _simplify.
     Where applicable, it converts simple objects into more complex objects such
     as converting binary objects into torch tensors. Read _simplify for more
@@ -561,6 +564,6 @@ def _detail(worker: AbstractWorker, obj: object) -> object:
             deserializing directly.
     """
     if type(obj) in (list, tuple):
-        return detailers[obj[0]](worker, obj[1])
+        return detailers[obj[0]](worker, obj[1], **kwargs)
     else:
         return obj

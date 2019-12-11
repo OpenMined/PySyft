@@ -293,7 +293,7 @@ def make_ellipsis(**kwargs):
             "value": ...,
             "simplified": (
                 CODE[type(Ellipsis)],
-                b""  # [no wrapping tuple]
+                (b"",)
             )
         }
     ]
@@ -319,8 +319,8 @@ def make_numpy_ndarray(**kwargs):
                 CODE[type(np_array)],
                 (
                     np_array.tobytes(),  # (bytes) serialized bin
-                    (2, 2),  # [not simplified] (tuple) shape
-                    "float64"  # [not simplified] (str) dtype.name
+                    (CODE[tuple], (2, 2)),  # (tuple) shape
+                    (CODE[str], (b"float64",))  # (str) dtype.name
                 )
             ),
             "cmp_detailed": compare
@@ -338,7 +338,7 @@ def make_numpy_number(dtype, **kwargs):
                 CODE[dtype],
                 (
                     num.tobytes(),  # (bytes)
-                    num.dtype.name,  # [not simplified] (str) dtype.name
+                    (CODE[str], (num.dtype.name.encode('utf-8'),)),  # (str) dtype.name
                 )
             )
         }
@@ -381,7 +381,9 @@ def make_torch_device(**kwargs):
             "value": torch_device,
             "simplified": (
                 CODE[type(torch_device)],
-                "cpu"  # [no wrapping tuple, not simplified str] (str)
+                (
+                    (CODE[str], (b"cpu",)),  # (str) device
+                )
             )
         }
     ]
@@ -404,7 +406,9 @@ def make_torch_scriptmodule(**kwargs):
             "value": sm,
             "simplified": (
                 CODE[torch.jit.ScriptModule],
-                sm.save_to_buffer()  # [no wrapping tuple] (bytes) serialized torchscript
+                (
+                    sm.save_to_buffer(),  # (bytes) serialized torchscript
+                )
             ),
             "cmp_detailed": compare_modules
         }
@@ -423,7 +427,9 @@ def make_torch_cfunction(**kwargs):
             "value": func,
             "simplified": (
                 CODE[torch._C.Function],
-                func.save_to_buffer()  # [no wrapping tuple] (bytes) serialized torchscript
+                (
+                    func.save_to_buffer(),  # (bytes) serialized torchscript
+                )
             ),
             "cmp_detailed": compare_modules
         }
@@ -454,7 +460,9 @@ def make_torch_topleveltracedmodule(**kwargs):
             "value": tm,
             "simplified": (
                 CODE[torch.jit.TopLevelTracedModule],
-                tm.save_to_buffer()  # [no wrapping tuple] (bytes) serialized torchscript
+                (
+                    tm.save_to_buffer(),  # (bytes) serialized torchscript
+                )
             ),
             "cmp_detailed": compare_modules
         }
@@ -492,7 +500,7 @@ def make_torch_parameter(**kwargs):
 # torch.Tensor
 def make_torch_tensor(**kwargs):
     tensor = torch.randn(3, 3)
-    tensor.tags = ["tag1", "tag2"]
+    tensor.tag("tag1")
     tensor.description = "desc"
 
     def compare(detailed, original):
@@ -500,6 +508,8 @@ def make_torch_tensor(**kwargs):
         assert detailed.data.equal(original.data)
         assert detailed.id == original.id
         assert detailed.requires_grad == original.requires_grad
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
         return True
 
     return [
@@ -513,8 +523,8 @@ def make_torch_tensor(**kwargs):
                     save_to_buffer(tensor),  # (bytes) serialized tensor
                     None,  # (AbstractTensor) chain
                     None,  # (AbstractTensor) grad_chain
-                    ["tag1", "tag2"],  # [not simplified] (list of str) tags
-                    "desc",  # [not simplified] (str) description
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
+                    (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"torch",))  # (str) framework
                 ),
             ),
@@ -535,8 +545,8 @@ def make_torch_tensor(**kwargs):
                     )),
                     None,  # (AbstractTensor) chain
                     None,  # (AbstractTensor) grad_chain
-                    ["tag1", "tag2"],  # [not simplified] (list of str) tags
-                    "desc",  # [not simplified] (str) description
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
+                    (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"all",))  # (str) framework
                 ),
             ),
@@ -552,9 +562,8 @@ def make_torch_size(**kwargs):
             "value": torch.randn(3, 3).size(),
             "simplified": (
                 CODE[torch.Size],
-                (  # [no wrapping tuple or not simplified tuple]
-                    3,  # (int)
-                    3
+                (
+                    3, 3  # (int) *shape
                 )
             )
         }
@@ -592,7 +601,7 @@ def make_additivesharingtensor(**kwargs):
                 (
                     ast.id,  # (int) id
                     ast.field,  # (int) field
-                    ast.crypto_provider.id,  # [not simplified] (str) worker_id
+                    (CODE[str], (ast.crypto_provider.id.encode('utf-8'),)),  # (str) worker_id
                     serde._simplify(syft.hook.local_worker, ast.child),  # (dict of AbstractTensor) simplified chain
                 ),
             ),
@@ -610,8 +619,7 @@ def make_fixedprecisiontensor(**kwargs):
         alice, bob, crypto_provider=james
     )
     fpt = fpt_tensor.child
-    # It is OK to assign like that?
-    fpt.tags = ["tag1", "tag2"]
+    fpt.tag("tag1")
     fpt.description = "desc"
     # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
     # This changes tensors' internal state in chain and is required to pass the test
@@ -627,6 +635,8 @@ def make_fixedprecisiontensor(**kwargs):
         assert detailed.base == original.base
         assert detailed.precision_fractional == original.precision_fractional
         assert detailed.kappa == original.kappa
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
         return True
 
     return [
@@ -640,7 +650,7 @@ def make_fixedprecisiontensor(**kwargs):
                     12,  # (int) base
                     5,  # (int) precision_fractional
                     fpt.kappa,  # (int) kappa
-                    (CODE[list], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),  # (list of str) tags
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     serde._simplify(syft.hook.local_worker, fpt.child),  # (AbstractTensor) chain
                 ),
@@ -787,7 +797,7 @@ def make_plan(**kwargs):
                     # NOTE: it's uninitialized until plan.output_shape property is used
                     None,  # (torch.Size) _output_shape
                     serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
-                    serde._simplify(syft.hook.local_worker, plan.tags),  # (list) tags
+                    serde._simplify(syft.hook.local_worker, plan.tags),  # (set of str) tags
                     serde._simplify(syft.hook.local_worker, plan.description),  # (str) description
                 ),
             ),
@@ -854,10 +864,10 @@ def make_procedure(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.procedure.Procedure],
                 (
-                    (  # [not simplified tuple]
-                        procedure.operations[0],  # (Operation)
+                    (CODE[list], (  # (list of Operation) operations
+                        procedure.operations[0],  # (unsimplified Operation)
                         procedure.operations[1],
-                    ),
+                    )),
                     (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_ids
                     (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_ids
                     None  # (int) promise_out_id
@@ -945,10 +955,10 @@ def make_pointertensor(**kwargs):
             "simplified": (
                 CODE[syft.generic.pointers.pointer_tensor.PointerTensor],
                 (
-                    ptr.id,  # (int) id
-                    ptr.id_at_location,  # (int) id_at_location
-                    "alice",  # [not simplified] (str) worker_id
-                    None,  # [not simplified] (str) point_to_attr
+                    ptr.id,  # (int or str) id
+                    ptr.id_at_location,  # (int or str) id_at_location
+                    (CODE[str], (b"alice",)),  # (str) worker_id
+                    None,  # (str) point_to_attr
                     (CODE[torch.Size], (3, 3)),  # (torch.Size) _shape
                     True,  # (bool) garbage_collect_data
                 ),
@@ -990,8 +1000,8 @@ def make_pointerplan(**kwargs):
                 (
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
-                    "alice",  # [not simplified] (str) worker_id
-                    False  # garbage_collect_data
+                    (CODE[str], (b"alice",)),  # (str) worker_id
+                    False  # (bool) garbage_collect_data
                 ),
             ),
             "cmp_detailed": compare,
@@ -1031,7 +1041,7 @@ def make_pointerprotocol(**kwargs):
                 (
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
-                    "alice",  # [not simplified] (str) location.id
+                    (CODE[str], (b"alice",)),  # (str) location.id
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1089,10 +1099,10 @@ def make_objectpointer(**kwargs):
             "simplified": (
                 CODE[syft.generic.pointers.object_pointer.ObjectPointer],
                 (
-                    ptr.id,  # [not simplified str] (int or str)
-                    ptr.id_at_location,  # (int)
-                    "alice",  # [not simplified] (str) location.id
-                    None,  # [not simplified] (str) point_to_attr
+                    ptr.id,  # (int or str) id
+                    ptr.id_at_location,  # (int or str) id
+                    (CODE[str], (b"alice",)),  # (str) location.id
+                    None,  # (str) point_to_attr
                     True,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1207,7 +1217,7 @@ def make_baseworker(**kwargs):
 def make_autogradtensor(**kwargs):
     t = torch.tensor([1, 2, 3])
     agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
-    agt.tags = ["aaa"]
+    agt.tag("aaa")
     agt.description = "desc"
 
     def compare(detailed, original):
@@ -1234,7 +1244,7 @@ def make_autogradtensor(**kwargs):
                     True,  # (bool) requires_grad
                     False,  # (bool) preinitialize_grad
                     None,  # [always None, ignored in constructor] grad_fn
-                    (CODE[list], ((CODE[str], (b"aaa",)),)),  # (list of str) tags
+                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                 ),
             ),
@@ -1247,7 +1257,7 @@ def make_autogradtensor(**kwargs):
 def make_privatetensor(**kwargs):
     t = torch.tensor([1, 2, 3])
     pt = t.private_tensor(allowed_users=("test",))
-    pt.tags = ["tag1"]
+    pt.tag("tag1")
     pt.description = "private"
     pt = pt.child
 
@@ -1281,7 +1291,7 @@ def make_privatetensor(**kwargs):
 # syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
 def make_promisetensor(**kwargs):
     pt = syft.Promise.FloatTensor(shape=torch.Size((3, 4)))
-    pt.tags = ["tag1"]
+    pt.tag("tag1")
     pt.description = "I promise"
 
     @syft.func2plan(args_shape=[(3, 4)])
@@ -1379,7 +1389,7 @@ def make_operation(**kwargs):
                 CODE[syft.messaging.message.Operation],
                 (
                     serde._simplify(syft.hook.local_worker, op.message),  # (Any) message
-                    op.return_ids,  # [not simplified] (tuple) return_ids
+                    (CODE[tuple], (op.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
             "cmp_detailed": compare,
