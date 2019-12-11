@@ -501,7 +501,7 @@ def make_torch_parameter(**kwargs):
 def make_torch_tensor(**kwargs):
     tensor = torch.randn(3, 3)
     tensor.tag("tag1")
-    tensor.description = "desc"
+    tensor.describe("desc")
 
     def compare(detailed, original):
         assert type(detailed) == torch.Tensor
@@ -620,7 +620,7 @@ def make_fixedprecisiontensor(**kwargs):
     )
     fpt = fpt_tensor.child
     fpt.tag("tag1")
-    fpt.description = "desc"
+    fpt.describe("desc")
     # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
     # This changes tensors' internal state in chain and is required to pass the test
     serde._simplify(syft.hook.local_worker, fpt)
@@ -1255,7 +1255,7 @@ def make_autogradtensor(**kwargs):
     t = torch.tensor([1, 2, 3])
     agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
     agt.tag("aaa")
-    agt.description = "desc"
+    agt.describe("desc")
 
     def compare(detailed, original):
         assert type(detailed) == syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor
@@ -1295,7 +1295,7 @@ def make_privatetensor(**kwargs):
     t = torch.tensor([1, 2, 3])
     pt = t.private_tensor(allowed_users=("test",))
     pt.tag("tag1")
-    pt.description = "private"
+    pt.describe("private")
     pt = pt.child
 
     def compare(detailed, original):
@@ -1329,7 +1329,7 @@ def make_privatetensor(**kwargs):
 def make_promisetensor(**kwargs):
     pt = syft.Promise.FloatTensor(shape=torch.Size((3, 4)))
     pt.tag("tag1")
-    pt.description = "I promise"
+    pt.describe("I promise")
 
     @syft.func2plan(args_shape=[(3, 4)])
     def promising_plan(x):
