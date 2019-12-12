@@ -39,12 +39,16 @@ To sync your fork with the OpenMined/PySyft repository please see this [Guide](h
 
 ### Installing PySyft after Cloning Repository
 
-To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
+To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/master/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
 ```bash
 cd PySyft
 pip install -e .
 ```
 If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
+
+### Deploying Workers
+
+You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
@@ -103,11 +107,11 @@ or renaming/moving related classes can make unit tests fail because `proto.json`
 
 Use following process:
  1. Fork [OpenMined/proto](https://github.com/OpenMined/proto) and create new branch.
- 1. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>` instead of `git+git://github.com/OpenMined/proto@master`.
- 1. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
- 1. Create PRs in both repos.
- 1. PRs should pass CI checks.
- 1. After both PRs are merged, `requirements.txt` in PySyft@dev should be updated back to `git+git://github.com/OpenMined/proto@master`.
+ 2. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>#egg=proto` instead of `git+git://github.com/OpenMined/proto@master#egg=proto`.
+ 3. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
+ 4. Create PRs in both repos.
+ 5. PRs should pass CI checks.
+ 6. After both PRs are merged, `requirements.txt` in PySyft@master should be updated back to `git+git://github.com/OpenMined/proto@master#egg=proto`.
 
 ### Documentation and Codestyle
 
@@ -134,6 +138,16 @@ from syft.serde import deserialize
 sphinx-apidoc -f -o docs/modules/ syft/
 ```
 
+#### Type Checking
+
+The codebase contains [static type hints](https://docs.python.org/3/library/typing.html) for code clarity and catching errors prior to runtime. If you're adding type hints, please run the static type checker to ensure the type annotations you added are correct via:
+
+```bash
+mypy syft
+```
+
+Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ignore existing type issues found by mypy.
+
 ### Keep it DRY (Don't repeat yourself)
 
 As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
@@ -141,7 +155,7 @@ As with any software project it's important to keep the amount of code to a mini
 ### Creating a Pull Request
 
 At any point in time you can create a pull request, so others can see your changes and give you feedback.
-Please create all pull requests to the `dev` branch.
+Please create all pull requests to the `master` branch.
 If your PR is still work in progress and not ready to be merged please add a `[WIP]` at the start of the title.
 Example:`[WIP] Serialization of PointerTensor`
 

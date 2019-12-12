@@ -1,3 +1,5 @@
+import pytest
+
 import torch
 import torch as th
 
@@ -9,6 +11,7 @@ from syft.frameworks.torch.mpc.securenn import (
     relu_deriv,
     division,
     maxpool,
+    maxpool2d,
     maxpool_deriv,
 )
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -157,3 +160,39 @@ def test_maxpool_deriv(workers):
     max_d = maxpool_deriv(x)
 
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
+
+
+@pytest.mark.parametrize(
+    "kernel_size, stride", [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 3)]
+)
+def test_maxpool2d(workers, kernel_size, stride):
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    def _test_maxpool2d(x):
+        x_sh = x.share(alice, bob, crypto_provider=james).wrap()
+        y = maxpool2d(x_sh, kernel_size=kernel_size, stride=stride)
+
+        torch_maxpool = torch.nn.MaxPool2d(kernel_size, stride=stride)
+
+        assert torch.all(torch.eq(y.get(), torch_maxpool(x).long()))
+
+    x1 = torch.Tensor(
+        [
+            [
+                [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
+                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]],
+            ]
+        ]
+    )
+
+    _test_maxpool2d(x1)
+
+    x2 = th.tensor(
+        [
+            [[[10, 9.1, 1, 1], [0.72, -2.5, 1, 1], [0.72, -2.5, 1, 1], [0.72, -2.5, 1, 1]]],
+            [[[15, 0.6, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
+            [[[1.2, 0.3, 1, 1], [5.5, 6.2, 1, 1], [1, -3, 1, 1], [1, -3, 1, 1]]],
+        ]
+    )
+
+    _test_maxpool2d(x2)

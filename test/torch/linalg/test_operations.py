@@ -133,3 +133,53 @@ def test_inv_upper(hook, workers):
     R_sh = R.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
     # invR_sh = DASH._inv_upper(R_sh)
     # assert ()(invR - invR_sh.get().float_precision()).abs() < 1e-2).all()
+    
+    
+def test_remote_random_number_generation(hook, workers):
+    """
+    Test random number generation on remote worker machine
+    """
+
+    class Model(torch.nn.Module):
+        def __init__(self):
+            super(Model, self).__init__()
+
+        def add_randn_like(self, x):
+            r = torch.randn_like(x)
+            return x + r
+
+        def get_randint(self, n):
+            r = torch.rand(n)
+            return r
+
+        def get_rand(self, n):
+            r = torch.rand(n)
+            return r
+
+        def get_randn(self, n):
+            r = torch.randn(n)
+            return r
+
+        def get_randperm(self, n):
+            r = torch.randperm(n)
+            return r
+
+    alice = workers["alice"]
+    model = Model().to("cpu").send(alice)
+
+    x = torch.tensor([1.0, 2.0, 3.0, 4.0]).send(alice)
+    y = model.add_randn_like(x)
+
+    # Check that returned tensor is same size as original
+    assert len(y.get()) == len(x)
+
+    r = model.get_randint(4)
+    s = model.get_rand(5)
+    t = model.get_randn(6)
+    v = model.get_randperm(7)
+
+    # Check that the returned tensors are the requested size
+    assert len(r) == 4
+    assert len(s) == 5
+    assert len(t) == 6
+    assert len(v) == 7
