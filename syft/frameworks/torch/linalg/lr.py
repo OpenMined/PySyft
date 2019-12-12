@@ -505,7 +505,7 @@ class DASH:
                 R_inv[i, :] = I[i, :] - (R[i : i + 1, (i + 1) : N].t() * R_inv[(i + 1) : N, :]).sum(
                     dim=0
                 )
-                R_inv[i, :] /= R[i, i]
+                R_inv[i, :] = R_inv[i, :] / R[i, i]
 
         return R_inv
 

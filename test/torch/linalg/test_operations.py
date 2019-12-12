@@ -131,10 +131,10 @@ def test_inv_upper(hook, workers):
     invR = R.inverse()
 
     R_sh = R.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
-    # invR_sh = DASH._inv_upper(R_sh)
-    # assert ()(invR - invR_sh.get().float_precision()).abs() < 1e-2).all()
-    
-    
+    invR_sh = DASH._inv_upper(R_sh)
+    assert ((invR - invR_sh.get().float_precision()).abs() < 1e-2).all()
+
+
 def test_remote_random_number_generation(hook, workers):
     """
     Test random number generation on remote worker machine
