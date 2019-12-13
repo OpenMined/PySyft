@@ -988,7 +988,7 @@ class AdditiveSharingTensor(AbstractTensor):
         tensor.set_garbage_collect_data(False)
 
         return (
-            tensor.id,
+            sy.serde._simplify(worker, tensor.id),
             tensor.field,
             sy.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
@@ -1012,7 +1012,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=tensor_id,
+            id=sy.serde._detail(worker, tensor_id),
             field=field,
             crypto_provider=worker.get_worker(crypto_provider),
         )

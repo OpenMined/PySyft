@@ -93,7 +93,7 @@ class PointerProtocol(ObjectPointer):
     def simplify(worker: AbstractWorker, ptr: "PointerPlan") -> tuple:
 
         return (
-            ptr.id,
+            sy.serde._simplify(worker, ptr.id),
             ptr.id_at_location,
             sy.serde._simplify(worker, ptr.location.id),
             ptr.garbage_collect_data,
@@ -104,6 +104,7 @@ class PointerProtocol(ObjectPointer):
         # TODO: fix comment for this and simplifier
         obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
 
+        obj_id = sy.serde._detail(worker, obj_id)
         worker_id = sy.serde._detail(worker, worker_id)
 
         # If the pointer received is pointing at the current worker, we load the tensor instead

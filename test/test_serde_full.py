@@ -599,7 +599,7 @@ def make_additivesharingtensor(**kwargs):
                     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
                 ],
                 (
-                    ast.id,  # (int) id
+                    ast.id,  # (int or str) id
                     ast.field,  # (int) field
                     (CODE[str], (ast.crypto_provider.id.encode('utf-8'),)),  # (str) worker_id
                     serde._simplify(syft.hook.local_worker, ast.child),  # (dict of AbstractTensor) simplified chain
@@ -645,7 +645,7 @@ def make_fixedprecisiontensor(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor],
                 (
-                    fpt.id,  # (int) id
+                    fpt.id,  # (int or str) id
                     fpt.field,  # (int) field
                     12,  # (int) base
                     5,  # (int) precision_fractional
@@ -714,8 +714,8 @@ def make_loggingtensor(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor],
                 (
-                    lt.id,  # (int)
-                    serde._simplify(syft.hook.local_worker, lt.child)  # (AbstractTensor)
+                    lt.id,  # (int or str) id
+                    serde._simplify(syft.hook.local_worker, lt.child)  # (AbstractTensor) chain
                 ),
             ),
             "cmp_detailed": compare,
@@ -742,7 +742,7 @@ def make_multipointertensor(**kwargs):
             "simplified": (
                 CODE[syft.generic.pointers.multi_pointer.MultiPointerTensor],
                 (
-                    mpt.id,  # (int)
+                    mpt.id,  # (int or str) id
                     serde._simplify(syft.hook.local_worker, mpt.child)  # (dict)
                 ),
             ),
@@ -805,7 +805,7 @@ def make_plan(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.plan.Plan],
                 (
-                    plan.id,  # (int) id
+                    plan.id,  # (int or str) id
                     serde._simplify(syft.hook.local_worker, plan.procedure),  # (Procedure)
                     serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
@@ -825,7 +825,7 @@ def make_plan(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.plan.Plan],
                 (
-                    model_plan.id,  # (int) id
+                    model_plan.id,  # (int or str) id
                     serde._simplify(syft.hook.local_worker, model_plan.procedure),  # (Procedure)
                     serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
                     model_plan.include_state,  # (bool) include_state
@@ -1076,7 +1076,7 @@ def make_pointerprotocol(**kwargs):
             "simplified": (
                 CODE[syft.generic.pointers.pointer_protocol.PointerProtocol],
                 (
-                    ptr.id,  # (int) id
+                    ptr.id,  # (int or str) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) location.id
                     False,  # (bool) garbage_collect_data
@@ -1200,7 +1200,7 @@ def make_trainconfig(**kwargs):
                     1,  # (int) epochs
                     (CODE[str], (b"SGD",)),  # (str) optimizer
                     (CODE[dict], (((CODE[str], (b"lr",)), 0.1),)),  # (dict) optimizer_args
-                    conf.id,  # (int)
+                    conf.id,  # (int or str)
                     -1,  # (int) max_nr_batches
                     True,  # (bool) shuffle
                 ),
