@@ -160,7 +160,10 @@ def serve_model():
 
     if request.files:
         # If model is large, receive it by a stream channel
-        serialized_model = request.files["model"].read().decode("utf-8")
+        try:
+            serialized_model = request.files["model"].read().decode("utf-8")
+        except UnicodeDecodeError:
+            serialized_model = request.files["model"].read().decode("latin-1")
     else:
         # If model is small, receive it by a standard json
         serialized_model = request.form["model"]
