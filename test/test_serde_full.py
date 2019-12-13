@@ -743,11 +743,28 @@ def make_multipointertensor(**kwargs):
 
 # syft.messaging.plan.plan.Plan
 def make_plan(**kwargs):
+    # Function to plan
     @syft.func2plan([torch.Size((3,))])
     def plan(x):
         x = x + x
         x = torch.abs(x)
         return x
+
+    # Model to plan
+    class Net(syft.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(3, 3)
+            self.fc2 = torch.nn.Linear(3, 2)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            x = self.fc2(x)
+            return torch.nn.functional.log_softmax(x, dim=0)
+
+    with syft.hook.local_worker.registration_enabled():
+        model_plan = Net()
+        model_plan.build(torch.tensor([1., 2., 3.]))
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
@@ -766,7 +783,7 @@ def make_plan(**kwargs):
         assert detailed.tags == original.tags
         assert detailed.description == original.description
         with syft.hook.local_worker.registration_enabled():
-            t = torch.tensor([1, -2, 3])
+            t = torch.tensor([1.1, -2, 3])
             res1 = detailed(t)
             res2 = original(t)
         assert res1.equal(res2)
@@ -789,6 +806,26 @@ def make_plan(**kwargs):
                     serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
                     serde._simplify(syft.hook.local_worker, plan.tags),  # (list) tags
                     serde._simplify(syft.hook.local_worker, plan.description),  # (str) description
+                ),
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": model_plan,
+            "simplified": (
+                CODE[syft.messaging.plan.plan.Plan],
+                (
+                    model_plan.id,  # (int) id
+                    serde._simplify(syft.hook.local_worker, model_plan.procedure),  # (Procedure)
+                    serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
+                    model_plan.include_state,  # (bool) include_state
+                    model_plan.is_built,  # (bool) is_built
+                    (CODE[list], ((CODE[torch.Size], (3,)),)),  # (list of torch.Size) input_shapes
+                    # NOTE: it's uninitialized until plan.output_shape property is used
+                    None,  # (torch.Size) _output_shape
+                    serde._simplify(syft.hook.local_worker, model_plan.name),  # (str) name
+                    serde._simplify(syft.hook.local_worker, model_plan.tags),  # (list) tags
+                    serde._simplify(syft.hook.local_worker, model_plan.description),  # (str) description
                 ),
             ),
             "cmp_detailed": compare,
