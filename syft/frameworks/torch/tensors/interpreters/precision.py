@@ -353,7 +353,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __mul__ = mul
 
     def __imul__(self, other):
-        self = self.mul_and_div(other, "mul")
+        self.child = self.mul_and_div(other, "mul").child
         return self
 
     mul_ = __imul__
@@ -364,7 +364,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __truediv__ = div
 
     def __itruediv__(self, other):
-        self = self.mul_and_div(other, "div")
+        self.child = self.mul_and_div(other, "div").child
         return self
 
     def pow(self, power):
