@@ -157,7 +157,7 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then
 
-`python setup.py install udacity`
+`python setup.py install`
 
 This will install PySyft and its requirements to your system. You should see no errors.
 
