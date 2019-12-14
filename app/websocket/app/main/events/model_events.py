@@ -21,7 +21,6 @@ def host_model(message: dict) -> str:
     model_id = message["model_id"]
     allow_download = message["allow_download"] == "True"
     allow_remote_inference = message["allow_remote_inference"] == "True"
-
     serialized_model = message["model"]
 
     # Encode the model accordingly
@@ -102,6 +101,7 @@ def run_inference(message: dict) -> str:
             response (str) : Model's inference.
     """
     response = mm.get_model_with_id(message["model_id"])
+
     if response[RESPONSE_MSG.SUCCESS]:
         model = response["model"]
 
@@ -117,6 +117,11 @@ def run_inference(message: dict) -> str:
         # Some models returns tuples (GPT-2 / BERT / ...)
         # To avoid errors on detach method, we check the type of inference's result
         model_output = model(data)
+
+        # It the model is a plan, it'll receive a tensor wrapper as a model_output.
+        if hasattr(model_output, "get"):
+            model_output = model_output.get()
+
         if isinstance(model_output, tuple):
             predictions = model_output[0].detach().numpy().tolist()
         else:

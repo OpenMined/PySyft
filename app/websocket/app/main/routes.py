@@ -226,7 +226,7 @@ def search_encrypted_models():
 
             workers = set()
             # Check every state used by this plan
-            for state_id in model.state_ids:
+            for state_id in model.state.state_ids:
                 obj = local_worker._objects.get(state_id)
                 # Decrease in Tensor Hierarchy (we want be a AdditiveSharingTensor to recover workers/crypto_provider addresses)
                 while not isinstance(obj, sy.AdditiveSharingTensor):

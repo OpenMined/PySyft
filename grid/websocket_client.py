@@ -229,11 +229,6 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
                 ValueError: if model_id is not provided and model is a jit model (aka does not have an id attribute).
                 RunTimeError: if there was a problem during model serving.
         """
-        if model_id is None:
-            if isinstance(model, sy.Plan):
-                model_id = model.id
-            else:
-                raise ValueError("Model id argument is mandatory for jit models.")
 
         # If the model is a Plan we send the model
         # and host the plan version created after
@@ -241,10 +236,8 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
         if isinstance(model, sy.Plan):
             # We need to use the same id in the model
             # as in the POST request.
-            model.id = model_id
-            model.send(self)
-            model.ptr_plans[self.id].garbage_collect_data = False
-            res_model = model.ptr_plans[self.id]
+            p_model = model.send(self)
+            res_model = p_model
         else:
             res_model = model
 

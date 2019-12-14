@@ -43,7 +43,6 @@ class GridAPITest(unittest.TestCase):
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
 
-    @pytest.mark.skip
     def test_host_inference_encrypted_model(self):
         sy.hook.local_worker.is_client_worker = False
 
@@ -53,7 +52,6 @@ class GridAPITest(unittest.TestCase):
                 super(Net, self).__init__(id="convnet")
                 self.fc1 = th.tensor([2.0, 4.0])
                 self.bias = th.tensor([1000.0])
-                self.state += ["fc1", "bias"]
 
             def forward(self, x):
                 return self.fc1.matmul(x) + self.bias
@@ -73,15 +71,16 @@ class GridAPITest(unittest.TestCase):
         expected = decrypted_model(th.tensor([1.0, 2]))
 
         assert th.all(result - expected.detach() < 1e-2)
+        sy.hook.local_worker.is_client_worker = True
 
-    @pytest.mark.skip
     def test_model_ids_overview(self):
+        sy.hook.local_worker.is_client_worker = False
+
         class Net(sy.Plan):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = th.nn.Linear(2, 1)
                 self.bias = th.tensor([1000.0])
-                self.state += ["fc1", "bias"]
 
             def forward(self, x):
                 x = self.fc1(x)
@@ -102,6 +101,7 @@ class GridAPITest(unittest.TestCase):
 
         for model_id in model_ids:
             assert model_id in models
+        sy.hook.local_worker.is_client_worker = True
 
     def test_grid_host_query_jit_model(self):
         toy_model = th.nn.Linear(2, 5)
@@ -136,14 +136,14 @@ class GridAPITest(unittest.TestCase):
             for tag in tensor_tags:
                 assert tag in tags
 
-    @pytest.mark.skip
     def test_host_plan_model(self):
+        sy.hook.local_worker.is_client_worker = False
+
         class Net(sy.Plan):
             def __init__(self):
                 super(Net, self).__init__()
                 self.fc1 = th.nn.Linear(2, 1)
                 self.bias = th.tensor([1000.0])
-                self.state += ["fc1", "bias"]
 
             def forward(self, x):
                 x = self.fc1(x)
@@ -167,6 +167,7 @@ class GridAPITest(unittest.TestCase):
             model_id="plan-model", data=th.tensor([1.0, 2])
         )
         assert inference == th.tensor([1000.0])
+        sy.hook.local_worker.is_client_worker = True
 
     def test_grid_search(self):
         hook.local_worker.is_client_worker = True

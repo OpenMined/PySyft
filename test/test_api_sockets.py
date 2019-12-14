@@ -16,14 +16,14 @@ from test import conftest
 hook = sy.TorchHook(th)
 
 
-@pytest.mark.skip
 def test_host_plan_not_allowed_to_run_ops(connected_node):
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = th.nn.Linear(2, 1)
             self.bias = th.tensor([1000.0])
-            self.state += ["fc1", "bias"]
 
         def forward(self, x):
             x = self.fc1(x)
@@ -46,16 +46,17 @@ def test_host_plan_not_allowed_to_run_ops(connected_node):
 
     with pytest.raises(RuntimeError):
         bob.download_model(model_id="not_allowed")
+    hook.local_worker.is_client_worker = True
 
 
-@pytest.mark.skip
 def test_host_plan_model(connected_node):
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = th.nn.Linear(2, 1)
             self.bias = th.tensor([1000.0])
-            self.state += ["fc1", "bias"]
 
         def forward(self, x):
             x = self.fc1(x)
@@ -75,16 +76,17 @@ def test_host_plan_model(connected_node):
     # Call one more time
     prediction = bob.run_remote_inference(model_id="1", data=th.tensor([1.0, 2]))
     assert th.tensor(prediction) == th.tensor([1000.0])
+    hook.local_worker.is_client_worker = True
 
 
-@pytest.mark.skip
 def test_host_models_with_the_same_key(connected_node):
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = th.nn.Linear(2, 1)
             self.bias = th.tensor([1000.0])
-            self.state += ["fc1", "bias"]
 
         def forward(self, x):
             x = self.fc1(x)
@@ -102,6 +104,7 @@ def test_host_models_with_the_same_key(connected_node):
     # Error when using the same id twice
     with pytest.raises(RuntimeError):
         bob.serve_model(model, model_id="2")
+    hook.local_worker.is_client_worker = True
 
 
 @pytest.mark.skipif(
@@ -135,14 +138,14 @@ def test_host_jit_model(connected_node):
     assert th.tensor(prediction) == th.tensor([1000.0])
 
 
-@pytest.mark.skip
 def test_delete_model(connected_node):
+    hook.local_worker.is_client_worker = False
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
             self.fc1 = th.nn.Linear(2, 1)
             self.bias = th.tensor([1000.0])
-            self.state += ["fc1", "bias"]
 
         def forward(self, x):
             x = self.fc1(x)
@@ -164,50 +167,45 @@ def test_delete_model(connected_node):
     # Error when deleting again
     with pytest.raises(RuntimeError):
         bob.delete_model("test_delete_model")
+    hook.local_worker.is_client_worker = True
 
 
-@pytest.mark.skip
 def test_run_encrypted_model(connected_node):
     sy.hook.local_worker.is_client_worker = False
 
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
+            self.theta1 = th.tensor([5.0])
             self.bias = th.tensor([2.0])
-            self.state += ["bias"]
 
         def forward(self, x):
-            # TODO: we're using a model that does not require
-            # communication between nodes to compute.
-            # Tests are breaking when communication
-            # between nodes is required.
-            return x + self.bias
+            return self.theta1.matmul(x) + self.bias
 
     plan = Net()
     plan.build(th.tensor([1.0]))
 
     nodes = list(connected_node.values())
-
+    gr.utils.connect_all_nodes(nodes)
     bob, alice, james = nodes[:3]
 
     # Send plan
     plan.encrypt(bob, james, crypto_provider=alice)
 
-    # Share data
-    x = th.tensor([1.0])
+    # Input data
+    x = th.tensor([4.5])
 
-    # TODO: figure it out why encrypt is not working here
-    # but is working on the notebooks
+    # Share input data between the same workers
     x_sh = x.fix_prec().share(bob, james, crypto_provider=alice)
 
     # Execute the plan
     decrypted = plan(x_sh).get().float_prec()
 
-    # Compare with local plan
-    plan.get().float_precision()
-    expected = plan(x)
-    assert th.all(decrypted - expected.detach() < 1e-2)
+    # Expected inference result
+    # bias + theta1 * x
+    inference_result = th.tensor(th.tensor([24.5]))
 
+    assert decrypted == inference_result
     sy.hook.local_worker.is_client_worker = True
 
 
