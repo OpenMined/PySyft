@@ -4,8 +4,8 @@ Flask==1.0.2
 Flask-Cors==3.0.7
 Flask-Sockets==0.2.1
 gevent==1.4.0
-git+git://github.com/OpenMined/Grid@dev
 git+git://github.com/OpenMined/proto
+git+git://github.com/OpenMined/Grid@dev
 git+git://github.com/OpenMined/PySyft@master
 gunicorn==19.9.0
 itsdangerous==1.1.0
