@@ -1,1 +1,2 @@
+git+git://github.com/OpenMined/proto@master#egg=pysyft-protos
 tf_encrypted>=0.5.4,<0.6.0!=0.5.7

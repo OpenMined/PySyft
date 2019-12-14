@@ -51,12 +51,6 @@ To install the development version of the package, once the `dev` version of the
     pip install -e .
     ```
 
-5. Install the PySyft-Proto dependency, thus:
-
-    ```bash
-    pip install git+git://github.com/OpenMined/proto
-    ```
-
 NOTE: If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
 
 ### Deploying Workers
