@@ -179,11 +179,6 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
                 ValueError: model_id isn't provided and model is a jit model.
                 RunTimeError: if there was a problem during model serving.
         """
-        print("Model ID: ", model_id)
-        if model_id is None and not model.id:
-            raise ValueError("Model id argument is mandatory for jit models.")
-        elif isinstance(model, Plan):
-            model_id = model.id
 
         # If the model is a Plan we send the model
         # and host the plan version created after
@@ -191,10 +186,8 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         if isinstance(model, Plan):
             # We need to use the same id in the model
             # as in the POST request.
-            model.id = model_id
-            model.send(self)
-            model.ptr_plans[self.id].garbage_collect_data = False
-            res_model = model.ptr_plans[self.id]
+            pointer_model = model.send(self)
+            res_model = pointer_model
         else:
             res_model = model
 
