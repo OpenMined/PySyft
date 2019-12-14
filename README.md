@@ -2,18 +2,19 @@
 
 [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master) [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=torch_1)](https://travis-ci.org/OpenMined/PySyft) [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
 
-PySyft is a Python library for secure, private Deep Learning. PySyft decouples private data from model training, using
+PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
-and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within PyTorch. Join the movement on
+and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[paper on arxiv](https://arxiv.org/abs/1811.04017)
+[white paper on arxiv](https://arxiv.org/abs/1811.04017)
 
-PySyft has also been explained in video form by [Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY&feature=youtu.be&a=)
+PySyft has also been explained in videos on YouTube:
+ - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
 
 ## Pre-Installation
 

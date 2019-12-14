@@ -1,6 +1,6 @@
 Flask>=1.0.2
 flask_socketio>=3.3.2
-git+git://github.com/OpenMined/proto@master
+git+git://github.com/OpenMined/proto@master#egg=pysyft-proto
 lz4>=2.1.6
 msgpack>=0.6.1
 numpy>=1.16.0

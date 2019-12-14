@@ -46,9 +46,11 @@ from syft import dependency_check
 from syft.federated.train_config import TrainConfig
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -103,9 +105,11 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
+    PrivateTensor,
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
+    PromiseTensor,
     ObjectPointer,
     Plan,
     State,
@@ -169,6 +173,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
             forced_full_simplifiers[current_type][0],
             forced_full_simplifiers[current_type][1](worker, obj),
         )
+        return result
     # If we already tried to find a full simplifier for this type but failed, we should
     # simplify it instead.
     elif current_type in no_full_simplifiers_found:
@@ -189,14 +194,14 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
                 forced_full_simplifiers[current_type] = forced_full_simplifiers[inheritance_type]
                 result = (
                     forced_full_simplifiers[current_type][0],
-                    forced_full_simplifiers[current_type][1](obj),
+                    forced_full_simplifiers[current_type][1](worker, obj),
                 )
                 return result
 
         # If there is not a full_simplifier for this
         # object, then we simplify it.
         no_full_simplifiers_found.add(current_type)
-        return _simplify(obj)
+        return _simplify(worker, obj)
 
 
 ## SECTION: dinamically generate simplifiers and detailers

@@ -15,6 +15,7 @@ class ObjectStorage:
     """
 
     def __init__(self):
+        # This is the collection of objects being stored.
         self._objects = {}
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
@@ -103,7 +104,7 @@ class ObjectStorage:
         """
         if remote_key in self._objects:
             obj = self._objects[remote_key]
-            if hasattr(obj, "child") and obj.child is not None:
+            if hasattr(obj, "child") and hasattr(obj.child, "garbage_collect_data"):
                 obj.child.garbage_collect_data = True
             del self._objects[remote_key]
 
