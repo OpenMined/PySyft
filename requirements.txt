@@ -18,5 +18,5 @@ gevent-websocket
 flask_sockets
 flask_login
 pbr
-syft_proto=0.1.0
+syft_proto==0.1.0
 -e git+https://github.com/OpenMined/PySyft@master#egg=syft
