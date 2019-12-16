@@ -145,7 +145,7 @@ class LoggingTensor(AbstractTensor):
         chain = None
         if hasattr(tensor, "child"):
             chain = sy.serde._simplify(worker, tensor.child)
-        return tensor.id, chain
+        return (sy.serde._simplify(worker, tensor.id), chain)
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "LoggingTensor":
@@ -161,7 +161,7 @@ class LoggingTensor(AbstractTensor):
         """
         obj_id, chain = tensor_tuple
 
-        tensor = LoggingTensor(owner=worker, id=obj_id)
+        tensor = LoggingTensor(owner=worker, id=sy.serde._detail(worker, obj_id))
 
         if chain is not None:
             chain = sy.serde._detail(worker, chain)
