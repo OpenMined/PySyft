@@ -236,7 +236,7 @@ class ObjectPointer(AbstractObject):
 
         Args:
             user (obj, optional) : authenticate/allow user to perform get on remote private objects.
-            reason (str, optional) : a description of why the data scientist wants to see it. 
+            reason (str, optional) : a description of why the data scientist wants to see it.
             deregister_ptr (bool, optional): this determines whether to
                 deregister this pointer from the pointer's owner during this
                 method. This defaults to True because the main reason people use
@@ -379,10 +379,10 @@ class ObjectPointer(AbstractObject):
         """
 
         return (
-            ptr.id,
-            ptr.id_at_location,
-            ptr.location.id,
-            ptr.point_to_attr,
+            syft.serde._simplify(worker, ptr.id),
+            syft.serde._simplify(worker, ptr.id_at_location),
+            syft.serde._simplify(worker, ptr.location.id),
+            syft.serde._simplify(worker, ptr.point_to_attr),
             ptr.garbage_collect_data,
         )
 
@@ -403,8 +403,10 @@ class ObjectPointer(AbstractObject):
         # TODO: fix comment for this and simplifier
         obj_id, id_at_location, worker_id, point_to_attr, garbage_collect_data = object_tuple
 
-        if isinstance(worker_id, bytes):
-            worker_id = worker_id.decode()
+        obj_id = syft.serde._detail(worker, obj_id)
+        id_at_location = syft.serde._detail(worker, id_at_location)
+        worker_id = syft.serde._detail(worker, worker_id)
+        point_to_attr = syft.serde._detail(worker, point_to_attr)
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
@@ -412,7 +414,7 @@ class ObjectPointer(AbstractObject):
 
             if point_to_attr is not None and obj is not None:
 
-                point_to_attrs = point_to_attr.decode("utf-8").split(".")
+                point_to_attrs = point_to_attr.split(".")
                 for attr in point_to_attrs:
                     if len(attr) > 0:
                         obj = getattr(obj, attr)
