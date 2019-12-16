@@ -120,8 +120,9 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
 
 def test_fl_sms(isolated_filesystem):
     sys.path.append("advanced/Federated SMS Spam prediction/")
-    os.chdir("advanced/Federated SMS Spam prediction/")
     import preprocess
+
+    os.chdir("advanced/Federated SMS Spam prediction/")
 
     notebook = "Federated SMS Spam prediction.ipynb"
     p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
