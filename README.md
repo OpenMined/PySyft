@@ -14,11 +14,7 @@ A more detailed explanation of PySyft can be found in the
 [white paper on arxiv](https://arxiv.org/abs/1811.04017)
 
 PySyft has also been explained in videos on YouTube:
- - [Privacy in Data Science by Siraj Raval](https://www.youtube.com/watch?v=39hNjnhY7cY)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
-
-
-
 
 ## Pre-Installation
 
