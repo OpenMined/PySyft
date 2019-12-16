@@ -851,8 +851,23 @@ def test_procedure_update_ids():
                         6,
                         (
                             (5, (b"__add__",)),
-                            (23, (27674294093, 68519530406, "me", None, (10, (1,)), True)),
-                            (6, ((23, (2843683950, 91383408771, "me", None, (10, (1,)), True)),)),
+                            (23, (27674294093, 68519530406, (5, (b"me",)), None, (10, (1,)), True)),
+                            (
+                                6,
+                                (
+                                    (
+                                        23,
+                                        (
+                                            2843683950,
+                                            91383408771,
+                                            (5, (b"me",)),
+                                            None,
+                                            (10, (1,)),
+                                            True,
+                                        ),
+                                    ),
+                                ),
+                            ),
                             (0, ()),
                         ),
                     ),
@@ -878,10 +893,32 @@ def test_procedure_update_ids():
                         6,
                         (
                             (5, (b"__add__",)),
-                            (23, (73570994542, 68519530406, "alice", None, (10, (1,)), True)),
+                            (
+                                23,
+                                (
+                                    73570994542,
+                                    68519530406,
+                                    (5, (b"alice",)),
+                                    None,
+                                    (10, (1,)),
+                                    True,
+                                ),
+                            ),
                             (
                                 6,
-                                ((23, (2843683950, 91383408771, "alice", None, (10, (1,)), True)),),
+                                (
+                                    (
+                                        23,
+                                        (
+                                            2843683950,
+                                            91383408771,
+                                            (5, (b"alice",)),
+                                            None,
+                                            (10, (1,)),
+                                            True,
+                                        ),
+                                    ),
+                                ),
                             ),
                             (0, ()),
                         ),
@@ -906,10 +943,25 @@ def test_procedure_update_ids():
                         6,
                         (
                             (5, (b"__add__",)),
-                            (23, (73570994542, tensor_id, "alice", None, (10, (1,)), True)),
+                            (
+                                23,
+                                (73570994542, tensor_id, (5, (b"alice",)), None, (10, (1,)), True),
+                            ),
                             (
                                 6,
-                                ((23, (2843683950, 91383408771, "alice", None, (10, (1,)), True)),),
+                                (
+                                    (
+                                        23,
+                                        (
+                                            2843683950,
+                                            91383408771,
+                                            (5, (b"alice",)),
+                                            None,
+                                            (10, (1,)),
+                                            True,
+                                        ),
+                                    ),
+                                ),
                             ),
                             (0, ()),
                         ),
@@ -921,16 +973,32 @@ def test_procedure_update_ids():
     ]
 
     procedure.operations = [
-        (73570994542, 8730174527, b"alice", None, (10, (1,)), True),
-        (2843683950, 91383408771, "alice", None, (10, (1,)), True),
+        (73570994542, 8730174527, (5, (b"alice",)), None, (10, (1,)), True),
+        (2843683950, 91383408771, (5, (b"alice",)), None, (10, (1,)), True),
     ]
 
     procedure.update_worker_ids(from_worker_id="alice", to_worker_id="me")
 
     assert procedure.operations == [
-        (73570994542, 8730174527, "me", None, (10, (1,)), True),
-        (2843683950, 91383408771, "me", None, (10, (1,)), True),
+        (73570994542, 8730174527, (5, (b"me",)), None, (10, (1,)), True),
+        (2843683950, 91383408771, (5, (b"me",)), None, (10, (1,)), True),
     ]
+
+    # From int worker_id to str
+    procedure.operations = [(73570994542, 8730174527, 1234567890, None, (10, (1,)), True)]
+
+    procedure.update_worker_ids(from_worker_id=1234567890, to_worker_id="me")
+
+    assert procedure.operations == [
+        (73570994542, 8730174527, (5, (b"me",)), None, (10, (1,)), True)
+    ]
+
+    # From str worker_id to int
+    procedure.operations = [(73570994542, 8730174527, (5, (b"alice",)), None, (10, (1,)), True)]
+
+    procedure.update_worker_ids(from_worker_id="alice", to_worker_id=1234567890)
+
+    assert procedure.operations == [(73570994542, 8730174527, 1234567890, None, (10, (1,)), True)]
 
 
 def test_send_with_plan(workers):
