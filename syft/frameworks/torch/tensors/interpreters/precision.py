@@ -36,7 +36,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
-        super().__init__(tags, description)
+        super().__init__(tags=tags, description=description)
 
         self.owner = owner
         self.id = id if id else syft.ID_PROVIDER.pop()
