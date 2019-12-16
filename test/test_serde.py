@@ -258,8 +258,8 @@ def test_ndarray_simplify(workers):
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
-    assert output[1][1] == input.shape
-    assert output[1][2] == input.dtype.name
+    assert output[1][1] == serde._simplify(me, input.shape)
+    assert output[1][2] == serde._simplify(me, input.dtype.name)
 
 
 def test_numpy_number_simplify(workers):
@@ -279,7 +279,7 @@ def test_numpy_number_simplify(workers):
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
-    assert output[1][1] == input.dtype.name
+    assert output[1][1] == serde._simplify(me, input.dtype.name)
 
 
 def test_ellipsis_simplify(workers):
@@ -289,7 +289,7 @@ def test_ellipsis_simplify(workers):
     assert serde.detailers[serde._simplify(me, Ellipsis)[0]] == native_serde._detail_ellipsis
 
     # the simplified ellipsis (empty object)
-    assert serde._simplify(me, Ellipsis)[1] == b""
+    assert serde._simplify(me, Ellipsis)[1] == (b"",)
 
 
 def test_torch_device_simplify(workers):
@@ -301,7 +301,7 @@ def test_torch_device_simplify(workers):
     assert serde.detailers[serde._simplify(me, device)[0]] == torch_serde._detail_torch_device
 
     # the simplified torch.device
-    assert serde._simplify(me, device)[1] == "cpu"
+    assert serde._simplify(me, device)[1][0] == serde._simplify(me, "cpu")
 
 
 def test_pointer_tensor_simplify(workers):
@@ -315,7 +315,7 @@ def test_pointer_tensor_simplify(workers):
 
     assert output[1][0] == input_tensor.id
     assert output[1][1] == input_tensor.id_at_location
-    assert output[1][2] == input_tensor.owner.id
+    assert output[1][2] == serde._simplify(me, input_tensor.owner.id)
 
 
 @pytest.mark.parametrize("compress", [True, False])

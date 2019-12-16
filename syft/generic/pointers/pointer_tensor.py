@@ -271,7 +271,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         C will hold a pointer to a pointer on A which points to the tensor on B.
         If change_location is set to True, the original pointer will point to the moved object.
         Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer 
+        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
         will have 2 references pointing to it.
         """
         args = (destination,)
@@ -463,10 +463,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             tags = ptr.tags
 
         return (
-            ptr.id,
-            ptr.id_at_location,
-            ptr.location.id,
-            ptr.point_to_attr,
+            # ptr.id,
+            syft.serde._simplify(worker, ptr.id),
+            syft.serde._simplify(worker, ptr.id_at_location),
+            syft.serde._simplify(worker, ptr.location.id),
+            syft.serde._simplify(worker, ptr.point_to_attr),
             syft.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
             tags,
@@ -507,8 +508,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             description,
         ) = tensor_tuple
 
-        if isinstance(worker_id, bytes):
-            worker_id = worker_id.decode()
+        obj_id = syft.serde._detail(worker, obj_id)
+        id_at_location = syft.serde._detail(worker, id_at_location)
+        worker_id = syft.serde._detail(worker, worker_id)
+        point_to_attr = syft.serde._detail(worker, point_to_attr)
 
         if shape is not None:
             shape = syft.hook.create_shape(syft.serde._detail(worker, shape))
@@ -519,7 +522,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             if point_to_attr is not None and tensor is not None:
 
-                point_to_attrs = point_to_attr.decode("utf-8").split(".")
+                point_to_attrs = point_to_attr.split(".")
                 for attr in point_to_attrs:
                     if len(attr) > 0:
                         tensor = getattr(tensor, attr)
