@@ -370,16 +370,16 @@ class DASH:
         yy_shared = sum(self._share_ptrs(yy_ptrs, idx))
         CX_shared = sum(self._share_ptrs(CX_ptrs, idx))
         Cy_shared = sum(self._share_ptrs(Cy_ptrs, idx))
-        R_shared = torch.cat(self._share_ptrs(R_ptrs, idx), dim=0)
+        R_cat_shared = torch.cat(self._share_ptrs(R_ptrs, idx), dim=0)
 
-        # QR decomposition of R_shared
-        _, R = qr(R_shared, norm_factor=self.total_size ** (1 / 2))
+        # QR decomposition of R_cat_shared
+        _, R_shared = qr(R_cat_shared, norm_factor=self.total_size ** (1 / 2))
 
         # Compute inverse of upper matrix
-        R_inv = self._inv_upper(R)
+        R_shared_inv = self._inv_upper(R_shared)
 
-        Qy = R_inv.t() @ Cy_shared
-        QX = R_inv.t() @ CX_shared
+        Qy = R_shared_inv.t() @ Cy_shared
+        QX = R_shared_inv.t() @ CX_shared
 
         denominator = XX_shared - (QX ** 2).sum(dim=0)
         # Need the line below to perform inverse of a number in MPC
