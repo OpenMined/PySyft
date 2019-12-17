@@ -20,7 +20,7 @@ except ImportError:
 class EncryptedLinearRegression:
     """
     Multi-Party Linear Regressor based on Jonathan Bloom's algorithm.
-    It performs linear regression using Secured Multi-Party Computation.
+    It performs linear regression using Secure Multi-Party Computation.
     While the training is performed in SMPC, the final regression coefficients
     are public at the end and predictions are made in clear on local or pointer
     Tensors.
@@ -28,9 +28,20 @@ class EncryptedLinearRegression:
     Reference: Section 2 of https://arxiv.org/abs/1901.09531
 
     Args:
-        crypto_provider: a BaseWorker providing crypto elements for ASTs such as
-            Beaver triples
-        hbc_worker: The "Honest but Curious" BaseWorker
+        crypto_provider: a BaseWorker providing crypto elements for
+            AdditiveSharingTensors (used for SMPC) such as Beaver triples
+        hbc_worker: The "Honest but Curious" BaseWorker. SMPC operations in PySyft
+            use SecureNN protocols, which are based on 3-party computations. In order to
+            apply it for more than 3 parties, we need a "Honest but Curious" worker.
+            To perform the Encrypted Linear Regression, the algorithm chooses randomly one of the
+            workers in the pool and secret share all tensors with the chosen worker,
+            the crypto provider and the "Honest but Curious" worker. Its main role
+            is to avoid collusion between two workers in the pool if the algorithm
+            secred shared the tensors with two randomly chosen workers and the
+            crypto provider. The "Honest but Curious" worker is essentially a
+            legitimate participant in a communication protocol who will not deviate
+            from the defined protocol but will attempt to learn all possible
+            information from legitimately received messages.
         precision_fractional: precision chosen for FixedPrecisionTensors
         fit_intercept:  whether to calculate the intercept for this model. If set
             to False, no intercept will be used in calculations (e.g. data is
@@ -299,7 +310,18 @@ class DASH:
     Args:
         crypto_provider: a BaseWorker providing crypto elements for ASTs such as
             Beaver triples
-        hbc_worker: The "Honest but Curious" BaseWorker
+        hbc_worker: The "Honest but Curious" BaseWorker. SMPC operations in PySyft
+            use SecureNN protocols, which are based on 3-party computations. In order to
+            apply it for more than 3 parties, we need a "Honest but Curious" worker.
+            To perform the DASH algorithm, we choose randomly one of the workers
+            in the pool and secret share all tensors with the chosen worker,the crypto
+            provider and the "Honest but Curious" worker. Its main role is to avoid
+            collusion between two workers in the pool if the algorithm secred shared
+            the tensors with two randomly chosen workers and the crypto provider.
+            The "Honest but Curious" worker is essentially a legitimate participant
+            in a communication protocol who will not deviate from the defined protocol
+            but will attempt to learn all possible information from legitimately
+            received messages.
         precision_fractional: precision chosen for FixedPrecisionTensors
 
     Attributes:
@@ -332,7 +354,7 @@ class DASH:
 
         self.workers = self._get_workers(X_ptrs)
 
-        # Computing aggregated pairwise dot products remotelly
+        # Computing aggregated pairwise dot products remotely
         XX_ptrs, Xy_ptrs, yy_ptrs, CX_ptrs, Cy_ptrs = self._remote_dot_products(
             X_ptrs, C_ptrs, y_ptrs
         )
@@ -398,20 +420,12 @@ class DASH:
 
         x_size, c_size, y_size = 0, 0, 0
         for x, c, y in zip(X_ptrs, C_ptrs, y_ptrs):
-            # Check wrapper
-            if not (x.has_child() and c.has_child() and y.has_child()):
-                raise TypeError(
-                    "Some tensors are not wrapped, please provide a wrapped Pointer Tensor"
-                )
-
-            # Check if x, c and y are pointers
-            if not (
-                isinstance(x.child, PointerTensor)
-                and isinstance(c.child, PointerTensor)
-                and isinstance(y.child, PointerTensor)
+            # Check wrappers and if x, c and y are pointers
+            if not all(
+                map(lambda t: t.has_child() and isinstance(t.child, PointerTensor), (x, c, y))
             ):
                 raise TypeError(
-                    "Some tensors are not pointers, please provided a wrapped Pointer Tensor"
+                    "Some tensors are not pointers or are not wrapped, please provided a wrapped Pointer Tensor"
                 )
 
             # Check if both are in the same worker
