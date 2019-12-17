@@ -11,6 +11,7 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
     - [PyGrid library](#pygrid-library)
   - [Common Installation Issues:](#common-installation-issues)
 - [Getting started](#getting-started)
+    - [Build Grid Platform Locally](#start-grid-platform-locally)
     - [Build images](#build-images)
     - [Let's put all together](#lets-put-all-together)
 - [Try out the Tutorials](#try-out-the-tutorials)
@@ -34,19 +35,19 @@ $ pip install .
 To boot the entire PyGrid platform locally, we will use docker containers.  
 To install docker the dependencies, just follow [docker documentation](https://docs.docker.com/install/).
 
+#### Start Grid platform locally
+It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.
+**PS:** Fell free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
+```
+$ docker-compose up
+```
 
-#### Build images
+#### Build your own images
 ```
 $ docker build -t node ./app/websocket/  # Build PyGrid node image
 $ docker build -t gateway ./gateway/  # Build gateway image
 ```
 
-#### Let's put all together
-**PS:** Fell free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
-```
-$ docker-compose up
-```
-Done! now we have a gateway and three nodes (by default) running locally.
 
 ## Try out the Tutorials
 A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PyGrid/tree/dev/examples).

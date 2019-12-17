@@ -1,14 +1,14 @@
 version: '3'
 services:
     gateway:
-        image: gateway:latest
+        image: openmined/grid-gateway:latest
         environment:
                 - PORT=5000
                 - SECRET_KEY=ineedtoputasecrethere
                 - DATABASE_URL=sqlite:///databasegateway.db
         network_mode: "host"
     bob:
-        image: node:latest
+        image: openmined/grid-node:latest
         environment:
                 - GRID_NETWORK_URL=http://localhost:5000
                 - ID=Bob
@@ -19,7 +19,7 @@ services:
                 - "gateway"
         network_mode: "host"
     alice:
-        image: node:latest
+        image: openmined/grid-node:latest
         environment:
                 - GRID_NETWORK_URL=http://localhost:5000
                 - ID=Alice
@@ -30,13 +30,24 @@ services:
                 - "gateway"
         network_mode: "host"
     bill:
-        image: node:latest
+        image: openmined/grid-node:latest
         environment:
                 - GRID_NETWORK_URL=http://localhost:5000
                 - ID=Bill
                 - ADDRESS=http://localhost:3002/
                 - DATABASE_URL=sqlite:///databaseBill.db
                 - PORT=3002
+        depends_on:
+                - "gateway"
+        network_mode: "host"
+    james:
+        image: openmined/grid-node:latest
+        environment:
+                - GRID_NETWORK_URL=http://localhost:5000
+                - ID=James
+                - ADDRESS=http://localhost:3003/
+                - DATABASE_URL=sqlite:///databaseJames.db
+                - PORT=3003
         depends_on:
                 - "gateway"
         network_mode: "host"
