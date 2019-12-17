@@ -365,7 +365,7 @@ class DASH:
         # Secred share tensors between hbc_worker, crypto_provider and a random worker
         # and compute aggregates. It corresponds to the Combine stage of DASH's algorithm
         idx = random.randint(0, len(self.workers) - 1)
-        XX_shared = sum(self._share_ptrs(XX_ptrs, idx)).sum(dim=0)
+        XX_shared = sum(self._share_ptrs(XX_ptrs, idx))
         Xy_shared = sum(self._share_ptrs(Xy_ptrs, idx))
         yy_shared = sum(self._share_ptrs(yy_ptrs, idx))
         CX_shared = sum(self._share_ptrs(CX_ptrs, idx))
@@ -478,7 +478,7 @@ class DASH:
         CX_ptrs = []
         Cy_ptrs = []
         for x, c, y in zip(X_ptrs, C_ptrs, y_ptrs):
-            XX_ptrs.append(x.t() @ x)
+            XX_ptrs.append((x.t() @ x).sum(dim=0))
             Xy_ptrs.append(x.t() @ y)
             yy_ptrs.append(y.t() @ y)
             CX_ptrs.append(c.t() @ x)
