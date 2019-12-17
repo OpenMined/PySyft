@@ -119,7 +119,7 @@ def run_inference(message: dict) -> str:
         model_output = model(data)
 
         # It the model is a plan, it'll receive a tensor wrapper as a model_output.
-        if hasattr(model_output, "get"):
+        if model_output.is_wrapper:
             model_output = model_output.get()
 
         if isinstance(model_output, tuple):
