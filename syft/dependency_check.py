@@ -21,3 +21,7 @@ tfe_available = tfe_spec is not None
 
 torch_spec = importlib.util.find_spec("torch")
 torch_available = torch_spec is not None
+
+
+numpy_spec = importlib.util.find_spec("numpy")
+numpy_available = numpy_spec is not None

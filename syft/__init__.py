@@ -39,6 +39,10 @@ else:
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook
 
+# NumPy dependencies
+# Import Hook
+from syft.frameworks.numpy.hook.hook import NumpyHook
+
 # Import grids
 from syft.grid import VirtualGrid
 

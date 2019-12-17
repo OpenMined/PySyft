@@ -6,5 +6,6 @@ class PLAN_CMDS(object):
 class TENSOR_SERIALIZATION(object):
     TORCH = "torch"
     NUMPY = "numpy"
+    WRAPPEDNUMPY = "WrappedNumpy"
     TF = "tf"
     ALL = "all"

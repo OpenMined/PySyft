@@ -19,3 +19,9 @@ if dependency_check.torch_available:
     from syft.frameworks import torch
 
     __all__.append("torch")
+
+
+if dependency_check.torch_available:
+    from syft.frameworks import numpy
+
+    __all__.append("numpy")

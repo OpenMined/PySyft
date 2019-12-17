@@ -1023,6 +1023,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if len(frameworks) == 1 and frameworks == {"torch"}:
             return codes.TENSOR_SERIALIZATION.TORCH
+        elif len(frameworks) == 1 and frameworks == {"numpy"}:
+            return codes.TENSOR_SERIALIZATION.WRAPPEDNUMPY
         else:
             return codes.TENSOR_SERIALIZATION.ALL
 

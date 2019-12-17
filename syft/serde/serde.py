@@ -86,6 +86,8 @@ if dependency_check.tensorflow_available:
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
+from syft.serde.wrappednumpy_serde import MAP_WRAPPEDNUMPY_SIMPLIFIERS_AND_DETAILERS
+
 from syft.serde.proto import proto_type_info
 
 # Maps a type to a tuple containing its simplifier and detailer function
@@ -95,6 +97,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
     + list(MAP_TF_SIMPLIFIERS_AND_DETAILERS.items())
+    + list(MAP_WRAPPEDNUMPY_SIMPLIFIERS_AND_DETAILERS.items())
 )
 
 # If an object implements its own simplify and detail functions it should be stored in this list
