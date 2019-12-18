@@ -64,7 +64,7 @@ def test_notebooks_basic(isolated_filesystem):
                     "n_train_items": 64,
                     "n_test_items": 64,
                 },
-                timeout=300,
+                timeout=600,
             )
             assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
@@ -85,7 +85,7 @@ def test_notebooks_basic_translations(isolated_filesystem):
                     "n_train_items": 64,
                     "n_test_items": 64,
                 },
-                timeout=300,
+                timeout=600,
             )
             assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
@@ -97,7 +97,7 @@ def test_notebooks_advanced(isolated_filesystem):
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
             not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+            res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=600)
             assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
@@ -112,7 +112,7 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
     target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
     dataset = sy.BaseDataset(data, target)
     process_remote_worker = start_remote_server_worker_only(dataset=(dataset, "xor"), **kwargs)
-    res = pm.execute_notebook(notebook, "/dev/null", timeout=300)
+    res = pm.execute_notebook(notebook, "/dev/null", timeout=600)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
     process_remote_worker.terminate()
     sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
@@ -133,7 +133,7 @@ def test_fl_sms(isolated_filesystem):
         # Extract all the contents of the zip file in current directory
         zipObj.extractall()
     preprocess.main()
-    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=600)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
@@ -156,7 +156,7 @@ def test_fl_with_websockets_and_averaging(
         notebook,
         "/dev/null",
         parameters={"args": ["--epochs", "1", "--test_batch_size", "100"], "abort_after_one": True},
-        timeout=300,
+        timeout=600,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
     [server.terminate() for server in processes]
