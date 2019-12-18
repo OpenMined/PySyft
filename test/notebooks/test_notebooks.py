@@ -6,7 +6,6 @@ import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
 
-import pytest
 import nbformat
 import numpy as np
 import pandas as pd
@@ -36,8 +35,6 @@ exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
     "examples/tutorials/advanced/websockets-example-MNIST-parallel",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
-    "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
 # remove known buggy notebooks and folders that should be excluded
@@ -121,8 +118,7 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
     sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
 
 
-@pytest.mark.skip
-def test_fl_sms(isolated_filesystem):  # pragma: no cover
+def test_fl_sms(isolated_filesystem):
     sys.path.append("advanced/Federated SMS Spam prediction/")
     os.chdir("advanced/Federated SMS Spam prediction/")
     import preprocess
