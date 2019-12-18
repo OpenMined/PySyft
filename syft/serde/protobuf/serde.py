@@ -3,6 +3,7 @@ from collections import OrderedDict
 import inspect
 import syft
 from syft import dependency_check
+from syft.messaging.message import ObjectMessage
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
@@ -30,7 +31,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = []
+OBJ_PROTOBUF_TRANSLATORS = [ObjectMessage]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -215,8 +216,11 @@ def serialize(
 
     protobuf_obj = _bufferize(worker, obj)
 
-    if type(obj) == type(None):
+    obj_type = type(obj)
+    if obj_type == type(None):
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
+    elif obj_type == ObjectMessage:
+        msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

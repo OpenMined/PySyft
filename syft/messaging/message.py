@@ -11,6 +11,9 @@ import syft as sy
 from syft.workers.abstract import AbstractWorker
 
 
+from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
+
+
 class Message:
     """All syft message types extend this class
 
@@ -226,6 +229,31 @@ class ObjectMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, message: "ObjectMessage") -> "ObjectMessagePB":
+        """
+        This function takes the attributes of an Object Message and saves them in a protobuf object
+        Args:
+            message (ObjectMessage): an ObjectMessage
+        Returns:
+            protobuf: a protobuf object holding the unique attributes of the object message
+        Examples:
+            data = bufferize(object_message)
+        """
+
+        protobuf_obj_msg = ObjectMessagePB()
+        bufferized_contents = sy.serde.protobuf.serde._bufferize(worker, message.contents)
+        protobuf_obj_msg.tensor.CopyFrom(bufferized_contents)
+        return protobuf_obj_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "ObjectMessagePB") -> "ObjectMessage":
+        protobuf_contents = protobuf_obj.tensor
+        contents = sy.serde.protobuf.serde._unbufferize(worker, protobuf_contents)
+        object_msg = ObjectMessage(contents)
+
+        return object_msg
 
 
 class ObjectRequestMessage(Message):

@@ -26,6 +26,10 @@ samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
 
 
+# Syft Messages
+samples[syft.messaging.message.ObjectMessage] = make_objectmessage
+
+
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in protobuf.serde.bufferizers.items():
