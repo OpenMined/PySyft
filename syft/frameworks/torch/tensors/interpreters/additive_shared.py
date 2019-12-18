@@ -9,6 +9,11 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
+    AdditiveSharingTensor as AdditiveSharingTensorPB,
+)
+from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
+
 no_wrap = {"no_wrap": True}
 
 
@@ -1024,6 +1029,80 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor
+
+    @staticmethod
+    def bufferize(
+        worker: AbstractWorker, tensor: "AdditiveSharingTensor"
+    ) -> "AdditiveSharingTensorPB":
+        """
+        This function takes the attributes of a AdditiveSharingTensor and saves them in a protobuf object
+        Args:
+            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+        Returns:
+            protobuf: a protobuf object holding the unique attributes of the additive shared tensor
+        Examples:
+            data = protobuf(tensor)
+        """
+
+        location_ids = []
+        shares = []
+        if hasattr(tensor, "child"):
+            for key, value in tensor.child.items():
+                location_ids.append(sy.serde.protobuf.proto.create_protobuf_id(key))
+                shares.append(value)
+
+        # Don't delete the remote values of the shares at simplification
+        tensor.set_garbage_collect_data(False)
+
+        protobuf_tensor = AdditiveSharingTensorPB()
+        protobuf_tensor.id.CopyFrom(sy.serde.protobuf.proto.create_protobuf_id(tensor.id))
+        protobuf_tensor.field_size = tensor.field
+        protobuf_tensor.crypto_provider_id.CopyFrom(
+            sy.serde.protobuf.proto.create_protobuf_id(tensor.crypto_provider.id)
+        )
+        protobuf_tensor.location_ids.extend(location_ids)
+        for share in shares:
+            protobuf_share = sy.serde.protobuf.serde._bufferize(worker, share)
+            protobuf_tensor.shares.append(protobuf_share)
+
+        return protobuf_tensor
+
+    @staticmethod
+    def unbufferize(
+        worker: AbstractWorker, protobuf_tensor: "AdditiveSharingTensorPB"
+    ) -> "AdditiveSharingTensor":
+        """
+            This function reconstructs a AdditiveSharingTensor given its' attributes in form of a protobuf object.
+            Args:
+                worker: the worker doing the deserialization
+                protobuf_tensor: a protobuf object holding the attributes of the AdditiveSharingTensor
+            Returns:
+                AdditiveSharingTensor: a AdditiveSharingTensor
+            Examples:
+                shared_tensor = unprotobuf(data)
+            """
+
+        tensor_id = getattr(protobuf_tensor.id, protobuf_tensor.id.WhichOneof("id"))
+        field = protobuf_tensor.field_size
+        crypto_provider_id = getattr(
+            protobuf_tensor.crypto_provider_id, protobuf_tensor.crypto_provider_id.WhichOneof("id")
+        )
+
+        tensor = AdditiveSharingTensor(
+            owner=worker,
+            id=tensor_id,
+            field=field,
+            crypto_provider=worker.get_worker(crypto_provider_id),
+        )
+
+        if protobuf_tensor.location_ids is not None:
+            chain = {}
+            for pb_location_id, share in zip(protobuf_tensor.location_ids, protobuf_tensor.shares):
+                location_id = getattr(pb_location_id, pb_location_id.WhichOneof("id"))
+                chain[location_id] = sy.serde.protobuf.serde._unbufferize(worker, share)
             tensor.child = chain
 
         return tensor

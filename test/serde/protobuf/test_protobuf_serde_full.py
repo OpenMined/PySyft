@@ -26,6 +26,9 @@ samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
 
 # PySyft
+samples[
+    syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
+] = make_additivesharingtensor
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages
