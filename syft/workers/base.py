@@ -268,13 +268,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} sending {message} to {location}")
 
         # Step 1: serialize the message to a binary
-        bin_message = sy.serde.serialize(message, worker=self)
+        bin_message = sy.serde.protobuf.serde.serialize(message, worker=self)
 
         # Step 2: send the message and wait for a response
         bin_response = self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
-        response = sy.serde.deserialize(bin_response, worker=self)
+        response = sy.serde.protobuf.serde.deserialize(bin_response, worker=self)
 
         return response
 
@@ -298,7 +298,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.msg_history.append(bin_message)
 
         # Step 0: deserialize message
-        msg = sy.serde.deserialize(bin_message, worker=self)
+        msg = sy.serde.protobuf.serde.deserialize(bin_message, worker=self)
 
         if self.verbose:
             print(f"worker {self} received {type(msg).__name__} {msg.contents}")
@@ -307,7 +307,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response = self._message_router[type(msg)](msg.contents)
 
         # Step 2: Serialize the message to simple python objects
-        bin_response = sy.serde.serialize(response, worker=self)
+        bin_response = sy.serde.protobuf.serde.serialize(response, worker=self)
 
         return bin_response
 
@@ -972,7 +972,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
 
-        return sy.serde.deserialize(self.msg_history[index], worker=self)
+        return sy.serde.protobuf.serde.deserialize(self.msg_history[index], worker=self)
 
     @staticmethod
     def create_message_execute_command(

@@ -214,7 +214,7 @@ class Plan(AbstractObject, ObjectStorage):
 
             self.procedure.operations.append((msg_type, contents))
 
-        return sy.serde.serialize(None)
+        return sy.serde.protobuf.serde.serialize(None)
 
     def build(self, *args):
         """Builds the plan.
@@ -324,7 +324,7 @@ class Plan(AbstractObject, ObjectStorage):
 
     def execute_commands(self):
         for message in self.procedure.operations:
-            bin_message = sy.serde.serialize(message, simplified=True)
+            bin_message = sy.serde.protobuf.serde.serialize(message, simplified=True)
             _ = self.owner.recv_msg(bin_message)
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):

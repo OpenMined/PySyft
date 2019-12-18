@@ -74,7 +74,7 @@ class WebsocketClientWorker(BaseWorker):
     def search(self, query):
         # Prepare a message requesting the websocket server to search among its objects
         message = SearchMessage(query)
-        serialized_message = sy.serde.serialize(message)
+        serialized_message = sy.serde.protobuf.serde.serialize(message)
         # Send the message and return the deserialized response.
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
@@ -111,7 +111,7 @@ class WebsocketClientWorker(BaseWorker):
         )
 
         # Send the message and return the deserialized response.
-        serialized_message = sy.serde.serialize(message)
+        serialized_message = sy.serde.protobuf.serde.serialize(message)
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
@@ -151,7 +151,7 @@ class WebsocketClientWorker(BaseWorker):
             )
 
             # Send the message and return the deserialized response.
-            serialized_message = sy.serde.serialize(message)
+            serialized_message = sy.serde.protobuf.serde.serialize(message)
             await websocket.send(str(binascii.hexlify(serialized_message)))
             await websocket.recv()  # returned value will be None, so don't care
 
@@ -160,7 +160,7 @@ class WebsocketClientWorker(BaseWorker):
 
         # Send an object request message to retrieve the result tensor of the fit() method
         msg = ObjectRequestMessage(return_ids[0])
-        serialized_message = sy.serde.serialize(msg)
+        serialized_message = sy.serde.protobuf.serde.serialize(msg)
         response = self._send_msg(serialized_message)
 
         # Return the deserialized response.
@@ -184,7 +184,7 @@ class WebsocketClientWorker(BaseWorker):
 
         msg = ObjectRequestMessage((return_ids[0], None, ""))
         # Send the message and return the deserialized response.
-        serialized_message = sy.serde.serialize(msg)
+        serialized_message = sy.serde.protobuf.serde.serialize(msg)
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
