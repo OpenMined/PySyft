@@ -279,6 +279,23 @@ def test_torch_div(workers):
     assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
 
 
+def test_inplace_operations():
+    a = torch.tensor([5.0, 6.0]).fix_prec()
+    b = torch.tensor([2.0]).fix_prec()
+
+    a /= b
+    assert (a.float_prec() == torch.tensor([2.5, 3.0])).all()
+
+    a *= b
+    assert (a.float_prec() == torch.tensor([5.0, 6.0])).all()
+
+    a += b
+    assert (a.float_prec() == torch.tensor([7.0, 8.0])).all()
+
+    a -= b
+    assert (a.float_prec() == torch.tensor([5.0, 6.0])).all()
+
+
 def test_torch_pow():
 
     m = torch.tensor([[1, 2], [3, 4.0]])

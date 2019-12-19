@@ -74,16 +74,30 @@ class Procedure(object):
             from_worker: The previous worker that built the plan.
             to_worker: The new worker that is running the plan.
         """
-        for idx, operation in enumerate(self.operations):
-            if from_worker and to_worker:
-                from_workers, to_workers = [from_worker], [to_worker]
-                if isinstance(from_worker, str):
-                    from_workers.append(from_worker.encode("utf-8"))
-                    to_workers.append(to_worker)
-                operation = Procedure.replace_operation_ids(operation, from_workers, to_workers)
 
-            if len(from_ids) and len(to_ids):
-                operation = Procedure.replace_operation_ids(operation, from_ids, to_ids)
+        # We operate on simplified content of Operation, hence all values should be simplified
+        from_workers_simplified = None
+        to_workers_simplified = None
+        if from_worker and to_worker:
+            from_workers_simplified = [sy.serde._simplify(None, from_worker)]
+            to_workers_simplified = [sy.serde._simplify(None, to_worker)]
+
+        from_ids_simplified = None
+        to_ids_simplified = None
+        if len(from_ids) and len(to_ids):
+            from_ids_simplified = [sy.serde._simplify(None, id) for id in from_ids]
+            to_ids_simplified = [sy.serde._simplify(None, id) for id in to_ids]
+
+        for idx, operation in enumerate(self.operations):
+            if from_workers_simplified and to_workers_simplified:
+                operation = Procedure.replace_operation_ids(
+                    operation, from_workers_simplified, to_workers_simplified
+                )
+
+            if from_ids_simplified and to_ids_simplified:
+                operation = Procedure.replace_operation_ids(
+                    operation, from_ids_simplified, to_ids_simplified
+                )
 
             self.operations[idx] = operation
 
@@ -106,7 +120,8 @@ class Procedure(object):
         type_obj = type(operation)
         operation = list(operation)
         for i, item in enumerate(operation):
-            if isinstance(item, (int, str, bytes)) and item in from_ids:
+            # Since this is simplified content, id can be int or simplified str (tuple)
+            if isinstance(item, (int, tuple)) and item in from_ids:
                 operation[i] = to_ids[from_ids.index(item)]
             elif isinstance(item, (list, tuple)):
                 operation[i] = Procedure.replace_operation_ids(
@@ -125,9 +140,8 @@ class Procedure(object):
     @staticmethod
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:
         return (
-            tuple(
-                procedure.operations
-            ),  # We're not simplifying because operations are already simplified
+            # We're not simplifying fully because operations are already simplified
+            sy.serde._simplify(worker, procedure.operations, shallow=True),
             sy.serde._simplify(worker, procedure.arg_ids),
             sy.serde._simplify(worker, procedure.result_ids),
             sy.serde._simplify(worker, procedure.promise_out_id),
@@ -136,7 +150,8 @@ class Procedure(object):
     @staticmethod
     def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
         operations, arg_ids, result_ids, promise_out_id = procedure_tuple
-        operations = list(operations)
+
+        operations = sy.serde._detail(worker, operations, shallow=True)
         arg_ids = sy.serde._detail(worker, arg_ids)
         result_ids = sy.serde._detail(worker, result_ids)
 

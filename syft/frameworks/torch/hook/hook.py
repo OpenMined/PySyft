@@ -177,7 +177,6 @@ class TorchHook(FrameworkHook):
         # Add all hooked tensor methods to LargePrecisionTensor tensor
         self._hook_syft_tensor_methods(LargePrecisionTensor)
 
-
         # Add all built-in 'str' methods to String
         self._hook_string_methods(owner=self.local_worker)
 
@@ -188,7 +187,6 @@ class TorchHook(FrameworkHook):
 
         # Add all hooked tensor methods to PromiseTensor
         self._hook_promise_tensor()
-
 
         # Hook the tensor constructor function
         self._hook_tensor()

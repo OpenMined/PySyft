@@ -155,7 +155,7 @@ class Operation(Message):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        return (sy.serde._simplify(worker, ptr.message), ptr.return_ids)
+        return (sy.serde._simplify(worker, ptr.message), sy.serde._simplify(worker, ptr.return_ids))
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
@@ -172,7 +172,9 @@ class Operation(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return Operation(sy.serde._detail(worker, msg_tuple[0]), msg_tuple[1])
+        return Operation(
+            sy.serde._detail(worker, msg_tuple[0]), sy.serde._detail(worker, msg_tuple[1])
+        )
 
 
 class ObjectMessage(Message):

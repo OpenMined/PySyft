@@ -233,7 +233,8 @@ class MultiPointerTensor(AbstractTensor):
         chain = None
         if hasattr(tensor, "child"):
             chain = sy.serde._simplify(worker, tensor.child)
-        return tensor.id, chain
+
+        return (sy.serde._simplify(worker, tensor.id), chain)
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "MultiPointerTensor":
@@ -250,7 +251,7 @@ class MultiPointerTensor(AbstractTensor):
 
         tensor_id, chain = tensor_tuple
 
-        tensor = sy.MultiPointerTensor(owner=worker, id=tensor_id)
+        tensor = sy.MultiPointerTensor(owner=worker, id=sy.serde._detail(worker, tensor_id))
 
         if chain is not None:
             chain = sy.serde._detail(worker, chain)
