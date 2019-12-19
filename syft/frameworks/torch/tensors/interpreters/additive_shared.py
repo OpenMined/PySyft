@@ -987,7 +987,12 @@ class AdditiveSharingTensor(AbstractTensor):
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
 
-        return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+        return (
+            sy.serde._simplify(worker, tensor.id),
+            tensor.field,
+            sy.serde._simplify(worker, tensor.crypto_provider.id),
+            chain,
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
@@ -1003,10 +1008,11 @@ class AdditiveSharingTensor(AbstractTensor):
             """
 
         tensor_id, field, crypto_provider, chain = tensor_tuple
+        crypto_provider = sy.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=tensor_id,
+            id=sy.serde._detail(worker, tensor_id),
             field=field,
             crypto_provider=worker.get_worker(crypto_provider),
         )

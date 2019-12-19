@@ -208,7 +208,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         if isinstance(msg, Operation):
             # Re-deserialize without detailing
-            (msg_type, contents) = sy.serde.deserialize(bin_message, details=False)
+            (msg_type, contents) = sy.serde.deserialize(
+                bin_message, strategy=sy.serde.serde._deserialize_msgpack_binary
+            )
 
             self.procedure.operations.append((msg_type, contents))
 
