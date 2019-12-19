@@ -199,16 +199,13 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
-    tags = tensor.tags
-    if tags is not None:
-        tags = list(tags)
     return (
         tensor.id,
         tensor_bin,
         chain,
         grad_chain,
-        tags,
-        tensor.description,
+        syft.serde._simplify(worker, tensor.tags),
+        syft.serde._simplify(worker, tensor.description),
         syft.serde._simplify(worker, worker.serializer),
     )
 
@@ -241,26 +238,13 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
-    if tags is not None:
-
-        tags = list(tags)
-
-        for i in range(len(tags)):
-            tag = tags[i]
-            if isinstance(tag, bytes):
-                tag = tag.decode("utf-8")
-            tags[i] = tag
-        tensor.tags = tags
-
-    if description is not None:
-        if isinstance(description, bytes):
-            description = description.decode("utf-8")
-        tensor.description = description
-
     if chain is not None:
         chain = syft.serde._detail(worker, chain)
         tensor.child = chain
         tensor.is_wrapper = True
+
+    tensor.tags = syft.serde._detail(worker, tags)
+    tensor.description = syft.serde._detail(worker, description)
 
     return tensor
 
@@ -326,30 +310,25 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     return param
 
 
-def _simplify_torch_device(worker: AbstractWorker, device: torch.device) -> Tuple[str]:
-    return device.type
+def _simplify_torch_device(worker: AbstractWorker, device: torch.device) -> Tuple:
+    device_type = syft.serde._simplify(worker, device.type)
+    return (device_type,)
 
 
-def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.device:
-    return torch.device(type=device_type)
+def _detail_torch_device(worker: AbstractWorker, device_type: tuple) -> torch.device:
+    return torch.device(type=syft.serde._detail(worker, device_type[0]))
 
 
-def _simplify_torch_size(worker: AbstractWorker, shape: torch.Size) -> Tuple:
-    return (list(shape),)
-
-
-def _detail_torch_size(worker: AbstractWorker, shape: List[int]) -> torch.Size:
-    return torch.Size(*shape)
-
-
-def _simplify_script_module(worker: AbstractWorker, obj: torch.jit.ScriptModule) -> str:
+def _simplify_script_module(worker: AbstractWorker, obj: torch.jit.ScriptModule) -> Tuple:
     """Strategy to serialize a script module using Torch.jit"""
-    return obj.save_to_buffer()
+    return (obj.save_to_buffer(),)
 
 
-def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> torch.jit.ScriptModule:
+def _detail_script_module(
+    worker: AbstractWorker, script_module_bin: Tuple
+) -> torch.jit.ScriptModule:
     """"Strategy to deserialize a binary input using Torch load"""
-    script_module_stream = io.BytesIO(script_module_bin)
+    script_module_stream = io.BytesIO(script_module_bin[0])
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module
 
@@ -368,7 +347,6 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         torch.device: (_simplify_torch_device, _detail_torch_device),
-        torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
         torch._C.Function: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
