@@ -32,6 +32,7 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
+from typing import Callable
 
 import inspect
 import lz4
@@ -255,44 +256,12 @@ simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_deta
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
 
 
-## SECTION:  High Level Public Functions (these are the ones you use)
-def serialize(
+def _serialize_msgpack_simple(
     obj: object,
     worker: AbstractWorker = None,
     simplified: bool = False,
-    force_no_compression: bool = False,
-    force_no_serialization: bool = False,
     force_full_simplification: bool = False,
 ) -> bin:
-    """This method can serialize any object PySyft needs to send or store.
-
-    This is the high level function for serializing any object or collection
-    of objects which PySyft needs to send over the wire. It includes three
-    steps, Simplify, Serialize, and Compress as described inline below.
-
-    Args:
-        obj (object): the object to be serialized
-        simplified (bool): in some cases we want to pass in data which has
-            already been simplified - in which case we must skip double
-            simplification - which would be bad.... so bad... so... so bad
-        force_no_compression (bool): If true, this will override ANY module
-            settings and not compress the objects being serialized. The primary
-            expected use of this functionality is testing and/or experimentation.
-        force_no_serialization (bool): Primarily a testing tool, this will force
-            this method to return human-readable Python objects which is very useful
-            for testing and debugging (forceably overrides module compression,
-            serialization, and the 'force_no_compression' override)). In other words,
-            only simplification operations are performed.
-        force_full_simplification (bool): Some objects are only partially serialized
-            by default. For objects where this is the case, setting this flag to True
-            will force the entire object to be serialized. For example, setting this
-            flag to True will cause a VirtualWorker to be serialized WITH all of its
-            tensors while by default VirtualWorker objects only serialize a small
-            amount of metadata.
-
-    Returns:
-        binary: the serialized form of the object.
-    """
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -309,15 +278,21 @@ def serialize(
     else:
         simple_objects = obj
 
+    return simple_objects
+
+
+def _serialize_msgpack_binary(
+    simple_objects: object,
+    worker: AbstractWorker = None,
+    simplified: bool = False,
+    force_full_simplification: bool = False,
+) -> bin:
     # 2) Serialize
     # serialize into a binary
-    if force_no_serialization:
-        return simple_objects
-    else:
-        binary = msgpack.dumps(simple_objects)
+    binary = msgpack.dumps(simple_objects)
 
     # 3) Compress
-    # optionally compress the binary and return the result
+    # compress the binary and return the result
     # prepend a 1-byte header '0' or '1' to the output stream
     # to denote whether output stream is compressed or not
     # if compressed stream length is greater than input stream
@@ -325,13 +300,121 @@ def serialize(
     # otherwise we output the compressed stream with header set to '1'
     # even if compressed flag is set to false by the caller we
     # output the input stream as it is with header set to '0'
-    if force_no_compression:
-        return binary
-    else:
-        return _compress(binary)
+    return _compress(binary)
 
 
-def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> object:
+def _serialize_msgpack(
+    obj: object,
+    worker: AbstractWorker = None,
+    simplified: bool = False,
+    force_full_simplification: bool = False,
+) -> bin:
+    """This method can serialize any object PySyft needs to send or store.
+
+    This is the high level function for serializing any object or collection
+    of objects which PySyft needs to send over the wire. It includes three
+    steps, Simplify, Serialize, and Compress as described inline below.
+
+    Args:
+        obj (object): the object to be serialized
+        simplified (bool): in some cases we want to pass in data which has
+            already been simplified - in which case we must skip double
+            simplification - which would be bad.... so bad... so... so bad
+        force_full_simplification (bool): Some objects are only partially serialized
+            by default. For objects where this is the case, setting this flag to True
+            will force the entire object to be serialized. For example, setting this
+            flag to True will cause a VirtualWorker to be serialized WITH all of its
+            tensors while by default VirtualWorker objects only serialize a small
+            amount of metadata.
+
+    Returns:
+        binary: the serialized form of the object.
+    """
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
+    simple_objects = _serialize_msgpack_simple(obj, worker, simplified, force_full_simplification)
+    return _serialize_msgpack_binary(simple_objects)
+
+
+def _deserialize_msgpack_binary(binary: bin, worker: AbstractWorker = None) -> object:
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
+    # 1) Decompress the binary if needed
+    binary = _decompress(binary)
+
+    # 2) Deserialize
+    # This function converts the binary into the appropriate python
+    # object (or nested dict/collection of python objects)
+    simple_objects = msgpack.loads(binary, use_list=False)
+
+    # sometimes we want to skip detailing (such as in Plan)
+    return simple_objects
+
+
+def _deserialize_msgpack_simple(simple_objects: object, worker: AbstractWorker = None) -> object:
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
+    # 3) Detail
+    # This function converts typed, simple objects into their morefrom typing import Dict
+    # complex (and difficult to serialize) counterparts which the
+    # serialization library wasn't natively able to serialize (such
+    # as msgpack's inability to serialize torch tensors or ... or
+    # python slice objects
+    return _detail(worker, simple_objects)
+
+
+def _deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
+    simple_objects = _deserialize_msgpack_binary(binary, worker)
+    return _deserialize_msgpack_simple(simple_objects, worker)
+
+
+## SECTION:  High Level Public Functions (these are the ones you use)
+def serialize(
+    obj: object,
+    worker: AbstractWorker = None,
+    simplified: bool = False,
+    force_full_simplification: bool = False,
+    strategy: Callable[[object, AbstractWorker], bin] = _serialize_msgpack,
+) -> bin:
+    """This method can serialize any object PySyft needs to send or store.
+
+    This is the high level function for serializing any object or collection
+    of objects which PySyft needs to send over the wire. It includes three
+    steps, Simplify, Serialize, and Compress as described inline below.
+
+    Args:
+        obj (object): the object to be serialized
+        simplified (bool): in some cases we want to pass in data which has
+            already been simplified - in which case we must skip double
+            simplification - which would be bad.... so bad... so... so bad
+        force_full_simplification (bool): Some objects are only partially serialized
+            by default. For objects where this is the case, setting this flag to True
+            will force the entire object to be serialized. For example, setting this
+            flag to True will cause a VirtualWorker to be serialized WITH all of its
+            tensors while by default VirtualWorker objects only serialize a small
+            amount of metadata.
+
+    Returns:
+        binary: the serialized form of the object.
+    """
+    return strategy(obj, worker, simplified, force_full_simplification)
+
+
+def deserialize(
+    binary: bin,
+    worker: AbstractWorker = None,
+    strategy: Callable[[bin, AbstractWorker], object] = _deserialize_msgpack,
+) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
     This is the high level function for deserializing any object or collection
@@ -350,30 +433,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, details=True) -> obj
     Returns:
         object: the deserialized form of the binary input.
     """
-    if worker is None:
-        # TODO[jvmancuso]: This might be worth a standalone function.
-        worker = syft.framework.hook.local_worker
-
-    # 1) Decompress the binary if needed
-    binary = _decompress(binary)
-
-    # 2) Deserialize
-    # This function converts the binary into the appropriate python
-    # object (or nested dict/collection of python objects)
-    simple_objects = msgpack.loads(binary, use_list=False)
-
-    if details:
-        # 3) Detail
-        # This function converts typed, simple objects into their morefrom typing import Dict
-        # complex (and difficult to serialize) counterparts which the
-        # serialization library wasn't natively able to serialize (such
-        # as msgpack's inability to serialize torch tensors or ... or
-        # python slice objects
-        return _detail(worker, simple_objects)
-
-    else:
-        # sometimes we want to skip detailing (such as in Plan)
-        return simple_objects
+    return strategy(binary, worker)
 
 
 ## SECTION: chosen Compression Algorithm
