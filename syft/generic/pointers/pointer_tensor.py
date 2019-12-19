@@ -460,7 +460,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if ptr.tags:
             tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
         else:
-            tags = ptr.tags
+            tags = None
 
         return (
             # ptr.id,
@@ -546,7 +546,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             if tags:  # Tag != None
                 # Decode binary tags
-                tags = set(map(lambda x: x.decode("utf-8"), tags))
+                tags = tuple(map(lambda x: x.decode("utf-8"), tags))
 
             if description:  # Description != None
                 # Decode binary description
