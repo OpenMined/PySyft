@@ -259,11 +259,11 @@ class Protocol(AbstractObject):
             plans_reference.append((worker_id, plan_id))
 
         return (
-            sy.serde._simplify(worker, protocol.id),
-            sy.serde._simplify(worker, protocol.tags),
-            sy.serde._simplify(worker, protocol.description),
-            sy.serde._simplify(worker, plans_reference),
-            sy.serde._simplify(worker, protocol.workers_resolved),
+            sy.serde.msgpack.serde._simplify(worker, protocol.id),
+            sy.serde.msgpack.serde._simplify(worker, protocol.tags),
+            sy.serde.msgpack.serde._simplify(worker, protocol.description),
+            sy.serde.msgpack.serde._simplify(worker, plans_reference),
+            sy.serde.msgpack.serde._simplify(worker, protocol.workers_resolved),
         )
 
     @staticmethod
@@ -277,7 +277,7 @@ class Protocol(AbstractObject):
         """
 
         id, tags, description, plans_reference, workers_resolved = map(
-            lambda o: sy.serde._detail(worker, o), protocol_tuple
+            lambda o: sy.serde.msgpack.serde._detail(worker, o), protocol_tuple
         )
 
         plans = []

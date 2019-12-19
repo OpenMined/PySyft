@@ -323,7 +323,7 @@ class CRTPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(worker, tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (tensor.id, tensor.base, tensor.precision_fractional, chain)
 
@@ -347,7 +347,7 @@ class CRTPrecisionTensor(AbstractTensor):
         )
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor
