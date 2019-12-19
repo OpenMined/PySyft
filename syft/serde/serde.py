@@ -256,7 +256,7 @@ simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_deta
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
 
 
-def _serialize_simple(
+def _serialize_msgpack_simple(
     obj: object,
     worker: AbstractWorker = None,
     simplified: bool = False,
@@ -279,6 +279,28 @@ def _serialize_simple(
         simple_objects = obj
 
     return simple_objects
+
+
+def _serialize_msgpack_binary(
+    simple_objects: object,
+    worker: AbstractWorker = None,
+    simplified: bool = False,
+    force_full_simplification: bool = False,
+) -> bin:
+    # 2) Serialize
+    # serialize into a binary
+    binary = msgpack.dumps(simple_objects)
+
+    # 3) Compress
+    # compress the binary and return the result
+    # prepend a 1-byte header '0' or '1' to the output stream
+    # to denote whether output stream is compressed or not
+    # if compressed stream length is greater than input stream
+    # we output the input stream as it is with header set to '0'
+    # otherwise we output the compressed stream with header set to '1'
+    # even if compressed flag is set to false by the caller we
+    # output the input stream as it is with header set to '0'
+    return _compress(binary)
 
 
 def _serialize_msgpack(
@@ -312,25 +334,11 @@ def _serialize_msgpack(
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
 
-    simple_objects = _serialize_simple(obj, worker, simplified, force_full_simplification)
-
-    # 2) Serialize
-    # serialize into a binary
-    binary = msgpack.dumps(simple_objects)
-
-    # 3) Compress
-    # compress the binary and return the result
-    # prepend a 1-byte header '0' or '1' to the output stream
-    # to denote whether output stream is compressed or not
-    # if compressed stream length is greater than input stream
-    # we output the input stream as it is with header set to '0'
-    # otherwise we output the compressed stream with header set to '1'
-    # even if compressed flag is set to false by the caller we
-    # output the input stream as it is with header set to '0'
-    return _compress(binary)
+    simple_objects = _serialize_msgpack_simple(obj, worker, simplified, force_full_simplification)
+    return _serialize_msgpack_binary(simple_objects)
 
 
-def _deserialize_msgpack_simple(binary: bin, worker: AbstractWorker = None) -> object:
+def _deserialize_msgpack_binary(binary: bin, worker: AbstractWorker = None) -> object:
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -347,12 +355,10 @@ def _deserialize_msgpack_simple(binary: bin, worker: AbstractWorker = None) -> o
     return simple_objects
 
 
-def _deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
+def _deserialize_msgpack_simple(simple_objects: object, worker: AbstractWorker = None) -> object:
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
-
-    simple_objects = _deserialize_msgpack_simple(binary, worker)
 
     # 3) Detail
     # This function converts typed, simple objects into their morefrom typing import Dict
@@ -361,6 +367,15 @@ def _deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
     # as msgpack's inability to serialize torch tensors or ... or
     # python slice objects
     return _detail(worker, simple_objects)
+
+
+def _deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
+    if worker is None:
+        # TODO[jvmancuso]: This might be worth a standalone function.
+        worker = syft.framework.hook.local_worker
+
+    simple_objects = _deserialize_msgpack_binary(binary, worker)
+    return _deserialize_msgpack_simple(simple_objects, worker)
 
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
