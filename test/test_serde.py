@@ -679,8 +679,8 @@ def test_pointer_tensor_detail(id):
 def test_numpy_tensor_serde():
     compression._apply_compress_scheme = compression.apply_lz4_compression
 
-    serde._serialize_tensor = syft.serde.numpy_tensor_serializer
-    serde._deserialize_tensor = syft.serde.numpy_tensor_deserializer
+    serde._serialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_serializer
+    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_deserializer
 
     tensor = torch.tensor(numpy.ones((10, 10)), requires_grad=False)
 
@@ -689,8 +689,8 @@ def test_numpy_tensor_serde():
     tensor_deserialized = syft.serde.deserialize(tensor_serialized)
 
     # Back to Pytorch serializer
-    serde._serialize_tensor = syft.serde.torch_tensor_serializer
-    serde._deserialize_tensor = syft.serde.torch_tensor_deserializer
+    serde._serialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_serializer
+    serde._deserialize_tensor = syft.serde.msgpack.torch_serde.torch_tensor_deserializer
 
     assert torch.eq(tensor_deserialized, tensor).all()
 
