@@ -5,6 +5,8 @@ import syft as sy
 from syft.generic.pointers.string_pointer import StringPointer
 from syft.workers.base import BaseWorker
 from syft.generic.object import AbstractObject
+from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook import hook_args
 import abc
 
 
@@ -162,6 +164,72 @@ class String(AbstractObject):
 
         return ptr
 
+    def get_class_attributes(self):
+        """returns minimal necessary keyword arguments to create a 
+           String object
+        """
+        kwargs = dict(owner=self.owner)
+
+        return kwargs
+
+    def on(self, object: str, wrap=False):
+        """Takes and object of type strings and assigns it to
+           self.child
+        """
+        self.child = object
+
+        return self
+
+    def __add__(self, other: Union[str, "String"]):
+        """
+            [Important] overriding the `__add__` here is not yet
+            activated. The real hooking happens in
+            syft/generic/frameworks/hook/hook.py.
+            Hooking as implemented here (using @overloaded.method)
+            is to be activated when hook_args.py is adapted
+            to wrapping reponses of `str` types into `String`
+            types. This is not yet supported.
+        """
+
+        # The following is necessary in order to adapt the
+        # below `add_string` method to the args hooking logic in
+        # hook_args.py. Please check the doc string of `add_string`
+        # to know more.
+        if isinstance(other, str):
+            other = String(other)
+
+        return self.add_string(other)
+
+    @overloaded.method
+    def add_string(self, _self: "String", other: "String"):
+        """This method is created in a way adapted to the logic implemented
+           in hook_args.py. That is, it can be wrapped with the decorator
+           @oerloaded.method.
+           
+           hook_args.py args hooking logic needs that the data types of 
+           argument be unchanged. For instance, 'other' should always
+           be of a fixed type 'String' or 'str' but not alternating
+           between both. This can cause unexpected behaviou due to caching
+           in hook_args.py.
+
+           Args:
+               _self: a String object (as received by the decorator).
+                      It represents the objects on which we called the add method.
+                      It will always be of type `str` inside this method. Since
+                      the decorator methods strips the `str` out of the `String`
+                      object.
+               other: a String object that we wish to concatenate to `_self`.
+                      Same as above, it is a String object as received by the 
+                      decorator but here it will always be of type `str`.
+
+           Returns:
+               The concatentenated `str` object between `_self` and `other`.
+               this `str` object will be wrapped by the decorator into a 
+               String object
+        """
+
+        return _self + other
+
     @staticmethod
     def create_pointer(
         obj,
@@ -261,3 +329,7 @@ class String(AbstractObject):
         child = sy.serde._detail(worker, simple_child)
 
         return String(object=child, id=id, owner=worker, tags=tags, description=description)
+
+
+### Register the String object with hook_args.py ###
+hook_args.default_register_tensor(String)
