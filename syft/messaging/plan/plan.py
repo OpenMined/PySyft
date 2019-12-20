@@ -534,17 +534,17 @@ class Plan(AbstractObject, ObjectStorage):
 
         """
         return (
-            sy.serde._simplify(worker, plan.id),
-            sy.serde._simplify(worker, plan.procedure),
-            sy.serde._simplify(worker, plan.state),
-            sy.serde._simplify(worker, plan.include_state),
-            sy.serde._simplify(worker, plan.is_built),
-            sy.serde._simplify(worker, plan.input_shapes),
-            sy.serde._simplify(worker, plan._output_shape),
-            sy.serde._simplify(worker, plan.name),
-            sy.serde._simplify(worker, plan.tags),
-            sy.serde._simplify(worker, plan.description),
-            sy.serde._simplify(worker, plan.nested_states),
+            sy.serde.msgpack.serde._simplify(worker, plan.id),
+            sy.serde.msgpack.serde._simplify(worker, plan.procedure),
+            sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.include_state),
+            sy.serde.msgpack.serde._simplify(worker, plan.is_built),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_shapes),
+            sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
+            sy.serde.msgpack.serde._simplify(worker, plan.name),
+            sy.serde.msgpack.serde._simplify(worker, plan.tags),
+            sy.serde.msgpack.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.nested_states),
         )
 
     @staticmethod
@@ -570,12 +570,12 @@ class Plan(AbstractObject, ObjectStorage):
             description,
             nested_states,
         ) = plan_tuple
-        id = sy.serde._detail(worker, id)
-        procedure = sy.serde._detail(worker, procedure)
-        state = sy.serde._detail(worker, state)
-        input_shapes = sy.serde._detail(worker, input_shapes)
-        output_shape = sy.serde._detail(worker, output_shape)
-        nested_states = sy.serde._detail(worker, nested_states)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        procedure = sy.serde.msgpack.serde._detail(worker, procedure)
+        state = sy.serde.msgpack.serde._detail(worker, state)
+        input_shapes = sy.serde.msgpack.serde._detail(worker, input_shapes)
+        output_shape = sy.serde.msgpack.serde._detail(worker, output_shape)
+        nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 

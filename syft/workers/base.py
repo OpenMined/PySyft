@@ -106,7 +106,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.verbose = verbose
         self.auto_add = auto_add
         self.msg_history = list()
-        self.plan_building = False
 
         # For performance, we cache all possible message types
         self._message_router = {
