@@ -208,7 +208,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         if isinstance(msg, Operation):
             # Re-deserialize without detailing
-            (msg_type, contents) = sy.serde.deserialize(bin_message, details=False)
+            (msg_type, contents) = sy.serde.deserialize(
+                bin_message, strategy=sy.serde.msgpack.serde._deserialize_msgpack_binary
+            )
 
             self.procedure.operations.append((msg_type, contents))
 
@@ -508,16 +510,16 @@ class Plan(AbstractObject, ObjectStorage):
 
         """
         return (
-            sy.serde._simplify(worker, plan.id),
-            sy.serde._simplify(worker, plan.procedure),
-            sy.serde._simplify(worker, plan.state),
-            sy.serde._simplify(worker, plan.include_state),
-            sy.serde._simplify(worker, plan.is_built),
-            sy.serde._simplify(worker, plan.input_shapes),
-            sy.serde._simplify(worker, plan._output_shape),
-            sy.serde._simplify(worker, plan.name),
-            sy.serde._simplify(worker, plan.tags),
-            sy.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.id),
+            sy.serde.msgpack.serde._simplify(worker, plan.procedure),
+            sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.include_state),
+            sy.serde.msgpack.serde._simplify(worker, plan.is_built),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_shapes),
+            sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
+            sy.serde.msgpack.serde._simplify(worker, plan.name),
+            sy.serde.msgpack.serde._simplify(worker, plan.tags),
+            sy.serde.msgpack.serde._simplify(worker, plan.description),
         )
 
     @staticmethod
@@ -542,11 +544,11 @@ class Plan(AbstractObject, ObjectStorage):
             tags,
             description,
         ) = plan_tuple
-        id = sy.serde._detail(worker, id)
-        procedure = sy.serde._detail(worker, procedure)
-        state = sy.serde._detail(worker, state)
-        input_shapes = sy.serde._detail(worker, input_shapes)
-        output_shape = sy.serde._detail(worker, output_shape)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        procedure = sy.serde.msgpack.serde._detail(worker, procedure)
+        state = sy.serde.msgpack.serde._detail(worker, state)
+        input_shapes = sy.serde.msgpack.serde._detail(worker, input_shapes)
+        output_shape = sy.serde.msgpack.serde._detail(worker, output_shape)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
@@ -556,8 +558,8 @@ class Plan(AbstractObject, ObjectStorage):
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
 
-        plan.name = sy.serde._detail(worker, name)
-        plan.tags = sy.serde._detail(worker, tags)
-        plan.description = sy.serde._detail(worker, description)
+        plan.name = sy.serde.msgpack.serde._detail(worker, name)
+        plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
+        plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
         return plan
