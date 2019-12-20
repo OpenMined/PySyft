@@ -4,6 +4,7 @@ import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
 from syft.frameworks.torch.linalg.operations import _norm_mpc
+from syft.frameworks.torch.linalg.lr import DASH
 from test.efficiency_tests.assertions import assert_time
 
 
@@ -115,6 +116,23 @@ def test_qr_mpc(hook, workers):
 
     # Check if QR == t
     assert ((Q @ R - t).abs() < 1e-2).all()
+
+
+def test_inv_upper(hook, workers):
+
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = workers["james"]
+
+    torch.manual_seed(0)  # Truncation might not always work so we set the random seed
+    n_cols = 3
+    n_rows = 3
+    R = torch.triu(torch.randn([n_rows, n_cols]))
+    invR = R.inverse()
+
+    R_sh = R.fix_precision(precision_fractional=6).share(bob, alice, crypto_provider=crypto_prov)
+    invR_sh = DASH._inv_upper(R_sh)
+    assert ((invR - invR_sh.get().float_precision()).abs() < 1e-2).all()
 
 
 def test_remote_random_number_generation(hook, workers):
