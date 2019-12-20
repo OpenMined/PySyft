@@ -3,6 +3,7 @@ This file exists to provide one common place for all serialisation and simplify_
 for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
+import torch
 import io
 from tempfile import TemporaryFile
 from typing import Tuple, List
@@ -93,21 +94,36 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
 def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     """Strategy to serialize a tensor using numpy npy format.
     If tensor requires to calculate gradients, it will be detached.
+    
+    Args
+        (torch.Tensor): an input tensor to be serialized
+
+    Returns
+        A serialized version of the input tensor
     """
     if tensor.requires_grad:
         warnings.warn(
             "Torch to Numpy serializer can only be used with tensors that do not require grad. "
             "Detaching tensor to continue"
         )
-        tensor = tensor.detach()
+        tensor = torch.detach()
 
     np_tensor = tensor.numpy()
-    outfile = TemporaryFile()
+    outfile = io.BytesIO()
     numpy.save(outfile, np_tensor)
-    # Simulate close and open by calling seek
-    outfile.seek(0)
-    return outfile.read()
+    return outfile.getvalue()
 
+def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
+    """Strategy to deserialize a binary input in npy format into Torch tensor
+    
+    Args
+        tensor_bin: A binary representation of a tensor
+
+    Returns
+        a Torch tensor
+    """
+    bin_tensor_stream = io.BytesIO(tensor_bin)
+    return torch.from_numpy(numpy.load(bin_tensor_stream))
 
 def generic_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> tuple:
     """Strategy to serialize a tensor to native python types.
@@ -130,16 +146,6 @@ def generic_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> 
     size, dtype, data_arr = serde._detail(worker, tensor_tuple)
     tensor = torch.tensor(data_arr, dtype=TORCH_STR_DTYPE[dtype]).reshape(size)
     return tensor
-
-
-def numpy_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
-    """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
-    input_file = TemporaryFile()
-    input_file.write(tensor_bin)
-    # read data from file
-    input_file.seek(0)
-    return torch.from_numpy(numpy.load(input_file))
-
 
 def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
     """Strategy to serialize a tensor using Torch saver"""
