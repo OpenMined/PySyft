@@ -37,7 +37,7 @@ To install docker the dependencies, just follow [docker documentation](https://d
 
 #### Start Grid platform locally
 It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.
-**PS:** Fell free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
+**PS:** Feel free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
 ```
 $ docker-compose up
 ```
