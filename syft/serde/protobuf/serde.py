@@ -1,11 +1,14 @@
 from collections import OrderedDict
 
+from google.protobuf.empty_pb2 import Empty
+
 import inspect
 import syft
 from syft import dependency_check
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.messaging.message import ObjectMessage
 from syft.serde import compression
+from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
@@ -27,7 +30,8 @@ from syft.serde.protobuf.proto import MAP_PYTHON_TO_PROTOBUF_CLASSES
 
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
-    list(MAP_TORCH_PROTOBUF_TRANSLATORS.items())
+    list(MAP_NATIVE_PROTOBUF_TRANSLATORS.items())
+    + list(MAP_TORCH_PROTOBUF_TRANSLATORS.items())
     # + list(MAP_TF_PROTOBUF_TRANSLATORS.items())
 )
 
@@ -213,8 +217,11 @@ def serialize(
     msg_wrapper = SyftMessagePB()
 
     protobuf_obj = _bufferize(worker, obj)
+
     if type(obj) == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
+    elif type(obj) == type(None):
+        msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

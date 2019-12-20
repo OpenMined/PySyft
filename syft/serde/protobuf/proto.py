@@ -8,6 +8,8 @@ a dependency in setup.py.
 """
 import torch
 
+from google.protobuf.empty_pb2 import Empty
+
 from syft.messaging.message import ObjectMessage
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
@@ -22,6 +24,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ObjectMessage: ObjectMessagePB,
     torch.Tensor: TensorPB,
     AdditiveSharingTensor: AdditiveSharingTensorPB,
+    type(None): Empty,
 }
 
 MAP_PROTOBUF_TO_PYTHON_CLASSES = {}
