@@ -198,7 +198,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(field)
+            share.random_(int(-field / 2), int(field / 2) - 1)
 
         shares = []
         for i in range(n_workers):
