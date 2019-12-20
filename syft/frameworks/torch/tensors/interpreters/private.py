@@ -158,13 +158,13 @@ class PrivateTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(worker, tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(worker, tensor.id),
-            syft.serde._simplify(worker, tensor.allowed_users),
-            syft.serde._simplify(worker, tensor.tags),
-            syft.serde._simplify(worker, tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, tensor.id),
+            syft.serde.msgpack.serde._simplify(worker, tensor.allowed_users),
+            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
+            syft.serde.msgpack.serde._simplify(worker, tensor.description),
             chain,
         )
 
@@ -185,14 +185,14 @@ class PrivateTensor(AbstractTensor):
 
         tensor = PrivateTensor(
             owner=worker,
-            id=syft.serde._detail(worker, tensor_id),
-            tags=syft.serde._detail(worker, tags),
-            description=syft.serde._detail(worker, description),
-            allowed_users=syft.serde._detail(worker, allowed_users),
+            id=syft.serde.msgpack.serde._detail(worker, tensor_id),
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
+            description=syft.serde.msgpack.serde._detail(worker, description),
+            allowed_users=syft.serde.msgpack.serde._detail(worker, allowed_users),
         )
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor
