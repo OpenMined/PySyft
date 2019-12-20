@@ -174,9 +174,9 @@ class ResponseSignatureError(Exception):
         except AttributeError:
             attributes = {}
         return (
-            sy.serde._simplify(worker, tp.__name__),
-            sy.serde._simplify(worker, traceback_str),
-            sy.serde._simplify(worker, attributes),
+            sy.serde.msgpack.serde._simplify(worker, tp.__name__),
+            sy.serde.msgpack.serde._simplify(worker, traceback_str),
+            sy.serde.msgpack.serde._simplify(worker, attributes),
         )
 
     @staticmethod
@@ -185,9 +185,9 @@ class ResponseSignatureError(Exception):
         Detail and re-raise an Exception forwarded by another worker
         """
         error_name, traceback_str, attributes = error_tuple
-        error_name = sy.serde._detail(worker, error_name)
-        traceback_str = sy.serde._detail(worker, traceback_str)
-        attributes = sy.serde._detail(worker, attributes)
+        error_name = sy.serde.msgpack.serde._detail(worker, error_name)
+        traceback_str = sy.serde.msgpack.serde._detail(worker, traceback_str)
+        attributes = sy.serde.msgpack.serde._detail(worker, attributes)
         # De-serialize the traceback
         tb = Traceback.from_string(traceback_str)
         # Check that the error belongs to a valid set of Exceptions
@@ -221,7 +221,7 @@ class SendNotPermittedError(Exception):
             attributes = e.get_attributes()
         except AttributeError:
             attributes = {}
-        return tp.__name__, traceback_str, sy.serde._simplify(worker, attributes)
+        return tp.__name__, traceback_str, sy.serde.msgpack.serde._simplify(worker, attributes)
 
     @staticmethod
     def detail(worker: "sy.workers.AbstractWorker", error_tuple: Tuple[str, str, dict]):
@@ -230,7 +230,7 @@ class SendNotPermittedError(Exception):
         """
         error_name, traceback_str, attributes = error_tuple
         error_name, traceback_str = error_name.decode("utf-8"), traceback_str.decode("utf-8")
-        attributes = sy.serde._detail(worker, attributes)
+        attributes = sy.serde.msgpack.serde._detail(worker, attributes)
         # De-serialize the traceback
         tb = Traceback.from_string(traceback_str)
         # Check that the error belongs to a valid set of Exceptions
@@ -265,9 +265,9 @@ class GetNotPermittedError(Exception):
         except AttributeError:
             attributes = {}
         return (
-            sy.serde._simplify(worker, tp.__name__),
-            sy.serde._simplify(worker, traceback_str),
-            sy.serde._simplify(worker, attributes),
+            sy.serde.msgpack.serde._simplify(worker, tp.__name__),
+            sy.serde.msgpack.serde._simplify(worker, traceback_str),
+            sy.serde.msgpack.serde._simplify(worker, attributes),
         )
 
     @staticmethod
@@ -276,9 +276,9 @@ class GetNotPermittedError(Exception):
         Detail and re-raise an Exception forwarded by another worker
         """
         error_name, traceback_str, attributes = error_tuple
-        error_name = sy.serde._detail(worker, error_name)
-        traceback_str = sy.serde._detail(worker, traceback_str)
-        attributes = sy.serde._detail(worker, attributes)
+        error_name = sy.serde.msgpack.serde._detail(worker, error_name)
+        traceback_str = sy.serde.msgpack.serde._detail(worker, traceback_str)
+        attributes = sy.serde.msgpack.serde._detail(worker, attributes)
         # De-serialize the traceback
         tb = Traceback.from_string(traceback_str)
         # Check that the error belongs to a valid set of Exceptions
