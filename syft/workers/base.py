@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
@@ -98,17 +99,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
-        if hook is None:
-            self.framework = None
-        else:
-            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
-            #     execute_command or command_guard to not expect an attribute named "torch"
-            #     (#2530)
-            self.framework = hook.framework
-            if hasattr(hook, "torch"):
-                self.torch = self.framework
-            elif hasattr(hook, "tensorflow"):
-                self.tensorflow = self.framework
+
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
@@ -162,6 +153,20 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        if hook is None:
+            self.framework = None
+        else:
+            # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
+            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     (#2530)
+            self.framework = hook.framework
+            if hasattr(hook, "torch"):
+                self.torch = self.framework
+                self.remote = Remote(self, "torch")
+            elif hasattr(hook, "tensorflow"):
+                self.tensorflow = self.framework
+                self.remote = Remote(self, "tensorflow")
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -526,6 +531,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj_id: A string or integer id of an object to look up.
         """
         obj = super().get_obj(obj_id)
+
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
         # deleted
@@ -537,15 +543,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
+    def respond_to_obj_req(self, request_msg: tuple):
         """Returns the deregistered object from registry.
 
         Args:
-            obj_id: A string or integer id of an object to look up.
+            request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-
+        obj_id, user, reason = request_msg
         obj = self.get_obj(obj_id)
-        if hasattr(obj, "allowed_to_get") and not obj.allowed_to_get():
+        if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
@@ -590,18 +596,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.send_msg(ObjectMessage(obj), location)
 
-    def request_obj(self, obj_id: Union[str, int], location: "BaseWorker") -> object:
+    def request_obj(
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+    ) -> object:
         """Returns the requested object from specified location.
 
         Args:
-            obj_id:  A string or integer id of an object to look up.
-            location: A BaseWorker instance that lets you provide the lookup
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
                 location.
-
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id), location)
+        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -1023,7 +1032,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(_worker, worker.id),)
+        return (sy.serde.msgpack.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:
@@ -1036,27 +1045,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A worker id or worker instance.
         """
-        worker_id = sy.serde._detail(worker, worker_tuple[0])
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_tuple[0])
 
         referenced_worker = worker.get_worker(worker_id)
 
         return referenced_worker
 
     @staticmethod
-    def force_simplify(worker: AbstractWorker) -> tuple:
+    def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
-            sy.serde._simplify(worker, worker.id),
-            sy.serde._simplify(worker, worker._objects),
+            sy.serde.msgpack.serde._simplify(_worker, worker.id),
+            sy.serde.msgpack.serde._simplify(_worker, worker._objects),
             worker.auto_add,
         )
 
     @staticmethod
     def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
         worker_id, _objects, auto_add = worker_tuple
-        worker_id = sy.serde._detail(worker, worker_id)
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
 
         result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-        _objects = sy.serde._detail(worker, _objects)
+        _objects = sy.serde.msgpack.serde._detail(worker, _objects)
         result._objects = _objects
 
         # make sure they weren't accidentally double registered

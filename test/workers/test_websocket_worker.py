@@ -185,7 +185,7 @@ def test_clear_objects_remote(hook, start_remote_worker):
 
 
 def test_connect_close(hook, start_remote_worker):
-    server, remote_proxy = start_remote_worker(id="fed-connect-close", hook=hook, port=8771)
+    server, remote_proxy = start_remote_worker(id="fed-connect-close", hook=hook, port=8770)
 
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_proxy)
@@ -214,7 +214,7 @@ def test_connect_close(hook, start_remote_worker):
 def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     """Evaluates that you can do basic tensor operations using
     WebsocketServerWorker."""
-    server, remote_proxy = start_remote_worker(id="socket_multiple_output", hook=hook, port=8768)
+    server, remote_proxy = start_remote_worker(id="socket_multiple_output", hook=hook, port=8771)
 
     x = torch.tensor([1.0, 3, 2])
     x = x.send(remote_proxy)
@@ -226,6 +226,44 @@ def test_websocket_worker_multiple_output_response(hook, start_remote_worker):
     assert (x2 == torch.tensor([0, 2, 1])).all()
 
     x.get()  # retrieve remote object before closing the websocket connection
+
+    remote_proxy.close()
+    server.terminate()
+
+
+def test_send_command_whitelist(hook, start_remote_worker):
+    server, remote_proxy = start_remote_worker(
+        id="worker_call_api_good_methods", hook=hook, port=8772
+    )
+    whitelisted_methods = {
+        "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
+    }
+
+    for framework, methods in whitelisted_methods.items():
+        attr = getattr(remote_proxy.remote, framework)
+
+        for method, inp in methods.items():
+            x = getattr(attr, method)(inp)
+
+            if "rand" not in method:
+                assert (x.get() == getattr(torch, method)(inp)).all()
+
+    remote_proxy.close()
+    server.terminate()
+
+
+def test_send_command_not_whitelisted(hook, start_remote_worker):
+    server, remote_proxy = start_remote_worker(
+        id="worker_call_api_bad_method", hook=hook, port=8773
+    )
+
+    method_not_exist = "openmind"
+
+    for framework in remote_proxy.remote.frameworks:
+        if framework in dir(remote_proxy.remote):
+            attr = getattr(remote_proxy.remote, framework)
+            with pytest.raises(AttributeError):
+                getattr(attr, method_not_exist)
 
     remote_proxy.close()
     server.terminate()

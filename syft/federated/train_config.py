@@ -155,9 +155,9 @@ class TrainConfig:
             train_config._loss_fn_id,
             train_config.batch_size,
             train_config.epochs,
-            sy.serde._simplify(worker, train_config.optimizer),
-            sy.serde._simplify(worker, train_config.optimizer_args),
-            sy.serde._simplify(worker, train_config.id),
+            sy.serde.msgpack.serde._simplify(worker, train_config.optimizer),
+            sy.serde.msgpack.serde._simplify(worker, train_config.optimizer_args),
+            sy.serde.msgpack.serde._simplify(worker, train_config.id),
             train_config.max_nr_batches,
             train_config.shuffle,
         )
@@ -185,9 +185,9 @@ class TrainConfig:
             shuffle,
         ) = train_config_tuple
 
-        id = sy.serde._detail(worker, id)
-        detailed_optimizer = sy.serde._detail(worker, optimizer)
-        detailed_optimizer_args = sy.serde._detail(worker, optimizer_args)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        detailed_optimizer = sy.serde.msgpack.serde._detail(worker, optimizer)
+        detailed_optimizer_args = sy.serde.msgpack.serde._detail(worker, optimizer_args)
 
         train_config = TrainConfig(
             model=None,

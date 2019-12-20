@@ -1,0 +1,23 @@
+version: '3'
+
+services:
+  alice:
+    image: openmined/pysyft-worker
+    environment:
+      - WORKER_ID=alice
+    ports:
+      - 8777:8777
+
+  bob:
+    image: openmined/pysyft-worker
+    environment:
+      - WORKER_ID=bob
+    ports:
+      - 8778:8777
+
+  charlie:
+    image: openmined/pysyft-worker
+    environment:
+      - WORKER_ID=charlie
+    ports:
+      - 8779:8777

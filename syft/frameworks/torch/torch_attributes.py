@@ -90,11 +90,6 @@ class TorchAttributes(FrameworkAttributes):
             "load",
             "manual_seed",
             "ones",
-            "rand",
-            "randint",
-            "randn",
-            "randn_like",
-            "randperm",
             "range",
             "save",
             "set_",
@@ -108,6 +103,8 @@ class TorchAttributes(FrameworkAttributes):
             "typename",
             "zeros",
         ]
+
+        self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
 
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
