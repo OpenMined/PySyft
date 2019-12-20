@@ -72,12 +72,12 @@ class PromiseTensor(AbstractTensor, Promise):
             tuple: a tuple holding the unique attributes of the Promise tensor.
         """
         return (
-            sy.serde._simplify(worker, tensor.id),
-            sy.serde._simplify(worker, tensor.shape),
-            sy.serde._simplify(worker, tensor.obj_type),
-            sy.serde._simplify(worker, tensor.plans),
-            sy.serde._simplify(worker, tensor.tags),
-            sy.serde._simplify(worker, tensor.description),
+            sy.serde.msgpack.serde._simplify(worker, tensor.id),
+            sy.serde.msgpack.serde._simplify(worker, tensor.shape),
+            sy.serde.msgpack.serde._simplify(worker, tensor.obj_type),
+            sy.serde.msgpack.serde._simplify(worker, tensor.plans),
+            sy.serde.msgpack.serde._simplify(worker, tensor.tags),
+            sy.serde.msgpack.serde._simplify(worker, tensor.description),
         )
 
     @staticmethod
@@ -95,12 +95,12 @@ class PromiseTensor(AbstractTensor, Promise):
 
         id, shape, tensor_type, plans, tags, description = tensor_tuple
 
-        id = sy.serde._detail(worker, id)
-        shape = sy.serde._detail(worker, shape)
-        tensor_type = sy.serde._detail(worker, tensor_type)
-        plans = sy.serde._detail(worker, plans)
-        tags = sy.serde._detail(worker, tags)
-        description = sy.serde._detail(worker, description)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        shape = sy.serde.msgpack.serde._detail(worker, shape)
+        tensor_type = sy.serde.msgpack.serde._detail(worker, tensor_type)
+        plans = sy.serde.msgpack.serde._detail(worker, plans)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
 
         tensor = PromiseTensor(
             owner=worker,

@@ -982,15 +982,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(worker, tensor.child)
+            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
 
         return (
-            sy.serde._simplify(worker, tensor.id),
+            sy.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
-            sy.serde._simplify(worker, tensor.crypto_provider.id),
+            sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
         )
 
@@ -1008,17 +1008,17 @@ class AdditiveSharingTensor(AbstractTensor):
             """
 
         tensor_id, field, crypto_provider, chain = tensor_tuple
-        crypto_provider = sy.serde._detail(worker, crypto_provider)
+        crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=sy.serde._detail(worker, tensor_id),
+            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
         if chain is not None:
-            chain = sy.serde._detail(worker, chain)
+            chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

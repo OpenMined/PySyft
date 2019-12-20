@@ -1032,7 +1032,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(_worker, worker.id),)
+        return (sy.serde.msgpack.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:
@@ -1045,7 +1045,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A worker id or worker instance.
         """
-        worker_id = sy.serde._detail(worker, worker_tuple[0])
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_tuple[0])
 
         referenced_worker = worker.get_worker(worker_id)
 
@@ -1054,18 +1054,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     @staticmethod
     def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
-            sy.serde._simplify(_worker, worker.id),
-            sy.serde._simplify(_worker, worker._objects),
+            sy.serde.msgpack.serde._simplify(_worker, worker.id),
+            sy.serde.msgpack.serde._simplify(_worker, worker._objects),
             worker.auto_add,
         )
 
     @staticmethod
     def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
         worker_id, _objects, auto_add = worker_tuple
-        worker_id = sy.serde._detail(worker, worker_id)
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
 
         result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-        _objects = sy.serde._detail(worker, _objects)
+        _objects = sy.serde.msgpack.serde._detail(worker, _objects)
         result._objects = _objects
 
         # make sure they weren't accidentally double registered
