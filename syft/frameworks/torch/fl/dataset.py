@@ -43,10 +43,11 @@ class BaseDataset:
             data: Data points corresponding to the given index
             targets: Targets correspoding to given datapoint
         """
-        data_elem = self.data[index]
+
         if self.transform_ is not None:
-            # TODO: avoid passing through numpy domain
-            data_elem = torch.tensor(self.transform_(data_elem.numpy()))
+            data_elem = self.transform_(self.data[index])
+        else:
+            data_elem = self.data[index]
 
         return data_elem, self.targets[index]
 
@@ -60,13 +61,13 @@ class BaseDataset:
         """
 
         # Transforms cannot be applied to Pointer, Fixed Precision or Float Precision tensors.
-        if type(self.data) == torch.Tensor:
-
-            self.data = transform(self.data)
-
+        if transform is not None:
+            if type(self.data) == torch.Tensor or type(self.data) == numpy.ndarry:
+                self.data = transform(self.data)
+            else:
+                raise TypeError("Transforms can be applied only on torch tensors or numpy array")
         else:
-
-            raise TypeError("Transforms can be applied only on torch tensors")
+            raise TypeError("Transform cann't be None")
 
     def send(self, worker):
         """
