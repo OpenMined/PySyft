@@ -78,7 +78,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             variables are instantiated or deleted as opposed to handling
             tensor/variable/model lifecycle internally. Set to True if this
             object is not where the objects will be stored, but is instead
-            a pointer to a worker that eists elsewhere.
+            a pointer to a worker that exists elsewhere.
         log_msgs: An optional boolean parameter to indicate whether all
             messages should be saved into a log for later review. This is
             primarily a development/testing feature.
