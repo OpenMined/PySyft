@@ -12,6 +12,8 @@ from syft.workers.abstract import AbstractWorker
 
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
+from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+from syft_proto.types.syft.v1.operation_pb2 import Operation as OperationPB
 
 
 class Message:
@@ -197,6 +199,65 @@ class Operation(Message):
         cmd_kwargs = detailed_msg[3]
 
         return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, operation: "Operation") -> "OperationMessagePB":
+        """
+        This function takes the attributes of a Operation and saves them in Protobuf
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (Operation): a Message
+        Returns:
+            protobuf_obj: a Protobuf message holding the unique attributes of the message
+        Examples:
+            data = bufferize(message)
+        """
+
+        protobuf_op_msg = OperationMessagePB()
+        protobuf_op = OperationPB()
+        protobuf_op.command = operation.cmd_name
+        # protobuf_op.owner = sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner)
+        if operation.cmd_args:
+            protobuf_op.args = sy.serde.protobuf.serde._bufferize(worker, operation.cmd_args)
+        if operation.cmd_kwargs:
+            protobuf_op.kwargs = sy.serde.protobuf.serde._bufferize(worker, operation.cmd_kwargs)
+
+        return_ids = []
+        for return_id in operation.return_ids:
+            return_ids.append(sy.serde.protobuf.serde.create_protobuf_id(return_id))
+
+        protobuf_op.return_ids.extend(return_ids)
+
+        protobuf_op_msg.operation.CopyFrom(protobuf_op)
+        return protobuf_op_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationMessagePB") -> "Operation":
+        """
+        This function takes the Protobuf version of this message and converts
+        it into an Operation. The bufferize() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            protobuf_obj (OperationPB): the Protobuf message
+
+        Returns:
+            obj (Operation): an Operation
+
+        Examples:
+            message = unbufferize(sy.local_worker, protobuf_msg)
+        """
+
+        command = protobuf_obj.operation.command
+        # owner
+        # Args
+        # kwargs
+        return_ids = protobuf_obj.operation.return_ids
+
+        operation_msg = Operation(command, [], [], [], return_ids)
+
+        return operation_msg
 
 
 class ObjectMessage(Message):

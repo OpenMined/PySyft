@@ -7,6 +7,7 @@ import syft
 from syft import dependency_check
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.messaging.message import ObjectMessage
+from syft.messaging.message import Operation
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
@@ -36,7 +37,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [AdditiveSharingTensor, ObjectMessage]
+OBJ_PROTOBUF_TRANSLATORS = [AdditiveSharingTensor, ObjectMessage, Operation]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -196,32 +197,24 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+    # TODO: Remove unnecessary flags and simplification
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
-
-    if force_no_serialization:
-        # 0) Simplify
-        # bufferize difficult-to-serialize objects. See the _bufferize method
-        # for unbufferizes on how this works. The general purpose is to handle types
-        # which the fast serializer cannot handle
-        simple_objects = obj
-        if not simplified:
-            if force_full_simplification:
-                simple_objects = _force_full_bufferize(worker, obj)
-            else:
-                simple_objects = _bufferize(worker, obj)
-        return simple_objects
 
     # 1) Convert to Protobuf objects
     msg_wrapper = SyftMessagePB()
 
     protobuf_obj = _bufferize(worker, obj)
 
-    if type(obj) == ObjectMessage:
-        msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
-    elif type(obj) == type(None):
+    obj_type = type(obj)
+    if obj_type == type(None):
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
+    elif obj_type == ObjectMessage:
+        msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
+    elif obj_type == Operation:
+        msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

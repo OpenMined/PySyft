@@ -11,17 +11,20 @@ import torch
 from google.protobuf.empty_pb2 import Empty
 
 from syft.messaging.message import ObjectMessage
+from syft.messaging.message import Operation
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
 )
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
+from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.generic.v1.tensor_pb2 import Tensor as TensorPB
 
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ObjectMessage: ObjectMessagePB,
+    Operation: OperationMessagePB,
     torch.Tensor: TensorPB,
     AdditiveSharingTensor: AdditiveSharingTensorPB,
     type(None): Empty,
