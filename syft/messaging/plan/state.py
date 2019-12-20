@@ -123,8 +123,8 @@ class State(object):
         Simplify the plan's state when sending a plan
         """
         return (
-            sy.serde._simplify(worker, state.state_ids),
-            sy.serde._simplify(worker, state.tensors()),
+            sy.serde.msgpack.serde._simplify(worker, state.state_ids),
+            sy.serde.msgpack.serde._simplify(worker, state.tensors()),
         )
 
     @staticmethod
@@ -134,8 +134,8 @@ class State(object):
         ids.
         """
         state_ids, state_elements = state_tuple
-        state_ids = sy.serde._detail(worker, state_ids)
-        state_elements = sy.serde._detail(worker, state_elements)
+        state_ids = sy.serde.msgpack.serde._detail(worker, state_ids)
+        state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
         for state_id, state_element in zip(state_ids, state_elements):
             worker.register_obj(state_element, obj_id=state_id)
