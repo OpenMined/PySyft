@@ -459,11 +459,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return (
             # ptr.id,
-            syft.serde._simplify(worker, ptr.id),
-            syft.serde._simplify(worker, ptr.id_at_location),
-            syft.serde._simplify(worker, ptr.location.id),
-            syft.serde._simplify(worker, ptr.point_to_attr),
-            syft.serde._simplify(worker, ptr._shape),
+            syft.serde.msgpack.serde._simplify(worker, ptr.id),
+            syft.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
+            syft.serde.msgpack.serde._simplify(worker, ptr.location.id),
+            syft.serde.msgpack.serde._simplify(worker, ptr.point_to_attr),
+            syft.serde.msgpack.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
         )
 
@@ -492,13 +492,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # TODO: fix comment for this and simplifier
         obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
 
-        obj_id = syft.serde._detail(worker, obj_id)
-        id_at_location = syft.serde._detail(worker, id_at_location)
-        worker_id = syft.serde._detail(worker, worker_id)
-        point_to_attr = syft.serde._detail(worker, point_to_attr)
+        obj_id = syft.serde.msgpack.serde._detail(worker, obj_id)
+        id_at_location = syft.serde.msgpack.serde._detail(worker, id_at_location)
+        worker_id = syft.serde.msgpack.serde._detail(worker, worker_id)
+        point_to_attr = syft.serde.msgpack.serde._detail(worker, point_to_attr)
 
         if shape is not None:
-            shape = syft.hook.create_shape(syft.serde._detail(worker, shape))
+            shape = syft.hook.create_shape(syft.serde.msgpack.serde._detail(worker, shape))
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:

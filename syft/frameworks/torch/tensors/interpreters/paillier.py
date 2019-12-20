@@ -270,7 +270,7 @@ class PaillierTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(worker, tensor.child)
+            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
         return tensor.id, chain
 
     @staticmethod
@@ -290,7 +290,7 @@ class PaillierTensor(AbstractTensor):
         tensor = PaillierTensor(owner=worker, id=obj_id)
 
         if chain is not None:
-            chain = sy.serde._detail(worker, chain)
+            chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor
