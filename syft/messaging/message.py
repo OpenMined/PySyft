@@ -62,7 +62,7 @@ class Message:
             data = simplify(ptr)
         """
 
-        return (sy.serde._simplify(worker, ptr.contents),)
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.contents),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
@@ -88,7 +88,7 @@ class Message:
         # TODO: as an alternative, this detailer could raise NotImplementedException
         # https://github.com/OpenMined/PySyft/issues/2514
 
-        return Message(sy.serde._detail(worker, msg_tuple[0]))
+        return Message(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -155,7 +155,10 @@ class Operation(Message):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        return (sy.serde._simplify(worker, ptr.message), ptr.return_ids)
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.message),
+            sy.serde.msgpack.serde._simplify(worker, ptr.return_ids),
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
@@ -172,7 +175,10 @@ class Operation(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return Operation(sy.serde._detail(worker, msg_tuple[0]), msg_tuple[1])
+        return Operation(
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
+        )
 
 
 class ObjectMessage(Message):
@@ -204,7 +210,7 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class ObjectRequestMessage(Message):
@@ -238,7 +244,7 @@ class ObjectRequestMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectRequestMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return ObjectRequestMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class IsNoneMessage(Message):
@@ -272,7 +278,7 @@ class IsNoneMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return IsNoneMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return IsNoneMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class GetShapeMessage(Message):
@@ -309,7 +315,7 @@ class GetShapeMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return GetShapeMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return GetShapeMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class ForceObjectDeleteMessage(Message):
@@ -344,7 +350,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ForceObjectDeleteMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return ForceObjectDeleteMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class SearchMessage(Message):
@@ -379,7 +385,7 @@ class SearchMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return SearchMessage(sy.serde._detail(worker, msg_tuple[0]))
+        return SearchMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class PlanCommandMessage(Message):
@@ -421,8 +427,8 @@ class PlanCommandMessage(Message):
             tuple: a tuple holding the unique attributes of the message
         """
         return (
-            sy.serde._simplify(worker, ptr.command_name),
-            sy.serde._simplify(worker, ptr.message),
+            sy.serde.msgpack.serde._simplify(worker, ptr.command_name),
+            sy.serde.msgpack.serde._simplify(worker, ptr.message),
         )
 
     @staticmethod
@@ -440,5 +446,6 @@ class PlanCommandMessage(Message):
         """
         command_name, message = msg_tuple
         return PlanCommandMessage(
-            sy.serde._detail(worker, command_name), sy.serde._detail(worker, message)
+            sy.serde.msgpack.serde._detail(worker, command_name),
+            sy.serde.msgpack.serde._detail(worker, message),
         )
