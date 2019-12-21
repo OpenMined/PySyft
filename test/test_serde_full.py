@@ -1282,14 +1282,28 @@ def make_operation(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
+        detailed_msg = (
+            detailed.cmd_name,
+            detailed.cmd_owner,
+            detailed.cmd_args,
+            detailed.cmd_kwargs,
+        )
+        original_msg = (
+            original.cmd_name,
+            original.cmd_owner,
+            original.cmd_args,
+            original.cmd_kwargs,
+        )
         assert type(detailed) == syft.messaging.message.Operation
-        for i in range(len(original.message)):
-            if type(original.message[i]) != torch.Tensor:
-                assert detailed.message[i] == original.message[i]
+        for i in range(len(original_msg)):
+            if type(original_msg[i]) != torch.Tensor:
+                assert detailed_msg[i] == original_msg[i]
             else:
-                assert detailed.message[i].equal(original.message[i])
+                assert detailed_msg[i].equal(original_msg[i])
         assert detailed.return_ids == original.return_ids
         return True
+
+    message = (op.cmd_name, op.cmd_owner, op.cmd_args, op.cmd_kwargs)
 
     return [
         {
@@ -1297,7 +1311,7 @@ def make_operation(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.Operation],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, op.message),  # (Any) message
+                    msgpack.serde._simplify(syft.hook.local_worker, message),  # (Any) message
                     (CODE[tuple], (op.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
