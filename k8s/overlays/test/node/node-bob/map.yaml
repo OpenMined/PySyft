@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  address: 'http://localhost:3000/'
+  grid_network_url: 'http://test-gateway'
+  database_url: sqlite:///databaseBob.db
+  port: "3000"
+  id: 'Bob'
+kind: ConfigMap
+metadata:
+  name: node-env

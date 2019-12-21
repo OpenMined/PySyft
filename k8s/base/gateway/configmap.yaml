@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  database_url: sqlite:///databasegateway.db
+  port: "5000"
+  secret_key: ineedtoputasecrethere
+kind: ConfigMap
+metadata:
+  name: gateway-env

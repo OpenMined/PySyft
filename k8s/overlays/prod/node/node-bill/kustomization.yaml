@@ -1,0 +1,11 @@
+namePrefix: prod-bill-
+commonLabels:
+  app: prod-bill
+resources:
+- ../../../../base/node
+images:
+- name: node
+  newName: openmined/grid-node
+  newTag: latest
+patchesStrategicMerge:
+  - map.yaml

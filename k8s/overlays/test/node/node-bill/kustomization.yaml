@@ -1,0 +1,11 @@
+namePrefix: test-bill-
+commonLabels:
+  app: test-bill
+resources:
+- ../../../../base/node
+images:
+- name: node
+  newName: openmined/grid-node
+  newTag: latest
+patchesStrategicMerge:
+  - map.yaml

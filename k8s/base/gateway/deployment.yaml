@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+      - env:
+          - name: DATABASE_URL
+            valueFrom:
+              configMapKeyRef:
+                name: gateway-env
+                key: database_url
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                name: gateway-env
+                key: port
+          - name: SECRET_KEY
+            valueFrom:
+              configMapKeyRef:
+                  name: gateway-env
+                  key: secret_key
+        image: openmined/grid-gateway:latest
+        imagePullPolicy: IfNotPresent
+        name: gateway
+      restartPolicy: Always
+status: {}

@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  address: 'http://localhost:3000/'
+  grid_network_url: 'http://local-gateway'
+  database_url: sqlite:///databaseBill.db
+  port: "3000"
+  id: 'Bill'
+kind: ConfigMap
+metadata:
+  name: node-env

@@ -1,0 +1,11 @@
+namePrefix: test-bob-
+commonLabels:
+  app: test-bob
+resources:
+- ../../../../base/node
+images:
+- name: node
+  newName: openmined/grid-node
+  newTag: latest
+patchesStrategicMerge:
+  - map.yaml

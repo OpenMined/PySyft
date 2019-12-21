@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node
+  labels:
+    app: node
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node
+  template:
+    metadata:
+      labels:
+        app: node
+    spec:
+      containers:
+      - env:
+        - name: ADDRESS
+          valueFrom:
+            configMapKeyRef:
+              name: node-env
+              key: address
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: node-env
+              key: database_url
+        - name: GRID_NETWORK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: node-env
+              key: grid_network_url
+        - name: ID
+          valueFrom:
+            configMapKeyRef:
+              name: node-env
+              key: id
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: node-env
+              key: port
+        image: openmined/grid-node:latest
+        imagePullPolicy: IfNotPresent
+        name: node
+      restartPolicy: Always

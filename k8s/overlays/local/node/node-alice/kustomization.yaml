@@ -1,0 +1,11 @@
+namePrefix: local-alice-
+commonLabels:
+  app: local-alice
+resources:
+- ../../../../base/node
+images:
+- name: node
+  newName: openmined/grid-node
+  newTag: latest
+patchesStrategicMerge:
+  - map.yaml

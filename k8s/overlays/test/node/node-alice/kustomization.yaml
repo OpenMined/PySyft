@@ -1,0 +1,7 @@
+namePrefix: test-alice-
+commonLabels:
+  app: test-alice
+resources:
+- ../../../../base/node
+patchesStrategicMerge:
+  - map.yaml
