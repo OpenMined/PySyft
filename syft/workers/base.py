@@ -482,14 +482,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args)
 
     def send_command(
-        self, recipient: "BaseWorker", message: str, return_ids: str = None
+        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
 
         Args:
             recipient: A recipient worker.
-            message: A string representing the message being sent.
+            message: A tuple representing the message being sent.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -499,8 +499,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
+        cmd_name = message[0]
+        cmd_owner = message[1]
+        cmd_args = message[2]
+        cmd_kwargs = message[3]
+
         try:
-            ret_val = self.send_msg(Operation(message, return_ids), location=recipient)
+            ret_val = self.send_msg(
+                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+            )
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated
@@ -987,7 +994,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation((command_name, command_owner, args, kwargs), return_ids)
+        return Operation(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
