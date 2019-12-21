@@ -126,7 +126,11 @@ class Operation(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.message = message
+        self.command_name = message[0]
+        self.command_owner = message[1]
+        self.args = message[2]
+        self.kwargs = message[3]
+
         self.return_ids = return_ids
 
     @property
@@ -139,7 +143,9 @@ class Operation(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        return (self.message, self.return_ids)
+        message = (self.command_name, self.command_owner, self.args, self.kwargs)
+
+        return (message, self.return_ids)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "Operation") -> tuple:
@@ -155,8 +161,10 @@ class Operation(Message):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
+        message = (ptr.command_name, ptr.command_owner, ptr.args, ptr.kwargs)
+
         return (
-            sy.serde.msgpack.serde._simplify(worker, ptr.message),
+            sy.serde.msgpack.serde._simplify(worker, message),
             sy.serde.msgpack.serde._simplify(worker, ptr.return_ids),
         )
 
