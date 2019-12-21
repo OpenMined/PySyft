@@ -994,7 +994,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation((command_name, command_owner, args, kwargs), return_ids)
+        return Operation(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
