@@ -126,10 +126,10 @@ class Operation(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.command_name = cmd_name
-        self.command_owner = cmd_owner
-        self.args = cmd_args
-        self.kwargs = cmd_kwargs
+        self.cmd_name = cmd_name
+        self.cmd_owner = cmd_owner
+        self.cmd_args = cmd_args
+        self.cmd_kwargs = cmd_kwargs
         self.return_ids = return_ids
 
     @property
@@ -142,7 +142,7 @@ class Operation(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.command_name, self.command_owner, self.args, self.kwargs)
+        message = (self.cmd_name, self.cmd_owner, self.cmd_args, self.cmd_kwargs)
 
         return (message, self.return_ids)
 
@@ -160,7 +160,7 @@ class Operation(Message):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        message = (ptr.command_name, ptr.command_owner, ptr.args, ptr.kwargs)
+        message = (ptr.cmd_name, ptr.cmd_owner, ptr.cmd_args, ptr.cmd_kwargs)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
