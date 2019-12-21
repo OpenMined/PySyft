@@ -109,7 +109,7 @@ class Operation(Message):
     worker to take two tensors and add them together is an operation. However, sending an object
     from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, message, return_ids):
+    def __init__(self, cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids):
         """Initialize an operation message
 
         Args:
@@ -126,11 +126,10 @@ class Operation(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.command_name = message[0]
-        self.command_owner = message[1]
-        self.args = message[2]
-        self.kwargs = message[3]
-
+        self.command_name = cmd_name
+        self.command_owner = cmd_owner
+        self.args = cmd_args
+        self.kwargs = cmd_kwargs
         self.return_ids = return_ids
 
     @property
@@ -183,10 +182,18 @@ class Operation(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return Operation(
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
-        )
+        message = msg_tuple[0]
+        return_ids = msg_tuple[1]
+
+        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
+        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
+
+        cmd_name = detailed_msg[0]
+        cmd_owner = detailed_msg[1]
+        cmd_args = detailed_msg[2]
+        cmd_kwargs = detailed_msg[3]
+
+        return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
 
 
 class ObjectMessage(Message):
