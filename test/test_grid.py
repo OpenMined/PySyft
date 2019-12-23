@@ -18,7 +18,7 @@ def test_virtual_grid(workers):
     alice = workers["alice"]
     james = workers["james"]
 
-    grid = sy.grid.GridNetwork(*[bob, alice, james])
+    grid = sy.PrivateGridNetwork(*[bob, alice, james])
 
     x = torch.tensor([1, 2, 3, 4]).tag("#bob", "#male").send(bob)
     y = torch.tensor([1, 2, 3, 4]).tag("#alice", "#female").send(alice)
