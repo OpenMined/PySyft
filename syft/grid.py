@@ -18,19 +18,6 @@ class GridNetwork:
         self.workers = list(workers)
         self._connect_all_nodes(self.workers)
 
-    def _connect_all_nodes(self, nodes: list):
-        """Connect all nodes to each other.
-
-        Args:
-            nodes: A tuple of grid clients.
-        """
-        if all(isinstance(node, NodeClient) for node in nodes):
-            for i in range(len(nodes)):
-                for j in range(i):
-                    node_i, node_j = nodes[i], nodes[j]
-                    node_i.connect_nodes(node_j)
-                    node_j.connect_nodes(node_i)
-
     def search(
         self, *query, verbose: bool = True, return_counter: bool = True
     ) -> Union[Tuple[Dict[Any, Any], CounterType], Dict[Any, Any]]:
@@ -77,15 +64,16 @@ class GridNetwork:
         self,
         model,
         id: str,
+        mpc: bool = False,
         allow_remote_inference: bool = False,
         allow_download: bool = False,
         n_replica: int = 1,
     ):
-
-        """ Choose some node(s) on grid network to host a unencrypted model.
+        """ Choose some node(s) on grid network to host a unencrypted / encrypted model.
             Args:
                 model: Model to be hosted.
                 id: Model's ID.
+                mpc: Boolean flag to host a plain text / encrypted model
                 allow_remote_inference: Allow to run inference remotely.
                 allow_download: Allow to copy the model and run it locally.
                 n_replica: Number of copies distributed through grid network.
@@ -97,50 +85,62 @@ class GridNetwork:
         else:
             nodes = random.sample(self.workers, n_replica)
 
-        for node in nodes:
-            # Host model
-            node.serve_model(
-                model,
-                model_id=id,
-                allow_download=allow_download,
-                allow_remote_inference=allow_remote_inference,
-            )
+        for i in range(len(nodes)):
+            if not mpc:
+                # Host model
+                nodes[i].serve_model(
+                    model,
+                    model_id=id,
+                    allow_download=allow_download,
+                    allow_remote_inference=allow_remote_inference,
+                )
+            else:
+                self._host_encrypted_model(model)
 
-    def run_remote_inference(self, id: str, data: torch.Tensor):
+    def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False):
         """ Search for a specific model registered on grid network, if found,
             It will run inference.
             Args:
                 id : Model's ID.
                 dataset : Data used to run inference.
+                mpc: Boolean flag to run a plain text / encrypted model
             Returns:
                 Tensor : Inference's result.
         """
-        node = self.query_model_host(id)
-        if node:
-            response = node.run_remote_inference(model_id=id, data=data)
-            return torch.tensor(response)
+        if not mpc:
+            node = self.query_model_host(id)
+            if node:
+                response = node.run_remote_inference(model_id=id, data=data)
+                return torch.tensor(response)
+            else:
+                raise RuntimeError("Model not found on Grid Network!")
         else:
-            raise RuntimeError("Model not found on Grid Network!")
+            return self._run_encrypted_inference(id, data)
 
-    def query_model_host(self, id: str):
+    def query_model_host(self, id: str, mpc: bool = False):
         """ Search for node host from a specific model registered on grid network, if found,
-            It will return the frist grid node that contains the desired model.
+            It will return the frist host/ set of hosts that contains the desired model.
             Args:
                 id : Model's ID.
                 data : Data used to run inference.
+                mpc : Boolean flag to search for a plain text / encrypted model
             Returns:
                 workers : First worker that contains the desired model.
         """
-        for node in self.workers:
-            if id in node.models:
-                return node
+        # If it isn't a mpc model
+        if not mpc:
+            for node in self.workers:
+                if id in node.models:
+                    return node
+        else:
+            # MPC model
+            return self._query_encrypted_model_hosts(id)
 
-    def host_encrypted_model(self, model, id: str, n_shares: int = 4):
+    def _host_encrypted_model(self, model, n_shares: int = 4):
         """ This method wiil choose some grid nodes at grid network to host an encrypted model.
 
             Args:
                 model: Model to be hosted.
-                id: Model's id.
                 n_shares: number of workers used by MPC protocol.
             Raise:
                 RuntimeError : If grid network doesn't have enough workers
@@ -175,7 +175,7 @@ class GridNetwork:
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def query_encrypted_model_hosts(self, id: str):
+    def _query_encrypted_model_hosts(self, id: str):
         """ Search for an encrypted model and return its mpc nodes.
 
             Args:
@@ -215,7 +215,7 @@ class GridNetwork:
         else:
             raise RuntimeError("Model ID not found!")
 
-    def run_encrypted_inference(self, id: str, data, copy=True):
+    def _run_encrypted_inference(self, id: str, data):
         """ Search for an encrypted model and perform inference.
             
             Args:
@@ -233,6 +233,19 @@ class GridNetwork:
         shared_data = data.fix_precision().share(*mpc_nodes, crypto_provider=crypto_provider)
 
         # Perform Inference
-        fetched_plan = host.hook.local_worker.fetch_plan(id, host, copy=copy)
+        fetched_plan = host.hook.local_worker.fetch_plan(id, host, copy=True)
 
         return fetched_plan(shared_data).get().float_prec()
+
+    def _connect_all_nodes(self, nodes: list):
+        """Connect all nodes to each other.
+
+        Args:
+            nodes: A tuple of grid clients.
+        """
+        if all(isinstance(node, NodeClient) for node in nodes):
+            for i in range(len(nodes)):
+                for j in range(i):
+                    node_i, node_j = nodes[i], nodes[j]
+                    node_i.connect_nodes(node_j)
+                    node_j.connect_nodes(node_i)
