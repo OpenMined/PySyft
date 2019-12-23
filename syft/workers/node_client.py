@@ -162,6 +162,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         self,
         model,
         model_id: str = None,
+        mpc: bool = False,
         allow_download: bool = False,
         allow_remote_inference: bool = False,
     ):
@@ -198,6 +199,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
             "encoding": self.encoding,
             "model_id": model_id,
             "allow_download": str(allow_download),
+            "mpc": str(mpc),
             "allow_remote_inference": str(allow_remote_inference),
             "model": serialized_model.decode(self.encoding),
         }

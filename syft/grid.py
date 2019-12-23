@@ -169,7 +169,11 @@ class GridNetwork:
 
             # Save a pointer reference to this model in database.
             host.serve_model(
-                p_model, model_id=model.id, allow_download=False, allow_remote_inference=False,
+                p_model,
+                model_id=model.id,
+                allow_download=False,
+                allow_remote_inference=False,
+                mpc=True,
             )
         # If model isn't a plan
         else:
@@ -227,7 +231,7 @@ class GridNetwork:
             Raises:
                 RuntimeError: If model id not found.
         """
-        host, mpc_nodes, crypto_provider = self.query_encrypted_model_hosts(id)
+        host, mpc_nodes, crypto_provider = self._query_encrypted_model_hosts(id)
 
         # Share your dataset to same SMPC Workers
         shared_data = data.fix_precision().share(*mpc_nodes, crypto_provider=crypto_provider)
