@@ -1861,7 +1861,14 @@ def test_serde_roundtrip(cls, workers):
 @pytest.mark.parametrize("cls", samples)
 def test_serde_roundtrip_protobuf(cls, workers):
     """Checks that values passed through serialization-deserialization stay same"""
+    
+    # This is a workaround for the workers being configured for the 'all' strategy
+    # which Protobuf does not support
+    for _, worker in workers.items():
+        worker.serializer = 'torch'
+
     _samples = samples[cls](workers=workers)
+    
     for sample in _samples:
         _to_protobuf = (
             protobuf_serde._bufferize
@@ -1870,7 +1877,7 @@ def test_serde_roundtrip_protobuf(cls, workers):
         )
         serde_worker = syft.hook.local_worker
         serde_worker.framework = sample.get("framework", torch)
-        if serde_worker.framework:
+        if serde_worker.framework and serde_worker.framework != "all":
             obj = sample.get("value")
             protobuf_obj = _to_protobuf(serde_worker, obj)
             if not isinstance(obj, Exception):
