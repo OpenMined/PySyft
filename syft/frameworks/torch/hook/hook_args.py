@@ -37,8 +37,8 @@ forward_func = {
 }
 
 backward_func = {
-    TorchTensor: lambda i: i.wrap(),
-    torch.Tensor: lambda i: i.wrap(),
+    TorchTensor: lambda i, **kwargs: i.wrap(**kwargs),
+    torch.Tensor: lambda i, **kwargs: i.wrap(**kwargs),
     torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
     AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
     LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
