@@ -13,7 +13,7 @@ from syft.messaging.plan.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 
-class GridNetwork:
+class PrivateGridNetwork:
     def __init__(self, *workers):
         self.workers = list(workers)
         self._connect_all_nodes(self.workers)
@@ -21,8 +21,16 @@ class GridNetwork:
     def search(
         self, *query, verbose: bool = True, return_counter: bool = True
     ) -> Union[Tuple[Dict[Any, Any], CounterType], Dict[Any, Any]]:
-        """Searches over a collection of workers, returning pointers to the results
+        """ Searches over a collection of workers, returning pointers to the results
         grouped by worker.
+            
+            Args:
+                query : List of tags used to identify the desired tensor.
+                verbose : Boolean flag to activate verbosity during search method.
+                return_counter : Boolean flag to return counter of found itens.
+            Returns:
+                results : list of pointers with pointers that matches with tags.
+                tag_counter : tag counter.
         """
 
         tag_counter: CounterType[int] = Counter()
@@ -79,7 +87,12 @@ class GridNetwork:
                 n_replica: Number of copies distributed through grid network.
             Raises:
                 RuntimeError: If grid network doesn't have enough nodes to replicate the model.
+                NotImplementedError: If workers used by grid network aren't grid nodes.
         """
+        # If workers used by grid network aren't grid nodes.
+        if not self.__is_node_workers():
+            raise NotImplementedError
+
         if n_replica > len(self.workers):
             raise RuntimeError("Not enough nodes!")
         else:
@@ -97,7 +110,7 @@ class GridNetwork:
             else:
                 self._host_encrypted_model(model)
 
-    def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False):
+    def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False) -> torch.Tensor:
         """ Search for a specific model registered on grid network, if found,
             It will run inference.
             Args:
@@ -106,7 +119,14 @@ class GridNetwork:
                 mpc: Boolean flag to run a plain text / encrypted model
             Returns:
                 Tensor : Inference's result.
+            Raises:
+                NotImplementedError: If workers used by grid network aren't grid nodes.
+                RuntimeError: If model id not found.
         """
+        # If workers used by grid network aren't grid nodes.
+        if not self.__is_node_workers():
+            raise NotImplementedError
+
         if not mpc:
             node = self.query_model_host(id)
             if node:
@@ -117,7 +137,9 @@ class GridNetwork:
         else:
             return self._run_encrypted_inference(id, data)
 
-    def query_model_host(self, id: str, mpc: bool = False):
+    def query_model_host(
+        self, id: str, mpc: bool = False
+    ) -> Union["NodeClient", Tuple["NodeClient"]]:
         """ Search for node host from a specific model registered on grid network, if found,
             It will return the frist host/ set of hosts that contains the desired model.
             Args:
@@ -126,7 +148,15 @@ class GridNetwork:
                 mpc : Boolean flag to search for a plain text / encrypted model
             Returns:
                 workers : First worker that contains the desired model.
+            Raises:
+                NotImplementedError: If workers used by grid network aren't grid nodes.
+                RuntimeError: If model id not found.
         """
+
+        # If workers used by grid network aren't grid nodes.
+        if not self.__is_node_workers():
+            raise NotImplementedError
+
         # If it isn't a mpc model
         if not mpc:
             for node in self.workers:
@@ -179,7 +209,7 @@ class GridNetwork:
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def _query_encrypted_model_hosts(self, id: str):
+    def _query_encrypted_model_hosts(self, id: str) -> Tuple["NodeClient"]:
         """ Search for an encrypted model and return its mpc nodes.
 
             Args:
@@ -219,7 +249,7 @@ class GridNetwork:
         else:
             raise RuntimeError("Model ID not found!")
 
-    def _run_encrypted_inference(self, id: str, data):
+    def _run_encrypted_inference(self, id: str, data) -> torch.Tensor:
         """ Search for an encrypted model and perform inference.
             
             Args:
@@ -247,9 +277,17 @@ class GridNetwork:
         Args:
             nodes: A tuple of grid clients.
         """
-        if all(isinstance(node, NodeClient) for node in nodes):
+        if self.__is_node_workers():
             for i in range(len(nodes)):
                 for j in range(i):
                     node_i, node_j = nodes[i], nodes[j]
                     node_i.connect_nodes(node_j)
                     node_j.connect_nodes(node_i)
+
+    def __is_node_workers(self) -> bool:
+        """ Private method used to verify if workers used by grid network are grid nodes.
+            
+            Returns:
+               result : Boolean value
+        """
+        return all(isinstance(node, NodeClient) for node in self.workers)
