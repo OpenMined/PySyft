@@ -24,7 +24,7 @@ class GridNetwork:
         Args:
             nodes: A tuple of grid clients.
         """
-        if all(isinstance(NodeClient, type(node)) for node in nodes):
+        if all(isinstance(node, NodeClient) for node in nodes):
             for i in range(len(nodes)):
                 for j in range(i):
                     node_i, node_j = nodes[i], nodes[j]
@@ -115,27 +115,27 @@ class GridNetwork:
             Returns:
                 Tensor : Inference's result.
         """
-        node = self.query_model(id)
+        node = self.query_model_host(id)
         if node:
             response = node.run_remote_inference(model_id=id, data=data)
             return torch.tensor(response)
         else:
             raise RuntimeError("Model not found on Grid Network!")
 
-    def query_model(self, id: str):
-        """ Search for a specific model registered on grid network, if found,
-            It will return all grid nodes that contains the desired model.
+    def query_model_host(self, id: str):
+        """ Search for node host from a specific model registered on grid network, if found,
+            It will return the frist grid node that contains the desired model.
             Args:
                 id : Model's ID.
                 data : Data used to run inference.
             Returns:
-                workers : List of workers that contains the desired model.
+                workers : First worker that contains the desired model.
         """
         for node in self.workers:
             if id in node.models:
                 return node
 
-    def host_encrypted_model(self, model, id: str, n_shares: int = 3):
+    def host_encrypted_model(self, model, id: str, n_shares: int = 4):
         """ This method wiil choose some grid nodes at grid network to host an encrypted model.
 
             Args:
@@ -149,7 +149,7 @@ class GridNetwork:
         # Verify if this network have enough workers.
         if n_shares > len(self.workers):
             raise RuntimeError("Not enough nodes!")
-        elif n_shares < 3:
+        elif n_shares < 4:
             raise RuntimeError("Not enough shares to perform MPC operations!")
         else:
             # Select N workers in your set of workers.
@@ -158,20 +158,24 @@ class GridNetwork:
         # Model needs to be a plan
         if isinstance(model, Plan):
             host = nodes[0]  # Host
-            mpc_nodes = nodes[:-1]  # Shares
+            mpc_nodes = nodes[1:-1]  # Shares
             crypto_provider = nodes[-1]  # Crypto Provider
 
             # SMPC Share
             model.fix_precision().share(*mpc_nodes, crypto_provider=crypto_provider)
 
             # Host model
-            model.send(host)
+            p_model = model.send(host)
 
+            # Save a pointer reference to this model in database.
+            host.serve_model(
+                p_model, model_id=model.id, allow_download=False, allow_remote_inference=False,
+            )
         # If model isn't a plan
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def query_encrypted_model(self, id: str):
+    def query_encrypted_model_hosts(self, id: str):
         """ Search for an encrypted model and return its mpc nodes.
 
             Args:
@@ -181,18 +185,18 @@ class GridNetwork:
             Raises:
                 RuntimeError: If model id not found.
         """
-        # Search for Pointer Plan
-        model = list(filter(lambda x: x._objects.get(id), self.workers))
+        host = self.query_model_host(id)
 
         # If it's registered on grid nodes.
-        if len(model):
-            host = model[0].owner  # Get the host of the first model found.
+        if host:
+            model = host.search(id)[0].get(deregister_ptr=False)
             mpc_nodes = set()
             crypto_provider = None
 
             # Check every state used by this plan
             for state_id in model.state.state_ids:
-                obj = host._objects.get(state_id)
+                hook = host.hook
+                obj = hook.local_worker._objects.get(state_id)
 
                 # Decrease in Tensor Hierarchy.
                 # (we want be a AdditiveSharingTensor to recover workers/crypto_provider addresses)
@@ -200,7 +204,7 @@ class GridNetwork:
                     obj = obj.child
 
                 # Get a list of mpc nodes.
-                nodes = map(lambda x: (x, host._known_workers.get(x)), obj.child.keys(),)
+                nodes = map(lambda x: hook.local_worker._known_workers.get(x), obj.child.keys(),)
 
                 mpc_nodes.update(set(nodes))
 
@@ -223,12 +227,12 @@ class GridNetwork:
             Raises:
                 RuntimeError: If model id not found.
         """
-        host, mpc_nodes, crypto_provider = self.query_encrypted_model(id)
+        host, mpc_nodes, crypto_provider = self.query_encrypted_model_hosts(id)
 
         # Share your dataset to same SMPC Workers
         shared_data = data.fix_precision().share(*mpc_nodes, crypto_provider=crypto_provider)
 
         # Perform Inference
-        fetched_plan = self.hook.local_worker.fetch_plan(id, host, copy=copy)
+        fetched_plan = host.hook.local_worker.fetch_plan(id, host, copy=copy)
 
         return fetched_plan(shared_data).get().float_prec()
