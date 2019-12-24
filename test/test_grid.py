@@ -24,19 +24,19 @@ def test_virtual_grid(workers):
     y = torch.tensor([1, 2, 3, 4]).tag("#alice", "#female").send(alice)
     z = torch.tensor([1, 2, 3, 4]).tag("#james", "#male").send(james)
 
-    results, tags = grid.search()
+    results = grid.search()
     assert len(results) == 3
 
     assert "bob" in results.keys()
     assert "alice" in results.keys()
     assert "james" in results.keys()
 
-    results, tags = grid.search("#bob")
+    results = grid.search("#bob")
     assert len(results["bob"]) == 1
     assert "alice" not in results
     assert "james" not in results
 
-    results, tags = grid.search("#male")
+    results = grid.search("#male")
     assert len(results["bob"]) == 1
     assert "alice" not in results
     assert len(results["james"]) == 1
