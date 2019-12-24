@@ -10,6 +10,14 @@ class TENSOR_SERIALIZATION(object):
     ALL = "all"
 
 
+class GATEWAY_ENDPOINTS(object):
+    SEARCH_TAGS = "/search"
+    SEARCH_MODEL = "/search-model"
+    SEARCH_ENCRYPTED_MODEL = "/search-encrypted-model"
+    SELECT_MODEL_HOST = "/choose-model-host"
+    SELECT_ENCRYPTED_MODEL_HOSTS = "/choose-encrypted-model-host"
+
+
 class REQUEST_MSG(object):
     TYPE_FIELD = "type"
     GET_ID = "get-id"
