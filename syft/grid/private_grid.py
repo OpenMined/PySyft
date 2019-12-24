@@ -1,72 +1,42 @@
 import random
 import torch
-from collections import Counter
+
 from typing import Any
 from typing import Tuple
-from typing import Counter as CounterType
 from typing import Dict
 from typing import Union
 
 # Syft imports
+from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
 from syft.messaging.plan.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 
-class PrivateGridNetwork:
+class PrivateGridNetwork(AbstractGrid):
     def __init__(self, *workers):
+        super().__init__()
         self.workers = list(workers)
-        self._connect_all_nodes(self.workers)
+        self._connect_all_nodes(self.workers, NodeClient)
 
-    def search(
-        self, *query, verbose: bool = True, return_counter: bool = True
-    ) -> Union[Tuple[Dict[Any, Any], CounterType], Dict[Any, Any]]:
+    def search(self, *query) -> Dict[Any, Any]:
         """ Searches over a collection of workers, returning pointers to the results
-        grouped by worker.
-            
+            grouped by worker.
             Args:
                 query : List of tags used to identify the desired tensor.
-                verbose : Boolean flag to activate verbosity during search method.
-                return_counter : Boolean flag to return counter of found itens.
             Returns:
                 results : list of pointers with pointers that matches with tags.
-                tag_counter : tag counter.
         """
 
-        tag_counter: CounterType[int] = Counter()
-        result_counter = 0
-
         results = {}
+
         for worker in self.workers:
-
-            worker_tag_ctr: CounterType[int] = Counter()
-
             worker_results = worker.search(query)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results
 
-                for result in worker_results:
-                    for tag in result.tags:
-                        tag_counter[tag] += 1
-                        worker_tag_ctr[tag] += 1
-
-                if verbose:
-                    tags = str(worker_tag_ctr.most_common(3))
-                    print(f"Found {str(len(worker_results))} results on {str(worker)} - {tags}")
-
-                result_counter += len(worker_results)
-
-        if verbose:
-            print(f"\nFound {str(result_counter)} results in total.")
-            print("\nTag Profile:")
-            for tag, count in tag_counter.most_common():
-                print(f"\t {tag} found {str(count)}")
-
-        if return_counter:
-            return results, tag_counter
-        else:
-            return results
+        return results
 
     def serve_model(
         self,
@@ -90,7 +60,7 @@ class PrivateGridNetwork:
                 NotImplementedError: If workers used by grid network aren't grid nodes.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self.__is_node_workers():
+        if not self._check_node_type(self.workers, NodeClient):
             raise NotImplementedError
 
         if n_replica > len(self.workers):
@@ -100,7 +70,7 @@ class PrivateGridNetwork:
 
         for i in range(len(nodes)):
             if not mpc:
-                # Host model
+                # Host plain-text model
                 nodes[i].serve_model(
                     model,
                     model_id=id,
@@ -108,6 +78,7 @@ class PrivateGridNetwork:
                     allow_remote_inference=allow_remote_inference,
                 )
             else:
+                # Host encrypted model
                 self._host_encrypted_model(model)
 
     def run_remote_inference(self, id: str, data: torch.Tensor, mpc: bool = False) -> torch.Tensor:
@@ -124,20 +95,17 @@ class PrivateGridNetwork:
                 RuntimeError: If model id not found.
         """
         # If workers used by grid network aren't grid nodes.
-        if not self.__is_node_workers():
+        if not self._check_node_type(self.workers, NodeClient):
             raise NotImplementedError
 
         if not mpc:
-            node = self.query_model_host(id)
-            if node:
-                response = node.run_remote_inference(model_id=id, data=data)
-                return torch.tensor(response)
-            else:
-                raise RuntimeError("Model not found on Grid Network!")
+            result = self._run_unencrypted_inference(id, data)
         else:
-            return self._run_encrypted_inference(id, data)
+            result = self._run_encrypted_inference(id, data)
 
-    def query_model_host(
+        return result
+
+    def query_model_hosts(
         self, id: str, mpc: bool = False
     ) -> Union["NodeClient", Tuple["NodeClient"]]:
         """ Search for node host from a specific model registered on grid network, if found,
@@ -154,16 +122,16 @@ class PrivateGridNetwork:
         """
 
         # If workers used by grid network aren't grid nodes.
-        if not self.__is_node_workers():
+        if not self._check_node_type(self.workers, NodeClient):
             raise NotImplementedError
 
-        # If it isn't a mpc model
+        # Search for non mpc models.
         if not mpc:
             for node in self.workers:
                 if id in node.models:
                     return node
         else:
-            # MPC model
+            # Search for MPC models
             return self._query_encrypted_model_hosts(id)
 
     def _host_encrypted_model(self, model, n_shares: int = 4):
@@ -179,7 +147,7 @@ class PrivateGridNetwork:
         # Verify if this network have enough workers.
         if n_shares > len(self.workers):
             raise RuntimeError("Not enough nodes!")
-        elif n_shares < 4:
+        elif n_shares < self.SMPC_HOST_CHUNK:
             raise RuntimeError("Not enough shares to perform MPC operations!")
         else:
             # Select N workers in your set of workers.
@@ -219,7 +187,7 @@ class PrivateGridNetwork:
             Raises:
                 RuntimeError: If model id not found.
         """
-        host = self.query_model_host(id)
+        host = self.query_model_hosts(id)
 
         # If it's registered on grid nodes.
         if host:
@@ -249,9 +217,26 @@ class PrivateGridNetwork:
         else:
             raise RuntimeError("Model ID not found!")
 
+    def _run_unencrypted_inference(self, id: str, data) -> torch.Tensor:
+        """ Search for a plain-text model registered on grid network, if found,
+            It will run inference.
+            Args:
+                id : Model's ID.
+                dataset : Data used to run inference.
+            Returns:
+                Tensor : Inference's result.
+            Raises:
+                RuntimeError: If model id not found.
+        """
+        node = self.query_model_hosts(id)
+        if node:
+            response = node.run_remote_inference(model_id=id, data=data)
+            return torch.tensor(response)
+        else:
+            raise RuntimeError("Model not found on Grid Network!")
+
     def _run_encrypted_inference(self, id: str, data) -> torch.Tensor:
         """ Search for an encrypted model and perform inference.
-            
             Args:
                 model_id: Model's ID.
                 data: Dataset to be shared/inferred.
@@ -270,24 +255,3 @@ class PrivateGridNetwork:
         fetched_plan = host.hook.local_worker.fetch_plan(id, host, copy=True)
 
         return fetched_plan(shared_data).get().float_prec()
-
-    def _connect_all_nodes(self, nodes: list):
-        """Connect all nodes to each other.
-
-        Args:
-            nodes: A tuple of grid clients.
-        """
-        if self.__is_node_workers():
-            for i in range(len(nodes)):
-                for j in range(i):
-                    node_i, node_j = nodes[i], nodes[j]
-                    node_i.connect_nodes(node_j)
-                    node_j.connect_nodes(node_i)
-
-    def __is_node_workers(self) -> bool:
-        """ Private method used to verify if workers used by grid network are grid nodes.
-            
-            Returns:
-               result : Boolean value
-        """
-        return all(isinstance(node, NodeClient) for node in self.workers)
