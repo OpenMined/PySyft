@@ -1020,6 +1020,27 @@ def make_objectpointer(**kwargs):
     ]
 
 
+# syft.generic.string.String
+def make_string(**kwargs):
+
+    return [
+        {
+            "value": syft.generic.string.String(
+                "Hello World", id=1234, tags=["tag1", "tag2"], description="description"
+            ),
+            "simplified": (
+                CODE[syft.generic.string.String],
+                (
+                    (CODE[str], (b"Hello World",)),
+                    1234,
+                    (CODE[list], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"description",)),
+                ),
+            ),
+        }
+    ]
+
+
 # syft.federated.train_config.TrainConfig
 def make_trainconfig(**kwargs):
     class Model(torch.jit.ScriptModule):
@@ -1651,6 +1672,7 @@ samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
 samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.string.String] = make_string
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
@@ -1669,6 +1691,7 @@ samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
+
 
 # Dynamically added to msgpack.serde.simplifiers by some other test
 samples[syft.workers.virtual.VirtualWorker] = make_baseworker
