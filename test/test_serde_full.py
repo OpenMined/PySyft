@@ -1020,6 +1020,43 @@ def make_objectpointer(**kwargs):
     ]
 
 
+# syft.generic.string.String
+def make_string(**kwargs):
+    def compare_simplified(actual, expected):
+        """This is a custom comparison functino.
+           The reason for using this is that when set is that tags are use. Tags are sets.
+           When sets are simplified and converted to tuple, elements order in tuple is random
+           We compare tuples as sets because the set order is undefined.
+
+           This function is inspired by the one with the same name defined above in `make_set`.
+        """
+        assert actual[0] == expected[0]
+        assert actual[1][0] == expected[1][0]
+        assert actual[1][1] == expected[1][1]
+        assert actual[1][2][0] == expected[1][2][0]
+        assert set(actual[1][2][1]) == set(expected[1][2][1])
+        assert actual[1][3] == expected[1][3]
+        return True
+
+    return [
+        {
+            "value": syft.generic.string.String(
+                "Hello World", id=1234, tags=set(["tag1", "tag2"]), description="description"
+            ),
+            "simplified": (
+                CODE[syft.generic.string.String],
+                (
+                    (CODE[str], (b"Hello World",)),
+                    1234,
+                    (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"description",)),
+                ),
+            ),
+            "cmp_simplified": compare_simplified,
+        }
+    ]
+
+
 # syft.federated.train_config.TrainConfig
 def make_trainconfig(**kwargs):
     class Model(torch.jit.ScriptModule):
@@ -1651,6 +1688,7 @@ samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
 samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.string.String] = make_string
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
@@ -1669,6 +1707,7 @@ samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
+
 
 # Dynamically added to msgpack.serde.simplifiers by some other test
 samples[syft.workers.virtual.VirtualWorker] = make_baseworker
