@@ -1,6 +1,9 @@
 import torch
+import syft
 from .gradients_core import GradFunc
 from .gradients_core import apply_dim_transformations
+
+from syft.workers.abstract import AbstractWorker
 
 
 class AddBackward(GradFunc):
@@ -19,6 +22,45 @@ class AddBackward(GradFunc):
             )
 
         return (grad_self, grad_other)
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, grad_fn: "AddBackward") -> tuple:
+        """ Simplifies AddBackward object """
+
+        chain_self_ = None
+        if hasattr(grad_fn.self_, "child"):
+            chain_self_ = (syft.serde.msgpack.serde._simplify(worker, grad_fn.self_))
+
+        chain_other = None
+        if hasattr(grad_fn.other, "child"):
+            chain_other = (syft.serde.msgpack.serde._simplify(worker, grad_fn.other))
+
+        return (
+        chain_self_,
+        chain_other
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, gradfn_tuple: tuple) -> "AddBackward":
+        """ Detailing AddBackward object """
+
+        (
+        chain_self_,
+        chain_other
+        ) = gradfn_tuple
+
+        if chain_self_ is not None:
+            chain_self_ = syft.serde.msgpack.serde._detail(worker, chain_self_)
+
+        if chain_other is not None:
+            chain_other = syft.serde.msgpack.serde._detail(worker, chain_other)
+
+        grad_fn = AddBackward(
+        chain_self_,
+        chain_other
+        )
+        
+        return grad_fn
 
 
 class SubBackward(GradFunc):
