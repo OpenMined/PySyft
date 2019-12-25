@@ -12,13 +12,15 @@ from typing import Tuple
 import numpy
 
 from syft.workers.abstract import AbstractWorker
-from syft import serde
+from syft.serde.msgpack import serde
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)
 
 
-def _simplify_collection(my_collection: Collection) -> Tuple:
+def _simplify_collection(
+    worker: AbstractWorker, my_collection: Collection, shallow: bool = False
+) -> Tuple:
     """
     This function is designed to search a collection for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
@@ -36,18 +38,24 @@ def _simplify_collection(my_collection: Collection) -> Tuple:
 
     """
 
+    # Don't simplify contents
+    if shallow:
+        return tuple(my_collection)
+
     # Step 0: initialize empty list
     pieces = list()
 
     # Step 1: serialize each part of the collection
     for part in my_collection:
-        pieces.append(serde._simplify(part))
+        pieces.append(serde._simplify(worker, part))
 
     # Step 2: return serialization as tuple of simplified items
     return tuple(pieces)
 
 
-def _detail_collection_list(worker: AbstractWorker, my_collection: Tuple) -> Collection:
+def _detail_collection_list(
+    worker: AbstractWorker, my_collection: Tuple, shallow: bool = False
+) -> Collection:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -64,19 +72,23 @@ def _detail_collection_list(worker: AbstractWorker, my_collection: Tuple) -> Col
             in the collection have been detailed.
     """
 
+    # Don't detail contents
+    if shallow:
+        return list(my_collection)
+
     pieces = list()
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         detailed = serde._detail(worker, part)
-        if isinstance(detailed, bytes):
-            detailed = detailed.decode("utf-8")
         pieces.append(detailed)
 
     return pieces
 
 
-def _detail_collection_set(worker: AbstractWorker, my_collection: Tuple) -> Collection:
+def _detail_collection_set(
+    worker: AbstractWorker, my_collection: Tuple, shallow: bool = False
+) -> Collection:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -93,18 +105,22 @@ def _detail_collection_set(worker: AbstractWorker, my_collection: Tuple) -> Coll
             in the collection have been detailed.
     """
 
+    # Don't detail contents
+    if shallow:
+        return set(my_collection)
+
     pieces = list()
 
     # Step 1: deserialize each part of the collection
     for part in my_collection:
         detailed = serde._detail(worker, part)
-        if isinstance(detailed, bytes):
-            detailed = detailed.decode("utf-8")
         pieces.append(detailed)
     return set(pieces)
 
 
-def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
+def _detail_collection_tuple(
+    worker: AbstractWorker, my_tuple: Tuple, shallow: bool = False
+) -> Tuple:
     """
     This function is designed to operate in the opposite direction of
     _simplify_collection. It takes a tuple of simple python objects
@@ -123,6 +139,10 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
             in the collection have been detailed.
     """
 
+    # Don't detail contents
+    if shallow:
+        return my_tuple
+
     pieces = list()
 
     # Step 1: deserialize each part of the collection
@@ -132,7 +152,7 @@ def _detail_collection_tuple(worker: AbstractWorker, my_tuple: Tuple) -> Tuple:
     return tuple(pieces)
 
 
-def _simplify_dictionary(my_dict: Dict) -> Tuple:
+def _simplify_dictionary(worker: AbstractWorker, my_dict: Dict, shallow: bool = False) -> Tuple:
     """
     This function is designed to search a dict for any objects
     which may need to be simplified (i.e., torch tensors). It iterates
@@ -152,12 +172,14 @@ def _simplify_dictionary(my_dict: Dict) -> Tuple:
     pieces = list()
     # for dictionaries we want to simplify both the key and the value
     for key, value in my_dict.items():
-        pieces.append((serde._simplify(key), serde._simplify(value)))
+        pieces.append(
+            (serde._simplify(worker, key), serde._simplify(worker, value) if not shallow else value)
+        )
 
     return tuple(pieces)
 
 
-def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
+def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple, shallow: bool = False) -> Dict:
     """
     This function is designed to operate in the opposite direction of
     _simplify_dictionary. It takes a dictionary of simple python objects
@@ -177,13 +199,12 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
     # for dictionaries we want to detail both the key and the value
     for key, value in my_dict:
         detailed_key = serde._detail(worker, key)
-        if isinstance(detailed_key, bytes):
-            detailed_key = detailed_key.decode("utf-8")
 
-        detailed_value = serde._detail(worker, value)
-        if isinstance(detailed_value, bytes):
-            detailed_value = detailed_value.decode("utf-8")
-        pieces[detailed_key] = detailed_value
+        if shallow:
+            pieces[detailed_key] = value
+        else:
+            detailed_value = serde._detail(worker, value)
+            pieces[detailed_key] = detailed_value
 
     return pieces
 
@@ -191,7 +212,7 @@ def _detail_dictionary(worker: AbstractWorker, my_dict: Tuple) -> Dict:
 # Simplify/Detail native types
 
 
-def _simplify_str(obj: str) -> tuple:
+def _simplify_str(worker: AbstractWorker, obj: str) -> tuple:
     return (obj.encode("utf-8"),)
 
 
@@ -199,7 +220,7 @@ def _detail_str(worker: AbstractWorker, str_tuple: tuple) -> str:
     return str_tuple[0].decode("utf-8")
 
 
-def _simplify_range(my_range: range) -> Tuple[int, int, int]:
+def _simplify_range(worker: AbstractWorker, my_range: range) -> Tuple[int, int, int]:
     """
     This function extracts the start, stop and step from the range.
 
@@ -242,15 +263,15 @@ def _detail_range(worker: AbstractWorker, my_range_params: Tuple[int, int, int])
     return range(my_range_params[0], my_range_params[1], my_range_params[2])
 
 
-def _simplify_ellipsis(e: Ellipsis) -> bytes:
-    return b""
+def _simplify_ellipsis(worker: AbstractWorker, e: Ellipsis) -> Tuple[bytes]:
+    return (b"",)
 
 
 def _detail_ellipsis(worker: AbstractWorker, ellipsis: bytes) -> Ellipsis:
     return ...
 
 
-def _simplify_slice(my_slice: slice) -> Tuple[int, int, int]:
+def _simplify_slice(worker: AbstractWorker, my_slice: slice) -> Tuple[int, int, int]:
     """
     This function creates a list that represents a slice.
 
@@ -291,7 +312,7 @@ def _detail_slice(worker: AbstractWorker, my_slice: Tuple[int, int, int]) -> sli
 #   Numpy array
 
 
-def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
+def _simplify_ndarray(worker: AbstractWorker, my_array: numpy.ndarray) -> Tuple[bin, Tuple, Tuple]:
     """
     This function gets the byte representation of the array
         and stores the dtype and shape for reconstruction
@@ -308,8 +329,8 @@ def _simplify_ndarray(my_array: numpy.ndarray) -> Tuple[bin, Tuple, str]:
 
     """
     arr_bytes = my_array.tobytes()
-    arr_shape = my_array.shape
-    arr_dtype = my_array.dtype.name
+    arr_shape = serde._simplify(worker, my_array.shape)
+    arr_dtype = serde._simplify(worker, my_array.dtype.name)
 
     return (arr_bytes, arr_shape, arr_dtype)
 
@@ -334,9 +355,9 @@ def _detail_ndarray(
         arr = _detail_ndarray(arr_representation)
 
     """
-    res = numpy.frombuffer(arr_representation[0], dtype=arr_representation[2]).reshape(
-        arr_representation[1]
-    )
+    arr_shape = serde._detail(worker, arr_representation[1])
+    arr_dtype = serde._detail(worker, arr_representation[2])
+    res = numpy.frombuffer(arr_representation[0], dtype=arr_dtype).reshape(arr_shape)
 
     assert type(res) == numpy.ndarray
 
@@ -344,7 +365,7 @@ def _detail_ndarray(
 
 
 def _simplify_numpy_number(
-    numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
+    worker: AbstractWorker, numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
 ) -> Tuple[bin, Tuple]:
     """
     This function gets the byte representation of the numpy number
@@ -358,11 +379,11 @@ def _simplify_numpy_number(
 
     Examples:
 
-        np_representation = _simplify_numpy_number(numpy.float64(2.3)))
+        np_representation = _simplify_numpy_number(worker, numpy.float64(2.3)))
 
     """
     nb_bytes = numpy_nb.tobytes()
-    nb_dtype = numpy_nb.dtype.name
+    nb_dtype = serde._simplify(worker, numpy_nb.dtype.name)
 
     return (nb_bytes, nb_dtype)
 
@@ -386,7 +407,8 @@ def _detail_numpy_number(
         nb = _detail_numpy_number(nb_representation)
 
     """
-    nb = numpy.frombuffer(nb_representation[0], dtype=nb_representation[1])[0]
+    nb_dtype = serde._detail(worker, nb_representation[1])
+    nb = numpy.frombuffer(nb_representation[0], dtype=nb_dtype)[0]
 
     assert type(nb) in [numpy.float32, numpy.float64, numpy.int32, numpy.int64]
 
@@ -394,7 +416,8 @@ def _detail_numpy_number(
 
 
 # Maps a type to a tuple containing its simplifier and detailer function
-# IMPORTANT: keep this structure sorted A-Z (by type name)
+# IMPORTANT: serialization constants for these objects need to be defined in `proto.json` file
+# in https://github.com/OpenMined/proto
 MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         dict: (_simplify_dictionary, _detail_dictionary),

@@ -1,9 +1,10 @@
 import pytest
 import torch
-
+from torch import nn
+import torch.nn.functional as F
 from syft.generic.pointers.pointer_tensor import PointerTensor
-
 from syft.exceptions import InvalidTensorForRemoteGet
+import syft
 
 
 def test___str__(workers):
@@ -110,6 +111,26 @@ def test_remote_get(hook, workers):
     assert len(alice._objects) == 1
 
 
+def test_remote_send(hook, workers):
+    me = workers["me"]
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    x = torch.tensor([1, 2, 3, 4, 5])
+    ptr_ptr_x = x.send(bob).remote_send(alice)
+
+    assert ptr_ptr_x.owner == me
+    assert ptr_ptr_x.location == bob
+    assert x.id in alice._objects
+
+    y = torch.tensor([1, 2, 3, 4, 5])
+    ptr_y = y.send(bob).remote_send(alice, change_location=True)
+
+    assert ptr_y.owner == me
+    assert ptr_y.location == alice
+    assert y.id in alice._objects
+
+
 def test_copy():
     tensor = torch.rand(5, 3)
     coppied_tensor = tensor.copy()
@@ -156,3 +177,38 @@ def test_roll(workers):
     result = torch.roll(x, index)
 
     assert (result == expected).all()
+
+
+def test_complex_model(workers):
+    hook = syft.TorchHook(torch)
+    bob = workers["bob"]
+    tensor_local = torch.rand(1, 1, 32, 32)
+    tensor_remote = tensor_local.send(bob)
+
+    ## Instantiating a model with multiple layer types
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.conv1 = nn.Conv2d(1, 6, 5)
+            self.conv2 = nn.Conv2d(6, 16, 5)
+            self.fc1 = nn.Linear(16 * 5 * 5, 120)
+            self.fc2 = nn.Linear(120, 84)
+            self.fc3 = nn.Linear(84, 10)
+
+        def forward(self, x):
+            out = self.conv1(x)
+            out = F.relu(out)
+            out = F.max_pool2d(out, 2)
+            out = F.relu(self.conv2(out))
+            out = F.avg_pool2d(out, 2)
+            out = out.view(out.shape[0], -1)
+            out = F.relu(self.fc1(out))
+            out = F.relu(self.fc2(out))
+            out = self.fc3(out)
+            return out
+
+    model_net = Net()
+    model_net.send(bob)
+
+    ## Forward on the remote model
+    pred = model_net(tensor_remote)

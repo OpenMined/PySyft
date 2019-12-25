@@ -2,6 +2,7 @@ import pytest
 import torch
 import syft as sy
 from syft.frameworks.torch.linalg import EncryptedLinearRegression
+from syft.frameworks.torch.linalg import DASH
 
 
 @pytest.mark.parametrize("fit_intercept", [False, True])
@@ -67,3 +68,52 @@ def test_crypto_lr(fit_intercept, hook, workers):
     ##### Test summarize ######
 
     crypto_lr.summarize()
+
+
+def test_DASH(hook, workers):
+    """
+    Test DASH (Distributed Association Scan Hammer), i.e. distributed linear regression for genetics with SMPC
+    """
+
+    bob = workers["bob"]
+    alice = workers["alice"]
+    james = workers["james"]
+    crypto_prov = sy.VirtualWorker(hook, id="crypto_prov")
+    hbc_worker = sy.VirtualWorker(hook, id="hbc_worker")
+
+    ###### Simulate data ######
+    torch.manual_seed(0)  # Truncation might not always work so we set the random seed
+
+    K = 2  # Number of permanent covariates
+    M = 5  # Number of transient covariates
+
+    # Alice
+    N1 = 100
+    y1 = torch.randn(N1).send(alice)
+    X1 = torch.randn(N1, M).send(alice)
+    C1 = torch.randn(N1, K).send(alice)
+
+    # Bob
+    N2 = 200
+    y2 = torch.randn(N2).send(bob)
+    X2 = torch.randn(N2, M).send(bob)
+    C2 = torch.randn(N2, K).send(bob)
+
+    # James
+    N3 = 150
+    y3 = torch.randn(N3).send(james)
+    X3 = torch.randn(N3, M).send(james)
+    C3 = torch.randn(N3, K).send(james)
+
+    X_ptrs = [X1, X2, X3]
+    C_ptrs = [C1, C2, C3]
+    y_ptrs = [y1, y2, y3]
+
+    ####### Run the model #######
+
+    model = DASH(crypto_prov, hbc_worker)
+    model.fit(X_ptrs, C_ptrs, y_ptrs)
+
+    # Check dimensions are ok
+    assert model.coef.shape == torch.Size([M])
+    assert model.sigma2.shape == torch.Size([M])

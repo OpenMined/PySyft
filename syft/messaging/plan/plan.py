@@ -3,15 +3,16 @@ from typing import Tuple
 from typing import Union
 
 import syft as sy
-from syft.codes import MSGTYPE
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.messaging.message import Operation
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 
 
 class func2plan(object):
@@ -122,6 +123,11 @@ class Plan(AbstractObject, ObjectStorage):
                 self.owner.register_obj(tensor)
         self.include_state = include_state
         self.is_built = is_built
+        self.input_shapes = None
+        self._output_shape = None
+
+        # The plan has not been sent
+        self.pointers = dict()
 
         if blueprint is not None:
             self.forward = blueprint
@@ -160,6 +166,20 @@ class Plan(AbstractObject, ObjectStorage):
         """
         return self.state.tensors()
 
+    @property
+    def output_shape(self):
+        if self._output_shape is None:
+            args = self._create_placeholders(self.input_shapes)
+            # NOTE I currently need to regiser and then remove objects to use the method
+            # but a better syntax is being worked on
+            for arg in args:
+                self.owner.register_obj(arg)
+            output = self(*args)
+            for arg in args:
+                self.owner.rm_obj(arg)
+            self._output_shape = output.shape
+        return self._output_shape
+
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
 
@@ -184,18 +204,15 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             The None message serialized to specify the command was received.
         """
-        (some_type, (msg_type, contents)) = sy.serde.deserialize(bin_message, details=False)
+        msg = sy.serde.deserialize(bin_message)
 
-        if (
-            msg_type not in (MSGTYPE.OBJ, MSGTYPE.OBJ_DEL, MSGTYPE.FORCE_OBJ_DEL)
-            and not self.is_built
-        ):
-            self.procedure.operations.append((some_type, (msg_type, contents)))
+        if isinstance(msg, Operation):
+            # Re-deserialize without detailing
+            (msg_type, contents) = sy.serde.deserialize(
+                bin_message, strategy=sy.serde.msgpack.serde._deserialize_msgpack_binary
+            )
 
-        # we can't receive the results of a plan without
-        # executing it. So, execute the plan.
-        if msg_type in (MSGTYPE.OBJ_REQ, MSGTYPE.IS_NONE, MSGTYPE.GET_SHAPE):
-            return self.__call__()
+            self.procedure.operations.append((msg_type, contents))
 
         return sy.serde.serialize(None)
 
@@ -212,6 +229,9 @@ class Plan(AbstractObject, ObjectStorage):
         Args:
             args: Input data.
         """
+
+        self.input_shapes = [x.shape for x in args]
+        self._output_shape = None
 
         # Move the arguments of the first call to the plan
         build_args = [arg.send(self) for arg in args]
@@ -318,6 +338,10 @@ class Plan(AbstractObject, ObjectStorage):
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
+        # If promises are given to the plan, prepare it to receive values from these promises
+        if self.has_promises_args(args):
+            return self.setup_plan_with_promises(*args)
+
         # We build the plan only if needed
         if not self.is_built:
             self.build(args)
@@ -330,6 +354,43 @@ class Plan(AbstractObject, ObjectStorage):
         if len(responses) == 1:
             return responses[0]
         return responses
+
+    def has_args_fulfilled(self):
+        """ Check if all the arguments of the plan are ready or not.
+        It might be the case that we still need to wait for some arguments in
+        case some of them are Promises.
+        """
+        for arg_id in self.procedure.arg_ids:
+            arg = self.owner.get_obj(arg_id)
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                if not arg.child.is_kept():
+                    return False
+        return True
+
+    def has_promises_args(self, args):
+        return any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args])
+
+    def setup_plan_with_promises(self, *args):
+        """ Slightly modifies a plan so that it can work with promises.
+        The plan will also be sent to location with this method.
+        """
+        for arg in args:
+            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
+                arg.child.plans.add(self.id)
+                prom_owner = arg.owner
+
+        # As we cannot perform operation between different type of tensors with torch, all the
+        # input tensors should have the same type and the result should also have this same type.
+        result_type = args[0].torch_type()
+
+        res = PromiseTensor(
+            owner=prom_owner, shape=self.output_shape, tensor_type=result_type, plans=set()
+        )
+
+        self.procedure.update_args(args, self.procedure.result_ids)
+        self.procedure.promise_out_id = res.id
+
+        return res.wrap()
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -347,19 +408,30 @@ class Plan(AbstractObject, ObjectStorage):
         if len(locations) == 1:
             location = locations[0]
 
+            # Check if plan was already sent at the location
+            if location in self.pointers:
+                return self.pointers[location]
+
             self.procedure.update_worker_ids(self.owner.id, location.id)
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
             # Revert ids
             self.procedure.update_worker_ids(location.id, self.owner.id)
+            self.pointers[location] = pointer
         else:
             ids_at_location = []
             for location in locations:
-                self.procedure.update_worker_ids(self.owner.id, location.id)
-                # Send the Plan
-                pointer = self.owner.send(self, workers=location)
-                # Revert ids
-                self.procedure.update_worker_ids(location.id, self.owner.id)
+                if location in self.pointers:
+                    # Use the pointer that was already sent
+                    pointer = self.pointers[location]
+                else:
+                    self.procedure.update_worker_ids(self.owner.id, location.id)
+                    # Send the Plan
+                    pointer = self.owner.send(self, workers=location)
+                    # Revert ids
+                    self.procedure.update_worker_ids(location.id, self.owner.id)
+                    self.pointers[location] = pointer
+
                 ids_at_location.append(pointer.id_at_location)
 
             pointer = sy.PointerPlan(location=locations, id_at_location=ids_at_location)
@@ -371,6 +443,9 @@ class Plan(AbstractObject, ObjectStorage):
         return self
 
     get = get_
+
+    def get_pointers(self):
+        return self.pointers
 
     def fix_precision_(self, *args, **kwargs):
         self.state.fix_precision_(*args, **kwargs)
@@ -424,24 +499,27 @@ class Plan(AbstractObject, ObjectStorage):
         return self.__str__()
 
     @staticmethod
-    def simplify(plan: "Plan") -> tuple:
+    def simplify(worker: AbstractWorker, plan: "Plan") -> tuple:
         """
         This function takes the attributes of a Plan and saves them in a tuple
         Args:
+            worker (AbstractWorker): the worker doing the serialization
             plan (Plan): a Plan object
         Returns:
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
         return (
-            sy.serde._simplify(plan.id),
-            sy.serde._simplify(plan.procedure),
-            sy.serde._simplify(plan.state),
-            sy.serde._simplify(plan.include_state),
-            sy.serde._simplify(plan.is_built),
-            sy.serde._simplify(plan.name),
-            sy.serde._simplify(plan.tags),
-            sy.serde._simplify(plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.id),
+            sy.serde.msgpack.serde._simplify(worker, plan.procedure),
+            sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.include_state),
+            sy.serde.msgpack.serde._simplify(worker, plan.is_built),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_shapes),
+            sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
+            sy.serde.msgpack.serde._simplify(worker, plan.name),
+            sy.serde.msgpack.serde._simplify(worker, plan.tags),
+            sy.serde.msgpack.serde._simplify(worker, plan.description),
         )
 
     @staticmethod
@@ -454,19 +532,34 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        id, procedure, state, include_state, is_built, name, tags, description = plan_tuple
-        id = sy.serde._detail(worker, id)
-        procedure = sy.serde._detail(worker, procedure)
-        state = sy.serde._detail(worker, state)
+        (
+            id,
+            procedure,
+            state,
+            include_state,
+            is_built,
+            input_shapes,
+            output_shape,
+            name,
+            tags,
+            description,
+        ) = plan_tuple
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        procedure = sy.serde.msgpack.serde._detail(worker, procedure)
+        state = sy.serde.msgpack.serde._detail(worker, state)
+        input_shapes = sy.serde.msgpack.serde._detail(worker, input_shapes)
+        output_shape = sy.serde.msgpack.serde._detail(worker, output_shape)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
         plan.procedure = procedure
         plan.state = state
         state.plan = plan
+        plan.input_shapes = input_shapes
+        plan._output_shape = output_shape
 
-        plan.name = sy.serde._detail(worker, name)
-        plan.tags = sy.serde._detail(worker, tags)
-        plan.description = sy.serde._detail(worker, description)
+        plan.name = sy.serde.msgpack.serde._detail(worker, name)
+        plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
+        plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
         return plan

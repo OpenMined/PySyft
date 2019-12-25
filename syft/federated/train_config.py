@@ -136,7 +136,7 @@ class TrainConfig:
             return self.loss_fn.get()
 
     @staticmethod
-    def simplify(train_config: "TrainConfig") -> tuple:
+    def simplify(worker: AbstractWorker, train_config: "TrainConfig") -> tuple:
         """Takes the attributes of a TrainConfig and saves them in a tuple.
 
         Attention: this function does not serialize the model and loss_fn attributes
@@ -145,6 +145,7 @@ class TrainConfig:
         are serialized here.
 
         Args:
+            worker: the worker doing the serialization
             train_config: a TrainConfig object
         Returns:
             tuple: a tuple holding the unique attributes of the TrainConfig object
@@ -154,9 +155,9 @@ class TrainConfig:
             train_config._loss_fn_id,
             train_config.batch_size,
             train_config.epochs,
-            sy.serde._simplify(train_config.optimizer),
-            sy.serde._simplify(train_config.optimizer_args),
-            sy.serde._simplify(train_config.id),
+            sy.serde.msgpack.serde._simplify(worker, train_config.optimizer),
+            sy.serde.msgpack.serde._simplify(worker, train_config.optimizer_args),
+            sy.serde.msgpack.serde._simplify(worker, train_config.id),
             train_config.max_nr_batches,
             train_config.shuffle,
         )
@@ -172,13 +173,21 @@ class TrainConfig:
             train_config: A TrainConfig object
         """
 
-        model_id, loss_fn_id, batch_size, epochs, optimizer, optimizer_args, id, max_nr_batches, shuffle = (
-            train_config_tuple
-        )
+        (
+            model_id,
+            loss_fn_id,
+            batch_size,
+            epochs,
+            optimizer,
+            optimizer_args,
+            id,
+            max_nr_batches,
+            shuffle,
+        ) = train_config_tuple
 
-        id = sy.serde._detail(worker, id)
-        detailed_optimizer = sy.serde._detail(worker, optimizer)
-        detailed_optimizer_args = sy.serde._detail(worker, optimizer_args)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        detailed_optimizer = sy.serde.msgpack.serde._detail(worker, optimizer)
+        detailed_optimizer_args = sy.serde.msgpack.serde._detail(worker, optimizer_args)
 
         train_config = TrainConfig(
             model=None,

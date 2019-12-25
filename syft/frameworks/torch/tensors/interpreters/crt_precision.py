@@ -4,11 +4,11 @@ import numpy as np
 import itertools
 
 import syft
-from syft.generic.tensor import AbstractTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook.hook_args import default_register_tensor
+from syft.generic.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 
 
 class CRTPrecisionTensor(AbstractTensor):
@@ -312,22 +312,23 @@ class CRTPrecisionTensor(AbstractTensor):
         return self.wrap()
 
     @staticmethod
-    def simplify(tensor: "CRTPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "CRTPrecisionTensor") -> tuple:
         """
         This function takes the attributes of a CRTPrecisionTensor and saves them in a tuple
         Args:
+            worker: the worker doing the serialization
             tensor: a CRTPrecisionTensor
         Returns:
             tuple: a tuple holding the unique attributes of the tensor
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (tensor.id, tensor.base, tensor.precision_fractional, chain)
 
     @staticmethod
-    def detail(worker, tensor_tuple: tuple) -> "CRTPrecisionTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "CRTPrecisionTensor":
         """
         This function reconstructs a CRTPrecisionTensor given its attributes in form of a tuple.
         Args:
@@ -346,7 +347,7 @@ class CRTPrecisionTensor(AbstractTensor):
         )
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

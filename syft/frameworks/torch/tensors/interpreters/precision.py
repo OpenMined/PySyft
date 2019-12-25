@@ -36,7 +36,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
-        super().__init__(tags, description)
+        super().__init__(tags=tags, description=description)
 
         self.owner = owner
         self.id = id if id else syft.ID_PROVIDER.pop()
@@ -315,7 +315,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If both have the same sign, sgn is 1 else it's 0
             # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
             # we would need to overload the __add__ for operators int and AST.
-            sgn = -(sgn_self - sgn_other) ** 2 + 1
+            sgn = -((sgn_self - sgn_other) ** 2) + 1
             changed_sign = True
 
             if cmd == "div":
@@ -353,7 +353,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __mul__ = mul
 
     def __imul__(self, other):
-        self = self.mul_and_div(other, "mul")
+        self.child = self.mul_and_div(other, "mul").child
         return self
 
     mul_ = __imul__
@@ -364,7 +364,7 @@ class FixedPrecisionTensor(AbstractTensor):
     __truediv__ = div
 
     def __itruediv__(self, other):
-        self = self.mul_and_div(other, "div")
+        self.child = self.mul_and_div(other, "div").child
         return self
 
     def pow(self, power):
@@ -777,10 +777,11 @@ class FixedPrecisionTensor(AbstractTensor):
         return self
 
     @staticmethod
-    def simplify(tensor: "FixedPrecisionTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "FixedPrecisionTensor") -> tuple:
         """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
+            worker: the worker doing the serialization
             tensor: a FixedPrecisionTensor.
 
         Returns:
@@ -788,16 +789,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(tensor.id),
+            syft.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            syft.serde._simplify(tensor.tags),
-            syft.serde._simplify(tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
+            syft.serde.msgpack.serde._simplify(worker, tensor.description),
             chain,
         )
 
@@ -818,17 +819,17 @@ class FixedPrecisionTensor(AbstractTensor):
 
         tensor = FixedPrecisionTensor(
             owner=worker,
-            id=syft.serde._detail(worker, tensor_id),
+            id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
-            tags=syft.serde._detail(worker, tags),
-            description=syft.serde._detail(worker, description),
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
+            description=syft.serde.msgpack.serde._detail(worker, description),
         )
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

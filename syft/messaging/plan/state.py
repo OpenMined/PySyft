@@ -118,11 +118,14 @@ class State(object):
             tensor.get_()
 
     @staticmethod
-    def simplify(state: "State") -> tuple:
+    def simplify(worker: AbstractWorker, state: "State") -> tuple:
         """
         Simplify the plan's state when sending a plan
         """
-        return (sy.serde._simplify(state.state_ids), sy.serde._simplify(state.tensors()))
+        return (
+            sy.serde.msgpack.serde._simplify(worker, state.state_ids),
+            sy.serde.msgpack.serde._simplify(worker, state.tensors()),
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
@@ -131,8 +134,8 @@ class State(object):
         ids.
         """
         state_ids, state_elements = state_tuple
-        state_ids = sy.serde._detail(worker, state_ids)
-        state_elements = sy.serde._detail(worker, state_elements)
+        state_ids = sy.serde.msgpack.serde._detail(worker, state_ids)
+        state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
         for state_id, state_element in zip(state_ids, state_elements):
             worker.register_obj(state_element, obj_id=state_id)

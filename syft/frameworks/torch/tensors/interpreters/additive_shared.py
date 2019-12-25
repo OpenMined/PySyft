@@ -2,8 +2,8 @@ import math
 import torch
 
 import syft as sy
-from syft.frameworks.torch.crypto import spdz
-from syft.frameworks.torch.crypto import securenn
+from syft.frameworks.torch.mpc import spdz
+from syft.frameworks.torch.mpc import securenn
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -198,7 +198,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(field)
+            share.random_(int(-field / 2), int(field / 2) - 1)
 
         shares = []
         for i in range(n_workers):
@@ -969,7 +969,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share.garbage_collect_data = value
 
     @staticmethod
-    def simplify(tensor: "AdditiveSharingTensor") -> tuple:
+    def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
         """
         This function takes the attributes of a AdditiveSharingTensor and saves them in a tuple
         Args:
@@ -982,12 +982,17 @@ class AdditiveSharingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(tensor.child)
+            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
 
-        return (tensor.id, tensor.field, tensor.crypto_provider.id, chain)
+        return (
+            sy.serde.msgpack.serde._simplify(worker, tensor.id),
+            tensor.field,
+            sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
+            chain,
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
@@ -1003,16 +1008,17 @@ class AdditiveSharingTensor(AbstractTensor):
             """
 
         tensor_id, field, crypto_provider, chain = tensor_tuple
+        crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=tensor_id,
+            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
         if chain is not None:
-            chain = sy.serde._detail(worker, chain)
+            chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor

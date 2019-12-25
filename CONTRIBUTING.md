@@ -27,7 +27,7 @@ You will just need to fork once. After that you can call `git fetch upstream` an
 
 PySyft uses the python package `pre-commit` to make sure the correct formatting (black & flake) is applied.
 
-You can install it via `pip install -r requirements_dev.txt` or directly doing `pip install pre-commit`
+You can install it via `pip install -r pip-dep/requirements_dev.txt` or directly doing `pip install pre-commit`
 
 Then you just need to call `pre-commit install`
 
@@ -39,12 +39,16 @@ To sync your fork with the OpenMined/PySyft repository please see this [Guide](h
 
 ### Installing PySyft after Cloning Repository
 
-To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
+To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/master/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
 ```bash
 cd PySyft
 pip install -e .
 ```
-If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead. 
+If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
+
+### Deploying Workers
+
+You can follow along [this example](./examples/deploy_workers/deploy-and-connect.ipynb) to learn how to deploy PySyft workers and start playing around.
 
 ## Contributing
 
@@ -94,6 +98,22 @@ def test_hooked_tensor(self, compress, compressScheme):
     assert (t == t_serialized_deserialized).all()
 ```
 
+### Process for Serde Protocol Changes
+Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto).
+All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/syft-proto/blob/master/proto.json) file and have unique code value.
+
+Updating lists of _simplifiers and detailers_ in `syft/serde/native_serde.py`, `syft/serde/serde.py`, `syft/serde/torch_serde.py`
+or renaming/moving related classes can make unit tests fail because `proto.json` won't be in sync with PySyft code anymore.
+
+Use following process:
+ 1. Fork [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto) and create new branch.
+ 2. Make required changes in your PySyft and syft-proto branches. Install syft-proto locally (`pip install .`) to test it with PySyft (note that editable install won't refresh `proto.json` as it is copied on installation time).
+ 3. To make CI checks pass in your PySyft PR, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto==*`. 
+ 4. Create PRs in PySyft and syft-proto repos.
+ 5. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
+](https://pypi.org/project/syft-proto/#history). 
+ 6. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto==<new version>`.
+
 ### Documentation and Codestyle
 
 To ensure code quality and make sure other people can understand your changes, you have to document your code. For documentation we are using the Google Python Style Rules which can be found [here](https://github.com/google/styleguide/blob/gh-pages/pyguide.md). A well wrote example can we viewed [here](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html).
@@ -119,14 +139,29 @@ from syft.serde import deserialize
 sphinx-apidoc -f -o docs/modules/ syft/
 ```
 
+#### Type Checking
+
+The codebase contains [static type hints](https://docs.python.org/3/library/typing.html) for code clarity and catching errors prior to runtime. If you're adding type hints, please run the static type checker to ensure the type annotations you added are correct via:
+
+```bash
+mypy syft
+```
+
+Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ignore existing type issues found by mypy.
+
 ### Keep it DRY (Don't repeat yourself)
 
 As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
 
+### Contributing a notebook and adding it to the CI system
+
+If you are contributing a notebook, please ensure you install the requirements for testing notebooks locally. `pip install -r pip-dep/requirements_notebooks.txt`.
+Also please add tests for it in the `tests/notebook/test_notebooks.py` file. There are plenty of examples, for questions about the notebook tests please feel free to reference https://github.com/fdroessler.
+
 ### Creating a Pull Request
 
 At any point in time you can create a pull request, so others can see your changes and give you feedback.
-Please create all pull requests to the `dev` branch.
+Please create all pull requests to the `master` branch.
 If your PR is still work in progress and not ready to be merged please add a `[WIP]` at the start of the title.
 Example:`[WIP] Serialization of PointerTensor`
 

@@ -18,6 +18,7 @@ install:
   - pip3 install -r pip-dep/requirements.txt >build.log
   - pip3 install -r pip-dep/requirements_dev.txt >build.log
   - pip3 install -r pip-dep/requirements_udacity.txt >build.log
+  - pip3 install -r pip-dep/requirements_notebooks.txt >build.log
   - pip3 install scikit-learn >build.log
   - pip3 install flake8
   #- pip3 install flake8-docstrings
@@ -34,11 +35,14 @@ before_script:
   # accordance with this:
   # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
   - flake8 . --count --exit-zero --statistics --select=E,F,W,C90
+  # Run type checker in CI such that type errors can be identified and gradually addressed.
+  # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
+  - mypy syft || echo "Type errors found, continuing build..."
 script:
   - coverage run -m pytest test
-  - coverage report --fail-under 95 -m
+  - coverage report --ignore-errors --fail-under 95 -m
   # ensuring coverage of tests stays at 100 until entire coverage can be 100
-  - coverage report --fail-under 100 -m --include="test/*"
+  - coverage report --ignore-errors --fail-under 100 -m --include="test/*"
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
 notifications:

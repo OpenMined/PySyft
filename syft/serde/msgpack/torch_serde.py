@@ -16,9 +16,32 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft.serde.msgpack import serde
+from syft.codes import TENSOR_SERIALIZATION
+
+# Torch dtypes to string (and back) mappers
+TORCH_DTYPE_STR = {
+    torch.uint8: "uint8",
+    torch.int8: "int8",
+    torch.int16: "int16",
+    torch.int32: "int32",
+    torch.int64: "int64",
+    torch.float16: "float16",
+    torch.float32: "float32",
+    torch.float64: "float64",
+    torch.complex32: "complex32",
+    torch.complex64: "complex64",
+    torch.complex128: "complex128",
+    torch.bool: "bool",
+    torch.qint8: "qint8",
+    torch.quint8: "quint8",
+    torch.qint32: "qint32",
+    torch.bfloat16: "bfloat16",
+}
+TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
 
 
-def _serialize_tensor(tensor) -> bin:
+def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     """Serialize the tensor using as default Torch serialization strategy
     This function can be overridden to provide different tensor serialization strategies
 
@@ -29,23 +52,45 @@ def _serialize_tensor(tensor) -> bin:
         A serialized version of the input tensor
 
     """
-    return torch_tensor_serializer(tensor)
+    serializers = {
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
+        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
+        TENSOR_SERIALIZATION.ALL: generic_tensor_serializer,
+    }
+    if worker.serializer not in serializers:
+        raise NotImplementedError(
+            f"Tensor serialization strategy is not supported: {worker.serializer}"
+        )
+    serializer = serializers[worker.serializer]
+    return serializer(worker, tensor)
 
 
-def _deserialize_tensor(tensor_bin) -> torch.Tensor:
+def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> torch.Tensor:
     """Deserialize the input tensor passed as parameter into a Torch tensor.
-    This function can be overridden to provide different deserialization strategies
+    `serializer` parameter selects different deserialization strategies
 
     Args
-        tensor_bin: A binary representation of a tensor
+        worker: Worker
+        serializer: Strategy used for tensor deserialization (e.g.: torch, numpy, all)
+        tensor_bin: A simplified representation of a tensor
 
     Returns
         a Torch tensor
     """
-    return torch_tensor_deserializer(tensor_bin)
+    deserializers = {
+        TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
+        TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
+        TENSOR_SERIALIZATION.ALL: generic_tensor_deserializer,
+    }
+    if serializer not in deserializers:
+        raise NotImplementedError(
+            f"Cannot deserialize tensor serialized with '{serializer}' strategy"
+        )
+    deserializer = deserializers[serializer]
+    return deserializer(worker, tensor_bin)
 
 
-def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
+def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     """Strategy to serialize a tensor using numpy npy format.
     If tensor requires to calculate gradients, it will be detached.
     """
@@ -64,7 +109,30 @@ def numpy_tensor_serializer(tensor: torch.Tensor) -> bin:
     return outfile.read()
 
 
-def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
+def generic_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> tuple:
+    """Strategy to serialize a tensor to native python types.
+    If tensor requires to calculate gradients, it will be detached.
+    """
+    if tensor.requires_grad:
+        warnings.warn(
+            "Torch to native serializer can only be used with tensors that do not require grad. "
+            "Detaching tensor to continue"
+        )
+        tensor = tensor.detach()
+
+    tensor_tuple = (tuple(tensor.size()), TORCH_DTYPE_STR[tensor.dtype], tensor.flatten().tolist())
+    return serde._simplify(worker, tensor_tuple)
+
+
+def generic_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
+    """"Strategy to deserialize a simplified tensor into a Torch tensor"""
+
+    size, dtype, data_arr = serde._detail(worker, tensor_tuple)
+    tensor = torch.tensor(data_arr, dtype=TORCH_STR_DTYPE[dtype]).reshape(size)
+    return tensor
+
+
+def numpy_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
     """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
     input_file = TemporaryFile()
     input_file.write(tensor_bin)
@@ -73,14 +141,14 @@ def numpy_tensor_deserializer(tensor_bin) -> torch.Tensor:
     return torch.from_numpy(numpy.load(input_file))
 
 
-def torch_tensor_serializer(tensor) -> bin:
+def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
     """Strategy to serialize a tensor using Torch saver"""
     binary_stream = io.BytesIO()
     torch.save(tensor, binary_stream)
     return binary_stream.getvalue()
 
 
-def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
+def torch_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Torch load"""
     bin_tensor_stream = io.BytesIO(tensor_bin)
     return torch.load(bin_tensor_stream)
@@ -89,7 +157,7 @@ def torch_tensor_deserializer(tensor_bin) -> torch.Tensor:
 # Simplify/Detail Torch Tensors
 
 
-def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
+def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     """
     This function converts a torch tensor into a serliaized torch tensor
     using pickle. We choose to use this because PyTorch has a custom and
@@ -105,7 +173,7 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
         (optinally) is the chain of graident tensors (nested tuple)
     """
 
-    tensor_bin = _serialize_tensor(tensor)
+    tensor_bin = _serialize_tensor(worker, tensor)
 
     # note we need to do this explicitly because torch.save does not
     # seem to be including .grad by default
@@ -115,9 +183,9 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
             if isinstance(tensor.child, PointerTensor):
                 grad_chain = None
             else:
-                grad_chain = _simplify_torch_tensor(tensor.grad)
+                grad_chain = _simplify_torch_tensor(worker, tensor.grad)
         else:
-            grad_chain = _simplify_torch_tensor(tensor.grad)
+            grad_chain = _simplify_torch_tensor(worker, tensor.grad)
 
     else:
         grad_chain = None
@@ -127,15 +195,20 @@ def _simplify_torch_tensor(tensor: torch.Tensor) -> bin:
     # I think the pointer bug is is between here
 
     if hasattr(tensor, "child"):
-        chain = syft.serde._simplify(tensor.child)
+        chain = serde._simplify(worker, tensor.child)
 
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
-    tags = tensor.tags
-    if tags is not None:
-        tags = list(tags)
-    return (tensor.id, tensor_bin, chain, grad_chain, tags, tensor.description)
+    return (
+        tensor.id,
+        tensor_bin,
+        chain,
+        grad_chain,
+        serde._simplify(worker, tensor.tags),
+        serde._simplify(worker, tensor.description),
+        serde._simplify(worker, worker.serializer),
+    )
 
 
 def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
@@ -153,9 +226,9 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain, tags, description = tensor_tuple
+    tensor_id, tensor_bin, chain, grad_chain, tags, description, serializer = tensor_tuple
 
-    tensor = _deserialize_tensor(tensor_bin)
+    tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
 
     # note we need to do this explicitly because torch.load does not
     # include .grad informatino
@@ -166,26 +239,13 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
     )
 
-    if tags is not None:
-
-        tags = list(tags)
-
-        for i in range(len(tags)):
-            tag = tags[i]
-            if isinstance(tag, bytes):
-                tag = tag.decode("utf-8")
-            tags[i] = tag
-        tensor.tags = tags
-
-    if description is not None:
-        if isinstance(description, bytes):
-            description = description.decode("utf-8")
-        tensor.description = description
-
     if chain is not None:
-        chain = syft.serde._detail(worker, chain)
+        chain = serde._detail(worker, chain)
         tensor.child = chain
         tensor.is_wrapper = True
+
+    tensor.tags = serde._detail(worker, tags)
+    tensor.description = serde._detail(worker, description)
 
     return tensor
 
@@ -193,7 +253,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 # Simplify/Detail Parameters
 
 
-def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
+def _simplify_torch_parameter(worker: AbstractWorker, param: torch.nn.Parameter) -> bin:
     """
     This function converts a torch Parameter into a serialized torch Parameter
 
@@ -207,12 +267,12 @@ def _simplify_torch_parameter(param: torch.nn.Parameter) -> bin:
     """
 
     tensor = param.data
-    tensor_ser = syft.serde._simplify(tensor)
+    tensor_ser = serde._simplify(worker, tensor)
 
     grad = param.grad
 
     if grad is not None and not (hasattr(grad, "child") and isinstance(grad.child, PointerTensor)):
-        grad_ser = _simplify_torch_tensor(grad)
+        grad_ser = _simplify_torch_tensor(worker, grad)
     else:
         grad_ser = None
 
@@ -233,7 +293,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     """
     param_id, tensor_ser, requires_grad, grad_ser = param_tuple
 
-    tensor = syft.serde._detail(worker, tensor_ser)
+    tensor = serde._detail(worker, tensor_ser)
 
     if grad_ser is not None:
         grad = _detail_torch_tensor(worker, grad_ser)
@@ -251,35 +311,30 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     return param
 
 
-def _simplify_torch_device(device: torch.device) -> Tuple[str]:
-    return device.type
+def _simplify_torch_device(worker: AbstractWorker, device: torch.device) -> Tuple:
+    device_type = serde._simplify(worker, device.type)
+    return (device_type,)
 
 
-def _detail_torch_device(worker: AbstractWorker, device_type: str) -> torch.device:
-    return torch.device(type=device_type)
+def _detail_torch_device(worker: AbstractWorker, device_type: tuple) -> torch.device:
+    return torch.device(type=serde._detail(worker, device_type[0]))
 
 
-def _simplify_torch_size(shape: torch.Size) -> Tuple:
-    return (list(shape),)
-
-
-def _detail_torch_size(worker: AbstractWorker, shape: List[int]) -> torch.Size:
-    return torch.Size(*shape)
-
-
-def _simplify_script_module(obj: torch.jit.ScriptModule) -> str:
+def _simplify_script_module(worker: AbstractWorker, obj: torch.jit.ScriptModule) -> Tuple:
     """Strategy to serialize a script module using Torch.jit"""
-    return obj.save_to_buffer()
+    return (obj.save_to_buffer(),)
 
 
-def _detail_script_module(worker: AbstractWorker, script_module_bin: str) -> torch.jit.ScriptModule:
+def _detail_script_module(
+    worker: AbstractWorker, script_module_bin: Tuple
+) -> torch.jit.ScriptModule:
     """"Strategy to deserialize a binary input using Torch load"""
-    script_module_stream = io.BytesIO(script_module_bin)
+    script_module_stream = io.BytesIO(script_module_bin[0])
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module
 
 
-def _simplify_torch_size(size: torch.Size) -> Tuple[int]:
+def _simplify_torch_size(worker: AbstractWorker, size: torch.Size) -> Tuple[int]:
     return tuple(size)
 
 
@@ -288,11 +343,11 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
 
 
 # Maps a type to a tuple containing its simplifier and detailer function
-# IMPORTANT: keep this structure sorted A-Z (by type name)
+# IMPORTANT: serialization constants for these objects need to be defined
+# in `proto.json` file of https://github.com/OpenMined/proto
 MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         torch.device: (_simplify_torch_device, _detail_torch_device),
-        torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
         torch._C.Function: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),

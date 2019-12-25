@@ -2,7 +2,7 @@ import numpy as np
 
 import torch
 
-from syft.frameworks.torch.differential_privacy import pate
+from syft.frameworks.torch.dp import pate
 
 np.random.seed(0)
 
