@@ -32,7 +32,7 @@ $ pip install .
 - On macOS, you might get ```ld: library not found for -lssl```. It happens when openssl is missing. Kindly install openSSL, add it to you path and try again. You can also fix the issue by installing the appropriate Xcode Command line tools from [here](https://developer.apple.com/download/more/).
 
 ## Getting started
-To boot the entire PyGrid platform locally, we will use docker containers.  
+To boot the entire PyGrid platform locally, we will use docker containers.
 To install docker the dependencies, just follow [docker documentation](https://docs.docker.com/install/).
 
 #### Start Grid platform locally
@@ -41,11 +41,13 @@ It will download the latest openmined's docker images and start a grid platform 
 ```
 $ docker-compose up
 ```
+#### Kubernetes deployment.
+You can now deploy the grid-gateway and grid-node docker containers on kubernetes. This can be either to a local (minikube) cluster or a remote cluster (GKE, EKS, AKS etc). The steps to setup the cluster can be found in [./k8s/Readme.md](https://github.com/OpenMined/PyGrid/tree/dev/k8s)
 
 #### Build your own images
 ```
-$ docker build -t node ./app/websocket/  # Build PyGrid node image
-$ docker build -t gateway ./gateway/  # Build gateway image
+$ docker build -t openmined/grid-node ./app/websocket/  # Build PyGrid node image
+$ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
 ```
 
 

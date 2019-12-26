@@ -27,8 +27,8 @@ Use deploy.sh to deploy local cluster , to test cluster or prod cluster
 * Build Docker images
 
   ```shell
-  $ docker build -t node ./app/websocket/  # Build PyGrid node image
-  $ docker build -t gateway ./gateway/  # Build gateway image
+  $ docker build -t openmined/grid-node ./app/websocket/  # Build PyGrid node image
+  $ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
   $ ./deploy.sh -t local # Kubernetes local deployment
   ```
 
