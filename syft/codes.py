@@ -27,6 +27,7 @@ class REQUEST_MSG(object):
     LIST_MODELS = "list-models"
     DELETE_MODEL = "delete-model"
     RUN_INFERENCE = "run-inference"
+    AUTHENTICATE = "authentication"
 
 
 class RESPONSE_MSG(object):

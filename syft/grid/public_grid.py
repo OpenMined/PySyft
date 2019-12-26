@@ -9,6 +9,7 @@ from typing import Tuple
 from typing import Dict
 
 # Syft imports
+from syft.grid.authentication.crendential import AbstractCredential
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
 from syft.messaging.plan.plan import Plan
@@ -16,10 +17,11 @@ from syft.codes import GATEWAY_ENDPOINTS
 
 
 class PublicGridNetwork(AbstractGrid):
-    def __init__(self, hook, gateway_url: str):
+    def __init__(self, hook, gateway_url: str, credential: AbstractCredential = None):
         super().__init__()
         self.hook = hook
         self.gateway_url = gateway_url
+        self.credential = credential
 
     def search(self, *query: Union[str]) -> Dict[Any, Any]:
         """ Search a set of tags across the grid network.
@@ -275,7 +277,7 @@ class PublicGridNetwork(AbstractGrid):
 
     def __connect_with_node(self, node_id, node_url):
         if node_id not in self.hook.local_worker._known_workers:
-            worker = NodeClient(self.hook, node_url, node_id)
+            worker = NodeClient(self.hook, node_url, node_id, credential=self.credential)
         else:
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]
