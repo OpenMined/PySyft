@@ -9,7 +9,7 @@ from typing import Tuple
 from typing import Dict
 
 # Syft imports
-from syft.grid.authentication.crendential import AbstractCredential
+from syft.grid.authentication.credential import AbstractCredential
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
 from syft.messaging.plan.plan import Plan
