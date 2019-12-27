@@ -102,6 +102,7 @@ def test_pointer_plan_parameters(workers):
     assert len(param_ptrs) == 2
 
     for param_ptr in param_ptrs:
-        assert isinstance(param_ptr, sy.PointerTensor)
+        assert param_ptr.is_wrapper
+        assert isinstance(param_ptr.child, sy.PointerTensor)
 
     me.is_client_worker = True
