@@ -111,7 +111,7 @@ class PointerPlan(ObjectPointer):
         for pointer in pointers:
             pointer.garbage_collect_data = False
 
-        return pointers
+        return [pointer.wrap() for pointer in pointers]
 
     def request_run_plan(
         self,
