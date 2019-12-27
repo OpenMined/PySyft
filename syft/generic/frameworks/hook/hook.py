@@ -450,7 +450,6 @@ class FrameworkHook(ABC):
                     return self
 
                 # if object is a pointer of pointer, set register to False
-                # TODO: only for torch.Tensor types
                 if isinstance(self.child, PointerTensor):
                     wrap_args = {"register": False}
                 else:
