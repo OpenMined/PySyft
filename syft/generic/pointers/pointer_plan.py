@@ -93,6 +93,26 @@ class PointerPlan(ObjectPointer):
 
         return response
 
+    def parameters(self) -> List:
+        """Return a list of pointers to the plan parameters"""
+
+        assert (
+            len(self._locations) == 1
+        ), ".parameters() for PointerPlan with > 1 locations is currently not implemented."
+        # TODO implement this feature using MultiPointerTensor
+
+        location = self._locations[0]
+        id_at_location = self._ids_at_location[0]
+
+        command = ("parameters", id_at_location, [], {})
+
+        pointers = self.owner.send_command(message=command, recipient=location)
+
+        for pointer in pointers:
+            pointer.garbage_collect_data = False
+
+        return [pointer.wrap() for pointer in pointers]
+
     def request_run_plan(
         self,
         location: "sy.workers.BaseWorker",
