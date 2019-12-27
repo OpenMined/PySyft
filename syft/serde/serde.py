@@ -9,8 +9,7 @@ from typing import Callable
 
 from syft.workers.abstract import AbstractWorker
 
-from syft.serde.msgpack import serialize_msgpack
-from syft.serde.msgpack import deserialize_msgpack
+from syft.serde import msgpack
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
@@ -18,7 +17,7 @@ def serialize(
     worker: AbstractWorker = None,
     simplified: bool = False,
     force_full_simplification: bool = False,
-    strategy: Callable[[object, AbstractWorker], bin] = serialize_msgpack,
+    strategy: Callable[[object, AbstractWorker], bin] = msgpack.serialize,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -47,7 +46,7 @@ def serialize(
 def deserialize(
     binary: bin,
     worker: AbstractWorker = None,
-    strategy: Callable[[bin, AbstractWorker], object] = deserialize_msgpack,
+    strategy: Callable[[bin, AbstractWorker], object] = msgpack.deserialize,
 ) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 

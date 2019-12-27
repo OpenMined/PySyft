@@ -291,7 +291,7 @@ def _serialize_msgpack_binary(
     return compression._compress(binary)
 
 
-def serialize_msgpack(
+def serialize(
     obj: object,
     worker: AbstractWorker = None,
     simplified: bool = False,
@@ -357,7 +357,7 @@ def _deserialize_msgpack_simple(simple_objects: object, worker: AbstractWorker =
     return _detail(worker, simple_objects)
 
 
-def deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
+def deserialize(binary: bin, worker: AbstractWorker = None) -> object:
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
