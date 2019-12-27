@@ -198,7 +198,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(field)
+            share.random_(int(-field / 2), int(field / 2) - 1)
 
         shares = []
         for i in range(n_workers):
@@ -325,6 +325,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
+        if isinstance(other, int):
+            other = torch.LongTensor([other])
+
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
@@ -356,10 +359,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return new_shares
 
-    def __add__(self, other, **kwargs):
-        """Adds two tensors. Forwards command to add. See add() for more details."""
-
-        return self.add(other, **kwargs)
+    __add__ = add
+    __radd__ = add
 
     @overloaded.method
     def sub(self, shares: dict, other):
@@ -373,6 +374,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
+
+        if isinstance(other, int):
+            other = torch.LongTensor([other])
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
@@ -405,9 +409,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return new_shares
 
-    def __sub__(self, *args, **kwargs):
-        """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
-        return self.sub(*args, **kwargs)
+    __sub__ = sub
+
+    def __rsub__(self, other):
+        return (self - other) * -1
 
     def _private_mul(self, other, equation: str):
         """Abstractly Multiplies two tensors

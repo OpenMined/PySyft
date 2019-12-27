@@ -169,6 +169,28 @@ def test_add(workers):
 
     assert (z == (t + t)).all()
 
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4
+
+    z = (x + c).get().float_prec()
+    assert (z == (t + c)).all()
+
+    z = (c + x).get().float_prec()
+    assert (z == (c + t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4.2
+
+    z = (x + c).get().float_prec()
+    assert ((z - (t + c)) < 10e-3).all()
+
+    z = (c + x).get().float_prec()
+    assert ((z - (c + t)) < 10e-3).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -210,6 +232,28 @@ def test_sub(workers):
     z = (y - x).get().float_prec()
 
     assert (z == (u - t)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4
+
+    z = (x - c).get().float_prec()
+    assert (z == (t - c)).all()
+
+    z = (c - x).get().float_prec()
+    assert (z == (c - t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4.2
+
+    z = (x - c).get().float_prec()
+    assert ((z - (t - c)) < 10e-3).all()
+
+    z = (c - x).get().float_prec()
+    assert ((z - (c - t)) < 10e-3).all()
 
 
 def test_mul(workers):
