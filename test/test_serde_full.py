@@ -643,6 +643,8 @@ def make_plan(**kwargs):
         assert detailed.procedure.operations == original.procedure.operations
         assert detailed.procedure.arg_ids == original.procedure.arg_ids
         assert detailed.procedure.result_ids == original.procedure.result_ids
+        # States for the nested plans
+        assert detailed.nested_states == original.nested_states
         # State
         assert detailed.state.state_ids == original.state.state_ids
         assert detailed.include_state == original.include_state
@@ -678,6 +680,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
@@ -702,6 +705,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
