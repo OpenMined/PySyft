@@ -501,10 +501,14 @@ class FixedPrecisionTensor(AbstractTensor):
                     NOTE: This method is faster but not as precise as "exp"
                     Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
         """
-        one = self * 0 + 1
 
         if method == "exp":
-            result = one / (1 + (self * -1).exp())
+            # Inverse can only be used on matrices
+            if len(self.shape) == 1:
+                one = self * 0 + 1
+                result = one / (1 + (self * -1).exp())
+            else:
+                result = (1 + (self * -1).exp()).inverse()
 
         elif method == "maclaurin":
             weights = (
@@ -515,6 +519,7 @@ class FixedPrecisionTensor(AbstractTensor):
             degrees = [0, 1, 3, 5]
 
             # initiate with term of degree 0 to avoid errors with tensor ** 0
+            one = self * 0 + 1
             result = one * weights[0]
             for i, d in enumerate(degrees[1:]):
                 result += (self ** d) * weights[i + 1]

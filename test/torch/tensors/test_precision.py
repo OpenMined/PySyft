@@ -81,19 +81,6 @@ def test_methods_for_linear_module(method, parameter):
     assert (result == fp_result.float_precision()).all()
 
 
-def test_add_method():
-
-    t = torch.tensor([0.1, 0.2, 0.3])
-    x = t.fix_prec()
-
-    y = x + x
-
-    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
-    y = y.float_prec()
-
-    assert (y == t + t).all()
-
-
 def test_torch_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
@@ -454,7 +441,6 @@ def test_torch_exp_approx(workers):
             cumsum += diff / (tolerance * norm)
 
         cumsum /= 10
-        print(cumsum)
         assert (cumsum < 1).all()
 
 
