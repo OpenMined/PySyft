@@ -151,6 +151,9 @@ bufferizers, forced_full_bufferizers, unbufferizers = _generate_bufferizers_and_
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_bufferizers_found, no_full_bufferizers_found = set(), set()
+# Store types that use simplifiers from their ancestors so we
+# can look them up quickly during serialization.
+inherited_bufferizers_found = OrderedDict()
 
 
 ## SECTION:  High Level Public Functions (these are the ones you use)
@@ -296,6 +299,12 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     if current_type in bufferizers:
         result = bufferizers[current_type](worker, obj, **kwargs)
         return result
+    elif current_type in inherited_bufferizers_found:
+        result = (
+            inherited_bufferizers_found[current_type][0],
+            inherited_bufferizers_found[current_type][1](worker, obj, **kwargs),
+        )
+        return result
 
     # If we already tried to find a bufferizer for this type but failed, we should
     # just return the object as it is.
@@ -315,8 +324,8 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
             if inheritance_type in bufferizers:
                 # Store the inheritance_type in bufferizers so next time we see this type
                 # serde will be faster.
-                bufferizers[current_type] = bufferizers[inheritance_type]
-                result = (bufferizers[current_type](worker, obj, **kwargs),)
+                inherited_bufferizers_found[current_type] = bufferizers[inheritance_type]
+                result = (inherited_bufferizers_found[current_type](worker, obj, **kwargs),)
                 return result
 
         no_bufferizers_found.add(current_type)
