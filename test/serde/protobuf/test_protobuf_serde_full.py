@@ -38,17 +38,9 @@ def test_serde_roundtrip_protobuf(cls, workers):
         serde_worker.framework = sample.get("framework", torch)
         obj = sample.get("value")
         protobuf_obj = _to_protobuf(serde_worker, obj)
+        roundtrip_obj = None
         if not isinstance(obj, Exception):
             roundtrip_obj = protobuf.serde._unbufferize(serde_worker, protobuf_obj)
-        else:
-            try:
-                protobuf.serde._unbufferize(serde_worker, protobuf_obj)
-            except Exception as e:
-                roundtrip_obj = e
 
-        if sample.get("cmp_detailed", None):
-            # Custom detailed objects comparison function.
-            assert sample.get("cmp_detailed")(roundtrip_obj, obj) is True
-        else:
-            assert type(roundtrip_obj) == type(obj)
-            assert roundtrip_obj == obj
+        assert type(roundtrip_obj) == type(obj)
+        assert roundtrip_obj == obj
