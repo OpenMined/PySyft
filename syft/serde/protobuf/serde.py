@@ -8,7 +8,6 @@ from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
-from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 
 
 # if dependency_check.torch_available:
@@ -270,15 +269,6 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
     message_type = msg_wrapper.WhichOneof("contents")
     python_obj = _unbufferize(worker, getattr(msg_wrapper, message_type))
     return python_obj
-
-
-def create_protobuf_id(id) -> IdPB:
-    protobuf_id = IdPB()
-    if type(id) == type("str"):
-        protobuf_id.id_str = id
-    else:
-        protobuf_id.id_int = id
-    return protobuf_id
 
 
 def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
