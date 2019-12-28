@@ -36,6 +36,13 @@ for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
 # Native types.
 ########################################################################
 
+# None
+
+
+def make_none(**kwargs):
+    return [{"value": None}]
+
+
 # Dict.
 def make_dict(**kwargs):
     return [
