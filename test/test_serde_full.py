@@ -643,6 +643,8 @@ def make_plan(**kwargs):
         assert detailed.procedure.operations == original.procedure.operations
         assert detailed.procedure.arg_ids == original.procedure.arg_ids
         assert detailed.procedure.result_ids == original.procedure.result_ids
+        # States for the nested plans
+        assert detailed.nested_states == original.nested_states
         # State
         assert detailed.state.state_ids == original.state.state_ids
         assert detailed.include_state == original.include_state
@@ -678,6 +680,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
@@ -702,6 +705,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
@@ -1022,6 +1026,7 @@ def make_objectpointer(**kwargs):
 
 # syft.generic.string.String
 def make_string(**kwargs):
+
     def compare_simplified(actual, expected):
         """This is a custom comparison functino.
            The reason for using this is that when set is that tags are use. Tags are sets.
@@ -1041,6 +1046,7 @@ def make_string(**kwargs):
     return [
         {
             "value": syft.generic.string.String(
+
                 "Hello World", id=1234, tags=set(["tag1", "tag2"]), description="description"
             ),
             "simplified": (
@@ -1048,6 +1054,7 @@ def make_string(**kwargs):
                 (
                     (CODE[str], (b"Hello World",)),
                     1234,
+
                     (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
                     (CODE[str], (b"description",)),
                 ),
