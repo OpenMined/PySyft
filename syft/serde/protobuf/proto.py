@@ -12,10 +12,7 @@ from google.protobuf.empty_pb2 import Empty
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 
 
-MAP_PYTHON_TO_PROTOBUF_CLASSES = {
-    type(None): Empty,
-    torch.Tensor: TorchTensorPB,
-}
+MAP_PYTHON_TO_PROTOBUF_CLASSES = {type(None): Empty, torch.Tensor: TorchTensorPB}
 
 MAP_PROTOBUF_TO_PYTHON_CLASSES = {}
 

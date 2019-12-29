@@ -44,7 +44,7 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     serializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
-        TENSOR_SERIALIZATION.ALL: protobuf_tensor_serializer
+        TENSOR_SERIALIZATION.ALL: protobuf_tensor_serializer,
     }
     if worker.serializer not in serializers:
         raise NotImplementedError(
@@ -69,7 +69,7 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     deserializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_deserializer,
-        TENSOR_SERIALIZATION.ALL: protobuf_tensor_deserializer
+        TENSOR_SERIALIZATION.ALL: protobuf_tensor_deserializer,
     }
     if serializer not in deserializers:
         raise NotImplementedError(
@@ -144,7 +144,7 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
         protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_ALL
     else:
         protobuf_tensor.contents_bin = serialized_tensor
-        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_UNSPECIFIED    
+        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_UNSPECIFIED
 
     if chain:
         protobuf_tensor.chain.CopyFrom(chain)
@@ -158,7 +158,9 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
     return protobuf_tensor
 
 
-def _unbufferize_torch_tensor(worker: AbstractWorker, protobuf_tensor: "TensorPB") -> torch.Tensor:
+def _unbufferize_torch_tensor(
+    worker: AbstractWorker, protobuf_tensor: "TorchTensorPB"
+) -> torch.Tensor:
     """
     This function converts a serialized torch tensor into a torch tensor
     using pickle.
@@ -178,7 +180,7 @@ def _unbufferize_torch_tensor(worker: AbstractWorker, protobuf_tensor: "TensorPB
 
     serializer = ""
     serialized_tensor = protobuf_tensor.contents_bin
-    if protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_TORCH:        
+    if protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_TORCH:
         serializer = TENSOR_SERIALIZATION.TORCH
     elif protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_NUMPY:
         serializer = TENSOR_SERIALIZATION.NUMPY
