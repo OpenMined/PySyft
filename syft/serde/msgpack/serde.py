@@ -239,6 +239,9 @@ simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_deta
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
+# Store types that use simplifiers from their ancestors so we
+# can look them up quickly during serialization.
+inherited_simplifiers_found = OrderedDict()
 
 
 def _serialize_msgpack_simple(
@@ -288,7 +291,7 @@ def _serialize_msgpack_binary(
     return compression._compress(binary)
 
 
-def serialize_msgpack(
+def serialize(
     obj: object,
     worker: AbstractWorker = None,
     simplified: bool = False,
@@ -354,7 +357,7 @@ def _deserialize_msgpack_simple(simple_objects: object, worker: AbstractWorker =
     return _detail(worker, simple_objects)
 
 
-def deserialize_msgpack(binary: bin, worker: AbstractWorker = None) -> object:
+def deserialize(binary: bin, worker: AbstractWorker = None) -> object:
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -393,6 +396,12 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
         return result
+    elif current_type in inherited_simplifiers_found:
+        result = (
+            inherited_simplifiers_found[current_type][0],
+            inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
+        )
+        return result
 
     # If we already tried to find a simplifier for this type but failed, we should
     # just return the object as it is.
@@ -412,10 +421,10 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
             if inheritance_type in simplifiers:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
-                simplifiers[current_type] = simplifiers[inheritance_type]
+                inherited_simplifiers_found[current_type] = simplifiers[inheritance_type]
                 result = (
-                    simplifiers[current_type][0],
-                    simplifiers[current_type][1](worker, obj, **kwargs),
+                    inherited_simplifiers_found[current_type][0],
+                    inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
                 )
                 return result
 
