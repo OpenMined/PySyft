@@ -16,6 +16,9 @@ samples = OrderedDict()
 # Native
 samples[type(None)] = make_none
 
+# Torch
+samples[torch.Tensor] = make_torch_tensor
+
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
@@ -42,5 +45,9 @@ def test_serde_roundtrip_protobuf(cls, workers):
         if not isinstance(obj, Exception):
             roundtrip_obj = protobuf.serde._unbufferize(serde_worker, protobuf_obj)
 
-        assert type(roundtrip_obj) == type(obj)
-        assert roundtrip_obj == obj
+        if sample.get("cmp_detailed", None):
+            # Custom detailed objects comparison function.
+            assert sample.get("cmp_detailed")(roundtrip_obj, obj) is True
+        else:
+            assert type(roundtrip_obj) == type(obj)
+            assert roundtrip_obj == obj
