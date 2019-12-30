@@ -189,17 +189,17 @@ def _unbufferize_torch_tensor(
     worker: AbstractWorker, protobuf_tensor: "TorchTensorPB"
 ) -> torch.Tensor:
     """
-    This function converts a serialized torch tensor into a torch tensor
-    using pickle.
+    This function converts a Protobuf torch tensor back into a
+    Torch tensor. The tensor contents can be deserialized from
+    binary representations produced by Torch or Numpy, or from
+    the generic Protobuf message format for cross-platform
+    communication.
 
     Args:
-        tensor_tuple (bin): serialized obj of torch tensor. It's a tuple where
-            the first value is the ID, the second vlaue is the binary for the
-            PyTorch object, the third value is the chain of tensor abstractions,
-            and the fourth object is the chain of gradients (.grad.grad, etc.)
+        protobuf_tensor (bin): Protobuf message of torch tensor.
 
     Returns:
-        torch.Tensor: a torch tensor that was serialized
+        torch.Tensor: a torch tensor converted from Protobuf
     """
     tensor_id = getattr(protobuf_tensor.id, protobuf_tensor.id.WhichOneof("id"))
     tags = protobuf_tensor.tags
