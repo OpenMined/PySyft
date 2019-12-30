@@ -8,7 +8,6 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.remote import Remote
-from syft.frameworks.numpy.wrapped_numpy.wrapper import WrappedNumpy, WrappedNdarray
 from syft.frameworks.numpy.tensors.interpreters.native import NumpyTensor
 #from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 #from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
@@ -21,6 +20,9 @@ from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.messaging.plan import Plan
+
+
+
 
 
 class NumpyHook(FrameworkHook):
@@ -120,7 +122,7 @@ class NumpyHook(FrameworkHook):
 
         self.args_hook_for_overloaded_attr = {}
 
-        self._hook_native_tensor(WrappedNdarray, NumpyTensor)
+        self._hook_native_tensor(syft.ndarray, NumpyTensor)
         """
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
@@ -176,6 +178,14 @@ class NumpyHook(FrameworkHook):
         self._hook_optim()
 
     """
+        if not "native_array" in dir(self.numpy):
+            self.numpy.native_array = self.numpy.array
+
+        def syftNumpyArray(array_like, subcls=syft.ndarray):
+            return self.numpy.native_array(array_like).view(subcls)
+
+        self.numpy.array = syftNumpyArray
+
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
         syft.local_worker = self.local_worker
@@ -185,6 +195,7 @@ class NumpyHook(FrameworkHook):
     def create_shape(cls, shape_dims):
         return torch.Size(shape_dims)
 
+    """
     def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
@@ -193,6 +204,8 @@ class NumpyHook(FrameworkHook):
         ), "NumpyHook only uses WrappedNumpy.WrappedNdarray wrappers"
 
         return WrappedNumpy.WrappedNdarray()
+
+    """
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
         return torch.zeros(*shape, dtype=dtype, **kwargs)

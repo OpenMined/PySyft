@@ -28,6 +28,11 @@ if dependency_check.torch_available:
     framework_layer_module.named_tensors = torch.nn.Module.named_parameters
     framework_layer_modules.append(framework_layer_module)
 
+if dependency_check.numpy_available:
+    from syft.frameworks.numpy.ndarray import ndarray
+
+    framework_tensors.append(ndarray)
+
 framework_tensors = tuple(framework_tensors)
 FrameworkTensorType = Union[framework_tensors]
 FrameworkTensor = framework_tensors

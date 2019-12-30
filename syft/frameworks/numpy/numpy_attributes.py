@@ -4,6 +4,7 @@ from typing import Callable
 from typing import Any
 
 from syft.generic.frameworks.attributes import FrameworkAttributes
+from syft import ndarray as SyftNdarray
 from syft.frameworks.numpy.tensors.interpreters.native import NumpyTensor
 
 
@@ -109,7 +110,7 @@ class NumpyAttributes(FrameworkAttributes):
 
         # Add all tensor types
         self.guard = {
-            "Tensor": numpy.WrappedNdarray,
+            "Tensor": SyftNdarray,
             #"DoubleTensor": torch.DoubleTensor,
             #"HalfTensor": torch.HalfTensor,
             #"ByteTensor": torch.ByteTensor,

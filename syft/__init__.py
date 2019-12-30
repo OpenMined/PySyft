@@ -40,6 +40,8 @@ else:
 from syft.frameworks.torch.hook.hook import TorchHook
 
 # NumPy dependencies
+from syft.frameworks.numpy.ndarray import ndarray
+
 # Import Hook
 from syft.frameworks.numpy.hook.hook import NumpyHook
 
