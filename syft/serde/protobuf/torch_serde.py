@@ -133,9 +133,11 @@ def protobuf_tensor_deserializer(
 
 def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     """
-    This function converts a torch tensor into a serliaized torch tensor
-    using pickle. We choose to use this because PyTorch has a custom and
-    very fast PyTorch pickler.
+    This function converts a Torch tensor into a serialized tensor
+    using Protobuf. Depending on the worker's serializer, the tensor
+    contents may be serialized to binary representations using Torch
+    or Numpy, or to a generic inner Protobuf message for cross-platform
+    communication.
 
     Args:
         tensor (torch.Tensor): an input tensor to be serialized
