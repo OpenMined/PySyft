@@ -11,3 +11,4 @@ websocket_client>=0.56.0
 websockets>=7.0
 zstd>=1.4.0.0
 phe>=1.4.0
+scipy>=1.4.1
