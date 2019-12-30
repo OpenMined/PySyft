@@ -26,6 +26,7 @@ from syft.serde.torch.serde import numpy_tensor_serializer
 from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
+from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 
@@ -233,7 +234,21 @@ def _unbufferize_torch_tensor(
     return tensor
 
 
+def _bufferize_torch_device(worker: AbstractWorker, device: torch.device) -> DevicePB:
+    protobuf_device = DevicePB()
+    protobuf_device.type = device.type
+    return protobuf_device
+
+
+def _unbufferize_torch_device(worker: AbstractWorker, protobuf_device: DevicePB) -> torch.device:
+    device_type = protobuf_device.type
+    return torch.device(type=device_type)
+
+
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
-    {torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor)}
+    {
+        torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor),
+        torch.device: (_bufferize_torch_device, _unbufferize_torch_device),
+    }
 )

@@ -16,7 +16,8 @@ samples = OrderedDict()
 # Native
 samples[type(None)] = make_none
 
-# Torch
+# PyTorch
+samples[torch.device] = make_torch_device
 samples[torch.Tensor] = make_torch_tensor
 
 
