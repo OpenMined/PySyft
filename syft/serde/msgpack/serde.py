@@ -74,7 +74,7 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
-from syft.frameworks.torch.tensors.interpreters.gradients import AddBackward
+from syft.frameworks.torch.tensors.interpreters.gradients_core import GradFunc
 
 if dependency_check.torch_available:
     from syft.serde.msgpack.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
@@ -129,7 +129,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
-    AddBackward
+    GradFunc,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list

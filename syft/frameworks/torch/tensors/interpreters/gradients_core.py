@@ -1,5 +1,10 @@
 # Module for implementing gradients used in the autograd system
 
+import syft
+from syft.workers.abstract import AbstractWorker
+
+from . import gradients
+
 __all__ = ["GradFunc", "apply_dim_transformations"]
 
 
@@ -24,10 +29,13 @@ class GradFunc:
         # This part builds our graph. It takes grad functions (if they exist)
         # from the input arguments and builds a tuple pointing to them. This way
         # we can use .next_functions to traverse through the entire graph.
+        # _parameters is a private list that records all the attributes (required for serialization/deserialization)
+
         self.next_functions = tuple(
             filter(lambda x: x is not None, [forward_grad(arg) for arg in args])
         )
         self.result = None
+        self._parameters = list()
 
     def gradient(self, grad):
         raise NotImplementedError
@@ -37,6 +45,70 @@ class GradFunc:
 
     def __repr__(self):
         return self.__class__.__name__
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+
+        # add attributes of grad function to _parameters list
+        # essential for serialization and deserialization
+        if not name in ["next_functions", "result", "_parameters"]:
+            self._parameters.append(value)
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, grad_fn) -> tuple:
+        """ Takes the attributes of a grad_fn object and saves them in a tuple
+            Every gradient function class that extends `GradFunc` uses this function to
+            simplify the attributes.
+
+        Args:
+            grad_fn: gradient function object (AddBackward, SubBackward, etc.)
+
+        Returns:
+            grad_fn_params: a tuple containing all the simplified attributes
+            of gradient function
+        """
+
+        # Add class name of the grad_fn object at the begining.
+        # Essential while deserializing the object
+        cls = syft.serde.msgpack.serde._simplify(worker, grad_fn.__class__.__name__)
+        grad_fn_params = [cls]
+
+        for param in grad_fn._parameters:
+
+            if hasattr(param, "child"):
+                param = syft.serde.msgpack.serde._simplify(worker, param.child)
+            else:
+                param = syft.serde.msgpack.serde._simplify(worker, param)
+
+            grad_fn_params.append(param)
+
+        return tuple(grad_fn_params)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, gradfn_tuple):
+        """ This function reconstructs (deserializes) the gradient function object,
+         given its attributes in the form of a tuple
+
+         Args:
+            gradfn_tuple: a tuple containing all the simplified attributes of a
+            grad function
+
+        Returns:
+            A correct gradient function object
+
+        """
+        # Extract the class name from tuple
+        cls = syft.serde.msgpack.serde._detail(worker, gradfn_tuple[0])
+        grad_fn_params = []
+        for param in gradfn_tuple[1:]:
+            grad_fn_params.append(syft.serde.msgpack.serde._detail(worker, param))
+
+        if cls == "GradFunc":
+            return GradFunc(*grad_fn_params)
+
+        cls = getattr(gradients, cls)
+
+        return cls(*grad_fn_params)
 
 
 # Accumulate gradients at graph leafs
