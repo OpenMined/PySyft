@@ -478,9 +478,14 @@ class FrameworkHook(ABC):
                 if syft.framework.is_inplace_method(method_name):
                     return self
 
+                # if object is a pointer of pointer, set register to False
+                if isinstance(self.child, PointerTensor):
+                    wrap_args = {"register": False}
+                else:
+                    wrap_args = {}
                 # Put back the wrappers where needed
                 response = hook_args.hook_response(
-                    method_name, response, wrap_type=type(self), new_self=self
+                    method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
                 )
 
             return response
