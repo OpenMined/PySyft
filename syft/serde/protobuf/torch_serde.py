@@ -26,7 +26,7 @@ from syft.serde.torch.serde import numpy_tensor_serializer
 from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
-from syft_proto.types.syft.v1.tensor_pb2 import SyftTensor as SyftTensorPB
+from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 
 
@@ -79,11 +79,11 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     return deserializer(worker, tensor_bin)
 
 
-def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> SyftTensorPB:
+def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> TensorDataPB:
     """Strategy to serialize a tensor using Protobuf"""
     dtype = TORCH_DTYPE_STR[tensor.dtype]
 
-    protobuf_tensor = SyftTensorPB()
+    protobuf_tensor = TensorDataPB()
 
     if tensor.is_quantized:
         protobuf_tensor.is_quantized = True
@@ -101,7 +101,7 @@ def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> 
 
 
 def protobuf_tensor_deserializer(
-    worker: AbstractWorker, protobuf_tensor: SyftTensorPB
+    worker: AbstractWorker, protobuf_tensor: TensorDataPB
 ) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Protobuf"""
     size = tuple(protobuf_tensor.shape.dims)

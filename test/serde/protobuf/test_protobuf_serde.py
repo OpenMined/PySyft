@@ -20,7 +20,7 @@ dtypes = [
     "bfloat16",
 ]
 quantized_dtypes = ["qint8", "quint8", "qint32"]
-complex_types = []  # not yet implemented
+complex_types = []  # not yet implemented in PyTorch
 
 
 @pytest.mark.parametrize("str_dtype", dtypes)
