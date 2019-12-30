@@ -27,6 +27,9 @@ def test_serde_coverage():
         assert has_sample is True, "Serde for %s is not tested" % cls
 
 
+# TODO: Test that tensor serialization works for all dtypes
+
+
 @pytest.mark.parametrize("cls", samples)
 def test_serde_roundtrip_protobuf(cls, workers):
     """Checks that values passed through serialization-deserialization stay same"""

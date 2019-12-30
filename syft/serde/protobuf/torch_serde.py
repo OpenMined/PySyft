@@ -81,17 +81,26 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
 
 def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> SyftTensorPB:
     """Strategy to serialize a tensor using Protobuf"""
+    dtype = TORCH_DTYPE_STR[tensor.dtype]
+    data = torch.flatten(tensor).tolist()
+
     protobuf_tensor = SyftTensorPB()
+    protobuf_tensor.dtype = dtype
     protobuf_tensor.shape.dims.extend(tensor.size())
-    protobuf_tensor.contents.extend(torch.flatten(tensor).tolist())
+    getattr(protobuf_tensor, "contents_" + dtype).extend(data)
+
     return protobuf_tensor
 
 
-def protobuf_tensor_deserializer(worker: AbstractWorker, tensor: SyftTensorPB) -> torch.Tensor:
+def protobuf_tensor_deserializer(
+    worker: AbstractWorker, protobuf_tensor: SyftTensorPB
+) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Protobuf"""
-    flattened_tensor = torch.Tensor(tensor.contents)
-    size = tuple(tensor.shape.dims)
-    return flattened_tensor.reshape(size)
+    size = tuple(protobuf_tensor.shape.dims)
+    dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype]
+    data = getattr(protobuf_tensor, "contents_" + protobuf_tensor.dtype)
+
+    return torch.tensor(data, dtype=dtype).reshape(size)
 
 
 # Bufferize/Unbufferize Torch Tensors
