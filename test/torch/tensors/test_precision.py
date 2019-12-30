@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from test.efficiency_tests.assertions import assert_time
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 
 
@@ -59,19 +60,6 @@ def test_fix_prec_inplace_registration(hook):
         assert hook.local_worker.get_obj(x.id) == torch.tensor([1.0]).fix_precision()
 
 
-def test_add_method():
-
-    t = torch.tensor([0.1, 0.2, 0.3])
-    x = t.fix_prec()
-
-    y = x + x
-
-    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
-    y = y.float_prec()
-
-    assert (y == t + t).all()
-
-
 @pytest.mark.parametrize("method", ["t", "matmul"])
 @pytest.mark.parametrize("parameter", [False, True])
 def test_methods_for_linear_module(method, parameter):
@@ -96,6 +84,17 @@ def test_methods_for_linear_module(method, parameter):
 def test_torch_add(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
+    # Method syntax
+    x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    y = x + x
+
+    assert (y.child.child == torch.LongTensor([200, 400, 600])).all()
+    y = y.float_prec()
+
+    assert (y == torch.tensor([0.2, 0.4, 0.6])).all()
+
+    # Function syntax
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
     y = torch.add(x, x)
@@ -120,14 +119,38 @@ def test_torch_add(workers):
 
     assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
 
-    # with AST
+    # with AdditiveSharingTensor
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec()
     y = t.fix_prec().share(bob, alice, crypto_provider=james)
 
-    z = torch.add(y, x).get().float_prec()
-
+    z = torch.add(x, y).get().float_prec()
     assert (z == torch.add(t, t)).all()
+
+    z = torch.add(y, x).get().float_prec()
+    assert (z == torch.add(t, t)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4
+
+    z = (x + c).float_prec()
+    assert (z == (t + c)).all()
+
+    z = (c + x).float_prec()
+    assert (z == (c + t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4.2
+
+    z = (x + c).float_prec()
+    assert ((z - (t + c)) < 10e-3).all()
+
+    z = (c + x).float_prec()
+    assert ((z - (c + t)) < 10e-3).all()
 
 
 def test_torch_add_():
@@ -151,6 +174,54 @@ def test_torch_add_():
     assert (y == torch.tensor([0.15, 0.3, 0.45])).all()
 
 
+def test_torch_sub(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
+
+    z = torch.sub(x, y)
+
+    assert (z.child.child == torch.LongTensor([400, 600, 1000])).all()
+    z = z.float_prec()
+
+    assert (z == torch.tensor([0.4, 0.6, 1.0])).all()
+
+    # with AdditiveSharingTensor
+    tx = torch.tensor([1.0, -2.0, 3.0])
+    ty = torch.tensor([0.1, 0.2, 0.3])
+    x = tx.fix_prec()
+    y = ty.fix_prec().share(bob, alice, crypto_provider=james)
+
+    z1 = torch.sub(y, x).get().float_prec()
+    z2 = torch.sub(x, y).get().float_prec()
+
+    assert (z1 == torch.sub(ty, tx)).all()
+    assert (z2 == torch.sub(tx, ty)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4
+
+    z = (x - c).float_prec()
+    assert (z == (t - c)).all()
+
+    z = (c - x).float_prec()
+    assert (z == (c - t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec()
+    c = 4.2
+
+    z = (x - c).float_prec()
+    assert ((z - (t - c)) < 10e-3).all()
+
+    z = (c - x).float_prec()
+    assert ((z - (c - t)) < 10e-3).all()
+
+
 def test_torch_sub_():
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
@@ -170,32 +241,6 @@ def test_torch_sub_():
     y = y.float_prec()
 
     assert (y == torch.tensor([0.05, 0.1, 0.15])).all()
-
-
-def test_torch_sub(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()
-    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
-
-    z = torch.sub(x, y)
-
-    assert (z.child.child == torch.LongTensor([400, 600, 1000])).all()
-    z = z.float_prec()
-
-    assert (z == torch.tensor([0.4, 0.6, 1.0])).all()
-
-    # with AST
-    tx = torch.tensor([1.0, -2.0, 3.0])
-    ty = torch.tensor([0.1, 0.2, 0.3])
-    x = tx.fix_prec()
-    y = ty.fix_prec().share(bob, alice, crypto_provider=james)
-
-    z1 = torch.sub(y, x).get().float_prec()
-    z2 = torch.sub(x, y).get().float_prec()
-
-    assert (z1 == torch.sub(ty, tx)).all()
-    assert (z2 == torch.sub(tx, ty)).all()
 
 
 def test_torch_mul(workers):
@@ -341,6 +386,117 @@ def test_torch_dot(workers):
     y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec()
 
     assert torch.dot(x, y).float_prec() == 45
+
+
+@assert_time(max_time=6)
+def test_torch_inverse_approx(workers):
+    """
+    Test the approximate inverse with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    fix_prec_tolerance = {3: 1 / 100, 4: 1 / 100, 5: 1 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        for t in [
+            torch.tensor([[0.4, -0.1], [-0.4, 2.0]]),
+            torch.tensor([[1, -0.6], [0.4, 4.0]]),
+            torch.tensor([[1, 0.2], [0.4, 4.0]]),
+        ]:
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.inverse()
+            r = r_sh.get().float_prec()
+            t = t.inverse()
+            diff = (r - t).abs().max()
+            norm = (r + t).abs().max() / 2
+
+            assert (diff / (tolerance * norm)) < 1
+
+
+@assert_time(max_time=10)
+def test_torch_exp_approx(workers):
+    """
+    Test the approximate exponential with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    fix_prec_tolerance = {3: 20 / 100, 4: 5 / 100, 5: 5 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        cumsum = torch.zeros(5)
+        for i in range(10):
+            t = torch.tensor([0.0, 1, 2, 3, 4])
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.exp()
+            r = r_sh.get().float_prec()
+            t = t.exp()
+            diff = (r - t).abs()
+            norm = (r + t) / 2
+            cumsum += diff / (tolerance * norm)
+
+        cumsum /= 10
+        assert (cumsum < 1).all()
+
+
+@assert_time(max_time=40)
+def test_torch_sigmoid_approx(workers):
+    """
+    Test the approximate sigmoid with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    fix_prec_tolerance_by_method = {
+        "exp": {3: 5 / 100, 4: 1 / 100, 5: 1 / 100},
+        "maclaurin": {3: 7 / 100, 4: 15 / 100, 5: 15 / 100},
+    }
+
+    for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
+        for prec_frac, tolerance in fix_prec_tolerance.items():
+            t = torch.tensor(range(-10, 10)) * 0.5
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.sigmoid(method=method)
+            r = r_sh.get().float_prec()
+            t = t.sigmoid()
+            diff = (r - t).abs().max()
+            norm = (r + t).abs().max() / 2
+
+            assert (diff / (tolerance * norm)) < 1
+
+
+@assert_time(max_time=45)
+def test_torch_log_approx(workers):
+    """
+    Test the approximate logarithm with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    fix_prec_tolerance = {3: 100 / 100, 4: 3 / 100, 5: 2 / 100}
+
+    for prec_frac, tolerance in fix_prec_tolerance.items():
+        cumsum = torch.zeros(9)
+        for i in range(10):
+            t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.log()
+            r = r_sh.get().float_prec()
+            t = t.log()
+            diff = (r - t).abs()
+            norm = (r + t) / 2
+            cumsum += diff / (tolerance * norm)
+
+        cumsum /= 10
+        assert (cumsum.abs() < 1).all()
 
 
 def test_torch_conv2d(workers):

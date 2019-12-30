@@ -1,6 +1,6 @@
 Flask>=1.0.2
 flask_socketio>=3.3.2
-syft-proto>=0.1.0a1
+syft-proto>=0.1.0a1.post2
 lz4>=2.1.6
 msgpack>=0.6.1
 numpy>=1.16.0
