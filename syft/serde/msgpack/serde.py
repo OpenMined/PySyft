@@ -53,6 +53,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.object_wrapper import ObjectWrapper
+from syft.generic.string import String
 from syft.messaging.plan import Plan
 from syft.messaging.plan.state import State
 from syft.messaging.plan.procedure import Procedure
@@ -127,6 +128,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
+    String,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
