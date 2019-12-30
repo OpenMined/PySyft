@@ -82,9 +82,17 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
 def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> SyftTensorPB:
     """Strategy to serialize a tensor using Protobuf"""
     dtype = TORCH_DTYPE_STR[tensor.dtype]
-    data = torch.flatten(tensor).tolist()
 
     protobuf_tensor = SyftTensorPB()
+
+    if tensor.is_quantized:
+        protobuf_tensor.is_quantized = True
+        protobuf_tensor.scale = tensor.q_scale()
+        protobuf_tensor.zero_point = tensor.q_zero_point()
+        data = torch.flatten(tensor).int_repr().tolist()
+    else:
+        data = torch.flatten(tensor).tolist()
+
     protobuf_tensor.dtype = dtype
     protobuf_tensor.shape.dims.extend(tensor.size())
     getattr(protobuf_tensor, "contents_" + dtype).extend(data)
@@ -97,10 +105,19 @@ def protobuf_tensor_deserializer(
 ) -> torch.Tensor:
     """"Strategy to deserialize a binary input using Protobuf"""
     size = tuple(protobuf_tensor.shape.dims)
-    dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype]
     data = getattr(protobuf_tensor, "contents_" + protobuf_tensor.dtype)
 
-    return torch.tensor(data, dtype=dtype).reshape(size)
+    if protobuf_tensor.is_quantized:
+        # Drop the 'q' from the beginning of the quantized dtype to get the int type
+        dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype[1:]]
+        int_tensor = torch.tensor(data, dtype=dtype).reshape(size)
+        # Automatically converts int types to quantized types
+        return torch._make_per_tensor_quantized_tensor(
+            int_tensor, protobuf_tensor.scale, protobuf_tensor.zero_point
+        )
+    else:
+        dtype = TORCH_STR_DTYPE[protobuf_tensor.dtype]
+        return torch.tensor(data, dtype=dtype).reshape(size)
 
 
 # Bufferize/Unbufferize Torch Tensors
