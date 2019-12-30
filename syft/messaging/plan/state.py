@@ -21,8 +21,17 @@ class State(object):
         self.plan = plan
         self.state_ids = state_ids or []
 
+    def __str__(self):
+        """Returns the string representation of the State."""
+        out = "<"
+        out += "State:"
+        for state_id in self.state_ids:
+            out += " {}".format(state_id)
+        out += ">"
+        return out
+
     def __repr__(self):
-        return "State: " + ", ".join(self.state_ids)
+        return self.__str__()
 
     def tensors(self) -> List:
         """
@@ -84,10 +93,8 @@ class State(object):
     def send_for_build(self, location, **kwargs):
         """
         Send functionality that can only be used when sending the state for
-        building the plan. Other than this, you shouldn't need to send the
-        state separately.
+        building the plan.
         """
-        assert location.id == self.plan.id  # ensure this is a send for the build
 
         for tensor in self.tensors():
             self.create_grad_if_missing(tensor)

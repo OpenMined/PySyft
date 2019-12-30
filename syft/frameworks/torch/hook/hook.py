@@ -32,7 +32,6 @@ from syft.messaging.plan import Plan
 from syft.messaging.promise import Promise
 
 from syft.exceptions import route_method_exception
-from syft.exceptions import TensorsNotCollocatedException
 
 
 class TorchHook(FrameworkHook):
