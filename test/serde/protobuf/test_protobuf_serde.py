@@ -44,7 +44,7 @@ def test_protobuf_serde_tensor_roundtrip(str_dtype):
     original_framework = serde_worker.framework
     serde_worker.framework = None
 
-    tensor = torch.rand([10, 100]) * 16
+    tensor = torch.rand([10, 10]) * 16
     tensor = tensor.to(TORCH_STR_DTYPE[str_dtype])
 
     protobuf_tensor = protobuf.serde._bufferize(serde_worker, tensor)
@@ -75,7 +75,7 @@ def test_protobuf_serde_tensor_roundtrip_quantized(str_dtype):
     original_framework = serde_worker.framework
     serde_worker.framework = None
 
-    tensor = torch.rand([10, 100]) * 16
+    tensor = torch.rand([10, 10]) * 16
     tensor = torch.quantize_per_tensor(tensor, 0.1, 10, TORCH_STR_DTYPE[str_dtype])
 
     protobuf_tensor = protobuf.serde._bufferize(serde_worker, tensor)
