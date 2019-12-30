@@ -30,6 +30,14 @@ from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 
 
+SERIALIZERS_SYFT_TO_PROTOBUF = {
+    TENSOR_SERIALIZATION.TORCH: TorchTensorPB.Serializer.SERIALIZER_TORCH,
+    TENSOR_SERIALIZATION.NUMPY: TorchTensorPB.Serializer.SERIALIZER_NUMPY,
+    TENSOR_SERIALIZATION.ALL: TorchTensorPB.Serializer.SERIALIZER_ALL,
+}
+SERIALIZERS_PROTOBUF_TO_SYFT = {value: key for key, value in SERIALIZERS_SYFT_TO_PROTOBUF.items()}
+
+
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     """Serialize the tensor using as default Torch serialization strategy
     This function can be overridden to provide different tensor serialization strategies
@@ -154,23 +162,14 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
         chain = syft.serde.protobuf.serde._bufferize(worker, tensor.child)
 
     protobuf_tensor = TorchTensorPB()
-
     protobuf_tensor.id.CopyFrom(syft.serde.protobuf.serde.create_protobuf_id(tensor.id))
-
     protobuf_tensor.shape.dims.extend(tensor.shape)
 
-    if worker.serializer == TENSOR_SERIALIZATION.TORCH:
-        protobuf_tensor.contents_bin = serialized_tensor
-        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_TORCH
-    elif worker.serializer == TENSOR_SERIALIZATION.NUMPY:
-        protobuf_tensor.contents_bin = serialized_tensor
-        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_TORCH
-    elif worker.serializer == TENSOR_SERIALIZATION.ALL:
-        protobuf_tensor.contents.CopyFrom(serialized_tensor)
-        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_ALL
+    protobuf_tensor.serializer = SERIALIZERS_SYFT_TO_PROTOBUF[worker.serializer]
+    if worker.serializer == TENSOR_SERIALIZATION.ALL:
+        protobuf_tensor.contents_data.CopyFrom(serialized_tensor)
     else:
         protobuf_tensor.contents_bin = serialized_tensor
-        protobuf_tensor.serializer = TorchTensorPB.Serializer.SERIALIZER_UNSPECIFIED
 
     if chain:
         protobuf_tensor.chain.CopyFrom(chain)
@@ -204,15 +203,9 @@ def _unbufferize_torch_tensor(
     tags = protobuf_tensor.tags
     description = protobuf_tensor.description
 
-    serializer = ""
-    serialized_tensor = protobuf_tensor.contents_bin
-    if protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_TORCH:
-        serializer = TENSOR_SERIALIZATION.TORCH
-    elif protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_NUMPY:
-        serializer = TENSOR_SERIALIZATION.NUMPY
-    elif protobuf_tensor.serializer == TorchTensorPB.Serializer.SERIALIZER_ALL:
-        serializer = TENSOR_SERIALIZATION.ALL
-        serialized_tensor = protobuf_tensor.contents
+    contents_type = protobuf_tensor.WhichOneof("contents")
+    serialized_tensor = getattr(protobuf_tensor, contents_type)
+    serializer = SERIALIZERS_PROTOBUF_TO_SYFT[protobuf_tensor.serializer]
 
     tensor = _deserialize_tensor(worker, (serializer), serialized_tensor)
 
