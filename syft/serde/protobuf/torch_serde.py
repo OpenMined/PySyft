@@ -18,6 +18,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
+from syft.serde.protobuf.proto import create_protobuf_id
 from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
 from syft.serde.torch.serde import torch_tensor_serializer
@@ -29,6 +30,7 @@ from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
+from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
@@ -165,7 +167,7 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
         chain = syft.serde.protobuf.serde._bufferize(worker, tensor.child)
 
     protobuf_tensor = TorchTensorPB()
-    protobuf_tensor.id.CopyFrom(syft.serde.protobuf.serde.create_protobuf_id(tensor.id))
+    protobuf_tensor.id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(tensor.id))
     protobuf_tensor.shape.dims.extend(tensor.shape)
 
     protobuf_tensor.serializer = SERIALIZERS_SYFT_TO_PROTOBUF[worker.serializer]
@@ -245,10 +247,32 @@ def _unbufferize_torch_device(worker: AbstractWorker, protobuf_device: DevicePB)
     return torch.device(type=device_type)
 
 
+def _bufferize_torch_parameter(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
+    protobuf_param = ParameterPB()
+    protobuf_param.id.CopyFrom(create_protobuf_id(param.id))
+    protobuf_param.tensor.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, param.data))
+    protobuf_param.requires_grad = param.requires_grad
+    if param.grad:
+        protobuf_param.grad.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, param.grad))
+    return protobuf_param
+
+
+def _unbufferize_torch_parameter(
+    worker: AbstractWorker, protobuf_param: ParameterPB
+) -> torch.nn.Parameter:
+    data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
+    param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
+    param.id = getattr(protobuf_param.id, protobuf_param.id.WhichOneof("id"))
+    if protobuf_param.HasField("grad"):
+        param.grad = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.grad)
+    return param
+
+
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
     {
         torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor),
         torch.device: (_bufferize_torch_device, _unbufferize_torch_device),
+        torch.nn.Parameter: (_bufferize_torch_parameter, _unbufferize_torch_parameter),
     }
 )
