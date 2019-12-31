@@ -10,9 +10,12 @@ import torch
 
 from google.protobuf.empty_pb2 import Empty
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
+from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
+from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
+from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
@@ -20,6 +23,9 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.Tensor: TorchTensorPB,
     torch.device: DevicePB,
     torch.nn.Parameter: ParameterPB,
+    torch.jit.ScriptModule: ScriptModulePB,
+    torch._C.Function: CFunctionPB,
+    torch.jit.TopLevelTracedModule: TracedModulePB,
 }
 
 MAP_PROTOBUF_TO_PYTHON_CLASSES = {}

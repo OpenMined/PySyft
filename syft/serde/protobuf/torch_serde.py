@@ -27,10 +27,13 @@ from syft.serde.torch.serde import numpy_tensor_serializer
 from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
+from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
+from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
+from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
-from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
+from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
@@ -268,11 +271,60 @@ def _unbufferize_torch_parameter(
     return param
 
 
+def _bufferize_script_module(
+    worker: AbstractWorker, script_module: torch.jit.ScriptModule
+) -> ScriptModulePB:
+    protobuf_script = ScriptModulePB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_script_module(
+    worker: AbstractWorker, protobuf_script: ScriptModulePB
+) -> torch.jit.ScriptModule:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
+def _bufferize_c_function(worker: AbstractWorker, script_module: torch._C.Function) -> CFunctionPB:
+    protobuf_script = CFunctionPB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_c_function(
+    worker: AbstractWorker, protobuf_script: CFunctionPB
+) -> torch._C.Function:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
+def _bufferize_traced_module(
+    worker: AbstractWorker, script_module: torch.jit.TopLevelTracedModule
+) -> TracedModulePB:
+    protobuf_script = ScriptModulePB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_traced_module(
+    worker: AbstractWorker, protobuf_script: TracedModulePB
+) -> torch.jit.TopLevelTracedModule:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
     {
         torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor),
         torch.device: (_bufferize_torch_device, _unbufferize_torch_device),
         torch.nn.Parameter: (_bufferize_torch_parameter, _unbufferize_torch_parameter),
+        torch._C.Function: (_bufferize_c_function, _unbufferize_c_function),
+        torch.jit.ScriptModule: (_bufferize_script_module, _unbufferize_script_module),
+        torch.jit.TopLevelTracedModule: (_bufferize_traced_module, _unbufferize_traced_module),
     }
 )
