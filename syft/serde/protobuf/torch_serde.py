@@ -31,6 +31,7 @@ from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
+from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
@@ -171,7 +172,6 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
 
     protobuf_tensor = TorchTensorPB()
     protobuf_tensor.id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(tensor.id))
-    protobuf_tensor.shape.dims.extend(tensor.shape)
 
     protobuf_tensor.serializer = SERIALIZERS_SYFT_TO_PROTOBUF[worker.serializer]
     if worker.serializer == TENSOR_SERIALIZATION.ALL:
@@ -317,6 +317,16 @@ def _unbufferize_traced_module(
     return loaded_module
 
 
+def _bufferize_torch_size(worker: AbstractWorker, size: torch.Size) -> SizePB:
+    protobuf_size = SizePB()
+    protobuf_size.dims.extend(size)
+    return protobuf_size
+
+
+def _unbufferize_torch_size(worker: AbstractWorker, protobuf_size: SizePB) -> torch.Size:
+    return torch.Size(protobuf_size.dims)
+
+
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
     {
@@ -326,5 +336,6 @@ MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
         torch._C.Function: (_bufferize_c_function, _unbufferize_c_function),
         torch.jit.ScriptModule: (_bufferize_script_module, _unbufferize_script_module),
         torch.jit.TopLevelTracedModule: (_bufferize_traced_module, _unbufferize_traced_module),
+        torch.Size: (_bufferize_torch_size, _unbufferize_torch_size),
     }
 )

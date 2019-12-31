@@ -23,7 +23,7 @@ samples[torch._C.Function] = make_torch_cfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
-# samples[torch.Size] = make_torch_size
+samples[torch.Size] = make_torch_size
 
 
 def test_serde_coverage():
