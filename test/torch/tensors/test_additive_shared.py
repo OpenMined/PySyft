@@ -40,11 +40,10 @@ def test_share_get(workers):
 def test___bool__(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
-    try:
-        if x_sh:
+
+    with pytest.raises(ValueError):
+        if x_sh:  # pragma: no cover
             pass
-    except ValueError:
-        pass
 
 
 def test_share_inplace_consistency(workers):
