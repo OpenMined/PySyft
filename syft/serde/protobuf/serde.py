@@ -20,7 +20,6 @@ else:
 # else:
 #     MAP_TF_PROTOBUF_TRANSLATORS = {}
 
-from syft.serde.protobuf.proto import MAP_PROTOBUF_TO_PYTHON_CLASSES
 from syft.serde.protobuf.proto import MAP_PYTHON_TO_PROTOBUF_CLASSES
 
 # Maps a type to its bufferizer and unbufferizer functions

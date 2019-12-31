@@ -30,11 +30,6 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.Size: SizePB,
 }
 
-MAP_PROTOBUF_TO_PYTHON_CLASSES = {}
-
-for key, value in MAP_PYTHON_TO_PROTOBUF_CLASSES.items():
-    MAP_PROTOBUF_TO_PYTHON_CLASSES[value] = key
-
 
 def create_protobuf_id(id) -> IdPB:
     protobuf_id = IdPB()
