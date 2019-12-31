@@ -277,7 +277,7 @@ class PublicGridNetwork(AbstractGrid):
 
     def __connect_with_node(self, node_id, node_url):
         if node_id not in self.hook.local_worker._known_workers:
-            worker = NodeClient(self.hook, node_url, node_id, credential=self.credential)
+            worker = NodeClient(self.hook, node_url, credential=self.credential)
         else:
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]
