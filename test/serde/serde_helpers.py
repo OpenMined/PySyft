@@ -17,7 +17,6 @@ FORCED_CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
     FORCED_CODE[cls] = simplifier[0]
 
-
 ########################################################################
 # Functions that return list of serde samples in the following format:
 # [
@@ -36,6 +35,13 @@ for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
 ########################################################################
 # Native types.
 ########################################################################
+
+# None
+
+
+def make_none(**kwargs):
+    return [{"value": None}]
+
 
 # Dict.
 def make_dict(**kwargs):
@@ -643,6 +649,8 @@ def make_plan(**kwargs):
         assert detailed.procedure.operations == original.procedure.operations
         assert detailed.procedure.arg_ids == original.procedure.arg_ids
         assert detailed.procedure.result_ids == original.procedure.result_ids
+        # States for the nested plans
+        assert detailed.nested_states == original.nested_states
         # State
         assert detailed.state.state_ids == original.state.state_ids
         assert detailed.include_state == original.include_state
@@ -678,6 +686,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
@@ -702,6 +711,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                 ),
             ),
             "cmp_detailed": compare,
@@ -1016,6 +1026,43 @@ def make_objectpointer(**kwargs):
                 ),
             ),
             "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.generic.string.String
+def make_string(**kwargs):
+    def compare_simplified(actual, expected):
+        """This is a custom comparison functino.
+           The reason for using this is that when set is that tags are use. Tags are sets.
+           When sets are simplified and converted to tuple, elements order in tuple is random
+           We compare tuples as sets because the set order is undefined.
+
+           This function is inspired by the one with the same name defined above in `make_set`.
+        """
+        assert actual[0] == expected[0]
+        assert actual[1][0] == expected[1][0]
+        assert actual[1][1] == expected[1][1]
+        assert actual[1][2][0] == expected[1][2][0]
+        assert set(actual[1][2][1]) == set(expected[1][2][1])
+        assert actual[1][3] == expected[1][3]
+        return True
+
+    return [
+        {
+            "value": syft.generic.string.String(
+                "Hello World", id=1234, tags=set(["tag1", "tag2"]), description="description"
+            ),
+            "simplified": (
+                CODE[syft.generic.string.String],
+                (
+                    (CODE[str], (b"Hello World",)),
+                    1234,
+                    (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"description",)),
+                ),
+            ),
+            "cmp_simplified": compare_simplified,
         }
     ]
 
@@ -1597,137 +1644,3 @@ def make_responsesignatureerror(**kwargs):
             "cmp_detailed": compare,
         }
     ]
-
-
-# Dictionary containing test samples functions
-samples = OrderedDict()
-
-# Native
-samples[float] = make_float
-samples[int] = make_int
-samples[dict] = make_dict
-samples[tuple] = make_tuple
-samples[list] = make_list
-samples[set] = make_set
-samples[slice] = make_slice
-samples[str] = make_str
-samples[range] = make_range
-samples[type(Ellipsis)] = make_ellipsis
-
-# Numpy
-samples[numpy.ndarray] = make_numpy_ndarray
-samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
-samples[numpy.float64] = partial(make_numpy_number, numpy.float64)
-samples[numpy.int32] = partial(make_numpy_number, numpy.int32)
-samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
-
-# PyTorch
-samples[torch.device] = make_torch_device
-samples[torch.jit.ScriptModule] = make_torch_scriptmodule
-samples[torch._C.Function] = make_torch_cfunction
-samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
-samples[torch.nn.Parameter] = make_torch_parameter
-samples[torch.Tensor] = make_torch_tensor
-samples[torch.Size] = make_torch_size
-
-# PySyft
-samples[
-    syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
-] = make_additivesharingtensor
-samples[
-    syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
-] = make_fixedprecisiontensor
-samples[
-    syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
-] = make_crtprecisiontensor
-samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
-samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
-samples[syft.messaging.plan.plan.Plan] = make_plan
-samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.plan.procedure.Procedure] = make_procedure
-samples[syft.messaging.protocol.Protocol] = make_protocol
-samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
-samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
-samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
-samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
-samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
-samples[syft.workers.base.BaseWorker] = make_baseworker
-samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
-samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
-samples[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor] = make_promisetensor
-
-samples[syft.messaging.message.Message] = make_message
-samples[syft.messaging.message.Operation] = make_operation
-samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
-samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
-samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
-samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
-samples[syft.messaging.message.SearchMessage] = make_searchmessage
-samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
-
-samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
-samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
-
-# Dynamically added to msgpack.serde.simplifiers by some other test
-samples[syft.workers.virtual.VirtualWorker] = make_baseworker
-
-
-def test_serde_coverage():
-    """Checks all types in serde are tested"""
-    for cls, _ in msgpack.serde.simplifiers.items():
-        has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
-
-
-@pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip(cls, workers):
-    """Checks that values passed through serialization-deserialization stay same"""
-    _samples = samples[cls](workers=workers)
-    for sample in _samples:
-        _simplify = (
-            msgpack.serde._simplify
-            if not sample.get("forced", False)
-            else msgpack.serde._force_full_simplify
-        )
-        serde_worker = syft.hook.local_worker
-        serde_worker.framework = sample.get("framework", torch)
-        obj = sample.get("value")
-        simplified_obj = _simplify(serde_worker, obj)
-        if not isinstance(obj, Exception):
-            detailed_obj = msgpack.serde._detail(serde_worker, simplified_obj)
-        else:
-            try:
-                msgpack.serde._detail(serde_worker, simplified_obj)
-            except Exception as e:
-                detailed_obj = e
-
-        if sample.get("cmp_detailed", None):
-            # Custom detailed objects comparison function.
-            assert sample.get("cmp_detailed")(detailed_obj, obj) is True
-        else:
-            assert type(detailed_obj) == type(obj)
-            assert detailed_obj == obj
-
-
-@pytest.mark.parametrize("cls", samples)
-def test_serde_simplify(cls, workers):
-    """Checks that simplified structures match expected"""
-    _samples = samples[cls](workers=workers)
-    for sample in _samples:
-        obj, expected_simplified_obj = sample.get("value"), sample.get("simplified")
-        _simplify = (
-            msgpack.serde._simplify
-            if not sample.get("forced", False)
-            else msgpack.serde._force_full_simplify
-        )
-        serde_worker = syft.hook.local_worker
-        serde_worker.framework = sample.get("framework", torch)
-        simplified_obj = _simplify(syft.hook.local_worker, obj)
-
-        if sample.get("cmp_simplified", None):
-            # Custom simplified objects comparison function.
-            assert sample.get("cmp_simplified")(simplified_obj, expected_simplified_obj) is True
-        else:
-            assert simplified_obj == expected_simplified_obj
