@@ -282,6 +282,10 @@ class PublicGridNetwork(AbstractGrid):
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]
             worker.connect()
+        remote_nodes = filter(
+            lambda x: isinstance(x, NodeClient), self.hook.local_worker._known_workers.values()
+        )
+        self._connect_all_nodes(tuple(remote_nodes), NodeClient)
         return worker
 
     def _ask_gateway(self, request_method, endpoint: str, body: Dict = {}):
