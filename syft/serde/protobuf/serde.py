@@ -325,7 +325,7 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
                 # Store the inheritance_type in bufferizers so next time we see this type
                 # serde will be faster.
                 inherited_bufferizers_found[current_type] = bufferizers[inheritance_type]
-                result = (inherited_bufferizers_found[current_type](worker, obj, **kwargs),)
+                result = inherited_bufferizers_found[current_type](worker, obj, **kwargs)
                 return result
 
         no_bufferizers_found.add(current_type)
