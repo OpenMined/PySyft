@@ -40,7 +40,10 @@ class AutogradTensor(AbstractTensor):
             self.grad = data * 0
         else:
             self.grad = None
+
         self.grad_fn = None
+        if "grad_fn" in kwargs.keys():
+            self.grad_fn = kwargs["grad_fn"]
 
     def backward(self, grad=None):
         if grad is None:
@@ -339,12 +342,10 @@ class AutogradTensor(AbstractTensor):
             requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,
             # local_autograd=local_autograd,
+            grad_fn=syft.serde.msgpack.serde._detail(worker, grad_fn),
             data=chain,  # pass the de-serialized data
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
         )
-
-        # Assigning grad_fn here. grad_fn doesn't get assigned when passed in constructor
-        tensor.grad_fn = syft.serde.msgpack.serde._detail(worker, grad_fn)
 
         return tensor
