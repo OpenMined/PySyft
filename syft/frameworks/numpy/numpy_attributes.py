@@ -61,7 +61,7 @@ class NumpyAttributes(FrameworkAttributes):
         # - functions that could use pointers or syft tensors
         self.exclude = [
             "arange",
-            "as_tensor",
+            "as_array",
             "from_numpy",
             "get_default_dtype",
             "get_device",
@@ -103,7 +103,7 @@ class NumpyAttributes(FrameworkAttributes):
             "zeros",
         ]
 
-        self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
+        self.worker_methods = ["array", "rand", "zeros", "randn", "randint"]
 
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
