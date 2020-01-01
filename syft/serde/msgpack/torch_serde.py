@@ -19,26 +19,12 @@ from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
 from syft.codes import TENSOR_SERIALIZATION
 
-# Torch dtypes to string (and back) mappers
-TORCH_DTYPE_STR = {
-    torch.uint8: "uint8",
-    torch.int8: "int8",
-    torch.int16: "int16",
-    torch.int32: "int32",
-    torch.int64: "int64",
-    torch.float16: "float16",
-    torch.float32: "float32",
-    torch.float64: "float64",
-    torch.complex32: "complex32",
-    torch.complex64: "complex64",
-    torch.complex128: "complex128",
-    torch.bool: "bool",
-    torch.qint8: "qint8",
-    torch.quint8: "quint8",
-    torch.qint32: "qint32",
-    torch.bfloat16: "bfloat16",
-}
-TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
+from syft.serde.torch.serde import TORCH_DTYPE_STR
+from syft.serde.torch.serde import TORCH_STR_DTYPE
+from syft.serde.torch.serde import torch_tensor_serializer
+from syft.serde.torch.serde import torch_tensor_deserializer
+from syft.serde.torch.serde import numpy_tensor_serializer
+from syft.serde.torch.serde import numpy_tensor_deserializer
 
 
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
@@ -55,7 +41,7 @@ def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     serializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_serializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
-        TENSOR_SERIALIZATION.ALL: generic_tensor_serializer,
+        TENSOR_SERIALIZATION.ALL: simplified_tensor_serializer,
     }
     if worker.serializer not in serializers:
         raise NotImplementedError(
@@ -80,7 +66,7 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     deserializers = {
         TENSOR_SERIALIZATION.TORCH: torch_tensor_deserializer,
         TENSOR_SERIALIZATION.NUMPY: numpy_tensor_serializer,
-        TENSOR_SERIALIZATION.ALL: generic_tensor_deserializer,
+        TENSOR_SERIALIZATION.ALL: simplified_tensor_deserializer,
     }
     if serializer not in deserializers:
         raise NotImplementedError(
@@ -90,26 +76,7 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     return deserializer(worker, tensor_bin)
 
 
-def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
-    """Strategy to serialize a tensor using numpy npy format.
-    If tensor requires to calculate gradients, it will be detached.
-    """
-    if tensor.requires_grad:
-        warnings.warn(
-            "Torch to Numpy serializer can only be used with tensors that do not require grad. "
-            "Detaching tensor to continue"
-        )
-        tensor = tensor.detach()
-
-    np_tensor = tensor.numpy()
-    outfile = TemporaryFile()
-    numpy.save(outfile, np_tensor)
-    # Simulate close and open by calling seek
-    outfile.seek(0)
-    return outfile.read()
-
-
-def generic_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> tuple:
+def simplified_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> tuple:
     """Strategy to serialize a tensor to native python types.
     If tensor requires to calculate gradients, it will be detached.
     """
@@ -124,34 +91,12 @@ def generic_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> t
     return serde._simplify(worker, tensor_tuple)
 
 
-def generic_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
+def simplified_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
     """"Strategy to deserialize a simplified tensor into a Torch tensor"""
 
     size, dtype, data_arr = serde._detail(worker, tensor_tuple)
     tensor = torch.tensor(data_arr, dtype=TORCH_STR_DTYPE[dtype]).reshape(size)
     return tensor
-
-
-def numpy_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
-    """"Strategy to deserialize a binary input in npy format into a Torch tensor"""
-    input_file = TemporaryFile()
-    input_file.write(tensor_bin)
-    # read data from file
-    input_file.seek(0)
-    return torch.from_numpy(numpy.load(input_file))
-
-
-def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
-    """Strategy to serialize a tensor using Torch saver"""
-    binary_stream = io.BytesIO()
-    torch.save(tensor, binary_stream)
-    return binary_stream.getvalue()
-
-
-def torch_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
-    """"Strategy to deserialize a binary input using Torch load"""
-    bin_tensor_stream = io.BytesIO(tensor_bin)
-    return torch.load(bin_tensor_stream)
 
 
 # Simplify/Detail Torch Tensors
