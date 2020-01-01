@@ -10,8 +10,10 @@ All Syft message types extend the Message class.
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
-
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
+from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+from syft_proto.types.syft.v1.operation_pb2 import Operation as OperationPB
+from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class Message:
@@ -197,6 +199,116 @@ class Operation(Message):
         cmd_kwargs = detailed_msg[3]
 
         return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, operation: "Operation") -> "OperationMessagePB":
+        """
+        This function takes the attributes of a Operation and saves them in Protobuf
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (Operation): a Message
+        Returns:
+            protobuf_obj: a Protobuf message holding the unique attributes of the message
+        Examples:
+            data = bufferize(message)
+        """
+        protobuf_op_msg = OperationMessagePB()
+        protobuf_op = OperationPB()
+        protobuf_op.command = operation.cmd_name
+
+        if type(operation.cmd_owner) == sy.generic.pointers.pointer_tensor.PointerTensor:
+            protobuf_owner = protobuf_op.owner_pointer
+        else:
+            protobuf_owner = protobuf_op.owner_tensor
+        protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
+
+        if operation.cmd_args:
+            protobuf_op.args.extend(Operation._bufferize_args(worker, operation.cmd_args))
+
+        if operation.cmd_kwargs:
+            for key, value in operation.cmd_kwargs.items():
+                protobuf_op.kwargs.get_or_create(key).CopyFrom(
+                    Operation._bufferize_arg(worker, value)
+                )
+
+        return_ids = []
+        for return_id in operation.return_ids:
+            return_ids.append(sy.serde.protobuf.proto.create_protobuf_id(return_id))
+
+        protobuf_op.return_ids.extend(return_ids)
+
+        protobuf_op_msg.operation.CopyFrom(protobuf_op)
+        return protobuf_op_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationMessagePB") -> "Operation":
+        """
+        This function takes the Protobuf version of this message and converts
+        it into an Operation. The bufferize() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            protobuf_obj (OperationPB): the Protobuf message
+
+        Returns:
+            obj (Operation): an Operation
+
+        Examples:
+            message = unbufferize(sy.local_worker, protobuf_msg)
+        """
+
+        command = protobuf_obj.operation.command
+        owner = sy.serde.protobuf.serde._unbufferize(
+            worker, getattr(protobuf_obj.operation, protobuf_obj.operation.WhichOneof("owner"))
+        )
+        args = Operation._unbufferize_args(worker, protobuf_obj.operation.args)
+
+        kwargs = {}
+        for key in protobuf_obj.operation.kwargs:
+            kwargs[key] = Operation._unbufferize_arg(worker, protobuf_obj.operation.kwargs[key])
+
+        return_ids = [
+            getattr(pb_id, pb_id.WhichOneof("id")) for pb_id in protobuf_obj.operation.return_ids
+        ]
+
+        operation_msg = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
+
+        return operation_msg
+
+    @staticmethod
+    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
+        protobuf_args = []
+        for arg in args:
+            protobuf_args.append(Operation._bufferize_arg(worker, arg))
+        return protobuf_args
+
+    @staticmethod
+    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
+        protobuf_arg = ArgPB()
+        try:
+            setattr(protobuf_arg, "arg_" + type(arg).__name__, arg)
+        except:
+            getattr(protobuf_arg, "arg_" + type(arg).__name__).CopyFrom(
+                sy.serde.protobuf.serde._bufferize(worker, arg)
+            )
+        return protobuf_arg
+
+    @staticmethod
+    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
+        args = []
+        for protobuf_arg in protobuf_args:
+            args.append(Operation._unbufferize_arg(worker, protobuf_arg))
+        return args
+
+    @staticmethod
+    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
+        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+        try:
+            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
+        except:
+            arg = protobuf_arg_field
+        return arg
 
 
 class ObjectMessage(Message):

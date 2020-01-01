@@ -3,7 +3,9 @@ from collections import OrderedDict
 import inspect
 import syft
 from syft import dependency_check
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.messaging.message import ObjectMessage
+from syft.messaging.message import Operation
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
@@ -31,7 +33,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [ObjectMessage]
+OBJ_PROTOBUF_TRANSLATORS = [ObjectMessage, Operation]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -221,6 +223,8 @@ def serialize(
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
+    elif obj_type == Operation:
+        msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

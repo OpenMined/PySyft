@@ -28,6 +28,7 @@ samples[torch.Size] = make_torch_size
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
+samples[syft.messaging.message.Operation] = make_operation
 
 
 def test_serde_coverage():
