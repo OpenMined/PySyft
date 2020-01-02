@@ -51,7 +51,7 @@ class GradFunc:
 
         # add attributes of grad function to _attributes list
         # essential for serialization and deserialization
-        if not name in ["next_functions", "result", "_attributes"]:
+        if not name in {"next_functions", "result", "_attributes"}:
             self._attributes.append(value)
 
     @staticmethod
