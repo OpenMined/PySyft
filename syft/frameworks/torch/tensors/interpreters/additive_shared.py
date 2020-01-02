@@ -1081,11 +1081,11 @@ class AdditiveSharingTensor(AbstractTensor):
                 shared_tensor = unprotobuf(data)
             """
 
-        tensor_id = getattr(protobuf_tensor.id, protobuf_tensor.id.WhichOneof("id"))
-        field = protobuf_tensor.field_size
-        crypto_provider_id = getattr(
-            protobuf_tensor.crypto_provider_id, protobuf_tensor.crypto_provider_id.WhichOneof("id")
+        tensor_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_tensor.id)
+        crypto_provider_id = sy.serde.protobuf.proto.get_protobuf_id(
+            protobuf_tensor.crypto_provider_id
         )
+        field = protobuf_tensor.field_size
 
         tensor = AdditiveSharingTensor(
             owner=worker,
@@ -1097,7 +1097,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if protobuf_tensor.location_ids is not None:
             chain = {}
             for pb_location_id, share in zip(protobuf_tensor.location_ids, protobuf_tensor.shares):
-                location_id = getattr(pb_location_id, pb_location_id.WhichOneof("id"))
+                location_id = sy.serde.protobuf.proto.get_protobuf_id(pb_location_id)
                 chain[location_id] = sy.serde.protobuf.serde._unbufferize(worker, share)
             tensor.child = chain
 

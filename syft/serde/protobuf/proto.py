@@ -51,3 +51,7 @@ def set_protobuf_id(field, id):
         field.id_str = id
     else:
         field.id_int = id
+
+
+def get_protobuf_id(field):
+    return getattr(field, field.WhichOneof("id"))

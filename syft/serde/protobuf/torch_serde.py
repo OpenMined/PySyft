@@ -18,6 +18,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
+from syft.serde.protobuf.proto import get_protobuf_id
 from syft.serde.protobuf.proto import set_protobuf_id
 from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
@@ -207,7 +208,7 @@ def _unbufferize_torch_tensor(
     Returns:
         torch.Tensor: a torch tensor converted from Protobuf
     """
-    tensor_id = getattr(protobuf_tensor.id, protobuf_tensor.id.WhichOneof("id"))
+    tensor_id = get_protobuf_id(protobuf_tensor.id)
     tags = protobuf_tensor.tags
     description = protobuf_tensor.description
 
@@ -265,7 +266,7 @@ def _unbufferize_torch_parameter(
 ) -> torch.nn.Parameter:
     data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
     param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
-    param.id = getattr(protobuf_param.id, protobuf_param.id.WhichOneof("id"))
+    param.id = get_protobuf_id(protobuf_param.id)
     if protobuf_param.HasField("grad"):
         param.grad = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.grad)
     return param

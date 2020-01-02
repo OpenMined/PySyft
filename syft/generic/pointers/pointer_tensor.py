@@ -573,14 +573,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def unbufferize(worker: AbstractWorker, protobuf_tensor: PointerTensorPB) -> "PointerTensor":
         # Extract the field values
 
-        obj_id = getattr(protobuf_tensor.object_id, protobuf_tensor.object_id.WhichOneof("id"))
-        obj_id_at_location = getattr(
-            protobuf_tensor.object_id_at_location,
-            protobuf_tensor.object_id_at_location.WhichOneof("id"),
+        obj_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_tensor.object_id)
+        obj_id_at_location = syft.serde.protobuf.proto.get_protobuf_id(
+            protobuf_tensor.object_id_at_location
         )
-        worker_id = getattr(
-            protobuf_tensor.location_id, protobuf_tensor.location_id.WhichOneof("id")
-        )
+        worker_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_tensor.location_id)
         point_to_attr = protobuf_tensor.point_to_attr
         shape = syft.hook.create_shape(protobuf_tensor.shape.dims)
         garbage_collect_data = protobuf_tensor.garbage_collect_data

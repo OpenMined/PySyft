@@ -266,7 +266,8 @@ class Operation(Message):
             kwargs[key] = Operation._unbufferize_arg(worker, protobuf_obj.operation.kwargs[key])
 
         return_ids = [
-            getattr(pb_id, pb_id.WhichOneof("id")) for pb_id in protobuf_obj.operation.return_ids
+            sy.serde.protobuf.proto.get_protobuf_id(pb_id)
+            for pb_id in protobuf_obj.operation.return_ids
         ]
 
         operation_msg = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
