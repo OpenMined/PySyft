@@ -10,23 +10,22 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 
 
-# if dependency_check.torch_available:
-#     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
-# else:
-#     MAP_TORCH_PROTOBUF_TRANSLATORS = {}
+if dependency_check.torch_available:
+    from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
+else:
+    MAP_TORCH_PROTOBUF_TRANSLATORS = {}
 
 # if dependency_check.tensorflow_available:
 #     from syft_tensorflow.serde import MAP_TF_PROTOBUF_TRANSLATORS
 # else:
 #     MAP_TF_PROTOBUF_TRANSLATORS = {}
 
-from syft.serde.protobuf.proto import MAP_PROTOBUF_TO_PYTHON_CLASSES
 from syft.serde.protobuf.proto import MAP_PYTHON_TO_PROTOBUF_CLASSES
 
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
     list(MAP_NATIVE_PROTOBUF_TRANSLATORS.items())
-    # + list(MAP_TORCH_PROTOBUF_TRANSLATORS.items())
+    + list(MAP_TORCH_PROTOBUF_TRANSLATORS.items())
     # + list(MAP_TF_PROTOBUF_TRANSLATORS.items())
 )
 
@@ -325,7 +324,7 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
                 # Store the inheritance_type in bufferizers so next time we see this type
                 # serde will be faster.
                 inherited_bufferizers_found[current_type] = bufferizers[inheritance_type]
-                result = (inherited_bufferizers_found[current_type](worker, obj, **kwargs),)
+                result = inherited_bufferizers_found[current_type](worker, obj, **kwargs)
                 return result
 
         no_bufferizers_found.add(current_type)

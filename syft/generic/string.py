@@ -283,13 +283,10 @@ class String(AbstractObject):
 
         """
 
-        def simplify_str(str):
-            return str.encode("utf-8") if str else None
-
         # Encode the string into a bytes object
-        simple_child = sy.serde._simplify(worker, string.child)
-        tags = sy.serde._simplify(worker, string.tags)
-        description = sy.serde._simplify(worker, string.description)
+        simple_child = sy.serde.msgpack.serde._simplify(worker, string.child)
+        tags = sy.serde.msgpack.serde._simplify(worker, string.tags)
+        description = sy.serde.msgpack.serde._simplify(worker, string.description)
 
         return (simple_child, string.id, tags, description)
 
@@ -317,16 +314,13 @@ class String(AbstractObject):
         # Get the contents of the tuple represening the simplified object
         simple_child, id, tags, description = simple_obj
 
-        def detail_bstr(b_str):
-            return str(b_str, encoding="utf-8") if b_str else None
-
         # It appears that all strings are converted to bytes objects
         # after deserialization, convert them back to strings
-        tags = sy.serde._detail(worker, tags)
-        description = sy.serde._detail(worker, description)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
 
         # Rebuild the str child our of the simplified child (the bytes child)
-        child = sy.serde._detail(worker, simple_child)
+        child = sy.serde.msgpack.serde._detail(worker, simple_child)
 
         return String(object=child, id=id, owner=worker, tags=tags, description=description)
 
