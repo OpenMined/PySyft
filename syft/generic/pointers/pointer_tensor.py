@@ -557,13 +557,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     @staticmethod
     def bufferize(worker: AbstractWorker, ptr: "PointerTensor") -> PointerTensorPB:
         protobuf_pointer = PointerTensorPB()
-        protobuf_pointer.object_id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(ptr.id))
-        protobuf_pointer.location_id.CopyFrom(
-            syft.serde.protobuf.proto.create_protobuf_id(ptr.location.id)
+
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_pointer.object_id, ptr.id)
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_pointer.location_id, ptr.location.id)
+        syft.serde.protobuf.proto.set_protobuf_id(
+            protobuf_pointer.object_id_at_location, ptr.id_at_location
         )
-        protobuf_pointer.object_id_at_location.CopyFrom(
-            syft.serde.protobuf.proto.create_protobuf_id(ptr.id_at_location)
-        )
+
         if ptr.point_to_attr:
             protobuf_pointer.point_to_attr = ptr.point_to_attr
         protobuf_pointer.garbage_collect_data = ptr.garbage_collect_data

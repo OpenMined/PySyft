@@ -231,11 +231,8 @@ class Operation(Message):
                     Operation._bufferize_arg(worker, value)
                 )
 
-        return_ids = []
         for return_id in operation.return_ids:
-            return_ids.append(sy.serde.protobuf.proto.create_protobuf_id(return_id))
-
-        protobuf_op.return_ids.extend(return_ids)
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
 
         protobuf_op_msg.operation.CopyFrom(protobuf_op)
         return protobuf_op_msg

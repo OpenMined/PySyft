@@ -46,10 +46,8 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
 }
 
 
-def create_protobuf_id(id) -> IdPB:
-    protobuf_id = IdPB()
+def set_protobuf_id(field, id):
     if type(id) == type("str"):
-        protobuf_id.id_str = id
+        field.id_str = id
     else:
-        protobuf_id.id_int = id
-    return protobuf_id
+        field.id_int = id

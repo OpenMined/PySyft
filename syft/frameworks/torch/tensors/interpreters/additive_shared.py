@@ -1046,27 +1046,23 @@ class AdditiveSharingTensor(AbstractTensor):
         Examples:
             data = protobuf(tensor)
         """
+        protobuf_tensor = AdditiveSharingTensorPB()
 
-        location_ids = []
-        shares = []
         if hasattr(tensor, "child"):
             for key, value in tensor.child.items():
-                location_ids.append(sy.serde.protobuf.proto.create_protobuf_id(key))
-                shares.append(value)
+                sy.serde.protobuf.proto.set_protobuf_id(protobuf_tensor.location_ids.add(), key)
+                protobuf_share = sy.serde.protobuf.serde._bufferize(worker, value)
+                protobuf_tensor.shares.append(protobuf_share)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
 
-        protobuf_tensor = AdditiveSharingTensorPB()
-        protobuf_tensor.id.CopyFrom(sy.serde.protobuf.proto.create_protobuf_id(tensor.id))
-        protobuf_tensor.field_size = tensor.field
-        protobuf_tensor.crypto_provider_id.CopyFrom(
-            sy.serde.protobuf.proto.create_protobuf_id(tensor.crypto_provider.id)
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_tensor.id, tensor.id)
+        sy.serde.protobuf.proto.set_protobuf_id(
+            protobuf_tensor.crypto_provider_id, tensor.crypto_provider.id
         )
-        protobuf_tensor.location_ids.extend(location_ids)
-        for share in shares:
-            protobuf_share = sy.serde.protobuf.serde._bufferize(worker, share)
-            protobuf_tensor.shares.append(protobuf_share)
+
+        protobuf_tensor.field_size = tensor.field
 
         return protobuf_tensor
 
