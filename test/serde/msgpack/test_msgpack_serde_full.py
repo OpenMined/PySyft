@@ -62,6 +62,7 @@ samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
 samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.string.String] = make_string
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
