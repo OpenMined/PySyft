@@ -18,6 +18,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
+from syft.serde.protobuf.proto import create_protobuf_id
 from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
 from syft.serde.torch.serde import torch_tensor_serializer
@@ -26,8 +27,14 @@ from syft.serde.torch.serde import numpy_tensor_serializer
 from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
+from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
+from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
+from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
+from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
+from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
+from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
@@ -164,8 +171,7 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
         chain = syft.serde.protobuf.serde._bufferize(worker, tensor.child)
 
     protobuf_tensor = TorchTensorPB()
-    protobuf_tensor.id.CopyFrom(syft.serde.protobuf.serde.create_protobuf_id(tensor.id))
-    protobuf_tensor.shape.dims.extend(tensor.shape)
+    protobuf_tensor.id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(tensor.id))
 
     protobuf_tensor.serializer = SERIALIZERS_SYFT_TO_PROTOBUF[worker.serializer]
     if worker.serializer == TENSOR_SERIALIZATION.ALL:
@@ -233,7 +239,103 @@ def _unbufferize_torch_tensor(
     return tensor
 
 
+def _bufferize_torch_device(worker: AbstractWorker, device: torch.device) -> DevicePB:
+    protobuf_device = DevicePB()
+    protobuf_device.type = device.type
+    return protobuf_device
+
+
+def _unbufferize_torch_device(worker: AbstractWorker, protobuf_device: DevicePB) -> torch.device:
+    device_type = protobuf_device.type
+    return torch.device(type=device_type)
+
+
+def _bufferize_torch_parameter(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
+    protobuf_param = ParameterPB()
+    protobuf_param.id.CopyFrom(create_protobuf_id(param.id))
+    protobuf_param.tensor.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, param.data))
+    protobuf_param.requires_grad = param.requires_grad
+    if param.grad:
+        protobuf_param.grad.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, param.grad))
+    return protobuf_param
+
+
+def _unbufferize_torch_parameter(
+    worker: AbstractWorker, protobuf_param: ParameterPB
+) -> torch.nn.Parameter:
+    data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
+    param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
+    param.id = getattr(protobuf_param.id, protobuf_param.id.WhichOneof("id"))
+    if protobuf_param.HasField("grad"):
+        param.grad = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.grad)
+    return param
+
+
+def _bufferize_script_module(
+    worker: AbstractWorker, script_module: torch.jit.ScriptModule
+) -> ScriptModulePB:
+    protobuf_script = ScriptModulePB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_script_module(
+    worker: AbstractWorker, protobuf_script: ScriptModulePB
+) -> torch.jit.ScriptModule:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
+def _bufferize_c_function(worker: AbstractWorker, script_module: torch._C.Function) -> CFunctionPB:
+    protobuf_script = CFunctionPB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_c_function(
+    worker: AbstractWorker, protobuf_script: CFunctionPB
+) -> torch._C.Function:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
+def _bufferize_traced_module(
+    worker: AbstractWorker, script_module: torch.jit.TopLevelTracedModule
+) -> TracedModulePB:
+    protobuf_script = ScriptModulePB()
+    protobuf_script.obj = script_module.save_to_buffer()
+    return protobuf_script
+
+
+def _unbufferize_traced_module(
+    worker: AbstractWorker, protobuf_script: TracedModulePB
+) -> torch.jit.TopLevelTracedModule:
+    script_module_stream = io.BytesIO(protobuf_script.obj)
+    loaded_module = torch.jit.load(script_module_stream)
+    return loaded_module
+
+
+def _bufferize_torch_size(worker: AbstractWorker, size: torch.Size) -> SizePB:
+    protobuf_size = SizePB()
+    protobuf_size.dims.extend(size)
+    return protobuf_size
+
+
+def _unbufferize_torch_size(worker: AbstractWorker, protobuf_size: SizePB) -> torch.Size:
+    return torch.Size(protobuf_size.dims)
+
+
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
-    {torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor)}
+    {
+        torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor),
+        torch.device: (_bufferize_torch_device, _unbufferize_torch_device),
+        torch.nn.Parameter: (_bufferize_torch_parameter, _unbufferize_torch_parameter),
+        torch._C.Function: (_bufferize_c_function, _unbufferize_c_function),
+        torch.jit.ScriptModule: (_bufferize_script_module, _unbufferize_script_module),
+        torch.jit.TopLevelTracedModule: (_bufferize_traced_module, _unbufferize_traced_module),
+        torch.Size: (_bufferize_torch_size, _unbufferize_torch_size),
+    }
 )
