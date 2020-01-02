@@ -12,6 +12,8 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
+
 from syft.exceptions import RemoteObjectFoundError
 
 
@@ -551,6 +553,75 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         #         val = v
         #     new_data[key] = val
         # return PointerTensor(**new_data)
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, ptr: "PointerTensor") -> PointerTensorPB:
+        protobuf_pointer = PointerTensorPB()
+        protobuf_pointer.object_id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(ptr.id))
+        protobuf_pointer.location_id.CopyFrom(
+            syft.serde.protobuf.proto.create_protobuf_id(ptr.location.id)
+        )
+        protobuf_pointer.object_id_at_location.CopyFrom(
+            syft.serde.protobuf.proto.create_protobuf_id(ptr.id_at_location)
+        )
+        if ptr.point_to_attr:
+            protobuf_pointer.point_to_attr = ptr.point_to_attr
+        protobuf_pointer.garbage_collect_data = ptr.garbage_collect_data
+        return protobuf_pointer
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_tensor: PointerTensorPB) -> "PointerTensor":
+        # Extract the field values
+
+        obj_id = getattr(protobuf_tensor.object_id, protobuf_tensor.object_id.WhichOneof("id"))
+        obj_id_at_location = getattr(
+            protobuf_tensor.object_id_at_location,
+            protobuf_tensor.object_id_at_location.WhichOneof("id"),
+        )
+        worker_id = getattr(
+            protobuf_tensor.location_id, protobuf_tensor.location_id.WhichOneof("id")
+        )
+        point_to_attr = protobuf_tensor.point_to_attr
+        shape = syft.hook.create_shape(protobuf_tensor.shape.dims)
+        garbage_collect_data = protobuf_tensor.garbage_collect_data
+
+        # If the pointer received is pointing at the current worker, we load the tensor instead
+        if worker_id == worker.id:
+            tensor = worker.get_obj(obj_id_at_location)
+
+            if point_to_attr is not None and tensor is not None:
+
+                point_to_attrs = point_to_attr.split(".")
+                for attr in point_to_attrs:
+                    if len(attr) > 0:
+                        tensor = getattr(tensor, attr)
+
+                if tensor is not None:
+
+                    if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
+                        # if the tensor is a wrapper then it doesn't need to be wrapped
+                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # then it doesn't need to be wrapped.
+                        # if the tensor is not a wrapper BUT it's also not a torch tensor,
+                        # then it needs to be wrapped or else it won't be able to be used
+                        # by other interfaces
+                        tensor = tensor.wrap()
+
+            return tensor
+        # Else we keep the same Pointer
+        else:
+            location = syft.hook.local_worker.get_worker(worker_id)
+
+            ptr = PointerTensor(
+                location=location,
+                id_at_location=obj_id_at_location,
+                owner=worker,
+                id=obj_id,
+                shape=shape,
+                garbage_collect_data=garbage_collect_data,
+            )
+
+            return ptr
 
 
 ### Register the tensor with hook_args.py ###

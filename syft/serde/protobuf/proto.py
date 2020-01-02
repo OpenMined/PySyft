@@ -8,10 +8,12 @@ a dependency in setup.py.
 """
 import torch
 
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import Operation
 
 from google.protobuf.empty_pb2 import Empty
+from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
@@ -35,6 +37,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.Size: SizePB,
     ObjectMessage: ObjectMessagePB,
     Operation: OperationMessagePB,
+    PointerTensor: PointerTensorPB,
 }
 
 

@@ -25,6 +25,8 @@ samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
 
+# PySyft
+samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage

@@ -4,6 +4,7 @@ import inspect
 import syft
 from syft import dependency_check
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import Operation
 from syft.serde import compression
@@ -33,7 +34,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [ObjectMessage, Operation]
+OBJ_PROTOBUF_TRANSLATORS = [ObjectMessage, Operation, PointerTensor]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
