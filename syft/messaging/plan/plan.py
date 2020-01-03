@@ -343,7 +343,7 @@ class Plan(AbstractObject, ObjectStorage):
 
     def execute_commands(self):
         for message in self.procedure.operations:
-            bin_message = sy.serde.serialize(message, simplified=True)
+            bin_message = sy.serde.serialize(message)
             _ = self.owner.recv_msg(bin_message)
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
