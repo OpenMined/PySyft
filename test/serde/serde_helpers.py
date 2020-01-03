@@ -1644,3 +1644,34 @@ def make_responsesignatureerror(**kwargs):
             "cmp_detailed": compare,
         }
     ]
+
+
+# syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
+def make_gradfn(**kwargs):
+    alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
+    x = torch.tensor([1, 2, 3])
+    x_share = x.share(alice, bob, requires_grad=True)
+    y_share = x_share + x_share  # AddBackward
+
+    grad_fn = y_share.child.grad_fn
+
+    def compare(detailed, original):
+        assert isinstance(
+            detailed, syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
+        )
+        assert detailed.__class__.name == original.__class__.name
+        assert detailed._attributes == original._attributes
+
+    return [
+        {
+            "value": grad_fn,
+            "simplified": (
+                CODE[list],
+                (
+                    (CODE[str], (b"AddBackward",)),
+                    msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                    msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                ),
+            ),
+        }
+    ]
