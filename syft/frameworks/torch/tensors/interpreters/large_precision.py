@@ -74,6 +74,7 @@ class LargePrecisionTensor(AbstractTensor):
 
         # floor is applied otherwise, long float is not accurate
         self_scaled = np.vectorize(math.floor)(self_scaled)
+
         # https://github.com/numpy/numpy/issues/6464
         self_scaled = np.remainder(self_scaled, np.array(self.field), casting="unsafe")
 
@@ -83,6 +84,7 @@ class LargePrecisionTensor(AbstractTensor):
         result = LargePrecisionTensor._split_numbers(
             self_scaled, self.internal_precision, self.internal_type
         )
+
         return torch.tensor(result, dtype=self.internal_type)
 
     @staticmethod

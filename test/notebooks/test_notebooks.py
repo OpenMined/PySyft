@@ -58,17 +58,20 @@ def test_notebooks_basic(isolated_filesystem):
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
             not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
-                parameters={
-                    "epochs": 1,
-                    "n_test_batches": 5,
-                    "n_train_items": 64,
-                    "n_test_items": 64,
-                },
-                timeout=300,
-            )
+            try:
+                res = pm.execute_notebook(
+                    notebook,
+                    "/dev/null",
+                    parameters={
+                        "epochs": 1,
+                        "n_test_batches": 5,
+                        "n_train_items": 64,
+                        "n_test_items": 64,
+                    },
+                    timeout=300,
+                )
+            except Exception as e:
+                raise Exception("FAILED ON NOTEBOOK" + str(list_name))
             assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
