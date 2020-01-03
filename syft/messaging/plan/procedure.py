@@ -77,12 +77,12 @@ class Procedure(object):
         for idx, operation in enumerate(self.operations):
             # replace ids in the owner
             owner = operation.cmd_owner
+            if owner is not None:
+                if owner.id in from_ids:
+                    owner.id = to_ids[from_ids.index(owner.id)]
 
-            if owner.id in from_ids:
-                owner.id = to_ids[from_ids.index(owner.id)]
-
-            if owner.id_at_location in from_ids:
-                owner.id_at_location = to_ids[from_ids.index(owner.id_at_location)]
+                if owner.id_at_location in from_ids:
+                    owner.id_at_location = to_ids[from_ids.index(owner.id_at_location)]
 
             # replace ids in the args
             for arg in operation.cmd_args:
@@ -106,8 +106,9 @@ class Procedure(object):
             to_worker = sy.workers.virtual.VirtualWorker(None, to_worker_id)
 
             # replace worker in the owner
-            if operation.cmd_owner.location.id == from_worker_id:
-                operation.cmd_owner.location = to_worker
+            if owner is not None and owner.location is not None:
+                if owner.location.id == from_worker_id:
+                    owner.location = to_worker
 
             # replace worker in the args
             for arg in operation.cmd_args:
