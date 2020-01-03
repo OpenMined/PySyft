@@ -78,7 +78,7 @@ class Plan(AbstractObject, ObjectStorage):
         state_ids: ids of the state elements
         arg_ids: ids of the last argument ids (present in the procedure commands)
         result_ids: ids of the last result ids (present in the procedure commands)
-        readable_plan: list of commands
+        operations: list of commands
         blueprint: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
         id: state id
@@ -98,7 +98,7 @@ class Plan(AbstractObject, ObjectStorage):
         state_ids: List[Union[str, int]] = None,
         arg_ids: List[Union[str, int]] = None,
         result_ids: List[Union[str, int]] = None,
-        readable_plan: List = None,
+        operations: List = None,
         blueprint=None,
         state_tensors=None,
         # General kwargs
@@ -120,7 +120,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.nested_states = []
 
         # Info about the plan stored via the state and the procedure
-        self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
+        self.procedure = procedure or Procedure(operations, arg_ids, result_ids)
         self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
         if state_tensors is not None:
             for tensor in state_tensors:
@@ -163,7 +163,7 @@ class Plan(AbstractObject, ObjectStorage):
 
     # For backward compatibility
     @property
-    def readable_plan(self):
+    def operations(self):
         return self.procedure.operations
 
     def parameters(self):
@@ -214,11 +214,8 @@ class Plan(AbstractObject, ObjectStorage):
 
         if isinstance(msg, Operation):
             # Re-deserialize without detailing
-            (msg_type, contents) = sy.serde.deserialize(
-                bin_message, strategy=sy.serde.msgpack.serde._deserialize_msgpack_binary
-            )
 
-            self.procedure.operations.append((msg_type, contents))
+            self.procedure.operations.append(msg)
 
         return sy.serde.serialize(None)
 

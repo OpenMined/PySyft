@@ -21,7 +21,7 @@ def test_plan_built_automatically():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.operations) > 0
     assert plan_abs.is_built
 
 
@@ -36,7 +36,7 @@ def test_stateful_plan_built_automatically(hook):
             return x + bias
 
         assert isinstance(foo.__str__(), str)
-        assert len(foo.readable_plan) > 0
+        assert len(foo.operations) > 0
         assert foo.is_built
 
         t = th.tensor([1.0, 2])
@@ -51,11 +51,11 @@ def test_plan_build():
         return data.abs()
 
     assert not plan_abs.is_built
-    assert not len(plan_abs.readable_plan)
+    assert not len(plan_abs.operations)
 
     plan_abs.build(th.tensor([-1]))
 
-    assert len(plan_abs.readable_plan)
+    assert len(plan_abs.operations)
     assert plan_abs.is_built
 
 
@@ -80,7 +80,7 @@ def test_plan_built_automatically_with_any_dimension():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.operations) > 0
 
 
 def test_raise_exception_for_invalid_shape():
@@ -381,7 +381,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
         assert th.all(th.eq(fetched_plan(x), plan(x)))
         # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
 
-        # Make sure fetched_plan is using the readable_plan
+        # Make sure fetched_plan is using the operations
         assert fetched_plan.forward is None
         assert fetched_plan.is_built
 
@@ -428,7 +428,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
         assert th.all(th.eq(fetched_plan(x), expected))
         # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
 
-        # Make sure fetched_plan is using the readable_plan
+        # Make sure fetched_plan is using the operations
         assert fetched_plan.forward is None
         assert fetched_plan.is_built
 
@@ -545,7 +545,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
         assert th.all(decrypted - expected.detach() < 1e-2)
         # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
 
-        # Make sure fetched_plan is using the readable_plan
+        # Make sure fetched_plan is using the operations
         assert fetched_plan.forward is None
         assert fetched_plan.is_built
 
