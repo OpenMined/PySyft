@@ -18,7 +18,7 @@ class Procedure(object):
     on different workers.
 
     Args:
-        operations: the list of (serialized) operations
+        operations: the list of operations
         arg_ids: the argument ids present in the operations
         result_ids: the result ids present in the operations
     """
@@ -63,8 +63,8 @@ class Procedure(object):
         self,
         from_ids: Tuple[Union[str, int]] = [],
         to_ids: Tuple[Union[str, int]] = [],
-        from_worker: Union[str, int] = None,
-        to_worker: Union[str, int] = None,
+        from_worker_id: Union[str, int] = None,
+        to_worker_id: Union[str, int] = None,
     ):
         """Replace ids and worker ids in the list of operations stored
 
@@ -74,68 +74,52 @@ class Procedure(object):
             from_worker: The previous worker that built the plan.
             to_worker: The new worker that is running the plan.
         """
-
-        # We operate on simplified content of Operation, hence all values should be simplified
-        from_workers_simplified = None
-        to_workers_simplified = None
-        if from_worker and to_worker:
-            from_workers_simplified = [sy.serde.msgpack.serde._simplify(None, from_worker)]
-            to_workers_simplified = [sy.serde.msgpack.serde._simplify(None, to_worker)]
-
-        from_ids_simplified = None
-        to_ids_simplified = None
-        if len(from_ids) and len(to_ids):
-            from_ids_simplified = [sy.serde.msgpack.serde._simplify(None, id) for id in from_ids]
-            to_ids_simplified = [sy.serde.msgpack.serde._simplify(None, id) for id in to_ids]
-
         for idx, operation in enumerate(self.operations):
-            if from_workers_simplified and to_workers_simplified:
-                operation = Procedure.replace_operation_ids(
-                    operation, from_workers_simplified, to_workers_simplified
-                )
+            # replace ids in the owner
+            owner = operation.cmd_owner
 
-            if from_ids_simplified and to_ids_simplified:
-                operation = Procedure.replace_operation_ids(
-                    operation, from_ids_simplified, to_ids_simplified
-                )
+            if owner.id in from_ids:
+                owner.id = to_ids[from_ids.index(owner.id)]
+
+            if owner.id_at_location in from_ids:
+                owner.id_at_location = to_ids[from_ids.index(owner.id_at_location)]
+
+            # replace ids in the args
+            for arg in operation.cmd_args:
+                try:
+                    if arg.id in from_ids:
+                        arg.id = to_ids[from_ids.index(arg.id)]
+
+                    if arg.id_at_location in from_ids:
+                        arg.id_at_location = to_ids[from_ids.index(arg.id_at_location)]
+                except:
+                    pass
+
+            # replace ids in the returns
+            return_ids = list(operation.return_ids)
+            for idx, return_id in enumerate(return_ids):
+                if return_id in from_ids:
+                    return_ids[idx] = to_ids[from_ids.index(return_id)]
+            operation.return_ids = return_ids
+
+            # create a dummy worker
+            to_worker = sy.workers.virtual.VirtualWorker(None, to_worker_id)
+
+            # replace worker in the owner
+            if operation.cmd_owner.location.id == from_worker_id:
+                operation.cmd_owner.location = to_worker
+
+            # replace worker in the args
+            for arg in operation.cmd_args:
+                try:
+                    if arg.location.id == from_worker_id:
+                        arg.location = to_worker
+                except:
+                    pass
 
             self.operations[idx] = operation
 
         return self
-
-    @staticmethod
-    def replace_operation_ids(operation, from_ids, to_ids):
-        """
-        Replace ids in a single operation
-
-        Args:
-            operation: the operation to update
-            from_ids: the ids to replace
-            to_ids: the new ids to put inplace
-        """
-
-        assert isinstance(from_ids, (list, tuple))
-        assert isinstance(to_ids, (list, tuple))
-
-        type_obj = type(operation)
-        operation = list(operation)
-        for i, item in enumerate(operation):
-            # Since this is simplified content, id can be int or simplified str (tuple)
-            if isinstance(item, (int, tuple)) and item in from_ids:
-                operation[i] = to_ids[from_ids.index(item)]
-            elif isinstance(item, (list, tuple)):
-                operation[i] = Procedure.replace_operation_ids(
-                    operation=item, from_ids=from_ids, to_ids=to_ids
-                )
-        return type_obj(operation)
-
-    def copy(self) -> "Procedure":
-        procedure = Procedure(
-            operations=copy.deepcopy(self.operations),
-            arg_ids=self.arg_ids,
-            result_ids=self.result_ids,
-        )
-        return procedure
 
     @staticmethod
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:

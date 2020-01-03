@@ -6,7 +6,7 @@ from syft.messaging.message import Operation
 from syft.messaging.plan.procedure import Procedure
 
 
-def test_procedure_update_ids(workers):
+def test_procedure_update_ids_and_args(workers):
     pointer1 = PointerTensor(
         workers["bob"], 68519530406, workers["me"], 27674294093, True, torch.Size([1])
     )
@@ -20,12 +20,12 @@ def test_procedure_update_ids(workers):
     procedure = Procedure(operations=[operation], arg_ids=[68519530406], result_ids=(75165665059,))
 
     procedure.update_ids(
-        from_ids=[27674294093], to_ids=[73570994542], from_worker="bob", to_worker="alice"
+        from_ids=[27674294093], to_ids=[73570994542], from_worker_id="bob", to_worker_id="alice"
     )
 
     assert procedure.operations[0].cmd_owner.id == 73570994542
-    assert procedure.operations[0].cmd_owner.location == workers["alice"]
-    assert procedure.operations[0].cmd_args[0].location == workers["alice"]
+    assert procedure.operations[0].cmd_owner.location.id == "alice"
+    assert procedure.operations[0].cmd_args[0].location.id == "alice"
 
     tensor = torch.tensor([1.0])
     tensor_id = tensor.id
