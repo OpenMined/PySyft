@@ -190,17 +190,17 @@ def test_plan_multiple_send(workers):
     def plan_abs(data):
         return data.abs()
 
-    plan_ptr = plan_abs.send(bob)
     x_ptr = th.tensor([-1, 7, 3]).send(bob)
+    plan_ptr = plan_abs.send(bob)
     p = plan_ptr(x_ptr)
     x_abs = p.get()
 
     assert (x_abs == th.tensor([1, 7, 3])).all()
 
     # Test get / send plan
+    x_ptr = th.tensor([-1, 2, 3]).send(alice)
     plan_ptr = plan_abs.send(alice)
 
-    x_ptr = th.tensor([-1, 2, 3]).send(alice)
     p = plan_ptr(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 2, 3])).all()
