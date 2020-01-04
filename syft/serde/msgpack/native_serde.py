@@ -428,10 +428,10 @@ MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         str: (_simplify_str, _detail_str),
         tuple: (_simplify_collection, _detail_collection_tuple),
         type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
-        # numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
-        # numpy.float32: (_simplify_numpy_number, _detail_numpy_number),
-        # numpy.float64: (_simplify_numpy_number, _detail_numpy_number),
-        # numpy.int32: (_simplify_numpy_number, _detail_numpy_number),
-        # numpy.int64: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.ndarray: (_simplify_ndarray, _detail_ndarray),
+        numpy.float32: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.float64: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.int32: (_simplify_numpy_number, _detail_numpy_number),
+        numpy.int64: (_simplify_numpy_number, _detail_numpy_number),
     }
 )
