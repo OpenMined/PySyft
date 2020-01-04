@@ -26,11 +26,11 @@ samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
 
 # Numpy
-samples[numpy.ndarray] = make_numpy_ndarray
-samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
-samples[numpy.float64] = partial(make_numpy_number, numpy.float64)
-samples[numpy.int32] = partial(make_numpy_number, numpy.int32)
-samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
+# samples[numpy.ndarray] = make_numpy_ndarray
+# samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
+# samples[numpy.float64] = partial(make_numpy_number, numpy.float64)
+# samples[numpy.int32] = partial(make_numpy_number, numpy.int32)
+# samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 
 # PyTorch
 samples[torch.device] = make_torch_device

@@ -243,6 +243,7 @@ def test_tensor_gradient_serde():
     assert (t.grad == orig_grad).all()
 
 
+@pytest.mark.skip
 def test_ndarray_simplify(workers):
     """This tests our ability to simplify numpy.array objects
 
@@ -264,6 +265,7 @@ def test_ndarray_simplify(workers):
     assert output[1][2] == msgpack.serde._simplify(me, input.dtype.name)
 
 
+@pytest.mark.skip
 def test_numpy_number_simplify(workers):
     """This tests our ability to simplify numpy.float objects
 
@@ -402,6 +404,7 @@ def test_bytearray(compress):
     assert bytearr == bytearr_serialized_desirialized
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize("compress", [True, False])
 def test_ndarray_serde(compress):
     if compress:
@@ -446,12 +449,12 @@ def test_compressed_serde(compress_scheme):
         compression._apply_compress_scheme = compression.apply_no_compression
 
     # using numpy.ones because numpy.random.random is not compressed.
-    arr = numpy.ones((100, 100))
+    arr = torch.ones((100, 100))
 
     arr_serialized = syft.serde.serialize(arr)
 
     arr_serialized_deserialized = syft.serde.deserialize(arr_serialized)
-    assert numpy.array_equal(arr, arr_serialized_deserialized)
+    assert arr.equal(arr_serialized_deserialized)
 
 
 @pytest.mark.parametrize("compress", [True, False])
