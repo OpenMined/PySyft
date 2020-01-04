@@ -1661,17 +1661,22 @@ def make_gradfn(**kwargs):
         )
         assert detailed.__class__.name == original.__class__.name
         assert detailed._attributes == original._attributes
+        return True
 
     return [
         {
             "value": grad_fn,
             "simplified": (
-                CODE[list],
+                CODE[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc],
                 (
-                    (CODE[str], (b"AddBackward",)),
-                    msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
-                    msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                    CODE[list],
+                    (
+                        (CODE[str], (b"AddBackward",)),
+                        msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                        msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                    ),
                 ),
             ),
+            "cmp_detailed": compare,
         }
     ]
