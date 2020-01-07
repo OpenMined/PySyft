@@ -231,6 +231,10 @@ class PublicGridNetwork(AbstractGrid):
 
             crypto_node = self.__connect_with_node(crypto_provider_id, crypto_provider_url)
 
+            # Connect nodes
+            nodes = workers + [host_node, crypto_node]
+            self._connect_all_nodes(tuple(nodes), NodeClient)
+
             return (host_node, workers, crypto_node)
         else:
             raise RuntimeError("Model not found on Grid Network!")
@@ -282,10 +286,6 @@ class PublicGridNetwork(AbstractGrid):
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]
             worker.connect()
-        remote_nodes = filter(
-            lambda x: isinstance(x, NodeClient), self.hook.local_worker._known_workers.values()
-        )
-        self._connect_all_nodes(tuple(remote_nodes), NodeClient)
         return worker
 
     def _ask_gateway(self, request_method, endpoint: str, body: Dict = {}):
