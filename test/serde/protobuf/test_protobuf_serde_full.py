@@ -25,6 +25,16 @@ samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
 
+# PySyft
+samples[
+    syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
+] = make_additivesharingtensor
+samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
+
+# Syft Messages
+samples[syft.messaging.message.ObjectMessage] = make_objectmessage
+samples[syft.messaging.message.Operation] = make_operation
+
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
