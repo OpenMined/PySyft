@@ -36,8 +36,10 @@ exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
     "examples/tutorials/advanced/websockets-example-MNIST-parallel",
-    # To run these notebooks we need to run grid nodes / grid gateway previously (they're in another repository)
+    # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
+    "examples/tutorials/grid/federated_learning/spam_prediction",
+    "examples/tutorials/grid/federated_learning/mnist"
     # This notebook is skipped because it fails in travis and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
