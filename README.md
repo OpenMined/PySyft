@@ -41,7 +41,7 @@ make venv
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.1
+> PySyft supports Python >= 3.6 and PyTorch 1.3
 
 ```bash
 pip install syft[udacity]
