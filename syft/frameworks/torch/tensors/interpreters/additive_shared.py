@@ -9,6 +9,11 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
+    AdditiveSharingTensor as AdditiveSharingTensorPB,
+)
+from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
+
 no_wrap = {"no_wrap": True}
 
 
@@ -198,7 +203,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(field)
+            share.random_(int(-field / 2), int(field / 2) - 1)
 
         shares = []
         for i in range(n_workers):
@@ -325,6 +330,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
+        if isinstance(other, int):
+            other = torch.LongTensor([other])
+
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
@@ -356,10 +364,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return new_shares
 
-    def __add__(self, other, **kwargs):
-        """Adds two tensors. Forwards command to add. See add() for more details."""
-
-        return self.add(other, **kwargs)
+    __add__ = add
+    __radd__ = add
 
     @overloaded.method
     def sub(self, shares: dict, other):
@@ -373,6 +379,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a torch tensor
                 - a constant
         """
+
+        if isinstance(other, int):
+            other = torch.LongTensor([other])
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
@@ -405,9 +414,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return new_shares
 
-    def __sub__(self, *args, **kwargs):
-        """Subtracts two tensors. Forwards command to sub. See .sub() for details."""
-        return self.sub(*args, **kwargs)
+    __sub__ = sub
+
+    def __rsub__(self, other):
+        return (self - other) * -1
 
     def _private_mul(self, other, equation: str):
         """Abstractly Multiplies two tensors
@@ -982,15 +992,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
         chain = None
         if hasattr(tensor, "child"):
-            chain = sy.serde._simplify(worker, tensor.child)
+            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
         tensor.set_garbage_collect_data(False)
 
         return (
-            sy.serde._simplify(worker, tensor.id),
+            sy.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
-            sy.serde._simplify(worker, tensor.crypto_provider.id),
+            sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
         )
 
@@ -1008,17 +1018,87 @@ class AdditiveSharingTensor(AbstractTensor):
             """
 
         tensor_id, field, crypto_provider, chain = tensor_tuple
-        crypto_provider = sy.serde._detail(worker, crypto_provider)
+        crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
-            id=sy.serde._detail(worker, tensor_id),
+            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
         if chain is not None:
-            chain = sy.serde._detail(worker, chain)
+            chain = sy.serde.msgpack.serde._detail(worker, chain)
+            tensor.child = chain
+
+        return tensor
+
+    @staticmethod
+    def bufferize(
+        worker: AbstractWorker, tensor: "AdditiveSharingTensor"
+    ) -> "AdditiveSharingTensorPB":
+        """
+        This function takes the attributes of a AdditiveSharingTensor and saves them in a protobuf object
+        Args:
+            tensor (AdditiveSharingTensor): a AdditiveSharingTensor
+        Returns:
+            protobuf: a protobuf object holding the unique attributes of the additive shared tensor
+        Examples:
+            data = protobuf(tensor)
+        """
+        protobuf_tensor = AdditiveSharingTensorPB()
+
+        if hasattr(tensor, "child"):
+            for key, value in tensor.child.items():
+                sy.serde.protobuf.proto.set_protobuf_id(protobuf_tensor.location_ids.add(), key)
+                protobuf_share = sy.serde.protobuf.serde._bufferize(worker, value)
+                protobuf_tensor.shares.append(protobuf_share)
+
+        # Don't delete the remote values of the shares at simplification
+        tensor.set_garbage_collect_data(False)
+
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_tensor.id, tensor.id)
+        sy.serde.protobuf.proto.set_protobuf_id(
+            protobuf_tensor.crypto_provider_id, tensor.crypto_provider.id
+        )
+
+        protobuf_tensor.field_size = tensor.field
+
+        return protobuf_tensor
+
+    @staticmethod
+    def unbufferize(
+        worker: AbstractWorker, protobuf_tensor: "AdditiveSharingTensorPB"
+    ) -> "AdditiveSharingTensor":
+        """
+            This function reconstructs a AdditiveSharingTensor given its' attributes in form of a protobuf object.
+            Args:
+                worker: the worker doing the deserialization
+                protobuf_tensor: a protobuf object holding the attributes of the AdditiveSharingTensor
+            Returns:
+                AdditiveSharingTensor: a AdditiveSharingTensor
+            Examples:
+                shared_tensor = unprotobuf(data)
+            """
+
+        tensor_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_tensor.id)
+        crypto_provider_id = sy.serde.protobuf.proto.get_protobuf_id(
+            protobuf_tensor.crypto_provider_id
+        )
+        field = protobuf_tensor.field_size
+
+        tensor = AdditiveSharingTensor(
+            owner=worker,
+            id=tensor_id,
+            field=field,
+            crypto_provider=worker.get_worker(crypto_provider_id),
+        )
+
+        if protobuf_tensor.location_ids is not None:
+            chain = {}
+            for pb_location_id, share in zip(protobuf_tensor.location_ids, protobuf_tensor.shares):
+                location_id = sy.serde.protobuf.proto.get_protobuf_id(pb_location_id)
+                chain[location_id] = sy.serde.protobuf.serde._unbufferize(worker, share)
             tensor.child = chain
 
         return tensor

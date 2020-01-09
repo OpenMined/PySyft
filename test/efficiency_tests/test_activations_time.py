@@ -5,7 +5,7 @@ from test.efficiency_tests.assertions import assert_time
 
 
 @pytest.mark.parametrize("activation", ["tanh", "sigmoid"])
-@assert_time(max_time=1)
+@assert_time(max_time=10)
 def test_activation(activation, hook, workers):
 
     activation_func = torch.tanh if activation == "tanh" else torch.sigmoid

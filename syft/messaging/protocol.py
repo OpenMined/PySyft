@@ -1,17 +1,16 @@
-import syft as sy
+import warnings
+from typing import List, Optional, Tuple, Union
 
+import syft as sy
 from syft.exceptions import WorkerNotFoundException
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_protocol import PointerProtocol
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.messaging.promise import Promise
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
-from syft.messaging.promise import Promise
-
-from typing import List, Union
-import warnings
 
 
 class Protocol(AbstractObject):
@@ -44,7 +43,7 @@ class Protocol(AbstractObject):
         self,
         plans: List = None,
         id: int = None,
-        owner: "sy.workers.AbstractWorker" = None,
+        owner: BaseWorker = None,
         tags: List[str] = None,
         description: str = None,
     ):
@@ -55,9 +54,9 @@ class Protocol(AbstractObject):
         self.workers_resolved = len(self.plans) and all(
             isinstance(w, AbstractWorker) for w, p in self.plans
         )
-        self.location = None
+        self.location: Optional[BaseWorker] = None
 
-    def deploy(self, *workers):
+    def deploy(self, *workers: BaseWorker) -> "Protocol":
         """
         Calling .deploy() sends the plans to the designated workers.
 
@@ -67,6 +66,18 @@ class Protocol(AbstractObject):
         For the first phase, either there is exactly one real worker per plan or one real
         worker per fictive_worker. _resolve_workers replaces the fictive workers by the
         real ones.
+
+        Args:
+            workers: BaseWorker. The workers to which plans are to
+                be sent
+
+        Returns:
+            "Protocol": self
+
+        Raises:
+            RuntimeError: If protocol is already deployed OR
+                the number of workers provided does not equal the number of fictive workers
+                and does not equal the number of plans
         """
         if self.workers_resolved:
             raise RuntimeError(
@@ -75,6 +86,9 @@ class Protocol(AbstractObject):
 
         n_workers = len(set(worker for worker, plan in self.plans))
 
+        # to correctly map workers, we must have exactly 1 worker for 1 plan
+        # or 1 worker for 1 fictive worker.
+        # If we don't, raise here
         if len(self.plans) != len(workers) != n_workers:
             raise RuntimeError(
                 f"This protocol is designed for {n_workers} workers, but {len(workers)} were provided."
@@ -82,6 +96,7 @@ class Protocol(AbstractObject):
 
         self._resolve_workers(workers)
 
+        # update plans list with *pointers* to the plans
         self.plans = [(worker, plan.send(worker)) for (worker, plan) in self.plans]
 
         return self
@@ -96,7 +111,8 @@ class Protocol(AbstractObject):
             return self.run(*args, **kwargs)
 
     def build_with_promises(self, *args, **kwargs):
-        """ This method is used to build the graph of computation distributed across the different workers,
+        """
+        This method is used to build the graph of computation distributed across the different workers,
         meaning that output promises are built for plans and these output promises are used as inputs
         for the next worker.
 
@@ -143,6 +159,10 @@ class Protocol(AbstractObject):
         run and its output is moved to the second plan location, and so on. The final
         result is returned after all plans have run, and it is composed of pointers to
         the last plan location.
+
+        Raises:
+            RuntimeError: If the protocol has a location attribute and it is not
+                the local worker
         """
         self._assert_is_resolved()
 
@@ -179,8 +199,11 @@ class Protocol(AbstractObject):
 
         return response
 
-    def request_remote_run(self, location: "sy.workers.BaseWorker", args, kwargs) -> object:
-        """Requests protocol execution.
+    def request_remote_run(
+        self, location: AbstractWorker, args, kwargs
+    ) -> Union[List[PointerTensor], PointerTensor]:
+        """
+        Requests protocol execution.
 
         Send a request to execute the protocol on the remote location.
 
@@ -190,8 +213,8 @@ class Protocol(AbstractObject):
             kwargs: Named arguments used as input data for the protocol.
 
         Returns:
-            Execution response.
-
+            PointerTensor or list of PointerTensors: response from request to
+                execute protocol
         """
         plan_name = f"plan{self.id}"
         args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
@@ -206,9 +229,13 @@ class Protocol(AbstractObject):
         return response
 
     @staticmethod
-    def find_args_location(args):
+    def find_args_location(args) -> BaseWorker:
         """
         Return location if args contain pointers else the local worker
+
+        Returns:
+            BaseWorker: The location of a pointer if in args, else local
+                worker
         """
         for arg in args:
             if isinstance(arg, FrameworkTensor):
@@ -216,11 +243,14 @@ class Protocol(AbstractObject):
                     return arg.location
         return sy.framework.hook.local_worker
 
-    def send(self, location):
+    def send(self, location: BaseWorker) -> None:
         """
         Send a protocol to a worker, to be fetched by other workers
-        """
 
+        Args:
+            location: BaseWorker. The location to which a protocol
+                is to be sent
+        """
         # If the workers have not been assigned, then the plans are still local
         # and should be sent together with the protocol to the location
         if not self.workers_resolved:
@@ -233,14 +263,19 @@ class Protocol(AbstractObject):
         self.location = location
 
     @staticmethod
-    def simplify(worker: AbstractWorker, protocol: "Protocol") -> tuple:
+    def simplify(worker: BaseWorker, protocol: "Protocol") -> Tuple:
         """
         This function takes the attributes of a Protocol and saves them in a tuple
+
         Args:
-            worker (AbstractWorker) : the worker doing the serialization
+            worker (BaseWorker) : the worker doing the serialization
             protocol (Protocol): a Protocol object
+
         Returns:
             tuple: a tuple holding the unique attributes of the Protocol object
+
+        Raises:
+            TypeError: if a plan is not sy.Plan or sy.PointerPlan
         """
         plans_reference = []
         for worker, plan in protocol.plans:
@@ -259,25 +294,27 @@ class Protocol(AbstractObject):
             plans_reference.append((worker_id, plan_id))
 
         return (
-            sy.serde._simplify(worker, protocol.id),
-            sy.serde._simplify(worker, protocol.tags),
-            sy.serde._simplify(worker, protocol.description),
-            sy.serde._simplify(worker, plans_reference),
-            sy.serde._simplify(worker, protocol.workers_resolved),
+            sy.serde.msgpack.serde._simplify(worker, protocol.id),
+            sy.serde.msgpack.serde._simplify(worker, protocol.tags),
+            sy.serde.msgpack.serde._simplify(worker, protocol.description),
+            sy.serde.msgpack.serde._simplify(worker, plans_reference),
+            sy.serde.msgpack.serde._simplify(worker, protocol.workers_resolved),
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, protocol_tuple: tuple) -> "Protocol":
-        """This function reconstructs a Protocol object given its attributes in the form of a tuple.
+    def detail(worker: BaseWorker, protocol_tuple: Tuple) -> "Protocol":
+        """
+        This function reconstructs a Protocol object given its attributes in the form of a tuple.
+
         Args:
             worker: the worker doing the deserialization
             protocol_tuple: a tuple holding the attributes of the Protocol
+
         Returns:
             protocol: a Protocol object
         """
-
         id, tags, description, plans_reference, workers_resolved = map(
-            lambda o: sy.serde._detail(worker, o), protocol_tuple
+            lambda o: sy.serde.msgpack.serde._detail(worker, o), protocol_tuple
         )
 
         plans = []
@@ -290,17 +327,28 @@ class Protocol(AbstractObject):
             else:
                 try:
                     plan_owner = worker.get_worker(owner_id, fail_hard=True)
-                    plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
-                    plan = plan_pointer.get()
                 except WorkerNotFoundException:
                     plan = worker.get_obj(plan_id)
+                else:
+                    plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
+                    plan = plan_pointer.get()
                 plans.append((worker.id, plan))
 
         protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
 
         return protocol
 
-    def create_pointer(self, owner, garbage_collect_data):
+    def create_pointer(self, owner: AbstractWorker, garbage_collect_data: bool) -> PointerProtocol:
+        """
+        Create a pointer to the protocol
+
+        Args:
+            owner: the owner of the pointer
+            garbage_collect_data: bool
+
+        Returns:
+            PointerProtocol: pointer to the protocol
+        """
         return PointerProtocol(
             location=self.owner,
             id_at_location=self.id,
@@ -323,15 +371,27 @@ class Protocol(AbstractObject):
     def __str__(self) -> str:
         return self.__repr__()
 
-    def _assert_is_resolved(self):
+    def _assert_is_resolved(self) -> None:
+        """
+        Check if protocol has already been resolved
+
+        Raises:
+            RuntimeError: If protocol has already been resolved
+        """
         if not self.workers_resolved:
             raise RuntimeError(
                 "Plans have not been allocated to existing workers. Call deploy(*workers) to do so."
             )
 
-    def _resolve_workers(self, workers):
-        """Map the abstract workers (named by strings) to the provided workers and
-        update the plans accordingly"""
+    def _resolve_workers(self, workers: Tuple[BaseWorker, ...]) -> None:
+        """
+        Map the abstract workers (named by strings) to the provided workers and
+        update the plans accordingly
+
+        Args:
+            workers: Iterable of workers. The workers to map to workers
+                in the protocol
+        """
         dict_workers = {w.id: w for w in workers}
         set_fake_ids = set(worker for worker, _ in self.plans)
         set_real_ids = set(dict_workers.keys())

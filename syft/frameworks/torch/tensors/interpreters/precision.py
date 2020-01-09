@@ -1,12 +1,12 @@
 import torch
 
 import syft
-from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import AbstractTensor
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 
 
 class FixedPrecisionTensor(AbstractTensor):
@@ -142,8 +142,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def add(self, _self, other):
         """Add two fixed precision tensors together.
         """
-        if isinstance(other, int):
-            scaled_int = other * self.base ** self.precision_fractional
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "add")(scaled_int)
 
         if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
@@ -161,6 +161,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __add__ = add
+    __radd__ = add
 
     def add_(self, value_or_tensor, tensor=None):
         if tensor is None:
@@ -182,8 +183,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def sub(self, _self, other):
         """Subtracts a fixed precision tensor from another one.
         """
-        if isinstance(other, int):
-            scaled_int = other * self.base ** self.precision_fractional
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
             return getattr(_self, "sub")(scaled_int)
 
         if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
@@ -201,6 +202,9 @@ class FixedPrecisionTensor(AbstractTensor):
         return response
 
     __sub__ = sub
+
+    def __rsub__(self, other):
+        return (self - other) * -1
 
     def sub_(self, value_or_tensor, tensor=None):
         if tensor is None:
@@ -225,7 +229,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
     def mul_and_div(self, other, cmd):
         """
-        Hook manually mul and div to add the trucation/rescaling part
+        Hook manually mul and div to add the truncation/rescaling part
         which is inherent to these operations in the fixed precision setting
         """
         changed_sign = False
@@ -238,6 +242,10 @@ class FixedPrecisionTensor(AbstractTensor):
         if isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             new_self = self.child
             new_other = other
+        elif isinstance(other, float):
+            raise NotImplementedError(
+                "Can't multiply or divide a FixedPrecisionTensor with a float value"
+            )
 
         elif isinstance(self.child, (AdditiveSharingTensor, MultiPointerTensor)) and isinstance(
             other.child, torch.Tensor
@@ -374,14 +382,17 @@ class FixedPrecisionTensor(AbstractTensor):
         This uses the following trick:
          - Divide power by 2 and multiply base to itself (if the power is even)
          - Decrement power by 1 to make it even and then follow the first step
+
+        Args:
+            power (int): the exponent supposed to be an integer > 0
         """
         base = self
 
-        result = 1
+        result = None
         while power > 0:
             # If power is odd
             if power % 2 == 1:
-                result = result * base
+                result = result * base if result is not None else base
 
             # Divide the power by 2
             power = power // 2
@@ -443,6 +454,109 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
+    # Approximations:
+    def inverse(self, iterations=8):
+        """
+        Computes an approximation of the matrix inversion using Newton-Schulz
+        iterations
+        """
+        # TODO: should we add non-approximate version if self.child is a pure tensor?
+
+        assert len(self.shape) >= 2, "Can't compute inverse on non-matrix"
+        assert self.shape[-1] == self.shape[-2], "Must be batches of square matrices"
+
+        inverse = (0.1 * torch.eye(self.shape[-1])).fix_prec(**self.get_class_attributes()).child
+
+        for _ in range(iterations):
+            inverse = 2 * inverse - inverse @ self @ inverse
+
+        return inverse
+
+    def exp(self, iterations=8):
+        """
+        Approximates the exponential function using a limit approximation:
+        exp(x) = \lim_{n -> infty} (1 + x / n) ^ n
+
+        Here we compute exp by choosing n = 2 ** d for some large d equal to
+        iterations. We then compute (1 + x / n) once and square `d` times.
+
+        Args:
+            iterations (int): number of iterations for limit approximation
+
+        Ref: https://github.com/LaRiffle/approximate-models
+        """
+        return (1 + self / 2 ** iterations) ** (2 ** iterations)
+
+    def sigmoid(self, method="exp"):
+        """
+        Approximates the sigmoid function
+
+        Args:
+            self: the fixed precision tensor
+            method (str): (default = "exp")
+                "exp": Use the exponential approximation and the sigmoid definition
+                    sigmoid(x) = 1 / (1 + exp(-x))
+                "maclaurin": Use the Maclaurin / Taylor approximation, with polynomial
+                    interpolation of degree 5 over [-8,8]
+                    NOTE: This method is faster but not as precise as "exp"
+                    Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+        """
+
+        if method == "exp":
+            # Inverse can only be used on matrices
+            if len(self.shape) == 1:
+                one = self * 0 + 1
+                result = one / (1 + (self * -1).exp())
+            else:
+                result = (1 + (self * -1).exp()).inverse()
+
+        elif method == "maclaurin":
+            weights = (
+                torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
+                .fix_precision(**self.get_class_attributes())
+                .child
+            )
+            degrees = [0, 1, 3, 5]
+
+            # initiate with term of degree 0 to avoid errors with tensor ** 0
+            one = self * 0 + 1
+            result = one * weights[0]
+            for i, d in enumerate(degrees[1:]):
+                result += (self ** d) * weights[i + 1]
+
+        return result
+
+    def log(self, iterations=2, exp_iterations=8):
+        """Approximates the natural logarithm using 8th order modified Householder iterations.
+        Recall that Householder method is an algorithm to solve a non linear equation f(x) = 0.
+        Here  f: x -> 1 - C * exp(-x)  with C = self
+
+        Iterations are computed by:
+            y_0 = some constant
+            h = 1 - self * exp(-y_n)
+            y_{n+1} = y_n - h * (1 + h / 2 + h^2 / 3 + h^3 / 6 + h^4 / 5 + h^5 / 7)
+
+        Args:
+            iterations (int): number of iterations for 6th order modified
+                Householder approximation.
+            exp_iterations (int): number of iterations for limit approximation of exp
+
+        Ref: https://github.com/LaRiffle/approximate-models
+        """
+
+        y = self / 31 + 1.59 - 20 * (-2 * self - 1.4).exp(iterations=exp_iterations)
+
+        # 6th order Householder iterations
+        for i in range(iterations):
+            h = [1 - self * (-y).refresh().exp(iterations=exp_iterations)]
+            for i in range(1, 5):
+                h.append(h[-1] * h[0])
+
+            y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 4 + h[3] / 5 + h[4] / 6)
+
+        return y
+
+    # Binary ops
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
@@ -506,27 +620,25 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.addmm = addmm
 
+        def inverse(self):
+            return self.inverse()
+
+        module.inverse = inverse
+
+        def exp(tensor):
+            return tensor.exp()
+
+        module.exp = exp
+
         def sigmoid(tensor):
-            """
-            Overloads torch.sigmoid to be able to use MPC
-            Approximation with polynomial interpolation of degree 5 over [-8,8]
-            Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
-            """
-
-            weights = [0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05]
-            degrees = [0, 1, 3, 5]
-
-            max_degree = degrees[-1]
-            max_idx = degrees.index(max_degree)
-
-            # initiate with term of degree 0 to avoid errors with tensor ** 0
-            result = (tensor * 0 + 1) * torch.tensor(weights[0]).fix_precision().child
-            for w, d in zip(weights[1:max_idx], degrees[1:max_idx]):
-                result += (tensor ** d) * torch.tensor(w).fix_precision().child
-
-            return result
+            return tensor.sigmoid()
 
         module.sigmoid = sigmoid
+
+        def log(tensor):
+            return tensor.log()
+
+        module.log = log
 
         def tanh(tensor):
             """
@@ -789,16 +901,16 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         chain = None
         if hasattr(tensor, "child"):
-            chain = syft.serde._simplify(worker, tensor.child)
+            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (
-            syft.serde._simplify(worker, tensor.id),
+            syft.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            syft.serde._simplify(worker, tensor.tags),
-            syft.serde._simplify(worker, tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
+            syft.serde.msgpack.serde._simplify(worker, tensor.description),
             chain,
         )
 
@@ -819,17 +931,17 @@ class FixedPrecisionTensor(AbstractTensor):
 
         tensor = FixedPrecisionTensor(
             owner=worker,
-            id=syft.serde._detail(worker, tensor_id),
+            id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
-            tags=syft.serde._detail(worker, tags),
-            description=syft.serde._detail(worker, description),
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
+            description=syft.serde.msgpack.serde._detail(worker, description),
         )
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
 
         return tensor
