@@ -42,10 +42,10 @@ class VirtualGrid:
                 result_counter += len(worker_results)
 
         if verbose:
-            print("\nFound " + str(result_counter) + " results in total.")
+            print(f"\nFound {str(result_counter)} results in total.")
             print("\nTag Profile:")
             for tag, count in tag_counter.most_common():
-                print("\t" + tag + " found " + str(count))
+                print(f"\t {tag} found {str(count)}")
 
         if return_counter:
             return results, tag_counter
