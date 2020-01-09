@@ -1005,7 +1005,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         # Don't delete the remote values of the shares at simplification
         # record the initial value and re-assign after simplification
-        garbage_collect_data_dict = tensor.get_garbage_collect_data()
+        # garbage_collect_data_dict = tensor.get_garbage_collect_data()
 
         tensor.set_garbage_collect_data(False)
 
@@ -1017,9 +1017,9 @@ class AdditiveSharingTensor(AbstractTensor):
         )
 
         # re-assign the values recorded
-        shares = tensor.child
-        for worker, share in shares.items():
-            share.garbage_collect_data = garbage_collect_data_dict[worker]
+        # shares = tensor.child
+        # for worker, share in shares.items():
+        #    share.garbage_collect_data = garbage_collect_data_dict[worker]
 
         return simplified_tuple
 
