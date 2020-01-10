@@ -2,7 +2,7 @@ venv: venv/bin/activate
 
 REQ_DIR=pip-dep
 
-reqs: $(REQ_DIR)/requirements.txt $(REQ_DIR)/requirements_dev.txt $(REQ_DIR)/requirements_udacity.txt
+reqs: $(REQ_DIR)/requirements.txt $(REQ_DIR)/requirements_dev.txt $(REQ_DIR)/requirements_udacity.txt $(REQ_DIR)/requirements_notebooks.txt
 
 venv/bin/activate: reqs
 	test -e venv/bin/activate || python -m venv venv
