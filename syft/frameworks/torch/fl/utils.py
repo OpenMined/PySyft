@@ -32,11 +32,14 @@ def extract_batches_per_worker(federated_train_loader: sy.FederatedDataLoader):
 def add_model(dst_model, src_model,dst_no_data,src_no_data):
     """Add the parameters of two models.
         Args:
+
             dst_model (torch.nn.Module): the model to which the src_model will be added.
             src_model (torch.nn.Module): the model to be added to dst_model.
             dst_no_data: the number of data within dst_model.
             src_no_data: the number of data within src_model.
+
         Returns:
+        
             torch.nn.Module: the resulting model of the addition.
         """
     if (dst_model==None):
@@ -54,15 +57,18 @@ def add_model(dst_model, src_model,dst_no_data,src_no_data):
 def scale_model(model, scale):
     """Scale the parameters of a model.
     Args:
+
         model (torch.nn.Module): the models whose parameters will be scaled.
         scale (float): the scaling factor.
+
     Returns:
+
         torch.nn.Module: the module with scaled parameters.
     """
     params = model.named_parameters()
     dict_params = dict(params)
     with torch.no_grad():
-        for name, param in dict_params.items():
+        for name, _ in dict_params.items():
             dict_params[name].set_(dict_params[name].data * scale)
     return model
 
@@ -70,9 +76,11 @@ def scale_model(model, scale):
 def federated_avg(models,data_num):
     """Calculate the federated average of a list of models.
     Args:
+
         models: the list of models of which the federated average is calculated.
         data_num: the list of number of data within corresponding model.
     Returns:
+
         torch.nn.Module: the module with averaged parameters.
     """
 
