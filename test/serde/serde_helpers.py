@@ -864,6 +864,8 @@ def make_pointertensor(**kwargs):
         assert detailed.id_at_location == original.id_at_location
         assert detailed.location == original.location
         assert detailed.point_to_attr == original.point_to_attr
+        # Not testing grabage collect data as we are always setting it as False at receiver end
+        # irrespective of its initial value
         assert detailed.garbage_collect_data == original.garbage_collect_data
         assert detailed.get().equal(tensor)
         return True
@@ -1670,6 +1672,9 @@ def make_gradfn(**kwargs):
     x = torch.tensor([1, 2, 3])
     x_share = x.share(alice, bob, requires_grad=True)
     y_share = x_share + x_share  # AddBackward
+
+    # This is bad. We should find something robust
+    x_share.child.child.set_garbage_collect_data(False)
 
     grad_fn = y_share.child.grad_fn
 

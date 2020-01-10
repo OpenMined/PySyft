@@ -1004,24 +1004,14 @@ class AdditiveSharingTensor(AbstractTensor):
             chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
-        # record the initial value and re-assign after simplification
-        # garbage_collect_data_dict = tensor.get_garbage_collect_data()
-
         tensor.set_garbage_collect_data(False)
 
-        simplified_tuple = (
+        return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
         )
-
-        # re-assign the values recorded
-        # shares = tensor.child
-        # for worker, share in shares.items():
-        #    share.garbage_collect_data = garbage_collect_data_dict[worker]
-
-        return simplified_tuple
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
