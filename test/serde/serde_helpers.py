@@ -1689,12 +1689,7 @@ def make_gradfn(**kwargs):
 
         for detailed_attr, original_attr in zip(detailed._attributes, original._attributes):
             assert detailed_attr.__class__.__name__ == original_attr.__class__.__name__
-            try:
-                # either its a tensor
-                assert detailed_attr.get().equal(t)
-            except AttributeError:
-                # non tensor
-                assert detailed_attr == original_attr
+            assert detailed_attr.get().equal(t)
 
         return True
 
