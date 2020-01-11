@@ -1,9 +1,8 @@
-import syft as sy
-import torch as th
-from torch.nn import Conv2d, Module
+import torch as ths
+from torch.nn import Module
 
 
-class PythonConv2d(Module):
+class Conv2d(Module):
     """
     This class is the beginning of an exact python port of the torch.nn.Conv2d
     module. Because PySyft cannot hook into layers which are implemented in C++,
