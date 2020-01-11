@@ -1687,6 +1687,7 @@ def make_gradfn(**kwargs):
         )
         assert detailed.__class__.__name__ == original.__class__.__name__
 
+        # This block only works only for syft tensor attributes
         for detailed_attr, original_attr in zip(detailed._attributes, original._attributes):
             assert detailed_attr.__class__.__name__ == original_attr.__class__.__name__
             assert detailed_attr.get().equal(t)
