@@ -52,7 +52,7 @@ class Conv2d(Module):
         self.has_bias = bias
         self.padding_mode = padding_mode
 
-        temp_init = torch.nn.Conv2d(in_channels=self.in_channels,
+        temp_init = th.nn.Conv2d(in_channels=self.in_channels,
                            out_channels=self.out_channels,
                            kernel_size=self.kernel_size,
                            stride=self.stride,
