@@ -1669,21 +1669,33 @@ def make_responsesignatureerror(**kwargs):
 # syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
 def make_gradfn(**kwargs):
     alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
-    x = torch.tensor([1, 2, 3])
-    x_share = x.share(alice, bob, requires_grad=True)
-    y_share = x_share + x_share  # AddBackward
+    t = torch.tensor([1, 2, 3])
+
+    x_share = t.share(alice, bob, requires_grad=True)
+    y_share = t.share(alice, bob, requires_grad=True)
+    z_share = x_share + y_share  # AddBackward
 
     # This is bad. We should find something robust
     x_share.child.child.set_garbage_collect_data(False)
+    y_share.child.child.set_garbage_collect_data(False)
 
-    grad_fn = y_share.child.grad_fn
+    grad_fn = z_share.child.grad_fn
 
     def compare(detailed, original):
         assert isinstance(
             detailed, syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
         )
         assert detailed.__class__.__name__ == original.__class__.__name__
-        # assert detailed._attributes == original._attributes
+
+        for detailed_attr, original_attr in zip(detailed._attributes, original._attributes):
+            assert detailed_attr.__class__.__name__ == original_attr.__class__.__name__
+            try:
+                # either its a tensor
+                assert detailed_attr.get().equal(t)
+            except AttributeError:
+                # non tensor
+                assert detailed_attr == original_attr
+
         return True
 
     return [
@@ -1696,7 +1708,7 @@ def make_gradfn(**kwargs):
                     (
                         (CODE[str], (b"AddBackward",)),
                         msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
-                        msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                        msgpack.serde._simplify(syft.hook.local_worker, y_share.child),
                     ),
                 ),
             ),
