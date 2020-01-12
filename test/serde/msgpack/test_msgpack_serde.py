@@ -676,13 +676,19 @@ def test_pointer_tensor_detail(id):
     assert (x_back == 2 * x).all()
 
 
-def test_numpy_tensor_serde():
+@pytest.mark.parametrize(
+    "tensor",
+    [
+        (torch.tensor(numpy.ones((10, 10)), requires_grad=False)),
+        (torch.tensor([[0.25, 1.5], [0.15, 0.25], [1.25, 0.5]], requires_grad=True)),
+        (torch.randint(low=0, high=10, size=[3, 7], requires_grad=False)),
+    ],
+)
+def test_numpy_tensor_serde(tensor):
     compression._apply_compress_scheme = compression.apply_lz4_compression
 
     serde._serialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_serializer
     serde._deserialize_tensor = syft.serde.msgpack.torch_serde.numpy_tensor_deserializer
-
-    tensor = torch.tensor(numpy.ones((10, 10)), requires_grad=False)
 
     tensor_serialized = syft.serde.serialize(tensor)
     assert tensor_serialized[0] != compression.NO_COMPRESSION
