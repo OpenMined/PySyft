@@ -1,6 +1,7 @@
 import torch as th
 from torch.nn import Module
 
+
 class AvgPool2d(Module):
     """
     This class is the beginning of an exact python port of the torch.nn.AvgPool2d
@@ -18,12 +19,15 @@ class AvgPool2d(Module):
     This module has not yet been tested with GPUs but should work out of the box.
     """
 
-    def __init__(self, kernel_size,
-                 stride=None,
-                 padding=0,
-                 ceil_mode=False,
-                 count_include_pad=True,
-                 divisor_override=None):
+    def __init__(
+        self,
+        kernel_size,
+        stride=None,
+        padding=0,
+        ceil_mode=False,
+        count_include_pad=True,
+        divisor_override=None,
+    ):
         """For information on the constructor arguments, please see PyTorch's
         documentation in torch.nn.AvgPool2d"""
 
@@ -57,13 +61,14 @@ class AvgPool2d(Module):
 
         for i in range(0, rows - self.kernel_size + 1, self.stride):
             for j in range(0, cols - self.kernel_size + 1, self.stride):
-                kernel_out = data[:, :, i:i + self.kernel_size, j:j + self.kernel_size].sum(2).sum(
-                    2) * self._one_over_kernel_size
+                kernel_out = (
+                    data[:, :, i : i + self.kernel_size, j : j + self.kernel_size].sum(2).sum(2)
+                    * self._one_over_kernel_size
+                )
                 kernel_results.append(kernel_out.unsqueeze(2))
 
-        pred = th.cat(kernel_results, axis=2).view(batch_size,
-                                                   out_channels,
-                                                   int(rows / self.stride),
-                                                   int(cols / self.stride))
+        pred = th.cat(kernel_results, axis=2).view(
+            batch_size, out_channels, int(rows / self.stride), int(cols / self.stride)
+        )
 
         return pred

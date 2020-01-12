@@ -9,15 +9,17 @@ def test_pool2d():
     output as the primary torch implementation, in the same order.
     """
 
-    model = nn.Conv2d(in_channels=1,
-               out_channels=32,
-               kernel_size=3,
-               stride=1,
-               padding=0,
-               dilation=1,
-               groups=1,
-               bias=True,
-               padding_mode='zeros')
+    model = nn.Conv2d(
+        in_channels=1,
+        out_channels=32,
+        kernel_size=3,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=True,
+        padding_mode="zeros",
+    )
 
     pool = nn.AvgPool2d(2)
     pool2 = nn2.AvgPool2d(2)
