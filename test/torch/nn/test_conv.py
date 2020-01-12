@@ -11,15 +11,17 @@ def test_conv2d():
 
     model2 = nn2.Conv2d(1, 32, 3, bias=True)
 
-    model = nn.Conv2d(in_channels=1,
-                      out_channels=32,
-                      kernel_size=3,
-                      stride=1,
-                      padding=0,
-                      dilation=1,
-                      groups=1,
-                      bias=True,
-                      padding_mode='zeros')
+    model = nn.Conv2d(
+        in_channels=1,
+        out_channels=32,
+        kernel_size=3,
+        stride=1,
+        padding=0,
+        dilation=1,
+        groups=1,
+        bias=True,
+        padding_mode="zeros",
+    )
 
     model2.weight = model.weight
     model2.bias = model.bias
