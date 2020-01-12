@@ -96,9 +96,9 @@ class GradFunc:
         cls, *grad_fn_attrs = syft.serde.msgpack.serde._detail(worker, gradfn_tuple)
 
         if cls == "GradFunc":
-            return GradFunc(*grad_fn_attrs)
-
-        cls = getattr(gradients, cls)
+            cls = GradFunc
+        else:
+            cls = getattr(gradients, cls)
 
         return cls(*grad_fn_attrs)
 

@@ -41,9 +41,7 @@ class AutogradTensor(AbstractTensor):
         else:
             self.grad = None
 
-        self.grad_fn = None
-        if "grad_fn" in kwargs.keys():
-            self.grad_fn = kwargs["grad_fn"]
+        self.grad_fn = kwargs.get("grad_fn")
 
     def backward(self, grad=None):
         if grad is None:
