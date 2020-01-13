@@ -11,6 +11,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.promise import Promise
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
 
 
 class Protocol(AbstractObject):
@@ -302,23 +303,25 @@ class Protocol(AbstractObject):
         )
 
     @staticmethod
-    def detail(worker: BaseWorker, protocol_tuple: Tuple) -> "Protocol":
+    def create_from_attributes(
+        worker, id, tags, description, workers_resolved, plans_assignments
+    ) -> "Protocol":
         """
-        This function reconstructs a Protocol object given its attributes in the form of a tuple.
+        This function reconstructs a Protocol object given its attributes.
 
         Args:
             worker: the worker doing the deserialization
-            protocol_tuple: a tuple holding the attributes of the Protocol
+            id: Protocol id
+            tags: Protocol tags
+            description: Protocol description
+            workers_resolved: Flag whether workers are resolved
+            plans_assignments: List of workers/plans IDs
 
         Returns:
             protocol: a Protocol object
         """
-        id, tags, description, plans_reference, workers_resolved = map(
-            lambda o: sy.serde.msgpack.serde._detail(worker, o), protocol_tuple
-        )
-
         plans = []
-        for owner_id, plan_id in plans_reference:
+        for owner_id, plan_id in plans_assignments:
             if workers_resolved:
                 plan_owner = worker.get_worker(owner_id, fail_hard=True)
                 plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
@@ -337,6 +340,95 @@ class Protocol(AbstractObject):
         protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
 
         return protocol
+
+    @staticmethod
+    def detail(worker: BaseWorker, protocol_tuple: Tuple) -> "Protocol":
+        """
+        This function reconstructs a Protocol object given its attributes in the form of a tuple.
+
+        Args:
+            worker: the worker doing the deserialization
+            protocol_tuple: a tuple holding the attributes of the Protocol
+
+        Returns:
+            protocol: a Protocol object
+        """
+        id, tags, description, plans_reference, workers_resolved = map(
+            lambda o: sy.serde.msgpack.serde._detail(worker, o), protocol_tuple
+        )
+
+        return Protocol.create_from_attributes(
+            worker, id, tags, description, workers_resolved, plans_reference
+        )
+
+    @staticmethod
+    def bufferize(worker: BaseWorker, protocol: "Protocol") -> ProtocolPB:
+        """
+        This function takes the attributes of a Protocol and saves them in protobuf ProtocolPB
+
+        Args:
+            worker (BaseWorker) : the worker doing the serialization
+            protocol (Protocol): a Protocol object
+
+        Returns:
+            ProtocolPB: a protobuf object holding the unique attributes of the Protocol object
+
+        Raises:
+            TypeError: if a plan is not sy.Plan or sy.PointerPlan
+        """
+        pb_protocol = ProtocolPB()
+        for worker, plan in protocol.plans:
+            if isinstance(plan, sy.Plan):
+                plan_id = plan.id
+            elif isinstance(plan, sy.PointerPlan):
+                plan_id = plan.id_at_location
+            else:
+                raise TypeError("This is not a valid Plan")
+
+            if isinstance(worker, str):
+                worker_id = worker
+            else:
+                worker_id = worker.id
+
+            plan_assignment = pb_protocol.plan_assignments.add()
+            sy.serde.protobuf.proto.set_protobuf_id(plan_assignment.worker_id, worker_id)
+            sy.serde.protobuf.proto.set_protobuf_id(plan_assignment.plan_id, plan_id)
+
+        sy.serde.protobuf.proto.set_protobuf_id(pb_protocol.id, protocol.id)
+        if protocol.tags:
+            pb_protocol.tags.extend(protocol.tags)
+        if protocol.description:
+            pb_protocol.description = protocol.description
+        pb_protocol.workers_resolved = protocol.workers_resolved
+        return pb_protocol
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, pb_protocol: ProtocolPB) -> "Protocol":
+        """
+        This function reconstructs a Protocol object given protobuf object.
+
+        Args:
+            worker: the worker doing the deserialization
+            pb_protocol: a ProtocolPB object
+
+        Returns:
+            protocol: a Protocol object
+        """
+        id = sy.serde.protobuf.proto.get_protobuf_id(pb_protocol.id)
+        tags = set(pb_protocol.tags)
+        description = pb_protocol.description
+        workers_resolved = pb_protocol.workers_resolved
+        plans_assignments = [
+            (
+                sy.serde.protobuf.proto.get_protobuf_id(item.worker_id),
+                sy.serde.protobuf.proto.get_protobuf_id(item.plan_id),
+            )
+            for item in pb_protocol.plan_assignments
+        ]
+
+        return Protocol.create_from_attributes(
+            worker, id, tags, description, workers_resolved, plans_assignments
+        )
 
     def create_pointer(self, owner: AbstractWorker, garbage_collect_data: bool) -> PointerProtocol:
         """

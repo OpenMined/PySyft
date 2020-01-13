@@ -984,6 +984,15 @@ class AdditiveSharingTensor(AbstractTensor):
         for _, share in shares.items():
             share.garbage_collect_data = value
 
+    def get_garbage_collect_data(self):
+        garbage_collect_data_dict = dict()
+        shares = self.child
+
+        for worker, share in shares.items():
+            garbage_collect_data_dict[worker] = share.garbage_collect_data
+
+        return garbage_collect_data_dict
+
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
         """
