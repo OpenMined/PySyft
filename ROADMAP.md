@@ -11,6 +11,8 @@ The second big priority is the refactoring and standardization of tensor abstrac
 - Upgrade Plan object
   - support two kinds of plans: "list of operations" style and JIT style.
   - ensure that "list of operations" style supports special functionality such as plans within plans and .send() functionality.
+  
+  - extend Plans to facilitate hooking at a specific "level" in the class abstraction hierarchy. Or it could simply be the "lowest" level by default.
 
 - Finish PromiseTensor object
 
