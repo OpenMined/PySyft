@@ -831,10 +831,7 @@ def make_protocol(**kwargs):
                 CODE[syft.messaging.protocol.Protocol],
                 (
                     protocol.id,  # (int)
-                    (
-                        CODE[set],
-                        ((CODE[str], (b"aaa",)),),
-                    ),  # (set of strings) tags
+                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (
                         CODE[list],  # (list) plans reference

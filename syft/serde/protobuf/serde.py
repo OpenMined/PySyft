@@ -35,7 +35,13 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [AdditiveSharingTensor, ObjectMessage, Operation, PointerTensor, Protocol]
+OBJ_PROTOBUF_TRANSLATORS = [
+    AdditiveSharingTensor,
+    ObjectMessage,
+    Operation,
+    PointerTensor,
+    Protocol,
+]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]

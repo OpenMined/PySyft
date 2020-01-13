@@ -13,6 +13,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
 
+
 class Protocol(AbstractObject):
     """
     A Protocol coordinates a sequence of Plans, deploys them on distant workers
@@ -302,7 +303,9 @@ class Protocol(AbstractObject):
         )
 
     @staticmethod
-    def create_from_attributes(worker, id, tags, description, workers_resolved, plans_assignments) -> "Protocol":
+    def create_from_attributes(
+        worker, id, tags, description, workers_resolved, plans_assignments
+    ) -> "Protocol":
         """
         This function reconstructs a Protocol object given its attributes.
 
@@ -355,8 +358,7 @@ class Protocol(AbstractObject):
         )
 
         return Protocol.create_from_attributes(
-            worker,
-            id, tags, description, workers_resolved, plans_reference
+            worker, id, tags, description, workers_resolved, plans_reference
         )
 
     @staticmethod
@@ -417,14 +419,15 @@ class Protocol(AbstractObject):
         description = pb_protocol.description
         workers_resolved = pb_protocol.workers_resolved
         plans_assignments = [
-            (sy.serde.protobuf.proto.get_protobuf_id(item.worker_id),
-             sy.serde.protobuf.proto.get_protobuf_id(item.plan_id))
+            (
+                sy.serde.protobuf.proto.get_protobuf_id(item.worker_id),
+                sy.serde.protobuf.proto.get_protobuf_id(item.plan_id),
+            )
             for item in pb_protocol.plan_assignments
         ]
 
         return Protocol.create_from_attributes(
-            worker,
-            id, tags, description, workers_resolved, plans_assignments
+            worker, id, tags, description, workers_resolved, plans_assignments
         )
 
     def create_pointer(self, owner: AbstractWorker, garbage_collect_data: bool) -> PointerProtocol:
