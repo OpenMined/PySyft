@@ -5,7 +5,7 @@ msgpack>=0.6.1
 numpy>=1.16.0
 phe>=1.4.0
 scipy>=1.4.1
-syft-proto>=0.1.0a1.post2
+git+git://github.com/OpenMined/syft-proto@vvm/add-protocol#egg=syft-proto
 tblib>=1.4.0
 torch==1.3
 torchvision==0.4.1

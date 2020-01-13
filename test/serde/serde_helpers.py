@@ -810,9 +810,9 @@ def make_protocol(**kwargs):
     with me.registration_enabled():
         me.register_obj(plan)
 
-    protocol = syft.messaging.protocol.Protocol(
-        [("me", plan), ("me", plan)], tags=["aaa", "bbb"], description="desc"
-    )
+    protocol = syft.messaging.protocol.Protocol([("me", plan), ("me", plan)])
+    protocol.tag("aaa")
+    protocol.describe("desc")
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.protocol.Protocol
@@ -832,14 +832,14 @@ def make_protocol(**kwargs):
                 (
                     protocol.id,  # (int)
                     (
-                        CODE[list],
-                        ((CODE[str], (b"aaa",)), (CODE[str], (b"bbb",))),
-                    ),  # (list of strings) tags
+                        CODE[set],
+                        ((CODE[str], (b"aaa",)),),
+                    ),  # (set of strings) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (
                         CODE[list],  # (list) plans reference
                         (
-                            # (tuple) reference: worker_id (str), plan_id (int)
+                            # (tuple) reference: worker_id (int/str), plan_id (int/str)
                             (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
                             (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
                         ),
