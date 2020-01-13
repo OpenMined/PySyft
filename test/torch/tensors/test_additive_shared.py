@@ -21,7 +21,7 @@ def test_wrap(workers):
     assert isinstance(x.child.child, torch.Tensor)
 
 
-def test__str__(workers):
+def test___str__(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
     assert isinstance(x_sh.__str__(), str)
@@ -35,6 +35,15 @@ def test_share_get(workers):
     x = x.get()
 
     assert (x == t).all()
+
+
+def test___bool__(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+
+    with pytest.raises(ValueError):
+        if x_sh:  # pragma: no cover
+            pass
 
 
 def test_share_inplace_consistency(workers):
