@@ -74,6 +74,12 @@ class AdditiveSharingTensor(AbstractTensor):
             out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
         return out
 
+    def __bool__(self):
+        """Prevent evaluation of encrypted tensor"""
+        raise ValueError(
+            "Additive shared tensors can't be converted boolean values. You should decrypt it first."
+        )
+
     @property
     def locations(self):
         """Provide a locations attribute"""
@@ -977,6 +983,15 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = self.child
         for _, share in shares.items():
             share.garbage_collect_data = value
+
+    def get_garbage_collect_data(self):
+        garbage_collect_data_dict = dict()
+        shares = self.child
+
+        for worker, share in shares.items():
+            garbage_collect_data_dict[worker] = share.garbage_collect_data
+
+        return garbage_collect_data_dict
 
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "AdditiveSharingTensor") -> tuple:
