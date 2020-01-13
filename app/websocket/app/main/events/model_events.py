@@ -21,6 +21,7 @@ def host_model(message: dict) -> str:
     model_id = message["model_id"]
     allow_download = message["allow_download"] == "True"
     allow_remote_inference = message["allow_remote_inference"] == "True"
+    mpc = message["mpc"] == "True"
     serialized_model = message["model"]
 
     # Encode the model accordingly
@@ -28,7 +29,7 @@ def host_model(message: dict) -> str:
 
     # save the model for later usage
     response = mm.save_model(
-        serialized_model, model_id, allow_download, allow_remote_inference
+        serialized_model, model_id, allow_download, allow_remote_inference, mpc
     )
     return json.dumps(response)
 

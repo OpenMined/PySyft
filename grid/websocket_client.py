@@ -211,6 +211,7 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
         self,
         model,
         model_id: str = None,
+        mpc: bool = False,
         allow_download: bool = False,
         allow_remote_inference: bool = False,
     ) -> bool:
@@ -253,6 +254,7 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
                 "allow_download": str(allow_download),
                 "allow_remote_inference": str(allow_remote_inference),
                 "model": serialized_model.decode(self._encoding),
+                "mpc": str(mpc),
             }
             response = self._forward_json_to_websocket_server_worker(message)
         else:
@@ -271,6 +273,7 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
                         "model_id": model_id,
                         "allow_download": str(allow_download),
                         "allow_remote_inference": str(allow_remote_inference),
+                        "mpc": str(mpc),
                     },
                 )
             )
@@ -493,6 +496,7 @@ class WebsocketGridClient(WebsocketClientWorker, FederatedClient):
             res_model.id,
             allow_download=True,
             allow_remote_inference=False,
+            mpc=True,
         )
         return result
 

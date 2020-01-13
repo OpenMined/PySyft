@@ -18,7 +18,7 @@ model_cache = dict()
 
 # Local model abstraction
 ModelTuple = collections.namedtuple(
-    "ModelTuple", ["model_obj", "allow_download", "allow_remote_inference"]
+    "ModelTuple", ["model_obj", "allow_download", "allow_remote_inference", "mpc"]
 )
 
 # Error messages
@@ -65,6 +65,7 @@ def _save_model_to_cache(
     model_id: str,
     allow_download: bool,
     allow_remote_inference: bool,
+    mpc: bool,
     serialized: bool = True,
 ):
     """Saves the model to cache. Nothing happens if a model with the same id already exists.
@@ -82,6 +83,7 @@ def _save_model_to_cache(
             model_obj=model,
             allow_download=allow_download,
             allow_remote_inference=allow_remote_inference,
+            mpc=mpc,
         )
 
 
@@ -103,6 +105,7 @@ def _save_model_in_db(
     model_id: str,
     allow_download: bool,
     allow_remote_inference: bool,
+    mpc: bool,
 ):
     db.session.remove()
     db.session.add(
@@ -111,6 +114,7 @@ def _save_model_in_db(
             model=serialized_model,
             allow_download=allow_download,
             allow_remote_inference=allow_remote_inference,
+            mpc=mpc,
         )
     )
     db.session.commit()
@@ -203,6 +207,7 @@ def save_model(
     model_id: str,
     allow_download: bool,
     allow_remote_inference: bool,
+    mpc: bool,
 ):
     """Saves the model for later usage.
 
@@ -224,20 +229,24 @@ def save_model(
     try:
         # Saves a copy in the database
         _save_model_in_db(
-            serialized_model, model_id, allow_download, allow_remote_inference
+            serialized_model, model_id, allow_download, allow_remote_inference, mpc
         )
 
         # Also save a copy in cache
         model = sy.serde.deserialize(serialized_model)
         _save_model_to_cache(
-            model, model_id, allow_download, allow_remote_inference, serialized=False
+            model,
+            model_id,
+            allow_download,
+            allow_remote_inference,
+            mpc,
+            serialized=False,
         )
 
         # If the model is a Plan we also need to store
         # the state tensors
         if isinstance(model, sy.Plan):
             _save_states_in_db(model)
-
         message = "Model saved with id: " + model_id
         return {"success": True, "message": message}
     except (SQLAlchemyError, IntegrityError) as e:

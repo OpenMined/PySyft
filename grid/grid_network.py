@@ -84,7 +84,10 @@ class GridNetwork(object):
                         *smpc_workers, crypto_provider=crypto_provider
                     )
                     # Host model
-                    model.send(host)
+                    p_model = model.send(host)
+
+                    # Save model pointer
+                    host.serve_model(p_model, model_id=model.id, mpc=True)
 
                     for node in model_nodes:
                         node.close()
@@ -123,6 +126,7 @@ class GridNetwork(object):
                 model_id=model_id,
                 allow_download=allow_download,
                 allow_remote_inference=allow_remote_inference,
+                mpc=False,  # Unencrypted model
             )
             host_worker.close()
 

@@ -35,6 +35,7 @@ class TorchModel(db.Model):
     model = db.Column(db.LargeBinary(128))
     allow_download = db.Column(db.Boolean, default=False)
     allow_remote_inference = db.Column(db.Boolean, default=False)
+    mpc = db.Column(db.Boolean, default=False)
 
 
 class WorkerObject(db.Model):
