@@ -30,6 +30,7 @@ samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
+samples[syft.messaging.protocol.Protocol] = make_protocol
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
