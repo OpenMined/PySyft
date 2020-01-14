@@ -1,6 +1,7 @@
 from syft.generic.string import String
 import syft as sy
 
+
 def test_string_methods():
     """Tests some of the `String` methods which are hooked from `str`.
        more tests are to be added
