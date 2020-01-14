@@ -28,6 +28,7 @@ class PlaceHolder(AbstractTensor):
 
     def instanciate(self, tensor):
         self.child = tensor
+        return self
 
     def __str__(self) -> str:
         if isinstance(self.tags, set):

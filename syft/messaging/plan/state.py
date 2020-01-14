@@ -16,17 +16,17 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, plan=None, state_ids=None):
+    def __init__(self, owner, plan=None, state_placeholders=None):
         self.owner = owner
         self.plan = plan
-        self.state_ids = state_ids or []
+        self.state_placeholders = state_placeholders or []
 
     def __str__(self):
         """Returns the string representation of the State."""
         out = "<"
         out += "State:"
-        for state_id in self.state_ids:
-            out += " {}".format(state_id)
+        for state_placeholder in self.state_placeholders:
+            out += " {}".format(state_placeholder)
         out += ">"
         return out
 
@@ -39,9 +39,8 @@ class State(object):
         Perform a check of consistency on the elements ids.
         """
         tensors = []
-        for state_id in self.state_ids:
-            tensor = self.owner.get_obj(state_id)
-            assert tensor.id == state_id
+        for placeholder in self.state_placeholders:
+            tensor = placeholder.child
             tensors.append(tensor)
         return tensors
 
@@ -49,38 +48,40 @@ class State(object):
         """
         Return a clone of the state elements. Tensor ids are kept.
         """
-        return {tensor.id: tensor.clone() for tensor in self.tensors()}
+        return {placeholder.id: placeholder.child.clone() for placeholder in self.state_placeholders}
 
     def copy(self) -> "State":
-        state = State(owner=self.owner, state_ids=self.state_ids.copy())
+        state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
         return state
 
     def read(self):
         """
         Return state elements
         """
-        tensors = []
-        for state_id in self.state_ids:
-            tensor = self.owner.get_obj(state_id)
-            tensors.append(tensor)
+        tensors = self.tensors()
+        if sy.hook.trace:
+            for tensor in tensors:
+                if tensor.id not in self.plan.placeholders.keys():
+                    placeholder = sy.PlaceHolder(tags={f'#{self.plan.var_count + 1}'})
+                    placeholder.instanciate(tensor)
+                    self.plan.placeholders[tensor.id] = placeholder
+                    self.state_placeholders.append(placeholder)
+                    placeholder.tags.add('#state')
+                    self.plan.var_count += 1
+                else:
+                    print('WARNING: tensor used before opened from state', tensor)
         return tensors
 
     def set_(self, state_dict):
         """
         Reset inplace the state by feeding it a dict of tensors or params
         """
-        assert list(self.state_ids) == list(state_dict.keys())
+        #assert list(self.state_placeholders) == list(state_dict.keys())
 
-        for state_id, new_tensor in state_dict.items():
-            tensor = self.owner.get_obj(state_id)
-
-            with torch.no_grad():
-                tensor.set_(new_tensor)
-
-            tensor.child = new_tensor.child if new_tensor.is_wrapper else None
-            tensor.is_wrapper = new_tensor.is_wrapper
-            if tensor.child is None:
-                delattr(tensor, "child")
+        for placeholder_id, new_tensor in state_dict.items():
+            for placeholder in self.state_placeholders:
+                if placeholder.id == placeholder_id:
+                    placeholder.instanciate(new_tensor)
 
     @staticmethod
     def create_grad_if_missing(tensor):
@@ -90,29 +91,20 @@ class State(object):
             if tensor.grad is not None:
                 tensor.grad -= tensor.grad
 
-    def send_for_build(self, location, **kwargs):
-        """
-        Send functionality that can only be used when sending the state for
-        building the plan.
-        """
 
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.send_(location, **kwargs)
-
-    def fix_precision_(self, *args, **kwargs):
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.fix_precision_(*args, **kwargs)
-
-    def float_precision_(self):
-        for tensor in self.tensors():
-            tensor.float_precision_()
-
-    def share_(self, *args, **kwargs):
-        for tensor in self.tensors():
-            self.create_grad_if_missing(tensor)
-            tensor.share_(*args, **kwargs)
+    # def fix_precision_(self, *args, **kwargs):
+    #     for tensor in self.tensors():
+    #         self.create_grad_if_missing(tensor)
+    #         tensor.fix_precision_(*args, **kwargs)
+    #
+    # def float_precision_(self):
+    #     for tensor in self.tensors():
+    #         tensor.float_precision_()
+    #
+    # def share_(self, *args, **kwargs):
+    #     for tensor in self.tensors():
+    #         self.create_grad_if_missing(tensor)
+    #         tensor.share_(*args, **kwargs)
 
     def get_(self):
         """
@@ -130,7 +122,7 @@ class State(object):
         Simplify the plan's state when sending a plan
         """
         return (
-            sy.serde.msgpack.serde._simplify(worker, state.state_ids),
+            sy.serde.msgpack.serde._simplify(worker, state.state_placeholders),
             sy.serde.msgpack.serde._simplify(worker, state.tensors()),
         )
 
@@ -147,5 +139,5 @@ class State(object):
         for state_id, state_element in zip(state_ids, state_elements):
             worker.register_obj(state_element, obj_id=state_id)
 
-        state = State(owner=worker, plan=None, state_ids=state_ids)
+        state = State(owner=worker, plan=None, state_placeholders=state_ids)
         return state

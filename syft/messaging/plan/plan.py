@@ -3,6 +3,7 @@ from typing import Tuple
 from typing import Union
 
 import syft as sy
+import torch
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -13,6 +14,7 @@ from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 
 class func2plan(object):
@@ -75,9 +77,9 @@ class Plan(AbstractObject, ObjectStorage):
         include_state: if true, implies that the plan is a function, else a class. If true, the
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
-        state_ids: ids of the state elements
-        arg_ids: ids of the last argument ids (present in the procedure commands)
-        result_ids: ids of the last result ids (present in the procedure commands)
+        state_placeholders: ids of the state elements
+        arg_placeholders: ids of the last argument ids (present in the procedure commands)
+        result_placeholders: ids of the last result ids (present in the procedure commands)
         readable_plan: list of commands
         blueprint: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
@@ -95,9 +97,9 @@ class Plan(AbstractObject, ObjectStorage):
         include_state: bool = False,
         is_built: bool = False,
         # Optional kwargs if commands or state are not provided
-        state_ids: List[Union[str, int]] = None,
-        arg_ids: List[Union[str, int]] = None,
-        result_ids: List[Union[str, int]] = None,
+        state_placeholders: List[PlaceHolder] = None,
+        input_placeholders: List[PlaceHolder] = None,
+        output_placeholders: List[PlaceHolder] = None,
         readable_plan: List = None,
         blueprint=None,
         state_tensors=None,
@@ -120,17 +122,20 @@ class Plan(AbstractObject, ObjectStorage):
         self.nested_states = []
 
         # Info about the plan stored via the state and the procedure
-        self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
-        self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
+        self.procedure = procedure or Procedure(readable_plan, input_placeholders, output_placeholders)
+        self.state = state or State(owner=owner, plan=self, state_placeholders=state_placeholders)
         if state_tensors is not None:
             for tensor in state_tensors:
-                self.state.state_ids.append(tensor.id)
+                placeholder = sy.PlaceHolder()
+                placeholder.instanciate(tensor)
+                self.state.state_placeholders.append(placeholder)
                 self.owner.register_obj(tensor)
 
         self.include_state = include_state
         self.is_built = is_built
-        self.input_shapes = None
-        self._output_shape = None
+
+        self.input_placeholders = []
+        self.placeholders = {}
 
         # The plan has not been sent
         self.pointers = dict()
@@ -203,74 +208,72 @@ class Plan(AbstractObject, ObjectStorage):
         self.de_register_obj(obj)
         return obj
 
-    def _recv_msg(self, bin_message: bin):
-        """Upon reception, a Plan stores all commands which can be executed lazily.
-        Args:
-            bin_message: the message of a command received.
-        Returns:
-            The None message serialized to specify the command was received.
-        """
-        msg = sy.serde.deserialize(bin_message)
+    def add_placeholder(self, tensor, find_inputs=False):
+        if tensor.id not in self.placeholders.keys():
+            placeholder = sy.PlaceHolder(tags={f'#{self.var_count + 1}'})
+            self.placeholders[tensor.id] = placeholder
+            if find_inputs:
+                self.input_placeholders.append(placeholder)
+                placeholder.tags.add('#input')
+            self.var_count += 1
 
-        if isinstance(msg, Operation):
-            # Re-deserialize without detailing
-            (msg_type, contents) = sy.serde.deserialize(
-                bin_message, strategy=sy.serde.msgpack.serde._deserialize_msgpack_binary
-            )
+        return self.placeholders[tensor.id]
 
-            self.procedure.operations.append((msg_type, contents))
-
-        return sy.serde.serialize(None)
+    def replace_with_placeholders(self, obj, **kw):
+        if isinstance(obj, (tuple, list)):
+            r = [self.replace_with_placeholders(o, **kw) for o in obj]
+            return type(obj)(r)
+        elif isinstance(obj, dict):
+            return {
+                key: self.replace_with_placeholders(value, **kw)
+                for key, value in obj.items()
+            }
+        elif isinstance(obj, torch.Tensor):
+            return self.add_placeholder(obj, **kw)
+        elif isinstance(obj, (int, float, str, bool)):
+            return obj
+        elif obj is None:
+            return None
+        else:
+            raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
 
     def build(self, *args):
         """Builds the plan.
-
-        The build operation is done "on" the plan (which can be seen like a
-        worker), by running the forward function. The plan will therefore
-        execute each command of the function, will cache it using _recv_msg
-        and will use it to fill the plan.
-        To do so, all the arguments provided and the state elements should be
-        moved to the plan, using send().
 
         Args:
             args: Input data.
         """
 
-        self.input_shapes = [x.shape for x in args]
-        self._output_shape = None
-
-        # Move the arguments of the first call to the plan
-        build_args = [arg.send(self) for arg in args]
-
-        # Same for the state element: we send to the plan and keep a clone
+        # Same for the state element: we keep a clone
         cloned_state = self.state.clone_state_dict()
-        self.state.send_for_build(location=self)
 
         self.owner.init_plan = self
+        sy.hook.trace, sy.hook.trace_inactive = True, True
+
+        self.var_count = 0
 
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
         if self.include_state:
-            res_ptr = self.forward(*build_args, self.state)
+            res = self.forward(*args, self.state)
         else:
-            res_ptr = self.forward(*build_args)
+            res = self.forward(*args)
+
+        sy.hook.trace, sy.hook.trace_inactive = False, False
+        self.owner.init_plan = None
 
         # We put back the clone of the original state
         self.state.set_(cloned_state)
 
-        # The plan is now built, we hide the fact that it was run on
-        # the plan and not on the owner by replacing the workers ids
-        self.procedure.update_worker_ids(from_worker_id=self.id, to_worker_id=self.owner.id)
+        for log in sy.trace_logs:
+            req, resp = log
+            req, resp = self.replace_with_placeholders(req, find_inputs=True), self.replace_with_placeholders(resp)
+            operation = (req, resp)
+            self.procedure.operations.append(operation)
 
-        # Register the ids of the args used for building the plan: as they will be
-        # included in the commands, it should be updated when the function is called
-        # with new args, so that's why we keep the ref ids in self.procedure.arg_ids
-        self.procedure.arg_ids = tuple(arg.id_at_location for arg in build_args)
-        # Also register the id where the result should be stored
-        self.procedure.result_ids = (res_ptr.id_at_location,)
+        sy.trace_logs = []
 
         self.is_built = True
-        self.owner.init_plan = None
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -303,7 +306,7 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            self.state.state_ids.append(value.id)
+            self.state.state_placeholders.append(value.id)
             self.owner.register_obj(value)
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
@@ -320,99 +323,35 @@ class Plan(AbstractObject, ObjectStorage):
             else the None message serialized.
         """
 
-        cloned_state = None
-        if self.owner.init_plan:
-            cloned_state = self.state.clone_state_dict()
-            self.owner.init_plan.nested_states.append(self.state)
-            self.state.send_for_build(location=self.owner.init_plan)
+        # result_ids = [sy.ID_PROVIDER.pop()]
+        #
+        # res = None
+        # if self.forward is not None:
+        #     if self.include_state:
+        #         args = (*args, self.state)
+        #     res = self.forward(*args)
+        # else:
+        #     res = self.run(args, result_ids=result_ids)
+        #
 
-        if len(kwargs):
-            raise ValueError("Kwargs are not supported for plan.")
+        print('\nInstanciating inputs..\n')
+        # Simulate instanciation
+        for placeholder, arg in zip(self.input_placeholders, args):
+            placeholder.instanciate(arg)
 
-        result_ids = [sy.ID_PROVIDER.pop()]
+        print('Running operations...\n')
+        for i, operation in enumerate(self.procedure.operations):
+            print('run cmd', i)
+            (cmd, self, args, kwargs), resp = operation
+            print((cmd, self, args, kwargs))
+            if self is None:
+                r = eval(cmd)(*args, **kwargs)
+            else:
+                r = getattr(self, cmd)(*args, **kwargs)
+            resp.instanciate(r.child)
+            print(resp)
 
-        res = None
-        if self.forward is not None:
-            if self.include_state:
-                args = (*args, self.state)
-            res = self.forward(*args)
-        else:
-            res = self.run(args, result_ids=result_ids)
-
-        if self.owner.init_plan:
-            self.state.set_(cloned_state)
-
-        return res
-
-    def execute_commands(self):
-        for message in self.procedure.operations:
-            bin_message = sy.serde.serialize(message, simplified=True)
-            _ = self.owner.recv_msg(bin_message)
-
-    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
-        """Controls local or remote plan execution.
-
-        If the plan doesn't have the plan built, first build it using the blueprint.
-        Then, update the plan with the result_ids and args ids given, run the plan
-        commands, build pointer(s) to the response(s) and return.
-
-        Args:
-            args: Arguments used to run plan.
-            result_ids: List of ids where the results will be stored.
-        """
-        # If promises are given to the plan, prepare it to receive values from these promises
-        if self.has_promises_args(args):
-            return self.setup_plan_with_promises(*args)
-
-        # We build the plan only if needed
-        if not self.is_built:
-            self.build(args)
-
-        self.procedure.update_args(args, result_ids)
-
-        self.execute_commands()
-        responses = [self.owner.get_obj(result_id) for result_id in result_ids]
-
-        if len(responses) == 1:
-            return responses[0]
-        return responses
-
-    def has_args_fulfilled(self):
-        """ Check if all the arguments of the plan are ready or not.
-        It might be the case that we still need to wait for some arguments in
-        case some of them are Promises.
-        """
-        for arg_id in self.procedure.arg_ids:
-            arg = self.owner.get_obj(arg_id)
-            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
-                if not arg.child.is_kept():
-                    return False
-        return True
-
-    def has_promises_args(self, args):
-        return any([hasattr(arg, "child") and isinstance(arg.child, PromiseTensor) for arg in args])
-
-    def setup_plan_with_promises(self, *args):
-        """ Slightly modifies a plan so that it can work with promises.
-        The plan will also be sent to location with this method.
-        """
-        for arg in args:
-            if hasattr(arg, "child") and isinstance(arg.child, PromiseTensor):
-                arg.child.plans.add(self.id)
-                prom_owner = arg.owner
-
-        # As we cannot perform operation between different type of tensors with torch, all the
-        # input tensors should have the same type and the result should also have this same type.
-        result_type = args[0].torch_type()
-
-        res = PromiseTensor(
-            owner=prom_owner, shape=self.output_shape, tensor_type=result_type, plans=set()
-        )
-
-        self.procedure.update_args(args, self.procedure.result_ids)
-        self.procedure.promise_out_id = res.id
-
-        return res.wrap()
+        return resp.child
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -433,8 +372,6 @@ class Plan(AbstractObject, ObjectStorage):
             # Check if plan was already sent at the location
             if location in self.pointers:
                 return self.pointers[location]
-
-            self.procedure.update_worker_ids(self.owner.id, location.id)
 
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
@@ -539,7 +476,6 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.state),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
-            sy.serde.msgpack.serde._simplify(worker, plan.input_shapes),
             sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),

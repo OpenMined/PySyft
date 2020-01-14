@@ -115,6 +115,8 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        self.trace = False
+
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()
 
