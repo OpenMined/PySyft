@@ -63,7 +63,6 @@ from syft.workers.websocket_server import WebsocketServerWorker
 # Import Syft's Public Tensor Types
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
@@ -91,7 +90,6 @@ __all__.extend(
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
-        "CRTPrecisionTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
         "PointerTensor",

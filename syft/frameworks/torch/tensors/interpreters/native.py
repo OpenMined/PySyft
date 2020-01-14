@@ -7,7 +7,6 @@ import torch
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
-from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -612,14 +611,12 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
+    def fix_prec(self, *args, no_wrap: bool = False, **kwargs):
         """
         Convert a tensor or syft tensor to fixed precision
 
         Args:
             *args (tuple): args to transmit to the fixed precision tensor
-            storage (str): code to define the type of fixed precision tensor (values in (auto, crt, large))
-            field_type (str): code to define a storage type (only for CRTPrecisionTensor)
             no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
             **kwargs (dict): kwargs to transmit to the fixed precision tensor
         """
@@ -634,31 +631,9 @@ class TorchTensor(AbstractTensor):
             else:
                 return self
 
-        if storage == "crt":
-            assert (
-                "field" not in kwargs
-            ), 'When storage is set to "crt", choose the field size with the field_type argument'
-
-            possible_field_types = list(_moduli_for_fields.keys())
-            assert (
-                field_type in possible_field_types
-            ), f"Choose field_type in {possible_field_types} to build CRT tensors"
-
-            residues = {}
-            for mod in _moduli_for_fields[field_type]:
-                residues[mod] = (
-                    syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
-                    .on(self, wrap=False)
-                    .fix_precision(check_range=False)
-                    .wrap()
-                )
-
-            fpt_tensor = syft.CRTPrecisionTensor(residues, *args, **kwargs)
-
-        else:
-            fpt_tensor = (
-                syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
-            )
+        fpt_tensor = (
+            syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
+        )
 
         if not no_wrap:
             fpt_tensor = fpt_tensor.wrap()
