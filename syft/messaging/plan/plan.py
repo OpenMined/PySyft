@@ -42,6 +42,7 @@ class func2plan(object):
             state_tensors=self.state_tensors,
             include_state=self.include_state,
         )
+
         # Build the plan automatically
         if self.args_shape:
             args = Plan._create_placeholders(self.args_shape)
@@ -114,6 +115,10 @@ class Plan(AbstractObject, ObjectStorage):
         self.name = name or self.__class__.__name__
         self.owner = owner
 
+        # If we have plans in plans we need to keep track of the states for each plan
+        # because we will need to serialize and send them to the remote workers
+        self.nested_states = []
+
         # Info about the plan stored via the state and the procedure
         self.procedure = procedure or Procedure(readable_plan, arg_ids, result_ids)
         self.state = state or State(owner=owner, plan=self, state_ids=state_ids)
@@ -121,6 +126,7 @@ class Plan(AbstractObject, ObjectStorage):
             for tensor in state_tensors:
                 self.state.state_ids.append(tensor.id)
                 self.owner.register_obj(tensor)
+
         self.include_state = include_state
         self.is_built = is_built
         self.input_shapes = None
@@ -208,7 +214,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         if isinstance(msg, Operation):
             # Re-deserialize without detailing
-            (msg_type, contents) = sy.serde.deserialize(bin_message, details=False)
+            (msg_type, contents) = sy.serde.deserialize(
+                bin_message, strategy=sy.serde.msgpack.serde._deserialize_msgpack_binary
+            )
 
             self.procedure.operations.append((msg_type, contents))
 
@@ -238,6 +246,8 @@ class Plan(AbstractObject, ObjectStorage):
         cloned_state = self.state.clone_state_dict()
         self.state.send_for_build(location=self)
 
+        self.owner.init_plan = self
+
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
         if self.include_state:
@@ -260,6 +270,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.procedure.result_ids = (res_ptr.id_at_location,)
 
         self.is_built = True
+        self.owner.init_plan = None
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -308,17 +319,30 @@ class Plan(AbstractObject, ObjectStorage):
             The pointer to the result of the execution if the plan was already sent,
             else the None message serialized.
         """
+
+        cloned_state = None
+        if self.owner.init_plan:
+            cloned_state = self.state.clone_state_dict()
+            self.owner.init_plan.nested_states.append(self.state)
+            self.state.send_for_build(location=self.owner.init_plan)
+
         if len(kwargs):
             raise ValueError("Kwargs are not supported for plan.")
 
         result_ids = [sy.ID_PROVIDER.pop()]
 
+        res = None
         if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
-            return self.forward(*args)
+            res = self.forward(*args)
         else:
-            return self.run(args, result_ids=result_ids)
+            res = self.run(args, result_ids=result_ids)
+
+        if self.owner.init_plan:
+            self.state.set_(cloned_state)
+
+        return res
 
     def execute_commands(self):
         for message in self.procedure.operations:
@@ -411,10 +435,12 @@ class Plan(AbstractObject, ObjectStorage):
                 return self.pointers[location]
 
             self.procedure.update_worker_ids(self.owner.id, location.id)
+
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
             # Revert ids
             self.procedure.update_worker_ids(location.id, self.owner.id)
+
             self.pointers[location] = pointer
         else:
             ids_at_location = []
@@ -508,16 +534,17 @@ class Plan(AbstractObject, ObjectStorage):
 
         """
         return (
-            sy.serde._simplify(worker, plan.id),
-            sy.serde._simplify(worker, plan.procedure),
-            sy.serde._simplify(worker, plan.state),
-            sy.serde._simplify(worker, plan.include_state),
-            sy.serde._simplify(worker, plan.is_built),
-            sy.serde._simplify(worker, plan.input_shapes),
-            sy.serde._simplify(worker, plan._output_shape),
-            sy.serde._simplify(worker, plan.name),
-            sy.serde._simplify(worker, plan.tags),
-            sy.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.id),
+            sy.serde.msgpack.serde._simplify(worker, plan.procedure),
+            sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.include_state),
+            sy.serde.msgpack.serde._simplify(worker, plan.is_built),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_shapes),
+            sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
+            sy.serde.msgpack.serde._simplify(worker, plan.name),
+            sy.serde.msgpack.serde._simplify(worker, plan.tags),
+            sy.serde.msgpack.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.nested_states),
         )
 
     @staticmethod
@@ -541,23 +568,26 @@ class Plan(AbstractObject, ObjectStorage):
             name,
             tags,
             description,
+            nested_states,
         ) = plan_tuple
-        id = sy.serde._detail(worker, id)
-        procedure = sy.serde._detail(worker, procedure)
-        state = sy.serde._detail(worker, state)
-        input_shapes = sy.serde._detail(worker, input_shapes)
-        output_shape = sy.serde._detail(worker, output_shape)
+        id = sy.serde.msgpack.serde._detail(worker, id)
+        procedure = sy.serde.msgpack.serde._detail(worker, procedure)
+        state = sy.serde.msgpack.serde._detail(worker, state)
+        input_shapes = sy.serde.msgpack.serde._detail(worker, input_shapes)
+        output_shape = sy.serde.msgpack.serde._detail(worker, output_shape)
+        nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
 
+        plan.nested_states = nested_states
         plan.procedure = procedure
         plan.state = state
         state.plan = plan
         plan.input_shapes = input_shapes
         plan._output_shape = output_shape
 
-        plan.name = sy.serde._detail(worker, name)
-        plan.tags = sy.serde._detail(worker, tags)
-        plan.description = sy.serde._detail(worker, description)
+        plan.name = sy.serde.msgpack.serde._detail(worker, name)
+        plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
+        plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
         return plan

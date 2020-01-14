@@ -102,7 +102,7 @@ def test_recv_msg():
     # call receive message on alice
     resp = alice.recv_msg(bin_msg)
 
-    obj_2 = serde.deserialize(resp)
+    obj_2 = sy.serde.deserialize(resp)
 
     # assert that response is correct type
     assert type(resp) == bytes

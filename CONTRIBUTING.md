@@ -99,19 +99,20 @@ def test_hooked_tensor(self, compress, compressScheme):
 ```
 
 ### Process for Serde Protocol Changes
-Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/proto](https://github.com/OpenMined/proto).
-All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/proto/blob/master/proto.json) file and have unique code value.
+Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto).
+All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/syft-proto/blob/master/proto.json) file and have unique code value.
 
 Updating lists of _simplifiers and detailers_ in `syft/serde/native_serde.py`, `syft/serde/serde.py`, `syft/serde/torch_serde.py`
 or renaming/moving related classes can make unit tests fail because `proto.json` won't be in sync with PySyft code anymore.
 
 Use following process:
- 1. Fork [OpenMined/proto](https://github.com/OpenMined/proto) and create new branch.
- 2. In your PySyft branch, update `requirements.txt` file to have `git+git://github.com/<your_account>/proto@<branch>#egg=proto` instead of `git+git://github.com/OpenMined/proto@master#egg=proto`.
- 3. Make required changes in your PySyft and proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
- 4. Create PRs in both repos.
- 5. PRs should pass CI checks.
- 6. After both PRs are merged, `requirements.txt` in PySyft@master should be updated back to `git+git://github.com/OpenMined/proto@master#egg=proto`.
+ 1. Fork [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto) and create new branch.
+ 2. Make required changes in your PySyft and syft-proto branches. Install syft-proto locally (`pip install .`) to test it with PySyft (note that editable install won't refresh `proto.json` as it is copied on installation time).
+ 3. To make CI checks pass in your PySyft PR, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto==*`. 
+ 4. Create PRs in PySyft and syft-proto repos.
+ 5. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
+](https://pypi.org/project/syft-proto/#history). 
+ 6. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto==<new version>`.
 
 ### Documentation and Codestyle
 
