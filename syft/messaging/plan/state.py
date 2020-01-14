@@ -21,8 +21,17 @@ class State(object):
         self.plan = plan
         self.state_ids = state_ids or []
 
+    def __str__(self):
+        """Returns the string representation of the State."""
+        out = "<"
+        out += "State:"
+        for state_id in self.state_ids:
+            out += " {}".format(state_id)
+        out += ">"
+        return out
+
     def __repr__(self):
-        return "State: " + ", ".join(self.state_ids)
+        return self.__str__()
 
     def tensors(self) -> List:
         """
@@ -84,10 +93,8 @@ class State(object):
     def send_for_build(self, location, **kwargs):
         """
         Send functionality that can only be used when sending the state for
-        building the plan. Other than this, you shouldn't need to send the
-        state separately.
+        building the plan.
         """
-        assert location.id == self.plan.id  # ensure this is a send for the build
 
         for tensor in self.tensors():
             self.create_grad_if_missing(tensor)
@@ -123,8 +130,8 @@ class State(object):
         Simplify the plan's state when sending a plan
         """
         return (
-            sy.serde._simplify(worker, state.state_ids),
-            sy.serde._simplify(worker, state.tensors()),
+            sy.serde.msgpack.serde._simplify(worker, state.state_ids),
+            sy.serde.msgpack.serde._simplify(worker, state.tensors()),
         )
 
     @staticmethod
@@ -134,8 +141,8 @@ class State(object):
         ids.
         """
         state_ids, state_elements = state_tuple
-        state_ids = sy.serde._detail(worker, state_ids)
-        state_elements = sy.serde._detail(worker, state_elements)
+        state_ids = sy.serde.msgpack.serde._detail(worker, state_ids)
+        state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
         for state_id, state_element in zip(state_ids, state_elements):
             worker.register_obj(state_element, obj_id=state_id)

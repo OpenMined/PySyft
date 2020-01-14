@@ -32,7 +32,6 @@ from syft.messaging.plan import Plan
 from syft.messaging.promise import Promise
 
 from syft.exceptions import route_method_exception
-from syft.exceptions import TensorsNotCollocatedException
 
 
 class TorchHook(FrameworkHook):
@@ -176,6 +175,14 @@ class TorchHook(FrameworkHook):
 
         # Add all hooked tensor methods to LargePrecisionTensor tensor
         self._hook_syft_tensor_methods(LargePrecisionTensor)
+
+        # Add all built-in 'str' methods to String
+        self._hook_string_methods(owner=self.local_worker)
+
+        # Add all string methods to StringPointer
+        # This method call should strictly come after the
+        # call to self._hook_string_methods()
+        self._hook_string_pointer_methods()
 
         # Add all hooked tensor methods to PromiseTensor
         self._hook_promise_tensor()
