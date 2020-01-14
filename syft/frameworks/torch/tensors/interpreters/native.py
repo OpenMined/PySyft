@@ -1,10 +1,7 @@
-import math
 from typing import List
 from typing import Union
-import warnings
 import weakref
 
-import numpy as np
 import torch
 
 import syft
@@ -18,25 +15,6 @@ from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
-
-
-def _get_maximum_precision():
-    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
-
-    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
-
-    The default value is the size of torch.long
-
-    Returns:
-        The maximum value for precision allowed in this setup
-    """
-    return default_pytorch_maximum_precision()
-
-
-def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**62-1 is not fun with precision tensors.
-    """
-    return 62
 
 
 class TorchTensor(AbstractTensor):
@@ -656,12 +634,6 @@ class TorchTensor(AbstractTensor):
             else:
                 return self
 
-        base = kwargs.get("base", 10)
-        prec_fractional = kwargs.get("precision_fractional", 3)
-
-        max_precision = _get_maximum_precision()
-        need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
-
         if storage == "crt":
             assert (
                 "field" not in kwargs
@@ -683,19 +655,7 @@ class TorchTensor(AbstractTensor):
 
             fpt_tensor = syft.CRTPrecisionTensor(residues, *args, **kwargs)
 
-        elif need_large_prec or storage == "large":
-            fpt_tensor = (
-                syft.LargePrecisionTensor(*args, **kwargs)
-                .on(self, wrap=False)
-                .fix_large_precision()
-            )
         else:
-            assert not need_large_prec, "This tensor needs large precision to be correctly stored"
-            if "internal_type" in kwargs:
-                warnings.warn(
-                    "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
-                )
-                del kwargs["internal_type"]
             fpt_tensor = (
                 syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
             )
@@ -725,15 +685,6 @@ class TorchTensor(AbstractTensor):
         return self
 
     fix_precision_ = fix_prec_
-
-    def _requires_large_precision(self, max_precision, base, precision_fractional):
-        """Check if any of the elements in the tensor would require large precision.
-        """
-        base_fractional = math.log2(base ** precision_fractional)
-        # We need to use NumPy here as log2 is not yet implemented for LongTensor PyTorch objects
-        return np.any(
-            np.log2(np.abs(self.clone().detach().numpy()) + 1) + base_fractional > max_precision
-        )
 
     def share(
         self,
