@@ -61,3 +61,7 @@ def test_string_methods():
     assert String("Hello %s") % "PySyft" == string
 
     assert str(string) == "Hello PySyft"
+
+    x = String("Hello PySyft")
+    out = x.send(bob)
+    assert isinstance(out, syft.generic.pointers.string_pointer.StringPointer)
