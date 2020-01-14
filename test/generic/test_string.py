@@ -1,5 +1,5 @@
 from syft.generic.string import String
-
+import syft as sy
 
 def test_string_methods():
     """Tests some of the `String` methods which are hooked from `str`.
@@ -63,5 +63,6 @@ def test_string_methods():
     assert str(string) == "Hello PySyft"
 
     x = String("Hello PySyft")
+    bob = sy.VirtualWorker(id="bob", hook=sy.hook)
     out = x.send(bob)
     assert isinstance(out, syft.generic.pointers.string_pointer.StringPointer)
