@@ -22,6 +22,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -168,6 +169,11 @@ class TorchHook(FrameworkHook):
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_private_tensor_methods(PrivateTensor)
+
+        # Add all hooked tensor methods to PlaceHolder tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_private_tensor_methods(PlaceHolder)
 
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
@@ -474,13 +480,13 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
-    @classmethod
-    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
-        """Torch-specific implementation. See the subclass for more."""
-        if attr.__module__ is None:
-            attr.__module__ = "torch"
-
-        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
+    # @classmethod
+    # def _get_hooked_func(cls, public_module_name, func_api_name, attr):
+    #     """Torch-specific implementation. See the subclass for more."""
+    #     if attr.__module__ is None:
+    #         attr.__module__ = "torch"
+    #
+    #     return super()._get_hooked_func(attr.__module__, func_api_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """

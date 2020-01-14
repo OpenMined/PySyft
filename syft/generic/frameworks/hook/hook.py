@@ -20,6 +20,8 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
 
+syft.trace_logs = []
+
 
 class FrameworkHook(ABC):
     @abstractmethod
@@ -411,6 +413,11 @@ class FrameworkHook(ABC):
             Operate the hooking
             """
 
+            if syft.hook.trace and syft.hook.trace_inactive:
+                #print(method_name)
+                req = (method_name, self, args, kwargs)
+                syft.hook.trace_inactive = False
+
             if not hasattr(self, "child"):  # means that it's not a wrapper
 
                 # if self is a natural tensor but the first argument isn't,
@@ -487,6 +494,12 @@ class FrameworkHook(ABC):
                 response = hook_args.hook_response(
                     method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
                 )
+
+            if syft.hook.trace:
+                syft.hook.trace_inactive = True
+
+                resp = response
+                syft.trace_logs.append((req, resp))
 
             return response
 
@@ -579,11 +592,18 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
+        if func_api_name == 'manual_seed':
+            print('_get_hooked_func', public_module_name, func_api_name, cmd_name)
+
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
+            if syft.hook.trace and syft.hook.trace_inactive:
+                #print(cmd_name)
+                req = (cmd_name, None, args, kwargs)
+                syft.hook.trace_inactive = False
             try:
                 tensor_type = (
                     type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
@@ -599,6 +619,12 @@ class FrameworkHook(ABC):
                 handle_func_command = syft.framework.Tensor.handle_func_command
 
             response = handle_func_command(command)
+
+            if syft.hook.trace:
+                syft.hook.trace_inactive = True
+
+                resp = response
+                syft.trace_logs.append((req, resp))
 
             return response
 
