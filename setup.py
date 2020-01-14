@@ -50,7 +50,7 @@ setup(
     install_requires=core_reqs,
     extras_require={
         "udacity": udacity_extras,
-        "notebooks": notebook_extras
+        "notebooks": notebook_extras,
         "dev": dev_extras
         "sandbox": sandbox_extras,
         "tensorflow": tensorflow_extras,
