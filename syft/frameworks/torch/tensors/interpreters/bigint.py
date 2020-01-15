@@ -1,4 +1,5 @@
 import syft
+import torch as th
 from syft.generic.tensor import AbstractTensor
 
 from syft.generic.frameworks.hook.hook_args import (
@@ -46,15 +47,27 @@ class BigIntTensor(AbstractTensor):
         self.enc_prec = enc_prec
         self.max_val = max_val
 
+    def encode_val(self, x):
+        shares = list()
+
+        for share_i in (range(self.n_shares)):
+            share = (x % (self.enc_prec ** (share_i + 1))) // (self.enc_prec ** share_i)
+            shares.append(share)
+
+        return th.tensor(shares)
 
     def encode(self, x):
         shares = list()
 
-        for share_i in (range(self.n_shares)):
-            shares.append((x % (self.enc_prec ** (share_i + 1))) // (self.enc_prec ** share_i))
+        # encode as numpy to ensure we don't accidentally overflow
+        if(isinstance(x, th.Tensor)):
+            x = x.numpy()
 
-        return shares
+        for val in x.flatten():
+            shares.append(self.encode_val(val))
 
+        shares = th.cat(shares).view(x.shape + th.Size([self.n_shares]))
+        self.child = shares
 
     def decode(self, shares):
         val = 0

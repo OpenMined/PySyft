@@ -11,7 +11,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.bigint import BigIntTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -959,3 +959,8 @@ class TorchTensor(AbstractTensor):
             """
 
         return self.child.decrypt(private_key)
+
+    def bigint(self, enc_prec=2**16, max_val=2**128):
+        x = BigIntTensor(enc_prec=enc_prec, max_val=max_val).on(self)
+        return x.child.encode(self)
+
