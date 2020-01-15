@@ -79,6 +79,8 @@ samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdelet
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 
+samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
+
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 

@@ -810,9 +810,9 @@ def make_protocol(**kwargs):
     with me.registration_enabled():
         me.register_obj(plan)
 
-    protocol = syft.messaging.protocol.Protocol(
-        [("me", plan), ("me", plan)], tags=["aaa", "bbb"], description="desc"
-    )
+    protocol = syft.messaging.protocol.Protocol([("me", plan), ("me", plan)])
+    protocol.tag("aaa")
+    protocol.describe("desc")
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.protocol.Protocol
@@ -831,15 +831,12 @@ def make_protocol(**kwargs):
                 CODE[syft.messaging.protocol.Protocol],
                 (
                     protocol.id,  # (int)
-                    (
-                        CODE[list],
-                        ((CODE[str], (b"aaa",)), (CODE[str], (b"bbb",))),
-                    ),  # (list of strings) tags
+                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (
                         CODE[list],  # (list) plans reference
                         (
-                            # (tuple) reference: worker_id (str), plan_id (int)
+                            # (tuple) reference: worker_id (int/str), plan_id (int/str)
                             (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
                             (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
                         ),
@@ -864,6 +861,8 @@ def make_pointertensor(**kwargs):
         assert detailed.id_at_location == original.id_at_location
         assert detailed.location == original.location
         assert detailed.point_to_attr == original.point_to_attr
+        # Not testing grabage collect data as we are always setting it as False at receiver end
+        # irrespective of its initial value
         assert detailed.garbage_collect_data == original.garbage_collect_data
         assert detailed.get().equal(tensor)
         return True
@@ -1657,6 +1656,53 @@ def make_responsesignatureerror(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, err.get_attributes()
                     ),  # (dict) attributes
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
+def make_gradfn(**kwargs):
+    alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
+    t = torch.tensor([1, 2, 3])
+
+    x_share = t.share(alice, bob, requires_grad=True)
+    y_share = t.share(alice, bob, requires_grad=True)
+    z_share = x_share + y_share  # AddBackward
+
+    # This is bad. We should find something robust
+    x_share.child.child.set_garbage_collect_data(False)
+    y_share.child.child.set_garbage_collect_data(False)
+
+    grad_fn = z_share.child.grad_fn
+
+    def compare(detailed, original):
+        assert isinstance(
+            detailed, syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc
+        )
+        assert detailed.__class__.__name__ == original.__class__.__name__
+
+        # This block only works only for syft tensor attributes
+        for detailed_attr, original_attr in zip(detailed._attributes, original._attributes):
+            assert detailed_attr.__class__.__name__ == original_attr.__class__.__name__
+            assert detailed_attr.get().equal(t)
+
+        return True
+
+    return [
+        {
+            "value": grad_fn,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc],
+                (
+                    CODE[list],
+                    (
+                        (CODE[str], (b"AddBackward",)),
+                        msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
+                        msgpack.serde._simplify(syft.hook.local_worker, y_share.child),
+                    ),
                 ),
             ),
             "cmp_detailed": compare,
