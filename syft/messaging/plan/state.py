@@ -58,19 +58,15 @@ class State(object):
         """
         Return state elements
         """
-        tensors = self.tensors()
-        if sy.hook.trace:
-            for tensor in tensors:
-                if tensor.id not in self.plan.placeholders.keys():
-                    placeholder = sy.PlaceHolder(tags={f'#{self.plan.var_count + 1}'})
-                    placeholder.instanciate(tensor)
-                    self.plan.placeholders[tensor.id] = placeholder
-                    self.state_placeholders.append(placeholder)
-                    placeholder.tags.add('#state')
-                    self.plan.var_count += 1
-                else:
-                    print('WARNING: tensor used before opened from state', tensor)
+        tensors = []
+        for placeholder in self.state_placeholders:
+            if sy.hook.trace:
+                placeholder.tags.add(f'#{self.plan.var_count + 1}')
+                self.plan.var_count += 1
+            tensor = placeholder.child
+            tensors.append(tensor)
         return tensors
+
 
     def set_(self, state_dict):
         """
@@ -81,7 +77,7 @@ class State(object):
         for placeholder_id, new_tensor in state_dict.items():
             for placeholder in self.state_placeholders:
                 if placeholder.id == placeholder_id:
-                    placeholder.instanciate(new_tensor)
+                    placeholder.instantiate(new_tensor)
 
     @staticmethod
     def create_grad_if_missing(tensor):
@@ -132,12 +128,15 @@ class State(object):
         Reconstruct the plan's state from the state elements and supposed
         ids.
         """
-        state_ids, state_elements = state_tuple
-        state_ids = sy.serde.msgpack.serde._detail(worker, state_ids)
+        state_placeholders, state_elements = state_tuple
+        state_placeholders = sy.serde.msgpack.serde._detail(worker, state_placeholders)
         state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
-        for state_id, state_element in zip(state_ids, state_elements):
+        for state_id, state_element in zip(state_placeholders, state_elements):
             worker.register_obj(state_element, obj_id=state_id)
 
-        state = State(owner=worker, plan=None, state_placeholders=state_ids)
+        for state_placeholder, state_element in zip(state_placeholders, state_elements):
+            state_placeholder.instantiate(state_element)
+
+        state = State(owner=worker, plan=None, state_placeholders=state_placeholders)
         return state

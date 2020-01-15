@@ -741,7 +741,7 @@ def make_state(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.state.State],
                 (
-                    (CODE[list], (t1.id, t2.id)),  # (list) state_ids
+                    (CODE[list], (t1.id, t2.id)),  # (list) state_placeholders
                     (
                         CODE[list],
                         (  # (list) tensors
@@ -787,8 +787,8 @@ def make_procedure(**kwargs):
                             procedure.operations[1],
                         ),
                     ),
-                    (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_ids
-                    (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_ids
+                    (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_placeholders
+                    (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_placeholders
                     None,  # (int) promise_out_id
                 ),
             ),

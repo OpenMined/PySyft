@@ -60,18 +60,17 @@ def test_plan_build():
 
 
 def test_stateful_plan_build(hook):
-    with hook.local_worker.registration_enabled():
 
-        @sy.func2plan(state=(th.tensor([1.0]),))
-        def foo(x, state):
-            (bias,) = state.read()
-            x = x * 2
-            return x + bias
+    @sy.func2plan(state=(th.tensor([1.0]),))
+    def foo(x, state):
+        (bias,) = state.read()
+        x = x * 2
+        return x + bias
 
-        t = th.tensor([1.0, 2])
-        x = foo(t)
+    t = th.tensor([1.0, 2])
+    x = foo(t)
 
-        assert (x == th.tensor([3.0, 5])).all()
+    assert (x == th.tensor([3.0, 5])).all()
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -124,11 +123,8 @@ def test_add_to_state():
             pass  # pragma: no cover
 
     model = Net()
-    assert model.fc1.bias.id in model.state.state_ids
-    assert model.fc1.weight.id in model.state.state_ids
 
-    assert model.fc2.id in model.state.state_ids
-
+    assert len(model.state.state_placeholders) == 3
 
 def test_plan_method_execute_locally(hook):
 
@@ -379,7 +375,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
         # Execute it locally
         x = th.tensor([-1.26])
         assert th.all(th.eq(fetched_plan(x), plan(x)))
-        # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
+        # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
         # Make sure fetched_plan is using the readable_plan
         assert fetched_plan.forward is None
@@ -426,7 +422,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
         # Execute it locally
         assert th.all(th.eq(fetched_plan(x), expected))
-        # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
+        # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
         # Make sure fetched_plan is using the readable_plan
         assert fetched_plan.forward is None
@@ -543,7 +539,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
         # Compare with local plan
         assert th.all(decrypted - expected.detach() < 1e-2)
-        # assert fetched_plan.state.state_ids != plan.state.state_ids #TODO
+        # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
         # Make sure fetched_plan is using the readable_plan
         assert fetched_plan.forward is None

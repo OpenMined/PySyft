@@ -121,21 +121,22 @@ class Plan(AbstractObject, ObjectStorage):
         # because we will need to serialize and send them to the remote workers
         self.nested_states = []
 
+        self.input_placeholders = []
+        self.placeholders = {}
+
         # Info about the plan stored via the state and the procedure
         self.procedure = procedure or Procedure(readable_plan, input_placeholders, output_placeholders)
-        self.state = state or State(owner=owner, plan=self, state_placeholders=state_placeholders)
+        self.state = state or State(owner=owner, plan=self)#, state_placeholders=state_placeholders)
         if state_tensors is not None:
             for tensor in state_tensors:
-                placeholder = sy.PlaceHolder()
-                placeholder.instanciate(tensor)
+                placeholder = sy.PlaceHolder(tags={'#state'})
+                placeholder.instantiate(tensor)
                 self.state.state_placeholders.append(placeholder)
-                self.owner.register_obj(tensor)
+                self.placeholders[tensor.id] = placeholder
+                #self.owner.register_obj(tensor)
 
         self.include_state = include_state
         self.is_built = is_built
-
-        self.input_placeholders = []
-        self.placeholders = {}
 
         # The plan has not been sent
         self.pointers = dict()
@@ -237,6 +238,15 @@ class Plan(AbstractObject, ObjectStorage):
         else:
             raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
 
+    def find_placeholders(self, *tags, exact_match=True):
+        results = []
+        for placeholder in self.placeholders.values():
+            for tag in tags:
+                if tag in placeholder.tags:
+                    results.append(placeholder)
+
+        return results
+
     def build(self, *args):
         """Builds the plan.
 
@@ -306,8 +316,10 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            self.state.state_placeholders.append(value.id)
-            self.owner.register_obj(value)
+            placeholder = sy.PlaceHolder(tags={'#state'})
+            placeholder.instantiate(value)
+            self.state.state_placeholders.append(placeholder)
+            self.placeholders[value.id] = placeholder
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
@@ -323,35 +335,34 @@ class Plan(AbstractObject, ObjectStorage):
             else the None message serialized.
         """
 
-        # result_ids = [sy.ID_PROVIDER.pop()]
-        #
-        # res = None
-        # if self.forward is not None:
-        #     if self.include_state:
-        #         args = (*args, self.state)
-        #     res = self.forward(*args)
-        # else:
-        #     res = self.run(args, result_ids=result_ids)
-        #
+        if self.forward is not None: #if not self.is_built:
+            if self.include_state:
+                args = (*args, self.state)
+            return self.forward(*args)
 
-        print('\nInstanciating inputs..\n')
-        # Simulate instanciation
-        for placeholder, arg in zip(self.input_placeholders, args):
-            placeholder.instanciate(arg)
+        else:
+            print('\nInstanciating inputs..\n')
+            # Simulate instanciation
+            for placeholder, arg in zip(self.input_placeholders, args):
+                placeholder.instantiate(arg) #TODO how do I know the order is preserved??
 
-        print('Running operations...\n')
-        for i, operation in enumerate(self.procedure.operations):
-            print('run cmd', i)
-            (cmd, self, args, kwargs), resp = operation
-            print((cmd, self, args, kwargs))
-            if self is None:
-                r = eval(cmd)(*args, **kwargs)
-            else:
-                r = getattr(self, cmd)(*args, **kwargs)
-            resp.instanciate(r.child)
-            print(resp)
+            print('Running operations...\n')
+            for i, operation in enumerate(self.procedure.operations):
+                print('run cmd', i)
+                (cmd, self, args, kwargs), resp = operation
+                print((cmd, self, args, kwargs))
+                if self is None:
+                    r = eval(cmd)(*args, **kwargs)
+                else:
+                    r = getattr(self, cmd)(*args, **kwargs)
+                resp.instantiate(r.child)
+                print(resp)
 
-        return resp.child
+            return resp.child
+
+
+        #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
+        #                       "shape=[<your_args_shapes>] to use it.")
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -375,8 +386,6 @@ class Plan(AbstractObject, ObjectStorage):
 
             # Send the Plan
             pointer = self.owner.send(self, workers=location)
-            # Revert ids
-            self.procedure.update_worker_ids(location.id, self.owner.id)
 
             self.pointers[location] = pointer
         else:
@@ -386,11 +395,9 @@ class Plan(AbstractObject, ObjectStorage):
                     # Use the pointer that was already sent
                     pointer = self.pointers[location]
                 else:
-                    self.procedure.update_worker_ids(self.owner.id, location.id)
                     # Send the Plan
                     pointer = self.owner.send(self, workers=location)
-                    # Revert ids
-                    self.procedure.update_worker_ids(location.id, self.owner.id)
+
                     self.pointers[location] = pointer
 
                 ids_at_location.append(pointer.id_at_location)
@@ -476,7 +483,6 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.state),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
-            sy.serde.msgpack.serde._simplify(worker, plan._output_shape),
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
@@ -499,8 +505,6 @@ class Plan(AbstractObject, ObjectStorage):
             state,
             include_state,
             is_built,
-            input_shapes,
-            output_shape,
             name,
             tags,
             description,
@@ -509,8 +513,6 @@ class Plan(AbstractObject, ObjectStorage):
         id = sy.serde.msgpack.serde._detail(worker, id)
         procedure = sy.serde.msgpack.serde._detail(worker, procedure)
         state = sy.serde.msgpack.serde._detail(worker, state)
-        input_shapes = sy.serde.msgpack.serde._detail(worker, input_shapes)
-        output_shape = sy.serde.msgpack.serde._detail(worker, output_shape)
         nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
 
         plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
@@ -519,8 +521,6 @@ class Plan(AbstractObject, ObjectStorage):
         plan.procedure = procedure
         plan.state = state
         state.plan = plan
-        plan.input_shapes = input_shapes
-        plan._output_shape = output_shape
 
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)

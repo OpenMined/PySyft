@@ -47,14 +47,14 @@ class Procedure(object):
         """
 
         for placeholder, arg in zip(self.input_placeholders, args):
-            placeholder.instanciate(arg)
+            placeholder.instantiate(arg)
 
 
     @staticmethod
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:
         return (
             # We're not simplifying fully because operations are already simplified
-            sy.serde.msgpack.serde._simplify(worker, procedure.operations, shallow=True),
+            sy.serde.msgpack.serde._simplify(worker, procedure.operations),
             sy.serde.msgpack.serde._simplify(worker, procedure.input_placeholders),
             sy.serde.msgpack.serde._simplify(worker, procedure.output_placeholders),
         )
@@ -63,7 +63,7 @@ class Procedure(object):
     def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
         operations, input_placeholders, output_placeholders = procedure_tuple
 
-        operations = sy.serde.msgpack.serde._detail(worker, operations, shallow=True)
+        operations = sy.serde.msgpack.serde._detail(worker, operations)
         input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
         output_placeholders = sy.serde.msgpack.serde._detail(worker, output_placeholders)
 

@@ -14,11 +14,16 @@ class PlaceHolder(AbstractTensor):
         tags: set = None,
         description: str = None,
     ):
-        """Initializes a PlaceHoled
+        """A PlaceHolder acts as a tensor but does nothing special. It can get
+        "instantiated" when a real tensor is appended as a child attribute. It
+        will send forward all the commands it receives to its child tensor.
+
+        When you send a PlaceHolder, you don't sent the instantiated tensors.
+
         Args:
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
-            id: An optional string or integer id of the FixedPrecisionTensor.
+            id: An optional string or integer id of the PlaceHolder.
         """
         super().__init__(tags=tags, description=description)
 
@@ -26,7 +31,7 @@ class PlaceHolder(AbstractTensor):
         self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
 
-    def instanciate(self, tensor):
+    def instantiate(self, tensor):
         self.child = tensor
         return self
 
@@ -44,93 +49,36 @@ class PlaceHolder(AbstractTensor):
 
     __repr__ = __str__
 
-    def get_class_attributes(self):
-        """
-        Specify all the attributes need to build a wrapper correctly when returning a response,
-        for example precision_fractional is important when wrapping the result of a method
-        on a self which is a fixed precision tensor with a non default precision_fractional.
-        """
-        return {}
-
-    @classmethod
-    def handle_func_command(cls, command):
-        """
-        Receive an instruction for a function to be applied on a FixedPrecision Tensor,
-        Perform some specific action (like logging) which depends of the
-        instruction content, replace in the args all the FPTensors with
-        their child attribute, forward the command instruction to the
-        handle_function_command of the type of the child attributes, get the
-        response and replace a FixedPrecision on top of all tensors found in
-        the response.
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
-        :return: the response of the function command
-        """
-        cmd, _, args, kwargs = command
-
-        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
-
-        # Check that the function has not been overwritten
-        try:
-            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
-        except AttributeError:
-            pass
-
-        # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
-
-        # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
-
-        # Send it to the appropriate class and get the response
-        response = new_type.handle_func_command(new_command)
-
-        # Put back FixedPrecisionTensor on the tensors found in the response
-        response = hook_args.hook_response(
-            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
-        )
-
-        return response
-
-
     @staticmethod
-    def simplify(worker: AbstractWorker, tensor: "FixedPrecisionTensor") -> tuple:
-        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+    def simplify(worker: AbstractWorker, tensor: "PlaceHolder") -> tuple:
+        """Takes the attributes of a PlaceHolder and saves them in a tuple.
 
         Args:
             worker: the worker doing the serialization
-            tensor: a FixedPrecisionTensor.
+            tensor: a PlaceHolder.
 
         Returns:
-            tuple: a tuple holding the unique attributes of the fixed precision tensor.
+            tuple: a tuple holding the unique attributes of the PlaceHolder.
         """
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = syft.serde.msgpack.serde._simplify(worker, tensor.child)
 
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
-            syft.serde.msgpack.serde._simplify(worker, tensor.description),
-            chain,
+            syft.serde.msgpack.serde._simplify(worker, tensor.description)
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "FixedPrecisionTensor":
+    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PlaceHolder":
         """
-            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
+            This function reconstructs a PlaceHolder given it's attributes in form of a tuple.
             Args:
                 worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+                tensor_tuple: a tuple holding the attributes of the PlaceHolder
             Returns:
-                FixedPrecisionTensor: a FixedPrecisionTensor
-            Examples:
-                shared_tensor = detail(data)
+                PlaceHolder: a PlaceHolder
             """
 
-        tensor_id, tags, description, chain = tensor_tuple
+        tensor_id, tags, description = tensor_tuple
 
         tensor = PlaceHolder(
             owner=worker,
@@ -138,10 +86,6 @@ class PlaceHolder(AbstractTensor):
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
         )
-
-        if chain is not None:
-            chain = syft.serde.msgpack.serde._detail(worker, chain)
-            tensor.child = chain
 
         return tensor
 

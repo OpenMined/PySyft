@@ -413,10 +413,12 @@ class FrameworkHook(ABC):
             Operate the hooking
             """
 
+            has_trace_lock = False
             if syft.hook.trace and syft.hook.trace_inactive:
-                #print(method_name)
+                # print('LOCK M', method_name)
                 req = (method_name, self, args, kwargs)
                 syft.hook.trace_inactive = False
+                has_trace_lock = True
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
 
@@ -495,11 +497,12 @@ class FrameworkHook(ABC):
                     method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
                 )
 
-            if syft.hook.trace:
+            if syft.hook.trace and has_trace_lock:
                 syft.hook.trace_inactive = True
 
                 resp = response
                 syft.trace_logs.append((req, resp))
+                # print('UNLOCK M', method_name)
 
             return response
 
@@ -600,10 +603,12 @@ class FrameworkHook(ABC):
             """
             Operate the hooking
             """
+            has_trace_lock = False
             if syft.hook.trace and syft.hook.trace_inactive:
-                #print(cmd_name)
+                # print('LOCK F', cmd_name)
                 req = (cmd_name, None, args, kwargs)
                 syft.hook.trace_inactive = False
+                has_trace_lock = True
             try:
                 tensor_type = (
                     type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
@@ -620,11 +625,12 @@ class FrameworkHook(ABC):
 
             response = handle_func_command(command)
 
-            if syft.hook.trace:
+            if syft.hook.trace and has_trace_lock:
                 syft.hook.trace_inactive = True
 
                 resp = response
                 syft.trace_logs.append((req, resp))
+                # print('UNLOCK F', cmd_name)
 
             return response
 
