@@ -132,22 +132,6 @@ def test_dim(workers):
     assert tensor_local.dim() == tensor_remote.dim()
 
 
-def test_does_not_require_large_precision():
-    x = torch.tensor([[[-1.5, 2.0, 30000000000.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
-    base = 10
-    prec_fractional = 3
-    max_precision = 62
-    assert not x._requires_large_precision(max_precision, base, prec_fractional)
-
-
-def test_requires_large_precision():
-    x = torch.tensor([[[-1.5, 2.0, 30000000000.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
-    base = 10
-    prec_fractional = 256
-    max_precision = 62
-    assert x._requires_large_precision(max_precision, base, prec_fractional)
-
-
 def test_roll(workers):
     x = torch.tensor([1.0, 2.0, 3, 4, 5])
     expected = torch.roll(x, -1)
