@@ -631,9 +631,7 @@ class TorchTensor(AbstractTensor):
             else:
                 return self
 
-        fpt_tensor = (
-            syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
-        )
+        fpt_tensor = syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
 
         if not no_wrap:
             fpt_tensor = fpt_tensor.wrap()
