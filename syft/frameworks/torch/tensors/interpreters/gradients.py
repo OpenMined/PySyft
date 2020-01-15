@@ -1,6 +1,9 @@
 import torch
+import syft
 from .gradients_core import GradFunc
 from .gradients_core import apply_dim_transformations
+
+from syft.workers.abstract import AbstractWorker
 
 
 class AddBackward(GradFunc):
