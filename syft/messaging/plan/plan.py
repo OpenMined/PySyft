@@ -263,12 +263,13 @@ class Plan(AbstractObject, ObjectStorage):
         self.state.set_(cloned_state)
 
         for log in sy.trace_logs:
-            req, resp = log
-            req, resp = (
-                self.replace_with_placeholders(req, find_inputs=True),
-                self.replace_with_placeholders(resp),
+            command, response = log
+            command_placeholders, return_placeholders = (
+                self.replace_with_placeholders(command, find_inputs=True),
+                self.replace_with_placeholders(response),
             )
-            operation = (req, resp)
+            # We're cheating a bit here because we put placeholders instead of return_ids
+            operation = Operation(*command_placeholders, return_ids=return_placeholders)
             self.procedure.operations.append(operation)
 
         sy.trace_logs = []
@@ -339,18 +340,24 @@ class Plan(AbstractObject, ObjectStorage):
                 placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
             print("Running operations...\n")
-            for i, operation in enumerate(self.procedure.operations):
+            for i, op in enumerate(self.procedure.operations):
                 print("run cmd", i)
-                (cmd, self, args, kwargs), resp = operation
-                print((cmd, self, args, kwargs))
-                if self is None:
-                    r = eval(cmd)(*args, **kwargs)
+                cmd, _self, args, kwargs, return_placeholder = (
+                    op.cmd_name,
+                    op.cmd_owner,  # cmd_owner is equivalent to the "self" in a method
+                    op.cmd_args,
+                    op.cmd_kwargs,
+                    op.return_ids,
+                )
+                print((cmd, _self, args, kwargs))
+                if _self is None:
+                    response = eval(cmd)(*args, **kwargs)
                 else:
-                    r = getattr(self, cmd)(*args, **kwargs)
-                resp.instantiate(r.child)
-                print(resp)
+                    response = getattr(_self, cmd)(*args, **kwargs)
+                return_placeholder.instantiate(response.child)
+                print(response)
 
-            return resp.child
+            return response.child
 
         #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
         #                       "shape=[<your_args_shapes>] to use it.")
