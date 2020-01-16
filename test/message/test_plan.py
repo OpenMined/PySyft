@@ -528,7 +528,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
 
 @pytest.mark.parametrize("is_func2plan", [True, False])
-def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
+def test_fetch_plan_multiple_times(hook, is_func2plan, workers):
 
     alice, bob, charlie, james = (
         workers["alice"],
