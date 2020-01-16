@@ -44,8 +44,8 @@ class NumpyTensor(HookedTensor):
         return _self.transpose(*reversed(dims))
 
 
-def create_numpy_tensor(contents):
-    return NumpyTensor(contents).wrap()
+def create_numpy_tensor(numpy_tensor):
+    return NumpyTensor(numpy_tensor).wrap()
 
 
 ### Register the tensor with hook_args.py ###
