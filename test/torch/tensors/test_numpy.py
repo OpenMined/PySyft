@@ -55,7 +55,7 @@ def test_numpy_dot():
 
 def test_numpy_mm():
     """
-    Test basic NumpyTensor dot product
+    Test basic NumpyTensor matrix multiply
     """
     x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]]))
     y = x.mm(x.transpose())
@@ -64,7 +64,7 @@ def test_numpy_mm():
 
 def test_numpy_mm2():
     """
-    Test basic NumpyTensor dot product
+    Test @ based NumpyTensor matrix multiply
     """
     x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]]))
     y = x @ (x.transpose())
@@ -73,7 +73,7 @@ def test_numpy_mm2():
 
 def test_numpy_transpose():
     """
-    Test basic NumpyTensor dot product
+    Test basic NumpyTensor transpose
     """
     x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]]))
     y = x.transpose(0, 1)
