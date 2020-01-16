@@ -1,14 +1,9 @@
-from syft.generic.frameworks.hook.hook_args import (
-    register_type_rule,
-    register_forward_func,
-    register_backward_func,
-    one,
-)
-
-from syft.generic.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.overload import overloaded
+from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
 
 
-class NumpyTensor(AbstractTensor):
+class NumpyTensor(HookedTensor):
     """NumpyTensor is a tensor which seeks to wrap the Numpy API with the PyTorch tensor API.
     This is useful because Numpy can offer a wide range of existing functionality ranging from
     large precision, custom scalar types, and polynomial arithmetic.
@@ -31,35 +26,17 @@ class NumpyTensor(AbstractTensor):
         self.verbose = verbose
         self.child = numpy_tensor
 
-    def __add__(self, other):
-        return NumpyTensor(numpy_tensor=self.child + other.child)
+    @overloaded.method
+    def mm(self, _self, other):
+        return _self.dot(other)
 
-    def __sub__(self, other):
-        return NumpyTensor(numpy_tensor=self.child - other.child)
-
-    def __mul__(self, other):
-        return NumpyTensor(numpy_tensor=self.child * other.child)
-
-    def __truediv__(self, other):
-        return NumpyTensor(numpy_tensor=self.child / other.child)
-
-    def dot(self, other):
-        return NumpyTensor(numpy_tensor=self.child.dot(other.child))
-
-    def mm(self, other):
-        return NumpyTensor(numpy_tensor=self.child.dot(other.child))
-
-    def __matmul__(self, other):
-        return NumpyTensor(numpy_tensor=self.child.dot(other.child))
-
-    def transpose(self, *dims):
+    @overloaded.method
+    def transpose(self, _self, *dims):
         # TODO: the semantics of the .transpose() dimensions are a bit different
         # for Numpy than they are for PyTorch. Fix this.
         # Related: https://github.com/pytorch/pytorch/issues/7609
-        return NumpyTensor(numpy_tensor=self.child.transpose(*reversed(dims)))
+        return _self.transpose(*reversed(dims))
 
 
 ### Register the tensor with hook_args.py ###
-register_type_rule({NumpyTensor: one})
-register_forward_func({NumpyTensor: lambda i: NumpyTensor._forward_func(i)})
-register_backward_func({NumpyTensor: lambda i, **kwargs: NumpyTensor._backward_func(i, **kwargs)})
+hook_args.default_register_tensor(NumpyTensor)
