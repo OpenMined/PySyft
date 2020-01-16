@@ -1,3 +1,5 @@
+import numpy as np
+
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
@@ -24,6 +26,10 @@ class NumpyTensor(HookedTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.verbose = verbose
+
+        if isinstance(numpy_tensor, list):
+            numpy_tensor = np.array(numpy_tensor)
+
         self.child = numpy_tensor
 
     @overloaded.method

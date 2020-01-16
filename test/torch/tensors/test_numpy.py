@@ -9,7 +9,7 @@ def test_numpy_add():
     Test basic NumpyTensor addition
     """
 
-    x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]])).wrap()
+    x = sy.NumpyTensor(numpy_tensor=[[1, 2, 3, 4]]).wrap()
     y = x + x
     assert (y.child.child == np.array([2, 4, 6, 8])).all()
 
