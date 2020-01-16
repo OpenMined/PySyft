@@ -8,9 +8,7 @@ class HookedTensor(AbstractTensor):
     method hooked.
     """
 
-    def __init__(
-            self, owner=None, id=None, tags=None, description=None, verbose=False
-    ):
+    def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
         """Initializes a NumpyTensor.
 
         Args:
@@ -23,6 +21,7 @@ class HookedTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.verbose = verbose
+
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(HookedTensor)
