@@ -557,25 +557,23 @@ def test_fecth_plan_multiple_times(hook, is_func2plan, workers):
         plan = Net()
         plan.build(th.tensor([1.2]))
 
-    plan_pointer = plan.fix_precision().share(alice, bob, crypto_provider=charlie).send(james)
+    plan_pointer = plan.send(james)
 
     # Fetch plan
     fetched_plan = plan_pointer.owner.fetch_plan(plan_pointer.id_at_location, james, copy=True)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
-    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
-    decrypted1 = fetched_plan(x_sh).get().float_prec()
+    result1 = fetched_plan(x).get()
 
     # 2. Re-fetch Plan
     fetched_plan = plan_pointer.owner.fetch_plan(plan_pointer.id_at_location, james, copy=True)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
-    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
-    decrypted2 = fetched_plan(x_sh).get().float_prec()
+    result2 = fetched_plan(x).get()
 
-    assert th.all(decrypted1 - decrypted2 < 1e-2)
+    assert th.all(result1 - result2 < 1e-2)
 
 
 def test_fetch_plan_remote(hook, start_remote_worker):
