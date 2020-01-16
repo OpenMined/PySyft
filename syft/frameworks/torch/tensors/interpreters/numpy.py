@@ -43,8 +43,10 @@ class NumpyTensor(HookedTensor):
         # Related: https://github.com/pytorch/pytorch/issues/7609
         return _self.transpose(*reversed(dims))
 
+
 def create_numpy_tensor(contents):
     return NumpyTensor(contents).wrap()
+
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(NumpyTensor)
