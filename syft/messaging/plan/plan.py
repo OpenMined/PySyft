@@ -184,20 +184,6 @@ class Plan(AbstractObject, ObjectStorage):
         """
         return self.state.tensors()
 
-    @property
-    def output_shape(self):
-        if self._output_shape is None:
-            args = self._create_placeholders(self.input_shapes)
-            # NOTE I currently need to regiser and then remove objects to use the method
-            # but a better syntax is being worked on
-            for arg in args:
-                self.owner.register_obj(arg)
-            output = self(*args)
-            for arg in args:
-                self.owner.rm_obj(arg)
-            self._output_shape = output.shape
-        return self._output_shape
-
     def send_msg(self, *args, **kwargs):
         return self.owner.send_msg(*args, **kwargs)
 
