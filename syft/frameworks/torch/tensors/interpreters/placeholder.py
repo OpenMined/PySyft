@@ -38,6 +38,14 @@ class PlaceHolder(AbstractTensor):
             self.child = tensor
         return self
 
+    def get(self):
+        """
+        Returns any content that has been filled into the placeholder.
+
+        This is roughly the opposite of instantiate().
+        """
+        return self.child
+
     def __str__(self) -> str:
         if isinstance(self.tags, set):
             tags = ", ".join(list(self.tags))

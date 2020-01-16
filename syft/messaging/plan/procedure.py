@@ -34,6 +34,15 @@ class Procedure(object):
     def __repr__(self):
         return self.__str__()
 
+    def copy(self) -> "Procedure":
+        # TODO: Sort out deep copying here
+        procedure = Procedure(
+            operations=self.operations,
+            input_placeholders=self.input_placeholders,
+            output_placeholders=self.output_placeholders,
+        )
+        return procedure
+
     def update_inputs(self, args: Tuple[Union[FrameworkTensorType, AbstractTensor]]):
         """Replace args and result_placeholders with the ones given.
         Updates the arguments ids and result ids used to execute

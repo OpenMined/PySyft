@@ -564,14 +564,14 @@ def test_fetch_plan_multiple_times(hook, is_func2plan, workers):
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
-    result1 = fetched_plan(x).get()
+    result1 = fetched_plan(x)
 
     # 2. Re-fetch Plan
     fetched_plan = plan_pointer.owner.fetch_plan(plan_pointer.id_at_location, james, copy=True)
 
     # Execute the fetch plan
     x = th.tensor([-1.0])
-    result2 = fetched_plan(x).get()
+    result2 = fetched_plan(x)
 
     assert th.all(result1 - result2 < 1e-2)
 

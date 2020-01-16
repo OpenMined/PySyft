@@ -294,9 +294,6 @@ class Plan(AbstractObject, ObjectStorage):
 
         plan.state.set_(self.state.clone_state_dict())
 
-        # Replace occurences of the old id to the new plan id
-        plan.procedure.update_worker_ids(self.id, plan.id)
-
         return plan
 
     def __setattr__(self, name, value):
@@ -338,6 +335,8 @@ class Plan(AbstractObject, ObjectStorage):
                 placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
             print("Running operations...\n")
+            final_return_placeholder = sy.PlaceHolder()  # Default return value to be replaced below
+
             for i, op in enumerate(self.procedure.operations):
                 print("run cmd", i)
                 cmd, _self, args, kwargs, return_placeholder = (
@@ -352,10 +351,11 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-                return_placeholder.instantiate(response.child)
                 print(response)
+                return_placeholder.instantiate(response.child)
+                final_return_placeholder = return_placeholder
 
-            return response.child
+            return final_return_placeholder.get()
 
         #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
         #                       "shape=[<your_args_shapes>] to use it.")
