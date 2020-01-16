@@ -430,23 +430,25 @@ class Plan(AbstractObject, ObjectStorage):
     def get_pointers(self):
         return self.pointers
 
-    def fix_precision_(self, *args, **kwargs):
-        self.state.fix_precision_(*args, **kwargs)
-        return self
+    # TODO: Re-enable these once the rest of the Plan rework is completed
 
-    fix_precision = fix_prec_ = fix_prec = fix_precision_
+    # def fix_precision_(self, *args, **kwargs):
+    #     self.state.fix_precision_(*args, **kwargs)
+    #     return self
 
-    def float_precision_(self):
-        self.state.float_precision_()
-        return self
+    # fix_precision = fix_prec_ = fix_prec = fix_precision_
 
-    float_precision = float_prec_ = float_prec = float_precision_
+    # def float_precision_(self):
+    #     self.state.float_precision_()
+    #     return self
 
-    def share_(self, *args, **kwargs):
-        self.state.share_(*args, **kwargs)
-        return self
+    # float_precision = float_prec_ = float_prec = float_precision_
 
-    share = share_
+    # def share_(self, *args, **kwargs):
+    #     self.state.share_(*args, **kwargs)
+    #     return self
+
+    # share = share_
 
     def create_pointer(
         self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
