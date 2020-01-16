@@ -121,19 +121,25 @@ class Plan(AbstractObject, ObjectStorage):
         # because we will need to serialize and send them to the remote workers
         self.nested_states = []
 
-        self.input_placeholders = []
+        self.input_placeholders = input_placeholders or []
         self.placeholders = {}
+        self.var_count = 0
 
         # Info about the plan stored via the state and the procedure
-        self.procedure = procedure or Procedure(readable_plan, input_placeholders, output_placeholders)
-        self.state = state or State(owner=owner, plan=self)#, state_placeholders=state_placeholders)
+        self.procedure = procedure or Procedure(
+            readable_plan, input_placeholders, output_placeholders
+        )
+        self.state = state or State(
+            owner=owner, plan=self
+        )  # , state_placeholders=state_placeholders)
         if state_tensors is not None:
             for tensor in state_tensors:
-                placeholder = sy.PlaceHolder(tags={'#state'})
+                placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})
+                self.var_count += 1
                 placeholder.instantiate(tensor)
                 self.state.state_placeholders.append(placeholder)
                 self.placeholders[tensor.id] = placeholder
-                #self.owner.register_obj(tensor)
+                # self.owner.register_obj(tensor)
 
         self.include_state = include_state
         self.is_built = is_built
@@ -211,11 +217,11 @@ class Plan(AbstractObject, ObjectStorage):
 
     def add_placeholder(self, tensor, find_inputs=False):
         if tensor.id not in self.placeholders.keys():
-            placeholder = sy.PlaceHolder(tags={f'#{self.var_count + 1}'})
+            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"})
             self.placeholders[tensor.id] = placeholder
             if find_inputs:
                 self.input_placeholders.append(placeholder)
-                placeholder.tags.add('#input')
+                placeholder.tags.add("#input")
             self.var_count += 1
 
         return self.placeholders[tensor.id]
@@ -225,10 +231,7 @@ class Plan(AbstractObject, ObjectStorage):
             r = [self.replace_with_placeholders(o, **kw) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {
-                key: self.replace_with_placeholders(value, **kw)
-                for key, value in obj.items()
-            }
+            return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
         elif isinstance(obj, torch.Tensor):
             return self.add_placeholder(obj, **kw)
         elif isinstance(obj, (int, float, str, bool)):
@@ -260,8 +263,6 @@ class Plan(AbstractObject, ObjectStorage):
         self.owner.init_plan = self
         sy.hook.trace, sy.hook.trace_inactive = True, True
 
-        self.var_count = 0
-
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
         if self.include_state:
@@ -277,7 +278,10 @@ class Plan(AbstractObject, ObjectStorage):
 
         for log in sy.trace_logs:
             req, resp = log
-            req, resp = self.replace_with_placeholders(req, find_inputs=True), self.replace_with_placeholders(resp)
+            req, resp = (
+                self.replace_with_placeholders(req, find_inputs=True),
+                self.replace_with_placeholders(resp),
+            )
             operation = (req, resp)
             self.procedure.operations.append(operation)
 
@@ -293,6 +297,7 @@ class Plan(AbstractObject, ObjectStorage):
             state=self.state.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
+            input_placeholders=self.input_placeholders,
             # General kwargs
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
@@ -316,7 +321,8 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(tags={'#state'})
+            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})
+            self.var_count += 1
             placeholder.instantiate(value)
             self.state.state_placeholders.append(placeholder)
             self.placeholders[value.id] = placeholder
@@ -335,20 +341,20 @@ class Plan(AbstractObject, ObjectStorage):
             else the None message serialized.
         """
 
-        if self.forward is not None: #if not self.is_built:
+        if self.forward is not None:  # if not self.is_built:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
 
         else:
-            print('\nInstanciating inputs..\n')
+            print("\nInstanciating inputs..\n")
             # Simulate instanciation
             for placeholder, arg in zip(self.input_placeholders, args):
-                placeholder.instantiate(arg) #TODO how do I know the order is preserved??
+                placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
-            print('Running operations...\n')
+            print("Running operations...\n")
             for i, operation in enumerate(self.procedure.operations):
-                print('run cmd', i)
+                print("run cmd", i)
                 (cmd, self, args, kwargs), resp = operation
                 print((cmd, self, args, kwargs))
                 if self is None:
@@ -360,9 +366,25 @@ class Plan(AbstractObject, ObjectStorage):
 
             return resp.child
 
-
         #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
         #                       "shape=[<your_args_shapes>] to use it.")
+
+    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
+        """Controls local or remote plan execution.
+        If the plan doesn't have the plan built, first build it using the blueprint.
+        Then, update the plan with the result_ids and args ids given, run the plan
+        commands, build pointer(s) to the response(s) and return.
+        Args:
+            args: Arguments used to run plan.
+            result_ids: List of ids where the results will be stored.
+        """
+
+        # We build the plan only if needed
+        if not self.is_built:
+            self.build(args)
+
+        result = self.__call__(*args)
+        return result
 
     def send(self, *locations, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -487,6 +509,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.nested_states),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_placeholders),
         )
 
     @staticmethod
@@ -509,13 +532,24 @@ class Plan(AbstractObject, ObjectStorage):
             tags,
             description,
             nested_states,
+            input_placeholders,
         ) = plan_tuple
+
+        sy.hook.placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
         procedure = sy.serde.msgpack.serde._detail(worker, procedure)
         state = sy.serde.msgpack.serde._detail(worker, state)
         nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
+        input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
 
-        plan = sy.Plan(owner=worker, id=id, include_state=include_state, is_built=is_built)
+        plan = sy.Plan(
+            owner=worker,
+            id=id,
+            include_state=include_state,
+            is_built=is_built,
+            input_placeholders=input_placeholders,
+        )
+        sy.hook.placeholders = {}
 
         plan.nested_states = nested_states
         plan.procedure = procedure

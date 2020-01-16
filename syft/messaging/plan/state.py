@@ -48,7 +48,9 @@ class State(object):
         """
         Return a clone of the state elements. Tensor ids are kept.
         """
-        return {placeholder.id: placeholder.child.clone() for placeholder in self.state_placeholders}
+        return {
+            placeholder.id: placeholder.child.clone() for placeholder in self.state_placeholders
+        }
 
     def copy(self) -> "State":
         state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
@@ -60,19 +62,15 @@ class State(object):
         """
         tensors = []
         for placeholder in self.state_placeholders:
-            if sy.hook.trace:
-                placeholder.tags.add(f'#{self.plan.var_count + 1}')
-                self.plan.var_count += 1
             tensor = placeholder.child
             tensors.append(tensor)
         return tensors
-
 
     def set_(self, state_dict):
         """
         Reset inplace the state by feeding it a dict of tensors or params
         """
-        #assert list(self.state_placeholders) == list(state_dict.keys())
+        # assert list(self.state_placeholders) == list(state_dict.keys())
 
         for placeholder_id, new_tensor in state_dict.items():
             for placeholder in self.state_placeholders:
@@ -86,7 +84,6 @@ class State(object):
             o.backward()
             if tensor.grad is not None:
                 tensor.grad -= tensor.grad
-
 
     # def fix_precision_(self, *args, **kwargs):
     #     for tensor in self.tensors():
@@ -117,10 +114,11 @@ class State(object):
         """
         Simplify the plan's state when sending a plan
         """
-        return (
+        r = (
             sy.serde.msgpack.serde._simplify(worker, state.state_placeholders),
             sy.serde.msgpack.serde._simplify(worker, state.tensors()),
         )
+        return r
 
     @staticmethod
     def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
@@ -129,11 +127,12 @@ class State(object):
         ids.
         """
         state_placeholders, state_elements = state_tuple
+
         state_placeholders = sy.serde.msgpack.serde._detail(worker, state_placeholders)
         state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
-        for state_id, state_element in zip(state_placeholders, state_elements):
-            worker.register_obj(state_element, obj_id=state_id)
+        for state_element in state_elements:
+            worker.register_obj(state_element, obj_id=state_element.id)
 
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)

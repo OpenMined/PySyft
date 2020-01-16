@@ -7,13 +7,7 @@ from syft.workers.abstract import AbstractWorker
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(
-        self,
-        owner=None,
-        id=None,
-        tags: set = None,
-        description: str = None,
-    ):
+    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -32,14 +26,23 @@ class PlaceHolder(AbstractTensor):
         self.child = None
 
     def instantiate(self, tensor):
-        self.child = tensor
+        """
+        Add a tensor as a child attribute. All operations on the placeholder will be also
+        executed on this child tensor
+
+        We remove wrappers is there are any.
+        """
+        if hasattr(tensor, "child") and tensor.is_wrapper and tensor.child is not None:
+            self.child = tensor.child
+        else:
+            self.child = tensor
         return self
 
     def __str__(self) -> str:
         if isinstance(self.tags, set):
-            tags = ', '.join(list(self.tags))
+            tags = ", ".join(list(self.tags))
         elif self.tags is None:
-            tags = '-'
+            tags = "-"
         else:
             tags = self.tags
         if hasattr(self, "child") and self.child is not None:
@@ -64,7 +67,7 @@ class PlaceHolder(AbstractTensor):
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
-            syft.serde.msgpack.serde._simplify(worker, tensor.description)
+            syft.serde.msgpack.serde._simplify(worker, tensor.description),
         )
 
     @staticmethod
@@ -80,14 +83,18 @@ class PlaceHolder(AbstractTensor):
 
         tensor_id, tags, description = tensor_tuple
 
-        tensor = PlaceHolder(
-            owner=worker,
-            id=syft.serde.msgpack.serde._detail(worker, tensor_id),
-            tags=syft.serde.msgpack.serde._detail(worker, tags),
-            description=syft.serde.msgpack.serde._detail(worker, description),
-        )
+        tensor_id = syft.serde.msgpack.serde._detail(worker, tensor_id)
+        tags = syft.serde.msgpack.serde._detail(worker, tags)
+        description = syft.serde.msgpack.serde._detail(worker, description)
 
-        return tensor
+        unique_id = "-".join(tags)
+
+        # NOTE having a global var here is not elegant, we can iterate on this
+        if unique_id not in syft.hook.placeholders:
+            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
+            syft.hook.placeholders[unique_id] = tensor
+
+        return syft.hook.placeholders[unique_id]
 
 
 ### Register the tensor with hook_args.py ###

@@ -34,10 +34,7 @@ class Procedure(object):
     def __repr__(self):
         return self.__str__()
 
-    def update_inputs(
-        self,
-        args: Tuple[Union[FrameworkTensorType, AbstractTensor]]
-    ):
+    def update_inputs(self, args: Tuple[Union[FrameworkTensorType, AbstractTensor]]):
         """Replace args and result_placeholders with the ones given.
         Updates the arguments ids and result ids used to execute
         the plan.
@@ -48,7 +45,6 @@ class Procedure(object):
 
         for placeholder, arg in zip(self.input_placeholders, args):
             placeholder.instantiate(arg)
-
 
     @staticmethod
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:

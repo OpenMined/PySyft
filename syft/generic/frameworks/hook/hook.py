@@ -595,9 +595,6 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
-        if func_api_name == 'manual_seed':
-            print('_get_hooked_func', public_module_name, func_api_name, cmd_name)
-
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
