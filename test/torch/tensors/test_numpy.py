@@ -81,5 +81,10 @@ def test_numpy_transpose():
 
 
 def test_numpy_casting():
+    """
+    This tests the ability to cast a data tensor to a tensor chain
+    with an underlying Numpy representation.
+    """
+
     out = th.tensor([1, 2, 23, 4]).numpy_tensor()
     assert (out.child.child == np.array([1, 2, 23, 4])).all()
