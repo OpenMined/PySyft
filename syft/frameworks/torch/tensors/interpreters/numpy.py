@@ -15,13 +15,7 @@ class NumpyTensor(AbstractTensor):
     """
 
     def __init__(
-        self,
-        numpy_tensor=None,
-        owner=None,
-        id=None,
-        tags=None,
-        description=None,
-        verbose=False,
+        self, numpy_tensor=None, owner=None, id=None, tags=None, description=None, verbose=False
     ):
         """Initializes a NumpyTensor.
 
@@ -68,6 +62,4 @@ class NumpyTensor(AbstractTensor):
 ### Register the tensor with hook_args.py ###
 register_type_rule({NumpyTensor: one})
 register_forward_func({NumpyTensor: lambda i: NumpyTensor._forward_func(i)})
-register_backward_func(
-    {NumpyTensor: lambda i, **kwargs: NumpyTensor._backward_func(i, **kwargs)}
-)
+register_backward_func({NumpyTensor: lambda i, **kwargs: NumpyTensor._backward_func(i, **kwargs)})

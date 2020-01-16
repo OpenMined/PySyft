@@ -206,7 +206,7 @@ class PrivateGridNetwork(AbstractGrid):
                     obj = obj.child
 
                 # Get a list of mpc nodes.
-                nodes = map(lambda x: hook.local_worker._known_workers.get(x), obj.child.keys(),)
+                nodes = map(lambda x: hook.local_worker._known_workers.get(x), obj.child.keys())
 
                 mpc_nodes.update(set(nodes))
 
