@@ -9,7 +9,7 @@ class HookedTensor(AbstractTensor):
     """
 
     def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
-        """Initializes a NumpyTensor.
+        """Initializes a HookedTensor.
 
         Args:
             numpy_tensor (np.array): The numpy array which this tensor should wrap.
