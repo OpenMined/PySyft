@@ -3,7 +3,7 @@ from syft.generic.tensor import AbstractTensor
 
 
 class HookedTensor(AbstractTensor):
-    """HookedTensor is an abstraction which should not be used directly on its own. It's purpose
+    """HookedTensor is an abstraction which should not be used directly on its own. Its purpose
     is only to allow other tensors to extend it so that they automatically have all of the Torch
     method hooked without having to add it to the hook.py file.
     """
