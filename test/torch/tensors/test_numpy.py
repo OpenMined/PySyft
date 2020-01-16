@@ -1,5 +1,5 @@
 import pytest
-import torch
+import torch as th
 import numpy as np
 import syft as sy
 
@@ -78,3 +78,8 @@ def test_numpy_transpose():
     x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]]))
     y = x.transpose(0, 1)
     assert (y.child.child == np.array([[1], [2], [3], [4]])).all()
+
+
+def test_numpy_casting():
+    out = th.tensor([1, 2, 23, 4]).numpy_tensor()
+    assert (out.child.child == np.array([1, 2, 23, 4])).all()
