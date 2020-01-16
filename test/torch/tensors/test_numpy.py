@@ -1,20 +1,73 @@
 import pytest
 import torch
+import numpy as np
 import syft as sy
 
 
 def test_numpy_add():
     """
-    Test the basic paillier encrypt/decrypt functionality
+    Test basic NumpyTensor addition
     """
 
-    pub, pri = sy.keygen()
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1,2,3,4]])).wrap()
+    y = x + x
+    assert (y.child.child == np.array([2,4,6,8])).all()
 
-    x_tensor = torch.Tensor([1, 2, 3])
-    x = x_tensor.encrypt(pub)
+def test_numpy_subtract():
+    """
+    Test basic NumpyTensor subtraction
+    """
 
-    y = x.decrypt(pri)
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1,2,3,4]])).wrap()
+    y = x - x
+    assert (y.child.child == np.array([0,0,0,0])).all()
 
-    assert (x_tensor == y).all()
+def test_numpy_multiply():
+    """
+    Test basic NumpyTensor multiplication
+    """
 
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1,2,3,4]])).wrap()
+    y = x * x
+    assert (y.child.child == np.array([1,4,9,16])).all()
 
+def test_numpy_divide():
+    """
+    Test basic NumpyTensor division
+    """
+
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1,2,3,4]])).wrap()
+    y = x / x
+    assert (y.child.child == np.array([1,1,1,1])).all()
+
+def test_numpy_dot():
+    """
+    Test basic NumpyTensor dot product
+    """
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]])).wrap()
+    y = x.dot(x.transpose())
+    assert (y.child.child == np.array([[30]])).all()
+
+def test_numpy_mm():
+    """
+    Test basic NumpyTensor dot product
+    """
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]])).wrap()
+    y = x.mm(x.transpose())
+    assert (y.child.child == np.array([[30]])).all()
+
+def test_numpy_mm2():
+    """
+    Test basic NumpyTensor dot product
+    """
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]])).wrap()
+    y = x@(x.transpose())
+    assert (y.child.child == np.array([[30]])).all()
+
+def test_numpy_transpose():
+    """
+    Test basic NumpyTensor dot product
+    """
+    x = sy.NumpyTensor(numpy_tensor=np.array([[1, 2, 3, 4]])).wrap()
+    y = x.transpose(0,1)
+    assert (y.child.child == np.array([[1], [2], [3], [4]])).all()

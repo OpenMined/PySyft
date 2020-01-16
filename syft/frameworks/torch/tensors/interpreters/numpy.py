@@ -50,7 +50,7 @@ class NumpyTensor(AbstractTensor):
     def __mul__(self, other):
         return NumpyTensor(numpy_tensor=self.child * other.child)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         return NumpyTensor(numpy_tensor=self.child / other.child)
 
     def dot(self, other):
