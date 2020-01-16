@@ -129,9 +129,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.procedure = procedure or Procedure(
             readable_plan, input_placeholders, output_placeholders
         )
-        self.state = state or State(
-            owner=owner, plan=self
-        )  # , state_placeholders=state_placeholders)
+        self.state = state or State(owner=owner)  # , state_placeholders=state_placeholders)
         if state_tensors is not None:
             for tensor in state_tensors:
                 placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})

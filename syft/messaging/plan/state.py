@@ -16,9 +16,8 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, plan=None, state_placeholders=None):
+    def __init__(self, owner, state_placeholders=None):
         self.owner = owner
-        self.plan = plan
         self.state_placeholders = state_placeholders or []
 
     def __str__(self):
@@ -137,5 +136,5 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, plan=None, state_placeholders=state_placeholders)
+        state = State(owner=worker, state_placeholders=state_placeholders)
         return state
