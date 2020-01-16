@@ -40,7 +40,8 @@ else:
 from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import grids
-from syft.grid import VirtualGrid
+from syft.grid.private_grid import PrivateGridNetwork
+from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
 from syft.sandbox import create_sandbox, hook
@@ -112,7 +113,8 @@ __all__.extend(
         "LargePrecisionTensor",
         "PointerTensor",
         "MultiPointerTensor",
-        "VirtualGrid",
+        "PrivateGridNetwork",
+        "PublicGridNetwork",
         "create_sandbox",
         "hook",
         "combine_pointers",
