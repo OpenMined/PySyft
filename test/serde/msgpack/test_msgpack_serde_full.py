@@ -68,6 +68,7 @@ samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 samples[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor] = make_promisetensor
+samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
 samples[syft.messaging.message.Message] = make_message
 samples[syft.messaging.message.Operation] = make_operation

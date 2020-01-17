@@ -623,8 +623,8 @@ def make_plan(**kwargs):
     @syft.func2plan([torch.Size((3,))])
     def plan(x):
         x = x + x
-        x = torch.abs(x)
-        return x
+        y = torch.abs(x)
+        return x, y
 
     # Model to plan
     class Net(syft.Plan):
@@ -642,21 +642,41 @@ def make_plan(**kwargs):
         model_plan = Net()
         model_plan.build(torch.tensor([1.0, 2.0, 3.0]))
 
+    def compare_placeholders_list(detailed, original):
+        assert len(detailed) == len(original)
+        for i, detailed_ph in enumerate(detailed):
+            original_ph = original[i]
+            assert detailed_ph.id == original_ph.id
+            assert detailed_ph.tags == original_ph.tags
+            assert detailed_ph.description == original_ph.description
+        return True
+
+    def compare_operations(detailed, original):
+        assert len(detailed) == len(original)
+        for i, detailed_op in enumerate(detailed):
+            original_op = original[i]
+            compare_placeholders_list(original_op.cmd_args, detailed_op.cmd_args)
+            # return_ids is not a list (why?)
+            compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
+            assert original_op.cmd_name == detailed_op.cmd_name
+            # TODO
+            assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
+
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
         # Procedure
-        assert detailed.procedure.operations == original.procedure.operations
-        assert detailed.procedure.arg_ids == original.procedure.arg_ids
-        assert detailed.procedure.result_ids == original.procedure.result_ids
-        # States for the nested plans
+        compare_placeholders_list(detailed.procedure.input_placeholders, original.procedure.input_placeholders)
+        compare_placeholders_list(detailed.procedure.output_placeholders, original.procedure.output_placeholders)
+        compare_operations(detailed.procedure.operations, original.procedure.operations)
+        # States for the nested plans (not done)
         assert detailed.nested_states == original.nested_states
         # State
-        assert detailed.state.state_ids == original.state.state_ids
+        compare_placeholders_list(detailed.state.state_placeholders, original.state.state_placeholders)
+
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
-        assert detailed.input_shapes == original.input_shapes
-        assert detailed._output_shape == original._output_shape
+        compare_placeholders_list(detailed.input_placeholders, original.input_placeholders)
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -1284,6 +1304,35 @@ def make_promisetensor(**kwargs):
                     (CODE[set], (list(pt.plans)[0],)),  # (set of Plans' id) plans
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"I promise",)),  # (str) description
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.frameworks.torch.tensors.interpreters.PlaceHolder
+def make_placeholder(**kwargs):
+    ph = syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder()
+    ph.tag("tag1")
+    ph.describe("just a placeholder")
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        return True
+
+    return [
+        {
+            "value": ph,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder],
+                (
+                    ph.id,  # (int) id
+                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
+                    (CODE[str], (b"just a placeholder",)),  # (str) description
                 ),
             ),
             "cmp_detailed": compare,
