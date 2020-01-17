@@ -19,7 +19,7 @@ from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
 all_notebooks = [Path(n) for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
-base_notebooks = [n.split("/")[-1] for n in glob.glob("examples/tutorials/*.ipynb")]
+basic_notebooks = [n.split("/")[-1] for n in glob.glob("examples/tutorials/*.ipynb")]
 translated_notebooks = [
     "/".join(n.split("/")[-2:]) for n in glob.glob("examples/tutorials/translations/**/*.ipynb")
 ]
@@ -59,7 +59,7 @@ for n in all_notebooks:
         not_excluded_notebooks.append(n)
 
 
-@pytest.mark.parametrize("notebook", sorted(base_notebooks))
+@pytest.mark.parametrize("notebook", sorted(basic_notebooks))
 def test_notebooks_basic(isolated_filesystem, notebook):
     """Test Notebooks in the tutorial root folder."""
     list_name = Path("examples/tutorials/") / notebook
