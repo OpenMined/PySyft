@@ -19,7 +19,10 @@ from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
 all_notebooks = [Path(n) for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
-all_languages = [l.split("/")[-1] for l in glob.glob("examples/tutorials/translations/*")]
+base_notebooks = [n.split("/")[-1] for n in glob.glob("examples/tutorials/*.ipynb")]
+translated_notebooks = [
+    "/".join(n.split("/")[-2:]) for n in glob.glob("examples/tutorials/translations/**/*.ipynb")
+]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -56,47 +59,35 @@ for n in all_notebooks:
         not_excluded_notebooks.append(n)
 
 
-def test_notebooks_basic(isolated_filesystem):
+@pytest.mark.parametrize("notebook", sorted(base_notebooks))
+def test_notebooks_basic(isolated_filesystem, notebook):
     """Test Notebooks in the tutorial root folder."""
-    notebooks = glob.glob("*.ipynb")
-    for notebook in notebooks:
-        list_name = Path("examples/tutorials/") / notebook
-        if list_name in not_excluded_notebooks:
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
-                parameters={
-                    "epochs": 1,
-                    "n_test_batches": 5,
-                    "n_train_items": 64,
-                    "n_test_items": 64,
-                },
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+    list_name = Path("examples/tutorials/") / notebook
+    if list_name in not_excluded_notebooks:
+        not_excluded_notebooks.remove(list_name)
+        res = pm.execute_notebook(
+            notebook,
+            "/dev/null",
+            parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+            timeout=300,
+        )
+        assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-@pytest.mark.parametrize("language", all_languages)
-def test_notebooks_basic_translations(isolated_filesystem, language):
-    """Test Notebooks in the tutorial root folder."""
-    notebooks = glob.glob(f"translations/{language}/*.ipynb")
-    for notebook in notebooks:
-        list_name = Path("examples/tutorials/") / notebook
-        if list_name in not_excluded_notebooks:
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
-                parameters={
-                    "epochs": 1,
-                    "n_test_batches": 5,
-                    "n_train_items": 64,
-                    "n_test_items": 64,
-                },
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+@pytest.mark.parametrize("translated_notebook", sorted(translated_notebooks))
+def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
+    """Test Notebooks in the tutorial translations folder."""
+    notebook = f"translations/{translated_notebook}"
+    list_name = Path(f"examples/tutorials/{notebook}")
+    if list_name in not_excluded_notebooks:
+        not_excluded_notebooks.remove(list_name)
+        res = pm.execute_notebook(
+            notebook,
+            "/dev/null",
+            parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+            timeout=300,
+        )
+        assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_notebooks_advanced(isolated_filesystem):
