@@ -12,7 +12,6 @@ class HookedTensor(AbstractTensor):
         """Initializes a HookedTensor.
 
         Args:
-            numpy_tensor (np.array): The numpy array which this tensor should wrap.
             owner (BaseWorker): An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
