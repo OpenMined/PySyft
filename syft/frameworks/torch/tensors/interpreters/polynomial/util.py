@@ -6,6 +6,7 @@ from syft.frameworks.torch.tensors.interpreters.polynomial.polynomial import Pol
 from syft.frameworks.torch.tensors.interpreters.polynomial.tensor import PolynomialTensor
 import syft.frameworks.torch.tensors.interpreters.polynomial.util as poly_util
 
+
 def var(name, minimum_factor=0):
     return Polynomial(Term(variables=Variable(name)), minimum_factor=minimum_factor)
 

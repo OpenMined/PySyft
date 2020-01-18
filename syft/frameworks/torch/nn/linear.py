@@ -1,8 +1,8 @@
 import torch.nn as nn
 import sys
 
-class Linear(nn.Module):
 
+class Linear(nn.Module):
     def __init__(self, in_features, out_features, bias=True):
         super().__init__()
         self.in_features = in_features
@@ -15,11 +15,13 @@ class Linear(nn.Module):
 
         _, y = input.shape
         if y != self.in_features:
-            sys.exit(f'Wrong Input Features. Please use tensor with {self.in_features} Input Features')
+            sys.exit(
+                f"Wrong Input Features. Please use tensor with {self.in_features} Input Features"
+            )
 
         weight = self.weight.t()
         prod = input @ weight
-        if(self.bias is not None):
+        if self.bias is not None:
             resized_bias = self.bias.unsqueeze(0)
             output = prod + resized_bias.expand(*prod.shape)
         else:
@@ -31,4 +33,3 @@ class Linear(nn.Module):
 
         self.weight = dummy_for_init.weight
         self.bias = dummy_for_init.bias
-

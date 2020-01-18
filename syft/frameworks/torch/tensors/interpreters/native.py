@@ -995,7 +995,9 @@ class TorchTensor(AbstractTensor):
                 (and any tensors you use them to create, etc. recursively).
             """
 
-        return poly_util.var_tensor(self.view(-1).shape, minimum_factor=minimum_factor).view(self.shape)
+        return poly_util.var_tensor(self.view(-1).shape, minimum_factor=minimum_factor).view(
+            self.shape
+        )
 
     def poly_eval(self, **input_kwargs):
         """If the child object is a PolynomialTensor, this will attempt to evaluate each element of the
