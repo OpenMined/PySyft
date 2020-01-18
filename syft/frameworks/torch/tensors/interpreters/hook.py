@@ -8,13 +8,10 @@ class HookedTensor(AbstractTensor):
     method hooked without having to add it to the hook.py file.
     """
 
-    def __init__(
-        self, numpy_tensor=None, owner=None, id=None, tags=None, description=None, verbose=False
-    ):
+    def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
         """Initializes a HookedTensor.
 
         Args:
-            numpy_tensor (np.array): The numpy array which this tensor should wrap.
             owner (BaseWorker): An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
