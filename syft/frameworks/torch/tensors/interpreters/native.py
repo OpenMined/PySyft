@@ -962,7 +962,7 @@ class TorchTensor(AbstractTensor):
 
     def bigint(self, enc_prec=2**16, max_val=2**128):
         x = BigIntTensor(enc_prec=enc_prec, max_val=max_val).on(self)
-        return x.child.encode(self)
+        return x.child.encode(self).wrap()
 
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying

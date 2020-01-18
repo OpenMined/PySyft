@@ -68,6 +68,7 @@ class BigIntTensor(AbstractTensor):
 
         shares = th.cat(shares).view(x.shape + th.Size([self.n_shares]))
         self.child = shares
+        return self
 
     def decode(self, shares):
         val = 0
