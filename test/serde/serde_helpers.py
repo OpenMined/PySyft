@@ -624,7 +624,7 @@ def make_plan(**kwargs):
     def plan(x):
         x = x + x
         y = torch.abs(x)
-        return x, y
+        return x
 
     # Model to plan
     class Net(syft.Plan):
