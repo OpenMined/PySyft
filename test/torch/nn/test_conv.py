@@ -1,6 +1,7 @@
 import syft.frameworks.torch.nn as nn2
 import torch as th
 import torch.nn as nn
+import pytest
 
 
 def test_conv2d():
@@ -32,4 +33,4 @@ def test_conv2d():
 
     out2 = model2(data)
 
-    assert (out2 - out).abs().max() < 0.000001
+    assert th.isclose(out, out2, atol=1e-6).all()
