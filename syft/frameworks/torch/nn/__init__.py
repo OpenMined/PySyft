@@ -4,3 +4,6 @@ from syft.frameworks.torch.nn.rnn import LSTM
 from syft.frameworks.torch.nn.rnn import RNNCell
 from syft.frameworks.torch.nn.rnn import GRUCell
 from syft.frameworks.torch.nn.rnn import LSTMCell
+from syft.frameworks.torch.nn.linear import Linear
+
+from torch.nn import Module

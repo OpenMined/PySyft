@@ -801,6 +801,17 @@ class TorchHook(FrameworkHook):
         self.torch.nn.Module.float_precision = module_float_precision_
         self.torch.nn.Module.float_prec = module_float_precision_
 
+        def poly_constant(self):
+
+            model = self.copy()
+
+            for p in model.parameters():
+                p.data = p.data.poly_constant()
+
+            return model
+
+        self.torch.nn.Module.poly_constant = poly_constant
+
         def module_copy(nn_self):
             """Returns a copy of a torch.nn.Module"""
             return copy.deepcopy(nn_self)

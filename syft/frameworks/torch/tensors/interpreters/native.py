@@ -6,12 +6,13 @@ import weakref
 
 import numpy as np
 import torch
+import torch as th
 
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+import syft.frameworks.torch.tensors.interpreters.polynomial.util as poly_util
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -972,3 +973,42 @@ class TorchTensor(AbstractTensor):
                 "on a wrapper. Add NumpyTensor to the chain by hand if you want "
                 "this functionality.",
             )
+
+    def poly_constant(self):
+        """If you are working with a tensor of polynomials, and you want to perform an operation
+        with a tensor of constants (such as elementwise addition, elementwise multiplication,
+        or matrix multiply), you need to convert the standard torch tensor into a tensor of
+        polynomial constants. We can do this simply by casting to a NumpyTensor."""
+        return self.numpy_tensor()
+
+    def polynomial(self, minimum_factor=0):
+        """This method returns a polynomial where each value is assumed to be a different
+        polynomial, laid out in the same shape as the memory footprint of the tensor,
+        but re-cast to have an identical shape.
+
+        The idea is that you should be able to forward propagate
+
+        Args:
+            *minimum_factor (float) this will eliminate any factors from the polynomial that are
+                less than a certain value. Additionally, if you then use this PolynomialTensor
+                for arithmetic, all derivative tensors will have and enforce the same minimum_factor
+                (and any tensors you use them to create, etc. recursively).
+            """
+
+        return poly_util.var_tensor(self.view(-1).shape, minimum_factor=minimum_factor).view(self.shape)
+
+    def poly_eval(self, **input_kwargs):
+        """If the child object is a PolynomialTensor, this will attempt to evaluate each element of the
+        PolynomialTensor's elements and return a tensor of results. Note that this is a relatively
+        inefficient process (it's not vectorized)."""
+        return self.child(**input_kwargs)
+
+    def poly_vectorize_input_vector(self, input_vector):
+        result = poly_util.get_expanded_input_vector(input_vector, self.child.child)
+        result = th.tensor(result)
+        return result.view(*(list(self.shape) + [-1]))
+
+    def factors(self):
+        result = poly_util.get_factor_vector(self.child.child)
+        result = th.tensor(result)
+        return result.view(*(list(self.shape) + [-1]))

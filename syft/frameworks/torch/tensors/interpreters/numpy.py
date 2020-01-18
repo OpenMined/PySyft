@@ -32,20 +32,56 @@ class NumpyTensor(HookedTensor):
 
         self.child = numpy_tensor
 
+    def attr(self, name):
+        if(name == "data"):
+            return self.wrap()
+
+    @overloaded.method
+    def expand(self, _self, *dims):
+
+        if (len(dims) != len(_self.shape)):
+            raise Exception(".expand() must be called with the same number of dims as the tensor on which it is called")
+
+        n_diff = 0
+        diff_i = 0
+        for i in range(len(_self.shape)):
+            if (_self.shape[i] != dims[i]):
+                diff_i = i
+                n_diff += 1
+
+        if (n_diff > 1):
+            raise Exception("You can only call .expand() with one dim different")
+
+        return np.repeat(_self, dims[diff_i], axis=diff_i).reshape(dims)
+
+    @overloaded.method
+    def view(self, _self, *dims):
+        return _self.reshape(*dims)
+
+    @overloaded.method
+    def unsqueeze(self, _self, axis):
+        return np.expand_dims(_self, axis=axis)
+
+    @overloaded.method
+    def t(self, _self, *args, **kwargs):
+        return _self.transpose(*args, **kwargs)
+
     @overloaded.method
     def mm(self, _self, other):
         return _self.dot(other)
 
-    @overloaded.method
-    def transpose(self, _self, *dims):
-        # TODO: the semantics of the .transpose() dimensions are a bit different
-        # for Numpy than they are for PyTorch. Fix this.
-        # Related: https://github.com/pytorch/pytorch/issues/7609
-        return _self.transpose(*reversed(dims))
+    # @overloaded.method
+    # def transpose(self, _self, *dims):
+    #     # TODO: the semantics of the .transpose() dimensions are a bit different
+    #     # for Numpy than they are for PyTorch. Fix this.
+    #     # Related: https://github.com/pytorch/pytorch/issues/7609
+    #     return _self.transpose(*reversed(dims))
 
 
 def create_numpy_tensor(numpy_tensor):
-    return NumpyTensor(numpy_tensor).wrap()
+    result = NumpyTensor(numpy_tensor).wrap()
+    result.is_wrapper = True
+    return result
 
 
 ### Register the tensor with hook_args.py ###
