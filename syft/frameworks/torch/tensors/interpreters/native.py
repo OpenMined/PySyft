@@ -959,3 +959,16 @@ class TorchTensor(AbstractTensor):
             """
 
         return self.child.decrypt(private_key)
+
+    def numpy_tensor(self):
+        """This method will cast the current tensor to one with numpy as the underlying
+        representation. The tensor chain will be Wrapper > NumpyTensor > np.ndarray"""
+
+        if not self.is_wrapper:
+            return syft.NumpyTensor(self.numpy())
+        else:
+            raise Exception(
+                "Can only cast a data tensor to NumpyTensor. You called this ",
+                "on a wrapper. Add NumpyTensor to the chain by hand if you want "
+                "this functionality.",
+            )

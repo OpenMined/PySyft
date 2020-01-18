@@ -40,7 +40,8 @@ else:
 from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import grids
-from syft.grid import VirtualGrid
+from syft.grid.private_grid import PrivateGridNetwork
+from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
 from syft.sandbox import create_sandbox, hook
@@ -67,6 +68,7 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
@@ -111,7 +113,8 @@ __all__.extend(
         "LargePrecisionTensor",
         "PointerTensor",
         "MultiPointerTensor",
-        "VirtualGrid",
+        "PrivateGridNetwork",
+        "PublicGridNetwork",
         "create_sandbox",
         "hook",
         "combine_pointers",

@@ -19,6 +19,7 @@ from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
 all_notebooks = [Path(n) for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
+all_languages = [l.split("/")[-1] for l in glob.glob("examples/tutorials/translations/*")]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -36,6 +37,10 @@ exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
     "examples/tutorials/advanced/websockets-example-MNIST-parallel",
+    # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
+    "examples/tutorials/grid",
+    "examples/tutorials/grid/federated_learning/spam_prediction",
+    "examples/tutorials/grid/federated_learning/mnist",
     # This notebook is skipped because it fails in travis and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
@@ -72,9 +77,10 @@ def test_notebooks_basic(isolated_filesystem):
             assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-def test_notebooks_basic_translations(isolated_filesystem):
+@pytest.mark.parametrize("language", all_languages)
+def test_notebooks_basic_translations(isolated_filesystem, language):
     """Test Notebooks in the tutorial root folder."""
-    notebooks = glob.glob("translations/**/*.ipynb", recursive=True)
+    notebooks = glob.glob(f"translations/{language}/*.ipynb")
     for notebook in notebooks:
         list_name = Path("examples/tutorials/") / notebook
         if list_name in not_excluded_notebooks:
