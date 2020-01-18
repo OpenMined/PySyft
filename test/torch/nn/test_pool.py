@@ -30,4 +30,4 @@ def test_pool2d():
     out = pool(model_out)
     out2 = pool2(model_out)
 
-    assert (out - out2).abs().max() < 0.000001
+    assert th.isclose(out, out2, atol=1e-6).all()
