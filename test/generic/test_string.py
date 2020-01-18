@@ -66,4 +66,4 @@ def test_string_methods():
     x = String("Hello PySyft")
     bob = sy.VirtualWorker(id="bob", hook=sy.hook)
     out = x.send(bob)
-    assert isinstance(out, syft.generic.pointers.string_pointer.StringPointer)
+    assert isinstance(out, sy.generic.pointers.string_pointer.StringPointer)
