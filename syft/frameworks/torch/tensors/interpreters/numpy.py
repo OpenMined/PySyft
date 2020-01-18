@@ -70,19 +70,10 @@ class NumpyTensor(HookedTensor):
     def mm(self, _self, other):
         return _self.dot(other)
 
-    # @overloaded.method
-    # def transpose(self, _self, *dims):
-    #     # TODO: the semantics of the .transpose() dimensions are a bit different
-    #     # for Numpy than they are for PyTorch. Fix this.
-    #     # Related: https://github.com/pytorch/pytorch/issues/7609
-    #     return _self.transpose(*reversed(dims))
-
-
 def create_numpy_tensor(numpy_tensor):
     result = NumpyTensor(numpy_tensor).wrap()
     result.is_wrapper = True
     return result
-
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(NumpyTensor)
