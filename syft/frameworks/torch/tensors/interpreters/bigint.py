@@ -1,5 +1,6 @@
 import syft
 import torch as th
+import numpy as np
 from syft.generic.tensor import AbstractTensor
 
 from syft.generic.frameworks.hook.hook_args import (
@@ -76,8 +77,14 @@ class BigIntTensor(AbstractTensor):
             val += (self.enc_prec ** share_i) * share
         return val
 
-    def float(self):
-        return self.decode(self.child)
+    def long(self):
+
+        numpy_shares = self.child.view(-1, self.shape[-1]).numpy()
+        values = list()
+        for val_shares in list(numpy_shares):
+            values.append(self.decode(val_shares))
+
+        return th.LongTensor(np.array(values)).view(self.shape[0:-1])
 
 ### Register the tensor with hook_args.py ###
 register_type_rule({BigIntTensor: one})

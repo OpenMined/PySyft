@@ -964,6 +964,18 @@ class TorchTensor(AbstractTensor):
         x = BigIntTensor(enc_prec=enc_prec, max_val=max_val).on(self)
         return x.child.encode(self).wrap()
 
+    def float(self):
+        if(self.is_wrapper):
+            return self.child.float()
+        else:
+            return self.native_float()
+
+    def long(self):
+        if(self.is_wrapper):
+            return self.child.long()
+        else:
+            return self.native_long()
+
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying
         representation. The tensor chain will be Wrapper > NumpyTensor > np.ndarray"""
