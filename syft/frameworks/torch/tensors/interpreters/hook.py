@@ -8,7 +8,7 @@ class HookedTensor(AbstractTensor):
     method hooked without having to add it to the hook.py file.
     """
 
-    def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
+    def __init__(self, numpy_tensor=None, owner=None, id=None, tags=None, description=None, verbose=False):
         """Initializes a HookedTensor.
 
         Args:
