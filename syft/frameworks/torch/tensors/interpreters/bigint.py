@@ -76,6 +76,8 @@ class BigIntTensor(AbstractTensor):
             val += (self.enc_prec ** share_i) * share
         return val
 
+    def float(self):
+        return self.decode(self.child)
 
 ### Register the tensor with hook_args.py ###
 register_type_rule({BigIntTensor: one})
