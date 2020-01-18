@@ -879,6 +879,8 @@ def make_pointertensor(**kwargs):
                     None,  # (str) point_to_attr
                     (CODE[torch.Size], (3, 3)),  # (torch.Size) _shape
                     True,  # (bool) garbage_collect_data
+                    ptr.tags,
+                    ptr.description,
                 ),
             ),
             "cmp_detailed": compare,
