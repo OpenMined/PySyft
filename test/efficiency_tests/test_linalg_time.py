@@ -6,7 +6,7 @@ from syft.frameworks.torch.linalg.operations import _norm_mpc
 from test.efficiency_tests.assertions import assert_time
 
 
-@assert_time(max_time=15)
+@assert_time(max_time=20)
 def test_inv_sym(hook, workers):
     torch.manual_seed(42)  # Truncation might not always work so we set the random seed
     N = 100
