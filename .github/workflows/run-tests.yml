@@ -48,6 +48,8 @@ jobs:
     - name: Test with pytest
       run: |
         coverage run -m pytest test --deselect=test/notebooks/test_notebooks.py::test_notebooks_basic_translations --deselect=test/notebooks/test_notebooks.py::test_all_translation_notebooks
+    - name: Coverage reports
+      run: |
         coverage report --omit="syft/grid/*" --ignore-errors --fail-under 95 -m
         # ensuring coverage of tests stays at 100 until entire coverage can be 100
         coverage report --ignore-errors --fail-under 100 -m --include="test/*"
