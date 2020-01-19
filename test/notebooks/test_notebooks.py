@@ -174,11 +174,6 @@ def test_fl_with_websockets_and_averaging(
 
 
 ### These tests must always be last
-def test_all_non_excluded_notebooks():
-    untested_notebooks = set(all_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
-    assert len(untested_notebooks) == 0, untested_notebooks
-
-
 def test_all_notebooks_except_translations():
     untested_notebooks = (
         set(all_notebooks)
@@ -186,4 +181,9 @@ def test_all_notebooks_except_translations():
         - set(translated_notebooks)
         - set(tested_notebooks)
     )
+    assert len(untested_notebooks) == 0, untested_notebooks
+
+
+def test_all_translation_notebooks():
+    untested_notebooks = set(translated_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks
