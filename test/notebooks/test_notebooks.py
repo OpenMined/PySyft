@@ -37,6 +37,10 @@ exclusion_list_notebooks = [
     # This notebook is excluded as it needs library code modification which I might add later on
     "Build your own tensor type (advanced).ipynb",
     "Federated Recurrent Neural Network.ipynb",
+    # Outdated training method
+    "Introduction to TrainConfig.ipynb",
+    # Outdated websocket client code
+    "Federated learning with websockets and federated averaging.ipynb",
 ]
 
 exclusion_list_folders = [
