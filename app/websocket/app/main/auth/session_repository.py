@@ -1,5 +1,4 @@
-from grid.auth.config import read_authentication_configs
-from grid.auth import AUTH_MODELS, UserAuthentication
+from syft.grid.authentication.account import AccountCredential
 from .user_session import UserSession
 from flask_login import UserMixin
 
@@ -57,7 +56,7 @@ class SessionsRepository(object):
             Returns:
                 session : Returns a user session.
         """
-        key = payload.get(UserAuthentication.USERNAME_FIELD)
+        key = payload.get(AccountCredential.USERNAME_FIELD)
         session_object = self.users.get(key)
         if session_object:
             if session_object.authenticate(payload):
@@ -65,15 +64,7 @@ class SessionsRepository(object):
 
     def __load_node_manager(self):
         """ Start session repository with default ADMIN credentials. """
-        return UserAuthentication(
+        return AccountCredential(
             SessionsRepository.DEFAULT_MANAGER_USER,
             SessionsRepository.DEFAULT_MANAGER_PASSWORD,
         )
-
-    def __load_preset_credentials(self):
-        """ Parse .openmined/* credential files and register them at session repository. """
-        for cred in read_authentication_configs():
-            for auth_type in AUTH_MODELS:
-                if isinstance(cred, auth_type):
-                    session = UserSession(cred)
-                    self.save_session(session, session.username())

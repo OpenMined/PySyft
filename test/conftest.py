@@ -1,21 +1,20 @@
 import pytest
 import torch
 from multiprocessing import Process
-from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
 import os
 import sys
+import syft
+from syft.workers.node_client import NodeClient
+from syft.grid.public_grid import PublicGridNetwork
 
 # We need to add our rest api as a path since it is a separate application
 # deployed on Heroku:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/../app/pg_rest_api")
 
-from grid import syft
 from test import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
 import time
 import requests
 import json
-import grid as gr
 
 
 @pytest.fixture()
@@ -100,7 +99,7 @@ def init_nodes(node_infos):
 
 
 def create_websocket_client(hook, port, id):
-    node = gr.WebsocketGridClient(hook, "http://localhost:" + port + "/", id=id)
+    node = NodeClient(hook, "http://localhost:" + port + "/", id=id)
     return node
 
 
@@ -119,8 +118,8 @@ def connected_node(hook):
 
 
 @pytest.fixture(scope="function")
-def grid_network():
-    my_grid = gr.GridNetwork(GATEWAY_URL)
+def grid_network(hook):
+    my_grid = PublicGridNetwork(hook, GATEWAY_URL)
 
     yield my_grid
 

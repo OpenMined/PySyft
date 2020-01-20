@@ -1,7 +1,7 @@
 from flask_login import UserMixin
 import syft as sy
 import uuid
-from grid.auth import UserAuthentication
+from syft.grid.authentication.account import AccountCredential
 from .. import hook, local_worker
 
 
@@ -9,15 +9,15 @@ class UserSession(UserMixin):
 
     NAMESPACE_DNS = "openmined.org"
 
-    def __init__(self, user: UserAuthentication, active=True):
+    def __init__(self, user: AccountCredential, active=True):
         """ Handle session with User Authentication.
             
             Args:
-                user (UserAuthentication) : User instance.
+                user (AccountCredential) : User instance.
                 active (bool) : Session state.
         """
         self.id = uuid.uuid5(uuid.NAMESPACE_DNS, UserSession.NAMESPACE_DNS)
-        self.user = user  # PyGrid UserAuthentication object
+        self.user = user  # PySyft Account Credential object
         self.tensor_requests = list()
 
         # If it is the first session of this user at this node.
@@ -77,8 +77,8 @@ class UserSession(UserMixin):
             Returns:
                 result (bool) : Credential verification result.
         """
-        candidate_username = payload.get(UserAuthentication.USERNAME_FIELD)
-        candidate_password = payload.get(UserAuthentication.PASSWORD_FIELD)
+        candidate_username = payload.get(AccountCredential.USERNAME_FIELD)
+        candidate_password = payload.get(AccountCredential.PASSWORD_FIELD)
         if candidate_username and candidate_password:
             return (
                 self.user.password == candidate_password

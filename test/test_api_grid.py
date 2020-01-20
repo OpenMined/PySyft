@@ -1,31 +1,31 @@
 import pytest
 import requests
-import grid as gr
 import unittest
 import json
-import syft as sy
 import torch as th
 from test import PORTS, IDS, GATEWAY_URL
 import torch.nn.functional as F
 
+import syft as sy
+from syft.workers.node_client import NodeClient
+from syft.grid.public_grid import PublicGridNetwork
+from syft.grid.private_grid import PrivateGridNetwork
+
 hook = sy.TorchHook(th)
 
 
-class GridAPITest(unittest.TestCase):
+class PublicGridAPITest(unittest.TestCase):
     def setUp(self):
-        self.my_grid = gr.GridNetwork(GATEWAY_URL)
-
-    def tearDown(self):
-        self.my_grid.disconnect_nodes()
+        nodes = list(self.connect_nodes().values())
+        self.public_grid = PublicGridNetwork(hook, GATEWAY_URL)
+        self.private_grid = PrivateGridNetwork(*nodes)
 
     def connect_nodes(self):
         nodes = {}
 
         for (node_id, port) in zip(IDS, PORTS):
             if node_id not in sy.hook.local_worker._known_workers:
-                node = gr.WebsocketGridClient(
-                    hook, "http://localhost:" + port + "/", id=node_id
-                )
+                node = NodeClient(hook, "http://localhost:" + port + "/", id=node_id)
             else:
                 node = sy.hook.local_worker._known_workers[node_id]
                 node.connect()
@@ -43,7 +43,7 @@ class GridAPITest(unittest.TestCase):
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
 
-    def test_host_inference_encrypted_model(self):
+    def test_host_inference_encrypted_model_public_grid(self):
         sy.hook.local_worker.is_client_worker = False
 
         # Build Model
@@ -61,11 +61,11 @@ class GridAPITest(unittest.TestCase):
 
         decrypted_model = Net()
 
-        self.my_grid.serve_encrypted_model(model)
+        self.public_grid.serve_model(model, id="", mpc=True)
 
         # Run inference
         x = th.tensor([1.0, 2])
-        result = self.my_grid.run_encrypted_inference("convnet", x)
+        result = self.public_grid.run_remote_inference("convnet", x, mpc=True)
 
         # Compare with local model
         expected = decrypted_model(th.tensor([1.0, 2]))
@@ -73,7 +73,37 @@ class GridAPITest(unittest.TestCase):
         assert th.all(result - expected.detach() < 1e-2)
         sy.hook.local_worker.is_client_worker = True
 
-    def test_model_ids_overview(self):
+    def test_host_inference_encrypted_model_private_grid(self):
+        sy.hook.local_worker.is_client_worker = False
+
+        # Build Model
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__(id="convnet2")
+                self.fc1 = th.tensor([2.0, 4.0])
+                self.bias = th.tensor([1000.0])
+
+            def forward(self, x):
+                return self.fc1.matmul(x) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+
+        decrypted_model = Net()
+
+        self.private_grid.serve_model(model, id="", mpc=True)
+
+        # Run inference
+        x = th.tensor([1.0, 2])
+        result = self.private_grid.run_remote_inference("convnet2", x, mpc=True)
+
+        # Compare with local model
+        expected = decrypted_model(th.tensor([1.0, 2]))
+
+        assert th.all(result - expected.detach() < 1e-2)
+        sy.hook.local_worker.is_client_worker = True
+
+    def test_model_ids_overview_public_grid(self):
         sy.hook.local_worker.is_client_worker = False
 
         class Net(sy.Plan):
@@ -92,7 +122,7 @@ class GridAPITest(unittest.TestCase):
 
         # Register models
         for model_id in model_ids:
-            self.my_grid.serve_model(model, model_id=model_id)
+            self.public_grid.serve_model(model, id=model_id)
 
         # Get available models
         models = json.loads(
@@ -103,14 +133,25 @@ class GridAPITest(unittest.TestCase):
             assert model_id in models
         sy.hook.local_worker.is_client_worker = True
 
-    def test_grid_host_query_jit_model(self):
+    def test_grid_host_query_jit_model_public_grid(self):
         toy_model = th.nn.Linear(2, 5)
         data = th.zeros((5, 2))
         traced_model = th.jit.trace(toy_model, data)
 
-        self.my_grid.serve_model(traced_model, "test", allow_remote_inference=True)
-        assert self.my_grid.query_model("test")
-        assert self.my_grid.query_model("unregistered-model") is None
+        self.public_grid.serve_model(traced_model, "test", allow_remote_inference=True)
+        assert self.public_grid.query_model_hosts("test")
+        assert self.public_grid.query_model_hosts("unregistered-model") is None
+
+    def test_grid_host_query_jit_model_private_grid(self):
+        toy_model = th.nn.Linear(2, 5)
+        data = th.zeros((5, 2))
+        traced_model = th.jit.trace(toy_model, data)
+
+        self.private_grid.serve_model(
+            traced_model, "test1", allow_remote_inference=True
+        )
+        assert self.private_grid.query_model_hosts("test1")
+        assert self.private_grid.query_model_hosts("unregistered-model") is None
 
     def test_dataset_tags_overview(self):
         nodes = self.connect_nodes()
@@ -136,7 +177,7 @@ class GridAPITest(unittest.TestCase):
             for tag in tensor_tags:
                 assert tag in tags
 
-    def test_host_plan_model(self):
+    def test_host_plan_model_public_grid(self):
         sy.hook.local_worker.is_client_worker = False
 
         class Net(sy.Plan):
@@ -152,19 +193,52 @@ class GridAPITest(unittest.TestCase):
         model = Net()
         model.build(th.tensor([1.0, 2]))
 
-        self.my_grid.serve_model(
-            model, model_id="plan-model", allow_remote_inference=True
+        self.public_grid.serve_model(
+            model, id="plan-model", allow_remote_inference=True
         )
 
         # Call one time
-        inference = self.my_grid.run_remote_inference(
-            model_id="plan-model", data=th.tensor([1.0, 2])
+        inference = self.public_grid.run_remote_inference(
+            id="plan-model", data=th.tensor([1.0, 2])
         )
         assert inference == th.tensor([1000.0])
 
         # Call one more time
-        inference = self.my_grid.run_remote_inference(
-            model_id="plan-model", data=th.tensor([1.0, 2])
+        inference = self.public_grid.run_remote_inference(
+            id="plan-model", data=th.tensor([1.0, 2])
+        )
+        assert inference == th.tensor([1000.0])
+        sy.hook.local_worker.is_client_worker = True
+
+    def test_host_plan_model_private_grid(self):
+        sy.hook.local_worker.is_client_worker = False
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = th.nn.Linear(2, 1)
+                self.bias = th.tensor([1000.0])
+
+            def forward(self, x):
+                x = self.fc1(x)
+                return F.log_softmax(x, dim=0) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+
+        self.private_grid.serve_model(
+            model, id="plan-model2", allow_remote_inference=True
+        )
+
+        # Call one time
+        inference = self.private_grid.run_remote_inference(
+            id="plan-model2", data=th.tensor([1.0, 2])
+        )
+        assert inference == th.tensor([1000.0])
+
+        # Call one more time
+        inference = self.private_grid.run_remote_inference(
+            id="plan-model2", data=th.tensor([1.0, 2])
         )
         assert inference == th.tensor([1000.0])
         sy.hook.local_worker.is_client_worker = True
@@ -202,14 +276,14 @@ class GridAPITest(unittest.TestCase):
 
         self.disconnect_nodes(nodes)
 
-        search_simple_tensor = self.my_grid.search("#simple-tensor")
+        search_simple_tensor = self.public_grid.search("#simple-tensor")
         self.assertEqual(len(search_simple_tensor), 1)
 
-        search_tensor_2d = self.my_grid.search("#2d-tensor")
+        search_tensor_2d = self.public_grid.search("#2d-tensor")
         self.assertEqual(len(search_tensor_2d), 1)
 
-        search_zeros_tensor = self.my_grid.search("#zeros-tensor")
+        search_zeros_tensor = self.public_grid.search("#zeros-tensor")
         self.assertEqual(len(search_zeros_tensor), 2)
 
-        search_nothing = self.my_grid.search("#nothing")
+        search_nothing = self.public_grid.search("#nothing")
         self.assertEqual(len(search_nothing), 0)

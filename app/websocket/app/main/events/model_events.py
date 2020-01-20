@@ -2,7 +2,7 @@ import syft as sy
 import torch as th
 import json
 import sys
-from grid.grid_codes import RESPONSE_MSG
+from syft.codes import RESPONSE_MSG
 from .. import local_worker, hook
 from ..persistence import model_manager as mm
 

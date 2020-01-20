@@ -19,4 +19,6 @@ flask_sockets
 flask_login
 pbr
 syft_proto
--e git+https://github.com/OpenMined/PySyft@master#egg=syft
+flask_cors
+flask_login
+-e git+https://github.com/IonesioJunior/PySyft@add_grid_workers#egg=syft

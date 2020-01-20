@@ -8,9 +8,14 @@ from grid.grid_network import GridNetwork
 from grid.utils import connect_all_nodes
 from grid.auth import auth_credentials as credentials
 from grid import auth
+import warnings
 
 __all__ = ["workers", "connect_all_nodes", "syft"]
 
+warnings.warn(
+    "This library is DEPRECATED and should be deleted soon. To use the grid features use the syft.grid module.",
+    Warning,
+)
 
 # ======= Providing a friendly API on top of Syft ===============
 def encrypt(self, worker_1, worker_2, crypto_provider):

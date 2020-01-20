@@ -3,8 +3,7 @@ import time
 import pytest
 from random import randint, sample
 
-import grid as gr
-from grid import syft as sy
+import syft as sy
 import torch as th
 import torch.nn.functional as F
 import numpy as np
@@ -44,8 +43,6 @@ def test_host_plan_not_allowed_to_run_ops(connected_node):
     with pytest.raises(RuntimeError):
         bob.run_remote_inference(model_id="not_allowed", data=th.tensor([1.0, 2]))
 
-    with pytest.raises(RuntimeError):
-        bob.download_model(model_id="not_allowed")
     hook.local_worker.is_client_worker = True
 
 
@@ -170,45 +167,6 @@ def test_delete_model(connected_node):
     hook.local_worker.is_client_worker = True
 
 
-def test_run_encrypted_model(connected_node):
-    sy.hook.local_worker.is_client_worker = False
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.theta1 = th.tensor([5.0])
-            self.bias = th.tensor([2.0])
-
-        def forward(self, x):
-            return self.theta1.matmul(x) + self.bias
-
-    plan = Net()
-    plan.build(th.tensor([1.0]))
-
-    nodes = list(connected_node.values())
-    gr.utils.connect_all_nodes(nodes)
-    bob, alice, james = nodes[:3]
-
-    # Send plan
-    plan.encrypt(bob, james, crypto_provider=alice)
-
-    # Input data
-    x = th.tensor([4.5])
-
-    # Share input data between the same workers
-    x_sh = x.fix_prec().share(bob, james, crypto_provider=alice)
-
-    # Execute the plan
-    decrypted = plan(x_sh).get().float_prec()
-
-    # Expected inference result
-    # bias + theta1 * x
-    inference_result = th.tensor(th.tensor([24.5]))
-
-    assert decrypted == inference_result
-    sy.hook.local_worker.is_client_worker = True
-
-
 @pytest.mark.parametrize(
     "test_input, expected", [(node_id, node_id) for node_id in IDS]
 )
@@ -224,14 +182,6 @@ def test_connect_node(connected_node):
                     continue
                 else:
                     connected_node[node].connect_nodes(connected_node[n])
-    except:
-        unittest.TestCase.fail("test_connect_nodes : Exception raised!")
-
-
-def test_connect_all_node(connected_node):
-    workers = [connected_node[node] for node in connected_node]
-    try:
-        gr.connect_all_nodes(workers)
     except:
         unittest.TestCase.fail("test_connect_nodes : Exception raised!")
 

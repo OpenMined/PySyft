@@ -8,7 +8,7 @@ from .syft_events import *
 from .model_events import *
 from .control_events import *
 
-from grid.grid_codes import REQUEST_MSG
+from syft.codes import REQUEST_MSG
 import json
 
 # Websocket events routes
@@ -16,13 +16,10 @@ import json
 routes = {
     REQUEST_MSG.GET_ID: get_node_id,
     REQUEST_MSG.CONNECT_NODE: connect_grid_nodes,
-    REQUEST_MSG.SYFT_COMMAND: syft_command,
-    REQUEST_MSG.PING: socket_ping,
     REQUEST_MSG.HOST_MODEL: host_model,
     REQUEST_MSG.RUN_INFERENCE: run_inference,
     REQUEST_MSG.DELETE_MODEL: delete_model,
     REQUEST_MSG.LIST_MODELS: get_models,
-    REQUEST_MSG.DOWNLOAD_MODEL: download_model,
     REQUEST_MSG.AUTHENTICATE: authentication,
 }
 

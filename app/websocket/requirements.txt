@@ -1,17 +1,19 @@
-Click==7.0
 eventlet==0.24.1
 Flask==1.0.2
 Flask-Cors==3.0.7
 Flask-Sockets==0.2.1
 gevent==1.4.0
 git+git://github.com/OpenMined/PySyft@master
-git+git://github.com/OpenMined/Grid@dev
 gunicorn==19.9.0
 itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 psycopg2-binary
-redis==3.2.1
 torch == 1.3.0
-torchvision
 Werkzeug==0.15.3
+requests
+requests_toolbelt
+sqlalchemy
+flask_sqlalchemy
+flask_login
+flask_migrate

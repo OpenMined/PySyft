@@ -1,6 +1,7 @@
 import json
-from grid import WebsocketGridClient
-from grid.grid_codes import RESPONSE_MSG
+from syft.workers.node_client import NodeClient
+from syft.codes import RESPONSE_MSG
+from syft.grid.authentication.account import AccountCredential
 
 from flask_login import login_user
 
@@ -42,9 +43,16 @@ def connect_grid_nodes(message: dict) -> str:
         Returns:
             response (str) : response message.
     """
+    # If found any credential
+    credentials = message.get("auth")
+    if credentials:
+        credentials = AccountCredential(
+            username=credentials["username"], password=credentials["password"]
+        )
+
     if message["id"] not in local_worker._known_workers:
-        worker = WebsocketGridClient(
-            hook, address=message["address"], id=message["id"], auth=message.get("auth")
+        worker = NodeClient(
+            hook, address=message["address"], id=message["id"], credential=credentials,
         )
     return json.dumps({"status": "Succesfully connected."})
 
