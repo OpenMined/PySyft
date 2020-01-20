@@ -108,6 +108,24 @@ def test_plan_execute_locally():
     assert (x_abs == th.tensor([1, 2, 3])).all()
 
 
+def test_plan_execute_locally_ambiguous_output(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        x = x + x
+        y = x * 2
+        return x
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+    t = th.tensor([2.3])
+    expected = serde_plan(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected
+
+
 def test_add_to_state():
     class Net(sy.Plan):
         def __init__(self):

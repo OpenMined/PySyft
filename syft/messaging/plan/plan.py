@@ -1,9 +1,11 @@
+import re
 from typing import List
 from typing import Tuple
 from typing import Union
 
-import syft as sy
 import torch
+
+import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -122,6 +124,8 @@ class Plan(AbstractObject, ObjectStorage):
         self.nested_states = []
 
         self.input_placeholders = input_placeholders or []
+        self.output_placeholders = output_placeholders or []
+
         self.placeholders = {}
         self.var_count = 0
 
@@ -199,13 +203,18 @@ class Plan(AbstractObject, ObjectStorage):
         self.de_register_obj(obj)
         return obj
 
-    def add_placeholder(self, tensor, find_inputs=False):
+    def add_placeholder(self, tensor, find_inputs=False, find_outputs=False):
         if tensor.id not in self.placeholders.keys():
             placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"})
             self.placeholders[tensor.id] = placeholder
+
             if find_inputs:
                 self.input_placeholders.append(placeholder)
                 placeholder.tags.add("#input")
+
+            if find_outputs and tensor.id in self._tmp_result_ids:
+                self.output_placeholders.append(placeholder)
+                placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
             self.var_count += 1
 
         return self.placeholders[tensor.id]
@@ -225,12 +234,14 @@ class Plan(AbstractObject, ObjectStorage):
         else:
             raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
 
-    def find_placeholders(self, *tags, exact_match=True):
+    def find_placeholders(self, *search_tags):
         results = []
         for placeholder in self.placeholders.values():
-            for tag in tags:
-                if tag in placeholder.tags:
-                    results.append(placeholder)
+            for search_tag in search_tags:
+                for tag in placeholder.tags:
+                    match = re.search(f".*{search_tag}.*", tag)
+                    if match is not None:
+                        results.append(placeholder)
 
         return results
 
@@ -250,12 +261,15 @@ class Plan(AbstractObject, ObjectStorage):
         # We usually have include_state==True for functions converted to plan
         # using @func2plan and we need therefore to add the state manually
         if self.include_state:
-            res = self.forward(*args, self.state)
+            results = self.forward(*args, self.state)
         else:
-            res = self.forward(*args)
+            results = self.forward(*args)
 
         sy.hook.trace, sy.hook.trace_inactive = False, False
         self.owner.init_plan = None
+
+        results = (results,) if not isinstance(results, tuple) else results
+        self._tmp_result_ids = [t.id for t in results if isinstance(t, torch.Tensor)]
 
         # We put back the clone of the original state
         self.state.set_(cloned_state)
@@ -264,7 +278,7 @@ class Plan(AbstractObject, ObjectStorage):
             command, response = log
             command_placeholders, return_placeholders = (
                 self.replace_with_placeholders(command, find_inputs=True),
-                self.replace_with_placeholders(response),
+                self.replace_with_placeholders(response, find_outputs=True),
             )
             # We're cheating a bit here because we put placeholders instead of return_ids
             operation = Operation(*command_placeholders, return_ids=return_placeholders)
@@ -335,7 +349,6 @@ class Plan(AbstractObject, ObjectStorage):
                 placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
             print("Running operations...\n")
-            final_return_placeholder = sy.PlaceHolder()  # Default return value to be replaced below
 
             for i, op in enumerate(self.procedure.operations):
                 print("run cmd", i)
@@ -353,9 +366,15 @@ class Plan(AbstractObject, ObjectStorage):
                     response = getattr(_self, cmd)(*args, **kwargs)
                 print(response)
                 return_placeholder.instantiate(response.child)
-                final_return_placeholder = return_placeholder
 
-            return final_return_placeholder.get()
+            response = [p.child for p in sorted(self.output_placeholders, key=tag_sort("output"))]
+
+            if len(response) == 0:
+                return None
+            elif len(response) == 1:
+                return response[0]
+            else:
+                return tuple(response)
 
         #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
         #                       "shape=[<your_args_shapes>] to use it.")
@@ -503,6 +522,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.nested_states),
             sy.serde.msgpack.serde._simplify(worker, plan.input_placeholders),
+            sy.serde.msgpack.serde._simplify(worker, plan.output_placeholders),
         )
 
     @staticmethod
@@ -526,6 +546,7 @@ class Plan(AbstractObject, ObjectStorage):
             description,
             nested_states,
             input_placeholders,
+            output_placeholders,
         ) = plan_tuple
 
         sy.hook.placeholders = {}
@@ -534,6 +555,7 @@ class Plan(AbstractObject, ObjectStorage):
         state = sy.serde.msgpack.serde._detail(worker, state)
         nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
         input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
+        output_placeholders = sy.serde.msgpack.serde._detail(worker, output_placeholders)
 
         plan = sy.Plan(
             owner=worker,
@@ -541,6 +563,7 @@ class Plan(AbstractObject, ObjectStorage):
             include_state=include_state,
             is_built=is_built,
             input_placeholders=input_placeholders,
+            output_placeholders=output_placeholders,
         )
         sy.hook.placeholders = {}
 
@@ -554,3 +577,15 @@ class Plan(AbstractObject, ObjectStorage):
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
         return plan
+
+
+def tag_sort(keyword):
+    # TODO is only works up to 9 return values, because comarison is done on str and '7' > '16'
+    def extract_key(placeholder):
+        for tag in placeholder.tags:
+            if keyword in tag:
+                return tag
+
+        return TypeError(f"Incorrect tag '{keyword}' in placeholder tags:", placeholder.tags)
+
+    return extract_key
