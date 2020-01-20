@@ -59,10 +59,23 @@ class State(object):
         """
         Return state elements
         """
+        if self.owner.init_plan:
+            parent_plan = self.owner.init_plan
+            if parent_plan.state != self:
+                for placeholder in self.state_placeholders:
+                    placeholder = placeholder.copy()
+                    placeholder.tags = set()
+                    placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
+                    parent_plan.state.state_placeholders.append(placeholder)
+                    parent_plan.placeholders[placeholder.child.id] = placeholder
+                    parent_plan.var_count += 1
+
         tensors = []
+
         for placeholder in self.state_placeholders:
-            tensor = placeholder.child
-            tensors.append(tensor)
+            if "#inner" not in placeholder.tags:
+                tensor = placeholder.child
+                tensors.append(tensor)
         return tensors
 
     def set_(self, state_dict):

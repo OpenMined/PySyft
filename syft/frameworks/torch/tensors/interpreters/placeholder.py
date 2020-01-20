@@ -60,6 +60,16 @@ class PlaceHolder(AbstractTensor):
 
     __repr__ = __str__
 
+    def copy(self):
+        """
+        Copying a placeholder doesn't duplicate the child attribute, because all
+        copy operations happen locally where we want to keep reference to the same
+        instantiated object. As the child doesn't get sent, this is not an issue.
+        """
+        placeholder = PlaceHolder(tags=self.tags)
+        placeholder.child = self.child
+        return placeholder
+
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PlaceHolder") -> tuple:
         """Takes the attributes of a PlaceHolder and saves them in a tuple.

@@ -119,10 +119,6 @@ class Plan(AbstractObject, ObjectStorage):
         self.name = name or self.__class__.__name__
         self.owner = owner
 
-        # If we have plans in plans we need to keep track of the states for each plan
-        # because we will need to serialize and send them to the remote workers
-        self.nested_states = []
-
         self.input_placeholders = input_placeholders or []
         self.output_placeholders = output_placeholders or []
 
@@ -141,7 +137,6 @@ class Plan(AbstractObject, ObjectStorage):
                 placeholder.instantiate(tensor)
                 self.state.state_placeholders.append(placeholder)
                 self.placeholders[tensor.id] = placeholder
-                # self.owner.register_obj(tensor)
 
         self.include_state = include_state
         self.is_built = is_built
@@ -256,6 +251,7 @@ class Plan(AbstractObject, ObjectStorage):
         cloned_state = self.state.clone_state_dict()
 
         self.owner.init_plan = self
+        sy.trace_logs = []
         sy.hook.trace, sy.hook.trace_inactive = True, True
 
         # We usually have include_state==True for functions converted to plan
@@ -287,6 +283,7 @@ class Plan(AbstractObject, ObjectStorage):
         sy.trace_logs = []
 
         self.is_built = True
+        self.owner.init_plan = None
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -297,6 +294,7 @@ class Plan(AbstractObject, ObjectStorage):
             include_state=self.include_state,
             is_built=self.is_built,
             input_placeholders=self.input_placeholders,
+            output_placeholders=self.input_placeholders,
             # General kwargs
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
@@ -520,7 +518,6 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
-            sy.serde.msgpack.serde._simplify(worker, plan.nested_states),
             sy.serde.msgpack.serde._simplify(worker, plan.input_placeholders),
             sy.serde.msgpack.serde._simplify(worker, plan.output_placeholders),
         )
@@ -544,7 +541,6 @@ class Plan(AbstractObject, ObjectStorage):
             name,
             tags,
             description,
-            nested_states,
             input_placeholders,
             output_placeholders,
         ) = plan_tuple
@@ -553,7 +549,6 @@ class Plan(AbstractObject, ObjectStorage):
         id = sy.serde.msgpack.serde._detail(worker, id)
         procedure = sy.serde.msgpack.serde._detail(worker, procedure)
         state = sy.serde.msgpack.serde._detail(worker, state)
-        nested_states = sy.serde.msgpack.serde._detail(worker, nested_states)
         input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
         output_placeholders = sy.serde.msgpack.serde._detail(worker, output_placeholders)
 
@@ -567,7 +562,6 @@ class Plan(AbstractObject, ObjectStorage):
         )
         sy.hook.placeholders = {}
 
-        plan.nested_states = nested_states
         plan.procedure = procedure
         plan.state = state
         state.plan = plan
