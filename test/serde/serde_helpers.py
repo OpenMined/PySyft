@@ -681,8 +681,6 @@ def make_plan(**kwargs):
             detailed.procedure.output_placeholders, original.procedure.output_placeholders
         )
         compare_operations(detailed.procedure.operations, original.procedure.operations)
-        # States for the nested plans (not done)
-        assert detailed.nested_states == original.nested_states
         # State
         compare_placeholders_list(
             detailed.state.state_placeholders, original.state.state_placeholders
@@ -717,9 +715,10 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                     # (PlaceHolder) input_placeholders
                     msgpack.serde._simplify(syft.hook.local_worker, plan.input_placeholders),
+                    # (PlaceHolder) output_placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.output_placeholders),
                 ),
             ),
             "cmp_detailed": compare,
@@ -741,9 +740,10 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
                     # (PlaceHolder) input_placeholders
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.input_placeholders),
+                    # (PlaceHolder) output_placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.output_placeholders),
                 ),
             ),
             "cmp_detailed": compare,
