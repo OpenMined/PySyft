@@ -19,8 +19,8 @@ class Procedure(object):
 
     Args:
         operations: the list of (serialized) operations
-        arg_ids: the argument ids present in the operations
-        result_ids: the result ids present in the operations
+        input_placeholders: the argument ids present in the operations
+        output_placeholders: the result ids present in the operations
     """
 
     def __init__(self, operations=None, input_placeholders=None, output_placeholders=None):
@@ -58,7 +58,6 @@ class Procedure(object):
     @staticmethod
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:
         return (
-            # We're not simplifying fully because operations are already simplified
             sy.serde.msgpack.serde._simplify(worker, procedure.operations),
             sy.serde.msgpack.serde._simplify(worker, procedure.input_placeholders),
             sy.serde.msgpack.serde._simplify(worker, procedure.output_placeholders),
