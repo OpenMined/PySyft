@@ -448,6 +448,7 @@ def compare_operations(detailed, original):
         assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
     return True
 
+
 def compare_placeholders_list(detailed, original):
     """Compare 2 lists of placeholders"""
     assert len(detailed) == len(original)
@@ -457,6 +458,7 @@ def compare_placeholders_list(detailed, original):
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
     return True
+
 
 # AdditiveSharingTensor
 def make_additivesharingtensor(**kwargs):
@@ -672,13 +674,19 @@ def make_plan(**kwargs):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
         # Procedure
-        compare_placeholders_list(detailed.procedure.input_placeholders, original.procedure.input_placeholders)
-        compare_placeholders_list(detailed.procedure.output_placeholders, original.procedure.output_placeholders)
+        compare_placeholders_list(
+            detailed.procedure.input_placeholders, original.procedure.input_placeholders
+        )
+        compare_placeholders_list(
+            detailed.procedure.output_placeholders, original.procedure.output_placeholders
+        )
         compare_operations(detailed.procedure.operations, original.procedure.operations)
         # States for the nested plans (not done)
         assert detailed.nested_states == original.nested_states
         # State
-        compare_placeholders_list(detailed.state.state_placeholders, original.state.state_placeholders)
+        compare_placeholders_list(
+            detailed.state.state_placeholders, original.state.state_placeholders
+        )
 
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
@@ -766,10 +774,13 @@ def make_state(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.state.State],
                 (
-                    (CODE[list], (  # (list) state_placeholders
-                        msgpack.serde._simplify(syft.hook.local_worker, p1),
-                        msgpack.serde._simplify(syft.hook.local_worker, p2),
-                    )),
+                    (
+                        CODE[list],
+                        (  # (list) state_placeholders
+                            msgpack.serde._simplify(syft.hook.local_worker, p1),
+                            msgpack.serde._simplify(syft.hook.local_worker, p2),
+                        ),
+                    ),
                     (
                         CODE[list],
                         (  # (list) tensors
@@ -810,13 +821,17 @@ def make_procedure(**kwargs):
                     (
                         CODE[list],
                         (  # (list of Operation) operations
-                            msgpack.serde._simplify(syft.hook.local_worker, procedure.operations[0]),  # (Operation)
-                            msgpack.serde._simplify(syft.hook.local_worker, procedure.operations[1]),
+                            msgpack.serde._simplify(
+                                syft.hook.local_worker, procedure.operations[0]
+                            ),  # (Operation)
+                            msgpack.serde._simplify(
+                                syft.hook.local_worker, procedure.operations[1]
+                            ),
                         ),
                     ),
                     #  Empty placeholders list (why?)
                     (CODE[list], tuple()),  # (list) input_placeholders
-                    (CODE[list], tuple())  # (list) output_placeholders
+                    (CODE[list], tuple()),  # (list) output_placeholders
                 ),
             ),
             "cmp_detailed": compare,
