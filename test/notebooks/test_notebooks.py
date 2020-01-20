@@ -185,5 +185,5 @@ def test_all_notebooks_except_translations():
 
 
 def test_all_translation_notebooks():  # pragma: no cover
-    untested_notebooks = set(translated_notebooks) - set(tested_notebooks)
+    untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks
