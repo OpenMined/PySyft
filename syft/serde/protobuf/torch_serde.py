@@ -18,7 +18,8 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
-from syft.serde.protobuf.proto import create_protobuf_id
+from syft.serde.protobuf.proto import get_protobuf_id
+from syft.serde.protobuf.proto import set_protobuf_id
 from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
 from syft.serde.torch.serde import torch_tensor_serializer
@@ -171,7 +172,7 @@ def _bufferize_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin
         chain = syft.serde.protobuf.serde._bufferize(worker, tensor.child)
 
     protobuf_tensor = TorchTensorPB()
-    protobuf_tensor.id.CopyFrom(syft.serde.protobuf.proto.create_protobuf_id(tensor.id))
+    set_protobuf_id(protobuf_tensor.id, tensor.id)
 
     protobuf_tensor.serializer = SERIALIZERS_SYFT_TO_PROTOBUF[worker.serializer]
     if worker.serializer == TENSOR_SERIALIZATION.ALL:
@@ -207,7 +208,7 @@ def _unbufferize_torch_tensor(
     Returns:
         torch.Tensor: a torch tensor converted from Protobuf
     """
-    tensor_id = getattr(protobuf_tensor.id, protobuf_tensor.id.WhichOneof("id"))
+    tensor_id = get_protobuf_id(protobuf_tensor.id)
     tags = protobuf_tensor.tags
     description = protobuf_tensor.description
 
@@ -252,7 +253,7 @@ def _unbufferize_torch_device(worker: AbstractWorker, protobuf_device: DevicePB)
 
 def _bufferize_torch_parameter(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
     protobuf_param = ParameterPB()
-    protobuf_param.id.CopyFrom(create_protobuf_id(param.id))
+    set_protobuf_id(protobuf_param.id, param.id)
     protobuf_param.tensor.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, param.data))
     protobuf_param.requires_grad = param.requires_grad
     if param.grad:
@@ -265,7 +266,7 @@ def _unbufferize_torch_parameter(
 ) -> torch.nn.Parameter:
     data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
     param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
-    param.id = getattr(protobuf_param.id, protobuf_param.id.WhichOneof("id"))
+    param.id = get_protobuf_id(protobuf_param.id)
     if protobuf_param.HasField("grad"):
         param.grad = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.grad)
     return param

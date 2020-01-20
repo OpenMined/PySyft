@@ -3,6 +3,11 @@ from collections import OrderedDict
 import inspect
 import syft
 from syft import dependency_check
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.messaging.protocol import Protocol
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import Operation
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
@@ -30,7 +35,13 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = []
+OBJ_PROTOBUF_TRANSLATORS = [
+    AdditiveSharingTensor,
+    ObjectMessage,
+    Operation,
+    PointerTensor,
+    Protocol,
+]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -215,8 +226,13 @@ def serialize(
 
     protobuf_obj = _bufferize(worker, obj)
 
-    if type(obj) == type(None):
+    obj_type = type(obj)
+    if obj_type == type(None):
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
+    elif obj_type == ObjectMessage:
+        msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
+    elif obj_type == Operation:
+        msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary
@@ -349,6 +365,6 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """
     current_type = type(obj)
     if current_type in unbufferizers:
-        return unbufferizers[type(obj)](worker, obj, **kwargs)
+        return unbufferizers[current_type](worker, obj, **kwargs)
     else:
         raise Exception(f"No unbufferizer found for {current_type}")
