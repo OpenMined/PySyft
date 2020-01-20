@@ -387,7 +387,7 @@ class TorchTensor(AbstractTensor):
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
-        
+
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
@@ -613,10 +613,10 @@ class TorchTensor(AbstractTensor):
 
     def allow(self, user=None) -> bool:
         """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
-            
+
             Args:
                 user (object,optional): User crendentials to be verified.
-            
+
             Returns:
                 boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
         """
@@ -661,17 +661,17 @@ class TorchTensor(AbstractTensor):
 
         return attr_val
 
-    def clone(self):
+    def clone(self, *args, **kwargs):
         """
         Clone should keep ids unchanged, contrary to copy
         """
-        cloned_tensor = self.native_clone()
+        cloned_tensor = self.native_clone(*args, **kwargs)
         cloned_tensor.id = self.id
         cloned_tensor.owner = self.owner
         cloned_tensor.is_wrapper = self.is_wrapper
 
         if self.has_child():
-            cloned_tensor.child = self.child.clone()
+            cloned_tensor.child = self.child.clone(*args, **kwargs)
 
         return cloned_tensor
 
