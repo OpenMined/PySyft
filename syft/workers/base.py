@@ -78,7 +78,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             variables are instantiated or deleted as opposed to handling
             tensor/variable/model lifecycle internally. Set to True if this
             object is not where the objects will be stored, but is instead
-            a pointer to a worker that eists elsewhere.
+            a pointer to a worker that exists elsewhere.
         log_msgs: An optional boolean parameter to indicate whether all
             messages should be saved into a log for later review. This is
             primarily a development/testing feature.
@@ -153,6 +153,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # Make the local worker aware of itself
                 # self is the to-be-created local worker
                 self.add_worker(self)
+
+        # Used to keep track of a building plan
+        self.init_plan = None
 
         if hook is None:
             self.framework = None
@@ -482,14 +485,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args)
 
     def send_command(
-        self, recipient: "BaseWorker", message: str, return_ids: str = None
+        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
 
         Args:
             recipient: A recipient worker.
-            message: A string representing the message being sent.
+            message: A tuple representing the message being sent.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -499,8 +502,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
+        cmd_name = message[0]
+        cmd_owner = message[1]
+        cmd_args = message[2]
+        cmd_kwargs = message[3]
+
         try:
-            ret_val = self.send_msg(Operation(message, return_ids), location=recipient)
+            ret_val = self.send_msg(
+                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+            )
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated
@@ -987,7 +997,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation((command_name, command_owner, args, kwargs), return_ids)
+        return Operation(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
@@ -1032,7 +1042,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
-        return (sy.serde._simplify(_worker, worker.id),)
+        return (sy.serde.msgpack.serde._simplify(_worker, worker.id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union[AbstractWorker, int, str]:
@@ -1045,7 +1055,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A worker id or worker instance.
         """
-        worker_id = sy.serde._detail(worker, worker_tuple[0])
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_tuple[0])
 
         referenced_worker = worker.get_worker(worker_id)
 
@@ -1054,18 +1064,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     @staticmethod
     def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
-            sy.serde._simplify(_worker, worker.id),
-            sy.serde._simplify(_worker, worker._objects),
+            sy.serde.msgpack.serde._simplify(_worker, worker.id),
+            sy.serde.msgpack.serde._simplify(_worker, worker._objects),
             worker.auto_add,
         )
 
     @staticmethod
     def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> tuple:
         worker_id, _objects, auto_add = worker_tuple
-        worker_id = sy.serde._detail(worker, worker_id)
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
 
         result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
-        _objects = sy.serde._detail(worker, _objects)
+        _objects = sy.serde.msgpack.serde._detail(worker, _objects)
         result._objects = _objects
 
         # make sure they weren't accidentally double registered

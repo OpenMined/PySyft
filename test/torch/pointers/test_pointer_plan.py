@@ -77,3 +77,32 @@ def test_get_plan(workers):
     assert (res == th.tensor([2.0])).all()
 
     me.is_client_worker = True
+
+
+def test_pointer_plan_parameters(workers):
+    bob, me = workers["bob"], workers["me"]
+
+    me.is_client_worker = False
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 1)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            return x
+
+    model = Net()
+    model.build(th.tensor([[0, 0]]))
+    model = model.send(bob)
+
+    param_ptrs = model.parameters()
+
+    assert len(param_ptrs) == 2
+
+    for param_ptr in param_ptrs:
+        assert param_ptr.is_wrapper
+        assert isinstance(param_ptr.child, sy.PointerTensor)
+
+    me.is_client_worker = True

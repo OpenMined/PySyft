@@ -79,14 +79,14 @@ class Procedure(object):
         from_workers_simplified = None
         to_workers_simplified = None
         if from_worker and to_worker:
-            from_workers_simplified = [sy.serde._simplify(None, from_worker)]
-            to_workers_simplified = [sy.serde._simplify(None, to_worker)]
+            from_workers_simplified = [sy.serde.msgpack.serde._simplify(None, from_worker)]
+            to_workers_simplified = [sy.serde.msgpack.serde._simplify(None, to_worker)]
 
         from_ids_simplified = None
         to_ids_simplified = None
         if len(from_ids) and len(to_ids):
-            from_ids_simplified = [sy.serde._simplify(None, id) for id in from_ids]
-            to_ids_simplified = [sy.serde._simplify(None, id) for id in to_ids]
+            from_ids_simplified = [sy.serde.msgpack.serde._simplify(None, id) for id in from_ids]
+            to_ids_simplified = [sy.serde.msgpack.serde._simplify(None, id) for id in to_ids]
 
         for idx, operation in enumerate(self.operations):
             if from_workers_simplified and to_workers_simplified:
@@ -141,19 +141,19 @@ class Procedure(object):
     def simplify(worker: AbstractWorker, procedure: "Procedure") -> tuple:
         return (
             # We're not simplifying fully because operations are already simplified
-            sy.serde._simplify(worker, procedure.operations, shallow=True),
-            sy.serde._simplify(worker, procedure.arg_ids),
-            sy.serde._simplify(worker, procedure.result_ids),
-            sy.serde._simplify(worker, procedure.promise_out_id),
+            sy.serde.msgpack.serde._simplify(worker, procedure.operations, shallow=True),
+            sy.serde.msgpack.serde._simplify(worker, procedure.arg_ids),
+            sy.serde.msgpack.serde._simplify(worker, procedure.result_ids),
+            sy.serde.msgpack.serde._simplify(worker, procedure.promise_out_id),
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, procedure_tuple: tuple) -> "State":
         operations, arg_ids, result_ids, promise_out_id = procedure_tuple
 
-        operations = sy.serde._detail(worker, operations, shallow=True)
-        arg_ids = sy.serde._detail(worker, arg_ids)
-        result_ids = sy.serde._detail(worker, result_ids)
+        operations = sy.serde.msgpack.serde._detail(worker, operations, shallow=True)
+        arg_ids = sy.serde.msgpack.serde._detail(worker, arg_ids)
+        result_ids = sy.serde.msgpack.serde._detail(worker, result_ids)
 
         procedure = Procedure(operations, arg_ids, result_ids)
         procedure.promise_out_id = promise_out_id

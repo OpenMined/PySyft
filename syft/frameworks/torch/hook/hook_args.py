@@ -37,12 +37,12 @@ forward_func = {
 }
 
 backward_func = {
-    TorchTensor: lambda i: i.wrap(),
-    torch.Tensor: lambda i: i.wrap(),
-    torch.nn.Parameter: lambda i: torch.nn.Parameter(data=i),
-    AutogradTensor: lambda i: AutogradTensor(data=i).on(i, wrap=False),
-    LoggingTensor: lambda i: LoggingTensor().on(i, wrap=False),
-    PaillierTensor: lambda i: PaillierTensor().on(i, wrap=False),
+    TorchTensor: lambda i, **kwargs: i.wrap(**kwargs),
+    torch.Tensor: lambda i, **kwargs: i.wrap(**kwargs),
+    torch.nn.Parameter: lambda i, **kwargs: torch.nn.Parameter(data=i),
+    AutogradTensor: lambda i, **kwargs: AutogradTensor(data=i).on(i, wrap=False),
+    LoggingTensor: lambda i, **kwargs: LoggingTensor().on(i, wrap=False),
+    PaillierTensor: lambda i, **kwargs: PaillierTensor().on(i, wrap=False),
 }
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because

@@ -18,9 +18,11 @@ Installing PySyft on Linux is really straight forward. Here are the steps:
 
 ### 1. Make sure you have Python >= 3.6
 
-### 2. Install PyTorch 1.1
+### 2. Install PyTorch 1.3
 
 Get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option) and run it in the terminal.
+
+NOTE: Use exact version `1.3.0`, not just `1.3`. E.g. `pip install torch==1.3.0`.
 
 ### 3. Clone the PySyft repo from Github
 
@@ -57,11 +59,13 @@ This will install **Homebrew**. Then, install python (version 3.6 or above) by r
 
 `brew install python3`
 
-### 2. Install PyTorch 1.1
+### 2. Install PyTorch 1.3
 
 You should first get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option)
 
 Then run that command in the open terminal.
+
+NOTE: Use exact version `1.3.0`, not just `1.3`. E.g. `pip install torch==1.3.0`.
 
 ### 3. Clone the PySyft repo from Github
 
@@ -121,9 +125,11 @@ In the window that opens, click on `New` and add the installation paths for `pyt
 
 Click on `OK`.
 
-### 3. Install PyTorch 1.1
+### 3. Install PyTorch 1.3
 
 You should first get the installation command [here](https://pytorch.org/get-started/locally/) (use the pip option)
+
+NOTE: Use exact version `1.3.0`, not just `1.3`. E.g. `pip install torch==1.3.0`.
 
 Then open the command prompt by going to **Run** and typing **cmd**, type or paste the pytorch installation command you got from the above link and press **Enter**.
 

@@ -12,7 +12,7 @@ from typing import Tuple
 import numpy
 
 from syft.workers.abstract import AbstractWorker
-from syft import serde
+from syft.serde.msgpack import serde
 
 
 # Simplify/Detail Collections (list, set, tuple, etc.)
