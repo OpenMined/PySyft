@@ -1,11 +1,7 @@
 import torch as th
 from torch.nn import Module
-<<<<<<< HEAD
 import syft as sy
 import sys
-=======
->>>>>>> 49c56331cf6bca65c27da661d7e3b7635f4bc247
-
 
 class Conv2d(Module):
     """
