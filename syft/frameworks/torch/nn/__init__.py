@@ -11,4 +11,6 @@ from syft.frameworks.torch.nn.conv import Conv2d
 
 from syft.frameworks.torch.nn.pool import AvgPool2d
 
+from syft.frameworks.torch.nn.poly import SimplePolynomial
+
 from torch.nn import Module
