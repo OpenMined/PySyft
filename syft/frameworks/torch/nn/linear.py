@@ -3,11 +3,13 @@ import sys
 
 
 class Linear(nn.Module):
-    def __init__(self, in_features, out_features, bias=True):
+    def __init__(self, in_features, out_features, bias=True, verbose=False):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.use_bias = bias
+
+        self.verbose = verbose
 
         self.reset_parameters()
 
@@ -18,14 +20,22 @@ class Linear(nn.Module):
             sys.exit(
                 f"Wrong Input Features. Please use tensor with {self.in_features} Input Features"
             )
-
+        if(self.verbose):
+            sys.stdout.write("Linear - transpose()      ")
         weight = self.weight.t()
+        if (self.verbose):
+            sys.stdout.write("\rLinear - matmul()      ")
         prod = input @ weight
+        if (self.verbose):
+            sys.stdout.write("\rLinear - +bias      ")
         if self.bias is not None:
             resized_bias = self.bias.unsqueeze(0)
             output = prod + resized_bias.expand(*prod.shape)
         else:
             output = prod
+        if (self.verbose):
+            sys.stdout.write("\rLinear - done!         ")
+        print()
         return output
 
     def reset_parameters(self):
