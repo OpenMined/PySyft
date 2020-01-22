@@ -25,9 +25,9 @@ class Conv2d(Module):
         in_channels,
         out_channels,
         kernel_size,
-        stride=1,
-        padding=0,
-        dilation=1,
+        stride=(1,1),
+        padding=(0,0),
+        dilation=(1,1),
         groups=1,
         bias=False,
         padding_mode="zeros",
@@ -43,9 +43,9 @@ class Conv2d(Module):
         # These assertions are the required settings.
 
         assert in_channels == 1
-        assert stride == 1
-        assert padding == 0
-        assert dilation == 1
+        assert stride == (1,1)
+        assert padding == (0,0)
+        assert dilation == (1,1)
         assert groups == 1
         assert padding_mode == "zeros"
 
@@ -143,3 +143,15 @@ class Conv2d(Module):
             print("")
 
         return pred
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        out = "Conv2d("
+        out += str(self.in_channels) + ", "
+        out += str(self.out_channels) + ", "
+        out += "kernel_size=" + str(self.kernel_size) + ", "
+        out += "stride=" + str(self.stride)
+        out += ")"
+        return out
