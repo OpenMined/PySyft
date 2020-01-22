@@ -1,4 +1,5 @@
 import os
+import versioneer
 
 from setuptools import find_packages
 from setuptools import setup
@@ -37,7 +38,8 @@ tests_require = ["pytest", "pytest-flake8"] + sandbox_extras + notebook_extras
 
 setup(
     name="syft",
-    version="0.2.3a1",
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),

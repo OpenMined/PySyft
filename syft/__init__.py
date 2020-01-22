@@ -132,3 +132,7 @@ if "ID_PROVIDER" not in globals():
     from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

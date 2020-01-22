@@ -1,0 +1,2 @@
+include versioneer.py
+include syft/_version.py
