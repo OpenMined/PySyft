@@ -180,7 +180,6 @@ class Conv2d(Module):
         return model
 
 
-
 def handcraft(self):
     import syft
 

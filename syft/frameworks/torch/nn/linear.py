@@ -66,4 +66,5 @@ def handcraft(self):
     model.bias = self.bias
     return model
 
+
 nn.Linear.handcraft = handcraft
