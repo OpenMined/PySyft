@@ -72,6 +72,19 @@ class NumpyTensor(HookedTensor):
     def mm(self, _self, other):
         return _self.dot(other)
 
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def cat(tensors, axis=0):
+            children = list()
+            for t in tensors:
+                children.append(t.child)
+            return NumpyTensor(np.concatenate(children, axis=axis))
+
+
+            # return self.__add__(other)
+
+        module.cat = cat
 
 def create_numpy_tensor(numpy_tensor):
     result = NumpyTensor(numpy_tensor).wrap()

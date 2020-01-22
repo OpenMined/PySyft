@@ -86,8 +86,8 @@ class PolynomialTensor(NumpyTensor):
         else:
 
             result = _self.sum(dim)
-            return np.array([result])
-
+            result = np.array(result)
+            return result
 
 def vsum(vector):
     additive_terms = list()

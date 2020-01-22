@@ -18,7 +18,6 @@ class PaillierTensor(AbstractTensor):
             id: An optional string or integer id of the PaillierTensor.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
-        print("creating paillier tensor 2")
 
     def encrypt(self, public_key):
         """This method will encrypt each value in the tensor using Paillier
