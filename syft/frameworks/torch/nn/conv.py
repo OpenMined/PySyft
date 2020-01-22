@@ -155,3 +155,28 @@ class Conv2d(Module):
         out += "stride=" + str(self.stride)
         out += ")"
         return out
+
+
+def handcraft(conv):
+    import syft
+
+    kwargs = {}
+    kwargs['in_channels'] = conv.in_channels
+    kwargs['out_channels'] = conv.out_channels
+    kwargs['kernel_size'] = conv.kernel_size
+    kwargs['stride'] = conv.stride
+    kwargs['padding'] = conv.padding
+    kwargs['dilation'] = conv.dilation
+    kwargs['groups'] = conv.groups
+    kwargs['bias'] = conv.bias is not None
+    kwargs['padding_mode'] = conv.padding_mode
+    kwargs['verbose'] = False
+
+    model = syft.frameworks.torch.nn.Conv2d(**kwargs)
+    model.weight = conv.weight
+    model.bias = conv.bias
+
+    return model
+
+th.nn.Conv2d.handcraft = handcraft
+
