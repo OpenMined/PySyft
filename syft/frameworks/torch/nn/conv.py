@@ -25,9 +25,9 @@ class Conv2d(Module):
         in_channels,
         out_channels,
         kernel_size,
-        stride=(1,1),
-        padding=(0,0),
-        dilation=(1,1),
+        stride=(1, 1),
+        padding=(0, 0),
+        dilation=(1, 1),
         groups=1,
         bias=False,
         padding_mode="zeros",
@@ -43,9 +43,9 @@ class Conv2d(Module):
         # These assertions are the required settings.
 
         assert in_channels == 1
-        assert stride == (1,1)
-        assert padding == (0,0)
-        assert dilation == (1,1)
+        assert stride == (1, 1)
+        assert padding == (0, 0)
+        assert dilation == (1, 1)
         assert groups == 1
         assert padding_mode == "zeros"
 
@@ -124,7 +124,10 @@ class Conv2d(Module):
             sys.stdout.write("\rConv - (Part 3/3) - 33%")
 
         pred = pred.view(
-            batch_size, self.out_channels, rows - self.kernel_size[0] + 1, cols - self.kernel_size[1] + 1
+            batch_size,
+            self.out_channels,
+            rows - self.kernel_size[0] + 1,
+            cols - self.kernel_size[1] + 1,
         )
 
         if self.verbose:
@@ -161,16 +164,16 @@ def handcraft(conv):
     import syft
 
     kwargs = {}
-    kwargs['in_channels'] = conv.in_channels
-    kwargs['out_channels'] = conv.out_channels
-    kwargs['kernel_size'] = conv.kernel_size
-    kwargs['stride'] = conv.stride
-    kwargs['padding'] = conv.padding
-    kwargs['dilation'] = conv.dilation
-    kwargs['groups'] = conv.groups
-    kwargs['bias'] = conv.bias is not None
-    kwargs['padding_mode'] = conv.padding_mode
-    kwargs['verbose'] = False
+    kwargs["in_channels"] = conv.in_channels
+    kwargs["out_channels"] = conv.out_channels
+    kwargs["kernel_size"] = conv.kernel_size
+    kwargs["stride"] = conv.stride
+    kwargs["padding"] = conv.padding
+    kwargs["dilation"] = conv.dilation
+    kwargs["groups"] = conv.groups
+    kwargs["bias"] = conv.bias is not None
+    kwargs["padding_mode"] = conv.padding_mode
+    kwargs["verbose"] = False
 
     model = syft.frameworks.torch.nn.Conv2d(**kwargs)
     model.weight = conv.weight
@@ -178,5 +181,5 @@ def handcraft(conv):
 
     return model
 
-th.nn.Conv2d.handcraft = handcraft
 
+th.nn.Conv2d.handcraft = handcraft
