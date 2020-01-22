@@ -57,3 +57,5 @@ def handcraft(self):
     model = Dropout2d(self.p, self.inplace)
     model.training = self.training
     return model
+
+th.nn.Dropout2d.handcraft = handcraft
