@@ -2,6 +2,7 @@ import torch as th
 from torch.nn import Module
 import sys
 
+
 class Conv2d(Module):
     """
     This class is the beginning of an exact python port of the torch.nn.Conv2d
@@ -79,47 +80,54 @@ class Conv2d(Module):
 
         batch_size, _, rows, cols = data.shape
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("Conv - (Part 1/3) - 0%")
 
         expanded_data = data.unsqueeze(1).expand(batch_size, self.out_channels, 1, rows, cols)
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 1/3) - 50%")
 
         expanded_model = self.weight.unsqueeze(0).expand(
             batch_size, self.out_channels, 1, self.kernel_size, self.kernel_size
         )
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 1/3) - 100%")
 
         kernel_results = list()
 
         for i in range(0, rows - self.kernel_size + 1):
 
-            if (self.verbose):
-                sys.stdout.write("\rConv - (Part 2/3) - " + str((i / (rows - self.kernel_size + 1)) * 100)[0:4] + "%")
+            if self.verbose:
+                sys.stdout.write(
+                    "\rConv - (Part 2/3) - "
+                    + str((i / (rows - self.kernel_size + 1)) * 100)[0:4]
+                    + "%"
+                )
 
             for j in range(0, cols - self.kernel_size + 1):
-                kernel_out = expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size] * expanded_model
+                kernel_out = (
+                    expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size]
+                    * expanded_model
+                )
                 kernel_out = kernel_out.sum(3)
                 kernel_out = kernel_out.sum(3)
                 kernel_results.append(kernel_out)
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 3/3) - 0%")
 
         pred = th.cat(kernel_results, axis=2)
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 3/3) - 33%")
 
         pred = pred.view(
             batch_size, self.out_channels, rows - self.kernel_size + 1, cols - self.kernel_size + 1
         )
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 3/3) - 66%")
 
         if self.has_bias:
@@ -130,7 +138,7 @@ class Conv2d(Module):
                 cols - self.kernel_size + 1,
             )
 
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rConv - (Part 3/3) - 100%")
             print("")
 

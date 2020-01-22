@@ -89,6 +89,7 @@ class PolynomialTensor(NumpyTensor):
             result = np.array(result)
             return result
 
+
 def vsum(vector):
     additive_terms = list()
     additive_constant = 0

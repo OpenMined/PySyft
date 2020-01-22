@@ -81,10 +81,10 @@ class NumpyTensor(HookedTensor):
                 children.append(t.child)
             return NumpyTensor(np.concatenate(children, axis=axis))
 
-
             # return self.__add__(other)
 
         module.cat = cat
+
 
 def create_numpy_tensor(numpy_tensor):
     result = NumpyTensor(numpy_tensor).wrap()
