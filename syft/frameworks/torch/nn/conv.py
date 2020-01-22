@@ -42,6 +42,18 @@ class Conv2d(Module):
         # a convolutional layer, I will only implement the basic functionality.
         # These assertions are the required settings.
 
+        if isinstance(kernel_size, int):
+            kernel_size = (kernel_size, kernel_size)
+
+        if isinstance(stride, int):
+            stride = (stride, stride)
+
+        if isinstance(padding, int):
+            padding = (padding, padding)
+
+        if isinstance(dilation, int):
+            dilation = (dilation, dilation)
+
         assert in_channels == 1
         assert stride == (1, 1)
         assert padding == (0, 0)
