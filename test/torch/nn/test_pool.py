@@ -30,4 +30,4 @@ def test_pool2d():
     out = pool(model_out)
     out2 = pool2(model_out)
 
-    assert th.isclose(out, out2, atol=1e-6).all()
+    assert th.eq(out, out2).all()
