@@ -89,7 +89,7 @@ class Conv2d(Module):
             sys.stdout.write("\rConv - (Part 1/3) - 50%")
 
         expanded_model = self.weight.unsqueeze(0).expand(
-            batch_size, self.out_channels, 1, self.kernel_size, self.kernel_size
+            batch_size, self.out_channels, 1, self.kernel_size[0], self.kernel_size[1]
         )
 
         if self.verbose:
@@ -97,18 +97,18 @@ class Conv2d(Module):
 
         kernel_results = list()
 
-        for i in range(0, rows - self.kernel_size + 1):
+        for i in range(0, rows - self.kernel_size[0] + 1):
 
             if self.verbose:
                 sys.stdout.write(
                     "\rConv - (Part 2/3) - "
-                    + str((i / (rows - self.kernel_size + 1)) * 100)[0:4]
+                    + str((i / (rows - self.kernel_size[0] + 1)) * 100)[0:4]
                     + "%"
                 )
 
-            for j in range(0, cols - self.kernel_size + 1):
+            for j in range(0, cols - self.kernel_size[1] + 1):
                 kernel_out = (
-                    expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size]
+                    expanded_data[:, :, :, i : i + self.kernel_size[0], j : j + self.kernel_size[1]]
                     * expanded_model
                 )
                 kernel_out = kernel_out.sum(3)
@@ -124,7 +124,7 @@ class Conv2d(Module):
             sys.stdout.write("\rConv - (Part 3/3) - 33%")
 
         pred = pred.view(
-            batch_size, self.out_channels, rows - self.kernel_size + 1, cols - self.kernel_size + 1
+            batch_size, self.out_channels, rows - self.kernel_size[0] + 1, cols - self.kernel_size[1] + 1
         )
 
         if self.verbose:
@@ -134,8 +134,8 @@ class Conv2d(Module):
             pred = pred + self.bias.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand(
                 batch_size,
                 self.out_channels,
-                rows - self.kernel_size + 1,
-                cols - self.kernel_size + 1,
+                rows - self.kernel_size[0] + 1,
+                cols - self.kernel_size[1] + 1,
             )
 
         if self.verbose:
@@ -148,7 +148,7 @@ class Conv2d(Module):
         return str(self)
 
     def __str__(self):
-        out = "Conv2d("
+        out = "Conv2d-Handcrafted("
         out += str(self.in_channels) + ", "
         out += str(self.out_channels) + ", "
         out += "kernel_size=" + str(self.kernel_size) + ", "
