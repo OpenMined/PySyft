@@ -159,25 +159,47 @@ class Conv2d(Module):
         out += ")"
         return out
 
+    def torchcraft(self):
+        import torch
 
-def handcraft(conv):
+        kwargs = {}
+        kwargs["in_channels"] = self.in_channels
+        kwargs["out_channels"] = self.out_channels
+        kwargs["kernel_size"] = self.kernel_size
+        kwargs["stride"] = self.stride
+        kwargs["padding"] = self.padding
+        kwargs["dilation"] = self.dilation
+        kwargs["groups"] = self.groups
+        kwargs["bias"] = self.bias is not None
+        kwargs["padding_mode"] = self.padding_mode
+        kwargs["verbose"] = False
+
+        model = torch.nn.Conv2d(**kwargs)
+        model.weight = self.weight
+        model.bias = self.bias
+
+        return model
+
+
+
+def handcraft(self):
     import syft
 
     kwargs = {}
-    kwargs["in_channels"] = conv.in_channels
-    kwargs["out_channels"] = conv.out_channels
-    kwargs["kernel_size"] = conv.kernel_size
-    kwargs["stride"] = conv.stride
-    kwargs["padding"] = conv.padding
-    kwargs["dilation"] = conv.dilation
-    kwargs["groups"] = conv.groups
-    kwargs["bias"] = conv.bias is not None
-    kwargs["padding_mode"] = conv.padding_mode
+    kwargs["in_channels"] = self.in_channels
+    kwargs["out_channels"] = self.out_channels
+    kwargs["kernel_size"] = self.kernel_size
+    kwargs["stride"] = self.stride
+    kwargs["padding"] = self.padding
+    kwargs["dilation"] = self.dilation
+    kwargs["groups"] = self.groups
+    kwargs["bias"] = self.bias is not None
+    kwargs["padding_mode"] = self.padding_mode
     kwargs["verbose"] = False
 
     model = syft.frameworks.torch.nn.Conv2d(**kwargs)
-    model.weight = conv.weight
-    model.bias = conv.bias
+    model.weight = self.weight
+    model.bias = self.bias
 
     return model
 
