@@ -1,7 +1,10 @@
 import torch as th
 from torch.nn import Module
+<<<<<<< HEAD
 import syft as sy
 import sys
+=======
+>>>>>>> 49c56331cf6bca65c27da661d7e3b7635f4bc247
 
 
 class Conv2d(Module):
@@ -112,8 +115,7 @@ class Conv2d(Module):
                     expanded_data[:, :, :, i : i + self.kernel_size[0], j : j + self.kernel_size[1]]
                     * expanded_model
                 )
-                kernel_out = kernel_out.sum(3)
-                kernel_out = kernel_out.sum(3)
+                kernel_out = kernel_out.sum((3, 4))s
                 kernel_results.append(kernel_out)
 
         if self.verbose:
@@ -208,3 +210,4 @@ def handcraft(self):
 
 
 th.nn.Conv2d.handcraft = handcraft
+
