@@ -1,5 +1,6 @@
 import torch as th
 from torch.nn import Module
+import syft as sy
 import sys
 
 
@@ -160,7 +161,9 @@ class Conv2d(Module):
         return out
 
     def torchcraft(self):
-        import torch
+        """Converts this handcrafted module into a torch.nn.Conv2d module wherein all the
+        module's features are executing in C++. This will increase performance at the cost of
+        some of PySyft's more advanced features such as encrypted computation."""
 
         kwargs = {}
         kwargs["in_channels"] = self.in_channels
@@ -173,7 +176,7 @@ class Conv2d(Module):
         kwargs["bias"] = self.bias is not None
         kwargs["padding_mode"] = self.padding_mode
 
-        model = torch.nn.Conv2d(**kwargs)
+        model = th.nn.Conv2d(**kwargs)
         model.weight = self.weight
         model.bias = self.bias
 
@@ -181,7 +184,9 @@ class Conv2d(Module):
 
 
 def handcraft(self):
-    import syft
+    """Converts a torch.nn.Conv2d module to a handcrafted one wherein all the
+    module's features are executing in python. This is necessary for some of PySyft's
+    more advanced features (like encrypted computation)."""
 
     kwargs = {}
     kwargs["in_channels"] = self.in_channels
@@ -195,7 +200,7 @@ def handcraft(self):
     kwargs["padding_mode"] = self.padding_mode
     kwargs["verbose"] = False
 
-    model = syft.frameworks.torch.nn.Conv2d(**kwargs)
+    model = sy.frameworks.torch.nn.Conv2d(**kwargs)
     model.weight = self.weight
     model.bias = self.bias
 
