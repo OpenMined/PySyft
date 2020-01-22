@@ -62,7 +62,7 @@ class AvgPool2d(Module):
         for i in range(0, rows - self.kernel_size + 1, self.stride):
             for j in range(0, cols - self.kernel_size + 1, self.stride):
                 kernel_out = (
-                    data[:, :, i : i + self.kernel_size, j : j + self.kernel_size].sum(2).sum(2)
+                    data[:, :, i : i + self.kernel_size, j : j + self.kernel_size].sum((2, 3))
                     * self._one_over_kernel_size
                 )
                 kernel_results.append(kernel_out.unsqueeze(2))
