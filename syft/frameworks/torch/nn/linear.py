@@ -46,6 +46,10 @@ class Linear(nn.Module):
         return out
 
     def torchcraft(self):
+        """Converts this handcrafted module into a torch.nn.Linear module wherein all the
+        module's features are executing in C++. This will increase performance at the cost of
+        some of PySyft's more advanced features such as encrypted computation."""
+
         model = nn.Linear(self.in_features, self.out_features, bias=self.bias is not None)
         model.weight = self.weight
         model.bias = self.bias
@@ -53,6 +57,10 @@ class Linear(nn.Module):
 
 
 def handcraft(self):
+    """Converts a torch.nn.Linear module to a handcrafted one wherein all the
+    module's features are executing in python. This is necessary for some of PySyft's
+    more advanced features (like encrypted computation)."""
+
     model = Linear(self.in_features, self.out_features, bias=self.bias is not None)
     model.weight = self.weight
     model.bias = self.bias
