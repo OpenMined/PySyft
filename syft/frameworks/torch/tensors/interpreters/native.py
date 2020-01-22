@@ -318,13 +318,6 @@ class TorchTensor(AbstractTensor):
             except AttributeError:
                 pass
 
-            # TODO: clean this line
-            cmd = (
-                "syft.local_worker.hook."
-                + ".".join(cmd.split(".")[:-1])
-                + ".native_"
-                + cmd.split(".")[-1]
-            )
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
@@ -341,10 +334,18 @@ class TorchTensor(AbstractTensor):
         """
             Return the evaluation of the cmd string parameter
         """
+        module = syft.local_worker.hook
+        submodules = cmd.split(".")[:-1]
+        command = cmd.split(".")[-1]
+
+        for sm in submodules:
+            module = getattr(module, sm)
+
+        command_method = getattr(module, f"native_{command}")
         if isinstance(args, tuple):
-            response = eval(cmd)(*args, **kwargs)
+            response = command_method(*args, **kwargs)
         else:
-            response = eval(cmd)(args, **kwargs)
+            response = command_method(args, **kwargs)
 
         return response
 
@@ -387,7 +388,7 @@ class TorchTensor(AbstractTensor):
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
-        
+
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
@@ -613,10 +614,10 @@ class TorchTensor(AbstractTensor):
 
     def allow(self, user=None) -> bool:
         """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
-            
+
             Args:
                 user (object,optional): User crendentials to be verified.
-            
+
             Returns:
                 boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
         """
