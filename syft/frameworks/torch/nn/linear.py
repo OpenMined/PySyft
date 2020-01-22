@@ -20,20 +20,20 @@ class Linear(nn.Module):
             sys.exit(
                 f"Wrong Input Features. Please use tensor with {self.in_features} Input Features"
             )
-        if(self.verbose):
+        if self.verbose:
             sys.stdout.write("Linear - transpose()      ")
         weight = self.weight.t()
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rLinear - matmul()      ")
         prod = input @ weight
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rLinear - +bias      ")
         if self.bias is not None:
             resized_bias = self.bias.unsqueeze(0)
             output = prod + resized_bias.expand(*prod.shape)
         else:
             output = prod
-        if (self.verbose):
+        if self.verbose:
             sys.stdout.write("\rLinear - done!         ")
         print()
         return output

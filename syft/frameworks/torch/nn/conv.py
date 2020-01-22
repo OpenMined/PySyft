@@ -3,6 +3,7 @@ from torch.nn import Module
 import syft as sy
 import sys
 
+
 class Conv2d(Module):
     """
     This class is the beginning of an exact python port of the torch.nn.Conv2d
@@ -218,4 +219,3 @@ def handcraft(self):
 
 
 th.nn.Conv2d.handcraft = handcraft
-

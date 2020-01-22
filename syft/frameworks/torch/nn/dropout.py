@@ -1,8 +1,8 @@
 import torch as th
 import torch.nn as nn
 
-class Dropout2d(nn.Module):
 
+class Dropout2d(nn.Module):
     def __init__(self, p, inplace=False):
         super().__init__()
         self.p = p
@@ -11,13 +11,13 @@ class Dropout2d(nn.Module):
 
     def forward(self, x):
 
-        if (self.training):
+        if self.training:
             mask = th.rand(x.shape) > self.p
             output = (x * mask) / (1 - self.p)
         else:
             output = x
 
-        if(self.inplace):
+        if self.inplace:
             x.set_(output)
             return x
 
@@ -47,6 +47,7 @@ class Dropout2d(nn.Module):
         model = th.nn.Dropout2d(self.p, self.inplace)
         model.training = self.training
         return model
+
 
 def handcraft(self):
     """Converts a torch.nn.Dropout2ds module to a handcrafted one wherein all the
