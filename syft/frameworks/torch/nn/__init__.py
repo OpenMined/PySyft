@@ -13,4 +13,6 @@ from syft.frameworks.torch.nn.pool import AvgPool2d
 
 from syft.frameworks.torch.nn.poly import SimplePolynomial
 
+from syft.frameworks.torch.nn.dropout import Dropout2d
+
 from torch.nn import Module
