@@ -111,7 +111,7 @@ class Conv2d(Module):
                     expanded_data[:, :, :, i : i + self.kernel_size[0], j : j + self.kernel_size[1]]
                     * expanded_model
                 )
-                kernel_out = kernel_out.sum((3, 4))s
+                kernel_out = kernel_out.sum((3, 4))
                 kernel_results.append(kernel_out)
 
         if self.verbose:
