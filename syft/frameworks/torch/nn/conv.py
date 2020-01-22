@@ -87,13 +87,9 @@ class Conv2d(Module):
         for i in range(0, rows - self.kernel_size + 1):
             for j in range(0, cols - self.kernel_size + 1):
                 kernel_out = (
-                    (
-                        expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size]
-                        * expanded_model
-                    )
-                    .sum(3)
-                    .sum(3)
-                )
+                    expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size]
+                    * expanded_model
+                ).sum((3, 4))
                 kernel_results.append(kernel_out)
 
         pred = th.cat(kernel_results, axis=2).view(
