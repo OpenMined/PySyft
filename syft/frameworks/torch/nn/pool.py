@@ -1,5 +1,6 @@
 import torch as th
 from torch.nn import Module
+import syft as sy
 
 
 class AvgPool2d(Module):
@@ -72,3 +73,46 @@ class AvgPool2d(Module):
         )
 
         return pred
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        out = "AvgPool2d-Handcrafted("
+        out += "kernel_size=" + str(self.kernel_size) + ", "
+        out += "stride=" + str(self.stride) + ", "
+        out += "padding=" + str(self.padding)
+        out += ")"
+        return out
+
+    def torchcraft(self):
+        """Converts this handcrafted module into a torch.nn.AvgPool2d module wherein all the
+        module's features are executing in C++. This will increase performance at the cost of
+        some of PySyft's more advanced features such as encrypted computation."""
+
+        kwargs = {}
+        kwargs['kernel_size'] = self.kernel_size
+        kwargs['stride'] = self.stride
+        kwargs['padding'] = self.padding
+        kwargs['ceil_mode'] = self.ceil_mode
+        kwargs['count_include_pad'] = self.count_include_pad
+        kwargs['divisor_override'] = self.divisor_override
+
+        return th.nn.AvgPool2d(**kwargs)
+
+def handcraft(self):
+    """Converts a torch.nn.AvgPool2d module to a handcrafted one wherein all the
+    module's features are executing in python. This is necessary for some of PySyft's
+    more advanced features (like encrypted computation)."""
+
+    kwargs = {}
+    kwargs['kernel_size'] = self.kernel_size
+    kwargs['stride'] = self.stride
+    kwargs['padding'] = self.padding
+    kwargs['ceil_mode'] = self.ceil_mode
+    kwargs['count_include_pad'] = self.count_include_pad
+    kwargs['divisor_override'] = self.divisor_override
+
+    return sy.frameworks.torch.nn.AvgPool2d(**kwargs)
+
+th.nn.AvgPool2d.handcraft = handcraft
