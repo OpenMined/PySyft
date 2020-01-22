@@ -91,14 +91,15 @@ class AvgPool2d(Module):
         some of PySyft's more advanced features such as encrypted computation."""
 
         kwargs = {}
-        kwargs['kernel_size'] = self.kernel_size
-        kwargs['stride'] = self.stride
-        kwargs['padding'] = self.padding
-        kwargs['ceil_mode'] = self.ceil_mode
-        kwargs['count_include_pad'] = self.count_include_pad
-        kwargs['divisor_override'] = self.divisor_override
+        kwargs["kernel_size"] = self.kernel_size
+        kwargs["stride"] = self.stride
+        kwargs["padding"] = self.padding
+        kwargs["ceil_mode"] = self.ceil_mode
+        kwargs["count_include_pad"] = self.count_include_pad
+        kwargs["divisor_override"] = self.divisor_override
 
         return th.nn.AvgPool2d(**kwargs)
+
 
 def handcraft(self):
     """Converts a torch.nn.AvgPool2d module to a handcrafted one wherein all the
@@ -106,13 +107,14 @@ def handcraft(self):
     more advanced features (like encrypted computation)."""
 
     kwargs = {}
-    kwargs['kernel_size'] = self.kernel_size
-    kwargs['stride'] = self.stride
-    kwargs['padding'] = self.padding
-    kwargs['ceil_mode'] = self.ceil_mode
-    kwargs['count_include_pad'] = self.count_include_pad
-    kwargs['divisor_override'] = self.divisor_override
+    kwargs["kernel_size"] = self.kernel_size
+    kwargs["stride"] = self.stride
+    kwargs["padding"] = self.padding
+    kwargs["ceil_mode"] = self.ceil_mode
+    kwargs["count_include_pad"] = self.count_include_pad
+    kwargs["divisor_override"] = self.divisor_override
 
     return sy.frameworks.torch.nn.AvgPool2d(**kwargs)
+
 
 th.nn.AvgPool2d.handcraft = handcraft
