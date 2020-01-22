@@ -33,3 +33,29 @@ class Linear(nn.Module):
 
         self.weight = dummy_for_init.weight
         self.bias = dummy_for_init.bias
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        out = "Linear-Handcrafted("
+        out += "in_features=" + str(self.in_features) + ", "
+        out += "out_features=" + str(self.out_features) + ", "
+        out += "bias=" + str(self.bias is not None)
+        out += ")"
+        return out
+
+    def torchcraft(self):
+        model = nn.Linear(self.in_features, self.out_features, bias=self.bias is not None)
+        model.weight = self.weight
+        model.bias = self.bias
+        return model
+
+
+def handcraft(self):
+    model = Linear(self.in_features, self.out_features, bias=self.bias is not None)
+    model.weight = self.weight
+    model.bias = self.bias
+    return model
+
+nn.Linear.handcraft = handcraft

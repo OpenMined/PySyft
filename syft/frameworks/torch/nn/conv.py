@@ -172,7 +172,6 @@ class Conv2d(Module):
         kwargs["groups"] = self.groups
         kwargs["bias"] = self.bias is not None
         kwargs["padding_mode"] = self.padding_mode
-        kwargs["verbose"] = False
 
         model = torch.nn.Conv2d(**kwargs)
         model.weight = self.weight
