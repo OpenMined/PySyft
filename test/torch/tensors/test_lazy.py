@@ -1,5 +1,6 @@
 import torch as th
 
+
 def test_lazy_add():
     x = th.tensor([[1, 2, 3]]).float()
     x = x.lazy()
