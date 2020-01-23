@@ -4,7 +4,6 @@ from syft.frameworks.torch.tensors.interpreters.polynomial.term import Term
 from syft.frameworks.torch.tensors.interpreters.polynomial.variable import Variable
 from syft.frameworks.torch.tensors.interpreters.polynomial.polynomial import Polynomial
 from syft.frameworks.torch.tensors.interpreters.polynomial.tensor import PolynomialTensor
-import syft.frameworks.torch.tensors.interpreters.polynomial.util as poly_util
 
 
 def var(name, minimum_factor=0):
@@ -18,7 +17,7 @@ def var_tensor(shape, minimum_factor=0.1):
 
     v = list()
     for i in range(size):
-        v.append(poly_util.var("x_" + str(i), minimum_factor=minimum_factor))
+        v.append(var("x_" + str(i), minimum_factor=minimum_factor))
 
     vartensor = PolynomialTensor(np.array(v)).wrap()
     return vartensor.view(*shape)
