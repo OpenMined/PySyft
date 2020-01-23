@@ -58,4 +58,5 @@ def handcraft(self):
     model.training = self.training
     return model
 
+
 th.nn.Dropout2d.handcraft = handcraft
