@@ -1,6 +1,9 @@
 name: Run tests
 
-on: [push]
+on:
+  - push
+  - pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build:
