@@ -16,6 +16,7 @@ from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
+from syft.frameworks.torch.tensors.interpreters.lazy import LazyTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
@@ -312,6 +313,7 @@ class TorchHook(FrameworkHook):
             if attr not in dir(AdditiveSharingTensor):
                 new_method = self._get_hooked_additive_shared_method(attr)
                 setattr(AdditiveSharingTensor, attr, new_method)
+
 
     def _hook_parameters(self):
         """
