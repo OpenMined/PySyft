@@ -6,7 +6,7 @@ from syft.generic.tensor import AbstractTensor
 
 class LazyTensor(AbstractTensor):
     def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
-        """Initializes a LazyTensor. This tensor allows one to 
+        """Initializes a LazyTensor. This tensor allows one to
 
         Args:
             owner (BaseWorker): An optional BaseWorker object to specify the worker on which
@@ -33,7 +33,7 @@ class LazyTensor(AbstractTensor):
     def execute(self):
         result = self
         for method_name, args, kwargs in self.todos:
-            result = self.child.__getattribute__(method_name)(*args, **kwargs)
+            result = self.child.__getattribute__(method_name)(*args, **kwargs).child
         return result
 
 
