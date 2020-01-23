@@ -14,6 +14,7 @@ from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 import syft.frameworks.torch.tensors.interpreters.polynomial.util as poly_util
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.frameworks.torch.tensors.interpreters.lazy import LazyTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -1014,3 +1015,10 @@ class TorchTensor(AbstractTensor):
         result = poly_util.get_factor_vector(self.child.child)
         result = th.tensor(result)
         return result.view(*(list(self.shape) + [-1]))
+
+    def lazy(self):
+        out = LazyTensor().on(self)
+        return out
+
+    def execute(self):
+        return self.child.execute()
