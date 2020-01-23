@@ -3,7 +3,7 @@ import torch
 import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg.operations import _norm_mpc
-from test.efficiency_tests.assertions import assert_time
+from test.efficiency.assertions import assert_time
 
 
 @assert_time(max_time=40)
