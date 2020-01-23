@@ -314,7 +314,6 @@ class TorchHook(FrameworkHook):
                 new_method = self._get_hooked_additive_shared_method(attr)
                 setattr(AdditiveSharingTensor, attr, new_method)
 
-
     def _hook_parameters(self):
         """
         This method overrides the torch Parameter class such that

@@ -5,10 +5,7 @@ from syft.generic.tensor import AbstractTensor
 
 
 class LazyTensor(AbstractTensor):
-
-    def __init__(
-            self, owner=None, id=None, tags=None, description=None, verbose=False
-    ):
+    def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
         """Initializes a LazyTensor.
 
         Args:
@@ -22,7 +19,7 @@ class LazyTensor(AbstractTensor):
         self.todos = list()
 
         hook = sy.hook
-        if(not hasattr(hook, 'hooked_lazy_tensor')):
+        if not hasattr(hook, "hooked_lazy_tensor"):
             tensor_type = hook.torch.Tensor
 
             # Use a pre-defined list to select the methods to overload
@@ -30,6 +27,7 @@ class LazyTensor(AbstractTensor):
                 if attr not in dir(LazyTensor):
                     new_method = get_lazy_method(attr)
                     setattr(LazyTensor, attr, new_method)
+
             hook.hooked_lazy_tensor = True
 
     def execute(self):
@@ -40,12 +38,12 @@ class LazyTensor(AbstractTensor):
 
 
 def get_lazy_method(attr):
-
     def new_method(self, *args, **kwargs):
         self.todos.append((attr, args, kwargs))
         return self
 
     return new_method
+
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(LazyTensor)
