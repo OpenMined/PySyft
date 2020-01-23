@@ -94,7 +94,7 @@ def test_pointer_plan_parameters(workers):
             return x
 
     model = Net()
-    model.build(th.tensor([[0, 0]]))
+    model.build(th.tensor([[0.0, 0.0]]))
     model = model.send(bob)
 
     param_ptrs = model.parameters()
