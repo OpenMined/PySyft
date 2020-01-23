@@ -29,12 +29,15 @@ REQ_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pip-dep")
 core_reqs, core_dependency_links = get_requirements(os.path.join(REQ_DIR, "requirements.txt"))
 udacity_extras = read(os.path.join(REQ_DIR, "requirements_udacity.txt")).split("\n")
 tensorflow_extras = read(os.path.join(REQ_DIR, "requirements_tensorflow.txt")).split("\n")
+notebook_extras = read(os.path.join(REQ_DIR, "requirements_notebooks.txt")).split("\n")
+dev_extras = read(os.path.join(REQ_DIR, "requirements_dev.txt")).split("\n")
 sandbox_extras = ["scikit-learn>=0.21.0"]
+tests_require = ["pytest", "pytest-flake8"] + sandbox_extras + notebook_extras
 
 
 setup(
     name="syft",
-    version="0.2.1a1",
+    version="0.2.2a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),
@@ -48,11 +51,13 @@ setup(
     install_requires=core_reqs,
     extras_require={
         "udacity": udacity_extras,
+        "notebooks": notebook_extras,
+        "dev": dev_extras,
         "sandbox": sandbox_extras,
         "tensorflow": tensorflow_extras,
     },
     dependency_links=core_dependency_links,
     setup_requires=["pytest-runner"],
-    tests_require=["pytest", "pytest-flake8"],
+    tests_require=tests_require,
     classifiers=["Programming Language :: Python :: 3", "Operating System :: OS Independent"],
 )

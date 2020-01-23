@@ -18,7 +18,14 @@ from syft import TorchHook
 from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
-all_notebooks = [Path(n) for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
+all_notebooks = [n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
+basic_notebooks = [n for n in glob.glob("examples/tutorials/*.ipynb")]
+advanced_notebooks = [
+    n for n in glob.glob("examples/tutorials/advanced/**/*.ipynb", recursive=True)
+]
+translated_notebooks = [
+    n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
+]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -30,85 +37,82 @@ exclusion_list_notebooks = [
     # This notebook is excluded as it needs library code modification which I might add later on
     "Build your own tensor type (advanced).ipynb",
     "Federated Recurrent Neural Network.ipynb",
+    # Outdated training method
+    "Introduction to TrainConfig.ipynb",
+    # Outdated websocket client code
+    "Federated learning with websockets and federated averaging.ipynb",
 ]
 
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
     "examples/tutorials/advanced/websockets-example-MNIST-parallel",
+    # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
+    "examples/tutorials/grid",
+    "examples/tutorials/grid/federated_learning/spam_prediction",
+    "examples/tutorials/grid/federated_learning/mnist",
     # This notebook is skipped because it fails in travis and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
-# remove known buggy notebooks and folders that should be excluded
-not_excluded_notebooks = []
-for n in all_notebooks:
-    if n.name in exclusion_list_notebooks:
-        continue
-    elif str(n.parent) in exclusion_list_folders:
-        continue
-    else:
-        not_excluded_notebooks.append(n)
+
+excluded_notebooks = []
+for nb in all_notebooks:
+    if Path(nb).name in exclusion_list_notebooks:
+        excluded_notebooks += [nb]
+for folder in exclusion_list_folders:
+    excluded_notebooks += glob.glob(f"{folder}/**/*.ipynb", recursive=True)
+
+tested_notebooks = []
 
 
-def test_notebooks_basic(isolated_filesystem):
+@pytest.mark.parametrize("notebook", sorted(set(basic_notebooks) - set(excluded_notebooks)))
+def test_notebooks_basic(isolated_filesystem, notebook):
     """Test Notebooks in the tutorial root folder."""
-    notebooks = glob.glob("*.ipynb")
-    for notebook in notebooks:
-        list_name = Path("examples/tutorials/") / notebook
-        if list_name in not_excluded_notebooks:
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
-                parameters={
-                    "epochs": 1,
-                    "n_test_batches": 5,
-                    "n_train_items": 64,
-                    "n_test_items": 64,
-                },
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+    notebook = notebook.split("/")[-1]
+    list_name = Path("examples/tutorials/") / notebook
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+        timeout=300,
+    )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-def test_notebooks_basic_translations(isolated_filesystem):
-    """Test Notebooks in the tutorial root folder."""
-    notebooks = glob.glob("translations/**/*.ipynb", recursive=True)
-    for notebook in notebooks:
-        list_name = Path("examples/tutorials/") / notebook
-        if list_name in not_excluded_notebooks:
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(
-                notebook,
-                "/dev/null",
-                parameters={
-                    "epochs": 1,
-                    "n_test_batches": 5,
-                    "n_train_items": 64,
-                    "n_test_items": 64,
-                },
-                timeout=300,
-            )
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+@pytest.mark.parametrize(
+    "translated_notebook", sorted(set(translated_notebooks) - set(excluded_notebooks))
+)
+def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
+    """Test Notebooks in the tutorial translations folder."""
+    notebook = "/".join(translated_notebook.split("/")[-2:])
+    notebook = f"translations/{notebook}"
+    list_name = Path(f"examples/tutorials/{notebook}")
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+        timeout=300,
+    )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-def test_notebooks_advanced(isolated_filesystem):
-    notebooks = glob.glob("advanced/*.ipynb")
-    notebooks += glob.glob("advanced/Split Neural Network/*.ipynb")
-    for notebook in notebooks:
-        list_name = Path("examples/tutorials/") / notebook
-        if list_name in not_excluded_notebooks:
-            not_excluded_notebooks.remove(list_name)
-            res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
-            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+@pytest.mark.parametrize("notebook", sorted(set(advanced_notebooks) - set(excluded_notebooks)))
+def test_notebooks_advanced(isolated_filesystem, notebook):
+    notebook = notebook.replace("examples/tutorials/", "")
+    list_name = Path("examples/tutorials/") / notebook
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
     os.chdir("advanced/Federated Learning with TrainConfig/")
     notebook = "Introduction to TrainConfig.ipynb"
     p_name = Path("examples/tutorials/advanced/Federated Learning with TrainConfig/")
-    not_excluded_notebooks.remove(p_name / notebook)
+    tested_notebooks.append(str(p_name / notebook))
     hook.local_worker.remove_worker_from_registry("alice")
     kwargs = {"id": "alice", "host": "localhost", "port": 8777, "hook": hook}
     data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
@@ -130,7 +134,7 @@ def test_fl_sms(isolated_filesystem):  # pragma: no cover
 
     notebook = "Federated SMS Spam prediction.ipynb"
     p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
-    not_excluded_notebooks.remove(p_name / notebook)
+    tested_notebooks.append(str(p_name / notebook))
     Path("data").mkdir(parents=True, exist_ok=True)
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip"
     urllib.request.urlretrieve(url, "data.zip")
@@ -148,7 +152,7 @@ def test_fl_with_websockets_and_averaging(
     os.chdir("advanced/websockets-example-MNIST/")
     notebook = "Federated learning with websockets and federated averaging.ipynb"
     p_name = Path("examples/tutorials/advanced/websockets-example-MNIST/")
-    not_excluded_notebooks.remove(p_name / notebook)
+    tested_notebooks.append(str(p_name / notebook))
     for n in ["alice", "bob", "charlie"]:
         hook.local_worker.remove_worker_from_registry(n)
     kwargs_list = [
@@ -169,6 +173,17 @@ def test_fl_with_websockets_and_averaging(
         sy.VirtualWorker(id=n, hook=hook, is_client_worker=False)
 
 
-def test_not_tested_notebooks():
-    """This test must always be last"""
-    assert len(not_excluded_notebooks) == 0, not_excluded_notebooks
+### These tests must always be last
+def test_all_non_excluded_notebooks():
+    untested_notebooks = set(all_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
+    assert len(untested_notebooks) == 0, untested_notebooks
+
+
+def test_all_notebooks_except_translations():
+    untested_notebooks = (
+        set(all_notebooks)
+        - set(excluded_notebooks)
+        - set(translated_notebooks)
+        - set(tested_notebooks)
+    )
+    assert len(untested_notebooks) == 0, untested_notebooks
