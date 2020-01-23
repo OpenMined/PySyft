@@ -7,12 +7,11 @@ from syft.generic.tensor import AbstractTensor
 class LazyTensor(AbstractTensor):
 
     def __init__(
-            self, numpy_tensor=None, owner=None, id=None, tags=None, description=None, verbose=False
+            self, owner=None, id=None, tags=None, description=None, verbose=False
     ):
         """Initializes a LazyTensor.
 
         Args:
-            numpy_tensor (np.array): The numpy array which this tensor should wrap.
             owner (BaseWorker): An optional BaseWorker object to specify the worker on which
                 the tensor is located.
             id (str or int): An optional string or integer id of the LargePrecisionTensor.
@@ -32,11 +31,6 @@ class LazyTensor(AbstractTensor):
                     new_method = get_lazy_method(attr)
                     setattr(LazyTensor, attr, new_method)
             hook.hooked_lazy_tensor = True
-
-
-    # def log_softmax(self, *args, **kwargs):
-    #     self.todos.append(('log_softmax', args, kwargs))
-    #     return self
 
     def execute(self):
         result = self
