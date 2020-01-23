@@ -15,6 +15,7 @@ from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
@@ -175,6 +176,9 @@ class TorchHook(FrameworkHook):
 
         # Add all hooked tensor methods to LargePrecisionTensor tensor
         self._hook_syft_tensor_methods(LargePrecisionTensor)
+
+        # Add all hooked tensor methods to NumpyTensor tensor
+        self._hook_syft_tensor_methods(HookedTensor)
 
         # Add all built-in 'str' methods to String
         self._hook_string_methods(owner=self.local_worker)

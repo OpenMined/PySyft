@@ -264,10 +264,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
             Returns:
                 result (bool) : If succeeded, return True.
         """
-        message = {
-            REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.DELETE_MODEL,
-            "model_id": model_id,
-        }
+        message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.DELETE_MODEL, "model_id": model_id}
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response)
 
