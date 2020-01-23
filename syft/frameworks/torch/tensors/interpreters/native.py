@@ -1023,4 +1023,4 @@ class TorchTensor(AbstractTensor):
 
     def execute(self):
         """Forces a LazyTensor to execute all of its commands"""
-        return self.child.execute()
+        return self.child.execute().child
