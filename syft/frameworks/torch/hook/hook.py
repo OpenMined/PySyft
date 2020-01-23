@@ -482,13 +482,13 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
-    # @classmethod
-    # def _get_hooked_func(cls, public_module_name, func_api_name, attr):
-    #     """Torch-specific implementation. See the subclass for more."""
-    #     if attr.__module__ is None:
-    #         attr.__module__ = "torch"
-    #
-    #     return super()._get_hooked_func(attr.__module__, func_api_name, attr)
+    @classmethod
+    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
+        """Torch-specific implementation. See the subclass for more."""
+        if attr.__module__ is None:
+            attr.__module__ = "torch"
+
+        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
