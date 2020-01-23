@@ -335,8 +335,9 @@ class TorchTensor(AbstractTensor):
             Return the evaluation of the cmd string parameter
         """
         module = syft.local_worker.hook
-        submodules = cmd.split(".")[:-1]
-        command = cmd.split(".")[-1]
+        segments = cmd.split(".")
+        submodules = segments[:-1]
+        command = segments[-1]
 
         for sm in submodules:
             module = getattr(module, sm)
