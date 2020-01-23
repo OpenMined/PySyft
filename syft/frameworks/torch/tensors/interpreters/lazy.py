@@ -6,7 +6,7 @@ from syft.generic.tensor import AbstractTensor
 
 class LazyTensor(AbstractTensor):
     def __init__(self, owner=None, id=None, tags=None, description=None, verbose=False):
-        """Initializes a LazyTensor.
+        """Initializes a LazyTensor. This tensor allows one to 
 
         Args:
             owner (BaseWorker): An optional BaseWorker object to specify the worker on which

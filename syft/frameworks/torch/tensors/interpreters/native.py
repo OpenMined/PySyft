@@ -1017,8 +1017,10 @@ class TorchTensor(AbstractTensor):
         return result.view(*(list(self.shape) + [-1]))
 
     def lazy(self):
+        """Returns a wrapper around self which will evaluate all method commands lazily."""
         out = LazyTensor().on(self)
         return out
 
     def execute(self):
+        """Forces a LazyTensor to execute all of its commands"""
         return self.child.execute()
