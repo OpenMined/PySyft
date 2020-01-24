@@ -1,13 +1,13 @@
 import math
 import logging
-
+from syft.generic.object import AbstractObject
 import torch
 from torch.utils.data import Dataset
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset:
+class BaseDataset(AbstractObject):
     """
     This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
@@ -24,6 +24,7 @@ class BaseDataset:
 
     def __init__(self, data, targets, transform=None):
 
+        super().__init__()
         self.data = data
         self.targets = targets
         self.transform_ = transform
