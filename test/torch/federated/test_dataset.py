@@ -114,3 +114,12 @@ def test_federated_dataset_search(workers):
         counter += 1
 
     assert counter == len(train_loader), f"{counter} == {len(fed_dataset)}"
+
+
+def test_abstract_dataset():
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
+    dataset = BaseDataset(inputs, targets, id=1)
+
+    assert dataset.id == 1
+    assert dataset.description==None
