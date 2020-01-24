@@ -1,7 +1,7 @@
 import pytest
 import torch
 import syft as sy
-from test.efficiency_tests.assertions import assert_time
+from test.efficiency.assertions import assert_time
 
 
 @pytest.mark.parametrize("activation", ["tanh", "sigmoid"])
