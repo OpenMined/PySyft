@@ -38,6 +38,11 @@ from syft.exceptions import ResponseSignatureError
 from syft.exceptions import PlanCommandUnknownError
 
 
+
+from syft.messaging.promise import Promise
+from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+
+
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.generic.frameworks.hook.hook import FrameworkHook
@@ -531,6 +536,33 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             responses = ret_val
         return responses
+
+    def promise_tensor(self) -> object:
+
+        ''' this works but can't pass tensor type '''
+        # pt  = sy.Promise.FloatTensor(shape=(3,3))
+        # print(pt)
+        # ref = pt.send(self)
+
+
+        '''
+        this gets error cannot serialize
+        see screen shot of stack trace:
+        https://share.getcloudapp.com/OAuLdOm6
+        '''
+        # _id = sy.ID_PROVIDER.pop()
+        # pt = PromiseTensor(owner=self, id = _id)
+        # self.send_obj(pt, self)
+
+        print('n obj before', len(self._objects))
+
+        _id = sy.ID_PROVIDER.pop()
+        pt = PromiseTensor(owner=self, id = _id)
+        self.register_obj(pt, _id)
+
+        print('n obj after', len(self._objects))
+
+        return pt
 
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.

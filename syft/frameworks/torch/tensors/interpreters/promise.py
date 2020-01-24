@@ -10,7 +10,7 @@ from syft.generic.frameworks.hook import hook_args
 
 class PromiseTensor(AbstractTensor, Promise):
     def __init__(
-        self, shape, owner=None, id=None, tensor_type=None, plans=None, tags=None, description=None
+        self, shape=None, owner=None, id=None, tensor_type=None, plans=None, tags=None, description=None
     ):
         """Initializes a PromiseTensor
 
@@ -30,13 +30,12 @@ class PromiseTensor(AbstractTensor, Promise):
         """
 
         if owner is None:
+            print("owner is None")
             owner = sy.local_worker
 
         # constructors for AbstractTensor and Promise
         AbstractTensor.__init__(self, id=id, owner=owner, tags=tags, description=description)
         Promise.__init__(self, owner=owner, obj_type=tensor_type, plans=plans)
-
-        self._shape = shape
 
         del self.child
 
@@ -56,6 +55,7 @@ class PromiseTensor(AbstractTensor, Promise):
         # return self._grad
 
     def __str__(self):
+        print(60, self.obj_type)
         return f"[PromiseTensor({self.owner.id}:{self.id}) -future-> {self.obj_type.split('.')[-1]} -blocking-> {len(self.plans)} plans]"
 
     def __repr__(self):

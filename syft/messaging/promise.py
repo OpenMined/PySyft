@@ -31,6 +31,7 @@ class Promise(ABC):
         Example:
             future_x = Promise()
         """
+        print(34, 'promise messaging', 1, owner, 2, obj_type)
 
         self.owner = owner
 
