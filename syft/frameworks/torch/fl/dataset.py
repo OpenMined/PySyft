@@ -23,13 +23,17 @@ class BaseDataset(AbstractObject):
 
     """
 
-    def __init__(self, data, targets, transform=None,
-                 id: int = None,
-                 owner: "sy.workers.AbstractWorker" = None,
-                 tags: List[str] = None,
-                 description: str = None,
-                 child=None,
-                 ):
+    def __init__(
+        self,
+        data,
+        targets,
+        transform=None,
+        id: int = None,
+        owner: "sy.workers.AbstractWorker" = None,
+        tags: List[str] = None,
+        description: str = None,
+        child=None,
+    ):
 
         super(BaseDataset, self).__init__(id, owner, tags, description, child)
         self.data = data

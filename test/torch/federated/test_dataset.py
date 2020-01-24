@@ -122,4 +122,4 @@ def test_abstract_dataset():
     dataset = BaseDataset(inputs, targets, id=1)
 
     assert dataset.id == 1
-    assert dataset.description==None
+    assert dataset.description == None
