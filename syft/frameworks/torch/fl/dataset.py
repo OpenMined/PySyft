@@ -2,6 +2,7 @@ import math
 import logging
 from syft.generic.object import AbstractObject
 from typing import List
+import syft as sy
 import torch
 from torch.utils.data import Dataset
 
