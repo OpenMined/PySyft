@@ -15,12 +15,11 @@ from syft.messaging.message import Operation
 from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 
 class func2plan(object):
-    """Converts a function to a plan.
+    """Decorator which converts a function to a plan.
 
     Converts a function containing sequential pytorch code into
     a plan object which can be sent to any arbitrary worker.
@@ -80,15 +79,15 @@ class Plan(AbstractObject, ObjectStorage):
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
         state_placeholders: ids of the state elements
-        arg_placeholders: ids of the last argument ids (present in the procedure commands)
-        result_placeholders: ids of the last result ids (present in the procedure commands)
+        input_placeholders: ids of the last argument ids (present in the procedure commands)
+        output_placeholders: ids of the last result ids (present in the procedure commands)
         readable_plan: list of commands
         blueprint: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
-        id: state id
-        owner: state owner
-        tags: state tags
-        description: state decription
+        id: plan id
+        owner: plan owner
+        tags: plan tags
+        description: plan description
     """
 
     def __init__(
@@ -230,6 +229,16 @@ class Plan(AbstractObject, ObjectStorage):
             raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
 
     def find_placeholders(self, *search_tags):
+        """
+        Search method to retrieve placeholders used in the Plan using tag search.
+        Retrieve all placeholders which have a tag containing at least one search_tag.
+
+        Args:
+            *search_tags: tuple of tags
+
+        Returns:
+            A list of placeholders found
+        """
         results = []
         for placeholder in self.placeholders.values():
             for search_tag in search_tags:
@@ -374,9 +383,6 @@ class Plan(AbstractObject, ObjectStorage):
             else:
                 return tuple(response)
 
-        #    raise RuntimeError("Plan is not built! Please call .build(<your_args>) or provide args_"
-        #                       "shape=[<your_args_shapes>] to use it.")
-
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the blueprint.
@@ -394,7 +400,7 @@ class Plan(AbstractObject, ObjectStorage):
         result = self.__call__(*args)
         return result
 
-    def send(self, *locations, force=False) -> PointerPlan:
+    def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:
         """Send plan to locations.
 
         If the plan was not built locally it will raise an exception.

@@ -1289,51 +1289,6 @@ def make_privatetensor(**kwargs):
     ]
 
 
-# syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
-def make_promisetensor(**kwargs):
-    pt = syft.Promise.FloatTensor(shape=torch.Size((3, 4)))
-    pt.tag("tag1")
-    pt.describe("I promise")
-
-    # Plan doesn't support Promises yet:
-    # @syft.func2plan(args_shape=[(3, 4)])
-    # def promising_plan(x):
-    #     x = x * 2 + 1
-    #     return x
-    #
-    # # A plan should be added to promise tensor's plans list here
-    # res = promising_plan(pt)
-    pt = pt.child
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
-        assert detailed.id == original.id
-        assert detailed.shape == original.shape
-        assert detailed.obj_type == original.obj_type
-        assert detailed.plans == original.plans
-        assert detailed.tags == original.tags
-        assert detailed.description == original.description
-        return True
-
-    return [
-        {
-            "value": pt,
-            "simplified": (
-                CODE[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor],
-                (
-                    pt.id,  # (int) id
-                    (CODE[torch.Size], (3, 4)),  # (torch.Size) shape
-                    (CODE[str], (b"torch.FloatTensor",)),  # (str) obj_type (torch tensor type)
-                    (CODE[set], tuple()),  # (set of Plans' id) plans
-                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
-                    (CODE[str], (b"I promise",)),  # (str) description
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
     ph = syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder()
