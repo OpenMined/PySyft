@@ -30,7 +30,7 @@ class BaseDataset(AbstractObject):
         targets,
         transform=None,
         id: int = None,
-        owner: "sy.workers.AbstractWorker" = None,
+        owner=None,
         tags: List[str] = None,
         description: str = None,
         child=None,
