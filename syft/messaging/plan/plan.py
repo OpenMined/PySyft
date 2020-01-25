@@ -12,7 +12,6 @@ from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.messaging.message import Operation
-from syft.messaging.plan.procedure import Procedure
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
@@ -36,14 +35,14 @@ class func2plan(object):
         # "manual" state was provided.
         self.include_state = state is not None
 
-    def __call__(self, plan_blueprint):
+    def __call__(self, plan_function):
         plan = Plan(
-            owner=sy.local_worker,
-            id=sy.ID_PROVIDER.pop(),
-            name=plan_blueprint.__name__,
-            blueprint=plan_blueprint,
-            state_tensors=self.state_tensors,
+            name=plan_function.__name__,
             include_state=self.include_state,
+            forward_func=plan_function,
+            state_tensors=self.state_tensors,
+            id=sy.ID_PROVIDER.pop(),
+            owner=sy.local_worker,
         )
 
         # Build the plan automatically
@@ -73,16 +72,14 @@ class Plan(AbstractObject, ObjectStorage):
 
     Args:
         name: the name of the name
-        procedure: stores and manages the plan's commands
         state: store the plan tensors like model parameters
         include_state: if true, implies that the plan is a function, else a class. If true, the
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
-        state_placeholders: ids of the state elements
-        input_placeholders: ids of the last argument ids (present in the procedure commands)
-        output_placeholders: ids of the last result ids (present in the procedure commands)
-        readable_plan: list of commands
-        blueprint: the function to be transformed into a plan
+        input_placeholders: list of the placeholders for the plan arguments
+        output_placeholders: list of the placeholders for the plan results
+        operations: list of commands (called operations)
+        forward_func: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
         id: plan id
         owner: plan owner
@@ -93,16 +90,13 @@ class Plan(AbstractObject, ObjectStorage):
     def __init__(
         self,
         name: str = None,
-        procedure: Procedure = None,
         state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        # Optional kwargs if commands or state are not provided
-        state_placeholders: List[PlaceHolder] = None,
+        operations: List = None,
         input_placeholders: List[PlaceHolder] = None,
         output_placeholders: List[PlaceHolder] = None,
-        readable_plan: List = None,
-        blueprint=None,
+        forward_func=None,
         state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
@@ -118,17 +112,15 @@ class Plan(AbstractObject, ObjectStorage):
         self.name = name or self.__class__.__name__
         self.owner = owner
 
+        self.operations = operations or []
         self.input_placeholders = input_placeholders or []
         self.output_placeholders = output_placeholders or []
 
         self.placeholders = {}
         self.var_count = 0
 
-        # Info about the plan stored via the state and the procedure
-        self.procedure = procedure or Procedure(
-            readable_plan, input_placeholders, output_placeholders
-        )
-        self.state = state or State(owner=owner)  # , state_placeholders=state_placeholders)
+        # Info about the plan stored via the state
+        self.state = state or State(owner=owner)
         if state_tensors is not None:
             for tensor in state_tensors:
                 placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})
@@ -140,11 +132,11 @@ class Plan(AbstractObject, ObjectStorage):
         self.include_state = include_state
         self.is_built = is_built
 
-        # The plan has not been sent
+        # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
 
-        if blueprint is not None:
-            self.forward = blueprint
+        if forward_func is not None:
+            self.forward = forward_func
         elif self.is_built:
             self.forward = None
 
@@ -172,7 +164,7 @@ class Plan(AbstractObject, ObjectStorage):
     # For backward compatibility
     @property
     def readable_plan(self):
-        return self.procedure.operations
+        return self.operations
 
     def parameters(self):
         """
@@ -287,7 +279,7 @@ class Plan(AbstractObject, ObjectStorage):
             )
             # We're cheating a bit here because we put placeholders instead of return_ids
             operation = Operation(*command_placeholders, return_ids=return_placeholders)
-            self.procedure.operations.append(operation)
+            self.operations.append(operation)
 
         sy.trace_logs = []
 
@@ -298,13 +290,11 @@ class Plan(AbstractObject, ObjectStorage):
         """Creates a copy of a plan."""
         plan = Plan(
             name=self.name,
-            procedure=self.procedure.copy(),
             state=self.state.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
             input_placeholders=self.input_placeholders,
             output_placeholders=self.input_placeholders,
-            # General kwargs
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
@@ -357,7 +347,7 @@ class Plan(AbstractObject, ObjectStorage):
 
             print("Running operations...\n")
 
-            for i, op in enumerate(self.procedure.operations):
+            for i, op in enumerate(self.operations):
                 print("run cmd", i)
                 cmd, _self, args, kwargs, return_placeholder = (
                     op.cmd_name,
@@ -517,7 +507,7 @@ class Plan(AbstractObject, ObjectStorage):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, plan.id),
-            sy.serde.msgpack.serde._simplify(worker, plan.procedure),
+            sy.serde.msgpack.serde._simplify(worker, plan.operations),
             sy.serde.msgpack.serde._simplify(worker, plan.state),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
@@ -540,7 +530,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         (
             id,
-            procedure,
+            operations,
             state,
             include_state,
             is_built,
@@ -553,22 +543,22 @@ class Plan(AbstractObject, ObjectStorage):
 
         sy.hook.placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
-        procedure = sy.serde.msgpack.serde._detail(worker, procedure)
+        operations = sy.serde.msgpack.serde._detail(worker, operations)
         state = sy.serde.msgpack.serde._detail(worker, state)
         input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
         output_placeholders = sy.serde.msgpack.serde._detail(worker, output_placeholders)
 
         plan = sy.Plan(
-            owner=worker,
-            id=id,
             include_state=include_state,
             is_built=is_built,
+            operations=operations,
             input_placeholders=input_placeholders,
             output_placeholders=output_placeholders,
+            id=id,
+            owner=worker,
         )
         sy.hook.placeholders = {}
 
-        plan.procedure = procedure
         plan.state = state
         state.plan = plan
 
@@ -580,7 +570,7 @@ class Plan(AbstractObject, ObjectStorage):
 
 
 def tag_sort(keyword):
-    # TODO is only works up to 9 return values, because comarison is done on str and '7' > '16'
+    # TODO is only works up to 9 return values, because comparison is done on str and '7' > '16'
     def extract_key(placeholder):
         for tag in placeholder.tags:
             if keyword in tag:

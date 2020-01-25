@@ -55,7 +55,6 @@ samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_l
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.messaging.plan.plan.Plan] = make_plan
 samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.plan.procedure.Procedure] = make_procedure
 samples[syft.messaging.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan

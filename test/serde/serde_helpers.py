@@ -673,14 +673,9 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
-        # Procedure
-        compare_placeholders_list(
-            detailed.procedure.input_placeholders, original.procedure.input_placeholders
-        )
-        compare_placeholders_list(
-            detailed.procedure.output_placeholders, original.procedure.output_placeholders
-        )
-        compare_operations(detailed.procedure.operations, original.procedure.operations)
+        compare_placeholders_list(detailed.input_placeholders, original.input_placeholders)
+        compare_placeholders_list(detailed.output_placeholders, original.output_placeholders)
+        compare_operations(detailed.operations, original.operations)
         # State
         compare_placeholders_list(
             detailed.state.state_placeholders, original.state.state_placeholders
@@ -706,7 +701,7 @@ def make_plan(**kwargs):
                 CODE[syft.messaging.plan.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.procedure),  # (Procedure)
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.operations),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
                     plan.is_built,  # (bool) is_built
@@ -729,9 +724,7 @@ def make_plan(**kwargs):
                 CODE[syft.messaging.plan.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, model_plan.procedure
-                    ),  # (Procedure)
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.operations),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
                     model_plan.include_state,  # (bool) include_state
                     model_plan.is_built,  # (bool) is_built
@@ -788,50 +781,6 @@ def make_state(**kwargs):
                             msgpack.serde._simplify(syft.hook.local_worker, t2),
                         ),
                     ),
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
-# Procedure
-def make_procedure(**kwargs):
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
-
-    procedure = plan.procedure
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.messaging.plan.procedure.Procedure
-        assert compare_placeholders_list(detailed.input_placeholders, original.input_placeholders)
-        assert compare_placeholders_list(detailed.output_placeholders, original.output_placeholders)
-        assert compare_operations(detailed.operations, original.operations)
-        return True
-
-    return [
-        {
-            "value": procedure,
-            "simplified": (
-                CODE[syft.messaging.plan.procedure.Procedure],
-                (
-                    (
-                        CODE[list],
-                        (  # (list of Operation) operations
-                            msgpack.serde._simplify(
-                                syft.hook.local_worker, procedure.operations[0]
-                            ),  # (Operation)
-                            msgpack.serde._simplify(
-                                syft.hook.local_worker, procedure.operations[1]
-                            ),
-                        ),
-                    ),
-                    #  Empty placeholders list (why?)
-                    (CODE[list], tuple()),  # (list) input_placeholders
-                    (CODE[list], tuple()),  # (list) output_placeholders
                 ),
             ),
             "cmp_detailed": compare,
