@@ -10,6 +10,7 @@ import weakref
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.generic.frameworks.hook.trace import Trace
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -113,7 +114,7 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
-        self.trace = False
+        self.trace = Trace()
 
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()

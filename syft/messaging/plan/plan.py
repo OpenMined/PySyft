@@ -252,18 +252,14 @@ class Plan(AbstractObject, ObjectStorage):
         cloned_state = self.state.clone_state_dict()
 
         self.owner.init_plan = self
-        sy.trace_logs = []
-        sy.hook.trace, sy.hook.trace_inactive = True, True
 
-        # We usually have include_state==True for functions converted to plan
-        # using @func2plan and we need therefore to add the state manually
-        if self.include_state:
-            results = self.forward(*args, self.state)
-        else:
-            results = self.forward(*args)
-
-        sy.hook.trace, sy.hook.trace_inactive = False, False
-        self.owner.init_plan = None
+        with sy.hook.trace.enabled():
+            # We usually have include_state==True for functions converted to plan
+            # using @func2plan and we need therefore to add the state manually
+            if self.include_state:
+                results = self.forward(*args, self.state)
+            else:
+                results = self.forward(*args)
 
         results = (results,) if not isinstance(results, tuple) else results
         self._tmp_result_ids = [t.id for t in results if isinstance(t, torch.Tensor)]
@@ -271,7 +267,7 @@ class Plan(AbstractObject, ObjectStorage):
         # We put back the clone of the original state
         self.state.set_(cloned_state)
 
-        for log in sy.trace_logs:
+        for log in sy.hook.trace.logs:
             command, response = log
             command_placeholders, return_placeholders = (
                 self.replace_with_placeholders(command, find_inputs=True),
@@ -281,7 +277,7 @@ class Plan(AbstractObject, ObjectStorage):
             operation = Operation(*command_placeholders, return_ids=return_placeholders)
             self.operations.append(operation)
 
-        sy.trace_logs = []
+        sy.hook.trace.clear()
 
         self.is_built = True
         self.owner.init_plan = None

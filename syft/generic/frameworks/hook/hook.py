@@ -20,8 +20,6 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
 
-syft.trace_logs = []
-
 
 class FrameworkHook(ABC):
     @abstractmethod
@@ -414,10 +412,9 @@ class FrameworkHook(ABC):
             """
 
             has_trace_lock = False
-            if syft.hook.trace and syft.hook.trace_inactive:
-                # print('LOCK M', method_name)
+            if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
                 req = (method_name, self, args, kwargs)
-                syft.hook.trace_inactive = False
+                syft.hook.trace.out_of_operation = False
                 has_trace_lock = True
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
@@ -497,12 +494,10 @@ class FrameworkHook(ABC):
                     method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
                 )
 
-            if syft.hook.trace and has_trace_lock:
-                syft.hook.trace_inactive = True
-
+            if syft.hook.trace.enabled and has_trace_lock:
+                syft.hook.trace.out_of_operation = True
                 resp = response
-                syft.trace_logs.append((req, resp))
-                # print('UNLOCK M', method_name)
+                syft.hook.trace.logs.append((req, resp))
 
             return response
 
@@ -601,11 +596,11 @@ class FrameworkHook(ABC):
             Operate the hooking
             """
             has_trace_lock = False
-            if syft.hook.trace and syft.hook.trace_inactive:
-                # print('LOCK F', cmd_name)
+            if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
                 req = (cmd_name, None, args, kwargs)
-                syft.hook.trace_inactive = False
+                syft.hook.trace.out_of_operation = False
                 has_trace_lock = True
+
             try:
                 tensor_type = (
                     type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
@@ -622,12 +617,10 @@ class FrameworkHook(ABC):
 
             response = handle_func_command(command)
 
-            if syft.hook.trace and has_trace_lock:
-                syft.hook.trace_inactive = True
-
+            if syft.hook.trace.enabled and has_trace_lock:
+                syft.hook.trace.out_of_operation = True
                 resp = response
-                syft.trace_logs.append((req, resp))
-                # print('UNLOCK F', cmd_name)
+                syft.hook.trace.logs.append((req, resp))
 
             return response
 
