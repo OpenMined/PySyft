@@ -1,8 +1,6 @@
 import math
 import logging
 from syft.generic.object import AbstractObject
-from typing import List
-import syft as sy
 import torch
 from torch.utils.data import Dataset
 
@@ -24,19 +22,8 @@ class BaseDataset(AbstractObject):
 
     """
 
-    def __init__(
-        self,
-        data,
-        targets,
-        transform=None,
-        id: int = None,
-        owner=None,
-        tags: List[str] = None,
-        description: str = None,
-        child=None,
-    ):
-
-        super(BaseDataset, self).__init__(id, owner, tags, description, child)
+    def __init__(self, data, targets, transform=None, **kwargs):
+        super().__init__(**kwargs)
         self.data = data
         self.targets = targets
         self.transform_ = transform
