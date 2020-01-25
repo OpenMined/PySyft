@@ -43,7 +43,7 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
         rank (int): rank of the crypten party.
         world_size (int): number of crypten parties involved in the computation.
         master_addr (str): IP address of the master party (party with rank 0).
-        master_port (int, str): port of the master party (party with rank 0).
+        master_port (int or str): port of the master party (party with rank 0).
         func_args (list): arguments to be passed to func.
         func_kwargs (dict): keyword arguments to be passed to func.
 
@@ -92,6 +92,8 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
 
     Args:
         workers (list): workers (parties) to be involved in the computation.
+        master_addr (str): IP address of the master party (party with rank 0).
+        master_port (int, str): port of the master party (party with rank 0), default is 15987.
     """
 
     def decorator(func):
