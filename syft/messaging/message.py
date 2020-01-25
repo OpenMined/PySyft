@@ -104,6 +104,22 @@ class Message:
         return self.__str__()
 
 
+class CryptenInit(Message):
+    """Initialize a Crypten party using this message.
+
+    Crypten uses processes as parties, those processes need to be initialized with information
+    so they can communicate and exchange tensors and shares while doing computation. This message
+    allows the exchange of information such as the ip and port of the master party to connect to,
+    as well as the rank of the party to run and the number of parties involved."""
+
+    def __init__(self, contents):
+        super().__init__(contents)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInit":
+        return CryptenInit(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+
+
 class Operation(Message):
     """All syft operations use this message type
 
