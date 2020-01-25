@@ -29,8 +29,10 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
+from syft.messaging.message import CryptenInit
 from syft.messaging.plan import Plan
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.crypten import toy_func, run_party
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
@@ -118,6 +120,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             GetShapeMessage: self.get_tensor_shape,
             SearchMessage: self.search,
             ForceObjectDeleteMessage: self.force_rm_obj,
+            CryptenInit: self.run_crypten_party,  # TODO: update Message to CryptenInit after implementing it
         }
 
         self._plan_command_router = {
@@ -395,6 +398,20 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.send_obj(obj, worker)
 
         return pointer
+
+    def run_crypten_party(self, message: tuple):
+        """Run crypten party according to the information received.
+
+        Args:
+            message (CryptenInit): should contain the rank, world_size, master_addr and master_port.
+
+        Returns:
+            An ObjectMessage containing the return value of the crypten function computed.
+        """
+
+        rank, world_size, master_addr, master_port = message
+        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+        return ObjectMessage(return_value)
 
     def execute_command(self, message: tuple) -> PointerTensor:
         """
