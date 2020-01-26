@@ -3,8 +3,6 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import torch
-
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -190,6 +188,19 @@ class Plan(AbstractObject, ObjectStorage):
         return obj
 
     def add_placeholder(self, tensor, find_inputs=False, find_outputs=False):
+        """
+        Create and register a new placeholder if not already existing (else return
+        the existing one).
+
+        The placeholder is tagged by a unique and incremental index for a given plan.
+
+        Args:
+            tensor: the tensor to replace with a placeholder
+            find_inputs: if True, register the placeholder in the input_placeholders
+                list and tag it accordingly
+            find_outputs: if True, register the placeholder in the output_placeholders
+                list and tag it accordingly
+        """
         if tensor.id not in self.placeholders.keys():
             placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"})
             self.placeholders[tensor.id] = placeholder
@@ -206,12 +217,15 @@ class Plan(AbstractObject, ObjectStorage):
         return self.placeholders[tensor.id]
 
     def replace_with_placeholders(self, obj, **kw):
+        """
+        Replace in an object all FrameworkTensors with Placeholders
+        """
         if isinstance(obj, (tuple, list)):
             r = [self.replace_with_placeholders(o, **kw) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
             return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
-        elif isinstance(obj, torch.Tensor):
+        elif isinstance(obj, FrameworkTensor):
             return self.add_placeholder(obj, **kw)
         elif isinstance(obj, (int, float, str, bool)):
             return obj
@@ -244,8 +258,18 @@ class Plan(AbstractObject, ObjectStorage):
     def build(self, *args):
         """Builds the plan.
 
+        First, run the function to be converted in a plan in a context which
+        activates the tracing and record the operations in trace.logs
+
+        Second, store the result ids temporarily to helper ordering the output
+        placeholders at return time
+
+        Third, loop through the trace logs and replace the tensors found in the
+        operations logged by PlaceHolders. Record those operations in
+        plan.operations
+
         Args:
-            args: Input data.
+            args: Input arguments to run the plan
         """
 
         self.owner.init_plan = self
@@ -285,7 +309,7 @@ class Plan(AbstractObject, ObjectStorage):
             include_state=self.include_state,
             is_built=self.is_built,
             input_placeholders=self.input_placeholders,
-            output_placeholders=self.input_placeholders,
+            output_placeholders=self.output_placeholders,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
@@ -334,10 +358,7 @@ class Plan(AbstractObject, ObjectStorage):
             for placeholder, arg in zip(self.input_placeholders, args):
                 placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
-            print("Running operations...\n")
-
             for i, op in enumerate(self.operations):
-                print("run cmd", i)
                 cmd, _self, args, kwargs, return_placeholder = (
                     op.cmd_name,
                     op.cmd_owner,  # cmd_owner is equivalent to the "self" in a method
@@ -345,14 +366,13 @@ class Plan(AbstractObject, ObjectStorage):
                     op.cmd_kwargs,
                     op.return_ids,
                 )
-                print((cmd, _self, args, kwargs))
                 if _self is None:
                     response = eval(cmd)(*args, **kwargs)
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-                print(response)
                 return_placeholder.instantiate(response.child)
 
+            # This ensures that we return the output placeholder in the correct order
             response = [p.child for p in sorted(self.output_placeholders, key=tag_sort("output"))]
 
             if len(response) == 0:
@@ -364,9 +384,8 @@ class Plan(AbstractObject, ObjectStorage):
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
-        If the plan doesn't have the plan built, first build it using the blueprint.
-        Then, update the plan with the result_ids and args ids given, run the plan
-        commands, build pointer(s) to the response(s) and return.
+        If the plan doesn't have the plan built, first build it using the original function.
+
         Args:
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
@@ -376,6 +395,7 @@ class Plan(AbstractObject, ObjectStorage):
         if not self.is_built:
             self.build(args)
 
+        # TODO: can we reuse result_ids?
         result = self.__call__(*args)
         return result
 
@@ -557,12 +577,15 @@ class Plan(AbstractObject, ObjectStorage):
 
 
 def tag_sort(keyword):
+    """
+    Utility function to sort tensors by their (unique) tag including "keyword"
+    """
     # TODO is only works up to 9 return values, because comparison is done on str and '7' > '16'
     def extract_key(placeholder):
         for tag in placeholder.tags:
             if keyword in tag:
                 return tag
 
-        return TypeError(f"Incorrect tag '{keyword}' in placeholder tags:", placeholder.tags)
+        return TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
 
     return extract_key

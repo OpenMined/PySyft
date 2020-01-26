@@ -48,12 +48,18 @@ class State(object):
 
     def read(self):
         """
-        Return state elements
+        Return state tensors that are from this plan specifically, but not those
+        of plans including in this plan.
+        If run while a plan is building, declare all the state tensors to the plan
+        currently building.
         """
-        # TODO I will add detailed expanation about this
+        # If there is a plan building, it is referenced in init_plan
         if self.owner.init_plan:
             parent_plan = self.owner.init_plan
+            # to see if we are in a sub plan, we use state objects equality
             if parent_plan.state != self:
+                # for all the placeholders in this sub plan, we report a copy of them
+                # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
                     placeholder.tags = set()
@@ -63,8 +69,8 @@ class State(object):
                     parent_plan.var_count += 1
 
         tensors = []
-
         for placeholder in self.state_placeholders:
+            # State elements from sub plan should not be reported when read() is used
             if "#inner" not in placeholder.tags:
                 tensor = placeholder.child
                 tensors.append(tensor)
