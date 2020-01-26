@@ -294,8 +294,6 @@ class Plan(AbstractObject, ObjectStorage):
 
         plan.state.plan = plan
 
-        plan.state.set_(self.state.clone_state_dict())
-
         return plan
 
     def __setattr__(self, name, value):

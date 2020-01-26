@@ -35,21 +35,12 @@ class State(object):
     def tensors(self) -> List:
         """
         Fetch and return all the state elements.
-        Perform a check of consistency on the elements ids.
         """
         tensors = []
         for placeholder in self.state_placeholders:
             tensor = placeholder.child
             tensors.append(tensor)
         return tensors
-
-    def clone_state_dict(self) -> Dict:
-        """
-        Return a clone of the state elements. Tensor ids are kept.
-        """
-        return {
-            placeholder.id: placeholder.child.clone() for placeholder in self.state_placeholders
-        }
 
     def copy(self) -> "State":
         state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
@@ -59,6 +50,7 @@ class State(object):
         """
         Return state elements
         """
+        # TODO I will add detailed expanation about this
         if self.owner.init_plan:
             parent_plan = self.owner.init_plan
             if parent_plan.state != self:
@@ -77,17 +69,6 @@ class State(object):
                 tensor = placeholder.child
                 tensors.append(tensor)
         return tensors
-
-    def set_(self, state_dict):
-        """
-        Reset inplace the state by feeding it a dict of tensors or params
-        """
-        # assert list(self.state_placeholders) == list(state_dict.keys())
-
-        for placeholder_id, new_tensor in state_dict.items():
-            for placeholder in self.state_placeholders:
-                if placeholder.id == placeholder_id:
-                    placeholder.instantiate(new_tensor)
 
     @staticmethod
     def create_grad_if_missing(tensor):
@@ -126,11 +107,10 @@ class State(object):
         """
         Simplify the plan's state when sending a plan
         """
-        r = (
+        return (
             sy.serde.msgpack.serde._simplify(worker, state.state_placeholders),
             sy.serde.msgpack.serde._simplify(worker, state.tensors()),
         )
-        return r
 
     @staticmethod
     def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
