@@ -100,7 +100,7 @@ class FrameworkHook(ABC):
             if f"native_{attr}" not in dir(tensor_type):
                 native_method = getattr(tensor_type, attr)
                 setattr(tensor_type, f"native_{attr}", native_method)
-                new_method = self._get_hooked_method(attr)
+                new_method = self._get_hooked_method(tensor_type, attr)
                 setattr(tensor_type, attr, new_method)
 
     def _hook_properties(hook_self, tensor_type: type):
@@ -392,7 +392,7 @@ class FrameworkHook(ABC):
         return overloaded_syft_method
 
     @classmethod
-    def _get_hooked_method(cls, method_name):
+    def _get_hooked_method(cls, tensor_type, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -407,7 +407,7 @@ class FrameworkHook(ABC):
         """
 
         @tracer(method_name=method_name)
-        @wraps(method_name)
+        @wraps(getattr(tensor_type, method_name))
         def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking

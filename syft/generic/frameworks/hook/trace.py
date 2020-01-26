@@ -46,10 +46,6 @@ def tracer(func_name=None, method_name=None):
     This decorator is applied on overloaded_native_method and overloaded_func
     in the generic hook
     """
-    # Select if the tracer records a function or a method, not none or both
-    assert (func_name is None) ^ (method_name is None)
-
-    cmd_name = func_name or method_name
 
     def decorator(func):
         @functools.wraps(func)
@@ -64,7 +60,12 @@ def tracer(func_name=None, method_name=None):
                     recording sub operations
             """
 
-            if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
+            if syft.hook.trace.active and syft.hook.trace.out_of_operation:
+                # Select if the tracer records a function or a method, not none or both
+                assert (func_name is None) ^ (method_name is None)
+
+                cmd_name = func_name or method_name
+
                 if method_name is not None:
                     # We extract the self with args[0]
                     command = (cmd_name, args[0], args[1:], kwargs)
