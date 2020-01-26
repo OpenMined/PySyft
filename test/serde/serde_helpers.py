@@ -225,11 +225,11 @@ def make_numpy_number(dtype, **kwargs):
 def compare_modules(detailed, original):
     """Compare ScriptModule instances"""
     input = torch.randn(10, 3)
-    # NOTE: after serde TopLevelTracedModule or _C.Function become ScriptModule
-    # (that's what torch.jit.load returns in detail function)
+    # NOTE: after serde TopLevelTracedModule or jit.ScriptFunction become
+    # ScriptModule (that's what torch.jit.load returns in detail function)
     assert isinstance(detailed, torch.jit.ScriptModule)
     # Code changes after torch.jit.load(): function becomes `forward` method
-    if type(original) != torch._C.Function:
+    if type(original) != torch.jit.ScriptFunction:
         assert detailed.code == original.code
     # model outputs match
     assert detailed(input).equal(original(input))
@@ -277,8 +277,8 @@ def make_torch_scriptmodule(**kwargs):
     ]
 
 
-# torch._C.Function
-def make_torch_cfunction(**kwargs):
+# torch.jit.ScriptFunction
+def make_torch_scriptfunction(**kwargs):
     @torch.jit.script
     def func(x):  # pragma: no cover
         return x + 2
@@ -287,12 +287,19 @@ def make_torch_cfunction(**kwargs):
         {
             "value": func,
             "simplified": (
-                CODE[torch._C.Function],
+                CODE[torch.jit.ScriptFunction],
                 (func.save_to_buffer(),),  # (bytes) serialized torchscript
             ),
             "cmp_detailed": compare_modules,
         }
     ]
+
+
+# torch.memory_format
+def make_torch_memoryformat(**kwargs):
+    memory_format = torch.preserve_format
+
+    return [{"value": memory_format, "simplified": (CODE[torch.memory_format], 3),}]
 
 
 # torch.jit.TopLevelTracedModule
