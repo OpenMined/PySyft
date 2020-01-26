@@ -116,7 +116,9 @@ class Plan(AbstractObject, ObjectStorage):
         self.input_placeholders = input_placeholders or []
         self.output_placeholders = output_placeholders or []
 
+        # Keep a local reference to all placeholders, stored by id
         self.placeholders = {}
+        # Incremental value to tag all placeholders with different tags
         self.var_count = 0
 
         # Info about the plan stored via the state
@@ -343,14 +345,16 @@ class Plan(AbstractObject, ObjectStorage):
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
 
     def __call__(self, *args, **kwargs):
-        """Calls a plan.
+        """
+        Calls a plan execution with some arguments.
 
-        Calls a plan execution with some arguments, and specify the ids where the result
-        should be stored.
-
-        Returns:
-            The pointer to the result of the execution if the plan was already sent,
-            else the None message serialized.
+        When possible, run the original function to improve efficiency. When
+        it's not, for example if you fetched the plan from a remote worker,
+        then run it from the tape of operations:
+        - Instantiate input placeholders
+        - for each recorded operation, run the operation on the placeholders
+          and use the result(s) to instantiate to appropriate placeholder.
+        - Return the instantiation of all the output placeholders.
         """
         if self.forward is not None:  # if not self.is_built:
             if self.include_state:
@@ -358,10 +362,10 @@ class Plan(AbstractObject, ObjectStorage):
             return self.forward(*args)
 
         else:
-            # Simulate instantiation
+            # Instantiate all the input placeholders in the correct order
             sorted_input_placeholders = sorted(self.input_placeholders, key=tag_sort("input"))
             for placeholder, arg in zip(sorted_input_placeholders, args):
-                placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
+                placeholder.instantiate(arg)
 
             for i, op in enumerate(self.operations):
                 cmd, _self, args, kwargs, return_placeholder = (
@@ -380,9 +384,7 @@ class Plan(AbstractObject, ObjectStorage):
             # This ensures that we return the output placeholder in the correct order
             response = [p.child for p in sorted(self.output_placeholders, key=tag_sort("output"))]
 
-            if len(response) == 0:
-                return None
-            elif len(response) == 1:
+            if len(response) == 1:
                 return response[0]
             else:
                 return tuple(response)
@@ -395,12 +397,12 @@ class Plan(AbstractObject, ObjectStorage):
             args: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
+        # TODO: can we reuse result_ids?
 
         # We build the plan only if needed
         if not self.is_built:
             self.build(args)
 
-        # TODO: can we reuse result_ids?
         result = self.__call__(*args)
         return result
 

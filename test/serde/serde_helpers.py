@@ -299,7 +299,7 @@ def make_torch_scriptfunction(**kwargs):
 def make_torch_memoryformat(**kwargs):
     memory_format = torch.preserve_format
 
-    return [{"value": memory_format, "simplified": (CODE[torch.memory_format], 3),}]
+    return [{"value": memory_format, "simplified": (CODE[torch.memory_format], 3)}]
 
 
 # torch.jit.TopLevelTracedModule

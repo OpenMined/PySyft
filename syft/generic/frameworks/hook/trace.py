@@ -53,7 +53,7 @@ def tracer(func_name=None, method_name=None):
             """
             The trace wrapper use two variables:
 
-                syft.hook.trace.enabled: True if we are in the recording mode
+                syft.hook.trace.active: True if we are in the recording mode
                     of operations
                 syft.hook.trace.out_of_operation: by default set to True, turns
                     to False when executing a recorded operation to prevent from
