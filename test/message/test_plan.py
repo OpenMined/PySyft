@@ -125,6 +125,27 @@ def test_plan_execute_locally_ambiguous_output(workers):
     assert actual == expected
 
 
+def test_plan_execute_locally_ambiguous_input(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,), (1,), (1,)])
+    def serde_plan(x, y, z):
+        a = x + x  # 2
+        b = x + z  # 4
+        c = y + z  # 5
+        return c, b, a  # 5, 4, 2
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+    t1, t2, t3 = th.tensor([1]), th.tensor([2]), th.tensor([3])
+    expected = serde_plan(t1, t2, t3)
+    actual = serde_plan_detailed(t1, t2, t3)
+    print(actual)
+    print(expected)
+    assert actual == expected
+
+
 def test_add_to_state():
     class Net(sy.Plan):
         def __init__(self):
@@ -765,75 +786,24 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     server.terminate()
 
 
-# def test_replace_worker_ids_two_strings(hook):
-#     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-#     _replace_message_ids_orig = Plan._replace_message_ids
-#     mock_fun = mock.Mock(return_value=[])
-#     Plan._replace_message_ids = mock_fun
-#     plan.replace_worker_ids("me", "you")
-#     args = {"change_id": -1, "obj": [], "to_id": -1}
-#     calls = [
-#         mock.call(from_worker="me", to_worker="you", **args),
-#         mock.call(from_worker=b"me", to_worker=b"you", **args),
-#     ]
-#     assert len(mock_fun.mock_calls) == 2
-#     mock_fun.assert_has_calls(calls, any_order=True)
-#     Plan._replace_message_ids = _replace_message_ids_orig
-
-
-# def test_replace_worker_ids_one_string_one_int(hook):
-#     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-#     _replace_message_ids_orig = Plan._replace_message_ids
+# Plans are not supporting non-local computation flows for the moment
+# def test_send_with_plan(workers):
+#     bob = workers["bob"]
 #
-#     mock_fun = mock.Mock(return_value=[])
-#     Plan._replace_message_ids = mock_fun
-#     plan.replace_worker_ids(100, "you")
+#     raise NotImplementedError
 #
-#     args = {"change_id": -1, "obj": [], "to_id": -1}
-#     calls = [mock.call(from_worker=100, to_worker="you", **args)]
-#     assert len(mock_fun.mock_calls) == 1
-#     mock_fun.assert_has_calls(calls, any_order=True)
+#     @sy.func2plan([th.Size((1, 3))])
+#     def plan_double_abs(x):
+#         x = x.send(bob)
+#         x = x + x
+#         x = th.abs(x)
+#         return x
 #
-#     mock_fun = mock.Mock(return_value=[])
-#     Plan._replace_message_ids = mock_fun
-#     plan.replace_worker_ids("me", 200)
-#     calls = [
-#         mock.call(from_worker="me", to_worker=200, **args),
-#         mock.call(from_worker=b"me", to_worker=200, **args),
-#     ]
-#     assert len(mock_fun.mock_calls) == 2
-#     mock_fun.assert_has_calls(calls, any_order=True)
-#     Plan._replace_message_ids = _replace_message_ids_orig
-#
-#
-# def test_replace_worker_ids_two_ints(hook):
-#     plan = sy.Plan(id="0", owner=hook.local_worker, name="test_plan")
-#     _replace_message_ids_orig = Plan._replace_message_ids
-#     mock_fun = mock.Mock(return_value=[])
-#     Plan._replace_message_ids = mock_fun
-#     plan.replace_worker_ids(300, 400)
-#     args = {"change_id": -1, "obj": [], "to_id": -1}
-#     calls = [mock.call(from_worker=300, to_worker=400, **args)]
-#     mock_fun.assert_called_once()
-#     mock_fun.assert_has_calls(calls, any_order=True)
-#     Plan._replace_message_ids = _replace_message_ids_orig
-
-
-def test_send_with_plan(workers):
-    bob = workers["bob"]
-
-    @sy.func2plan([th.Size((1, 3))])
-    def plan_double_abs(x):
-        x = x.send(bob)
-        x = x + x
-        x = th.abs(x)
-        return x
-
-    expected = th.tensor([4.0, 4.0, 4.0])
-    ptr_result = plan_double_abs(th.tensor([-2.0, 2.0, 2.0]))
-    assert isinstance(ptr_result.child, sy.PointerTensor)
-    result = ptr_result.get()
-    assert th.equal(result, expected)
+#     expected = th.tensor([4.0, 4.0, 4.0])
+#     ptr_result = plan_double_abs(th.tensor([-2.0, 2.0, 2.0]))
+#     assert isinstance(ptr_result.child, sy.PointerTensor)
+#     result = ptr_result.get()
+#     assert th.equal(result, expected)
 
 
 def test_cached_plan_send(workers):

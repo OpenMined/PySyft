@@ -3,6 +3,8 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import torch
+
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -207,7 +209,7 @@ class Plan(AbstractObject, ObjectStorage):
 
             if find_inputs:
                 self.input_placeholders.append(placeholder)
-                placeholder.tags.add("#input")
+                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
 
             if find_outputs and tensor.id in self._tmp_result_ids:
                 self.output_placeholders.append(placeholder)
@@ -274,6 +276,8 @@ class Plan(AbstractObject, ObjectStorage):
 
         self.owner.init_plan = self
 
+        self._tmp_args_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
+
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
             # using @func2plan and we need therefore to add the state manually
@@ -283,7 +287,7 @@ class Plan(AbstractObject, ObjectStorage):
                 results = self.forward(*args)
 
         results = (results,) if not isinstance(results, tuple) else results
-        self._tmp_result_ids = [t.id for t in results if isinstance(t, torch.Tensor)]
+        self._tmp_result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
 
         for log in sy.hook.trace.logs:
             command, response = log
@@ -297,6 +301,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         sy.hook.trace.clear()
         del self._tmp_result_ids
+        del self._tmp_args_ids
 
         self.is_built = True
         self.owner.init_plan = None
@@ -308,6 +313,7 @@ class Plan(AbstractObject, ObjectStorage):
             state=self.state.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
+            operations=self.operations,
             input_placeholders=self.input_placeholders,
             output_placeholders=self.output_placeholders,
             id=sy.ID_PROVIDER.pop(),
@@ -346,16 +352,15 @@ class Plan(AbstractObject, ObjectStorage):
             The pointer to the result of the execution if the plan was already sent,
             else the None message serialized.
         """
-
         if self.forward is not None:  # if not self.is_built:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
 
         else:
-            print("\nInstanciating inputs..\n")
-            # Simulate instanciation
-            for placeholder, arg in zip(self.input_placeholders, args):
+            # Simulate instantiation
+            sorted_input_placeholders = sorted(self.input_placeholders, key=tag_sort("input"))
+            for placeholder, arg in zip(sorted_input_placeholders, args):
                 placeholder.instantiate(arg)  # TODO how do I know the order is preserved??
 
             for i, op in enumerate(self.operations):

@@ -865,7 +865,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if plan_id in self._objects:
             candidate = self._objects[plan_id]
-            print("?", candidate)
             if isinstance(candidate, sy.Plan):
                 if copy:
                     return candidate.copy()
