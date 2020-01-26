@@ -28,7 +28,7 @@ from syft.serde.torch.serde import numpy_tensor_serializer
 from syft.serde.torch.serde import numpy_tensor_deserializer
 
 from syft_proto.types.syft.v1.shape_pb2 import Shape as ShapePB
-from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
+from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
@@ -288,15 +288,17 @@ def _unbufferize_script_module(
     return loaded_module
 
 
-def _bufferize_c_function(worker: AbstractWorker, script_module: torch._C.Function) -> CFunctionPB:
-    protobuf_script = CFunctionPB()
+def _bufferize_script_function(
+    worker: AbstractWorker, script_module: torch.jit.ScriptFunction
+) -> ScriptFunctionPB:
+    protobuf_script = ScriptFunctionPB()
     protobuf_script.obj = script_module.save_to_buffer()
     return protobuf_script
 
 
-def _unbufferize_c_function(
-    worker: AbstractWorker, protobuf_script: CFunctionPB
-) -> torch._C.Function:
+def _unbufferize_script_function(
+    worker: AbstractWorker, protobuf_script: ScriptFunctionPB
+) -> torch.jit.ScriptFunction:
     script_module_stream = io.BytesIO(protobuf_script.obj)
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module
@@ -334,7 +336,7 @@ MAP_TORCH_PROTOBUF_TRANSLATORS = OrderedDict(
         torch.Tensor: (_bufferize_torch_tensor, _unbufferize_torch_tensor),
         torch.device: (_bufferize_torch_device, _unbufferize_torch_device),
         torch.nn.Parameter: (_bufferize_torch_parameter, _unbufferize_torch_parameter),
-        torch._C.Function: (_bufferize_c_function, _unbufferize_c_function),
+        torch.jit.ScriptFunction: (_bufferize_script_function, _unbufferize_script_function),
         torch.jit.ScriptModule: (_bufferize_script_module, _unbufferize_script_module),
         torch.jit.TopLevelTracedModule: (_bufferize_traced_module, _unbufferize_traced_module),
         torch.Size: (_bufferize_torch_size, _unbufferize_torch_size),
