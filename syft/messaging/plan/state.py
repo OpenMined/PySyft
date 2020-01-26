@@ -97,19 +97,19 @@ class State(object):
             if tensor.grad is not None:
                 tensor.grad -= tensor.grad
 
-    # def fix_precision_(self, *args, **kwargs):
-    #     for tensor in self.tensors():
-    #         self.create_grad_if_missing(tensor)
-    #         tensor.fix_precision_(*args, **kwargs)
-    #
-    # def float_precision_(self):
-    #     for tensor in self.tensors():
-    #         tensor.float_precision_()
-    #
-    # def share_(self, *args, **kwargs):
-    #     for tensor in self.tensors():
-    #         self.create_grad_if_missing(tensor)
-    #         tensor.share_(*args, **kwargs)
+    def fix_precision_(self, *args, **kwargs):
+        for tensor in self.tensors():
+            self.create_grad_if_missing(tensor)
+            tensor.fix_precision_(*args, **kwargs)
+
+    def float_precision_(self):
+        for tensor in self.tensors():
+            tensor.float_precision_()
+
+    def share_(self, *args, **kwargs):
+        for tensor in self.tensors():
+            self.create_grad_if_missing(tensor)
+            tensor.share_(*args, **kwargs)
 
     def get_(self):
         """
