@@ -8,6 +8,7 @@ from typing import List, Tuple
 
 import syft
 from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.hook.trace import tracer
 from syft.generic.object import initialize_object
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -405,17 +406,12 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
+        @tracer(method_name=method_name)
         @wraps(method_name)
         def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking
             """
-
-            has_trace_lock = False
-            if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
-                req = (method_name, self, args, kwargs)
-                syft.hook.trace.out_of_operation = False
-                has_trace_lock = True
 
             if not hasattr(self, "child"):  # means that it's not a wrapper
 
@@ -493,11 +489,6 @@ class FrameworkHook(ABC):
                 response = hook_args.hook_response(
                     method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
                 )
-
-            if syft.hook.trace.enabled and has_trace_lock:
-                syft.hook.trace.out_of_operation = True
-                resp = response
-                syft.hook.trace.logs.append((req, resp))
 
             return response
 
@@ -590,16 +581,12 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
+        @tracer(func_name=cmd_name)
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
-            has_trace_lock = False
-            if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
-                req = (cmd_name, None, args, kwargs)
-                syft.hook.trace.out_of_operation = False
-                has_trace_lock = True
 
             try:
                 tensor_type = (
@@ -616,11 +603,6 @@ class FrameworkHook(ABC):
                 handle_func_command = syft.framework.Tensor.handle_func_command
 
             response = handle_func_command(command)
-
-            if syft.hook.trace.enabled and has_trace_lock:
-                syft.hook.trace.out_of_operation = True
-                resp = response
-                syft.hook.trace.logs.append((req, resp))
 
             return response
 

@@ -19,16 +19,14 @@ class PlaceHolder(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the PlaceHolder.
         """
-        super().__init__(tags=tags, description=description)
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.owner = owner
-        self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
 
     def instantiate(self, tensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
-        executed on this child tensor
+        executed on this child tensor.
 
         We remove wrappers is there are any.
         """
@@ -38,25 +36,18 @@ class PlaceHolder(AbstractTensor):
             self.child = tensor
         return self
 
-    def get(self):
-        """
-        Returns any content that has been filled into the placeholder.
-
-        This is roughly the opposite of instantiate().
-        """
-        return self.child
-
     def __str__(self) -> str:
-        if isinstance(self.tags, set):
-            tags = ", ".join(list(self.tags))
-        elif self.tags is None:
-            tags = "-"
-        else:
-            tags = self.tags
+        """
+        Compact representation of a Placeholder, including tags and optional child
+        """
+        tags = " ".join(list(self.tags or []))
+
+        out = f"{type(self).__name__ }[Tags:{tags}]"
+
         if hasattr(self, "child") and self.child is not None:
-            return f"{type(self).__name__ }({tags})>" + self.child.__str__()
-        else:
-            return f"{type(self).__name__ }({tags})"
+            out += f">{self.child}"
+
+        return out
 
     __repr__ = __str__
 
@@ -105,14 +96,11 @@ class PlaceHolder(AbstractTensor):
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
 
-        unique_id = "-".join(tags)
-
-        # NOTE having a global var here is not elegant, we can iterate on this
-        if unique_id not in syft.hook.placeholders:
+        if tensor_id not in worker._tmp_placeholders:
             tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            syft.hook.placeholders[unique_id] = tensor
+            worker._tmp_placeholders[tensor_id] = tensor
 
-        return syft.hook.placeholders[unique_id]
+        return worker._tmp_placeholders[tensor_id]
 
 
 ### Register the tensor with hook_args.py ###

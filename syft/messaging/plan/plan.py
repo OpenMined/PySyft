@@ -272,6 +272,7 @@ class Plan(AbstractObject, ObjectStorage):
             self.operations.append(operation)
 
         sy.hook.trace.clear()
+        del self._tmp_result_ids
 
         self.is_built = True
         self.owner.init_plan = None
@@ -529,7 +530,7 @@ class Plan(AbstractObject, ObjectStorage):
             output_placeholders,
         ) = plan_tuple
 
-        sy.hook.placeholders = {}
+        worker._tmp_placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
         operations = sy.serde.msgpack.serde._detail(worker, operations)
         state = sy.serde.msgpack.serde._detail(worker, state)
@@ -545,7 +546,7 @@ class Plan(AbstractObject, ObjectStorage):
             id=id,
             owner=worker,
         )
-        sy.hook.placeholders = {}
+        del worker._tmp_placeholders
 
         plan.state = state
         state.plan = plan
