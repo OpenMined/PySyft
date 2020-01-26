@@ -4,15 +4,15 @@ import torch.nn as nn
 import pytest
 
 
-# Disable mkldnn to avoid rounding errors due to difference in implementation
-th._C._set_mkldnn_enabled(False)
-
-
 def test_conv2d():
     """
     Test the Conv2d module to ensure that it produces the exact same
     output as the primary torch implementation, in the same order.
     """
+
+    # Disable mkldnn to avoid rounding errors due to difference in implementation
+    mkldnn_enabled_init = th._C._get_mkldnn_enabled()
+    th._C._set_mkldnn_enabled(False)
 
     model2 = nn2.Conv2d(1, 32, 3, bias=True)
 
@@ -36,5 +36,8 @@ def test_conv2d():
     out = model(data)
 
     out2 = model2(data)
+
+    # Reset mkldnn to the original state
+    th._C._set_mkldnn_enabled(mkldnn_enabled_init)
 
     assert th.eq(out, out2).all()
