@@ -14,7 +14,7 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
         "RENDEZVOUS": "env://",
         "MASTER_ADDR": master_addr,
         "MASTER_PORT": master_port,
-        "BACKEND": "gloo",
+        "DISTRIBUTED_BACKEND": "gloo",
     }
     for key, val in communicator_args.items():
         os.environ[key] = str(val)
