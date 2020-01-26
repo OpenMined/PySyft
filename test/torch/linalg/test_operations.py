@@ -5,7 +5,6 @@ from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
 from syft.frameworks.torch.linalg.operations import _norm_mpc
 from syft.frameworks.torch.linalg.lr import DASH
-from test.efficiency_tests.assertions import assert_time
 
 
 def test_inv_sym(hook, workers):
@@ -31,7 +30,6 @@ def test_inv_sym(hook, workers):
     assert (diff < 1e-3).all()
 
 
-@assert_time(max_time=20)
 def test_norm_mpc(hook, workers):
     """
     Testing computation of vector norm on an AdditiveSharedTensor
