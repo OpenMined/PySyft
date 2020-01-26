@@ -54,22 +54,32 @@ def tracer(func_name=None, method_name=None):
     def decorator(func):
         @functools.wraps(func)
         def trace_wrapper(*args, **kwargs):
+            """
+            The trace wrapper use two variables:
 
-            has_trace_lock = False
+                syft.hook.trace.enabled: True if we are in the recording mode
+                    of operations
+                syft.hook.trace.out_of_operation: by default set to True, turns
+                    to False when executing a recorded operation to prevent from
+                    recording sub operations
+            """
+
             if syft.hook.trace.enabled and syft.hook.trace.out_of_operation:
                 if method_name is not None:
                     # We extract the self with args[0]
                     command = (cmd_name, args[0], args[1:], kwargs)
                 else:
                     command = (cmd_name, None, args, kwargs)
+
                 syft.hook.trace.out_of_operation = False
-                has_trace_lock = True
 
-            response = func(*args, **kwargs)
+                response = func(*args, **kwargs)
 
-            if syft.hook.trace.enabled and has_trace_lock:
                 syft.hook.trace.out_of_operation = True
+
                 syft.hook.trace.logs.append((command, response))
+            else:
+                response = func(*args, **kwargs)
 
             return response
 
