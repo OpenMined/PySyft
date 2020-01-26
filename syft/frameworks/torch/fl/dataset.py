@@ -131,17 +131,33 @@ class BaseDataset(AbstractObject):
 
     @staticmethod
     def simplify(worker, dataset: "BaseDataset") -> tuple:
+        chain = None
+        if hasattr(dataset, "child"):
+            chain = syft.serde.msgpack.serde._simplify(worker, dataset.child)
         return (
             syft.serde.msgpack.serde._simplify(worker, dataset.data),
             syft.serde.msgpack.serde._simplify(worker, dataset.targets),
+            dataset.id,
+            syft.serde.msgpack.serde._simplify(worker, dataset.tags),
+            syft.serde.msgpack.serde._simplify(worker, dataset.description),
+            chain,
         )
 
     @staticmethod
     def detail(worker, dataset_tuple: tuple) -> "BaseDataset":
-        data, targets = dataset_tuple
-        data = syft.serde.msgpack.serde._detail(worker, data)
-        targets = syft.serde.msgpack.serde._detail(worker, targets)
-        return BaseDataset(data, targets)
+        data, targets, id, tags, description, chain = dataset_tuple
+        dataset = BaseDataset(
+            syft.serde.msgpack.serde._detail(worker, data),
+            syft.serde.msgpack.serde._detail(worker, targets),
+            id=id,
+            tags=syft.serde.msgpack.serde._detail(worker, data),
+            description=syft.serde.msgpack.serde._detail(worker, description),
+        )
+        if chain is not None:
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
+            dataset.child = chain
+
+        return dataset
 
 
 def dataset_federate(dataset, workers):
