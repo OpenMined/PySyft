@@ -4,6 +4,10 @@ import torch.nn as nn
 import pytest
 
 
+# Disable mkldnn to avoid rounding errors due to difference in implementation
+th._C._set_mkldnn_enabled(False)
+
+
 def test_conv2d():
     """
     Test the Conv2d module to ensure that it produces the exact same
@@ -33,4 +37,4 @@ def test_conv2d():
 
     out2 = model2(data)
 
-    assert th.isclose(out, out2, atol=1e-6).all()
+    assert th.eq(out, out2).all()
