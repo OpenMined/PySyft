@@ -96,6 +96,9 @@ class PlaceHolder(AbstractTensor):
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
 
+        if not hasattr(worker, "_tmp_placeholders"):
+            worker._tmp_placeholders = {}
+
         if tensor_id not in worker._tmp_placeholders:
             tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
             worker._tmp_placeholders[tensor_id] = tensor
