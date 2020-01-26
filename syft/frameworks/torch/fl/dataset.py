@@ -3,6 +3,7 @@ import logging
 from syft.generic.object import AbstractObject
 import torch
 from torch.utils.data import Dataset
+import syft
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,20 @@ class BaseDataset(AbstractObject):
             Get location of the data
         """
         return self.data.location
+
+    @staticmethod
+    def simplify(worker, dataset: "BaseDataset") -> tuple:
+        return (
+            syft.serde.msgpack.serde._simplify(worker, dataset.data),
+            syft.serde.msgpack.serde._simplify(worker, dataset.targets),
+        )
+
+    @staticmethod
+    def detail(worker, dataset_tuple: tuple) -> "BaseDataset":
+        data, targets = dataset_tuple
+        data = syft.serde.msgpack.serde._detail(worker, data)
+        targets = syft.serde.msgpack.serde._detail(worker, targets)
+        return BaseDataset(data, targets)
 
 
 def dataset_federate(dataset, workers):
