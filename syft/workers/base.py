@@ -37,6 +37,8 @@ from syft.exceptions import WorkerNotFoundException
 from syft.exceptions import ResponseSignatureError
 from syft.exceptions import PlanCommandUnknownError
 
+from syft.frameworks.mpc import crypten as syftcrypt
+import crypten
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -167,9 +169,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if hasattr(hook, "torch"):
                 self.torch = self.framework
                 self.remote = Remote(self, "torch")
+
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
+
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -220,6 +224,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             yield self
         finally:
             self.is_client_worker = True
+
+    def connect_to_mpc(self, rank, world_size):
+        import os
+        default_args = {
+             "DISTRIBUTED_BACKEND": "gloo",
+             "MASTER_IP": "127.0.0.1",
+             "MASTER_PORT": 9000,
+             "WORLD_SIZE": world_size,
+             "RANK": rank,
+        }
+
+        for key, val in default_args.items():
+            os.environ[key] = str(val)
+
+        crypten.init(rank, world_size)
+
+    def put_to_store_mpc(self, key, val):
+        syftcrypt.add_val(key, val)
+
+    def get_from_store_mpc(self, key):
+        return syftcrypt.get_val(key)
 
     def remove_worker_from_registry(self, worker_id):
         """Removes a worker from the dictionary of known workers.
