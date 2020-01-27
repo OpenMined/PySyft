@@ -23,12 +23,12 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
-from syft_proto.types.torch.v1.c_function_pb2 import CFunction as CFunctionPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
+from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
 
@@ -38,7 +38,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.device: DevicePB,
     torch.nn.Parameter: ParameterPB,
     torch.jit.ScriptModule: ScriptModulePB,
-    torch._C.Function: CFunctionPB,
+    torch.jit.ScriptFunction: ScriptFunctionPB,
     torch.jit.TopLevelTracedModule: TracedModulePB,
     torch.Size: SizePB,
     ObjectMessage: ObjectMessagePB,
