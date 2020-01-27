@@ -318,13 +318,6 @@ class TorchTensor(AbstractTensor):
             except AttributeError:
                 pass
 
-            # TODO: clean this line
-            cmd = (
-                "syft.local_worker.hook."
-                + ".".join(cmd.split(".")[:-1])
-                + ".native_"
-                + cmd.split(".")[-1]
-            )
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
@@ -341,10 +334,19 @@ class TorchTensor(AbstractTensor):
         """
             Return the evaluation of the cmd string parameter
         """
+        module = syft.local_worker.hook
+        segments = cmd.split(".")
+        submodules = segments[:-1]
+        command = segments[-1]
+
+        for sm in submodules:
+            module = getattr(module, sm)
+
+        command_method = getattr(module, f"native_{command}")
         if isinstance(args, tuple):
-            response = eval(cmd)(*args, **kwargs)
+            response = command_method(*args, **kwargs)
         else:
-            response = eval(cmd)(args, **kwargs)
+            response = command_method(args, **kwargs)
 
         return response
 
