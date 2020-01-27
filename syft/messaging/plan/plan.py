@@ -1,4 +1,5 @@
 import re
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -76,8 +77,7 @@ class Plan(AbstractObject, ObjectStorage):
         include_state: if true, implies that the plan is a function, else a class. If true, the
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
-        input_placeholders: list of the placeholders for the plan arguments
-        output_placeholders: list of the placeholders for the plan results
+        placeholders: dict of placeholders used in the plan
         operations: list of commands (called operations)
         forward_func: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
@@ -93,9 +93,8 @@ class Plan(AbstractObject, ObjectStorage):
         state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        operations: List = None,
-        input_placeholders: List[PlaceHolder] = None,
-        output_placeholders: List[PlaceHolder] = None,
+        operations: List[Operation] = None,
+        placeholders: Dict[Union[str, int], PlaceHolder] = None,
         forward_func=None,
         state_tensors=None,
         # General kwargs
@@ -113,19 +112,21 @@ class Plan(AbstractObject, ObjectStorage):
         self.owner = owner
 
         self.operations = operations or []
-        self.input_placeholders = input_placeholders or []
-        self.output_placeholders = output_placeholders or []
 
         # Keep a local reference to all placeholders, stored by id
-        self.placeholders = {}
+        self.placeholders = placeholders or {}
         # Incremental value to tag all placeholders with different tags
         self.var_count = 0
 
-        # Info about the plan stored via the state
         self.state = state or State(owner=owner)
+        # state_tensors are provided when plans are created using func2plan
         if state_tensors is not None:
+            # we want to make sure in that case that the state is empty
+            assert state is None
             for tensor in state_tensors:
-                placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})
+                placeholder = sy.PlaceHolder(
+                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id
+                )
                 self.var_count += 1
                 placeholder.instantiate(tensor)
                 self.state.state_placeholders.append(placeholder)
@@ -191,7 +192,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.de_register_obj(obj)
         return obj
 
-    def add_placeholder(self, tensor, find_inputs=False, find_outputs=False):
+    def add_placeholder(self, tensor, node_type=None):
         """
         Create and register a new placeholder if not already existing (else return
         the existing one).
@@ -200,22 +201,20 @@ class Plan(AbstractObject, ObjectStorage):
 
         Args:
             tensor: the tensor to replace with a placeholder
-            find_inputs: if True, register the placeholder in the input_placeholders
-                list and tag it accordingly
-            find_outputs: if True, register the placeholder in the output_placeholders
-                list and tag it accordingly
+            node_type: Should be "input" or "output", used to tag like this: #<type>-*
         """
         if tensor.id not in self.placeholders.keys():
-            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"})
+            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"}, id=tensor.id)
             self.placeholders[tensor.id] = placeholder
 
-            if find_inputs:
-                self.input_placeholders.append(placeholder)
+            if node_type == "input":
                 placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
+            elif node_type == "output":
+                if tensor.id in self._tmp_result_ids:
+                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
+            else:
+                raise ValueError("node_type should be 'input' or 'output'.")
 
-            if find_outputs and tensor.id in self._tmp_result_ids:
-                self.output_placeholders.append(placeholder)
-                placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
             self.var_count += 1
 
         return self.placeholders[tensor.id]
@@ -294,8 +293,8 @@ class Plan(AbstractObject, ObjectStorage):
         for log in sy.hook.trace.logs:
             command, response = log
             command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, find_inputs=True),
-                self.replace_with_placeholders(response, find_outputs=True),
+                self.replace_with_placeholders(command, node_type="input"),
+                self.replace_with_placeholders(response, node_type="output"),
             )
             # We're cheating a bit here because we put placeholders instead of return_ids
             operation = Operation(*command_placeholders, return_ids=return_placeholders)
@@ -316,8 +315,7 @@ class Plan(AbstractObject, ObjectStorage):
             include_state=self.include_state,
             is_built=self.is_built,
             operations=self.operations,
-            input_placeholders=self.input_placeholders,
-            output_placeholders=self.output_placeholders,
+            placeholders=self.placeholders,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
@@ -335,7 +333,7 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"})
+            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"}, id=value.id)
             self.var_count += 1
             placeholder.instantiate(value)
             self.state.state_placeholders.append(placeholder)
@@ -363,8 +361,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         else:
             # Instantiate all the input placeholders in the correct order
-            sorted_input_placeholders = sorted(self.input_placeholders, key=tag_sort("input"))
-            for placeholder, arg in zip(sorted_input_placeholders, args):
+
+            input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
+            for placeholder, arg in zip(input_placeholders, args):
                 placeholder.instantiate(arg)
 
             for i, op in enumerate(self.operations):
@@ -382,7 +381,8 @@ class Plan(AbstractObject, ObjectStorage):
                 return_placeholder.instantiate(response.child)
 
             # This ensures that we return the output placeholder in the correct order
-            response = [p.child for p in sorted(self.output_placeholders, key=tag_sort("output"))]
+            output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
+            response = [p.child for p in output_placeholders]
 
             if len(response) == 1:
                 return response[0]
@@ -528,8 +528,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
-            sy.serde.msgpack.serde._simplify(worker, plan.input_placeholders),
-            sy.serde.msgpack.serde._simplify(worker, plan.output_placeholders),
+            sy.serde.msgpack.serde._simplify(worker, plan.placeholders),
         )
 
     @staticmethod
@@ -551,23 +550,20 @@ class Plan(AbstractObject, ObjectStorage):
             name,
             tags,
             description,
-            input_placeholders,
-            output_placeholders,
+            placeholders,
         ) = plan_tuple
 
         worker._tmp_placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
         operations = sy.serde.msgpack.serde._detail(worker, operations)
         state = sy.serde.msgpack.serde._detail(worker, state)
-        input_placeholders = sy.serde.msgpack.serde._detail(worker, input_placeholders)
-        output_placeholders = sy.serde.msgpack.serde._detail(worker, output_placeholders)
+        placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
 
         plan = sy.Plan(
             include_state=include_state,
             is_built=is_built,
             operations=operations,
-            input_placeholders=input_placeholders,
-            output_placeholders=output_placeholders,
+            placeholders=placeholders,
             id=id,
             owner=worker,
         )
