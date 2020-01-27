@@ -1318,6 +1318,33 @@ def make_message(**kwargs):
     ]
 
 
+# syft.messaging.message.CryptenInit
+def make_crypteninit(**kwargs):
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CryptenInit
+        assert detailed.contents == original.contents
+        return True
+
+    return [
+        {
+            "value": syft.messaging.message.CryptenInit([0, 2, "127.0.01", 8080]),
+            "simplified": (
+                CODE[syft.messaging.message.CryptenInit],
+                ((CODE[list], (0, 2, "127.0.01", 8080)),),  # (Any) simplified content
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": syft.messaging.message.CryptenInit((0, 2, "127.0.01", 8080)),
+            "simplified": (
+                CODE[syft.messaging.message.CryptenInit],
+                ((CODE[tuple], (0, 2, "127.0.01", 8080)),),  # (Any) simplified content
+            ),
+            "cmp_detailed": compare,
+        },
+    ]
+
+
 # syft.messaging.message.Operation
 def make_operation(**kwargs):
     bob = kwargs["workers"]["bob"]
