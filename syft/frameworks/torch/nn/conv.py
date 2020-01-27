@@ -76,23 +76,15 @@ class Conv2d(Module):
 
         batch_size, _, rows, cols = data.shape
 
-        expanded_data = data.unsqueeze(1).expand(batch_size, self.out_channels, 1, rows, cols)
+        flattened_model = self.weight.reshape(self.out_channels, -1)
+        flattened_data = th.nn.functional.unfold(data, kernel_size=self.kernel_size)
 
-        expanded_model = self.weight.unsqueeze(0).expand(
-            batch_size, self.out_channels, 1, self.kernel_size, self.kernel_size
-        )
-
+        # Loop over batch as direct multiplication results in rounding errors
         kernel_results = list()
+        for n in range(0, batch_size):
+            kernel_results.append(flattened_model @ flattened_data[n])
 
-        for i in range(0, rows - self.kernel_size + 1):
-            for j in range(0, cols - self.kernel_size + 1):
-                kernel_out = (
-                    expanded_data[:, :, :, i : i + self.kernel_size, j : j + self.kernel_size]
-                    * expanded_model
-                ).sum((3, 4))
-                kernel_results.append(kernel_out)
-
-        pred = th.cat(kernel_results, axis=2).view(
+        pred = th.stack(kernel_results, axis=0).view(
             batch_size, self.out_channels, rows - self.kernel_size + 1, cols - self.kernel_size + 1
         )
 
