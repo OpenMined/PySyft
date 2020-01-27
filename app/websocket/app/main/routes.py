@@ -1,7 +1,7 @@
 """
 This file exists to provide one common place for all grid node http requests.
 """
-import binascii
+
 import json
 import sys
 import os
@@ -12,16 +12,14 @@ from flask import request, send_from_directory
 
 import syft as sy
 from syft.workers.node_client import NodeClient
-from requests_toolbelt import MultipartEncoder
 from flask_cors import cross_origin
 
 from . import html, local_worker
-from .persistence import model_manager as mm
 
+from .persistence import model_controller
+from .codes import MODEL
+from syft.codes import RESPONSE_MSG
 
-# Suport for sending big models over the wire back to a
-# worker
-MODEL_LIMIT_SIZE = (1024 ** 2) * 100  # 100MB
 
 # ======= WEB ROUTES ======
 
@@ -48,8 +46,24 @@ def list_models_with_details():
         Returns:
             Response : List of models (and their properties) stored at this node.
     """
+    model_ids = model_controller.models(local_worker)["models"]
+    models = list()
+    for id in model_ids:
+        model = model_controller.get(local_worker, id)
+        model_data = model_controller.get(local_worker, id)[MODEL.PROPERTIES]
+        models.append(
+            {
+                "id": id,
+                MODEL.SIZE: "{}KB".format(
+                    sys.getsizeof(model_data[MODEL.MODEL]) / 1000
+                ),
+                MODEL.ALLOW_DOWNLOAD: model_data[MODEL.ALLOW_DOWNLOAD],
+                MODEL.ALLOW_REMOTE_INFERENCE: model_data[MODEL.ALLOW_REMOTE_INFERENCE],
+                MODEL.MPC: model_data[MODEL.MPC],
+            }
+        )
     return Response(
-        json.dumps(mm.list_models(detailed_list=True)),
+        json.dumps({RESPONSE_MSG.SUCCESS: True, RESPONSE_MSG.MODELS: models}),
         status=200,
         mimetype="application/json",
     )
@@ -66,7 +80,7 @@ def list_workers():
         lambda x: isinstance(x, NodeClient), local_worker._known_workers.values(),
     )
     ids = map(lambda x: x.id, connected_workers)
-    response_body = {"success": True, "workers": list(ids)}
+    response_body = {RESPONSE_MSG.SUCCESS: True, "workers": list(ids)}
     return Response(json.dumps(response_body), status=200, mimetype="application/json")
 
 
@@ -84,68 +98,10 @@ def list_models():
             Response : List of model's ids stored at this node.
     """
     return Response(
-        json.dumps(mm.list_models()), status=200, mimetype="application/json"
-    )
-
-
-@html.route("/is_model_copy_allowed/<model_id>", methods=["GET"])
-@cross_origin()
-def is_model_copy_allowed(model_id):
-    """ Check if the desired model is available to download. 
-        
-        Args:
-            model_id (str) : model's id.
-        Returns:
-            Response : Model manager JSON response.
-    """
-    return Response(
-        json.dumps(mm.is_model_copy_allowed(model_id)),
+        json.dumps(model_controller.models(local_worker)),
         status=200,
         mimetype="application/json",
     )
-
-
-## Will be removed when sockets can download huge models
-@html.route("/get_model/<model_id>", methods=["GET"])
-@cross_origin()
-def get_model(model_id):
-    """ Try to download a specific model if allowed.
-        
-        Args:
-            model_id (str) : model's id.
-        Returns:
-            Response : If allowed, returns serialized model.
-    """
-
-    # If not Allowed
-    check = mm.is_model_copy_allowed(model_id)
-    response = {}
-    if not check["success"]:  # If not allowed
-        if check["error"] == mm.MODEL_NOT_FOUND_MSG:
-            status_code = 404  # Not Found
-            response["error"] = mm.Model_NOT_FOUND_MSG
-        else:
-            status_code = 403  # Forbidden
-            response["error"] = mm.NOT_ALLOWED_TO_DOWNLOAD_MSG
-        return Response(
-            json.dumps(response), status=status_code, mimetype="application/json"
-        )
-
-    # If allowed
-    result = mm.get_serialized_model_with_id(model_id)
-
-    if result["success"]:
-        # Use correct encoding
-        response = {"serialized_model": result["serialized_model"].decode("ISO-8859-1")}
-
-        # If model is large split it in multiple parts
-        if sys.getsizeof(response["serialized_model"]) >= MODEL_LIMIT_SIZE:
-            form = MultipartEncoder(response)
-            return Response(form.to_string(), mimetype=form.content_type)
-        else:
-            return Response(
-                json.dumps(response), status=200, mimetype="application/json"
-            )
 
 
 ## Will be removed when sockets can upload huge models
@@ -153,28 +109,29 @@ def get_model(model_id):
 @cross_origin()
 def serve_model():
     encoding = request.form["encoding"]
-    model_id = request.form["model_id"]
-    allow_download = request.form["allow_download"] == "True"
-    allow_remote_inference = request.form["allow_remote_inference"] == "True"
+    model_id = request.form[MODEL.ID]
+    allow_download = request.form[MODEL.ALLOW_DOWNLOAD] == "True"
+    allow_remote_inference = request.form[MODEL.ALLOW_REMOTE_INFERENCE] == "True"
 
     if request.files:
         # If model is large, receive it by a stream channel
         try:
-            serialized_model = request.files["model"].read().decode("utf-8")
+            serialized_model = request.files[MODEL.MODEL].read().decode("utf-8")
         except UnicodeDecodeError:
-            serialized_model = request.files["model"].read().decode("latin-1")
+            serialized_model = request.files[MODEL.MODEL].read().decode("latin-1")
     else:
         # If model is small, receive it by a standard json
-        serialized_model = request.form["model"]
+        serialized_model = request.form[MODEL.MODEL]
 
     # Encode the model accordingly
     serialized_model = serialized_model.encode(encoding)
 
     # save the model for later usage
-    response = mm.save_model(
+    response = model_controller.save_model(
         serialized_model, model_id, allow_download, allow_remote_inference
     )
-    if response["success"]:
+    response = {}
+    if response[RESPONSE_MSG.SUCCESS]:
         return Response(json.dumps(response), status=200, mimetype="application/json")
     else:
         return Response(json.dumps(response), status=409, mimetype="application/json")
@@ -216,9 +173,9 @@ def search_encrypted_models():
         )
 
     # Check json fields
-    if body.get("model_id"):
+    if body.get(MODEL.ID):
         # Search model_id on node objects
-        model = local_worker._objects.get(body.get("model_id"))
+        model = local_worker._objects.get(body.get(MODEL.ID))
 
         # If found model is a plan
         if isinstance(model, sy.Plan):
@@ -251,11 +208,11 @@ def search_encrypted_models():
             }
             response_status = 200
         else:
-            response = {"error": "Model ID not found!"}
+            response = {RESPONSE_MSG.ERROR: "Model ID not found!"}
             response_status = 404
     # JSON without model_id field
     else:
-        response = {"error": "Invalid payload format"}
+        response = {RESPONSE_MSG.ERROR: "Invalid payload format"}
         response_status = 400
     return Response(
         json.dumps(response), status=response_status, mimetype="application/json"

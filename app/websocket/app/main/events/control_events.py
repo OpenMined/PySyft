@@ -30,7 +30,9 @@ def authentication(message: dict) -> str:
     # If it was authenticated
     if user:
         login_user(user)
-        return json.dumps({"success": "True", RESPONSE_MSG.NODE_ID: user.worker.id})
+        return json.dumps(
+            {RESPONSE_MSG.SUCCESS: "True", RESPONSE_MSG.NODE_ID: user.worker.id}
+        )
     else:
         return json.dumps({RESPONSE_MSG.ERROR: "Invalid username/password!"})
 

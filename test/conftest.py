@@ -71,16 +71,13 @@ def init_nodes(node_infos):
         from gevent import pywsgi
         from geventwebsocket.handler import WebSocketHandler
 
-        db_path = "sqlite:///" + BASEDIR + "/database" + node_id + ".db"
         requests.post(
             GATEWAY_URL + "/join",
             data=json.dumps(
                 {"node-id": node_id, "node-address": "http://localhost:" + port + "/"}
             ),
         )
-        app = ws_create_app(
-            node_id, debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
-        )
+        app = ws_create_app(node_id, debug=False, database_url=None)
         server = pywsgi.WSGIServer(("", int(port)), app, handler_class=WebSocketHandler)
         server.serve_forever()
 

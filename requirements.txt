@@ -21,4 +21,5 @@ pbr
 syft_proto
 flask_cors
 flask_login
+redis
 -e git+https://github.com/IonesioJunior/PySyft@add_grid_workers#egg=syft

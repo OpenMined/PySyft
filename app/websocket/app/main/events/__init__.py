@@ -39,7 +39,7 @@ def route_requests(message):
         message = json.loads(message)
         return routes[message[REQUEST_MSG.TYPE_FIELD]](message)
     except Exception as e:
-        return json.dumps({"error": "Invalid JSON format/field!"})
+        return json.dumps({"error": str(e)})
 
 
 @ws.route("/")

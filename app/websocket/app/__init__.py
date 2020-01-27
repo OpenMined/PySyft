@@ -2,7 +2,7 @@ from flask import Flask
 from flask_sockets import Sockets
 
 
-def create_app(node_id, debug=False, test_config=None):
+def create_app(node_id, debug=False, database_url=None):
     """ Create / Configure flask socket application instance.
         
         Args:
@@ -14,12 +14,22 @@ def create_app(node_id, debug=False, test_config=None):
     """
     app = Flask(__name__)
     app.debug = debug
+
     app.config["SECRET_KEY"] = "justasecretkeythatishouldputhere"
 
-    from .main import html, ws, db, hook, local_worker, auth
-    from .main.persistence.utils import set_database_config
+    # Enable persistent mode
+    # Overwrite syft.object_storage methods to work in a persistent way
+    # Persist models / tensors
+    if database_url:
+        app.config["REDISCLOUD_URL"] = database_url
+        from .main.persistence import database, object_storage
 
-    global db
+        db_instance = database.set_db_instance(database_url)
+        object_storage.set_persistent_mode(db_instance)
+
+    from .main import html, ws, hook, local_worker, auth
+
+    # Global socket handler
     sockets = Sockets(app)
 
     # set_node_id(id)
@@ -32,10 +42,5 @@ def create_app(node_id, debug=False, test_config=None):
 
     # Set Authentication configs
     app = auth.set_auth_configs(app)
-
-    # Set SQLAlchemy configs
-    app = set_database_config(app, test_config=test_config)
-    s = app.app_context().push()
-    db.create_all()
 
     return app

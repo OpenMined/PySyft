@@ -161,9 +161,6 @@ def test_delete_model(connected_node):
     assert bob.delete_model("test_delete_model")
     assert "test_delete_model" not in bob.models
 
-    # Error when deleting again
-    with pytest.raises(RuntimeError):
-        bob.delete_model("test_delete_model")
     hook.local_worker.is_client_worker = True
 
 

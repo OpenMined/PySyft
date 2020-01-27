@@ -1,12 +1,12 @@
-import syft as sy
 import json
 from flask_login import current_user
-from .. import local_worker, hook
-from ..persistence.utils import recover_objects, snapshot
-from ..auth import authenticated_only
-from ..auth import UserSession
 
+import syft as sy
 from syft.exceptions import GetNotPermittedError
+
+from .. import local_worker, hook
+from ..persistence.object_storage import recover_objects
+from ..auth import authenticated_only, UserSession
 
 
 @authenticated_only
@@ -26,8 +26,6 @@ def forward_binary_message(message: bin) -> bin:
         # Process message
         decoded_response = current_user.worker._recv_msg(message)
 
-        # Save worker state at database
-        snapshot(current_user.worker)
     except GetNotPermittedError as e:
         message = sy.serde.deserialize(message, worker=current_user.worker)
 

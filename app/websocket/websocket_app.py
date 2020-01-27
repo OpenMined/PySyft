@@ -46,10 +46,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--start_local_db",
-    dest="start_local_db",
-    action="store_true",
-    help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
+    "--db_url",
+    type=str,
+    help="REDIS database server address",
+    default=os.environ.get("REDISCLOUD_URL", ""),
 )
 
 parser.set_defaults(use_test_config=False)
@@ -57,14 +57,8 @@ parser.set_defaults(use_test_config=False)
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    # Start grid node without use a real database
-    if args.start_local_db:
-        db_path = "sqlite:///database{}.db".format(args.id)
-        app = create_app(
-            args.id, debug=False, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
-        )
-    else:
-        app = create_app(args.id, debug=False)
+    # Create app
+    app = create_app(args.id, debug=False, database_url=args.db_url)
 
     # If using a Gateway URL start the connection
     if args.gateway_url is not None:
@@ -85,6 +79,7 @@ else:
     gateway_url = os.environ.get("GRID_NETWORK_URL", None)
     node_id = os.environ.get("ID", None)
     node_address = os.environ.get("ADDRESS", None)
+    db_address = os.environ.get("REDISCLOUD_URL", None)
 
     # If using a Gateway URL start the connection
     if gateway_url:
@@ -94,4 +89,4 @@ else:
                 {"node-id": node_id, "node-address": "{}".format(node_address)}
             ),
         )
-    app = create_app(node_id, debug=False)
+    app = create_app(node_id, debug=False, database_url=db_address)

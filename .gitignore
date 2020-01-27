@@ -11,6 +11,7 @@ grid.egg-info/
 *.h5
 *.log
 *.lock
+*.db
 .DS_Store
 .openmined
 nohup.out
@@ -23,7 +24,6 @@ notebooks/ipfs.log
 .idea/*
 venv/
 test_flask_grid_server.db
-database*
 
 # Sphinx documentation
 docs/_build/
