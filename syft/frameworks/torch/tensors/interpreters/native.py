@@ -663,17 +663,17 @@ class TorchTensor(AbstractTensor):
 
         return attr_val
 
-    def clone(self):
+    def clone(self, *args, **kwargs):
         """
         Clone should keep ids unchanged, contrary to copy
         """
-        cloned_tensor = self.native_clone()
+        cloned_tensor = self.native_clone(*args, **kwargs)
         cloned_tensor.id = self.id
         cloned_tensor.owner = self.owner
         cloned_tensor.is_wrapper = self.is_wrapper
 
         if self.has_child():
-            cloned_tensor.child = self.child.clone()
+            cloned_tensor.child = self.child.clone(*args, **kwargs)
 
         return cloned_tensor
 
