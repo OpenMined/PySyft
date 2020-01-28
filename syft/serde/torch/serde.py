@@ -29,11 +29,7 @@ TORCH_DTYPE_STR = {
 TORCH_STR_DTYPE = {name: cls for cls, name in TORCH_DTYPE_STR.items()}
 
 
-TORCH_MFORMAT_ID = {
-    torch.channels_last: 1,
-    torch.contiguous_format: 2,
-    torch.preserve_format: 3,
-}
+TORCH_MFORMAT_ID = {torch.channels_last: 1, torch.contiguous_format: 2, torch.preserve_format: 3}
 
 TORCH_ID_MFORMAT = {i: cls for cls, i in TORCH_MFORMAT_ID.items()}
 
