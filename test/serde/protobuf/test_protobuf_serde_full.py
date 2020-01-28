@@ -19,7 +19,7 @@ samples[type(None)] = make_none
 # PyTorch
 samples[torch.device] = make_torch_device
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
-samples[torch._C.Function] = make_torch_cfunction
+samples[torch.jit.ScriptFunction] = make_torch_scriptfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
@@ -30,6 +30,7 @@ samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
+samples[syft.messaging.protocol.Protocol] = make_protocol
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
