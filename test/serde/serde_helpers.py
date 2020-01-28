@@ -467,6 +467,17 @@ def compare_placeholders_list(detailed, original):
     return True
 
 
+def compare_placeholders_dict(detailed, original):
+    """Compare 2 dicts of placeholders"""
+    assert len(detailed) == len(original)
+    for key, detailed_ph in detailed.items():
+        original_ph = original[key]
+        assert detailed_ph.id == original_ph.id
+        assert detailed_ph.tags == original_ph.tags
+        assert detailed_ph.description == original_ph.description
+    return True
+
+
 # AdditiveSharingTensor
 def make_additivesharingtensor(**kwargs):
     workers = kwargs["workers"]
@@ -680,8 +691,7 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
-        compare_placeholders_list(detailed.input_placeholders, original.input_placeholders)
-        compare_placeholders_list(detailed.output_placeholders, original.output_placeholders)
+        compare_placeholders_dict(detailed.placeholders, original.placeholders)
         compare_operations(detailed.operations, original.operations)
         # State
         compare_placeholders_list(
@@ -690,7 +700,7 @@ def make_plan(**kwargs):
 
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
-        compare_placeholders_list(detailed.input_placeholders, original.input_placeholders)
+        compare_placeholders_dict(detailed.placeholders, original.placeholders)
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -717,10 +727,8 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
-                    # (PlaceHolder) input_placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.input_placeholders),
-                    # (PlaceHolder) output_placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.output_placeholders),
+                    # (PlaceHolder) placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.placeholders),
                 ),
             ),
             "cmp_detailed": compare,
@@ -740,10 +748,8 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
-                    # (PlaceHolder) input_placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.input_placeholders),
-                    # (PlaceHolder) output_placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.output_placeholders),
+                    # (PlaceHolder) placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.placeholders),
                 ),
             ),
             "cmp_detailed": compare,
