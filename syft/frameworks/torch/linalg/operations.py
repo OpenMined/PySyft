@@ -202,6 +202,42 @@ def qr(t, mode="reduced", norm_factor=None):
     return Q_t.t(), R
 
 
+def masked_inv(t):
+
+    # check if the tensor is a square matrix
+    rows, cols = t.shape
+    if rows != cols:
+        raise ValueError(
+            "The tensor has {} rows and {} columns. It must be a symmetric matrix".format(
+                rows, cols
+            )
+        )
+
+    workers = t.child.child.locations
+    crypto_prov = t.child.child.crypto_provider
+    prec_frac = t.child.precision_fractional
+    field = t.child.child.field
+    Q = int(field ** (1 / 2) / 10 ** (prec_frac / 2))
+
+    # Random matrix used for masking
+    M = torch.zeros_like(t).random_(0, Q)
+
+    # Mask the tensor
+    t_masked = M @ t
+
+    # Send it to the cryto crypto_provider
+    t_masked = t_masked.send(crypto_prov).remote_get().float_precision()
+
+    # Compute inverse in the crypto_provider and share it back
+    t_masked_inv = t_masked.inverse()
+    t_masked_inv = t_masked_inv.fix_precision().share(*workers, crypto_provider=crypto_prov).get()
+
+    # Unmask it and return result
+    t_inv = t_masked_inv @ M
+
+    return t_inv
+
+
 def _norm_mpc(t, norm_factor):
     """
     Computation of a norm of a vector in MPC. The vector should be an AdditiveSharedTensor.

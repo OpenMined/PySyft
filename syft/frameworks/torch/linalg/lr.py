@@ -6,6 +6,7 @@ import torch
 
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.linalg.operations import inv_sym
+from syft.frameworks.torch.linalg.operations import masked_inv
 from syft.frameworks.torch.linalg.operations import qr
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
@@ -66,12 +67,14 @@ class EncryptedLinearRegression:
         hbc_worker: BaseWorker,
         precision_fractional: int = 6,
         fit_intercept: bool = True,
+        inv_mpc: bool = True,
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
         self.fit_intercept = fit_intercept
+        self.inv_mpc = inv_mpc
 
     def fit(self, X_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]):
         """
@@ -111,7 +114,8 @@ class EncryptedLinearRegression:
         # the end in order to make sure the subsequent computations are still precise
 
         XX_shared = XX_shared / self.total_size
-        XX_inv_shared = inv_sym(XX_shared)
+
+        XX_inv_shared = inv_sym(XX_shared) if self.inv_mpc else masked_inv(XX_shared)
 
         # Compute shared coefficients
         coef_shared = XX_inv_shared @ Xy_shared
