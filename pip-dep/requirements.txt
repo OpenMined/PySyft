@@ -4,12 +4,12 @@ lz4>=2.1.6
 msgpack>=0.6.1
 numpy>=1.16.0
 phe>=1.4.0
+Pillow<7
 scipy>=1.4.1
-git+git://github.com/gmuraru/syft-proto@gm-pytorch-1.4#egg=syft-proto
+syft-proto>=0.1.1.a1.post2
 tblib>=1.4.0
 torch==1.4
 torchvision==0.5.0
-Pillow<7
 websocket_client>=0.56.0
 websockets>=7.0
 zstd>=1.4.0.0

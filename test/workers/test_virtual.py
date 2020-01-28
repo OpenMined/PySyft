@@ -226,7 +226,7 @@ def test_spinup_time(hook):
     start_time = time()
     dummy = sy.VirtualWorker(hook, id="dummy", data=data)
     end_time = time()
-    assert (end_time - start_time) < 0.05
+    assert (end_time - start_time) < 0.1
 
 
 def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
