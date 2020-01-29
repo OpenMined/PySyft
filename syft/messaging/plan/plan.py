@@ -49,7 +49,16 @@ class func2plan(object):
         # Build the plan automatically
         if self.args_shape:
             args = Plan._create_placeholders(self.args_shape)
-            plan.build(*args)
+            try:
+                plan.build(*args)
+            except TypeError as e:
+                print(
+                    "Automatic build using @func2plan failed!\nCheck that:\n"
+                    " - you have provided the correct number of shapes in args_shape\n"
+                    " - you have no simple numbers like int or float as args. If you do "
+                    "so, please consider using a tensor instead."
+                )
+                raise e
         return plan
 
 
@@ -230,12 +239,17 @@ class Plan(AbstractObject, ObjectStorage):
             return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
         elif isinstance(obj, FrameworkTensor):
             return self.add_placeholder(obj, **kw)
-        elif isinstance(obj, (int, float, str, bool)):
+        elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
             return obj
         elif obj is None:
             return None
         else:
-            raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
+            # We are restrictive on the type of args/kwargs that we support, but are less
+            # strict on the response
+            if kw.get("node_type") == "input":
+                raise ValueError(f"Type {type(obj)} not supported in plans args/kwargs")
+            else:
+                return None
 
     def find_placeholders(self, *search_tags):
         """
@@ -599,12 +613,17 @@ def tag_sort(keyword):
     """
     Utility function to sort tensors by their (unique) tag including "keyword"
     """
-    # TODO is only works up to 9 return values, because comparison is done on str and '7' > '16'
+
     def extract_key(placeholder):
         for tag in placeholder.tags:
             if keyword in tag:
-                return tag
+                try:
+                    return int(tag.split("-")[-1])
+                except ValueError:
+                    raise ValueError(
+                        f"Tags used in tag_sort should follow the <str>-<int> structure, but found: {tag}"
+                    )
 
-        return TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
+        raise TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
 
     return extract_key
