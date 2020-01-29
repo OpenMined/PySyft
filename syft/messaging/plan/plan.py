@@ -378,7 +378,8 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-                return_placeholder.instantiate(response.child)
+
+                self.instantiate(return_placeholder, response)
 
             # This ensures that we return the output placeholder in the correct order
             output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
@@ -388,6 +389,21 @@ class Plan(AbstractObject, ObjectStorage):
                 return response[0]
             else:
                 return tuple(response)
+
+    def instantiate(self, placeholder, response):
+        """
+        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
+        """
+        if placeholder is not None:
+            if isinstance(placeholder, PlaceHolder):
+                placeholder.instantiate(response)
+            elif isinstance(placeholder, (list, tuple)):
+                for ph, rep in zip(placeholder, response):
+                    self.instantiate(ph, rep)
+            else:
+                raise ValueError(
+                    f"Response of type {type(response)} is not supported in plan operations"
+                )
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
