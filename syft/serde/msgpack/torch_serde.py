@@ -21,6 +21,8 @@ from syft.codes import TENSOR_SERIALIZATION
 
 from syft.serde.torch.serde import TORCH_DTYPE_STR
 from syft.serde.torch.serde import TORCH_STR_DTYPE
+from syft.serde.torch.serde import TORCH_MFORMAT_ID
+from syft.serde.torch.serde import TORCH_ID_MFORMAT
 from syft.serde.torch.serde import torch_tensor_serializer
 from syft.serde.torch.serde import torch_tensor_deserializer
 from syft.serde.torch.serde import numpy_tensor_serializer
@@ -287,6 +289,14 @@ def _detail_torch_size(worker: AbstractWorker, size: Tuple[int]) -> torch.Size:
     return torch.Size(size)
 
 
+def _simplify_torch_mem_format(worker: AbstractWorker, mem_format: torch.memory_format) -> int:
+    return TORCH_MFORMAT_ID[mem_format]
+
+
+def _detail_torch_mem_format(worker: AbstractWorker, mem_format: int) -> torch.memory_format:
+    return TORCH_ID_MFORMAT[mem_format]
+
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: serialization constants for these objects need to be defined
 # in `proto.json` file of https://github.com/OpenMined/proto
@@ -294,10 +304,11 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
     {
         torch.device: (_simplify_torch_device, _detail_torch_device),
         torch.jit.ScriptModule: (_simplify_script_module, _detail_script_module),
-        torch._C.Function: (_simplify_script_module, _detail_script_module),
+        torch.jit.ScriptFunction: (_simplify_script_module, _detail_script_module),
         torch.jit.TopLevelTracedModule: (_simplify_script_module, _detail_script_module),
         torch.nn.Parameter: (_simplify_torch_parameter, _detail_torch_parameter),
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
         torch.Size: (_simplify_torch_size, _detail_torch_size),
+        torch.memory_format: (_simplify_torch_mem_format, _detail_torch_mem_format),
     }
 )

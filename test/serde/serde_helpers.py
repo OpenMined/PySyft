@@ -225,11 +225,11 @@ def make_numpy_number(dtype, **kwargs):
 def compare_modules(detailed, original):
     """Compare ScriptModule instances"""
     input = torch.randn(10, 3)
-    # NOTE: after serde TopLevelTracedModule or _C.Function become ScriptModule
-    # (that's what torch.jit.load returns in detail function)
+    # NOTE: after serde TopLevelTracedModule or jit.ScriptFunction become
+    # ScriptModule (that's what torch.jit.load returns in detail function)
     assert isinstance(detailed, torch.jit.ScriptModule)
     # Code changes after torch.jit.load(): function becomes `forward` method
-    if type(original) != torch._C.Function:
+    if type(original) != torch.jit.ScriptFunction:
         assert detailed.code == original.code
     # model outputs match
     assert detailed(input).equal(original(input))
@@ -277,8 +277,8 @@ def make_torch_scriptmodule(**kwargs):
     ]
 
 
-# torch._C.Function
-def make_torch_cfunction(**kwargs):
+# torch.jit.ScriptFunction
+def make_torch_scriptfunction(**kwargs):
     @torch.jit.script
     def func(x):  # pragma: no cover
         return x + 2
@@ -287,12 +287,19 @@ def make_torch_cfunction(**kwargs):
         {
             "value": func,
             "simplified": (
-                CODE[torch._C.Function],
+                CODE[torch.jit.ScriptFunction],
                 (func.save_to_buffer(),),  # (bytes) serialized torchscript
             ),
             "cmp_detailed": compare_modules,
         }
     ]
+
+
+# torch.memory_format
+def make_torch_memoryformat(**kwargs):
+    memory_format = torch.preserve_format
+
+    return [{"value": memory_format, "simplified": (CODE[torch.memory_format], 3)}]
 
 
 # torch.jit.TopLevelTracedModule
@@ -431,6 +438,45 @@ def make_torch_size(**kwargs):
 ########################################################################
 # PySyft.
 ########################################################################
+
+# Utility functions
+
+
+def compare_operations(detailed, original):
+    """Compare 2 Operation's"""
+    assert len(detailed) == len(original)
+    for i, detailed_op in enumerate(detailed):
+        original_op = original[i]
+        compare_placeholders_list(original_op.cmd_args, detailed_op.cmd_args)
+        # return_ids is not a list (why?)
+        compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
+        assert original_op.cmd_name == detailed_op.cmd_name
+        # TODO
+        assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
+    return True
+
+
+def compare_placeholders_list(detailed, original):
+    """Compare 2 lists of placeholders"""
+    assert len(detailed) == len(original)
+    for i, detailed_ph in enumerate(detailed):
+        original_ph = original[i]
+        assert detailed_ph.id == original_ph.id
+        assert detailed_ph.tags == original_ph.tags
+        assert detailed_ph.description == original_ph.description
+    return True
+
+
+def compare_placeholders_dict(detailed, original):
+    """Compare 2 dicts of placeholders"""
+    assert len(detailed) == len(original)
+    for key, detailed_ph in detailed.items():
+        original_ph = original[key]
+        assert detailed_ph.id == original_ph.id
+        assert detailed_ph.tags == original_ph.tags
+        assert detailed_ph.description == original_ph.description
+    return True
+
 
 # AdditiveSharingTensor
 def make_additivesharingtensor(**kwargs):
@@ -623,7 +669,7 @@ def make_plan(**kwargs):
     @syft.func2plan([torch.Size((3,))])
     def plan(x):
         x = x + x
-        x = torch.abs(x)
+        y = torch.abs(x)
         return x
 
     # Model to plan
@@ -645,18 +691,16 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.plan.Plan
         assert detailed.id == original.id
-        # Procedure
-        assert detailed.procedure.operations == original.procedure.operations
-        assert detailed.procedure.arg_ids == original.procedure.arg_ids
-        assert detailed.procedure.result_ids == original.procedure.result_ids
-        # States for the nested plans
-        assert detailed.nested_states == original.nested_states
+        compare_placeholders_dict(detailed.placeholders, original.placeholders)
+        compare_operations(detailed.operations, original.operations)
         # State
-        assert detailed.state.state_ids == original.state.state_ids
+        compare_placeholders_list(
+            detailed.state.state_placeholders, original.state.state_placeholders
+        )
+
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
-        assert detailed.input_shapes == original.input_shapes
-        assert detailed._output_shape == original._output_shape
+        compare_placeholders_dict(detailed.placeholders, original.placeholders)
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -674,19 +718,17 @@ def make_plan(**kwargs):
                 CODE[syft.messaging.plan.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.procedure),  # (Procedure)
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.operations),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
                     plan.is_built,  # (bool) is_built
-                    (CODE[list], ((CODE[torch.Size], (3,)),)),  # (list of torch.Size) input_shapes
-                    # NOTE: it's uninitialized until plan.output_shape property is used
-                    None,  # (torch.Size) _output_shape
                     msgpack.serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
                     msgpack.serde._simplify(syft.hook.local_worker, plan.tags),  # (set of str) tags
                     msgpack.serde._simplify(
                         syft.hook.local_worker, plan.description
                     ),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
+                    # (PlaceHolder) placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.placeholders),
                 ),
             ),
             "cmp_detailed": compare,
@@ -697,21 +739,17 @@ def make_plan(**kwargs):
                 CODE[syft.messaging.plan.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, model_plan.procedure
-                    ),  # (Procedure)
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.operations),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
                     model_plan.include_state,  # (bool) include_state
                     model_plan.is_built,  # (bool) is_built
-                    (CODE[list], ((CODE[torch.Size], (3,)),)),  # (list of torch.Size) input_shapes
-                    # NOTE: it's uninitialized until plan.output_shape property is used
-                    None,  # (torch.Size) _output_shape
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),  # (str) name
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),  # (list) tags
                     msgpack.serde._simplify(
                         syft.hook.local_worker, model_plan.description
                     ),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, []),  # (list of State)
+                    # (PlaceHolder) placeholders
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.placeholders),
                 ),
             ),
             "cmp_detailed": compare,
@@ -723,14 +761,15 @@ def make_plan(**kwargs):
 def make_state(**kwargs):
     me = kwargs["workers"]["me"]
 
-    with me.registration_enabled():
-        t1, t2 = torch.randn(3, 3), torch.randn(3, 3)
-        me.register_obj(t1), me.register_obj(t2)
-        state = syft.messaging.plan.state.State(owner=me, state_ids=[t1.id, t2.id])
+    t1, t2 = torch.randn(3, 3), torch.randn(3, 3)
+    p1, p2 = syft.PlaceHolder(), syft.PlaceHolder()
+    p1.tag("state1"), p2.tag("state2")
+    p1.instantiate(t1), p2.instantiate(t2)
+    state = syft.messaging.plan.state.State(owner=me, state_placeholders=[p1, p2])
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.plan.state.State
-        assert detailed.state_ids == original.state_ids
+        compare_placeholders_list(detailed.state_placeholders, original.state_placeholders)
         for i in range(len(original.tensors())):
             assert detailed.tensors()[i].equal(original.tensors()[i])
         return True
@@ -741,7 +780,13 @@ def make_state(**kwargs):
             "simplified": (
                 CODE[syft.messaging.plan.state.State],
                 (
-                    (CODE[list], (t1.id, t2.id)),  # (list) state_ids
+                    (
+                        CODE[list],
+                        (  # (list) state_placeholders
+                            msgpack.serde._simplify(syft.hook.local_worker, p1),
+                            msgpack.serde._simplify(syft.hook.local_worker, p2),
+                        ),
+                    ),
                     (
                         CODE[list],
                         (  # (list) tensors
@@ -749,47 +794,6 @@ def make_state(**kwargs):
                             msgpack.serde._simplify(syft.hook.local_worker, t2),
                         ),
                     ),
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
-# Procedure
-def make_procedure(**kwargs):
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
-
-    procedure = plan.procedure
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.messaging.plan.procedure.Procedure
-        assert detailed.arg_ids == original.arg_ids
-        assert detailed.result_ids == original.result_ids
-        assert detailed.operations == original.operations
-        assert detailed.promise_out_id == original.promise_out_id
-        return True
-
-    return [
-        {
-            "value": procedure,
-            "simplified": (
-                CODE[syft.messaging.plan.procedure.Procedure],
-                (
-                    (
-                        CODE[list],
-                        (  # (list of Operation) operations
-                            procedure.operations[0],  # (unsimplified Operation)
-                            procedure.operations[1],
-                        ),
-                    ),
-                    (CODE[tuple], (procedure.arg_ids[0],)),  # (tuple) arg_ids
-                    (CODE[tuple], (procedure.result_ids[0],)),  # (tuple) result_ids
-                    None,  # (int) promise_out_id
                 ),
             ),
             "cmp_detailed": compare,
@@ -1247,43 +1251,28 @@ def make_privatetensor(**kwargs):
     ]
 
 
-# syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
-def make_promisetensor(**kwargs):
-    pt = syft.Promise.FloatTensor(shape=torch.Size((3, 4)))
-    pt.tag("tag1")
-    pt.describe("I promise")
-
-    @syft.func2plan(args_shape=[(3, 4)])
-    def promising_plan(x):
-        x = x * 2 + 1
-        return x
-
-    # A plan should be added to promise tensor's plans list here
-    res = promising_plan(pt)
-    pt = pt.child
+# syft.frameworks.torch.tensors.interpreters.PlaceHolder
+def make_placeholder(**kwargs):
+    ph = syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder()
+    ph.tag("tag1")
+    ph.describe("just a placeholder")
 
     def compare(detailed, original):
-        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor
+        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         assert detailed.id == original.id
-        assert detailed.shape == original.shape
-        assert detailed.obj_type == original.obj_type
-        assert detailed.plans == original.plans
         assert detailed.tags == original.tags
         assert detailed.description == original.description
         return True
 
     return [
         {
-            "value": pt,
+            "value": ph,
             "simplified": (
-                CODE[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor],
+                CODE[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder],
                 (
-                    pt.id,  # (int) id
-                    (CODE[torch.Size], (3, 4)),  # (torch.Size) shape
-                    (CODE[str], (b"torch.FloatTensor",)),  # (str) obj_type (torch tensor type)
-                    (CODE[set], (list(pt.plans)[0],)),  # (set of Plans' id) plans
+                    ph.id,  # (int) id
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
-                    (CODE[str], (b"I promise",)),  # (str) description
+                    (CODE[str], (b"just a placeholder",)),  # (str) description
                 ),
             ),
             "cmp_detailed": compare,
