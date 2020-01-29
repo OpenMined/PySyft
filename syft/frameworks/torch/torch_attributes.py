@@ -61,7 +61,6 @@ class TorchAttributes(FrameworkAttributes):
         # - functions like native_*
         # - functions that could use pointers or syft tensors
         self.exclude = [
-            "arange",
             "as_tensor",
             "from_numpy",
             "get_default_dtype",
@@ -88,9 +87,6 @@ class TorchAttributes(FrameworkAttributes):
             "isclose",
             "isfinite",
             "load",
-            "manual_seed",
-            "ones",
-            "range",
             "save",
             "set_",
             "set_num_threads",
@@ -101,7 +97,6 @@ class TorchAttributes(FrameworkAttributes):
             "stride",
             "tensor",
             "typename",
-            "zeros",
         ]
 
         self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
