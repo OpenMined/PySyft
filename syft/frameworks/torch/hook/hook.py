@@ -477,7 +477,6 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
-
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
         Hook a method to send it multiple remote workers
