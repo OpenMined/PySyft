@@ -141,8 +141,93 @@ def test_plan_execute_locally_ambiguous_input(workers):
     t1, t2, t3 = th.tensor([1]), th.tensor([2]), th.tensor([3])
     expected = serde_plan(t1, t2, t3)
     actual = serde_plan_detailed(t1, t2, t3)
-    print(actual)
-    print(expected)
+    assert actual == expected
+
+
+def test_plan_torch_function_no_args(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.tensor([-1])
+        z = x + y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected == th.tensor([0.0])
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.arange(3)
+        z = y + x
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert (actual == expected).all()
+    assert (actual == th.tensor([1, 2, 3])).all()
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        th.manual_seed(14)
+        y = th.randint(2, size=(1,), dtype=th.uint8)
+        y = y + 10
+        return y
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected and actual >= 10
+
+
+def test_plan_with_comp(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(2,), (2,)])
+    def serde_plan(x, y):
+        z = x > y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t1 = th.tensor([2.0, 0.0])
+    t2 = th.tensor([1.0, 1.0])
+    expected = serde_plan_detailed(t1, t2)
+    actual = serde_plan_detailed(t1, t2)
+    assert (actual == expected).all()
+
+
+def test_plan_fixed_len_loop(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        for i in range(10):
+            x = x + 1
+        return x
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
     assert actual == expected
 
 
