@@ -451,7 +451,6 @@ def compare_operations(detailed, original):
         # return_ids is not a list (why?)
         compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
         assert original_op.cmd_name == detailed_op.cmd_name
-        # TODO
         assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
     return True
 
