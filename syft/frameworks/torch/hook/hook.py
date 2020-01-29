@@ -246,8 +246,6 @@ class TorchHook(FrameworkHook):
                 the tensor_type class. In practice this is always TorchTensor.
                 Read more about it there.
         """
-        # Reinitialize init method of Torch tensor with Syft init
-        self._add_registration_to___init__(tensor_type, is_tensor=True)
 
         # Overload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
@@ -472,13 +470,6 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
-    @classmethod
-    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
-        """Torch-specific implementation. See the subclass for more."""
-        if attr.__module__ is None:
-            attr.__module__ = "torch"
-
-        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """

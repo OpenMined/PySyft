@@ -9,7 +9,6 @@ from typing import List, Tuple
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.trace import tracer
-from syft.generic.object import initialize_object
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -312,34 +311,6 @@ class FrameworkHook(ABC):
 
                 # Add the hooked method
                 setattr(StringPointer, attr, new_method)
-
-    def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
-        """Adds several attributes to the tensor.
-
-        Overload tensor_type.__init__ to add several attributes to the tensor
-        as well as (optionally) registering the tensor automatically.
-        TODO: auto-registration is disabled at the moment, this might be bad.
-
-        Args:
-            tensor_type: The class of the tensor being hooked
-            torch_tensor: An optional boolean parameter (default False) to
-                specify whether to skip running the native initialization
-                logic. TODO: this flag might never get used.
-        """
-        if "native___init__" not in dir(tensor_type):
-            tensor_type.native___init__ = tensor_type.__init__
-
-        def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
-            initialize_object(
-                hook=hook_self,
-                obj=self,
-                id=id,
-                reinitialize=not is_tensor,
-                init_args=args,
-                init_kwargs=kwargs,
-            )
-
-        tensor_type.__init__ = new___init__
 
     @classmethod
     def _perform_function_overloading(cls, parent_module_name, parent_module, func_name):
