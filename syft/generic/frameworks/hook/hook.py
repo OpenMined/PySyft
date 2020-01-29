@@ -186,9 +186,9 @@ class FrameworkHook(ABC):
             A list of methods to be overloaded.
         """
 
-        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
+        self.boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
 
-        to_overload = boolean_comparators
+        to_overload = self.boolean_comparators.copy()
 
         native_pattern = re.compile("native*")
 
@@ -230,6 +230,18 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_syft_method(attr)
                 setattr(syft_type, attr, new_method)
 
+    def _hook_syft_placeholder_methods(self, tensor_type: type, syft_type: type):
+        """
+        Slight variant of _hook_syft_tensor_methods, which adds the boolean
+        comparators to the hooking
+        """
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type]:
+            if attr not in dir(syft_type) or attr in self.boolean_comparators:
+                new_method = self._get_hooked_syft_method(attr)
+                setattr(syft_type, attr, new_method)
+
     def _hook_private_tensor_methods(self, tensor_type: type, syft_type: type):
         """
         Add hooked version of all methods of the tensor_type to the
@@ -250,11 +262,9 @@ class FrameworkHook(ABC):
         is pointing at.
         """
 
-        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
-
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
-            if attr not in dir(PointerTensor) or attr in boolean_comparators:
+            if attr not in dir(PointerTensor) or attr in self.boolean_comparators:
                 new_method = self._get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
