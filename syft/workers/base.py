@@ -120,7 +120,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             GetShapeMessage: self.get_tensor_shape,
             SearchMessage: self.search,
             ForceObjectDeleteMessage: self.force_rm_obj,
-            CryptenInit: self.run_crypten_party,  # TODO: update Message to CryptenInit after implementing it
+            CryptenInit: self.run_crypten_party,
         }
 
         self._plan_command_router = {
