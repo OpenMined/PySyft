@@ -55,7 +55,6 @@ from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
-from syft.messaging.promise import Promise
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -71,7 +70,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
