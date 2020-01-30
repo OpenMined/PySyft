@@ -146,7 +146,7 @@ class AdditiveSharingTensor(AbstractTensor):
         res_field = sum(shares)
 
         gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field/2) * gate
+        neg_nums = (res_field - self.field / 2) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -165,7 +165,7 @@ class AdditiveSharingTensor(AbstractTensor):
         res_field = sum(shares)
 
         gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field/2) * gate
+        neg_nums = (res_field - self.field / 2) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -365,7 +365,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (other[k] + v)
+            new_shares[k] = other[k] + v
 
         return new_shares
 
@@ -415,7 +415,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (v - other[k])
+            new_shares[k] = v - other[k]
 
         return new_shares
 
@@ -469,9 +469,7 @@ class AdditiveSharingTensor(AbstractTensor):
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
-            return {
-                worker: (cmd(share, other[worker])) for worker, share in shares.items()
-            }
+            return {worker: (cmd(share, other[worker])) for worker, share in shares.items()}
         else:
             other_is_zero = False
             if isinstance(other, (torch.LongTensor, torch.IntTensor)):
@@ -487,9 +485,7 @@ class AdditiveSharingTensor(AbstractTensor):
                     for worker, share in shares.items()
                 }
             else:
-                return {
-                    worker: (cmd(share, other)) for worker, share in shares.items()
-                }
+                return {worker: (cmd(share, other)) for worker, share in shares.items()}
 
     def mul(self, other):
         """Multiplies two tensors together

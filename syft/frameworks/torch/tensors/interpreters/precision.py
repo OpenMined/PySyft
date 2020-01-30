@@ -112,8 +112,8 @@ class FixedPrecisionTensor(AbstractTensor):
         one, encoded with floating point precision"""
 
         value = self.child.long()
-        gate = value.native_gt(self.field/2).long()
-        neg_nums = (value - self.field/2) * gate
+        gate = value.native_gt(self.field / 2).long()
+        neg_nums = (value - self.field / 2) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
 
@@ -129,8 +129,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            gate = self.child.native_gt(self.field/2).long()
-            neg_nums = (self.child - self.field/2) / truncation + self.field/2
+            gate = self.child.native_gt(self.field / 2).long()
+            neg_nums = (self.child - self.field / 2) / truncation + self.field / 2
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
