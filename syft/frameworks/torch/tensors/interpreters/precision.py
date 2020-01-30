@@ -14,7 +14,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = 2 ** 62,
+        field: int = 2 ** 64,
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -101,7 +101,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
             )
 
-        field_element = upscaled % self.field
+        field_element = upscaled
         field_element.owner = rational.owner
 
         self.child = field_element
@@ -111,11 +111,9 @@ class FixedPrecisionTensor(AbstractTensor):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
 
-        value = self.child.long() % self.field
-        torch_max_value = torch.tensor(self.field).long()
-
-        gate = value.native_gt(torch_max_value / 2).long()
-        neg_nums = (value - self.field) * gate
+        value = self.child.long()
+        gate = value.native_gt(self.field/2).long()
+        neg_nums = (value - self.field/2) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
 
@@ -131,9 +129,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            torch_max_value = torch.tensor(self.field).long()
-            gate = self.child.native_gt(torch_max_value / 2).long()
-            neg_nums = (self.child - self.field) / truncation + self.field
+            gate = self.child.native_gt(self.field/2).long()
+            neg_nums = (self.child - self.field/2) / truncation + self.field/2
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
@@ -156,7 +153,6 @@ class FixedPrecisionTensor(AbstractTensor):
             _self, other = other, _self.wrap()
 
         response = getattr(_self, "add")(other)
-        response %= self.field  # Wrap around the field
 
         return response
 
@@ -197,7 +193,6 @@ class FixedPrecisionTensor(AbstractTensor):
             _self, other = -other, -_self.wrap()
 
         response = getattr(_self, "sub")(other)
-        response %= self.field  # Wrap around the field
 
         return response
 
@@ -342,16 +337,11 @@ class FixedPrecisionTensor(AbstractTensor):
                 # If operation is mul, we need to truncate
                 response = response.truncate(self.precision_fractional, check_sign=False)
 
-            response %= self.field  # Wrap around the field
-
             if changed_sign:
                 # Give back its sign to response
                 pos_res = response * sgn
                 neg_res = response * (sgn - 1)
                 response = neg_res + pos_res
-
-        else:
-            response %= self.field  # Wrap around the field
 
         return response
 
@@ -446,7 +436,6 @@ class FixedPrecisionTensor(AbstractTensor):
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        response %= self.field  # Wrap around the field
         response = response.truncate(other.precision_fractional)
 
         return response
@@ -883,7 +872,7 @@ class FixedPrecisionTensor(AbstractTensor):
     def share_(self, *args, **kwargs):
         """
         Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
-        contrary to the classic share version version
+        contrary to the classic share version 
         """
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self

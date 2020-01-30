@@ -14,7 +14,7 @@ import syft as sy
 p = 67
 
 # Q field
-Q_BITS = 62
+Q_BITS = 64
 
 no_wrap = {"no_wrap": True}
 

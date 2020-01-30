@@ -143,10 +143,10 @@ class AdditiveSharingTensor(AbstractTensor):
             else:
                 shares.append(share)
 
-        res_field = sum(shares) % self.field
+        res_field = sum(shares)
 
         gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
+        neg_nums = (res_field - self.field/2) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -162,10 +162,10 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        res_field = sum(shares) % self.field
+        res_field = sum(shares)
 
         gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
+        neg_nums = (res_field - self.field/2) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -199,8 +199,8 @@ class AdditiveSharingTensor(AbstractTensor):
             n_workers: the number of shares to generate for each value
                 (i.e., the number of tensors to return)
             field: 1 + the max value for a share
-            random_type: the torch type shares should be encoded in (use the smallest possible
-                given the choise of mod"
+            random_type: the torch type shares should be encoded in (use the smallest possible)
+                given the choice of mod"
             """
 
         if not isinstance(secret, random_type):
@@ -219,7 +219,6 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            share %= field  # Generated shares should be in a finite field Zq
             shares.append(share)
 
         return shares
@@ -366,7 +365,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (other[k] + v) % self.field
+            new_shares[k] = (other[k] + v)
 
         return new_shares
 
@@ -416,7 +415,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (v - other[k]) % self.field
+            new_shares[k] = (v - other[k])
 
         return new_shares
 
@@ -471,7 +470,7 @@ class AdditiveSharingTensor(AbstractTensor):
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
             return {
-                worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
+                worker: (cmd(share, other[worker])) for worker, share in shares.items()
             }
         else:
             other_is_zero = False
@@ -484,12 +483,12 @@ class AdditiveSharingTensor(AbstractTensor):
             if other_is_zero:
                 zero_shares = self.zero().child
                 return {
-                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
+                    worker: ((cmd(share, other) + zero_shares[worker]))
                     for worker, share in shares.items()
                 }
             else:
                 return {
-                    worker: (cmd(share, other) % self.field) for worker, share in shares.items()
+                    worker: (cmd(share, other)) for worker, share in shares.items()
                 }
 
     def mul(self, other):
