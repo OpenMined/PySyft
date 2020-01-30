@@ -18,13 +18,14 @@
 
 
 # -- Project information -----------------------------------------------------
+import versioneer
 
 project = "PySyft"
 copyright = "2019, OpenMinedContributors"
 author = "Andrew Trask"
 
 # The short X.Y version
-version = "0.2.3a1"
+version = versioneer.get_version()
 # The full version, including alpha/beta/rc tags
 release = "0.2.3a1"
 
