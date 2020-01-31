@@ -145,6 +145,8 @@ class Plan(AbstractObject, ObjectStorage):
         elif self.is_built:
             self.forward = None
 
+        self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
+
     @staticmethod
     def _create_placeholders(args_shape):
         # In order to support -1 value in shape to indicate any dimension
