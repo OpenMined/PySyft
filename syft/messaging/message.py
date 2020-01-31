@@ -52,6 +52,37 @@ class Message(ABC):
         return self.__str__()
 
 
+class CryptenInit(Message):
+    """Initialize a Crypten party using this message.
+
+    Crypten uses processes as parties, those processes need to be initialized with information
+    so they can communicate and exchange tensors and shares while doing computation. This message
+    allows the exchange of information such as the ip and port of the master party to connect to,
+    as well as the rank of the party to run and the number of parties involved."""
+
+    def __init__(self, contents):
+        super().__init__(contents)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInit":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an CryptenInit. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+
+        Returns:
+            CryptenInit message.
+
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return CryptenInit(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+
+
 class TensorCommandMessage(Message):
     """All syft actions use this message type
 
