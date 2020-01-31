@@ -985,3 +985,29 @@ def test_plan_nested_build_multiple_plans_state(hook, workers):
 
     res = plan_1_ptr(x_ptr)
     assert res.get() == expected_res
+
+
+def test_plan_can_be_jit_traced(hook, workers):
+    args_shape = [(1,)]
+
+    @sy.func2plan(args_shape=args_shape, state=(th.tensor([1.0]),))
+    def foo(x, state):
+        (bias,) = state.read()
+        x = x * 2
+        return x + bias
+
+    assert isinstance(foo.__str__(), str)
+    assert len(foo.readable_plan) > 0
+    assert foo.is_built
+
+    t = th.tensor([1.0, 2])
+    x = foo(t)
+
+    assert (x == th.tensor([3.0, 5])).all()
+
+    args = Plan._create_placeholders(args_shape)
+    torchscript_plan = th.jit.trace(foo, args)
+
+    y = torchscript_plan(t)
+
+    assert (y == th.tensor([3.0, 5])).all()
