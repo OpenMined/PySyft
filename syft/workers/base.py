@@ -30,7 +30,9 @@ from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.execution.plan import Plan
+from syft.messaging.message import CryptenInit
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.crypten import toy_func, run_party
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
@@ -85,7 +87,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
         message_pending_time (optional): A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
     """
 
@@ -123,6 +125,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             GetShapeMessage: self.get_tensor_shape,
             SearchMessage: self.search,
             ForceObjectDeleteMessage: self.force_rm_obj,
+            CryptenInit: self.run_crypten_party,
         }
 
         self._plan_command_router = {
@@ -400,6 +403,20 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.send_obj(obj, worker)
 
         return pointer
+
+    def run_crypten_party(self, message: tuple):
+        """Run crypten party according to the information received.
+
+        Args:
+            message (CryptenInit): should contain the rank, world_size, master_addr and master_port.
+
+        Returns:
+            An ObjectMessage containing the return value of the crypten function computed.
+        """
+
+        rank, world_size, master_addr, master_port = message
+        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+        return ObjectMessage(return_value)
 
     def execute_command(self, message: tuple) -> PointerTensor:
         """
@@ -995,7 +1012,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             seconds: A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
 
         """
