@@ -53,7 +53,7 @@ class GRUCell(nn.Module):
 
 class GRU(nn.Module):
     def __init__(
-        self, vocab_size, output_size=1, embedding_dim=50, hidden_dim=10, bias=True, dropout=0.2,
+        self, vocab_size, output_size=1, embedding_dim=50, hidden_dim=10, bias=True, dropout=0.2
     ):
         super(GRU, self).__init__()
 

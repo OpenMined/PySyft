@@ -10,11 +10,11 @@ import weakref
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.generic.frameworks.hook.trace import Trace
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
@@ -22,6 +22,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -30,7 +31,6 @@ from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.messaging.plan import Plan
-from syft.messaging.promise import Promise
 
 from syft.exceptions import route_method_exception
 
@@ -114,6 +114,8 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        self.trace = Trace()
+
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()
 
@@ -169,6 +171,11 @@ class TorchHook(FrameworkHook):
         # SyftTensor class file)
         self._hook_private_tensor_methods(PrivateTensor)
 
+        # Add all hooked tensor methods to PlaceHolder tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_private_tensor_methods(PlaceHolder)
+
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
@@ -187,9 +194,6 @@ class TorchHook(FrameworkHook):
         # This method call should strictly come after the
         # call to self._hook_string_methods()
         self._hook_string_pointer_methods()
-
-        # Add all hooked tensor methods to PromiseTensor
-        self._hook_promise_tensor()
 
         # Hook the tensor constructor function
         self._hook_tensor()
@@ -521,103 +525,6 @@ class TorchHook(FrameworkHook):
             return response
 
         return overloaded_attr
-
-    def _hook_promise_tensor(hook_self):
-
-        methods_to_hook = hook_self.to_auto_overload[torch.Tensor]
-
-        def generate_method(method_name):
-            def method(self, *args, **kwargs):
-
-                arg_shapes = list([self.shape])
-                arg_ids = list([self.id])
-
-                # Convert scalar arguments to tensors to be able to use them with plans
-                args = list(args)
-                for ia in range(len(args)):
-                    if not isinstance(args[ia], (torch.Tensor, AbstractTensor)):
-                        args[ia] = torch.tensor(args[ia])
-
-                for arg in args:
-                    arg_shapes.append(arg.shape)
-
-                @syft.func2plan(arg_shapes)
-                def operation_method(self, *args, **kwargs):
-                    return getattr(self, method_name)(*args, **kwargs)
-
-                self.plans.add(operation_method.id)
-                for arg in args:
-                    if isinstance(arg, PromiseTensor):
-                        arg.plans.add(operation_method.id)
-
-                operation_method.procedure.update_args(
-                    [self, *args], operation_method.procedure.result_ids
-                )
-
-                promise_out = PromiseTensor(
-                    owner=self.owner,
-                    shape=operation_method.output_shape,
-                    tensor_type=self.obj_type,
-                    plans=set(),
-                )
-                operation_method.procedure.promise_out_id = promise_out.id
-
-                if operation_method.owner != self.owner:
-                    operation_method.send(self.owner)
-                else:  # otherwise object not registered on local worker
-                    operation_method.owner.register_obj(operation_method)
-
-                return promise_out
-
-            return method
-
-        for method_name in methods_to_hook:
-            setattr(PromiseTensor, method_name, generate_method(method_name))
-
-        def FloatTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.FloatTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "FloatTensor", FloatTensor)
-
-        def DoubleTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.DoubleTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "DoubleTensor", DoubleTensor)
-
-        def HalfTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.HalfTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "HalfTensor", HalfTensor)
-
-        def ByteTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.ByteTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "ByteTensor", ByteTensor)
-
-        def CharTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.CharTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "CharTensor", CharTensor)
-
-        def ShortTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.ShortTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "ShortTensor", ShortTensor)
-
-        def IntTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.IntTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "IntTensor", IntTensor)
-
-        def LongTensor(shape, *args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.LongTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "LongTensor", LongTensor)
-
-        def BoolTensor(shape, args, **kwargs):
-            return PromiseTensor(shape, tensor_type="torch.BoolTensor", *args, **kwargs).wrap()
-
-        setattr(Promise, "BoolTensor", BoolTensor)
 
     def _hook_tensor(hook_self):
         """Hooks the function torch.tensor()
