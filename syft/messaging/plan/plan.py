@@ -16,6 +16,8 @@ from syft.messaging.message import Operation
 from syft.messaging.plan.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+from syft_proto.messaging.v1.plan_pb2 import Plan as PlanPB
 
 
 class func2plan(object):
@@ -575,6 +577,100 @@ class Plan(AbstractObject, ObjectStorage):
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
+
+        return plan
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, plan: "Plan") -> PlanPB:
+        """
+        This function takes the attributes of a Plan and saves them in a Protobuf message
+        Args:
+            worker (AbstractWorker): the worker doing the serialization
+            plan (Plan): a Plan object
+        Returns:
+            PlanPB: a Protobuf message holding the unique attributes of the Plan object
+
+        """
+        protobuf_plan = PlanPB()
+
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
+
+        protobuf_operations = [
+            sy.serde.protobuf.serde._bufferize(worker, operation).operation
+            for operation in plan.operations
+        ]
+        protobuf_plan.operations.extend(protobuf_operations)
+
+        protobuf_plan.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.state))
+
+        protobuf_plan.include_state = plan.include_state
+        protobuf_plan.is_built = plan.is_built
+        protobuf_plan.name = plan.name
+        protobuf_plan.tags.extend(plan.tags)
+
+        if protobuf_plan.description:
+            protobuf_plan.description = plan.description
+
+        if type(plan.placeholders) == type(dict()):
+            placeholders = plan.placeholders.values()
+        else:
+            placeholders = plan.placeholders
+
+        protobuf_placeholders = [
+            sy.serde.protobuf.serde._bufferize(worker, placeholder) for placeholder in placeholders
+        ]
+        protobuf_plan.placeholders.extend(protobuf_placeholders)
+
+        return protobuf_plan
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_plan: PlanPB) -> "Plan":
+        """This function reconstructs a Plan object given its attributes in the form of a Protobuf message
+        Args:
+            worker: the worker doing the deserialization
+            protobuf_plan: a Protobuf message holding the attributes of the Plan
+        Returns:
+            plan: a Plan object
+        """
+
+        worker._tmp_placeholders = {}
+        id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
+
+        operations = []
+        for operation in protobuf_plan.operations:
+            op_msg = OperationMessagePB()
+            op_msg.operation.CopyFrom(operation)
+            operations.append(op_msg)
+
+        operations = [
+            sy.serde.protobuf.serde._unbufferize(worker, operation) for operation in operations
+        ]
+        state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.state)
+
+        placeholders = [
+            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+            for placeholder in protobuf_plan.placeholders
+        ]
+        placeholders = dict([(placeholder.id, placeholder) for placeholder in placeholders])
+
+        plan = sy.Plan(
+            include_state=protobuf_plan.include_state,
+            is_built=protobuf_plan.is_built,
+            operations=operations,
+            placeholders=placeholders,
+            id=id,
+            owner=worker,
+        )
+        del worker._tmp_placeholders
+
+        plan.state = state
+        state.plan = plan
+
+        plan.name = protobuf_plan.name
+        if protobuf_plan.tags:
+            plan.tags = set(protobuf_plan.tags)
+        if protobuf_plan.description:
+            plan.description = protobuf_plan.description
 
         return plan
 
