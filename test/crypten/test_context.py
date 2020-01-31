@@ -10,7 +10,7 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     def test_three_parties():
-        pass
+        pass  # pragma: no cover
 
     return_values = test_three_parties()
     # A toy function is ran at each party, and they should all decrypt
