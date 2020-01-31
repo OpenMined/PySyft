@@ -58,6 +58,11 @@ class Message:
         """
         This function takes the attributes of a Message and saves them in a tuple.
         The detail() method runs the inverse of this method.
+
+        This method is provided as a convenience to make it easier to serialize
+        simple message type sub-classes, but other code should never rely on
+        round-trip serialization of raw Message objects.
+
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
             ptr (Message): a Message
@@ -66,7 +71,6 @@ class Message:
         Examples:
             data = simplify(ptr)
         """
-
         return (sy.serde.msgpack.serde._simplify(worker, ptr.contents),)
 
     @staticmethod
@@ -75,8 +79,8 @@ class Message:
         This function takes the simplified tuple version of this message and converts
         it into a message. The simplify() method runs the inverse of this method.
 
-        This method shouldn't get called very often. It exists as a backup but in theory
-        every message type should have its own detailer.
+        This method should never get called, since every message type should have
+        its own detailer.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -87,13 +91,7 @@ class Message:
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-
-        # TODO: attempt to use the msg_tuple[0] to return the correct type instead of Message
-        # https://github.com/OpenMined/PySyft/issues/2514
-        # TODO: as an alternative, this detailer could raise NotImplementedException
-        # https://github.com/OpenMined/PySyft/issues/2514
-
-        return Message(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        raise NotImplementedError
 
     def __str__(self):
         """Return a human readable version of this message"""

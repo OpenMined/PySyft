@@ -69,7 +69,6 @@ samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = ma
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
-samples[syft.messaging.message.Message] = make_message
 samples[syft.messaging.message.Operation] = make_operation
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
