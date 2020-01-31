@@ -1327,18 +1327,18 @@ def make_crypteninit(**kwargs):
 
     return [
         {
-            "value": syft.messaging.message.CryptenInit([0, 2, "127.0.01", 8080]),
+            "value": syft.messaging.message.CryptenInit([0, 2, "127.0.0.1", 8080]),
             "simplified": (
                 CODE[syft.messaging.message.CryptenInit],
-                ((CODE[list], (0, 2, "127.0.01", 8080)),),  # (Any) simplified content
+                ((CODE[list], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),),  # (Any) simplified content
             ),
             "cmp_detailed": compare,
         },
         {
-            "value": syft.messaging.message.CryptenInit((0, 2, "127.0.01", 8080)),
+            "value": syft.messaging.message.CryptenInit((0, 2, "127.0.0.1", 8080)),
             "simplified": (
                 CODE[syft.messaging.message.CryptenInit],
-                ((CODE[tuple], (0, 2, "127.0.01", 8080)),),  # (Any) simplified content
+                ((CODE[tuple], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),),  # (Any) simplified content
             ),
             "cmp_detailed": compare,
         },
