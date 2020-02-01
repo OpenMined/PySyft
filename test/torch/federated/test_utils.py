@@ -51,11 +51,12 @@ def test_add_model():
     with th.no_grad():
         dict_params2["fc1.weight"].set_(weight2)
         dict_params2["fc1.bias"].set_(bias2)
+    data_num1 = 1
+    data_num2 = 2
+    new_model = utils.add_model(net1, net2, data_num1, data_num2)
 
-    new_model = utils.add_model(net1, net2)
-
-    assert (new_model.fc1.weight.data == (weight1 + weight2)).all()
-    assert (new_model.fc1.bias.data == (bias1 + bias2)).all()
+    assert (new_model.fc1.weight.data == (weight1 * data_num1 + weight2 * data_num2)).all()
+    assert (new_model.fc1.bias.data == (bias1 * data_num1 + bias2 * data_num2)).all()
 
 
 @pytest.mark.skipif(not th.cuda.is_available(), reason="cuda not available")
@@ -85,10 +86,12 @@ def test_add_model_cuda():  # pragma: no cover
         dict_params2["fc1.weight"].set_(weight2)
         dict_params2["fc1.bias"].set_(bias2)
 
-    new_model = utils.add_model(net1, net2)
+    data_num1 = 1
+    data_num2 = 2
+    new_model = utils.add_model(net1, net2, data_num1, data_num2)
 
-    assert (new_model.fc1.weight.data == (weight1 + weight2)).all()
-    assert (new_model.fc1.bias.data == (bias1 + bias2)).all()
+    assert (new_model.fc1.weight.data == (weight1 * data_num1 + weight2 * data_num2)).all()
+    assert (new_model.fc1.bias.data == (bias1 * data_num1 + bias2 * data_num2)).all()
 
 
 def test_scale_model():
