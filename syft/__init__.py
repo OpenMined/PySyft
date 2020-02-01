@@ -40,7 +40,8 @@ else:
 from syft.frameworks.torch.hook.hook import TorchHook
 
 # Import grids
-from syft.grid import VirtualGrid
+from syft.grid.private_grid import PrivateGridNetwork
+from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
 from syft.sandbox import create_sandbox, hook
@@ -54,7 +55,6 @@ from syft.messaging.protocol import Protocol
 from syft.messaging.plan import Plan
 from syft.messaging.plan import func2plan
 from syft.messaging.plan import method2plan
-from syft.messaging.promise import Promise
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -67,9 +67,10 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -111,7 +112,8 @@ __all__.extend(
         "LargePrecisionTensor",
         "PointerTensor",
         "MultiPointerTensor",
-        "VirtualGrid",
+        "PrivateGridNetwork",
+        "PublicGridNetwork",
         "create_sandbox",
         "hook",
         "combine_pointers",

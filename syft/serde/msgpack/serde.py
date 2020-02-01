@@ -46,7 +46,7 @@ from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -56,7 +56,6 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.string import String
 from syft.messaging.plan import Plan
 from syft.messaging.plan.state import State
-from syft.messaging.plan.procedure import Procedure
 from syft.messaging.protocol import Protocol
 from syft.messaging.message import Message
 from syft.messaging.message import Operation
@@ -74,6 +73,8 @@ from syft.workers.base import BaseWorker
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
+
+from syft.frameworks.torch.tensors.interpreters.gradients_core import GradFunc
 
 if dependency_check.torch_available:
     from syft.serde.msgpack.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
@@ -106,11 +107,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
-    PromiseTensor,
+    PlaceHolder,
     ObjectPointer,
     Plan,
     State,
-    Procedure,
     Protocol,
     PointerTensor,
     PointerPlan,
@@ -128,6 +128,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
+    GradFunc,
     String,
 ]
 
@@ -395,6 +396,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # for this type. If there is, return the simplified object.
     # breakpoint()
     current_type = type(obj)
+    # print(current_type, current_type in simplifiers)
     if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
         return result
