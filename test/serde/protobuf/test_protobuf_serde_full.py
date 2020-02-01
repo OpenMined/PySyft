@@ -29,8 +29,11 @@ samples[torch.Size] = make_torch_size
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
+samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
+samples[syft.messaging.plan.Plan] = make_plan
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.messaging.protocol.Protocol] = make_protocol
+samples[syft.messaging.plan.state.State] = make_state
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
