@@ -29,7 +29,7 @@ def extract_batches_per_worker(federated_train_loader: sy.FederatedDataLoader):
     return batches
 
 
-def add_model(dst_model, src_model,dst_num_data,src_num_data):
+def add_model(dst_model, src_model, dst_num_data, src_num_data):
     """Add the parameters of two models.
         Args:
 
@@ -39,10 +39,10 @@ def add_model(dst_model, src_model,dst_num_data,src_num_data):
             src_num_data: the number of data within src_model.
 
         Returns:
-        
+
             torch.nn.Module: the resulting model of the addition.
         """
-    if (dst_model==None):
+    if dst_model == None:
         return src_model
     params1 = src_model.named_parameters()
     params2 = dst_model.named_parameters()
@@ -50,7 +50,9 @@ def add_model(dst_model, src_model,dst_num_data,src_num_data):
     with torch.no_grad():
         for name1, param1 in params1:
             if name1 in dict_params2:
-                dict_params2[name1].set_(param1.data*src_num_data + dict_params2[name1].data*dst_num_data)
+                dict_params2[name1].set_(
+                    param1.data * src_num_data + dict_params2[name1].data * dst_num_data
+                )
     return dst_model
 
 
@@ -68,12 +70,12 @@ def scale_model(model, scale):
     params = model.named_parameters()
     dict_params = dict(params)
     with torch.no_grad():
-        for name, _ in dict_params.items():
+        for name, param in dict_params.items():
             dict_params[name].set_(dict_params[name].data * scale)
     return model
 
 
-def federated_avg(models,data_num):
+def federated_avg(models: List[torch.nn.Module], data_amount: List[int]) -> torch.nn.Module:
     """Calculate the federated average of a list of models.
     Args:
 
@@ -84,12 +86,15 @@ def federated_avg(models,data_num):
         torch.nn.Module: the module with averaged parameters.
     """
 
-    total_num_data=0
-    model=None
-    for i in range(len(models)):
-        model = add_model(model, models[i],total_num_data,data_num[i])
-        model = scale_model(model, 1.0 / (total_num_data+data_num[i]))
-        total_num_data=total_num_data+data_num[i]
+    if models == []:
+        return None
+
+    model = add_model(None, models[0], 0, data_amount[0])
+    total_num_data = data_amount[0]
+    for i in range(1, len(models)):
+        model = add_model(model, models[i], total_num_data, data_amount[i])
+        model = scale_model(model, 1.0 / (total_num_data + data_amount[i]))
+        total_num_data += data_amount[i]
     return model
 
 
