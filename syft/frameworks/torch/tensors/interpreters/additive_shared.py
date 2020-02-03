@@ -511,6 +511,9 @@ class AdditiveSharingTensor(AbstractTensor):
         self = self.mul(other)
         return self
 
+    def square(self):
+        return self.mul(self)
+
     def pow(self, power):
         """
         Compute integer power of a number by recursion using mul
@@ -699,7 +702,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
         @overloaded.function
         def stack(tensors_shares, **kwargs):
-
             results = {}
 
             workers = tensors_shares[0].keys()

@@ -83,6 +83,9 @@ from syft import serde
 from syft.frameworks.torch.functions import combine_pointers
 from syft.frameworks.torch.he.paillier import keygen
 
+# import common
+import syft.common.util
+
 
 def pool():
     if not hasattr(syft, "_pool"):
