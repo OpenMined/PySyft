@@ -26,7 +26,7 @@ def chebyshev_series(func, width, terms):
     return coeffs
 
 
-def chebyshev_polynomials(tensor, terms=32):
+def chebyshev_polynomials(tensor, terms):
     """
     Evaluates odd degree Chebyshev polynomials at x
     Chebyshev Polynomials of the first kind are defined as
@@ -41,7 +41,7 @@ def chebyshev_polynomials(tensor, terms=32):
         raise ValueError("Chebyshev terms must be even and >= 6")
 
     polynomials = [tensor.clone()]
-    y = 4 * tensor ** 2 - 2
+    y = 4 * tensor.square() - 2
     z = y - 1
     polynomials.append(z.mul(tensor))
 
