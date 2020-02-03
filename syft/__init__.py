@@ -8,7 +8,6 @@ from syft import dependency_check
 from syft import frameworks  # Triggers registration of any available frameworks
 
 # Major imports
-from syft.version import __version__
 
 # This import statement is strictly here to trigger registration of syft
 # tensor types inside hook_args.py.
