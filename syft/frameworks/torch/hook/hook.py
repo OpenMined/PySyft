@@ -444,12 +444,6 @@ class TorchHook(FrameworkHook):
             the real :func:`torch.cat` will become :func:`torch.native_cat`
             and :func:`torch.cat` will have our hooking code.
         """
-
-        if torch.__version__ < "1.0.2":
-            # Hard fix for PyTorch versions < 1.0.2
-            # usage of torch.jit requires a torch version < torch 1.1, so we still need to support this torch version
-            syft.torch.apply_fix16922(self.torch)
-
         torch_modules = syft.torch.torch_modules
 
         for module_name, torch_module in torch_modules.items():
