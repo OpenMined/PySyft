@@ -850,8 +850,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         message = PlanCommandMessage("fetch_plan", (plan_id, copy))
         plan = self.send_msg(message, location=location)
 
-        plan.procedure.update_worker_ids(location.id, self.id)
-
         return plan
 
     def _fetch_plan_remote(self, plan_id: Union[str, int], copy: bool) -> "Plan":  # noqa: F821
