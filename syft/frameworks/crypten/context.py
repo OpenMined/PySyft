@@ -2,9 +2,13 @@ import functools
 import multiprocessing
 import threading
 import os
+
+import syft as sy
+from syft.messaging.message import CryptenInit
+from syft.frameworks import crypten as syft_crypt
+
 import crypten
 from crypten.communicator import DistributedCommunicator
-from syft.messaging.message import CryptenInit
 
 
 def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs):
@@ -80,11 +84,11 @@ def _send_party_info(worker, rank, msg, return_values):
 
 
 def toy_func():
-    # Toy function to be called by each party
-    alice_t = crypten.cryptensor([73, 81], src=0)
-    bob_t = crypten.cryptensor([90, 100], src=1)
-    out = bob_t.get_plain_text()
-    return out.tolist()  # issues with putting torch tensors into queues
+    alice_tensor = syft_crypt.load("crypten_data", 1, "alice")
+    bob_tensor = syft_crypt.load("crypten_data", 2, "bob")
+
+    crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
+    return crypt.get_plain_text().tolist()
 
 
 def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
