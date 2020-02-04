@@ -459,6 +459,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             data = simplify(ptr)
         """
 
+        if ptr.tags:
+            tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
+        else:
+            tags = None
+
         return (
             # ptr.id,
             syft.serde.msgpack.serde._simplify(worker, ptr.id),
@@ -467,6 +472,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             syft.serde.msgpack.serde._simplify(worker, ptr.point_to_attr),
             syft.serde.msgpack.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
+            tags,
+            ptr.description,
         )
 
         # a more general but slower/more verbose option
@@ -492,7 +499,16 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr = detail(data)
         """
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, point_to_attr, shape, garbage_collect_data = tensor_tuple
+        (
+            obj_id,
+            id_at_location,
+            worker_id,
+            point_to_attr,
+            shape,
+            garbage_collect_data,
+            tags,
+            description,
+        ) = tensor_tuple
 
         obj_id = syft.serde.msgpack.serde._detail(worker, obj_id)
         id_at_location = syft.serde.msgpack.serde._detail(worker, id_at_location)
@@ -530,6 +546,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             location = syft.hook.local_worker.get_worker(worker_id)
 
+            if tags:  # Tag != None
+                # Decode binary tags
+                tags = tuple(map(lambda x: x.decode("utf-8"), tags))
+
+            if description:  # Description != None
+                # Decode binary description
+                description = description.decode("utf-8")
+
             ptr = PointerTensor(
                 location=location,
                 id_at_location=id_at_location,
@@ -537,6 +561,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 id=obj_id,
                 shape=shape,
                 garbage_collect_data=garbage_collect_data,
+                tags=tags,
+                description=description,
             )
 
             return ptr

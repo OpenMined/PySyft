@@ -12,24 +12,24 @@ venv/bin/activate: reqs
 install_hooks: venv
 	venv/bin/pre-commit install
 
-notebook: venv
+notebook: venv reqs
 	(. venv/bin/activate; \
-		python setup.py install udacity; \
+		pip install -Ur $(REQ_DIR)/requirements_notebooks.txt; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter notebook;\
 	)
 
 lab: venv
 	(. venv/bin/activate; \
-		python setup.py install udacity; \
 		python -m ipykernel install --user --name=pysyft; \
 		jupyter lab;\
 	)
 
 .PHONY: test
-test: venv
+test: venv reqs
 	(. venv/bin/activate; \
-		python setup.py install; \
+		pip install -Ur $(REQ_DIR)/requirements_notebooks.txt; \
+		pip install "scikit-learn>=0.21.0" "pytest" "pytest-flake8"; \
 		venv/bin/coverage run -m pytest test; \
 		venv/bin/coverage report -m --fail-under 95; \
 	)
