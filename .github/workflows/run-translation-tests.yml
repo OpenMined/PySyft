@@ -4,6 +4,8 @@ on:
   push:
     paths:
     - "examples/tutorials/**"
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   build:
