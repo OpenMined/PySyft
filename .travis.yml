@@ -45,8 +45,9 @@ script:
   - coverage report --ignore-errors --fail-under 100 -m --include="test/*"
   # - bash scripts/execute_notebooks.sh
   # - if grep -q "Traceback (most recent call last):" nb_to_md.txt; then false; else true; fi
-  - cd docs
-  - make html
+  # delete stale existing documentation if there's one
+  - make -C ./docs/ clean
+  - make -C ./docs/ html
 notifications:
   on_success: change
   # `always` will be the setting below once code changes slow down
