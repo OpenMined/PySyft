@@ -6,6 +6,8 @@ on:
     - "examples/tutorials/**"
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+    - "examples/tutorials/**"
 
 jobs:
   build:
