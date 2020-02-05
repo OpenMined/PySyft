@@ -11,3 +11,4 @@ setuptools>=41.0.0
 sphinx-markdown-builder>=0.4.1
 Sphinx>=2.1.1
 sphinx-autoapi
+sphinx-rtd-theme
