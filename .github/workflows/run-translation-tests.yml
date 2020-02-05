@@ -3,7 +3,7 @@ name: Run notebook translation tests
 on:
   push:
     paths:
-    - 'examples/tutorials/**'
+    - "examples/tutorials/**"
 
 jobs:
   build:
