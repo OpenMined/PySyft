@@ -69,6 +69,44 @@ def list_models_with_details():
     )
 
 
+@html.route("/identity/")
+def identity():
+    """ Generates a response with the name of this node.
+    
+        Returns:
+            Response : Name of node
+    """
+
+    return Response(
+        json.dumps({RESPONSE_MSG.SUCCESS: True, "identity": local_worker.id}),
+        status=200,
+        mimetype="application/json",
+    )
+
+
+@html.route("/status/")
+def show_status():
+    """ Generates a response with the status of this node.
+        if the nodes is connected to workers, the status is online
+    
+        Returns:
+            Response : Status of node
+    """
+
+    connected_workers = filter(
+        lambda x: isinstance(x, NodeClient), local_worker._known_workers.values(),
+    )
+    ids = map(lambda x: x.id, connected_workers)
+
+    status = "OpenGrid" if len(list(ids)) > 0 else ""
+
+    return Response(
+        json.dumps({RESPONSE_MSG.SUCCESS: True, "status": status}),
+        status=200,
+        mimetype="application/json",
+    )
+
+
 @html.route("/workers/")
 def list_workers():
     """ Generates a list of remote nodes directly connected to this node.

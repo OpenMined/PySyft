@@ -15,6 +15,17 @@ async function get_identity_from_server() {
   }
 }
 
+async function get_status_from_server() {
+  try {
+    const response = await axios.get('/status/');
+    return Promise.resolve(response)
+  } catch (error) {
+    console.error(error);
+    return Promise.resolve(error)
+  }
+}
+
+
 async function get_models_from_server() {
   try {
     const response = await axios.get('/detailed_models_list/');
@@ -119,16 +130,18 @@ var server_ip = new Vue({
 // MAIN LOGIC
 async function update_server_status() {
   // just doing a identity check to see if server is online
-  var identity = await get_identity_from_server()
-  if (identity["data"] == "OpenGrid") {
+  var identity = await get_status_from_server()
+  if (identity["data"]["status"] == "OpenGrid") {
     set_online_status("Online")
-    set_name_of_node("Bob")
   } else {
     set_online_status("Offline")
   }
-  //set_online_status(identity)
 }
 
+async function update_name_of_node(){
+  var identity = await get_identity_from_server()
+  set_name_of_node(identity["data"]["identity"])
+}
 async function update_models_list() {
   var response = await get_models_from_server()
   set_models_in_table(response["data"]["models"])
@@ -150,6 +163,7 @@ async function sync_with_server() {
   console.log("syncing with server")
   await update_server_status()
   await update_models_list()
+  await update_name_of_node()
   await update_workers_list()
   await update_dataset_tags()
   setTimeout(sync_with_server, 5000)
