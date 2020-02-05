@@ -1,4 +1,4 @@
-name: Run notebook translation tests
+name: Run notebook tests
 
 on:
   push:
