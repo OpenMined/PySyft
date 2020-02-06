@@ -51,7 +51,17 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.child = shares
+        if shares is not None:
+            self.child = {}
+            for location, share in shares.items():
+                if isinstance(share, sy.PointerTensor):
+                    self.child[location] = share
+                elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
+                    self.child[location] = share.child
+                else:
+                    raise ValueError(f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}")
+        else:
+            self.child = None
 
         self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
         self.n_bits = (
@@ -68,8 +78,9 @@ class AdditiveSharingTensor(AbstractTensor):
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
-        for v in self.child.values():
-            out += "\n\t-> " + str(v)
+        if self.child is not None:
+            for v in self.child.values():
+                out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
             out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
         return out
