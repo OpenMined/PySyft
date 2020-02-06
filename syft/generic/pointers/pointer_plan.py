@@ -156,7 +156,11 @@ class PointerPlan(ObjectPointer):
             message=command, recipient=location, return_ids=response_ids
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
-        response.garbage_collect_data = False
+        if isinstance(response, (list, tuple)):
+            for r in response:
+                r.garbage_collect_data = False
+        else:
+            response.garbage_collect_data = False
         return response
 
     def get(self, deregister_ptr: bool = True):
