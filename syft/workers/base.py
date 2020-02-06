@@ -2,6 +2,7 @@ from abc import abstractmethod
 from contextlib import contextmanager
 
 import logging
+from time import time
 from typing import Callable
 from typing import List
 from typing import Tuple
@@ -173,7 +174,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
-    def _send_msg(self, message: bin, location: "BaseWorker"):
+    def _send_msg(self, message: bin, location: "BaseWorker", pending_time: Union[int, float]):
         """Sends message from one worker to another.
 
         As BaseWorker implies, you should never instantiate this class by
@@ -187,6 +188,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 to another.
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
+            pending_time: A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Raises:
             NotImplementedError: Method not implemented error.
@@ -1082,3 +1086,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 del worker._objects[obj.id]
 
         return result
+
+    @staticmethod
+    def add_pending_time(seconds: Union[int, float] = 0) -> None:
+        time.sleep(seconds)
