@@ -26,14 +26,14 @@ def chebyshev_series(func, width, terms):
     return coeffs
 
 
-def chebyshev_polynomials(tensor, terms):
+def chebyshev_polynomials(tensor, terms=32):
     """
     Evaluates odd degree Chebyshev polynomials at x
     Chebyshev Polynomials of the first kind are defined as
     .. math::
         P_0(x) = 1, P_1(x) = x, P_n(x) = 2 P_{n - 1}(x) - P_{n-2}(x)
     Args:
-        self (MPCTensor): input at which polynomials are evaluated
+        tensor (torch.tensor): input at which polynomials are evaluated
         terms (int): highest degree of Chebyshev polynomials.
                      Must be even and at least 6.
     """
@@ -41,7 +41,7 @@ def chebyshev_polynomials(tensor, terms):
         raise ValueError("Chebyshev terms must be even and >= 6")
 
     polynomials = [tensor.clone()]
-    y = 4 * tensor.square() - 2
+    y = 4 * tensor ** 2 - 2
     z = y - 1
     polynomials.append(z.mul(tensor))
 
