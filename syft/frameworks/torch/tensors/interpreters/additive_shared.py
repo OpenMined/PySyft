@@ -62,7 +62,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
                     self.child[location] = share.child
                 else:
-                    raise ValueError(f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}")
+                    raise ValueError(
+                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                    )
         else:
             self.child = None
 
@@ -75,7 +77,7 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
 
-        self.protocol = 'fss'
+        self.protocol = "fss"
 
     def __repr__(self):
         return self.__str__()
@@ -836,12 +838,12 @@ class AdditiveSharingTensor(AbstractTensor):
     def relu(self):
         return securenn.relu(self)
 
-    @crypto_protocol('snn')
+    @crypto_protocol("snn")
     def positive(self):
         # self >= 0
         return securenn.relu_deriv(self)
 
-    @crypto_protocol('fss')
+    @crypto_protocol("fss")
     def positive(self):
         # self >= 0
         return fss.positive(self)
@@ -871,14 +873,14 @@ class AdditiveSharingTensor(AbstractTensor):
     def __le__(self, other):
         return self.le(other)
 
-    @crypto_protocol('snn')
+    @crypto_protocol("snn")
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
 
-    @crypto_protocol('fss')
+    @crypto_protocol("fss")
     def eq(self, other):
         return fss.eq(self, other)
 

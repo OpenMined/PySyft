@@ -218,13 +218,15 @@ class Plan(AbstractObject, ObjectStorage):
 
             if node_type == "input":
                 if tensor.id not in self._tmp_args_ids:
-                    raise ValueError(f"The following tensor was used but is not known in "
-                                     f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
-                                     f"- This tensor is external to the plan and should be provided "
-                                     f"using the state. See more about plan.state to fix this.\n"
-                                     f"- This tensor was created internally using torch.Tensor, "
-                                     f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
-                                     f"Please use instead torch.tensor(..., dtype=torch.int32) for example.")
+                    raise ValueError(
+                        f"The following tensor was used but is not known in "
+                        f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
+                        f"- This tensor is external to the plan and should be provided "
+                        f"using the state. See more about plan.state to fix this.\n"
+                        f"- This tensor was created internally using torch.Tensor, "
+                        f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
+                        f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
+                    )
                 placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
             elif node_type == "output":
                 if tensor.id in self._tmp_result_ids:

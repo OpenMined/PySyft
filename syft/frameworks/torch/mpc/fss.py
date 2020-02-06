@@ -11,8 +11,8 @@ import torch as th
 import syft as sy
 from syft.messaging.plan import func2plan
 
-λ = 6#63  # security parameter
-n = 8#32  # bit precision
+λ = 6  # 63  # security parameter
+n = 8  # 32  # bit precision
 
 no_wrap = {"no_wrap": True}
 
@@ -26,7 +26,6 @@ def eq(x1, x2):
     k = [(s_00, *CW), (s_01, *CW)]
     evaluate = func2plan()(DPF.eval)
     evaluate.build(th.IntTensor([0]), alpha, *k[0])
-
 
     # x1==x2 : x1-x2==0
     x_sh = x1 - x2
@@ -45,20 +44,18 @@ def eq(x1, x2):
     # reveal masked values
     x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
 
-
     alice, bob = locations
 
-    k = [
-        sy.MultiPointerTensor(children=[s_00.move(alice), s_01.move(bob)])
-    ] + [
+    k = [sy.MultiPointerTensor(children=[s_00.move(alice), s_01.move(bob)])] + [
         c.get().send(*locations, **no_wrap) for c in CW
     ]
 
     # Eval
-    b = sy.MultiPointerTensor(children=[
-            th.IntTensor([i]).send(location, **no_wrap)
-            for i, location in enumerate(locations)
-    ])
+    b = sy.MultiPointerTensor(
+        children=[
+            th.IntTensor([i]).send(location, **no_wrap) for i, location in enumerate(locations)
+        ]
+    )
 
     evaluate_ptr = evaluate.send(*locations)
 
@@ -105,15 +102,15 @@ class DPF:
     @staticmethod
     def eval(b, x, *k_b):
         x = bit_decomposition(x)
-        s, t = Array(n+1, λ), Array(n+1, 1)
+        s, t = Array(n + 1, λ), Array(n + 1, 1)
         s[0] = k_b[0]
         CW = k_b[1:]
         t[0] = b
         for i in range(0, n):
-            τ = G(s[i]) ^ (t[i]*CW[i])
-            τ = τ.reshape(2, λ+1)
-            s[i+1], t[i+1] = split(τ[x[i]], [λ, 1])
-        return (-1)**b * (Convert(s[n]) + t[n]*CW[n])
+            τ = G(s[i]) ^ (t[i] * CW[i])
+            τ = τ.reshape(2, λ + 1)
+            s[i + 1], t[i + 1] = split(τ[x[i]], [λ, 1])
+        return (-1) ** b * (Convert(s[n]) + t[n] * CW[n])
 
 
 # PRG
