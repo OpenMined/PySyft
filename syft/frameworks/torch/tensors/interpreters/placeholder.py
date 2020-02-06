@@ -31,12 +31,12 @@ class PlaceHolder(AbstractTensor):
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.
 
-        We remove wrappers or Placholders if is there are any.
+        We remove wrappers or Placeholders if is there are any.
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
         elif hasattr(tensor, "child") and tensor.is_wrapper and tensor.child is not None:
-            self.child = tensor.child
+            self.instantiate(tensor.child)
         else:
             self.child = tensor
         return self
