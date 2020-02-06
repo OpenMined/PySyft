@@ -5,7 +5,8 @@ on:
     paths:
     - "examples/tutorials/**"
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches:
+    - master
     paths:
     - "examples/tutorials/**"
 
