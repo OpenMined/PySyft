@@ -362,9 +362,6 @@ class FixedPrecisionTensor(AbstractTensor):
 
     mul_ = __imul__
 
-    def square(self):
-        return self.mul_and_div(self, "mul")
-
     def div(self, other):
         return self.mul_and_div(other, "div")
 
