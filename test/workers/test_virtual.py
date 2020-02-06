@@ -33,11 +33,21 @@ def test_send_msg():
     obj = torch.Tensor([100, 100])
     obj_id = obj.id
 
+    # pending time to send the message
+    pending_time = 1.5
+
+    start_time = time()
+
     # Send data to bob
-    me.send_msg(ObjectMessage(obj), bob)
+    me.send_msg(ObjectMessage(obj), bob, pending_time)
+
+    elapsed_time = time() - start_time
 
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
+
+    # ensures that the pending time has been attended
+    assert abs(elapsed_time - pending_time) < 0.05
 
 
 def test_send_msg_using_tensor_api():
@@ -57,12 +67,21 @@ def test_send_msg_using_tensor_api():
     # save the object's id
     obj_id = obj.id
 
+    # pending time to send the message
+    pending_time = 1.5
+
+    start_time = time()
+
     # send the object to Bob (from local_worker)
     _ = obj.send(bob)
+
+    elapsed_time = time() - start_time
 
     # ensure tensor made it to Bob
     assert obj_id in bob._objects
 
+    # ensures that the pending time has been attended
+    assert abs(elapsed_time - pending_time) < 0.05
 
 def test_recv_msg():
     """Tests the recv_msg command with 2 tests

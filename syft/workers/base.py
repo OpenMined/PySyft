@@ -252,7 +252,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.register_obj(tensor)
                 tensor.owner = self
 
-    def send_msg(self, message: Message, location: "BaseWorker") -> object:
+    def send_msg(
+        self, message: Message, location: "BaseWorker", pending_time: Union[int, float]
+    ) -> object:
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -266,6 +268,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A Message object
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
+            pending_time: A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             The deserialized form of message from the worker at specified
@@ -278,7 +283,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         bin_message = sy.serde.serialize(message, worker=self)
 
         # Step 2: send the message and wait for a response
-        bin_response = self._send_msg(bin_message, location)
+        bin_response = self._send_msg(bin_message, location, pending_time)
 
         # Step 3: deserialize the response
         response = sy.serde.deserialize(bin_response, worker=self)
@@ -325,7 +330,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         obj: Union[FrameworkTensorType, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
-        garbage_collect_data=None,
+        garbage_collect_data = None,
+        pending_time: Union[int, float] = 0
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -335,7 +341,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/framework tensor/object to send.
+            obj: A syft/framework tensor/object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
@@ -344,6 +350,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
             garbage_collect_data: argument passed down to create_pointer()
+            pending_time: A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Example:
             >>> import torch
@@ -390,13 +399,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 register=True,
                 ptr_id=ptr_id,
                 garbage_collect_data=garbage_collect_data,
+                pending_time=pending_time,
                 **kwargs,
             )
         else:
             pointer = obj
 
         # Send the object
-        self.send_obj(obj, worker)
+        self.send_obj(obj, worker, pending_time)
 
         return pointer
 
@@ -489,7 +499,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args)
 
     def send_command(
-        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
+        self, 
+        recipient: "BaseWorker", 
+        message: tuple, 
+        return_ids: str = None, 
+        pending_time: Union[int, float] = 0
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
@@ -499,6 +513,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A tuple representing the message being sent.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
+            pending_time: A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             A list of PointerTensors or a single PointerTensor if just one response is expected.
@@ -513,7 +530,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), 
+                location=recipient,
+                pending_time=pending_time
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -600,18 +619,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker"):
+    def send_obj(self, obj: object, location: "BaseWorker", pending_time: Union[int, float]):
         """Send a torch object to a worker.
 
         Args:
             obj: A torch Tensor or Variable object to be sent.
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
+            pending_time: A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
         """
-        return self.send_msg(ObjectMessage(obj), location)
+        return self.send_msg(ObjectMessage(obj), location, pending_time)
 
     def request_obj(
-        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+        self, 
+        obj_id: Union[str, int], 
+        location: "BaseWorker", 
+        user=None, 
+        reason: str = "",
+        pending_time: Union[int, float] = 0
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -620,11 +647,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location (BaseWorker): A BaseWorker instance that lets you provide the lookup
                 location.
             user (object, optional): user credentials to perform user authentication.
-            reason (string, optional): a description of why the data scientist wants to see it.
+            reason (string, optional): A description of why the data scientist wants to see it.
+            pending_time (int or foat, optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond precision.
+
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
+        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location, pending_time)
         return obj
 
     # SECTION: Manage the workers network
@@ -795,7 +825,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def is_tensor_none(obj):
         return obj is None
 
-    def request_is_remote_tensor_none(self, pointer: PointerTensor):
+    def request_is_remote_tensor_none(
+        self, pointer: PointerTensor, pending_time: Union[int, float] = 0
+    ):
         """
         Sends a request to the remote worker that holds the target a pointer if
         the value of the remote tensor is None or not.
@@ -804,11 +836,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             pointer: The pointer on which we can to get information.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond precision.
 
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(IsNoneMessage(pointer), location=pointer.location)
+        return self.send_msg(IsNoneMessage(pointer), location=pointer.location, pending_time=pending_time)
 
     @staticmethod
     def get_tensor_shape(tensor: FrameworkTensorType) -> List:
@@ -824,22 +858,31 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return list(tensor.shape)
 
-    def request_remote_tensor_shape(self, pointer: PointerTensor) -> FrameworkShape:
+    def request_remote_tensor_shape(
+        self, pointer: PointerTensor, pending_time: Union[int, float] = 0
+    ) -> FrameworkShape:
         """
         Sends a request to the remote worker that holds the target a pointer to
         have its shape.
 
         Args:
             pointer: A pointer on which we want to get the shape.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location)
+        shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location, pending_time=pending_time)
         return sy.hook.create_shape(shape)
 
     def fetch_plan(
-        self, plan_id: Union[str, int], location: "BaseWorker", copy: bool = False
+        self, 
+        plan_id: Union[str, int], 
+        location: "BaseWorker", 
+        copy: bool = False, 
+        pending_time: Union[int, float] = 0
     ) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
@@ -847,12 +890,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             plan_id: A string indicating the plan id.
+            location: A BaseWorker instance that lets you provide the lookup location.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
         message = PlanCommandMessage("fetch_plan", (plan_id, copy))
-        plan = self.send_msg(message, location=location)
+        plan = self.send_msg(message, location=location, pending_time=pending_time)
 
         return plan
 
@@ -878,7 +925,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return None
 
     def fetch_protocol(
-        self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
+        self, 
+        protocol_id: Union[str, int], 
+        location: "BaseWorker", 
+        copy: bool = False,
+        pending_time: Union[int, float] = 0
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
 
@@ -886,12 +937,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             protocol_id: A string indicating the protocol id.
-
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """
         message = PlanCommandMessage("fetch_protocol", (protocol_id, copy))
-        protocol = self.send_msg(message, location=location)
+        protocol = self.send_msg(message, location=location, pending_time=pending_time)
 
         return protocol
 
