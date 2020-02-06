@@ -2,8 +2,11 @@ import math
 import torch
 
 import syft as sy
+from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
+from syft.frameworks.torch.mpc import fss
+
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -61,6 +64,8 @@ class AdditiveSharingTensor(AbstractTensor):
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
+
+        self.protocol = 'fss'
 
     def __repr__(self):
         return self.__str__()
@@ -820,9 +825,15 @@ class AdditiveSharingTensor(AbstractTensor):
     def relu(self):
         return securenn.relu(self)
 
+    @crypto_protocol('snn')
     def positive(self):
         # self >= 0
         return securenn.relu_deriv(self)
+
+    @crypto_protocol('fss')
+    def positive(self):
+        # self >= 0
+        return fss.positive(self)
 
     def gt(self, other):
         r = self - other - 1
@@ -849,11 +860,16 @@ class AdditiveSharingTensor(AbstractTensor):
     def __le__(self, other):
         return self.le(other)
 
+    @crypto_protocol('snn')
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
+
+    @crypto_protocol('fss')
+    def eq(self, other):
+        return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)
