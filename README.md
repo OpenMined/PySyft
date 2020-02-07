@@ -49,7 +49,7 @@ pip install syft[udacity]
 
 This will auto-install the PyTorch and TF Encrypted
 dependencies, which are required for running the tutorials
-from Udacity's "Secure & Private AI" course (recommended).
+from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
 
 You can install syft without these dependencies with the usual
 `pip install syft`, but you will need to install framework
