@@ -59,3 +59,8 @@ jobs:
         coverage report --ignore-errors --fail-under 95 -m
         # ensuring coverage of tests stays at 100 until entire coverage can be 100
         coverage report --ignore-errors --fail-under 100 -m --include="test/*"
+    - name: Test documentation build
+      run: |
+        # delete stale existing documentation if there's one
+        make -C ./docs/ clean
+        make -C ./docs/ html
