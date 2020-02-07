@@ -76,7 +76,7 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
     async def test_protocol_id(self):
         protocol_id = "not-fake-protocol-id"
         response = await send_ws_message(
-            {"type": "get-protocol", "data": {"protocolId": protocol_id},}
+            {"type": "get-protocol", "data": {"protocolId": protocol_id}}
         )
 
         user = get_user(response)
@@ -178,6 +178,6 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
 
     async def test_invalid_message_type(self):
         response = await send_ws_message(
-            {"type": "not-a-type", "data": {"protocol-id": "test-protocol"},}
+            {"type": "not-a-type", "data": {"protocol-id": "test-protocol"}}
         )
         self.assertEqual(response, {"error": "Invalid JSON format/field!"})

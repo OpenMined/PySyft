@@ -43,6 +43,7 @@ class PublicGridAPITest(unittest.TestCase):
         for node_id in IDS:
             self.assertTrue(node_id in response["grid-nodes"])
 
+    @pytest.mark.skip
     def test_host_inference_encrypted_model_public_grid(self):
         sy.hook.local_worker.is_client_worker = False
 
@@ -73,6 +74,7 @@ class PublicGridAPITest(unittest.TestCase):
         assert th.all(result - expected.detach() < 1e-2)
         sy.hook.local_worker.is_client_worker = True
 
+    @pytest.mark.skip
     def test_host_inference_encrypted_model_private_grid(self):
         sy.hook.local_worker.is_client_worker = False
 

@@ -1,0 +1,55 @@
+name: Run tests
+
+on:
+  push:
+    branches:
+    - dev
+  pull_request:
+    types: [opened, synchronize, reopened]
+    
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.6]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        sudo apt-get update
+        hash -r
+        pip3 install -r requirements.txt > build.log
+        pip3 install flake8
+        pip3 install flake8-comprehensions
+        pip3 install pep8-naming
+        pip3 install -r dev-requirements.txt >> build.log
+        
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined
+        # names
+        flake8 --config=.flake8 --exclude src/syft .
+        black --check --verbose --exclude src/syft .
+        # exit-zero treats all errors as warnings.
+        # diverting from the standard 79 character line length in
+        # accordance with this:
+        # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
+        flake8 . --count --exit-zero --statistics --select=E,F,W,C90
+  
+    - name: Test with pytest
+      run: |
+        coverage run -m pytest -v test
+
+    - name: Test documentation build
+      run: |
+        cd docs
+        make html

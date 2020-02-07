@@ -1,7 +1,7 @@
 [flake8]
 select = E901,E999,F821,F822,F823
 max-line-length = 100
-exclude = .git,.eggs,__pycache__,build,dist,venv
+exclude = .git,.eggs,__pycache__,build,dist,venv,syft
 max-complexity = 11
 show-source = true
 statistics = true

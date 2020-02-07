@@ -54,7 +54,7 @@ def connect_grid_nodes(message: dict) -> str:
 
     if message["id"] not in local_worker._known_workers:
         worker = NodeClient(
-            hook, address=message["address"], id=message["id"], credential=credentials,
+            hook, address=message["address"], id=message["id"], credential=credentials
         )
     return json.dumps({"status": "Succesfully connected."})
 
