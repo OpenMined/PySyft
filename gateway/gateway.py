@@ -9,6 +9,9 @@ import argparse
 
 from app import create_app
 
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
+
 parser = argparse.ArgumentParser(description="Run Grid Gatway application.")
 
 
@@ -56,7 +59,10 @@ if __name__ == "__main__":
     else:
         app = create_app(debug=False, n_replica=args.num_replicas)
 
-    app.run(host=args.host, port=args.port)
+    server = pywsgi.WSGIServer(
+        (args.host, args.port), app, handler_class=WebSocketHandler
+    )
+    server.serve_forever()
 else:
     num_replicas = os.environ.get("N_REPLICAS", None)
     app = create_app(debug=False, n_replica=num_replicas)

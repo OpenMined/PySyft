@@ -3,6 +3,7 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
@@ -65,16 +66,20 @@ def create_app(debug=False, n_replica=None, test_config=None):
 
     app.config["N_REPLICA"] = n_replica
 
-    from .main import main as main_blueprint
+    from .main import main as main_blueprint, ws
     from .main import db
 
     global db
+    sockets = Sockets(app)
 
     # Set SQLAlchemy configs
     app = set_database_config(app, test_config=test_config)
     s = app.app_context().push()
     db.create_all()
 
+    # Register app blueprints
     app.register_blueprint(main_blueprint)
+    sockets.register_blueprint(ws, url_prefix=r"/")
+
     CORS(app)
     return app

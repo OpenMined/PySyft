@@ -16,6 +16,9 @@ import time
 import requests
 import json
 
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
+
 
 @pytest.fixture()
 def start_proc():  # pragma: no cover
@@ -50,7 +53,11 @@ def init_gateway():
         app = create_app(
             debug=False, n_replica=1, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
         )
-        app.run(host="0.0.0.0", port=GATEWAY_PORT)
+
+        server = pywsgi.WSGIServer(
+            ("", int(GATEWAY_PORT)), app, handler_class=WebSocketHandler
+        )
+        server.serve_forever()
 
     # Init Grid Gateway
     p = Process(target=setUpGateway, args=(GATEWAY_PORT,))
@@ -68,8 +75,6 @@ def init_nodes(node_infos):
 
     def setUpNode(port, node_id):
         from app.websocket.app import create_app as ws_create_app
-        from gevent import pywsgi
-        from geventwebsocket.handler import WebSocketHandler
 
         requests.post(
             GATEWAY_URL + "/join",
