@@ -75,7 +75,7 @@ def scale_model(model, scale):
     return model
 
 
-def federated_avg(models: List[torch.nn.Module], data_amount: List[int]) -> torch.nn.Module:
+def federated_avg(models: List[torch.nn.Module], data_amount: List[int] = None) -> torch.nn.Module:
     """Calculate the federated average of a list of models.
     Args:
 
@@ -88,7 +88,8 @@ def federated_avg(models: List[torch.nn.Module], data_amount: List[int]) -> torc
 
     if models == []:
         return None
-
+    if data_amount == None:
+        data_amount = [1] * len(models)
     model = add_model(None, models[0], 0, data_amount[0])
     total_num_data = data_amount[0]
     for i in range(1, len(models)):
