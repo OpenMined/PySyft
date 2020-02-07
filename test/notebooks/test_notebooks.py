@@ -50,7 +50,7 @@ exclusion_list_folders = [
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
-    "examples/tutorials/grid/federated_learning/mnist"
+    "examples/tutorials/grid/federated_learning/mnist",
 ]
 
 
