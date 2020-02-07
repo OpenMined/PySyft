@@ -163,7 +163,7 @@ class MultiPointerTensor(AbstractTensor):
         return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
 
     @classmethod
-    def handle_func_command(cls, command):
+    def handle_func_command(cls, command, pending_time: Union[int, float] = 0):
         """
         Receive an instruction for a function to be applied on a Syft Tensor,
         Replace in the args all the LogTensors with
@@ -174,7 +174,10 @@ class MultiPointerTensor(AbstractTensor):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+                <no self>, arguments[, kwargs])
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             the response of the function command
@@ -204,7 +207,7 @@ class MultiPointerTensor(AbstractTensor):
             new_command = (cmd, None, new_args_worker, new_kwargs)
 
             # Send it to the appropriate class and get the response
-            results[worker] = new_type.handle_func_command(new_command)
+            results[worker] = new_type.handle_func_command(new_command, pending_time)
 
         # Put back MultiPointerTensor on the tensors found in the response
         response = hook_args.hook_response(

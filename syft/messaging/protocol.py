@@ -196,7 +196,7 @@ class Protocol(AbstractObject):
                     return arg.location
         return sy.framework.hook.local_worker
 
-    def send(self, location: BaseWorker) -> None:
+    def send(self, location: BaseWorker, pending_time: Union[int, float] = 0) -> None:
         """
         Send a protocol to a worker, to be fetched by other workers
 
@@ -208,10 +208,10 @@ class Protocol(AbstractObject):
         # and should be sent together with the protocol to the location
         if not self.workers_resolved:
             for _, plan in self.plans:
-                plan.send(location)
+                plan.send(location, pending_time)
         # Else, the plans are already deployed and we don't move them
 
-        self.owner.send_obj(obj=self, location=location)
+        self.owner.send_obj(obj=self, location=location, pending_time=pending_time)
 
         self.location = location
 

@@ -28,6 +28,7 @@ class PointerProtocol(ObjectPointer):
         id: Union[str, int] = None,
         tags: List[str] = None,
         description: str = None,
+        pending_time: Union[int, float] = 0,
     ):
         if owner is None:
             owner = sy.framework.hook.local_worker
@@ -40,6 +41,7 @@ class PointerProtocol(ObjectPointer):
             id=id,
             tags=tags,
             description=description,
+            pending_time=pending_time,
         )
 
     def run(self, *args, **kwargs):
@@ -76,7 +78,9 @@ class PointerProtocol(ObjectPointer):
         command = ("run", self.id_at_location, args, kwargs)
 
         response = self.owner.send_command(
-            message=command, recipient=location  # , return_ids=return_ids
+            message=command,
+            recipient=location,
+            pending_time=self.pending_time,  # , return_ids=return_ids
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         return response
@@ -86,7 +90,9 @@ class PointerProtocol(ObjectPointer):
         This is an alias to fetch_protocol, to behave like a pointer
         """
         copy = not deregister_ptr
-        protocol = self.owner.fetch_protocol(self.id_at_location, self.location, copy=copy)
+        protocol = self.owner.fetch_protocol(
+            self.id_at_location, self.location, copy=copy, pending_time=self.pending_time
+        )
         return protocol
 
     @staticmethod
@@ -97,12 +103,13 @@ class PointerProtocol(ObjectPointer):
             ptr.id_at_location,
             sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
             ptr.garbage_collect_data,
+            prt.pending_time,
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerPlan":
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
+        obj_id, id_at_location, worker_id, garbage_collect_data, pending_time = tensor_tuple
 
         obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
         worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
@@ -122,6 +129,7 @@ class PointerProtocol(ObjectPointer):
                 owner=worker,
                 garbage_collect_data=garbage_collect_data,
                 id=obj_id,
+                pending_time=pending_time,
             )
 
             return ptr

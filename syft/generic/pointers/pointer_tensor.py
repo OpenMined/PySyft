@@ -58,6 +58,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
+        pending_time: Union[int, float] = 0,
     ):
         """Initializes a PointerTensor.
 
@@ -83,6 +84,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             tags: an optional set of strings corresponding to this tensor
                 which this tensor should be searchable for.
             description: an optional string describing the purpose of the tensor.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
         """
 
         super().__init__(
@@ -94,6 +98,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             point_to_attr=point_to_attr,
             tags=tags,
             description=description,
+            pending_time=pending_time,
         )
         self._shape = shape
 
@@ -173,18 +178,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             "location": self.location,
             "id_at_location": self.id_at_location,
             "garbage_collect_data": self.garbage_collect_data,
+            "pending_time": self.pending_time,
         }
 
     @staticmethod
     def create_pointer(
         tensor,
         location: AbstractWorker = None,
-        id_at_location: (str or int) = None,
+        id_at_location: Union[str, int] = None,
         register: bool = False,
         owner: AbstractWorker = None,
-        ptr_id: (str or int) = None,
+        ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
         shape=None,
+        pending_time: Union[int, float] = 0,
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -228,6 +235,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 Otherwise, it will be set randomly.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             A FrameworkTensor[PointerTensor] pointer to self. Note that this
@@ -255,12 +265,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 shape=shape,
                 tags=tensor.tags,
                 description=tensor.description,
+                pending_time=pending_time,
             )
 
         return ptr
 
-    def move(self, location):
-        ptr = self.owner.send(self, location)
+    def move(self, location, pending_time: Union[int, float] = 0):
+        ptr = self.owner.send(self, location, pending_time=pending_time)
         ptr.remote_get()
         # don't want it to accidentally delete the remote object
         # when this pointer is deleted
@@ -278,13 +289,21 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         args = (destination,)
         kwargs = {"inplace": True}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
+        self.owner.send_command(
+            message=("send", self, args, kwargs),
+            recipient=self.location,
+            pending_time=self.pending_time,
+        )
         if change_location:
             self.location = destination
         return self
 
     def remote_get(self):
-        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        self.owner.send_command(
+            message=("mid_get", self, (), {}),
+            recipient=self.location,
+            pending_time=self.pending_time,
+        )
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -332,6 +351,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             location=self.location,
             id_at_location=self.id_at_location,
             point_to_attr=self._create_attr_name_string(attr_name),
+            pending_time=self.pending_time,
         ).wrap(register=False)
         self.__setattr__(attr_name, attr_ptr)
         return attr_ptr
@@ -350,7 +370,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the command
         command = ("fix_prec", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, pending_time=self.pending_time)
 
         return response
 
@@ -367,7 +387,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the command
         command = ("float_prec", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, pending_time=self.pending_time)
 
         return response
 
@@ -384,7 +404,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the command
         command = ("share", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, self.pending_time)
 
         return response
 
@@ -399,7 +419,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the command
         command = ("keep", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, self.pending_time)
 
         return response
 
@@ -412,7 +432,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         command = ("value", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, self.pending_time)
 
         return response
 
@@ -427,7 +447,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the command
         command = ("share_", self, args, kwargs)
 
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, command, self.pending_time)
 
         return self
 
@@ -453,8 +473,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Args:
             worker (AbstractWorker): the worker doing the serialization
             ptr (PointerTensor): a PointerTensor
+
         Returns:
             tuple: a tuple holding the unique attributes of the pointer
+            
         Examples:
             data = simplify(ptr)
         """
@@ -474,6 +496,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             ptr.garbage_collect_data,
             tags,
             ptr.description,
+            ptr.pending_time,
         )
 
         # a more general but slower/more verbose option
@@ -493,8 +516,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Args:
             worker: the worker doing the deserialization
             tensor_tuple: a tuple holding the attributes of the PointerTensor
+
         Returns:
             PointerTensor: a PointerTensor
+
         Examples:
             ptr = detail(data)
         """
@@ -508,6 +533,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             garbage_collect_data,
             tags,
             description,
+            pending_time,
         ) = tensor_tuple
 
         obj_id = syft.serde.msgpack.serde._detail(worker, obj_id)
@@ -563,6 +589,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 garbage_collect_data=garbage_collect_data,
                 tags=tags,
                 description=description,
+                pending_time=pending_time,
             )
 
             return ptr
@@ -593,6 +620,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if ptr.point_to_attr:
             protobuf_pointer.point_to_attr = ptr.point_to_attr
         protobuf_pointer.garbage_collect_data = ptr.garbage_collect_data
+        protobuf_pointer.pending_time = ptr.pending_time
         return protobuf_pointer
 
     @staticmethod
@@ -607,6 +635,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         point_to_attr = protobuf_tensor.point_to_attr
         shape = syft.hook.create_shape(protobuf_tensor.shape.dims)
         garbage_collect_data = protobuf_tensor.garbage_collect_data
+        pending_time = protobuf_tensor.pending_time
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
@@ -642,6 +671,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 id=obj_id,
                 shape=shape,
                 garbage_collect_data=garbage_collect_data,
+                pending_time=pending_time,
             )
 
             return ptr

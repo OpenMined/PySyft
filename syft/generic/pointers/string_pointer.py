@@ -28,6 +28,7 @@ class StringPointer(ObjectPointer):
         garbage_collect_data: bool = True,
         tags: List[str] = None,
         description: str = None,
+        pending_time: Union[int, float] = 0,
     ):
 
         super(StringPointer, self).__init__(
@@ -38,4 +39,5 @@ class StringPointer(ObjectPointer):
             garbage_collect_data=garbage_collect_data,
             tags=tags,
             description=description,
+            pending_time=pending_time,
         )

@@ -83,6 +83,7 @@ def test_send_msg_using_tensor_api():
     # ensures that the pending time has been attended
     assert abs(elapsed_time - pending_time) < 0.05
 
+
 def test_recv_msg():
     """Tests the recv_msg command with 2 tests
 

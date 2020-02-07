@@ -30,6 +30,7 @@ class PointerPlan(ObjectPointer):
         id: Union[str, int] = None,
         tags: List[str] = None,
         description: str = None,
+        pending_time: Union[int, float] = 0,
     ):
         if owner is None:
             owner = sy.framework.hook.local_worker
@@ -45,6 +46,7 @@ class PointerPlan(ObjectPointer):
             id=id,
             tags=tags,
             description=description,
+            pending_time=pending_time,
         )
 
     # Make PointerPlan compatible with multi pointers
@@ -106,7 +108,9 @@ class PointerPlan(ObjectPointer):
 
         command = ("parameters", id_at_location, [], {})
 
-        pointers = self.owner.send_command(message=command, recipient=location)
+        pointers = self.owner.send_command(
+            message=command, recipient=location, pending_time=self.pending_time
+        )
 
         for pointer in pointers:
             pointer.garbage_collect_data = False
@@ -153,7 +157,10 @@ class PointerPlan(ObjectPointer):
         command = ("run", id_at_location, args, kwargs)
 
         response = self.owner.send_command(
-            message=command, recipient=location, return_ids=response_ids
+            message=command,
+            recipient=location,
+            return_ids=response_ids,
+            pending_time=self.pending_time,
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         response.garbage_collect_data = False
@@ -164,7 +171,9 @@ class PointerPlan(ObjectPointer):
         This is an alias to fetch_plan, to behave like a pointer
         """
         copy = not deregister_ptr
-        plan = self.owner.fetch_plan(self.id_at_location, self.location, copy=copy)
+        plan = self.owner.fetch_plan(
+            self.id_at_location, self.location, copy=copy, pending_time=self.pending_time
+        )
         return plan
 
     @staticmethod
@@ -175,12 +184,13 @@ class PointerPlan(ObjectPointer):
             sy.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
             ptr.garbage_collect_data,
+            ptr.pending_time,
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerPlan":
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
+        obj_id, id_at_location, worker_id, garbage_collect_data, pending_time = tensor_tuple
 
         obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
         id_at_location = sy.serde.msgpack.serde._detail(worker, id_at_location)
@@ -201,6 +211,7 @@ class PointerPlan(ObjectPointer):
                 owner=worker,
                 garbage_collect_data=garbage_collect_data,
                 id=obj_id,
+                pending_time=pending_time,
             )
 
             return ptr

@@ -56,6 +56,7 @@ class ObjectWrapper:
         ptr_id: Union[int, str],
         id_at_location: Union[int, str] = None,
         garbage_collect_data=None,
+        pending_time: Union[int, float] = 0,
         **kwargs,
     ):
         """ Creates a callable pointer to the object wrapper instance
@@ -81,6 +82,9 @@ class ObjectWrapper:
                 doing something you shouldn't.
             garbage_collect_data: If True, delete the remote object when the
                 pointer is deleted.
+            pending_time (optional): A number of seconds to delay the message to 
+                be sent. The argument may be a floating point number for subsecond 
+                precision.
 
         Returns:
             A pointers.CallablePointer pointer to self.
@@ -93,6 +97,7 @@ class ObjectWrapper:
             tags=object.tags,
             description=object.description,
             garbage_collect_data=False if garbage_collect_data is None else garbage_collect_data,
+            pending_time=pending_time,
         )
         return pointer
 

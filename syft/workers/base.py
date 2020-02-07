@@ -2,7 +2,7 @@ from abc import abstractmethod
 from contextlib import contextmanager
 
 import logging
-from time import time
+from time import sleep
 from typing import Callable
 from typing import List
 from typing import Tuple
@@ -85,6 +85,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             primarily a development/testing feature.
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
+        pending_time (optional): A number of seconds to delay the message to be sent.
+            The argument may be a floating point number for subsecond 
+            precision.
     """
 
     def __init__(
@@ -96,6 +99,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
+        pending_time: Union[int, float] = 0,
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -106,6 +110,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.log_msgs = log_msgs
         self.verbose = verbose
         self.auto_add = auto_add
+        self.pending_time = pending_time
         self.msg_history = list()
 
         # For performance, we cache all possible message types
@@ -253,7 +258,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 tensor.owner = self
 
     def send_msg(
-        self, message: Message, location: "BaseWorker", pending_time: Union[int, float]
+        self, message: Message, location: "BaseWorker", pending_time: Union[int, float] = 0
     ) -> object:
         """Implements the logic to send messages.
 
@@ -268,7 +273,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A Message object
             location: A BaseWorker instance that lets you provide the
                 destination to send the message.
-            pending_time: A number of seconds to delay the message to be sent.
+            pending_time (optional): A number of seconds to delay the message to be sent.
                 The argument may be a floating point number for subsecond 
                 precision.
 
@@ -330,8 +335,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         obj: Union[FrameworkTensorType, AbstractTensor],
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
-        garbage_collect_data = None,
-        pending_time: Union[int, float] = 0
+        garbage_collect_data=None,
+        pending_time: Union[int, float] = 0,
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -499,11 +504,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args)
 
     def send_command(
-        self, 
-        recipient: "BaseWorker", 
-        message: tuple, 
-        return_ids: str = None, 
-        pending_time: Union[int, float] = 0
+        self,
+        recipient: "BaseWorker",
+        message: tuple,
+        return_ids: str = None,
+        pending_time: Union[int, float] = 0,
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
@@ -530,9 +535,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), 
+                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids),
                 location=recipient,
-                pending_time=pending_time
+                pending_time=pending_time,
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -619,26 +624,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker", pending_time: Union[int, float]):
+    def send_obj(self, obj: object, location: "BaseWorker", pending_time: Union[int, float] = 0):
         """Send a torch object to a worker.
 
         Args:
             obj: A torch Tensor or Variable object to be sent.
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
-            pending_time: A number of seconds to delay the message to be sent.
+            pending_time (optional): A number of seconds to delay the message to be sent.
                 The argument may be a floating point number for subsecond 
                 precision.
         """
         return self.send_msg(ObjectMessage(obj), location, pending_time)
 
     def request_obj(
-        self, 
-        obj_id: Union[str, int], 
-        location: "BaseWorker", 
-        user=None, 
+        self,
+        obj_id: Union[str, int],
+        location: "BaseWorker",
+        user=None,
         reason: str = "",
-        pending_time: Union[int, float] = 0
+        pending_time: Union[int, float] = 0,
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -842,7 +847,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(IsNoneMessage(pointer), location=pointer.location, pending_time=pending_time)
+        return self.send_msg(
+            IsNoneMessage(pointer), location=pointer.location, pending_time=pending_time
+        )
 
     @staticmethod
     def get_tensor_shape(tensor: FrameworkTensorType) -> List:
@@ -874,15 +881,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location, pending_time=pending_time)
+        shape = self.send_msg(
+            GetShapeMessage(pointer), location=pointer.location, pending_time=pending_time
+        )
         return sy.hook.create_shape(shape)
 
     def fetch_plan(
-        self, 
-        plan_id: Union[str, int], 
-        location: "BaseWorker", 
-        copy: bool = False, 
-        pending_time: Union[int, float] = 0
+        self,
+        plan_id: Union[str, int],
+        location: "BaseWorker",
+        copy: bool = False,
+        pending_time: Union[int, float] = 0,
     ) -> "Plan":  # noqa: F821
         """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
 
@@ -925,11 +934,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return None
 
     def fetch_protocol(
-        self, 
-        protocol_id: Union[str, int], 
-        location: "BaseWorker", 
+        self,
+        protocol_id: Union[str, int],
+        location: "BaseWorker",
         copy: bool = False,
-        pending_time: Union[int, float] = 0
+        pending_time: Union[int, float] = 0,
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
 
@@ -940,6 +949,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             pending_time (optional): A number of seconds to delay the message to be sent.
                 The argument may be a floating point number for subsecond 
                 precision.
+
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """
@@ -1031,6 +1041,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         return sy.serde.deserialize(self.msg_history[index], worker=self)
+
+    def set_pending_time(self, seconds: Union[int, float]):
+        self.pending_time = seconds
 
     @staticmethod
     def create_message_execute_command(
@@ -1142,4 +1155,4 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     @staticmethod
     def add_pending_time(seconds: Union[int, float] = 0) -> None:
-        time.sleep(seconds)
+        sleep(seconds)

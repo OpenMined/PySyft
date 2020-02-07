@@ -50,6 +50,7 @@ class ObjectPointer(AbstractObject):
         point_to_attr: str = None,
         tags: List[str] = None,
         description: str = None,
+        pending_time: Union[int, float] = 0,
     ):
 
         """Initializes a ObjectPointer.
@@ -72,6 +73,9 @@ class ObjectPointer(AbstractObject):
                 .grad. Note the string can be a chain (i.e., .child.child.child or
                 .grad.child.child). Defaults to None, which means don't point to any attr,
                 just point to then object corresponding to the id_at_location.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
@@ -79,16 +83,18 @@ class ObjectPointer(AbstractObject):
         self.id_at_location = id_at_location
         self.garbage_collect_data = garbage_collect_data
         self.point_to_attr = point_to_attr
+        self.pending_time = pending_time
 
     @staticmethod
     def create_pointer(
         obj,
         location: "AbstractWorker" = None,
-        id_at_location: (str or int) = None,
+        id_at_location: Union[str, int] = None,
         register: bool = False,
         owner: "AbstractWorker" = None,
-        ptr_id: (str or int) = None,
+        ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
+        pending_time: Union[int, float] = 0,
     ) -> "ObjectPointer":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -132,6 +138,9 @@ class ObjectPointer(AbstractObject):
                 Otherwise, it will be set randomly.
             garbage_collect_data: If true (default), delete the remote tensor when the
                 pointer is deleted.
+            pending_time (optional): A number of seconds to delay the message to be sent.
+                The argument may be a floating point number for subsecond 
+                precision.
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor.
@@ -157,6 +166,7 @@ class ObjectPointer(AbstractObject):
             garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
             tags=obj.tags,
             description=obj.description,
+            pending_time=pending_time,
         )
 
         return ptr
@@ -193,13 +203,15 @@ class ObjectPointer(AbstractObject):
         return wrapper
 
     @classmethod
-    def handle_func_command(cls, command):
+    def handle_func_command(cls, command, pending_time: Union[int, float] = 0):
         """
         Receive an instruction for a function to be applied on a Pointer,
         Get the remote location to send the command, send it and get a
         pointer to the response, return.
         :param command: instruction of a function command: (command name,
         None, arguments[, kwargs])
+        :param pending_time: (optional) A number of seconds to delay the message to be sent.
+        The argument may be a floating point number for subsecond precision.
         :return: the response of the function command
         """
         pointer = cls.find_a_pointer(command)
@@ -208,7 +220,7 @@ class ObjectPointer(AbstractObject):
         location = pointer.location
 
         # Send the command
-        response = owner.send_command(location, command)
+        response = owner.send_command(location, command, pending_time=pending_time)
 
         return response
 
@@ -266,7 +278,9 @@ class ObjectPointer(AbstractObject):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+            obj = self.owner.request_obj(
+                self.id_at_location, self.location, user, reason, self.pending_time
+            )
 
         # Remove this pointer by default
         if deregister_ptr:
@@ -277,6 +291,14 @@ class ObjectPointer(AbstractObject):
             self.garbage_collect_data = False
 
         return obj
+
+    def set_pending_time(self, seconds: Union[int, float]):
+        """Sets the pending time in seconds.
+
+        Args:
+            seconds: A number of seconds to delay the message to be sent.
+        """
+        self.pending_time = seconds
 
     def __str__(self):
         """Returns a string version of this pointer.
@@ -341,7 +363,9 @@ class ObjectPointer(AbstractObject):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
+                self.owner.send_msg(
+                    ForceObjectDeleteMessage(self.id_at_location), self.location, self.pending_time
+                )
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
@@ -363,7 +387,9 @@ class ObjectPointer(AbstractObject):
 
     def setattr(self, name, value):
         self.owner.send_command(
-            message=("__setattr__", self, (name, value), {}), recipient=self.location
+            message=("__setattr__", self, (name, value), {}),
+            recipient=self.location,
+            pending_time=self.pending_time,
         )
 
     @staticmethod
