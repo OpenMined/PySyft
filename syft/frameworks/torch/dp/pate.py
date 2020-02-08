@@ -29,7 +29,7 @@ import numpy as np
 import torch
 
 
-def compute_q_noisy_max(counts: List[float, ...], noise_eps: float) -> float:
+def compute_q_noisy_max(counts: Union[np.ndarray, List[float, ...]], noise_eps: float) -> float:
     """
     Returns ~ Pr[outcome != winner].
 
@@ -115,7 +115,9 @@ def logmgf_exact(q: float, priv_eps: float, l: int) -> float:
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def logmgf_from_counts(counts: List[float, ...], noise_eps: float, l: int) -> float:
+def logmgf_from_counts(
+    counts: Union[np.ndarray, List[float, ...]], noise_eps: float, l: int
+) -> float:
     """
     ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
     in our setting where one count can go up by one and another
@@ -132,7 +134,7 @@ def logmgf_from_counts(counts: List[float, ...], noise_eps: float, l: int) -> fl
     return logmgf_exact(q, 2.0 * noise_eps, l)
 
 
-def sens_at_k(counts: List[float, ...], noise_eps: float, l: int, k: float) -> float:
+def sens_at_k(counts: np.ndarray, noise_eps: float, l: int, k: float) -> float:
     """
     Return sensitivity at distance k.
 
@@ -167,7 +169,7 @@ def sens_at_k(counts: List[float, ...], noise_eps: float, l: int, k: float) -> f
     return val_changed - val
 
 
-def smoothed_sens(counts: List[float, ...], noise_eps: float, l: int, beta: float) -> float:
+def smoothed_sens(counts: np.ndarray, noise_eps: float, l: int, beta: float) -> float:
     """
     Compute beta-smooth sensitivity.
 
@@ -325,7 +327,9 @@ def logmgf_exact_torch(q: float, priv_eps: float, l: int) -> float:
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def compute_q_noisy_max_torch(counts: List[float, ...], noise_eps: float) -> float:
+def compute_q_noisy_max_torch(
+    counts: Union[List[torch.Tensor, ...], torch.Tensor], noise_eps: float
+) -> float:
     """
     Returns ~ Pr[outcome != winner].
 
@@ -357,7 +361,9 @@ def compute_q_noisy_max_torch(counts: List[float, ...], noise_eps: float) -> flo
     return min(q, 1.0 - (1.0 / len(counts)))
 
 
-def logmgf_from_counts_torch(counts: List[float, ...], noise_eps: float, l: int) -> float:
+def logmgf_from_counts_torch(
+    counts: Union[List[torch.Tensor, ...], torch.Tensor], noise_eps: float, l: int
+) -> float:
     """
     ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
     in our setting where one count can go up by one and another
@@ -375,12 +381,12 @@ def logmgf_from_counts_torch(counts: List[float, ...], noise_eps: float, l: int)
     return logmgf_exact_torch(q, 2.0 * noise_eps, l)
 
 
-def sens_at_k_torch(counts: List[float, ...], noise_eps: float, l: int, k: int) -> float:
+def sens_at_k_torch(counts: torch.Tensor, noise_eps: float, l: int, k: int) -> float:
     """
     Return sensitivity at distane k.
 
     Args:
-        counts: an array of scores
+        counts: tensor of scores
         noise_eps: noise parameter used
         l: moment whose sensitivity is being computed
         k: distance
@@ -408,11 +414,11 @@ def sens_at_k_torch(counts: List[float, ...], noise_eps: float, l: int, k: int) 
     return val_changed - val
 
 
-def smooth_sens_torch(counts: List[float, ...], noise_eps: float, l: int, beta: float) -> float:
+def smooth_sens_torch(counts: torch.Tensor, noise_eps: float, l: int, beta: float) -> float:
     """Compute beta-smooth sensitivity.
 
     Args:
-        counts: array of scores
+        counts: tensor of scores
         noise_eps: noise parameter
         l: moment of interest
         beta: smoothness parameter
@@ -459,6 +465,7 @@ def perform_analysis_torch(
     num_teachers, num_examples = preds.shape
     _num_examples = indices.shape[0]
 
+    # Check that preds is shape (teachers x examples)
     assert num_examples == _num_examples
 
     labels = list(preds.flatten())
@@ -467,6 +474,7 @@ def perform_analysis_torch(
 
     counts_mat = torch.zeros(num_examples, num_labels, dtype=torch.float32)
 
+    # Count number of teacher predictions of each label for each example
     for i in range(num_examples):
         for j in range(num_teachers):
             counts_mat[i, int(preds[j, i])] += 1
@@ -495,6 +503,7 @@ def perform_analysis_torch(
             "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
         )
 
+    # Computer epsilon when not taking teacher quorum into account
     data_ind_log_mgf = torch.tensor([0.0 for _ in l_list])
     data_ind_log_mgf += num_examples * torch.tensor(
         tensors_to_literals([logmgf_exact_torch(1.0, 2.0 * noise_eps, l) for l in l_list])
