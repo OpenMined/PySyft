@@ -37,7 +37,7 @@ import numpy as np
 import torch
 
 
-def compute_q_noisy_max(counts: Union[np.ndarray, List[float, ...]], noise_eps: float) -> float:
+def compute_q_noisy_max(counts: Union[np.ndarray, List[float]], noise_eps: float) -> float:
     """
     Returns ~ Pr[outcome != winner].
 
@@ -65,7 +65,7 @@ def compute_q_noisy_max(counts: Union[np.ndarray, List[float, ...]], noise_eps: 
     return min(q, 1.0 - (1.0 / len(counts)))
 
 
-def compute_q_noisy_max_approx(counts: List[float, ...], noise_eps: float) -> float:
+def compute_q_noisy_max_approx(counts: List[float], noise_eps: float) -> float:
     """
     Returns ~ Pr[outcome != winner].
 
@@ -123,9 +123,7 @@ def logmgf_exact(q: float, priv_eps: float, l: int) -> float:
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def logmgf_from_counts(
-    counts: Union[np.ndarray, List[float, ...]], noise_eps: float, l: int
-) -> float:
+def logmgf_from_counts(counts: Union[np.ndarray, List[float]], noise_eps: float, l: int) -> float:
     """
     ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
     in our setting where one count can go up by one and another
@@ -284,7 +282,7 @@ def perform_analysis(
     return min(eps_list_nm), min(data_ind_eps_list)
 
 
-def tensors_to_literals(tensor_list: List[torch.Tensor, ...]) -> List[Union[float, int], ...]:
+def tensors_to_literals(tensor_list: List[torch.Tensor]) -> List[Union[float, int]]:
     """
     Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
 
@@ -336,7 +334,7 @@ def logmgf_exact_torch(q: float, priv_eps: float, l: int) -> float:
 
 
 def compute_q_noisy_max_torch(
-    counts: Union[List[torch.Tensor, ...], torch.Tensor], noise_eps: float
+    counts: Union[List[torch.Tensor], torch.Tensor], noise_eps: float
 ) -> float:
     """
     Returns ~ Pr[outcome != winner].
@@ -370,7 +368,7 @@ def compute_q_noisy_max_torch(
 
 
 def logmgf_from_counts_torch(
-    counts: Union[List[torch.Tensor, ...], torch.Tensor], noise_eps: float, l: int
+    counts: Union[List[torch.Tensor], torch.Tensor], noise_eps: float, l: int
 ) -> float:
     """
     ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
