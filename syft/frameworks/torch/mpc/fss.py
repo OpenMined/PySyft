@@ -11,35 +11,49 @@ import torch as th
 import syft as sy
 from syft.messaging.plan import func2plan
 
-λ = 6  # 63  # security parameter
-n = 8  # 32  # bit precision
+λ = 63  # 6  # 63  # security parameter
+n = 32  # 8  # 32  # bit precision
 
 no_wrap = {"no_wrap": True}
 
 
-def eq(x1, x2):
-
-    # TODO put this outside
+def manual_init_store(worker):
     keygen = func2plan()(DPF.keygen)
     keygen.build()
+
     alpha, s_00, s_01, *CW = keygen()
     k = [(s_00, *CW), (s_01, *CW)]
     evaluate = func2plan()(DPF.eval)
     evaluate.build(th.IntTensor([0]), alpha, *k[0])
 
-    # x1==x2 : x1-x2==0
+    keygen.owner = worker
+    keygen.tag("#fss-keygen")
+    evaluate.owner = worker
+    evaluate.tag("#fss-eval")
+    worker.register_obj(keygen)
+    worker.register_obj(evaluate)
+
+    keygen.forward = None
+    evaluate.forward = None
+
+
+def eq(x1, x2):
+
+    # x1==x2 ~ x1-x2==0
     x_sh = x1 - x2
 
     locations = x_sh.locations
     crypto_provider = x_sh.crypto_provider
 
+    # Retrieve keygen & eval plans
+    keygen_ptr, = crypto_provider.search("#fss-keygen")
+    evaluate_ptr, = crypto_provider.search("#fss-eval")
+
     # key gen
-    keygen_ptr = keygen.send(crypto_provider)
     alpha, s_00, s_01, *CW = keygen_ptr()
 
-    # build mask
-    alpha = alpha.get()
-    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap)
+    # send mask
+    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
 
     # reveal masked values
     x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
@@ -57,8 +71,7 @@ def eq(x1, x2):
         ]
     )
 
-    evaluate_ptr = evaluate.send(*locations)
-
+    evaluate_ptr = evaluate_ptr.get().send(*locations)
     int_shares = evaluate_ptr(b, x_masked, *k)
 
     long_shares = {k: v.long() for k, v in int_shares.items()}
@@ -97,14 +110,15 @@ class DPF:
 
         CW_n = (-1) ** t[n, 1] * (beta.to(th.uint8) - Convert(s[n, 0]) + Convert(s[n, 1]))
 
-        return (alpha,) + s[0].unbind() + CW.unbind() + (CW_n,)
+        return (alpha,) + s[0].unbind() + (CW, CW_n)
 
     @staticmethod
     def eval(b, x, *k_b):
         x = bit_decomposition(x)
         s, t = Array(n + 1, λ), Array(n + 1, 1)
         s[0] = k_b[0]
-        CW = k_b[1:]
+        # here k[1:] is (CW, CW_n)
+        CW = k_b[1].unbind() + (k_b[2],)
         t[0] = b
         for i in range(0, n):
             τ = G(s[i]) ^ (t[i] * CW[i])
