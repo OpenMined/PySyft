@@ -241,9 +241,6 @@ def perform_analysis(
 
     eps_list_nm = (total_log_mgf_nm - math.log(delta)) / l_list
 
-    # print("Epsilons (Noisy Max): " + str(eps_list_nm))
-    # print("Smoothed sensitivities (Noisy Max): " + str(total_ss_nm / l_list))
-
     # If beta < eps / 2 ln (1/delta), then adding noise Lap(1) * 2 SS/eps
     # is eps,delta DP
     # Also if beta < eps / 2(gamma +1), then adding noise 2(gamma+1) SS eta / eps
@@ -254,10 +251,7 @@ def perform_analysis(
 
     ss_eps = 2.0 * beta * math.log(1 / delta)
     ss_scale = 2.0 / ss_eps
-    # print("To get an " + str(ss_eps) + "-DP estimate of epsilon, ")
-    # print("..add noise ~ " + str(ss_scale))
-    # print("... times " + str(total_ss_nm / l_list))
-    # print("Epsilon = " + str(min(eps_list_nm)) + ".")
+
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
             "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
@@ -271,7 +265,6 @@ def perform_analysis(
     )
 
     data_ind_eps_list = (data_ind_log_mgf - math.log(delta)) / l_list
-    # print("Data independent bound = " + str(min(data_ind_eps_list)) + ".")
 
     return min(eps_list_nm), min(data_ind_eps_list)
 
