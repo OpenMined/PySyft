@@ -93,6 +93,26 @@ class PointerPlan(ObjectPointer):
 
         return response
 
+    def parameters(self) -> List:
+        """Return a list of pointers to the plan parameters"""
+
+        assert (
+            len(self._locations) == 1
+        ), ".parameters() for PointerPlan with > 1 locations is currently not implemented."
+        # TODO implement this feature using MultiPointerTensor
+
+        location = self._locations[0]
+        id_at_location = self._ids_at_location[0]
+
+        command = ("parameters", id_at_location, [], {})
+
+        pointers = self.owner.send_command(message=command, recipient=location)
+
+        for pointer in pointers:
+            pointer.garbage_collect_data = False
+
+        return [pointer.wrap() for pointer in pointers]
+
     def request_run_plan(
         self,
         location: "sy.workers.BaseWorker",
@@ -150,15 +170,21 @@ class PointerPlan(ObjectPointer):
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "PointerPlan") -> tuple:
 
-        return (ptr.id, ptr.id_at_location, ptr.location.id, ptr.garbage_collect_data)
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.id),
+            sy.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
+            sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
+            ptr.garbage_collect_data,
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerPlan":
         # TODO: fix comment for this and simplifier
         obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
 
-        if isinstance(worker_id, bytes):
-            worker_id = worker_id.decode()
+        obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
+        id_at_location = sy.serde.msgpack.serde._detail(worker, id_at_location)
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:

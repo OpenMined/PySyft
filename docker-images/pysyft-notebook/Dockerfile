@@ -5,7 +5,7 @@ ENV WORKSPACE /workspace
 # Setup workspace environment
 RUN apt-get update && apt-get install -y gcc
 RUN conda install jupyter notebook
-RUN pip install --no-cache-dir syft[udacity]
+RUN pip install --no-cache-dir syft[udacity,sandbox]
 
 # Create jupyter notebook workspace
 RUN mkdir $WORKSPACE
