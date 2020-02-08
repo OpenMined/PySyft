@@ -13,6 +13,14 @@
 # limitations under the License.
 # ==============================================================================
 
+# ==============================================================================
+# Modifications copyright (C) 2020 OpenMined
+#
+# Added type hints to functions
+# Added moment values to print statements when calculating sensitivity
+# ==============================================================================
+
+
 """
 This script computes bounds on the privacy cost of training the
 student model from noisy aggregation of labels predicted by teachers.
@@ -372,7 +380,7 @@ def logmgf_from_counts_torch(
     Args:
         counts: a list of scores
         noise_eps: noise parameter used
-        l: moment whose sensitivty is being computed
+        l: moment whose sensitivity is being computed
     Returns:
         q: the probability that outcome is different from true winner
     """
