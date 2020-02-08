@@ -49,9 +49,9 @@ def compute_q_noisy_max(counts: List[float, ...], noise_eps: float) -> float:
 
     counts_rest = np.array([counts_normalized[i] for i in range(len(counts)) if i != winner])
     q = 0.0
+
     for c in counts_rest:
         gap = -c
-
         q += (gap + 2.0) / (4.0 * math.exp(gap))
 
     return min(q, 1.0 - (1.0 / len(counts)))
@@ -128,7 +128,6 @@ def logmgf_from_counts(counts: List[float, ...], noise_eps: float, l: int) -> fl
     Returns:
         q: Upper bound on logmgf
     """
-
     q = compute_q_noisy_max(counts, noise_eps)
     return logmgf_exact(q, 2.0 * noise_eps, l)
 
@@ -146,20 +145,25 @@ def sens_at_k(counts: List[float, ...], noise_eps: float, l: int, k: float) -> f
         sensitivity: at distance k
     """
     counts_sorted = sorted(counts, reverse=True)
+
     if 0.5 * noise_eps * l > 1:
         print("l too large to compute sensitivity")
         return 0
+
     # Now we can assume that at k, gap remains positive
     # or we have reached the point where logmgf_exact is
     # determined by the first term and ind of q.
     if counts[0] < counts[1] + k:
         return 0
+
     counts_sorted[0] -= k
     counts_sorted[1] += k
     val = logmgf_from_counts(counts_sorted, noise_eps, l)
+
     counts_sorted[0] -= 1
     counts_sorted[1] += 1
     val_changed = logmgf_from_counts(counts_sorted, noise_eps, l)
+
     return val_changed - val
 
 
@@ -177,6 +181,7 @@ def smoothed_sens(counts: List[float, ...], noise_eps: float, l: int, beta: floa
     """
     k = 0
     smoothed_sensitivity = sens_at_k(counts, noise_eps, l, k)
+
     while k < max(counts):
         k += 1
         sensitivity_at_k = sens_at_k(counts, noise_eps, l, k)
@@ -209,7 +214,6 @@ def perform_analysis(
     Returns:
         tuple: first value is the data dependent epsilon, then the data independent epsilon
     """
-
     num_teachers, num_examples = teacher_preds.shape
     _num_examples = indices.shape[0]
     labels = set(list(teacher_preds.flatten()))
@@ -229,7 +233,6 @@ def perform_analysis(
     total_ss_nm = np.array([0.0 for _ in l_list])
 
     for i in indices:
-
         total_log_mgf_nm += np.array(
             [logmgf_from_counts(counts_mat[i], noise_eps, l) for l in l_list]
         )
@@ -278,7 +281,6 @@ def tensors_to_literals(tensor_list: List[torch.Tensor, ...]) -> List[Union[floa
     Returns:
         literal_list: List of floats/integers
     """
-
     literal_list = []
 
     for tensor in tensor_list:
@@ -309,16 +311,13 @@ def logmgf_exact_torch(q: float, priv_eps: float, l: int) -> float:
         t_one = (1 - q) * math.pow((1 - q) / (1 - math.exp(priv_eps) * q), l)
         t_two = q * math.exp(priv_eps * l)
         t = t_one + t_two
+
         try:
-
             log_t = math.log(t)
-
         except ValueError:
-
             print("Got ValueError in math.log for values :" + str((q, priv_eps, l, t)))
             log_t = priv_eps * l
     else:
-
         log_t = priv_eps * l
 
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
@@ -348,7 +347,6 @@ def compute_q_noisy_max_torch(counts: List[float, ...], noise_eps: float) -> flo
 
     index = 0
     for c in counts_rest:
-
         gap = -c
         q += (gap + 2.0) / (4.0 * math.exp(gap))
 
@@ -391,20 +389,20 @@ def sens_at_k_torch(counts: List[float, ...], noise_eps: float, l: int, k: int) 
     counts_sorted = sorted(counts, reverse=True)
 
     if 0.5 * noise_eps * l > 1:
-
         print("l too large to compute sensitivity")
         return 0
 
     if counts[0] < counts[1] + k:
-
         return 0
 
     counts_sorted[0] -= k
     counts_sorted[1] += k
     val = logmgf_from_counts_torch(counts_sorted, noise_eps, l)
+
     counts_sorted[0] -= 1
     counts_sorted[1] += 1
     val_changed = logmgf_from_counts_torch(counts_sorted, noise_eps, l)
+
     return val_changed - val
 
 
@@ -419,7 +417,6 @@ def smooth_sens_torch(counts: List[float, ...], noise_eps: float, l: int, beta: 
     Returns:
         smooth_sensitivity: a beta smooth upper bound
     """
-
     k = 0
     smoothed_sensitivity = sens_at_k_torch(counts, noise_eps, l, k)
 
@@ -457,7 +454,6 @@ def perform_analysis_torch(
     Returns:
         tuple: first value is the data dependent epsilon, then the data independent epsilon
     """
-
     num_teachers, num_examples = preds.shape
     _num_examples = indices.shape[0]
 
@@ -470,9 +466,7 @@ def perform_analysis_torch(
     counts_mat = torch.zeros(num_examples, num_labels, dtype=torch.float32)
 
     for i in range(num_examples):
-
         for j in range(num_teachers):
-
             counts_mat[i, int(preds[j, i])] += 1
 
     l_list = 1 + torch.tensor(range(moments), dtype=torch.float)
@@ -481,7 +475,6 @@ def perform_analysis_torch(
     total_ss_nm = torch.tensor([0.0 for _ in l_list], dtype=torch.float)
 
     for i in indices:
-
         total_log_mgf_nm += torch.tensor(
             [logmgf_from_counts_torch(counts_mat[i].clone(), noise_eps, l) for l in l_list]
         )
@@ -494,6 +487,7 @@ def perform_analysis_torch(
     eps_list_nm = (total_log_mgf_nm - math.log(delta)) / l_list
     ss_eps = 2.0 * beta * math.log(1 / delta)
     ss_scale = 2.0 / ss_eps
+
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
             "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
