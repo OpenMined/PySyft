@@ -147,7 +147,7 @@ def sens_at_k(counts: List[float, ...], noise_eps: float, l: int, k: float) -> f
     counts_sorted = sorted(counts, reverse=True)
 
     if 0.5 * noise_eps * l > 1:
-        print("l too large to compute sensitivity")
+        print(f"l of {l} too large to compute sensitivity with noise epsilon {noise_eps}")
         return 0
 
     # Now we can assume that at k, gap remains positive
@@ -172,7 +172,7 @@ def smoothed_sens(counts: List[float, ...], noise_eps: float, l: int, beta: floa
     Compute beta-smooth sensitivity.
 
     Args:
-        counts: array of scors
+        counts: array of scores
         noise_eps: noise parameter
         l: moment of interest
         beta: smoothness parameter
@@ -186,8 +186,10 @@ def smoothed_sens(counts: List[float, ...], noise_eps: float, l: int, beta: floa
         k += 1
         sensitivity_at_k = sens_at_k(counts, noise_eps, l, k)
         smoothed_sensitivity = max(smoothed_sensitivity, math.exp(-beta * k) * sensitivity_at_k)
+
         if sensitivity_at_k == 0.0:
             break
+
     return smoothed_sensitivity
 
 
@@ -389,7 +391,7 @@ def sens_at_k_torch(counts: List[float, ...], noise_eps: float, l: int, k: int) 
     counts_sorted = sorted(counts, reverse=True)
 
     if 0.5 * noise_eps * l > 1:
-        print("l too large to compute sensitivity")
+        print(f"l of {l} is too large to compute sensitivity with noise epsilon {noise_eps}")
         return 0
 
     if counts[0] < counts[1] + k:
