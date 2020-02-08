@@ -23,42 +23,22 @@ the epsilon bounds for MNIST and SVHN students.
 """
 import os
 import math
+from typing import List, Tuple, Union
+
 import numpy as np
 import torch
 
-# import tensorflow as tf
-#
-#
-# # These parameters can be changed to compute bounds for different failure rates
-# # or different model predictions.
-#
-# tf.flags.DEFINE_integer("moments",8, "Number of moments")
-# tf.flags.DEFINE_float("noise_eps", 0.1, "Eps value for each call to noisymax.")
-# tf.flags.DEFINE_float("delta", 1e-5, "Target value of delta.")
-# tf.flags.DEFINE_float("beta", 0.09, "Value of beta for smooth sensitivity")
-# tf.flags.DEFINE_string("counts_file","","Numpy matrix with raw counts")
-# tf.flags.DEFINE_string("indices_file","",
-#     "File containting a numpy matrix with indices used."
-#     "Optional. Use the first max_examples indices if this is not provided.")
-# tf.flags.DEFINE_integer("max_examples",1000,
-#     "Number of examples to use. We will use the first"
-#     " max_examples many examples from the counts_file"
-#     " or indices_file to do the privacy cost estimate")
-# tf.flags.DEFINE_float("too_small", 1e-10, "Small threshold to avoid log of 0")
-# tf.flags.DEFINE_bool("input_is_counts", False, "False if labels, True if counts")
-#
-# FLAGS = tf.flags.FLAGS
 
+def compute_q_noisy_max(counts: List[float, ...], noise_eps: float) -> float:
+    """
+    Returns ~ Pr[outcome != winner].
 
-def compute_q_noisy_max(counts, noise_eps):
-    """Returns ~ Pr[outcome != winner].
-
-  Args:
-    counts: a list of scores
-    noise_eps: privacy parameter for noisy_max
-  Returns:
-    q: the probability that outcome is different from true winner.
-  """
+    Args:
+        counts: a list of scores
+        noise_eps: privacy parameter for noisy_max
+    Returns:
+        q: the probability that outcome is different from true winner.
+    """
     # For noisy max, we only get an upper bound.
     # Pr[ j beats i*] \leq (2+gap(j,i*))/ 4 exp(gap(j,i*)
     # proof at http://mathoverflow.net/questions/66763/
@@ -77,15 +57,16 @@ def compute_q_noisy_max(counts, noise_eps):
     return min(q, 1.0 - (1.0 / len(counts)))
 
 
-def compute_q_noisy_max_approx(counts, noise_eps):
-    """Returns ~ Pr[outcome != winner].
+def compute_q_noisy_max_approx(counts: List[float, ...], noise_eps: float) -> float:
+    """
+    Returns ~ Pr[outcome != winner].
 
-  Args:
-    counts: a list of scores
-    noise_eps: privacy parameter for noisy_max
-  Returns:
-    q: the probability that outcome is different from true winner.
-  """
+    Args:
+        counts: a list of scores
+        noise_eps: privacy parameter for noisy_max
+    Returns:
+        q: the probability that outcome is different from true winner.
+    """
     # For noisy max, we only get an upper bound.
     # Pr[ j beats i*] \leq (2+gap(j,i*))/ 4 exp(gap(j,i*)
     # proof at http://mathoverflow.net/questions/66763/
@@ -101,22 +82,24 @@ def compute_q_noisy_max_approx(counts, noise_eps):
     return min(q, 1.0 - (1.0 / len(counts)))
 
 
-def logmgf_exact(q, priv_eps, l):
-    """Computes the logmgf value given q and privacy eps.
+def logmgf_exact(q: float, priv_eps: float, l: int) -> float:
+    """
+    Computes the logmgf value given q and privacy eps.
 
-  The bound used is the min of three terms. The first term is from
-  https://arxiv.org/pdf/1605.02065.pdf.
-  The second term is based on the fact that when event has probability (1-q) for
-  q close to zero, q can only change by exp(eps), which corresponds to a
-  much smaller multiplicative change in (1-q)
-  The third term comes directly from the privacy guarantee.
-  Args:
-    q: pr of non-optimal outcome
-    priv_eps: eps parameter for DP
-    l: moment to compute.
-  Returns:
-    Upper bound on logmgf
-  """
+    The bound used is the min of three terms. The first term is from
+    https://arxiv.org/pdf/1605.02065.pdf.
+    The second term is based on the fact that when event has probability (1-q) for
+    q close to zero, q can only change by exp(eps), which corresponds to a
+    much smaller multiplicative change in (1-q)
+    The third term comes directly from the privacy guarantee.
+
+    Args:
+        q: pr of non-optimal outcome
+        priv_eps: eps parameter for DP
+        l: moment to compute.
+    Returns:
+        Upper bound on logmgf
+    """
     if q < 0.5:
         t_one = (1 - q) * math.pow((1 - q) / (1 - math.exp(priv_eps) * q), l)
         t_two = q * math.exp(priv_eps * l)
@@ -132,28 +115,36 @@ def logmgf_exact(q, priv_eps, l):
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def logmgf_from_counts(counts, noise_eps, l):
+def logmgf_from_counts(counts: List[float, ...], noise_eps: float, l: int) -> float:
     """
-  ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
-  in our setting where one count can go up by one and another
-  can go down by 1.
-  """
+    ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
+    in our setting where one count can go up by one and another
+    can go down by 1.
+
+    Args:
+        counts: an array of scores
+        noise_eps: noise epsilon used
+        l: moment to compute
+    Returns:
+        q: Upper bound on logmgf
+    """
 
     q = compute_q_noisy_max(counts, noise_eps)
     return logmgf_exact(q, 2.0 * noise_eps, l)
 
 
-def sens_at_k(counts, noise_eps, l, k):
-    """Return sensitivity at distane k.
+def sens_at_k(counts: List[float, ...], noise_eps: float, l: int, k: float) -> float:
+    """
+    Return sensitivity at distance k.
 
-  Args:
-    counts: an array of scores
-    noise_eps: noise parameter used
-    l: moment whose sensitivity is being computed
-    k: distance
-  Returns:
-    sensitivity: at distance k
-  """
+    Args:
+        counts: an array of scores
+        noise_eps: noise parameter used
+        l: moment whose sensitivity is being computed
+        k: distance
+    Returns:
+        sensitivity: at distance k
+    """
     counts_sorted = sorted(counts, reverse=True)
     if 0.5 * noise_eps * l > 1:
         print("l too large to compute sensitivity")
@@ -172,17 +163,18 @@ def sens_at_k(counts, noise_eps, l, k):
     return val_changed - val
 
 
-def smoothed_sens(counts, noise_eps, l, beta):
-    """Compute beta-smooth sensitivity.
+def smoothed_sens(counts: List[float, ...], noise_eps: float, l: int, beta: float) -> float:
+    """
+    Compute beta-smooth sensitivity.
 
-  Args:
-    counts: array of scors
-    noise_eps: noise parameter
-    l: moment of interest
-    beta: smoothness parameter
-  Returns:
-    smooth_sensitivity: a beta smooth upper bound
-  """
+    Args:
+        counts: array of scors
+        noise_eps: noise parameter
+        l: moment of interest
+        beta: smoothness parameter
+    Returns:
+        smooth_sensitivity: a beta smooth upper bound
+    """
     k = 0
     smoothed_sensitivity = sens_at_k(counts, noise_eps, l, k)
     while k < max(counts):
@@ -194,8 +186,16 @@ def smoothed_sens(counts, noise_eps, l, beta):
     return smoothed_sensitivity
 
 
-def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, beta=0.09):
-    """"Performs PATE analysis on predictions from teachers and combined predictions for student.
+def perform_analysis(
+    teacher_preds: np.ndarray,
+    indices: np.ndarray,
+    noise_eps: float,
+    delta: float = 1e-5,
+    moments: int = 8,
+    beta: float = 0.09,
+) -> Tuple[float, float]:
+    """"
+    Performs PATE analysis on predictions from teachers and combined predictions for student.
 
     Args:
         teacher_preds: a numpy array of dim (num_teachers x num_examples). Each value corresponds to the
@@ -276,17 +276,14 @@ def perform_analysis(teacher_preds, indices, noise_eps, delta=1e-5, moments=8, b
     return min(eps_list_nm), min(data_ind_eps_list)
 
 
-def tensors_to_literals(tensor_list):
-    """Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
+def tensors_to_literals(tensor_list: List[torch.Tensor, ...]) -> List[Union[float, int], ...]:
+    """
+    Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
 
-       Args:
-
-           tensor_list[List]: List of torch tensors
-
-       Returns:
-
-           literal_list[List]: List of floats/integers
-
+    Args:
+        tensor_list: List of torch tensors
+    Returns:
+        literal_list: List of floats/integers
     """
 
     literal_list = []
@@ -297,21 +294,24 @@ def tensors_to_literals(tensor_list):
     return literal_list
 
 
-def logmgf_exact_torch(q, priv_eps, l):
-    """Computes the logmgf value given q and privacy eps.
-       The bound used is the min of three terms. The first term is from
-       https://arxiv.org/pdf/1605.02065.pdf.
-       The second term is based on the fact that when event has probability (1-q) for
-       q close to zero, q can only change by exp(eps), which corresponds to a
-       much smaller multiplicative change in (1-q)
-       The third term comes directly from the privacy guarantee.
-       Args:
-            q: pr of non-optimal outcome
-            priv_eps: eps parameter for DP
-            l: moment to compute.
-       Returns:
-            Upper bound on logmgf
-      """
+def logmgf_exact_torch(q: float, priv_eps: float, l: int) -> float:
+    """
+    Computes the logmgf value given q and privacy eps.
+
+    The bound used is the min of three terms. The first term is from
+    https://arxiv.org/pdf/1605.02065.pdf.
+    The second term is based on the fact that when event has probability (1-q) for
+    q close to zero, q can only change by exp(eps), which corresponds to a
+    much smaller multiplicative change in (1-q)
+    The third term comes directly from the privacy guarantee.
+
+    Args:
+        q: pr of non-optimal outcome
+        priv_eps: eps parameter for DP
+        l: moment to compute.
+    Returns:
+        Upper bound on logmgf
+    """
     if q < 0.5:
         t_one = (1 - q) * math.pow((1 - q) / (1 - math.exp(priv_eps) * q), l)
         t_two = q * math.exp(priv_eps * l)
@@ -331,21 +331,17 @@ def logmgf_exact_torch(q, priv_eps, l):
     return min(0.5 * priv_eps * priv_eps * l * (l + 1), log_t, priv_eps * l)
 
 
-def compute_q_noisy_max_torch(counts, noise_eps):
-    """Returns ~ Pr[outcome != winner].
-       Args:
-
-          counts: a list of scores
-          noise_eps: privacy parameter for noisy_max
-
-       Returns:
-
-          q: the probability that outcome is different from true winner.
-
+def compute_q_noisy_max_torch(counts: List[float, ...], noise_eps: float) -> float:
     """
+    Returns ~ Pr[outcome != winner].
 
+    Args:
+        counts: a list of scores
+        noise_eps: privacy parameter for noisy_max
+    Returns:
+        q: the probability that outcome is different from true winner.
+    """
     if type(counts) != torch.tensor:
-
         counts = torch.tensor(tensors_to_literals(counts), dtype=torch.float)
 
     _, winner = counts.max(0)
@@ -368,31 +364,36 @@ def compute_q_noisy_max_torch(counts, noise_eps):
     return min(q, 1.0 - (1.0 / len(counts)))
 
 
-def logmgf_from_counts_torch(counts, noise_eps, l):
-
+def logmgf_from_counts_torch(counts: List[float, ...], noise_eps: float, l: int) -> float:
     """
-        ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
-        in our setting where one count can go up by one and another
-        can go down by 1.
-    """
+    ReportNoisyMax mechanism with noise_eps with 2*noise_eps-DP
+    in our setting where one count can go up by one and another
+    can go down by 1.
 
+    Args:
+        counts: a list of scores
+        noise_eps: noise parameter used
+        l: moment whose sensitivty is being computed
+    Returns:
+        q: the probability that outcome is different from true winner
+    """
     q = compute_q_noisy_max_torch(counts, noise_eps)
 
     return logmgf_exact_torch(q, 2.0 * noise_eps, l)
 
 
-def sens_at_k_torch(counts, noise_eps, l, k):
+def sens_at_k_torch(counts: List[float, ...], noise_eps: float, l: int, k: int) -> float:
+    """
+    Return sensitivity at distane k.
 
-    """Return sensitivity at distane k.
-      Args:
-
-          counts: an array of scores
-          noise_eps: noise parameter used
-          l: moment whose sensitivity is being computed
-          k: distance
-      Returns:
-         sensitivity: at distance k
-     """
+    Args:
+        counts: an array of scores
+        noise_eps: noise parameter used
+        l: moment whose sensitivity is being computed
+        k: distance
+    Returns:
+        sensitivity: at distance k
+    """
 
     counts_sorted = sorted(counts, reverse=True)
 
@@ -414,37 +415,45 @@ def sens_at_k_torch(counts, noise_eps, l, k):
     return val_changed - val
 
 
-def smooth_sens_torch(counts, noise_eps, l, beta):
-
+def smooth_sens_torch(counts: List[float, ...], noise_eps: float, l: int, beta: float) -> float:
     """Compute beta-smooth sensitivity.
 
-     Args:
-         counts: array of scors
-         noise_eps: noise parameter
-         l: moment of interest
-         beta: smoothness parameter
-     Returns:
-         smooth_sensitivity: a beta smooth upper bound
-     """
+    Args:
+        counts: array of scores
+        noise_eps: noise parameter
+        l: moment of interest
+        beta: smoothness parameter
+    Returns:
+        smooth_sensitivity: a beta smooth upper bound
+    """
 
     k = 0
     smoothed_sensitivity = sens_at_k_torch(counts, noise_eps, l, k)
 
     while k < max(counts):
-
         k += 1
         sensitivity_at_k = sens_at_k_torch(counts, noise_eps, l, k)
         smoothed_sensitivity = max(smoothed_sensitivity, math.exp(-beta * k) * sensitivity_at_k)
+
         if sensitivity_at_k == 0.0:
             break
 
     return smoothed_sensitivity
 
 
-def perform_analysis_torch(preds, indices, noise_eps=0.1, delta=1e-5, moments=8, beta=0.09):
-    """Performs PATE analysis on predictions from teachers and combined predictions for student.
+def perform_analysis_torch(
+    preds: torch.Tensor,
+    indices: torch.Tensor,
+    noise_eps: float = 0.1,
+    delta: float = 1e-5,
+    moments: int = 8,
+    beta: float = 0.09,
+) -> Tuple[float, float]:
+    """
+    Performs PATE analysis on predictions from teachers and combined predictions for student.
+
     Args:
-        teacher_preds: a torch tensor of dim (num_teachers x num_examples). Each value corresponds to the
+        preds: a torch tensor of dim (num_teachers x num_examples). Each value corresponds to the
             index of the label which a teacher gave for a specific example
         indices: a torch tensor of dim (num_examples) of aggregated examples which were aggregated using
             the noisy max mechanism.
