@@ -28,10 +28,9 @@ class AutogradTensor(AbstractTensor):
     def __init__(
         self, data=None, requires_grad=True, owner=None, id=None, preinitialize_grad=False, **kwargs
     ):
-        super().__init__()
-
-        self.owner = owner
-        self.id = id
+        super().__init__(
+            id=id, owner=owner, tags=kwargs.get("tags"), description=kwargs.get("description")
+        )
 
         self.child = data
         self.requires_grad = requires_grad
@@ -41,7 +40,8 @@ class AutogradTensor(AbstractTensor):
             self.grad = data * 0
         else:
             self.grad = None
-        self.grad_fn = None
+
+        self.grad_fn = kwargs.get("grad_fn")
 
     def backward(self, grad=None):
         if grad is None:
@@ -290,18 +290,22 @@ class AutogradTensor(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the AutogradTensor.
         """
-        chain = syft.serde._simplify(worker, tensor.child) if hasattr(tensor, "child") else None
+        chain = (
+            syft.serde.msgpack.serde._simplify(worker, tensor.child)
+            if hasattr(tensor, "child")
+            else None
+        )
 
         return (
             tensor.owner,
-            syft.serde._simplify(worker, tensor.id),
+            syft.serde.msgpack.serde._simplify(worker, tensor.id),
             chain,
             tensor.requires_grad,
             tensor.preinitialize_grad,
-            tensor.grad_fn,
+            syft.serde.msgpack.serde._simplify(worker, tensor.grad_fn),
             # tensor.local_autograd,
-            syft.serde._simplify(worker, tensor.tags),
-            syft.serde._simplify(worker, tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
+            syft.serde.msgpack.serde._simplify(worker, tensor.description),
         )
 
     @staticmethod
@@ -328,18 +332,18 @@ class AutogradTensor(AbstractTensor):
         ) = tensor_tuple
 
         if chain is not None:
-            chain = syft.serde._detail(worker, chain)
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
 
         tensor = AutogradTensor(
             owner=owner,
-            id=syft.serde._detail(worker, tensor_id),
+            id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,
-            grad_fn=grad_fn,
             # local_autograd=local_autograd,
+            grad_fn=syft.serde.msgpack.serde._detail(worker, grad_fn),
             data=chain,  # pass the de-serialized data
-            tags=syft.serde._detail(worker, tags),
-            description=syft.serde._detail(worker, description),
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
+            description=syft.serde.msgpack.serde._detail(worker, description),
         )
 
         return tensor

@@ -21,7 +21,7 @@ def test_wrap(workers):
     assert isinstance(x.child.child, torch.Tensor)
 
 
-def test__str__(workers):
+def test___str__(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
     assert isinstance(x_sh.__str__(), str)
@@ -35,6 +35,15 @@ def test_share_get(workers):
     x = x.get()
 
     assert (x == t).all()
+
+
+def test___bool__(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+
+    with pytest.raises(ValueError):
+        if x_sh:  # pragma: no cover
+            pass
 
 
 def test_share_inplace_consistency(workers):
@@ -169,6 +178,28 @@ def test_add(workers):
 
     assert (z == (t + t)).all()
 
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4
+
+    z = (x + c).get().float_prec()
+    assert (z == (t + c)).all()
+
+    z = (c + x).get().float_prec()
+    assert (z == (c + t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4.2
+
+    z = (x + c).get().float_prec()
+    assert ((z - (t + c)) < 10e-3).all()
+
+    z = (c + x).get().float_prec()
+    assert ((z - (c + t)) < 10e-3).all()
+
 
 def test_sub(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -210,6 +241,28 @@ def test_sub(workers):
     z = (y - x).get().float_prec()
 
     assert (z == (u - t)).all()
+
+    # with constant integer
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4
+
+    z = (x - c).get().float_prec()
+    assert (z == (t - c)).all()
+
+    z = (c - x).get().float_prec()
+    assert (z == (c - t)).all()
+
+    # with constant float
+    t = torch.tensor([1.0, -2.0, 3.0])
+    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    c = 4.2
+
+    z = (x - c).get().float_prec()
+    assert ((z - (t - c)) < 10e-3).all()
+
+    z = (c - x).get().float_prec()
+    assert ((z - (c - t)) < 10e-3).all()
 
 
 def test_mul(workers):
@@ -873,3 +926,17 @@ def test_cnn_model(workers):
     sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
 
     assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
+
+
+def test_correct_tag_and_description_after_send(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+
+    x = torch.tensor([1, 2, 3]).share(alice, bob, james)
+    x.tags = ["tag_additive_test1", "tag_additive_test2"]
+    x.description = "description_additive_test"
+
+    pointer_x = x.send(alice)
+
+    assert alice.search("tag_additive_test1")
+    assert alice.search("tag_additive_test2")
+    assert alice.search("description_additive_test")

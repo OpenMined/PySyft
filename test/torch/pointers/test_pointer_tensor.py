@@ -461,3 +461,19 @@ def test_float_prec_on_pointer_of_pointer(workers):
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
+
+
+def test_registration_of_operation_on_pointer_of_pointer(workers):
+    """
+    Ensure operations along a chain of pointers are registered as expected.
+    """
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    tensor = torch.tensor([1, 2, 3, 4.0])
+    ptr = tensor.send(bob)
+    ptr = ptr.send(alice)
+    ptr_operation = ptr + ptr
+
+    assert len(alice._objects) == 2
+    assert len(bob._objects) == 2
