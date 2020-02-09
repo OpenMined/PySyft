@@ -50,7 +50,7 @@ jobs:
         # Run type checker in CI such that type errors can be identified and gradually addressed.
         # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
         mypy syft || echo "Type errors found, continuing build..."
-    - name: security source code scan
+    - name: Scan for security issues
       run: |
             bandit -r syft -ll
     - name: Test with pytest
