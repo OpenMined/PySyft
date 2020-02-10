@@ -11,7 +11,6 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
-from syft.frameworks.torch.tensors.interpreters.promise import PromiseTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -318,13 +317,6 @@ class TorchTensor(AbstractTensor):
             except AttributeError:
                 pass
 
-            # TODO: clean this line
-            cmd = (
-                "syft.local_worker.hook."
-                + ".".join(cmd.split(".")[:-1])
-                + ".native_"
-                + cmd.split(".")[-1]
-            )
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
@@ -341,10 +333,19 @@ class TorchTensor(AbstractTensor):
         """
             Return the evaluation of the cmd string parameter
         """
+        module = syft.local_worker.hook
+        segments = cmd.split(".")
+        submodules = segments[:-1]
+        command = segments[-1]
+
+        for sm in submodules:
+            module = getattr(module, sm)
+
+        command_method = getattr(module, f"native_{command}")
         if isinstance(args, tuple):
-            response = eval(cmd)(*args, **kwargs)
+            response = command_method(*args, **kwargs)
         else:
-            response = eval(cmd)(args, **kwargs)
+            response = command_method(args, **kwargs)
 
         return response
 
@@ -387,7 +388,7 @@ class TorchTensor(AbstractTensor):
         Returns:
             A torch.Tensor[PointerTensor] pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
-        
+
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
@@ -613,10 +614,10 @@ class TorchTensor(AbstractTensor):
 
     def allow(self, user=None) -> bool:
         """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
-            
+
             Args:
                 user (object,optional): User crendentials to be verified.
-            
+
             Returns:
                 boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
         """
@@ -661,17 +662,17 @@ class TorchTensor(AbstractTensor):
 
         return attr_val
 
-    def clone(self):
+    def clone(self, *args, **kwargs):
         """
         Clone should keep ids unchanged, contrary to copy
         """
-        cloned_tensor = self.native_clone()
+        cloned_tensor = self.native_clone(*args, **kwargs)
         cloned_tensor.id = self.id
         cloned_tensor.owner = self.owner
         cloned_tensor.is_wrapper = self.is_wrapper
 
         if self.has_child():
-            cloned_tensor.child = self.child.clone()
+            cloned_tensor.child = self.child.clone(*args, **kwargs)
 
         return cloned_tensor
 
