@@ -29,7 +29,7 @@ translated_notebooks = [
 # Exclude all translated basic tutorials that are also
 # excluded in their original version.
 excluded_translated_notebooks = [
-    nb for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
+    Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
 ]
 
 # buggy notebooks with explanation what does not work
