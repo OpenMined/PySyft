@@ -2,6 +2,7 @@ import pytest
 import requests
 import unittest
 import json
+import random
 import torch as th
 from test import PORTS, IDS, GATEWAY_URL
 import torch.nn.functional as F
@@ -133,6 +134,41 @@ class PublicGridAPITest(unittest.TestCase):
 
         for model_id in model_ids:
             assert model_id in models
+        sy.hook.local_worker.is_client_worker = True
+
+    def test_model_host_consistency(self):
+        sy.hook.local_worker.is_client_worker = False
+
+        class Net(sy.Plan):
+            def __init__(self):
+                super(Net, self).__init__()
+                self.fc1 = th.nn.Linear(2, 1)
+                self.bias = th.tensor([1000.0])
+
+            def forward(self, x):
+                x = self.fc1(x)
+                return F.log_softmax(x, dim=0) + self.bias
+
+        model = Net()
+        model.build(th.tensor([1.0, 2]))
+        model_id = "model_with_consistent_host"
+
+        # randomly choose a node to host the model
+        node = random.sample(list(self.connect_nodes().values()), 1)[0]
+        # directly serve the model on the node
+        node.serve_model(model, model_id=model_id)
+
+        # retrieve the model host
+        model_host = json.loads(
+            requests.get(
+                GATEWAY_URL + "/choose-model-host?model_id={}".format(model_id)
+            ).content
+        )
+        model_host_id = model_host[0][0]
+
+        # check if the model host is really the host we sent the model to
+        assert model_host_id == node.id
+
         sy.hook.local_worker.is_client_worker = True
 
     def test_grid_host_query_jit_model_public_grid(self):

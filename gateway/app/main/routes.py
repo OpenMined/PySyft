@@ -29,7 +29,7 @@ def index():
 
 @main.route("/join", methods=["POST"])
 def join_grid_node():
-    """ Register a new grid node at grid network. 
+    """ Register a new grid node at grid network.
         TODO: Add Authentication process.
     """
 
@@ -125,8 +125,18 @@ def choose_model_host():
     if not n_replica:
         n_replica = 1
 
-    hosts = random.sample(list(grid_nodes.keys()), n_replica)
-    hosts_info = [(host, grid_nodes[host]) for host in hosts]
+    model_id = request.args.get("model_id")
+    hosts_info = None
+
+    # lookup the nodes already hosting this model to prevent hosting different model versions
+    if model_id:
+        hosts_info = _get_model_hosting_nodes(model_id)
+
+    # no model id given or no hosting nodes found: randomly choose node
+    if not hosts_info:
+        hosts = random.sample(list(grid_nodes.keys()), n_replica)
+        hosts_info = [(host, grid_nodes[host]) for host in hosts]
+
     return Response(json.dumps(hosts_info), status=200, mimetype="application/json")
 
 
@@ -182,16 +192,8 @@ def search_model():
     try:
         body = json.loads(request.data)
 
-        grid_nodes = connected_nodes()
-        match_nodes = []
-        for node in grid_nodes:
-            try:
-                response = requests.get(grid_nodes[node] + "/models/").content
-            except requests.exceptions.ConnectionError:
-                continue
-            response = json.loads(response)
-            if body["model_id"] in response.get("models", []):
-                match_nodes.append((node, grid_nodes[node]))
+        model_id = body["model_id"]
+        match_nodes = _get_model_hosting_nodes(model_id)
 
         # It returns a list[ (id, address) ]  with all grid nodes that have the desired model
         response_body = match_nodes
@@ -275,3 +277,23 @@ def search_dataset_tags():
         status_code = 400
 
     return Response(json.dumps(response_body), status=200, mimetype="application/json")
+
+
+def _get_model_hosting_nodes(model_id):
+    """ Search all nodes if they are currently hosting the model.
+
+    :param model_id: The model to search for
+    :return: An array of the nodes currently hosting the model
+    """
+    grid_nodes = connected_nodes()
+    match_nodes = []
+    for node in grid_nodes:
+        try:
+            response = requests.get(grid_nodes[node] + "/models/").content
+        except requests.exceptions.ConnectionError:
+            continue
+        response = json.loads(response)
+        if model_id in response.get("models", []):
+            match_nodes.append((node, grid_nodes[node]))
+
+    return match_nodes
