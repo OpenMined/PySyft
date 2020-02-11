@@ -26,6 +26,11 @@ advanced_notebooks = [
 translated_notebooks = [
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
 ]
+# Exclude all translated basic tutorials that are also
+# excluded in their original version.
+excluded_translated_notebooks = [
+    Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
+]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -42,6 +47,9 @@ exclusion_list_notebooks = [
     # Outdated websocket client code
     "Federated learning with websockets and federated averaging.ipynb",
 ]
+
+# Add excluded translated notebooks to the exclusion list
+exclusion_list_notebooks += excluded_translated_notebooks
 
 exclusion_list_folders = [
     "examples/tutorials/websocket",
