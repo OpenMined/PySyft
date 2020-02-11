@@ -1,6 +1,7 @@
 import math
 import logging
 from syft.generic.object import AbstractObject
+from syft.workers.base import BaseWorker
 import torch
 from torch.utils.data import Dataset
 import syft
@@ -158,6 +159,10 @@ class BaseDataset(AbstractObject):
             dataset.child = chain
 
         return dataset
+
+    def send(self, location: BaseWorker):
+        self.owner.send_obj(obj=self, location=location)
+        self.location = location
 
 
 def dataset_federate(dataset, workers):
