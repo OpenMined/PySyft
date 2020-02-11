@@ -2,6 +2,7 @@ import math
 import logging
 from syft.generic.object import AbstractObject
 from syft.workers.base import BaseWorker
+from syft.generic.pointers.pointer_dataset import PointerDataset
 import torch
 from torch.utils.data import Dataset
 import syft
@@ -70,21 +71,9 @@ class BaseDataset(AbstractObject):
 
             raise TypeError("Transforms can be applied only on torch tensors")
 
-    def send(self, worker):
-        """
-        Args:
-
-            worker[worker class]: worker to which the data must be sent
-
-        Returns:
-
-            self: Return the object instance with data sent to corresponding worker
-
-        """
-
-        self.data.send_(worker)
-        self.targets.send_(worker)
-        return self
+    def send(self, location: BaseWorker):
+        ptr = self.owner.send(self, workers=location)
+        return ptr
 
     def get(self):
         """
@@ -123,6 +112,16 @@ class BaseDataset(AbstractObject):
         self.targets.share_(*args, **kwargs)
         return self
 
+    def create_pointer(
+            self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+    ):
+        return PointerDataset(
+            owner=owner,
+            location=location or self.owner,
+            id_at_location=id_at_location or self.id,
+            garbage_collect_data=garbage_collect_data,
+        )
+
     @property
     def location(self):
         """
@@ -160,9 +159,6 @@ class BaseDataset(AbstractObject):
 
         return dataset
 
-    def send(self, location: BaseWorker):
-        self.owner.send_obj(obj=self, location=location)
-        self.location = location
 
 
 def dataset_federate(dataset, workers):
