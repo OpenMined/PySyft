@@ -735,7 +735,7 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
     # get the transformation lambda for each args
     lambdas = [
         (lambda i, **kwargs: i)  # return the same object
-        if not r  # or not hasattr(a, "owner")  # if the rule is a number == 0.
+        if not r or not hasattr(a, "owner")  # if the rule is a number == 0.
         else build_register_response(
             a, r, True
         )  # If not, call recursively build_wrap_response_with_rules

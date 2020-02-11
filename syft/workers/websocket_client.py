@@ -195,6 +195,7 @@ class WebsocketClientWorker(BaseWorker):
         nr_bins: int = -1,
         return_loss=True,
         return_raw_accuracy: bool = True,
+        device: str = "cpu",
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
 
@@ -204,6 +205,7 @@ class WebsocketClientWorker(BaseWorker):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -221,6 +223,7 @@ class WebsocketClientWorker(BaseWorker):
             nr_bins=nr_bins,
             return_loss=return_loss,
             return_raw_accuracy=return_raw_accuracy,
+            device=device,
         )
 
     def __str__(self):
