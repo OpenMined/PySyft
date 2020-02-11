@@ -1,4 +1,4 @@
-name: Run notebook tests
+name: Tutorials
 
 on:
   push:
