@@ -4,7 +4,7 @@
 
 ### Learn Git and Github
 
-All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. https://guides.github.com/activities/hello-world/
+All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. <https://guides.github.com/activities/hello-world/>
 
 ### Slack
 
@@ -39,12 +39,19 @@ To sync your fork with the OpenMined/PySyft repository please see this [Guide](h
 
 ### Installing PySyft after Cloning Repository
 
-To install the development version of the package, once the `dev` version of the requirements have been satisified, one should follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/master/INSTALLATION.md) to complete the installation process. Effectively do the following two steps after a clone has been made on one's local machine at the terminal and that the pre-commit hook has been set up as described above in [Setting up Pre-Commit Hook](#syncing-a-forked-repository):
-```bash
-cd PySyft
-pip install -e .
-```
-If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
+To install the development version of the package, once the `dev` version of the requirements have been satisified, one should:
+
+1. Follow the instructions as laid out in [INSTALLATION.md](https://github.com/OpenMined/PySyft/blob/master/INSTALLATION.md) to complete the installation process.
+2. Make a clone of PySyft repo on one's local machine at the terminal
+3. Set up the pre-commit hook as described above in [Setting up Pre-Commit Hook](#Setting-up-Pre-Commit-Hook)
+4. Do the following two steps:
+
+    ```bash
+    cd PySyft
+    pip install -e .
+    ```
+
+NOTE: If you are using a virtual environment, please be sure to use the correct executable for `pip` or `python` instead.
 
 ### Deploying Workers
 
@@ -99,6 +106,7 @@ def test_hooked_tensor(self, compress, compressScheme):
 ```
 
 ### Process for Serde Protocol Changes
+
 Constants related to PySyft Serde protocol are located in separate repository: [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto).
 All classes that need to be serialized have to be listed in the [`proto.json`](https://github.com/OpenMined/syft-proto/blob/master/proto.json) file and have unique code value.
 
@@ -106,13 +114,15 @@ Updating lists of _simplifiers and detailers_ in `syft/serde/native_serde.py`, `
 or renaming/moving related classes can make unit tests fail because `proto.json` won't be in sync with PySyft code anymore.
 
 Use following process:
+
  1. Fork [OpenMined/syft-proto](https://github.com/OpenMined/syft-proto) and create new branch.
- 2. Make required changes in your PySyft and syft-proto branches. Install syft-proto locally (`pip install .`) to test it with PySyft (note that editable install won't refresh `proto.json` as it is copied on installation time).
- 3. To make CI checks pass in your PySyft PR, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto==*`. 
+ 2. In your PySyft branch, update `pip-deps/requirements.txt` file to have `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` instead of `syft-proto>=*`.
+ 3. Make required changes in your PySyft and syft-proto branches. [`helpers/update_types.py`](https://github.com/OpenMined/syft-proto/blob/master/helpers/update_types.py) can help update `proto.json` automatically.
  4. Create PRs in PySyft and syft-proto repos.
- 5. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
-](https://pypi.org/project/syft-proto/#history). 
- 6. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto==<new version>`.
+ 5. PRs should pass CI checks.
+ 6. After syft-proto PR is merged, new version of syft-proto will be published automatically. You can look up new version [in PyPI
+](https://pypi.org/project/syft-proto/#history).
+ 7. Before merging PySyft PR, update `pip-deps/requirements.txt` to revert from `git+git://github.com/<your_account>/syft-proto@<branch>#egg=syft-proto` to `syft-proto>=<new version>`.
 
 ### Documentation and Codestyle
 
