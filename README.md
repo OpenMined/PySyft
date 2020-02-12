@@ -1,6 +1,11 @@
 # Introduction
 
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master) [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=torch_1)](https://travis-ci.org/OpenMined/PySyft) [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
+![](https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg)
+![](https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg)
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
+
 
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
@@ -49,7 +54,7 @@ pip install syft[udacity]
 
 This will auto-install the PyTorch and TF Encrypted
 dependencies, which are required for running the tutorials
-from Udacity's "Secure & Private AI" course (recommended).
+from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
 
 You can install syft without these dependencies with the usual
 `pip install syft`, but you will need to install framework

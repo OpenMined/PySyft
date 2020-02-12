@@ -26,6 +26,11 @@ advanced_notebooks = [
 translated_notebooks = [
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
 ]
+# Exclude all translated basic tutorials that are also
+# excluded in their original version.
+excluded_translated_notebooks = [
+    Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
+]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -43,6 +48,9 @@ exclusion_list_notebooks = [
     "Federated learning with websockets and federated averaging.ipynb",
 ]
 
+# Add excluded translated notebooks to the exclusion list
+exclusion_list_notebooks += excluded_translated_notebooks
+
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
@@ -52,6 +60,7 @@ exclusion_list_folders = [
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
     # This notebook is skipped because it fails in travis and we do not know why for the moment
+    # new note: now that travis has been replaced with github actions, someone should test this to see if this is still needed or removed.
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
