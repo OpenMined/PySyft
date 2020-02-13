@@ -487,9 +487,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response = getattr(self, command_name)(*args, **kwargs)
         #  TODO [midokura-silvia]: send the tensor directly
         #  TODO this code is currently necessary for the async_fit method in websocket_client.py
-        import torch
-
-        if isinstance(response, torch.Tensor):
+        if isinstance(response, FrameworkTensor):
             self.register_obj(obj=response, obj_id=return_ids[0])
             return None
         return response
