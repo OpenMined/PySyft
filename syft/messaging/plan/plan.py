@@ -1,4 +1,3 @@
-import ast
 import re
 from typing import Dict
 from typing import List
@@ -380,7 +379,7 @@ class Plan(AbstractObject, ObjectStorage):
                     op.return_ids,
                 )
                 if _self is None:
-                    response = ast.literal_eval(cmd)(*args, **kwargs)
+                    response = eval(cmd)(*args, **kwargs) # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
                 return_placeholder.instantiate(response.child)
