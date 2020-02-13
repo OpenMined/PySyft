@@ -84,6 +84,12 @@ class BaseDataset(AbstractObject):
         self.targets.get_()
         return self
 
+    def get_data(self):
+        return self.data
+
+    def get_targets(self):
+        return self.targets
+
     def fix_prec(self, *args, **kwargs):
         """
             Converts data of BaseDataset into fixed precision
