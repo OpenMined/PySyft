@@ -1,7 +1,7 @@
 
 # PyGrid on Kubernetes
 
-Use deploy.sh to deploy local cluster , to test cluster or prod cluster
+Use `deploy.sh` to deploy to a local cluster, a test cluster or a prod cluster
 
 ```shell
   ./deploy.sh -t <local|test|prod> [-ch]
@@ -10,7 +10,7 @@ Use deploy.sh to deploy local cluster , to test cluster or prod cluster
 
     -h, Display help
     -t, Specify the target environment (local|test|prod) to be deployed to
-    -c, Speicfy the cluster name
+    -c, Specify the cluster name
 ```
 
 ## Running on local minikube setup
@@ -28,7 +28,7 @@ Use deploy.sh to deploy local cluster , to test cluster or prod cluster
 
   ```shell
   $ docker build -t openmined/grid-node ./app/websocket/  # Build PyGrid node image
-  $ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
+  $ docker build -t openmined/grid-gateway ./gateway/  # Build PyGrid Gateway image
   $ ./deploy.sh -t local # Kubernetes local deployment
   ```
 
