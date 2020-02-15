@@ -427,7 +427,6 @@ class FixedPrecisionTensor(AbstractTensor):
             new_self = other.child
             new_args = (self,)
             new_kwargs = kwargs
-
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
