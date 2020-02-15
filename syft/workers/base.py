@@ -951,7 +951,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # set garbage_collect_data to False because if we're searching
                 # for a tensor we don't own, then it's probably someone else's
                 # decision to decide when to delete the tensor.
-                ptr = obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
+                ptr = obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker, location=self).wrap()
                 results.append(ptr)
 
         return results

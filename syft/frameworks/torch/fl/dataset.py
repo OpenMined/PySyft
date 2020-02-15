@@ -25,8 +25,10 @@ class BaseDataset(AbstractObject):
 
     """
 
-    def __init__(self, data, targets, transform=None, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, data, targets, transform=None, owner=None, **kwargs):
+        if owner is None:
+            owner = syft.framework.hook.local_worker
+        super().__init__(owner=owner, **kwargs)
         self.data = data
         self.targets = targets
         self.transform_ = transform
@@ -71,7 +73,7 @@ class BaseDataset(AbstractObject):
 
             raise TypeError("Transforms can be applied only on torch tensors")
 
-    def send(self, location: BaseWorker):
+    def send(self, location:BaseWorker):
         ptr = self.owner.send(self, workers=location)
         return ptr
 
@@ -119,11 +121,11 @@ class BaseDataset(AbstractObject):
         return self
 
     def create_pointer(
-            self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+            self, owner, garbage_collect_data, location, id_at_location=None, **kwargs
     ):
         return PointerDataset(
             owner=owner,
-            location=location or self.owner,
+            location=location,
             id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
         )
@@ -156,7 +158,7 @@ class BaseDataset(AbstractObject):
             syft.serde.msgpack.serde._detail(worker, data),
             syft.serde.msgpack.serde._detail(worker, targets),
             id=id,
-            tags=syft.serde.msgpack.serde._detail(worker, data),
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
         )
         if chain is not None:
