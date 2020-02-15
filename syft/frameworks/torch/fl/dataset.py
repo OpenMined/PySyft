@@ -73,7 +73,7 @@ class BaseDataset(AbstractObject):
 
             raise TypeError("Transforms can be applied only on torch tensors")
 
-    def send(self, location:BaseWorker):
+    def send(self, location: BaseWorker):
         ptr = self.owner.send(self, workers=location)
         return ptr
 
@@ -120,9 +120,7 @@ class BaseDataset(AbstractObject):
         self.targets.share_(*args, **kwargs)
         return self
 
-    def create_pointer(
-            self, owner, garbage_collect_data, location, id_at_location=None, **kwargs
-    ):
+    def create_pointer(self, owner, garbage_collect_data, location, id_at_location=None, **kwargs):
         return PointerDataset(
             owner=owner,
             location=location,
@@ -166,7 +164,6 @@ class BaseDataset(AbstractObject):
             dataset.child = chain
 
         return dataset
-
 
 
 def dataset_federate(dataset, workers):

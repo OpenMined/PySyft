@@ -30,7 +30,7 @@ class PointerDataset(ObjectPointer):
         )
 
     def get(self):
-        dataset= self.location.get_obj(self.id_at_location)
+        dataset = self.location.get_obj(self.id_at_location)
         return dataset
 
     def data(self):
