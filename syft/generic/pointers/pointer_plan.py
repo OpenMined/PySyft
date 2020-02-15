@@ -193,17 +193,19 @@ class PointerPlan(ObjectPointer):
             sy.serde.msgpack.serde._simplify(worker, ptr.id),
             sy.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
+            sy.serde.msgpack.serde._simplify(worker, ptr.tags),
             ptr.garbage_collect_data,
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerPlan":
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
+        obj_id, id_at_location, worker_id, tags, garbage_collect_data = tensor_tuple
 
         obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
         id_at_location = sy.serde.msgpack.serde._detail(worker, id_at_location)
         worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
@@ -218,6 +220,7 @@ class PointerPlan(ObjectPointer):
                 location=location,
                 id_at_location=id_at_location,
                 owner=worker,
+                tags=tags,
                 garbage_collect_data=garbage_collect_data,
                 id=obj_id,
             )
