@@ -39,41 +39,45 @@ def manual_init_store(worker):
 
 def eq(x1, x2):
 
-    # x1==x2 ~ x1-x2==0
+    # Equivalence x1==x2 ~ x1-x2==0
     x_sh = x1 - x2
 
-    locations = x_sh.locations
-    crypto_provider = x_sh.crypto_provider
+    locations = x1.locations
+    crypto_provider = x1.crypto_provider
+    me = sy.local_worker
 
-    # Retrieve keygen & eval plans
-    keygen_ptr, = crypto_provider.search("#fss-keygen")
-    evaluate_ptr, = crypto_provider.search("#fss-eval")
+    # Retrieve keygen plan
+    keygen_ptr, = me.find_or_request("#fss-keygen", location=crypto_provider)
 
-    # key gen
+    # Run key generation
     alpha, s_00, s_01, *CW = keygen_ptr()
 
-    # send mask
+    # build shares of the mask
     alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
 
-    # reveal masked values
+    # reveal masked values and send to locations
     x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
 
-    alice, bob = locations
-
-    k = [sy.MultiPointerTensor(children=[s_00.move(alice), s_01.move(bob)])] + [
-        c.get().send(*locations, **no_wrap) for c in CW
-    ]
+    s_0 = sy.MultiPointerTensor(children=[s.move(loc) for s, loc in zip([s_00, s_01], locations)])
+    k = [s_0] + [c.get().send(*locations, **no_wrap) for c in CW]
 
     # Eval
     b = sy.MultiPointerTensor(
-        children=[
-            th.IntTensor([i]).send(location, **no_wrap) for i, location in enumerate(locations)
-        ]
+        children=[th.IntTensor([i]).send(loc, **no_wrap) for i, loc in enumerate(locations)]
     )
 
-    evaluate_ptr = evaluate_ptr.get().send(*locations)
+    # Search multi ptr plan Eval
+    eval_tag = f"#fss-eval-{'-'.join([loc.id for loc in locations])}"
+    if not me.find_by_tag(eval_tag):  # if not registered, build it
+        evaluate_ptr, = me.find_or_request("#fss-eval", location=crypto_provider)
+        evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
+    else:  # else retrieve it directly
+        evaluate_ptr, = me.find_by_tag(eval_tag)
+
+    # Run evaluation
     int_shares = evaluate_ptr(b, x_masked, *k)
 
+    # Build response
     long_shares = {k: v.long() for k, v in int_shares.items()}
     response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
 
@@ -89,7 +93,6 @@ class DPF:
         beta = th.tensor([2], dtype=th.int32)
         alpha, = th.randint(0, 2 ** n, (1,))
 
-        i = sy.ID_PROVIDER
         α = bit_decomposition(alpha)
         s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 * (λ + 1))
         s[0] = randbit(size=(2, λ))
