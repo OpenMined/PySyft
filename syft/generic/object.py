@@ -56,12 +56,19 @@ class AbstractObject(ABC):
         self.description = description
         return self
 
-    def tag(self, *_tags: str) -> "AbstractObject":
+    def tag(self, *tags: str) -> "AbstractObject":
         if self.tags is None:
             self.tags = set()
 
-        for new_tag in _tags:
-            self.tags.add(new_tag)
+        # Update the owner tag index
+        for tag in tags:
+            self.tags.add(tag)
+            if self.id not in self.owner._objects:
+                self.owner.register_obj(self)
+            if tag not in self.owner._tag_to_object_ids:
+                self.owner._tag_to_object_ids[tag] = {self.id}
+            else:
+                self.owner._tag_to_object_ids[tag].add(self.id)
         return self
 
     def serialize(self):  # check serde.py to see how to provide compression schemes

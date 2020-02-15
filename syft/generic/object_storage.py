@@ -17,6 +17,8 @@ class ObjectStorage:
     def __init__(self):
         # This is the collection of objects being stored.
         self._objects = {}
+        # This is an index to retrieve objects from their tags in an efficient way
+        self._tag_to_object_ids = {}
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -126,3 +128,28 @@ class ObjectStorage:
     def current_objects(self):
         """Returns a copy of the objects in the object storage."""
         return self._objects.copy()
+
+    def find_by_id(self, id):
+        """Local search by id"""
+        if id in self._objects:
+            return self._objects[id]
+        else:
+            return None
+
+    def find_by_tag(self, tag):
+        """Local search by tag
+
+        Args:
+            tag (str): exact tag searched
+
+        Return:
+            A list of results, possibly empty
+        """
+        if tag in self._tag_to_object_ids:
+            results = []
+            for obj_id in self._tag_to_object_ids[tag]:
+                obj = self.find_by_id(obj_id)
+                if obj:
+                    results.append(obj)
+            return results
+        return []
