@@ -116,7 +116,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
             IsNoneMessage: self.is_tensor_none,
             GetShapeMessage: self.get_tensor_shape,
-            SearchMessage: self.search,
+            SearchMessage: self.respond_to_search,
             ForceObjectDeleteMessage: self.force_rm_obj,
         }
 
@@ -905,7 +905,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
-    def search(self, query: Union[List[Union[str, int]], str, int]) -> List[PointerTensor]:
+    def search(self, query: Union[List[Union[str, int]], str, int]) -> List:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
         Note that the query is an AND query meaning that every item in the list of strings (query*)
@@ -913,54 +913,75 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             query: A list of strings to match against.
-            me: A reference to the worker calling the search.
 
         Returns:
-            A list of PointerTensors.
+            A list of valid results found.
         """
         if isinstance(query, (str, int)):
             query = [query]
 
-        results = list()
-        for key, obj in self._objects.items():
-            found_something = True
-            for query_item in query:
-                # If deserialization produced a bytes object instead of a string,
-                # make sure it's turned back to a string or a fair comparison.
-                if isinstance(query_item, bytes):
-                    query_item = query_item.decode("ascii")
-                query_item = str(query_item)
+        results = None
+        for query_item in query:
+            results_item = set()
+            result_by_id = self.find_by_id(query_item)
+            if result_by_id:
+                results_item.add(result_by_id)
+            else:
+                results_item = set(self.find_by_tag(query_item))
+                # results_by_tag can be the empty list
 
-                match = False
-                if query_item == str(key):
-                    match = True
+            if results:
+                results = results.intersection(results_item)
+            else:
+                results = results_item
 
-                if isinstance(obj, (AbstractObject, FrameworkTensor)):
-                    if obj.tags is not None:
-                        if query_item in obj.tags:
-                            match = True
+        return list(results)
 
-                    if obj.description is not None:
-                        if query_item in obj.description:
-                            match = True
-
-                if not match:
-                    found_something = False
-
-            if found_something:
-                # set garbage_collect_data to False because if we're searching
-                # for a tensor we don't own, then it's probably someone else's
-                # decision to decide when to delete the tensor.
-                ptr = obj.create_pointer(garbage_collect_data=False, owner=sy.local_worker).wrap()
-                results.append(ptr)
+    def respond_to_search(
+        self, query: Union[List[Union[str, int]], str, int]
+    ) -> List[PointerTensor]:
+        """
+        When remote worker calling search on this worker, forwarding the call and
+        replace found elements by pointers
+        """
+        objects = self.search(query)
+        results = []
+        for obj in objects:
+            # set garbage_collect_data to False because if we're searching
+            # for a tensor we don't own, then it's probably someone else's
+            # decision to decide when to delete the tensor.
+            ptr = obj.create_pointer(
+                garbage_collect_data=False, owner=sy.local_worker, tags=obj.tags
+            ).wrap()
+            results.append(ptr)
 
         return results
 
-    def request_search(self, query: List[str], location: "BaseWorker"):
+    def request_search(self, query: List[str], location: "BaseWorker") -> List:
+        """
+        Add a remote worker to perform a search
+        Args:
+            query: the tags or id used in the search
+            location: the remote worker identity
 
-        result = self.send_msg(SearchMessage(query), location=location)
+        Returns:
+            A list of pointers to the results
+        """
+        results = self.send_msg(SearchMessage(query), location=location)
+        for result in results:
+            self.register_obj(result)
+        return results
 
-        return result
+    def find_or_request(self, tag, location):
+        """
+        Allow efficient retrieval: if the tag is know locally, return the local
+        element. Else, perform a search on location
+        """
+        results = self.find_by_tag(tag)
+        if results:
+            return results
+        else:
+            return self.request_search(tag, location=location)
 
     def _get_msg(self, index):
         """Returns a decrypted message from msg_history. Mostly useful for testing.
