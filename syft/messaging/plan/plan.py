@@ -518,13 +518,14 @@ class Plan(AbstractObject, ObjectStorage):
     share = share_
 
     def create_pointer(
-        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+        self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
     ):
         return PointerPlan(
             owner=owner,
             location=location or self.owner,
             id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
+            tags=tags,
         )
 
     def __str__(self):
