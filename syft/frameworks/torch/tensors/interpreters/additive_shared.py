@@ -870,8 +870,14 @@ class AdditiveSharingTensor(AbstractTensor):
     def le(self, other):
         return (other - self).positive()
 
+    @crypto_protocol("snn")
     def __le__(self, other):
         return self.le(other)
+
+    @crypto_protocol("fss")
+    def __le__(self, other):
+        print("FSS LE")
+        return fss.le(self, other)
 
     @crypto_protocol("snn")
     def eq(self, other):
