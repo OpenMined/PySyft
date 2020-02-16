@@ -62,7 +62,7 @@ def fss_op(x1, x2, type_op):
     me = sy.local_worker
 
     # Retrieve keygen plan
-    keygen_ptr, = me.find_or_request(f"#fss-{type_op}-keygen", location=crypto_provider)
+    (keygen_ptr,) = me.find_or_request(f"#fss-{type_op}-keygen", location=crypto_provider)
 
     # Run key generation
     alpha, s_00, s_01, *CW = keygen_ptr()
@@ -84,10 +84,10 @@ def fss_op(x1, x2, type_op):
     # Search multi ptr plan Eval
     eval_tag = f"#fss-{type_op}-eval-{'-'.join([loc.id for loc in locations])}"
     if not me.find_by_tag(eval_tag):  # if not registered, build it
-        evaluate_ptr, = me.find_or_request(f"#fss-{type_op}-eval", location=crypto_provider)
+        (evaluate_ptr,) = me.find_or_request(f"#fss-{type_op}-eval", location=crypto_provider)
         evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
     else:  # else retrieve it directly
-        evaluate_ptr, = me.find_by_tag(eval_tag)
+        (evaluate_ptr,) = me.find_by_tag(eval_tag)
 
     # Run evaluation
     int_shares = evaluate_ptr(b, x_masked, *k)
@@ -116,7 +116,7 @@ class DPF:
     @staticmethod
     def keygen():
         beta = th.tensor([2], dtype=th.int32)
-        alpha, = th.randint(0, 2 ** n, (1,))
+        (alpha,) = th.randint(0, 2 ** n, (1,))
 
         α = bit_decomposition(alpha)
         s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 * (λ + 1))
@@ -163,7 +163,7 @@ class DIF:
 
     @staticmethod
     def keygen():
-        alpha, = th.randint(0, 2 ** n, (1,))
+        (alpha,) = th.randint(0, 2 ** n, (1,))
         α = bit_decomposition(alpha)
         s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 + 2 * (λ + 1))
         s[0] = randbit(size=(2, λ))
