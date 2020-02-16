@@ -676,54 +676,72 @@ def test_get_item(workers):
     assert x[:, idx].get() == torch.tensor([[3]])
 
 
-def test_eq(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_eq(workers, protocol):
+    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
 
-    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    if protocol == "fss":
+        from syft.frameworks.torch.mpc.fss import manual_init_store
+
+        manual_init_store(crypto_provider)
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+
+    x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
 
     assert (x == y).get().float_prec()
 
-    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([2.1]).fix_prec().share(*args, **kwargs)
 
     assert not (x == y).get().float_prec()
 
-    x = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
 
     assert (x == y).get().float_prec()
 
 
-def test_comp(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_comp(workers, protocol):
+    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
 
-    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    if protocol == "fss":
+        from syft.frameworks.torch.mpc.fss import manual_init_store
+
+        manual_init_store(crypto_provider)
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+
+    x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
 
     assert (x >= y).get().float_prec()
     assert (x <= y).get().float_prec()
     assert not (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
 
-    x = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
 
     assert (x >= y).get().float_prec()
     assert (x <= y).get().float_prec()
     assert not (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
 
-    x = torch.tensor([3.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([2.1]).fix_prec().share(*args, **kwargs)
 
     assert (x >= y).get().float_prec()
     assert not (x <= y).get().float_prec()
     assert (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
 
-    x = torch.tensor([-2.1]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([-3.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = torch.tensor([-2.1]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
 
     assert (x >= y).get().float_prec()
     assert not (x <= y).get().float_prec()
@@ -731,52 +749,70 @@ def test_comp(workers):
     assert not (x < y).get().float_prec()
 
 
-def test_max(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_max(workers, protocol):
+    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+
+    if protocol == "fss":
+        from syft.frameworks.torch.mpc.fss import manual_init_store
+
+        manual_init_store(crypto_provider)
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
     t = torch.tensor([3, 1.0, 2])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([3.0])
 
     t = torch.tensor([3, 4.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([4.0])
 
     t = torch.tensor([3, 4.0, 5, 2])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([5.0])
 
 
-def test_argmax(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_argmax(workers, protocol):
+    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+
+    if protocol == "fss":
+        from syft.frameworks.torch.mpc.fss import manual_init_store
+
+        manual_init_store(crypto_provider)
+
+    args = (alice, bob)
+    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
     t = torch.tensor([3, 1.0, 2])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([0.0])
 
     t = torch.tensor([3, 4.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([1.0])
 
     t = torch.tensor([3, 4.0, 5, 2])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([2.0])
 
     # no dim=
     t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax().get().float_prec()
     assert ids.long() == torch.argmax(t)
 
     # dim=1
     t = torch.tensor([[1, 2.0, 4], [3, 1.0, 2.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
 

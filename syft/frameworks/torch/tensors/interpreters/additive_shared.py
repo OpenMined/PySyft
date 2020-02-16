@@ -28,6 +28,7 @@ class AdditiveSharingTensor(AbstractTensor):
         id=None,
         field=None,
         n_bits=None,
+        protocol="snn",
         crypto_provider=None,
         tags=None,
         description=None,
@@ -77,7 +78,7 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
 
-        self.protocol = "fss"
+        self.protocol = protocol
 
     def __repr__(self):
         return self.__str__()
@@ -838,34 +839,43 @@ class AdditiveSharingTensor(AbstractTensor):
     def relu(self):
         return securenn.relu(self)
 
-    @crypto_protocol("snn")
     def positive(self):
         # self >= 0
         return securenn.relu_deriv(self)
-
-    @crypto_protocol("fss")
-    def positive(self):
-        # self >= 0
-        return fss.positive(self)
 
     def gt(self, other):
         r = self - other - 1
         return r.positive()
 
+    @crypto_protocol("snn")
     def __gt__(self, other):
         return self.gt(other)
+
+    @crypto_protocol("fss")
+    def __gt__(self, other):
+        return (other + 1) <= self
 
     def ge(self, other):
         return (self - other).positive()
 
+    @crypto_protocol("snn")
     def __ge__(self, other):
         return self.ge(other)
+
+    @crypto_protocol("fss")
+    def __ge__(self, other):
+        return other <= self
 
     def lt(self, other):
         return (other - self - 1).positive()
 
+    @crypto_protocol("snn")
     def __lt__(self, other):
         return self.lt(other)
+
+    @crypto_protocol("fss")
+    def __lt__(self, other):
+        return (self + 1) <= other
 
     def le(self, other):
         return (other - self).positive()
@@ -876,7 +886,6 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __le__(self, other):
-        print("FSS LE")
         return fss.le(self, other)
 
     @crypto_protocol("snn")
