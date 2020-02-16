@@ -843,6 +843,7 @@ class TorchTensor(AbstractTensor):
         self,
         *owners: List[BaseWorker],
         field: Union[int, None] = None,
+        protocol: str = "snn",
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,
         no_wrap: bool = False,
@@ -852,6 +853,7 @@ class TorchTensor(AbstractTensor):
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
+            protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
@@ -863,12 +865,15 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, protocol=protocol, crypto_provider=crypto_provider, **kwargs
             )
         else:
             shared_tensor = (
                 syft.AdditiveSharingTensor(
-                    field=field, crypto_provider=crypto_provider, owner=self.owner
+                    field=field,
+                    protocol=protocol,
+                    crypto_provider=crypto_provider,
+                    owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)
