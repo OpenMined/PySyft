@@ -18,137 +18,98 @@ no_wrap = {"no_wrap": True}
 
 
 def manual_init_store(worker):
-    # Equality
-    keygen = func2plan()(DPF.keygen)
-    keygen.build()
+    """
+    This is called manually for the moment, to build the plan used to perform
+    Function Secret Sharing on a specific worker.
+    """
+    # Init the plans for equality and comparison
+    for type_op, fss_class in zip(["eq", "comp"], [DPF, DIF]):
+        keygen = func2plan()(fss_class.keygen)
+        keygen.build()
 
-    alpha, s_00, s_01, *CW = keygen()
-    k = [(s_00, *CW), (s_01, *CW)]
-    evaluate = func2plan()(DPF.eval)
-    evaluate.build(th.IntTensor([0]), alpha, *k[0])
+        alpha, s_00, s_01, *CW = keygen()
+        k = [(s_00, *CW), (s_01, *CW)]
+        evaluate = func2plan()(fss_class.eval)
+        evaluate.build(th.IntTensor([0]), alpha, *k[0])
 
-    keygen.owner = worker
-    keygen.tag("#fss-eq-keygen")
-    evaluate.owner = worker
-    evaluate.tag("#fss-eq-eval")
+        keygen.owner = worker
+        keygen.tag(f"#fss-{type_op}-keygen")
+        evaluate.owner = worker
+        evaluate.tag(f"#fss-{type_op}-eval")
 
-    keygen.forward = None
-    evaluate.forward = None
+        keygen.forward = None
+        evaluate.forward = None
 
-    # Comparison
-    keygen = func2plan()(DIF.keygen)
-    keygen.build()
 
-    alpha, s_00, s_01, *CW = keygen()
-    k = [(s_00, *CW), (s_01, *CW)]
-    evaluate = func2plan()(DIF.eval)
-    evaluate.build(th.IntTensor([0]), alpha, *k[0])
+def fss_op(x1, x2, type_op):
+    """
+    Define the workflow for a binary operation using Function Secret Sharing
 
-    keygen.owner = worker
-    keygen.tag("#fss-comp-keygen")
-    evaluate.owner = worker
-    evaluate.tag("#fss-comp-eval")
+    Currently supported operand are = & <=, respectively corresponding to
+    type_op = 'eq' and 'comp'
 
-    keygen.forward = None
-    evaluate.forward = None
+    Args:
+        x1: first AST
+        x2: second AST
+        type_op: type of operation to perform, should be 'eq' or 'comp'
+    """
+
+    # Equivalence x1==x2 ~ x1-x2==0
+    x_sh = x1 - x2
+
+    locations = x1.locations
+    crypto_provider = x1.crypto_provider
+    me = sy.local_worker
+
+    # Retrieve keygen plan
+    keygen_ptr, = me.find_or_request(f"#fss-{type_op}-keygen", location=crypto_provider)
+
+    # Run key generation
+    alpha, s_00, s_01, *CW = keygen_ptr()
+
+    # build shares of the mask
+    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
+
+    # reveal masked values and send to locations
+    x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
+
+    s_0 = sy.MultiPointerTensor(children=[s.move(loc) for s, loc in zip([s_00, s_01], locations)])
+    k = [s_0] + [c.get().send(*locations, **no_wrap) for c in CW]
+
+    # Eval
+    b = sy.MultiPointerTensor(
+        children=[th.IntTensor([i]).send(loc, **no_wrap) for i, loc in enumerate(locations)]
+    )
+
+    # Search multi ptr plan Eval
+    eval_tag = f"#fss-{type_op}-eval-{'-'.join([loc.id for loc in locations])}"
+    if not me.find_by_tag(eval_tag):  # if not registered, build it
+        evaluate_ptr, = me.find_or_request(f"#fss-{type_op}-eval", location=crypto_provider)
+        evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
+    else:  # else retrieve it directly
+        evaluate_ptr, = me.find_by_tag(eval_tag)
+
+    # Run evaluation
+    int_shares = evaluate_ptr(b, x_masked, *k)
+
+    # Build response
+    long_shares = {k: v.long() for k, v in int_shares.items()}
+    response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
+
+    return response
 
 
 def eq(x1, x2):
-
-    # Equivalence x1==x2 ~ x1-x2==0
-    x_sh = x1 - x2
-
-    locations = x1.locations
-    crypto_provider = x1.crypto_provider
-    me = sy.local_worker
-
-    # Retrieve keygen plan
-    keygen_ptr, = me.find_or_request("#fss-eq-keygen", location=crypto_provider)
-
-    # Run key generation
-    alpha, s_00, s_01, *CW = keygen_ptr()
-
-    # build shares of the mask
-    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
-
-    # reveal masked values and send to locations
-    x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
-
-    s_0 = sy.MultiPointerTensor(children=[s.move(loc) for s, loc in zip([s_00, s_01], locations)])
-    k = [s_0] + [c.get().send(*locations, **no_wrap) for c in CW]
-
-    # Eval
-    b = sy.MultiPointerTensor(
-        children=[th.IntTensor([i]).send(loc, **no_wrap) for i, loc in enumerate(locations)]
-    )
-
-    # Search multi ptr plan Eval
-    eval_tag = f"#fss-eq-eval-{'-'.join([loc.id for loc in locations])}"
-    if not me.find_by_tag(eval_tag):  # if not registered, build it
-        evaluate_ptr, = me.find_or_request("#fss-eq-eval", location=crypto_provider)
-        evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
-    else:  # else retrieve it directly
-        evaluate_ptr, = me.find_by_tag(eval_tag)
-
-    # Run evaluation
-    int_shares = evaluate_ptr(b, x_masked, *k)
-
-    # Build response
-    long_shares = {k: v.long() for k, v in int_shares.items()}
-    response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
-
-    return response
+    return fss_op(x1, x2, "eq")
 
 
 def le(x1, x2):
-
-    # Equivalence x1==x2 ~ x1-x2==0
-    x_sh = x1 - x2
-
-    locations = x1.locations
-    crypto_provider = x1.crypto_provider
-    me = sy.local_worker
-
-    # Retrieve keygen plan
-    keygen_ptr, = me.find_or_request("#fss-comp-keygen", location=crypto_provider)
-
-    # Run key generation
-    alpha, s_00, s_01, *CW = keygen_ptr()
-
-    # build shares of the mask
-    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
-
-    # reveal masked values and send to locations
-    x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
-
-    s_0 = sy.MultiPointerTensor(children=[s.move(loc) for s, loc in zip([s_00, s_01], locations)])
-    k = [s_0] + [c.get().send(*locations, **no_wrap) for c in CW]
-
-    # Eval
-    b = sy.MultiPointerTensor(
-        children=[th.IntTensor([i]).send(loc, **no_wrap) for i, loc in enumerate(locations)]
-    )
-
-    # Search multi ptr plan Eval
-    eval_tag = f"#fss-comp-eval-{'-'.join([loc.id for loc in locations])}"
-    if not me.find_by_tag(eval_tag):  # if not registered, build it
-        evaluate_ptr, = me.find_or_request("#fss-comp-eval", location=crypto_provider)
-        evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
-    else:  # else retrieve it directly
-        evaluate_ptr, = me.find_by_tag(eval_tag)
-
-    # Run evaluation
-    int_shares = evaluate_ptr(b, x_masked, *k)
-
-    # Build response
-    long_shares = {k: v.long() for k, v in int_shares.items()}
-    response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
-    response.field = 2
-
-    return response
+    return fss_op(x1, x2, "comp")
 
 
 class DPF:
+    """Distributed Point Function - used for equality"""
+
     def __init__(self):
         pass
 
@@ -195,6 +156,8 @@ class DPF:
 
 
 class DIF:
+    "Distributed Interval Function - used for comparison <="
+
     def __init__(self):
         pass
 
