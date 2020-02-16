@@ -41,6 +41,15 @@ It will download the latest openmined's docker images and start a grid platform 
 ```
 $ docker-compose up
 ```
+
+On MacOS, you have to work-around the lack of support for `network_mode: host` in Docker for Mac by adding following to your `/etc/hosts`
+```
+127.0.0.1 host.docker.internal
+```
+and running:
+```
+$ docker-compose -f docker-compose-mac.yml up
+```
 #### Kubernetes deployment.
 You can now deploy the grid-gateway and grid-node docker containers on kubernetes. This can be either to a local (minikube) cluster or a remote cluster (GKE, EKS, AKS etc). The steps to setup the cluster can be found in [./k8s/Readme.md](https://github.com/OpenMined/PyGrid/tree/dev/k8s)
 
