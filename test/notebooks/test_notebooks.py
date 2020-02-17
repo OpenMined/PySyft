@@ -5,6 +5,7 @@ import time
 import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
+import codecs
 
 import pytest
 import nbformat
@@ -31,6 +32,21 @@ translated_notebooks = [
 excluded_translated_notebooks = [
     Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
 ]
+
+
+# Include only the translations that have been changed
+gitdiff = Path("test/notebooks/git-diff.txt")
+changed_files = []
+if gitdiff.is_file():
+    changed_files = open(gitdiff, "r")
+    changed_files = changed_files.readlines()
+    changed_files = [
+        codecs.decode(file.replace('"', "").replace("\n", ""), "unicode-escape")
+        .encode("latin-1")
+        .decode()
+        for file in changed_files
+    ]
+translated_notebooks = list(set(changed_files) & set(translated_notebooks))
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
