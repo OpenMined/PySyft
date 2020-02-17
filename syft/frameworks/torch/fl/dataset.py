@@ -128,6 +128,22 @@ class BaseDataset(AbstractObject):
             garbage_collect_data=garbage_collect_data,
         )
 
+    def __repr__(self):
+
+        fmt_str = "BaseDataset\n"
+        fmt_str += f"\tData: {self.data}\n"
+        fmt_str += f"\ttargets: {self.targets}"
+
+        if self.tags is not None and len(self.tags):
+            fmt_str += "\n\tTags: "
+            for tag in self.tags:
+                fmt_str += str(tag) + " "
+
+        if self.description is not None:
+            fmt_str += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+
+        return fmt_str
+
     @property
     def location(self):
         """
