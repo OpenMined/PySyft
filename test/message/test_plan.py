@@ -371,7 +371,7 @@ def test_plan_built_on_class(hook):
     net.build(th.tensor([1, 2.0]))
 
     net_ptr = net.send(device_1)
-    pointer_to_data = device_1.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_1)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()
@@ -380,7 +380,7 @@ def test_plan_built_on_class(hook):
 
     net_ptr = net.send(device_2)
 
-    pointer_to_data = device_2.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_2)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()

@@ -63,12 +63,15 @@ class AbstractObject(ABC):
         # Update the owner tag index
         for tag in tags:
             self.tags.add(tag)
-            if self.id not in self.owner._objects:
-                self.owner.register_obj(self)
-            if tag not in self.owner._tag_to_object_ids:
-                self.owner._tag_to_object_ids[tag] = {self.id}
+            if self.owner is not None:
+                if self.id not in self.owner._objects:
+                    self.owner.register_obj(self)
+                if tag not in self.owner._tag_to_object_ids:
+                    self.owner._tag_to_object_ids[tag] = {self.id}
+                else:
+                    self.owner._tag_to_object_ids[tag].add(self.id)
             else:
-                self.owner._tag_to_object_ids[tag].add(self.id)
+                raise RuntimeError("Can't tag a tensor which doesn't have an owner")
         return self
 
     def serialize(self):  # check serde.py to see how to provide compression schemes

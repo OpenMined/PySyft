@@ -59,7 +59,7 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags)
+        placeholder = PlaceHolder(tags=self.tags, owner=self.owner)
         placeholder.child = self.child
         return placeholder
 

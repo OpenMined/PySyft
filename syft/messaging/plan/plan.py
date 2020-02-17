@@ -134,7 +134,7 @@ class Plan(AbstractObject, ObjectStorage):
             assert state is None
             for tensor in state_tensors:
                 placeholder = sy.PlaceHolder(
-                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id
+                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
                 )
                 self.var_count += 1
                 placeholder.instantiate(tensor)
@@ -147,10 +147,8 @@ class Plan(AbstractObject, ObjectStorage):
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
 
-        if forward_func is not None:
-            self.forward = forward_func
-        else:
-            self.forward = None
+        if not hasattr(self, "forward"):
+            self.forward = forward_func or None
 
     @staticmethod
     def _create_placeholders(args_shape):
@@ -213,7 +211,9 @@ class Plan(AbstractObject, ObjectStorage):
             node_type: Should be "input" or "output", used to tag like this: #<type>-*
         """
         if tensor.id not in self.placeholders.keys():
-            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"}, id=tensor.id)
+            placeholder = sy.PlaceHolder(
+                tags={f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
+            )
             self.placeholders[tensor.id] = placeholder
 
             if node_type == "input":
@@ -357,7 +357,9 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"}, id=value.id)
+            placeholder = sy.PlaceHolder(
+                tags={"#state", f"#{self.var_count + 1}"}, id=value.id, owner=self.owner
+            )
             self.var_count += 1
             placeholder.instantiate(value)
             self.state.state_placeholders.append(placeholder)
