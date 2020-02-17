@@ -98,10 +98,13 @@ for language_dir in glob.glob("examples/tutorials/translations/*"):
     ]
 
     def language_test_helper(language):
+        @pytest.mark.translation
         @pytest.mark.parametrize(
             "language_notebook", sorted(set(language_notebooks) - set(excluded_notebooks))
         )
-        def test_basic_notebook_translations_per_language(isolated_filesystem, language_notebook):
+        def test_basic_notebook_translations_per_language(
+            isolated_filesystem, language_notebook
+        ):  # pragma: no cover
             """Test Notebooks in the tutorial translations folder."""
             notebook = "/".join(language_notebook.split("/")[-2:])
             notebook = f"translations/{notebook}"
