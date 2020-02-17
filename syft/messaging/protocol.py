@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Set
 
 import syft as sy
 from syft.exceptions import WorkerNotFoundException
@@ -382,13 +382,16 @@ class Protocol(AbstractObject):
             worker, id, tags, description, workers_resolved, plans_assignments
         )
 
-    def create_pointer(self, owner: AbstractWorker, garbage_collect_data: bool) -> PointerProtocol:
+    def create_pointer(
+        self, owner: AbstractWorker, garbage_collect_data: bool, tags: Set = None
+    ) -> PointerProtocol:
         """
         Create a pointer to the protocol
 
         Args:
             owner: the owner of the pointer
             garbage_collect_data: bool
+            tags: the tags inherited from the Protocol
 
         Returns:
             PointerProtocol: pointer to the protocol
@@ -398,6 +401,7 @@ class Protocol(AbstractObject):
             id_at_location=self.id,
             owner=owner,
             garbage_collect_data=garbage_collect_data,
+            tags=tags,
         )
 
     def __repr__(self):
