@@ -59,8 +59,7 @@ exclusion_list_folders = [
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
-    # new note: now that travis has been replaced with github actions, someone should test this to see if this is still needed or removed.
+    # This notebook is skipped because it fails in github actions and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
