@@ -919,6 +919,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if isinstance(query, (str, int)):
             query = [query]
+        # Empty query returns all the tagged and registered values
+        elif len(query) == 0:
+            results = []
+            for obj in self._objects.values():
+                if hasattr(obj, "tags") and obj.tags is not None and len(obj.tags) > 0:
+                    results.append(obj)
+            return results
 
         results = None
         for query_item in query:
@@ -935,7 +942,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             else:
                 results = results_item
 
-        return list(results)
+        if results is not None:
+            return list(results)
+        else:
+            return list()
 
     def respond_to_search(
         self, query: Union[List[Union[str, int]], str, int]
