@@ -520,6 +520,19 @@ class Plan(AbstractObject, ObjectStorage):
     def create_pointer(
         self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
     ):
+        """
+        Create a pointer to the plan
+
+        Args:
+            owner: the owner of the pointer
+            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+            location: the location of the pointer
+            id_at_location: the remote id at location
+            tags: the tags inherited from the Plan
+
+        Returns:
+            PointerPlan: pointer to the plan
+        """
         return PointerPlan(
             owner=owner,
             location=location or self.owner,
