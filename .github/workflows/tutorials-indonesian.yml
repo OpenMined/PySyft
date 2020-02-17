@@ -1,15 +1,15 @@
-name: Tutorials
+name: Tutorials (Indonesian)
 
 on:
   push:
     branches:
     - master
     paths:
-    - "examples/tutorials/**"
+    - "examples/tutorials/indonesian"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-    - "examples/tutorials/**"
+    - "examples/tutorials/indonesian"
 
 jobs:
   build:
@@ -37,6 +37,6 @@ jobs:
         pip3 install -r pip-dep/requirements_notebooks.txt
         pip3 install scikit-learn
         python setup.py install
-    - name: Test with pytest
+    - name: Run the translated tutorials
       run: |
-        pytest test/notebooks/test_notebooks.py::test_notebooks_basic_translations
+        pytest test/notebooks/test_notebooks.py::test_basic_notebook_translations_in_indonesian
