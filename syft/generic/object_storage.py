@@ -154,7 +154,7 @@ class ObjectStorage:
             results = []
             for obj_id in self._tag_to_object_ids[tag]:
                 obj = self.find_by_id(obj_id)
-                if obj:
+                if obj is not None:
                     results.append(obj)
             return results
         return []
