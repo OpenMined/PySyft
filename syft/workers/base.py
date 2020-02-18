@@ -84,6 +84,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             primarily a development/testing feature.
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
+        pending_time (optional): A number of seconds to delay the messages to be sent.
+            The argument may be a floating point number for subsecond 
+            precision.
     """
 
     def __init__(
@@ -95,6 +98,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
+        pending_time: Union[int, float] = 0,
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -105,6 +109,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.log_msgs = log_msgs
         self.verbose = verbose
         self.auto_add = auto_add
+        self.pending_time = pending_time
         self.msg_history = list()
 
         # For performance, we cache all possible message types
