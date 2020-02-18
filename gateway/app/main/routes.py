@@ -10,6 +10,7 @@ import os
 import requests
 
 from .persistence.manager import register_new_node, connected_nodes, delete_node
+from .processes import processes
 
 
 # All grid nodes registered at grid network will be stored here
@@ -18,6 +19,9 @@ grid_nodes = {}
 SMPC_HOST_CHUNK = 4  # Minimum nodes required to host an encrypted model
 INVALID_JSON_FORMAT_MESSAGE = (
     "Invalid JSON format."  # Default message used to report Invalid JSON format.
+)
+INVALID_REQUEST_KEY_MESSAGE = (
+    "Invalid request key."  # Default message for invalid request key.
 )
 
 
@@ -297,3 +301,34 @@ def _get_model_hosting_nodes(model_id):
             match_nodes.append((node, grid_nodes[node]))
 
     return match_nodes
+
+
+@main.route("/federated/get-model", methods=["GET"])
+def download_model():
+    """ validate request key and download model
+    """
+
+    model_id = request.args.get("model_id")
+    worker_id = request.args.get("worker_id")
+    request_key = request.args.get("request_key")
+
+    _validated = False
+
+    # check if cycle exist and hash matches
+    _cycle = processes.get_cycle(model_id)
+    _validated = _cycle.validate(worker_id, request_key) if _cycle else False
+
+    if _validated:
+        return Response(
+            json.dumps(_cycle.fl_process.json()["model"]),
+            status=200,
+            mimetype="application/json",
+        )
+    else:
+        response_body = {"message": None}
+        response_body["message"] = INVALID_REQUEST_KEY_MESSAGE
+        status_code = 400
+
+        return Response(
+            json.dumps(response_body), status=status_code, mimetype="application/json"
+        )
