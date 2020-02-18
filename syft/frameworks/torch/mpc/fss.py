@@ -95,6 +95,8 @@ def fss_op(x1, x2, type_op):
     # Build response
     long_shares = {k: v.long() for k, v in int_shares.items()}
     response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
+    # # Response is binary
+    # response.field = 2
 
     return response
 
@@ -123,16 +125,18 @@ class DPF:
         s[0] = randbit(size=(2, λ))
         t[0] = th.tensor([0, 1], dtype=th.uint8)
         for i in range(0, n):
+            g0 = G(s[i, 0])
+            g1 = G(s[i, 1])
             # Re-use useless randomness
-            sL_0, _, sR_0, _ = split(G(s[i, 0]), [λ, 1, λ, 1])
-            sL_1, _, sR_1, _ = split(G(s[i, 1]), [λ, 1, λ, 1])
+            sL_0, _, sR_0, _ = split(g0, [λ, 1, λ, 1])
+            sL_1, _, sR_1, _ = split(g1, [λ, 1, λ, 1])
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
 
             cw_i = TruthTableDPF(s_rand, α[i])
-            CW[i] = cw_i ^ G(s[i, 0]) ^ G(s[i, 1])
+            CW[i] = cw_i ^ g0 ^ g1
 
             for b in (0, 1):
-                τ = G(s[i, b]) ^ (t[i, b] * CW[i])
+                τ = [g0, g1][b] ^ (t[i, b] * CW[i])
                 τ = τ.reshape(2, λ + 1)
                 s[i + 1, b], t[i + 1, b] = split(τ[α[i]], [λ, 1])
 
@@ -169,15 +173,17 @@ class DIF:
         s[0] = randbit(size=(2, λ))
         t[0] = th.tensor([0, 1], dtype=th.uint8)
         for i in range(0, n):
+            h0 = H(s[i, 0])
+            h1 = H(s[i, 1])
             # Re-use useless randomness
-            _, _, sL_0, _, sR_0, _ = split(H(s[i, 0]), [1, 1, λ, 1, λ, 1])
-            _, _, sL_1, _, sR_1, _ = split(H(s[i, 1]), [1, 1, λ, 1, λ, 1])
+            _, _, sL_0, _, sR_0, _ = split(h0, [1, 1, λ, 1, λ, 1])
+            _, _, sL_1, _, sR_1, _ = split(h1, [1, 1, λ, 1, λ, 1])
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
             cw_i = TruthTableDIF(s_rand, α[i])
-            CW[i] = cw_i ^ H(s[i, 0]) ^ H(s[i, 1])
+            CW[i] = cw_i ^ h0 ^ h1
 
             for b in (0, 1):
-                τ = H(s[i, b]) ^ (t[i, b] * CW[i])
+                τ = [h0, h1][b] ^ (t[i, b] * CW[i])
                 τ = τ.reshape(2, λ + 2)
                 σ_leaf, s[i + 1, b], t[i + 1, b] = split(τ[α[i]], [1, λ, 1])
 
