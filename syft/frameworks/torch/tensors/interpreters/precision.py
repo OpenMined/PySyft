@@ -20,6 +20,7 @@ class FixedPrecisionTensor(AbstractTensor):
         kappa: int = 1,
         tags: set = None,
         description: str = None,
+        dtype: str = "long",
     ):
         """Initializes a Fixed Precision tensor, which encodes all decimal point
         values using an underlying integer value.
@@ -38,10 +39,14 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
+        self.dtype = dtype
+        if(self.dtype=="long"):
+            self.field = 2**64
+        else:
+            self.field=2**32
 
     def get_class_attributes(self):
         """
@@ -54,6 +59,7 @@ class FixedPrecisionTensor(AbstractTensor):
             "base": self.base,
             "precision_fractional": self.precision_fractional,
             "kappa": self.kappa,
+            "dtype": self.dtype,
         }
 
     @property
@@ -87,9 +93,10 @@ class FixedPrecisionTensor(AbstractTensor):
         """This method encodes the .child object using fixed precision"""
 
         rational = self.child
-
-        upscaled = (rational * self.base ** self.precision_fractional).long()
-
+        if(self.dtype=="long"):
+            upscaled = (rational * self.base ** self.precision_fractional).long()
+        else:
+            upscaled = (rational * self.base ** self.precision_fractional).int()
         if check_range:
             assert (
                 upscaled.abs() < (self.field / 2)
@@ -106,9 +113,13 @@ class FixedPrecisionTensor(AbstractTensor):
     def float_precision(self):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
+        if(self.dtype=="long"):
+            value = self.child.long()
+            gate = value.native_gt(self.field / 2).long()
+        else:
+            value = self.child.int()
+            gate = value.native_gt(self.field / 2).int()
 
-        value = self.child.long()
-        gate = value.native_gt(self.field / 2).long()
         neg_nums = (value - self.field / 2) * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
@@ -127,7 +138,7 @@ class FixedPrecisionTensor(AbstractTensor):
         else:
             gate = self.child.native_gt(self.field / 2).long()
             neg_nums = (self.child - self.field / 2) / truncation + self.field / 2
-            pos_nums = self.child / truncation
+            pos_nums = self.child / truncation 
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
 
@@ -282,7 +293,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # 2) overflow when scaling self in division
 
             # sgn_self is 1 when new_self is positive else it's 0
-            # The comparison is different is new_self is a torch tensor or an AST
+            # The comparison is different if new_self is a torch tensor or an AST
             sgn_self = (
                 (new_self < self.field // 2).long()
                 if isinstance(new_self, torch.Tensor)
@@ -290,7 +301,7 @@ class FixedPrecisionTensor(AbstractTensor):
             )
             pos_self = new_self * sgn_self
             neg_self = (
-                (self.field - new_self) * (1 - sgn_self)
+                (self.field / 2 - new_self) * (1 - sgn_self)
                 if isinstance(new_self, torch.Tensor)
                 else new_self * (sgn_self - 1)
             )
@@ -305,7 +316,7 @@ class FixedPrecisionTensor(AbstractTensor):
             )
             pos_other = new_other * sgn_other
             neg_other = (
-                (self.field - new_other) * (1 - sgn_other)
+                (self.field / 2 - new_other) * (1 - sgn_other)
                 if isinstance(new_other, torch.Tensor)
                 else new_other * (sgn_other - 1)
             )
@@ -544,27 +555,42 @@ class FixedPrecisionTensor(AbstractTensor):
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
-        return result.long() * self.base ** self.precision_fractional
+        if(self.dtype=="long"):
+            return result.long() * self.base ** self.precision_fractional
+        else:
+            return result.int() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __ge__(self, _self, other):
         result = _self.__ge__(other)
-        return result.long() * self.base ** self.precision_fractional
+        if(self.dtype=="long"):
+            return result.long() * self.base ** self.precision_fractional
+        else:
+            return result.int() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __lt__(self, _self, other):
         result = _self.__lt__(other)
-        return result.long() * self.base ** self.precision_fractional
+        if(self.dtype=="long"):
+            return result.long() * self.base ** self.precision_fractional
+        else:
+            return result.int() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __le__(self, _self, other):
         result = _self.__le__(other)
-        return result.long() * self.base ** self.precision_fractional
+        if(self.dtype=="long"):
+            return result.long() * self.base ** self.precision_fractional
+        else:
+            return result.int() * self.base ** self.precision_fractional
 
     @overloaded.method
     def eq(self, _self, other):
         result = _self.eq(other)
-        return result.long() * self.base ** self.precision_fractional
+        if(self.dtype=="long"):
+            return result.long() * self.base ** self.precision_fractional
+        else:
+            return result.int() * self.base ** self.precision_fractional
 
     __eq__ = eq
 
@@ -893,6 +919,7 @@ class FixedPrecisionTensor(AbstractTensor):
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
+            tensor.dtype,
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
             syft.serde.msgpack.serde._simplify(worker, tensor.description),
             chain,
@@ -911,7 +938,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, base, precision_fractional, kappa, tags, description, chain = tensor_tuple
+        tensor_id, field, base, precision_fractional, kappa, tags, description, dtype, chain = tensor_tuple
 
         tensor = FixedPrecisionTensor(
             owner=worker,
@@ -922,6 +949,7 @@ class FixedPrecisionTensor(AbstractTensor):
             kappa=kappa,
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
+            dtype=dtype,
         )
 
         if chain is not None:
