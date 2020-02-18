@@ -268,7 +268,7 @@ def test_torch_mul(workers):
     z = z.float_prec()
     assert z == torch.tensor([-0.2380])
 
-    x = torch.tensor([11.0]).fix_prec(precision_fractional=2)
+    x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
     y = torch.mul(x, x).float_prec()
 
     assert y == torch.tensor([121.0])
@@ -628,3 +628,16 @@ def test_comp():
     assert (x <= y).float_prec()
     assert not (x > y).float_prec()
     assert (x < y).float_prec()
+
+def test_dtype():
+    x = torch.tensor([3.1]).fix_prec()
+    assert x.child.dtype=="long" and x.child.field == 2**64
+
+    x = torch.tensor([2.1]).fix_prec(dtype="int")
+    assert x.child.dtype=="int" and x.child.field == 2**32
+
+    x = torch.tensor([2.1]).fix_prec(dtype=None, field=2**16)
+    assert x.child.dtype=="int" and x.child.field == 2**32
+
+    x = torch.tensor([3.1]).fix_prec(dtype=None, field=2**62)
+    assert x.child.dtype=="long" and x.child.field == 2**64

@@ -14,7 +14,7 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = 2 ** 64,
+        field: int = None,
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -42,11 +42,26 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        self.dtype = dtype
-        if(self.dtype=="long"):
-            self.field = 2**64
-        else:
+        if dtype=="long":
+            self.dtype="long"
+            self.field=2**64
+        elif dtype=="int":
+            self.dtype="int"
             self.field=2**32
+        else:
+            # Since n mod 0 is not defined
+            if type(field)==int and field>0:
+                if field <= 2**32:
+                    self.dtype="int"
+                    self.field=2**32
+                else:
+                    self.dtype="long"
+                    self.field=2**64
+            else:
+                # Invalid args dtype and field
+                raise ValueError("Unsupported arg value for dtype. Use dtype='long' or dtype='int'.")
+
+
 
     def get_class_attributes(self):
         """
@@ -93,10 +108,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """This method encodes the .child object using fixed precision"""
 
         rational = self.child
-        if(self.dtype=="long"):
-            upscaled = (rational * self.base ** self.precision_fractional).long()
-        else:
-            upscaled = (rational * self.base ** self.precision_fractional).int()
+        upscaled = (rational * self.base ** self.precision_fractional).long()
         if check_range:
             assert (
                 upscaled.abs() < (self.field / 2)
@@ -113,12 +125,8 @@ class FixedPrecisionTensor(AbstractTensor):
     def float_precision(self):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
-        if(self.dtype=="long"):
-            value = self.child.long()
-            gate = value.native_gt(self.field / 2).long()
-        else:
-            value = self.child.int()
-            gate = value.native_gt(self.field / 2).int()
+        value = self.child.long()
+        gate = value.native_gt(self.field / 2).long()
 
         neg_nums = (value - self.field / 2) * gate
         pos_nums = value * (1 - gate)
@@ -555,42 +563,27 @@ class FixedPrecisionTensor(AbstractTensor):
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
-        if(self.dtype=="long"):
-            return result.long() * self.base ** self.precision_fractional
-        else:
-            return result.int() * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __ge__(self, _self, other):
         result = _self.__ge__(other)
-        if(self.dtype=="long"):
-            return result.long() * self.base ** self.precision_fractional
-        else:
-            return result.int() * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __lt__(self, _self, other):
         result = _self.__lt__(other)
-        if(self.dtype=="long"):
-            return result.long() * self.base ** self.precision_fractional
-        else:
-            return result.int() * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def __le__(self, _self, other):
         result = _self.__le__(other)
-        if(self.dtype=="long"):
-            return result.long() * self.base ** self.precision_fractional
-        else:
-            return result.int() * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     @overloaded.method
     def eq(self, _self, other):
         result = _self.eq(other)
-        if(self.dtype=="long"):
-            return result.long() * self.base ** self.precision_fractional
-        else:
-            return result.int() * self.base ** self.precision_fractional
+        return result.long() * self.base ** self.precision_fractional
 
     __eq__ = eq
 
