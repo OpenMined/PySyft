@@ -45,7 +45,7 @@ def construct_grad_fn_class(grad_def):
 
 if __name__ == "__main__":
     with open("syft/frameworks/torch/tensors/interpreters/derivatives.yaml", "r") as f:
-        derivatives = yaml.load(f.read())
+        derivatives = yaml.safe_load(f.read())
 
     with open("syft/frameworks/torch/tensors/interpreters/gradients.py", "w") as f:
         grad_fn_map = {}

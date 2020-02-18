@@ -17,6 +17,8 @@ import syft as sy
 from syft import TorchHook
 from syft.workers.websocket_server import WebsocketServerWorker
 
+thismodule = sys.modules[__name__]
+
 # lets start by finding all notebooks currently available in examples and subfolders
 all_notebooks = [n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
 basic_notebooks = [n for n in glob.glob("examples/tutorials/*.ipynb")]
@@ -59,8 +61,7 @@ exclusion_list_folders = [
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
-    # new note: now that travis has been replaced with github actions, someone should test this to see if this is still needed or removed.
+    # This notebook is skipped because it fails in github actions and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
@@ -90,22 +91,45 @@ def test_notebooks_basic(isolated_filesystem, notebook):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
-@pytest.mark.parametrize(
-    "translated_notebook", sorted(set(translated_notebooks) - set(excluded_notebooks))
-)
-def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):  # pragma: no cover
-    """Test Notebooks in the tutorial translations folder."""
-    notebook = "/".join(translated_notebook.split("/")[-2:])
-    notebook = f"translations/{notebook}"
-    list_name = Path(f"examples/tutorials/{notebook}")
-    tested_notebooks.append(str(list_name))
-    res = pm.execute_notebook(
-        notebook,
-        "/dev/null",
-        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+for language_dir in glob.glob("examples/tutorials/translations/*"):
+    language = Path(language_dir).name
+    language_notebooks = [
+        n for n in glob.glob(f"examples/tutorials/translations/{language}/*.ipynb", recursive=True)
+    ]
+
+    def language_test_helper(language):
+        @pytest.mark.translation
+        @pytest.mark.parametrize(
+            "language_notebook", sorted(set(language_notebooks) - set(excluded_notebooks))
+        )
+        def test_basic_notebook_translations_per_language(
+            isolated_filesystem, language_notebook
+        ):  # pragma: no cover
+            """Test Notebooks in the tutorial translations folder."""
+            notebook = "/".join(language_notebook.split("/")[-2:])
+            notebook = f"translations/{notebook}"
+            list_name = Path(f"examples/tutorials/{notebook}")
+            tested_notebooks.append(str(list_name))
+            res = pm.execute_notebook(
+                notebook,
+                "/dev/null",
+                parameters={
+                    "epochs": 1,
+                    "n_test_batches": 5,
+                    "n_train_items": 64,
+                    "n_test_items": 64,
+                },
+                timeout=300,
+            )
+            assert isinstance(res, nbformat.notebooknode.NotebookNode)
+
+        return test_basic_notebook_translations_per_language
+
+    setattr(
+        thismodule,
+        f"test_basic_notebook_translations_in_{language}",
+        language_test_helper(language),
     )
-    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 @pytest.mark.parametrize("notebook", sorted(set(advanced_notebooks) - set(excluded_notebooks)))
@@ -182,7 +206,18 @@ def test_fl_with_websockets_and_averaging(
         sy.VirtualWorker(id=n, hook=hook, is_client_worker=False)
 
 
-### These tests must always be last
+def test_github_workflows_exist_for_all_languages():
+    dirs_checked = 0
+    # check that all languages in translation directory have a workflow
+    for language_dir in glob.glob("examples/tutorials/translations/*"):
+        language = Path(language_dir).name
+        workflow = Path(".github", "workflows", f"tutorials-{language}.yml")
+        assert os.path.exists(workflow) and os.path.isfile(workflow)
+        dirs_checked += 1
+    assert dirs_checked > 0
+
+
+### This test must always be last
 def test_all_notebooks_except_translations():
     untested_notebooks = (
         set(all_notebooks)
@@ -190,9 +225,4 @@ def test_all_notebooks_except_translations():
         - set(translated_notebooks)
         - set(tested_notebooks)
     )
-    assert len(untested_notebooks) == 0, untested_notebooks
-
-
-def test_all_translation_notebooks():  # pragma: no cover
-    untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks

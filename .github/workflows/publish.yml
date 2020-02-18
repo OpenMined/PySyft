@@ -1,4 +1,4 @@
-name: Upload Python Package
+name: Publish
 
 on:
   release:
