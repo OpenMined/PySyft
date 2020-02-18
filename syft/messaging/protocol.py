@@ -8,7 +8,6 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.promise import Promise
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
@@ -103,54 +102,7 @@ class Protocol(AbstractObject):
         return self
 
     def __call__(self, *args, **kwargs):
-        has_promised_inputs = any(
-            [hasattr(arg, "child") and isinstance(arg.child, Promise) for arg in args]
-        )
-        if has_promised_inputs:
-            return self.build_with_promises(*args, **kwargs)
-        else:
-            return self.run(*args, **kwargs)
-
-    def build_with_promises(self, *args, **kwargs):
-        """
-        This method is used to build the graph of computation distributed across the different workers,
-        meaning that output promises are built for plans and these output promises are used as inputs
-        for the next worker.
-
-        The input args (with at least one promise) provided are sent to the first plan location.
-        The output promise(s) is created and linked to this plan and send to the second plan location, and so on.
-        Pointer(s) to the final result(s) on the last worker as well as to the input promise(s)
-        that have to be kept are returned.
-        """
-        self._assert_is_resolved()
-
-        # TODO if self.location is not None:
-
-        # Local and sequential coordination of the plan execution
-        previous_worker_id = None
-        response = None
-        for worker, plan in self.plans:
-            # Transmit the args to the next worker if it's a different one % the previous
-            if previous_worker_id is None:
-                args = [arg.send(worker).child for arg in args]
-            elif previous_worker_id != worker.id:
-                args = [arg.remote_send(worker).child for arg in args]
-                for arg in args:
-                    # Not clean but need to point to promise on next worker from protocol owner
-                    # TODO see if a better solution exists
-                    arg.location = worker
-            else:
-                args = [arg.child for arg in args]
-
-            if previous_worker_id is None:
-                in_promise_ptrs = args[0] if len(args) == 1 else args
-            previous_worker_id = worker.id
-
-            response = plan(*args)
-
-            args = response if isinstance(response, tuple) else (response,)
-
-        return in_promise_ptrs, response
+        return self.run(*args, **kwargs)
 
     def run(self, *args, **kwargs):
         """
