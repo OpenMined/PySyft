@@ -379,7 +379,7 @@ class Plan(AbstractObject, ObjectStorage):
                     op.return_ids,
                 )
                 if _self is None:
-                    response = eval(cmd)(*args, **kwargs)
+                    response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
                 return_placeholder.instantiate(response.child)
