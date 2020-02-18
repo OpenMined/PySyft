@@ -46,7 +46,7 @@ if gitdiff.is_file():
         .decode()
         for file in changed_files
     ]
-translated_notebooks = list(set(changed_files) & set(translated_notebooks))
+translated_notebooks_diff = list(set(changed_files) & set(translated_notebooks))
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -110,6 +110,30 @@ def test_notebooks_basic(isolated_filesystem, notebook):
 )
 def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):  # pragma: no cover
     """Test Notebooks in the tutorial translations folder."""
+    notebook = "/".join(translated_notebook.split("/")[-2:])
+    notebook = f"translations/{notebook}"
+    list_name = Path(f"examples/tutorials/{notebook}")
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+        timeout=300,
+    )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
+
+
+@pytest.mark.parametrize(
+    "translated_notebook", sorted(set(translated_notebooks_diff) - set(excluded_notebooks))
+)
+def test_notebooks_basic_translations_diff(
+    isolated_filesystem, translated_notebook
+):  # pragma: no cover
+    """
+    Test Notebooks in the tutorial translations folder if they have been
+    modified in the current pull request. This test should not consider any
+    notebooks locally. It should be used on Github Actions.
+    """
     notebook = "/".join(translated_notebook.split("/")[-2:])
     notebook = f"translations/{notebook}"
     list_name = Path(f"examples/tutorials/{notebook}")
