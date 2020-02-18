@@ -1,0 +1,42 @@
+name: Tutorials (Bengali)
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - "examples/tutorials/bengali"
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+    - "examples/tutorials/bengali"
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.6, 3.7]
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        python -m pip install --upgrade pip
+        hash -r
+        pip3 install -r pip-dep/requirements.txt
+        pip3 install -r pip-dep/requirements_dev.txt
+        pip3 install -r pip-dep/requirements_udacity.txt
+        pip3 install -r pip-dep/requirements_notebooks.txt
+        pip3 install scikit-learn
+        python setup.py install
+    - name: Run the translated tutorials
+      run: |
+        pytest test/notebooks/test_notebooks.py::test_basic_notebook_translations_in_bengali
