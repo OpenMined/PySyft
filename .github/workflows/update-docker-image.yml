@@ -22,7 +22,7 @@ jobs:
           python-version: '3.x'
 
       - name: Build image
-        run: docker build -t $IMAGE -f docker-images/pysyft-notebook/Dockerfile .
+        run: docker build -t $IMAGE -f docker-images/pysyft-notebook/Dockerfile docker-images/pysyft-notebook
 
       - name: Tag images
         run: |
