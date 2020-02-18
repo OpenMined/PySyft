@@ -26,6 +26,11 @@ advanced_notebooks = [
 translated_notebooks = [
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
 ]
+# Exclude all translated basic tutorials that are also
+# excluded in their original version.
+excluded_translated_notebooks = [
+    Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
+]
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -43,6 +48,9 @@ exclusion_list_notebooks = [
     "Federated learning with websockets and federated averaging.ipynb",
 ]
 
+# Add excluded translated notebooks to the exclusion list
+exclusion_list_notebooks += excluded_translated_notebooks
+
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/Monitor_Network_Traffic",
@@ -51,7 +59,7 @@ exclusion_list_folders = [
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
+    # This notebook is skipped because it fails in github actions and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
@@ -84,7 +92,7 @@ def test_notebooks_basic(isolated_filesystem, notebook):
 @pytest.mark.parametrize(
     "translated_notebook", sorted(set(translated_notebooks) - set(excluded_notebooks))
 )
-def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
+def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):  # pragma: no cover
     """Test Notebooks in the tutorial translations folder."""
     notebook = "/".join(translated_notebook.split("/")[-2:])
     notebook = f"translations/{notebook}"
@@ -174,11 +182,6 @@ def test_fl_with_websockets_and_averaging(
 
 
 ### These tests must always be last
-def test_all_non_excluded_notebooks():
-    untested_notebooks = set(all_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
-    assert len(untested_notebooks) == 0, untested_notebooks
-
-
 def test_all_notebooks_except_translations():
     untested_notebooks = (
         set(all_notebooks)
@@ -186,4 +189,9 @@ def test_all_notebooks_except_translations():
         - set(translated_notebooks)
         - set(tested_notebooks)
     )
+    assert len(untested_notebooks) == 0, untested_notebooks
+
+
+def test_all_translation_notebooks():  # pragma: no cover
+    untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks

@@ -10,6 +10,8 @@ All Syft message types extend the Message class.
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.types.syft.v1.operation_pb2 import Operation as OperationPB
@@ -218,9 +220,16 @@ class Operation(Message):
 
         if type(operation.cmd_owner) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.owner_pointer
+        elif (
+            type(operation.cmd_owner)
+            == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+        ):
+            protobuf_owner = protobuf_op.owner_placeholder
         else:
             protobuf_owner = protobuf_op.owner_tensor
-        protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
+
+        if operation.cmd_owner is not None:
+            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
 
         if operation.cmd_args:
             protobuf_op.args.extend(Operation._bufferize_args(worker, operation.cmd_args))
@@ -231,8 +240,19 @@ class Operation(Message):
                     Operation._bufferize_arg(worker, value)
                 )
 
-        for return_id in operation.return_ids:
-            sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
+        if operation.return_ids is not None:
+            if type(operation.return_ids) == PlaceHolder:
+                return_ids = list((operation.return_ids,))
+            else:
+                return_ids = operation.return_ids
+
+            for return_id in return_ids:
+                if type(return_id) == PlaceHolder:
+                    protobuf_op.return_placeholders.extend(
+                        [sy.serde.protobuf.serde._bufferize(worker, return_id)]
+                    )
+                else:
+                    sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
 
         protobuf_op_msg.operation.CopyFrom(protobuf_op)
         return protobuf_op_msg
@@ -256,9 +276,13 @@ class Operation(Message):
         """
 
         command = protobuf_obj.operation.command
-        owner = sy.serde.protobuf.serde._unbufferize(
-            worker, getattr(protobuf_obj.operation, protobuf_obj.operation.WhichOneof("owner"))
-        )
+        protobuf_owner = protobuf_obj.operation.WhichOneof("owner")
+        if protobuf_owner:
+            owner = sy.serde.protobuf.serde._unbufferize(
+                worker, getattr(protobuf_obj.operation, protobuf_obj.operation.WhichOneof("owner"))
+            )
+        else:
+            owner = None
         args = Operation._unbufferize_args(worker, protobuf_obj.operation.args)
 
         kwargs = {}
@@ -270,7 +294,20 @@ class Operation(Message):
             for pb_id in protobuf_obj.operation.return_ids
         ]
 
-        operation_msg = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
+        return_placeholders = [
+            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+            for placeholder in protobuf_obj.operation.return_placeholders
+        ]
+
+        if return_placeholders:
+            if len(return_placeholders) == 1:
+                operation_msg = Operation(
+                    command, owner, tuple(args), kwargs, return_placeholders[0]
+                )
+            else:
+                operation_msg = Operation(command, owner, tuple(args), kwargs, return_placeholders)
+        else:
+            operation_msg = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
 
         return operation_msg
 
@@ -285,9 +322,9 @@ class Operation(Message):
     def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
         protobuf_arg = ArgPB()
         try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__, arg)
+            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
         except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__).CopyFrom(
+            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
                 sy.serde.protobuf.serde._bufferize(worker, arg)
             )
         return protobuf_arg
