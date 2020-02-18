@@ -5,6 +5,7 @@ import time
 import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
+import codecs
 
 import pytest
 import nbformat
@@ -31,6 +32,21 @@ translated_notebooks = [
 excluded_translated_notebooks = [
     Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
 ]
+
+
+# Include only the translations that have been changed
+gitdiff = Path("test/notebooks/git-diff.txt")
+changed_files = []
+if gitdiff.is_file():
+    changed_files = open(gitdiff, "r")
+    changed_files = changed_files.readlines()
+    changed_files = [
+        codecs.decode(file.replace('"', "").replace("\n", ""), "unicode-escape")
+        .encode("latin-1")
+        .decode()
+        for file in changed_files
+    ]
+translated_notebooks_diff = list(set(changed_files) & set(translated_notebooks))
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -59,8 +75,7 @@ exclusion_list_folders = [
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
-    # new note: now that travis has been replaced with github actions, someone should test this to see if this is still needed or removed.
+    # This notebook is skipped because it fails in github actions and we do not know why for the moment
     "examples/tutorials/advanced/Federated SMS Spam prediction",
 ]
 
@@ -95,6 +110,30 @@ def test_notebooks_basic(isolated_filesystem, notebook):
 )
 def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):  # pragma: no cover
     """Test Notebooks in the tutorial translations folder."""
+    notebook = "/".join(translated_notebook.split("/")[-2:])
+    notebook = f"translations/{notebook}"
+    list_name = Path(f"examples/tutorials/{notebook}")
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+        timeout=300,
+    )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
+
+
+@pytest.mark.parametrize(
+    "translated_notebook", sorted(set(translated_notebooks_diff) - set(excluded_notebooks))
+)
+def test_notebooks_basic_translations_diff(
+    isolated_filesystem, translated_notebook
+):  # pragma: no cover
+    """
+    Test Notebooks in the tutorial translations folder if they have been
+    modified in the current pull request. This test should not consider any
+    notebooks locally. It should be used on Github Actions.
+    """
     notebook = "/".join(translated_notebook.split("/")[-2:])
     notebook = f"translations/{notebook}"
     list_name = Path(f"examples/tutorials/{notebook}")
