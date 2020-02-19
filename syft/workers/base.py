@@ -84,7 +84,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             primarily a development/testing feature.
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
-        pending_time (optional): A number of seconds to delay the messages to be sent.
+        message_pending_time (optional): A number of seconds to delay the messages to be sent.
             The argument may be a floating point number for subsecond 
             precision.
     """
