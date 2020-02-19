@@ -37,7 +37,7 @@ tests_require = ["pytest", "pytest-flake8"] + sandbox_extras + notebook_extras
 
 setup(
     name="syft",
-    version="0.2.2a1",
+    version="0.2.3a1",
     author="Andrew Trask",
     author_email="contact@openmined.org",
     description=("A Library for Private, Secure Deep Learning"),

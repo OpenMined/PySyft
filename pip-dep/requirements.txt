@@ -5,6 +5,7 @@ msgpack>=0.6.1
 numpy>=1.16.0
 phe>=1.4.0
 Pillow<7
+requests==2.22.0
 scipy>=1.4.1
 syft-proto>=0.1.1a1.post15
 tblib>=1.4.0

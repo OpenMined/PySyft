@@ -7,6 +7,9 @@ import torch
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft_proto.messaging.v1.state_pb2 import State as StatePB
+from syft_proto.messaging.v1.state_tensor_pb2 import StateTensor as StateTensorPB
+from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
 class State(object):
@@ -128,6 +131,65 @@ class State(object):
 
         state_placeholders = sy.serde.msgpack.serde._detail(worker, state_placeholders)
         state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
+
+        for state_element in state_elements:
+            worker.register_obj(state_element, obj_id=state_element.id)
+
+        for state_placeholder, state_element in zip(state_placeholders, state_elements):
+            state_placeholder.instantiate(state_element)
+
+        state = State(owner=worker, state_placeholders=state_placeholders)
+        return state
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, state: "State") -> StatePB:
+        """
+        Serialize the State to Protobuf message
+        """
+        protobuf_state = StatePB()
+
+        protobuf_placeholders = [
+            sy.serde.protobuf.serde._bufferize(worker, placeholder)
+            for placeholder in state.state_placeholders
+        ]
+        protobuf_state.placeholders.extend(protobuf_placeholders)
+
+        state_tensors = []
+        for tensor in state.tensors():
+            protobuf_tensor = sy.serde.protobuf.serde._bufferize(worker, tensor)
+            state_tensor = StateTensorPB()
+            if type(protobuf_tensor) == ParameterPB:
+                state_tensor.torch_param.CopyFrom(
+                    sy.serde.protobuf.serde._bufferize(worker, tensor)
+                )
+            else:
+                state_tensor.torch_tensor.CopyFrom(
+                    sy.serde.protobuf.serde._bufferize(worker, tensor)
+                )
+            state_tensors.append(state_tensor)
+
+        protobuf_state.tensors.extend(state_tensors)
+
+        return protobuf_state
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_state: StatePB) -> "State":
+        """
+        Reconstruct the plan's state from the state elements and supposed
+        ids.
+        """
+        state_placeholders = protobuf_state.placeholders
+        state_elements = protobuf_state.tensors
+
+        state_placeholders = [
+            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+            for placeholder in protobuf_state.placeholders
+        ]
+
+        state_elements = []
+        for protobuf_tensor in protobuf_state.tensors:
+            tensor = getattr(protobuf_tensor, protobuf_tensor.WhichOneof("tensor"))
+            state_elements.append(sy.serde.protobuf.serde._unbufferize(worker, tensor))
 
         for state_element in state_elements:
             worker.register_obj(state_element, obj_id=state_element.id)
