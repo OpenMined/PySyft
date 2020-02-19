@@ -118,8 +118,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
         field_element = upscaled
         field_element.owner = rational.owner
-
-        self.child = field_element
+        if self.dtype=="int":
+            self.child = field_element.type(torch.IntTensor)
+        else:
+            self.child = field_element.type(torch.LongTensor)
         return self
 
     def float_precision(self):

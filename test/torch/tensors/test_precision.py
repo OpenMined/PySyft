@@ -29,6 +29,16 @@ def test_encode_decode(workers, parameter):
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
+    # With int dtype
+    x = torch.tensor([0.1, 0.2, 0.3])
+    if parameter:
+        x = nn.Parameter(x)
+    x = x.fix_prec(dtype="int")
+    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2**32
+    x = x.float_prec()
+    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
+
+
 
 def test_fix_prec_registration(hook):
     with hook.local_worker.registration_enabled():
@@ -43,6 +53,14 @@ def test_inplace_encode_decode(workers):
     x = torch.tensor([0.1, 0.2, 0.3])
     x.fix_prec_()
     assert (x.child.child == torch.LongTensor([100, 200, 300])).all()
+    x.float_prec_()
+
+    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
+    
+    # With int dtype
+    x = torch.tensor([0.1, 0.2, 0.3])
+    x.fix_prec_(dtype="int")
+    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2**32
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
