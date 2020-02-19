@@ -546,14 +546,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             location = syft.hook.local_worker.get_worker(worker_id)
 
-            if tags:  # Tag != None
-                # Decode binary tags
-                tags = tuple(map(lambda x: x.decode("utf-8"), tags))
-
-            if description:  # Description != None
-                # Decode binary description
-                description = description.decode("utf-8")
-
             ptr = PointerTensor(
                 location=location,
                 id_at_location=id_at_location,
