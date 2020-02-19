@@ -23,5 +23,6 @@ flask_cors
 flask_login
 redis
 aiounittest==1.3.1
--e git+https://github.com/OpenMined/PySyft@master#egg=syft
+-e git+https://github.com/OpenMined/syft-proto@master#egg=syft_proto
+-e git+https://github.com/IonesioJunior/PySyft@master#egg=syft
 
