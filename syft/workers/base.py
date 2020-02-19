@@ -98,7 +98,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
-        pending_time: Union[int, float] = 0,
+        message_pending_time: Union[int, float] = 0,
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -109,7 +109,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.log_msgs = log_msgs
         self.verbose = verbose
         self.auto_add = auto_add
-        self.pending_time = pending_time
+        self._message_pending_time = message_pending_time
         self.msg_history = list()
 
         # For performance, we cache all possible message types
@@ -979,6 +979,29 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         return sy.serde.deserialize(self.msg_history[index], worker=self)
+    
+    @property
+    def message_pending_time(self):
+        """
+        Returns:
+            The pending time in seconds for messaging between virtual workers.
+        """
+        return self._message_pending_time
+
+    @message_pending_time.setter
+    def message_pending_time(self, seconds: Union[int, float]) -> None:
+        """Sets the pending time to send messaging between workers.
+
+        Args:
+            seconds: A number of seconds to delay the messages to be sent.
+            The argument may be a floating point number for subsecond 
+            precision.
+
+        """
+        if self.verbose:
+            print(f"Set message pending time to {seconds} seconds.")
+
+        self._message_pending_time = seconds
 
     @staticmethod
     def create_message_execute_command(

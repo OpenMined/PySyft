@@ -26,11 +26,11 @@ def test_send_msg():
     me = sy.torch.hook.local_worker
 
     # pending time to simulate lantency (optional)
-    msg_pending_time = 0.1
+    me.message_pending_time = 0.1
 
     # create a new worker (to send the object to)
     worker_id = sy.ID_PROVIDER.pop()
-    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}", pending_time=msg_pending_time)
+    bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
     # initialize the object and save it's id
     obj = torch.Tensor([100, 100])
@@ -44,7 +44,7 @@ def test_send_msg():
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
     # ensure that object was sent 0.1 secs later
-    assert abs(elapsed_time - msg_pending_time) < 1e-2
+    assert abs(elapsed_time - me.message_pending_time) < 0.1
 
 
 def test_send_msg_using_tensor_api():

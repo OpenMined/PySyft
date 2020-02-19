@@ -6,10 +6,10 @@ from syft.federated.federated_client import FederatedClient
 
 class VirtualWorker(BaseWorker, FederatedClient):
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
-        if self.pending_time > 0:
+        if self.message_pending_time > 0:
             if self.verbose:
-                print(f"pending time of {self.pending_time} seconds to send message...")
-            sleep(self.pending_time)
+                print(f"pending time of {self.message_pending_time} seconds to send message...")
+            sleep(self.message_pending_time)
 
         return location._recv_msg(message)
 
