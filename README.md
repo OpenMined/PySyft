@@ -7,9 +7,6 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 
 ## Overview
 - [Overview](#overview)
-- [How to install](#how-to-install)
-    - [PyGrid library](#pygrid-library)
-  - [Common Installation Issues:](#common-installation-issues)
 - [Getting started](#getting-started)
     - [Build Grid Platform Locally](#start-grid-platform-locally)
     - [Build images](#build-images)
@@ -20,16 +17,6 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 - [Disclaimer](#disclaimer)
 - [License](#license)
 
-## How to install
-
-#### PyGrid library
-Make PyGrid library importable in python:
-```
-$ pip install .
-```
-
-### Common Installation Issues:
-- On macOS, you might get ```ld: library not found for -lssl```. It happens when openssl is missing. Kindly install openSSL, add it to you path and try again. You can also fix the issue by installing the appropriate Xcode Command line tools from [here](https://developer.apple.com/download/more/).
 
 ## Getting started
 To boot the entire PyGrid platform locally, we will use docker containers.
@@ -61,8 +48,7 @@ $ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
 
 
 ## Try out the Tutorials
-A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PyGrid/tree/dev/examples).
-A list with latest experimental tutorials can be found in the dev branch [here](https://github.com/Quisher/PyGrid/tree/dev/examples).
+A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials/grid).
 
 These tutorials cover how to create a PyGrid node and what operations you can perform.
 
@@ -77,6 +63,7 @@ We also have a Github Project page for PySyft and PyGrid [here](https://github.c
 ## High-level Architecture
 
 ![High-level Architecture](https://raw.githubusercontent.com/OpenMined/PyGrid/dev/art/PyGrid-Arch.png)
+
 
 
 ## Disclaimer
