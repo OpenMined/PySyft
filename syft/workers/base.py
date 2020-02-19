@@ -979,7 +979,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         return sy.serde.deserialize(self.msg_history[index], worker=self)
-    
+
     @property
     def message_pending_time(self):
         """

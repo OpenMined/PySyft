@@ -4,6 +4,7 @@ from typing import Union
 from syft.workers.base import BaseWorker
 from syft.federated.federated_client import FederatedClient
 
+
 class VirtualWorker(BaseWorker, FederatedClient):
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
         if self.message_pending_time > 0:
