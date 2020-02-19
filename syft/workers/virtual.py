@@ -1,5 +1,4 @@
 from time import sleep
-from typing import Union
 
 from syft.workers.base import BaseWorker
 from syft.federated.federated_client import FederatedClient
