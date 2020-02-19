@@ -31,7 +31,6 @@ jobs:
         pip3 install flake8
         pip3 install flake8-comprehensions
         pip3 install pep8-naming
-        pip3 install -r dev-requirements.txt >> build.log
         
     - name: Lint with flake8
       run: |
@@ -48,8 +47,3 @@ jobs:
     - name: Test with pytest
       run: |
         coverage run -m pytest -v test
-
-    - name: Test documentation build
-      run: |
-        cd docs
-        make html
