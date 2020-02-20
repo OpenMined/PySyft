@@ -120,12 +120,14 @@ class BaseDataset(AbstractObject):
         self.targets.share_(*args, **kwargs)
         return self
 
-    def create_pointer(self, owner, garbage_collect_data, location, id_at_location=None, **kwargs):
+    def create_pointer(self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs):
         return PointerDataset(
             owner=owner,
             location=location,
             id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
+            tags=self.tags,
+            description=self.description
         )
 
     def __repr__(self):
