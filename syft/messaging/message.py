@@ -354,11 +354,33 @@ class ObjectMessage(Message):
     to do so.
     """
 
-    def __init__(self, contents):
+    def __init__(self, contents, sender=None, origin_id=None):
         """Initialize the message using default Message constructor.
 
         See Message.__init__ for details."""
         super().__init__(contents)
+        self.contents.sender = sender
+        self.contents.origin_id = origin_id
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, ptr: "ObjectMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(ptr)
+        """
+
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.contents),
+            sy.serde.msgpack.serde._simplify(worker, ptr.contents.sender),
+            sy.serde.msgpack.serde._simplify(worker, ptr.contents.origin_id)
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectMessage":
@@ -375,7 +397,11 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        return ObjectMessage(
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[2])
+        )
 
     @staticmethod
     def bufferize(worker: AbstractWorker, message: "ObjectMessage") -> "ObjectMessagePB":

@@ -58,6 +58,36 @@ class TorchTensor(AbstractTensor):
     def has_child(self):
         return hasattr(self, "child")
 
+    def trigger_origin_backward_hook(self, sender, origin_id):
+        """
+        This hook is triggered when a tensor which was received from a sender has
+        a gradient update. It will send back to this sender and his original tensor
+        this gradient value to be set remotely. Also, because this is triggered during
+        backward(), the backward command is also forwarded back.
+
+        Args:
+            sender: where this tensor comes from
+            origin_id: what was its original id
+        """
+
+        def trigger_origin_backward(grad):
+            location = self.owner.get_worker(sender)
+            id_at_location = origin_id
+
+            origin_ptr = syft.PointerTensor.create_pointer(
+                self, location, id_at_location, garbage_collect_data=False
+            )
+            # set the gradient
+            self.owner.send_command(location, message=('set_grad', origin_ptr, (grad,), {}))
+
+            # call backward()
+            origin_ptr.backward(grad)
+
+        return trigger_origin_backward
+
+    def set_grad(self, grad):
+        self.grad = grad
+
     @property
     def tags(self):
         if self.has_child():

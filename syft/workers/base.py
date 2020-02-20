@@ -111,7 +111,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_router = {
             Operation: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
-            ObjectMessage: self.set_obj,
+            ObjectMessage: self.receive_object,
             ObjectRequestMessage: self.respond_to_obj_req,
             ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
             IsNoneMessage: self.is_tensor_none,
@@ -532,6 +532,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             responses = ret_val
         return responses
 
+    def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
+        """Receive an object from a another worker
+
+        Args:
+            obj: a Framework Tensor or a subclass of an AbstractTensor with an id
+        """
+        self.set_obj(obj)
+
+        if isinstance(obj, FrameworkTensor):
+            tensor = obj
+            if tensor.requires_grad:
+                tensor.register_hook(tensor.trigger_origin_backward_hook(tensor.sender, tensor.origin_id))
+
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 
@@ -604,7 +617,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(ObjectMessage(obj), location)
+        return self.send_msg(ObjectMessage(obj, sender=self.id, origin_id=obj.id), location)
 
     def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
