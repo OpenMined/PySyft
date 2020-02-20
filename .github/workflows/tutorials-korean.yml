@@ -5,11 +5,11 @@ on:
     branches:
     - master
     paths:
-    - "examples/tutorials/translations/korean"
+    - "examples/tutorials/translations/korean/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-    - "examples/tutorials/translations/korean"
+    - "examples/tutorials/translations/korean/**"
 
 jobs:
   build:
