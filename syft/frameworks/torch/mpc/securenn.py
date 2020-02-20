@@ -158,7 +158,7 @@ def private_compare(x_bit_sh, r, beta):
     )
 
     # 1)
-    t = (r + 1) % L
+    t = r + 1
     t_bit = decompose(t)
     r_bit = decompose(r)
 
@@ -341,7 +341,7 @@ def share_convert(a_sh):
         (a_tilde_shares[workers[0].id].copy().get() + a_tilde_shares[workers[1].id].copy().get())
         >= L
     ).long()
-    x = a_tilde_sh.get() % L
+    x = a_tilde_sh.get()
 
     # 5)
     x_bit = decompose(x)

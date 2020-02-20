@@ -42,26 +42,26 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        if dtype=="long":
-            self.dtype="long"
-            self.field=2**64
-        elif dtype=="int":
-            self.dtype="int"
-            self.field=2**32
+        if dtype == "long":
+            self.dtype = "long"
+            self.field = 2 ** 64
+        elif dtype == "int":
+            self.dtype = "int"
+            self.field = 2 ** 32
         else:
             # Since n mod 0 is not defined
-            if type(field)==int and field>0:
-                if field <= 2**32:
-                    self.dtype="int"
-                    self.field=2**32
+            if type(field) == int and field > 0:
+                if field <= 2 ** 32:
+                    self.dtype = "int"
+                    self.field = 2 ** 32
                 else:
-                    self.dtype="long"
-                    self.field=2**64
+                    self.dtype = "long"
+                    self.field = 2 ** 64
             else:
                 # Invalid args dtype and field
-                raise ValueError("Unsupported arg value for dtype. Use dtype='long' or dtype='int'.")
-
-
+                raise ValueError(
+                    "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
+                )
 
     def get_class_attributes(self):
         """
@@ -118,7 +118,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         field_element = upscaled
         field_element.owner = rational.owner
-        if self.dtype=="int":
+        if self.dtype == "int":
             self.child = field_element.type(torch.IntTensor)
         else:
             self.child = field_element.type(torch.LongTensor)
@@ -148,7 +148,7 @@ class FixedPrecisionTensor(AbstractTensor):
         else:
             gate = self.child.native_gt(self.field / 2).long()
             neg_nums = (self.child - self.field / 2) / truncation + self.field / 2
-            pos_nums = self.child / truncation 
+            pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
 
@@ -306,13 +306,13 @@ class FixedPrecisionTensor(AbstractTensor):
             # The comparison is different if new_self is a torch tensor or an AST
             sgn_self = (
                 (new_self < self.field // 2).long()
-                if isinstance(new_self, torch.Tensor)
-                else new_self > 0
+                if isinstance(new_self, AdditiveSharingTensor)
+                else (new_self > 0).long()
             )
             pos_self = new_self * sgn_self
             neg_self = (
-                (self.field / 2 - new_self) * (1 - sgn_self)
-                if isinstance(new_self, torch.Tensor)
+                (self.field - new_self) * (1 - sgn_self)
+                if isinstance(new_self, AdditiveSharingTensor)
                 else new_self * (sgn_self - 1)
             )
             new_self = neg_self + pos_self
@@ -321,13 +321,13 @@ class FixedPrecisionTensor(AbstractTensor):
             # The comparison is different is new_other is a torch tensor or an AST
             sgn_other = (
                 (new_other < self.field // 2).long()
-                if isinstance(new_other, torch.Tensor)
-                else new_other > 0
+                if isinstance(new_other, AdditiveSharingTensor)
+                else (new_other > 0).long()
             )
             pos_other = new_other * sgn_other
             neg_other = (
-                (self.field / 2 - new_other) * (1 - sgn_other)
-                if isinstance(new_other, torch.Tensor)
+                (self.field - new_other) * (1 - sgn_other)
+                if isinstance(new_other, AdditiveSharingTensor)
                 else new_other * (sgn_other - 1)
             )
             new_other = neg_other + pos_other
@@ -933,7 +933,9 @@ class FixedPrecisionTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, base, precision_fractional, kappa, tags, description, dtype, chain = tensor_tuple
+        tensor_id, field, base, precision_fractional, kappa, tags, description, dtype, chain = (
+            tensor_tuple
+        )
 
         tensor = FixedPrecisionTensor(
             owner=worker,

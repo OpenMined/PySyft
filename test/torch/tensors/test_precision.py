@@ -34,10 +34,9 @@ def test_encode_decode(workers, parameter):
     if parameter:
         x = nn.Parameter(x)
     x = x.fix_prec(dtype="int")
-    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2**32
+    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2 ** 32
     x = x.float_prec()
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-
 
 
 def test_fix_prec_registration(hook):
@@ -56,11 +55,11 @@ def test_inplace_encode_decode(workers):
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-    
+
     # With int dtype
     x = torch.tensor([0.1, 0.2, 0.3])
     x.fix_prec_(dtype="int")
-    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2**32
+    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2 ** 32
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
@@ -128,13 +127,6 @@ def test_torch_add(workers):
     z = torch.add(x, y).float_prec()
 
     assert (z == torch.tensor([0.3, -0.7, -0.3])).all()
-
-    # When overflow occurs
-    #x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(dtype="int", precision_fractional=2)
-    #y = torch.add(x, x)
-    #y = torch.add(y, y).float_prec()
-
-    #assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
 
     # with AdditiveSharingTensor
     t = torch.tensor([1.0, -2.0, 3.0])
@@ -647,15 +639,16 @@ def test_comp():
     assert not (x > y).float_prec()
     assert (x < y).float_prec()
 
+
 def test_dtype():
     x = torch.tensor([3.1]).fix_prec()
-    assert x.child.dtype=="long" and x.child.field == 2**64
+    assert x.child.dtype == "long" and x.child.field == 2 ** 64
 
     x = torch.tensor([2.1]).fix_prec(dtype="int")
-    assert x.child.dtype=="int" and x.child.field == 2**32
+    assert x.child.dtype == "int" and x.child.field == 2 ** 32
 
-    x = torch.tensor([2.1]).fix_prec(dtype=None, field=2**16)
-    assert x.child.dtype=="int" and x.child.field == 2**32
+    x = torch.tensor([2.1]).fix_prec(dtype=None, field=2 ** 16)
+    assert x.child.dtype == "int" and x.child.field == 2 ** 32
 
-    x = torch.tensor([3.1]).fix_prec(dtype=None, field=2**62)
-    assert x.child.dtype=="long" and x.child.field == 2**64
+    x = torch.tensor([3.1]).fix_prec(dtype=None, field=2 ** 62)
+    assert x.child.dtype == "long" and x.child.field == 2 ** 64

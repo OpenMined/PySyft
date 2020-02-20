@@ -53,10 +53,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
 
-        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
+        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 64 bits
         self.n_bits = (
             n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
-        )  # < 63 bits
+        )  # < 64 bits
         # assert 2 ** self.n_bits == self.field
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
@@ -573,7 +573,7 @@ class AdditiveSharingTensor(AbstractTensor):
             # The idea is to compute Q - (Q - pointer) / divisor for as many worker
             # as the number of times the sum of shares "crosses" Q/2.
             if i_worker % 2 == 0:
-                divided_shares[location] = self.field - (self.field - pointer) / divisor
+                divided_shares[location] = self.field / 2 - (self.field / 2 - pointer) / divisor
             else:
                 divided_shares[location] = pointer / divisor
 
