@@ -18,6 +18,8 @@ import syft as sy
 from syft import TorchHook
 from syft.workers.websocket_server import WebsocketServerWorker
 
+thismodule = sys.modules[__name__]
+
 # lets start by finding all notebooks currently available in examples and subfolders
 all_notebooks = [n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
 basic_notebooks = [n for n in glob.glob("examples/tutorials/*.ipynb")]
@@ -121,7 +123,6 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
         timeout=300,
     )
-    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 @pytest.mark.translation
