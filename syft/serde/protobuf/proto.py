@@ -31,6 +31,9 @@ from syft_proto.frameworks.torch.tensors.interpreters.v1.placeholder_pb2 import 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+from syft_proto.messaging.v1.plan_pb2 import Plan as PlanPB
+from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
+from syft_proto.messaging.v1.state_pb2 import State as StatePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB

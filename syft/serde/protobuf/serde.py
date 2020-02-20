@@ -41,7 +41,11 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
     ObjectMessage,
+<<<<<<< HEAD
     OperationMessage,
+=======
+    Operation,
+>>>>>>> d20925cf... Rebase Crypten (#3077)
     PlaceHolder,
     Plan,
     PointerTensor,
