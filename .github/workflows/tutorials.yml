@@ -4,15 +4,13 @@ on:
   push:
     branches:
     - master
-    paths:
-    - "examples/tutorials/**"
-    - "!examples/tutorials/translations/**"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
 
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-    - "examples/tutorials/**"
-    - "!examples/tutorials/translations/**"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
 
 jobs:
   build:
