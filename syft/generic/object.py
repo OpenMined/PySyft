@@ -155,7 +155,7 @@ class AbstractObject(ABC):
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
 
-        # Do a generic action depending og the call
+        # Do a generic action depending on the call
         cls.on_function_call(new_command)
 
         # Send it to the appropriate class and get the response

@@ -106,6 +106,8 @@ class TorchAttributes(FrameworkAttributes):
 
         self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
 
+        self.crypten_methods = ["load", "get_plain_text"]
+
         # SECTION: Build the guard, that define which functions or methods can be safely called by
         # external or local workers
 

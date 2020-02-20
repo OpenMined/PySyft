@@ -1,13 +1,13 @@
 import torch
-import syft
-from syft.frameworks.crypten.context import toy_func, run_party
+import syft as sy
+from syft.frameworks.crypten.context import run_party
 import crypten.communicator as comm
 import crypten
 
 
 def load(tag: str, src: int, id_worker: int):
     if comm.get().get_rank() == src:
-        worker = syft.local_worker.get_worker(id_worker)
+        worker = sy.local_worker.get_worker(id_worker)
         result = worker.search(tag)[0].get()
 
         # file contains torch.tensor
@@ -42,5 +42,4 @@ def load(tag: str, src: int, id_worker: int):
 
     return result
 
-
-__all__ = ["toy_func", "run_party", "load"]
+__all__ = ["run_party", "load", "get_plain_text"]

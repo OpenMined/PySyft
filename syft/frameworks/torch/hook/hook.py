@@ -3,6 +3,7 @@ from functools import wraps
 import logging
 from math import inf
 import torch
+
 from torch import nn
 import types
 import weakref
@@ -33,6 +34,13 @@ from syft.workers.virtual import VirtualWorker
 from syft.messaging.plan import Plan
 
 from syft.exceptions import route_method_exception
+
+from syft.frameworks.crypten import load as crypten_load
+
+try:
+    import crypten
+except e:
+    print("CrypTen not found")
 
 
 class TorchHook(FrameworkHook):
@@ -203,6 +211,9 @@ class TorchHook(FrameworkHook):
 
         # Hook torch functions from modules like torch.add OR torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
+
+        # Hook specific crypten functions
+        self._hook_crypten()
 
         # Hook torch.nn (containing Linear and Convolution layers)
         self._hook_module()
@@ -471,6 +482,26 @@ class TorchHook(FrameworkHook):
                     continue
 
                 self._perform_function_overloading(module_name, torch_module, func)
+
+    # TODO -- Should do this only if we have CrypTen as a backend
+    def _hook_crypten(self):
+        from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
+        overload_funcs = ["load"]
+
+        native_func = getattr(crypten, "load")
+        setattr(crypten, "native_load", native_func)
+        setattr(crypten, "load", crypten_load)
+
+        new_func = get_hooked_crypten_func("load", crypten_load)
+        setattr(crypten, "load", new_func)
+
+        # Hook get_plain_text
+        native_func = getattr(crypten.mpc.MPCTensor, "get_plain_text")
+        setattr(crypten, "native_get_plain_text", native_func)
+        setattr(crypten, "get_plain_text", crypten_load)
+
+        new_func = get_hooked_crypten_func("get_plain_text", crypten_load)
+        setattr(crypten, "get_plain_text", new_func)
 
     @classmethod
     def _get_hooked_func(cls, public_module_name, func_api_name, attr):

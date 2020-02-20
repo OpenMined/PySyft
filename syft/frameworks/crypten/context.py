@@ -5,7 +5,6 @@ import os
 
 import syft as sy
 from syft.messaging.message import CryptenInit
-from syft.frameworks import crypten as syft_crypt
 
 import crypten
 from crypten.communicator import DistributedCommunicator
@@ -32,10 +31,12 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
 
 def _new_party(func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
     queue = multiprocessing.Queue()
+
     process = multiprocessing.Process(
         target=_launch,
         args=(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs),
     )
+
     return process, queue
 
 
@@ -83,15 +84,7 @@ def _send_party_info(worker, rank, msg, return_values):
     return_values[rank] = response.contents
 
 
-def toy_func():
-    alice_tensor = syft_crypt.load("crypten_data", 1, "alice")
-    bob_tensor = syft_crypt.load("crypten_data", 2, "bob")
-
-    crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
-    return crypt.get_plain_text().tolist()
-
-
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
+def run_multiworkers(plan, workers: list, master_addr: str, master_port: int = 15995):
     """Defines decorator to run function across multiple workers.
 
     Args:
@@ -110,8 +103,12 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
+            plan.build()
+            for worker in workers:
+                plan.send(worker)
+
             # Start local party
-            process, queue = _new_party(toy_func, 0, world_size, master_addr, master_port, (), {})
+            process, queue = _new_party(plan, 0, world_size, master_addr, master_port, (), {})
             was_initialized = DistributedCommunicator.is_initialized()
             if was_initialized:
                 crypten.uninit()

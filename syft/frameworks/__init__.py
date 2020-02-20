@@ -19,3 +19,11 @@ if dependency_check.torch_available:
     from syft.frameworks import torch
 
     __all__.append("torch")
+
+    '''TODO: needs to add a new attribute that keep track of dependencies
+        Like crypten is dependent on torch
+        And if we continue to add different backend support how should we proceed?
+    if dependency_check.crypten_available:
+        from syft.frameworks import crypten
+        __all__.append("crypten")
+    '''

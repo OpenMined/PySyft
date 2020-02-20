@@ -19,6 +19,7 @@ class AbstractTensor(AbstractObject):
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
+
     def wrap(self, register=True, type=None, **kwargs):
         """Wraps the class inside an empty object of class `type`.
 

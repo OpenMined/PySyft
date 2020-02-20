@@ -254,7 +254,7 @@ class TorchTensor(AbstractTensor):
     def handle_func_command(cls, command):
         """
         Operates as a router for functions. A function call always starts
-        by being handled here and 3 scenarii must be considered:
+        by being handled here and 3 scenarios must be considered:
 
         Real Torch tensor:
             The arguments of the function are real tensors so we should

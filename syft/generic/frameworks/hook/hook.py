@@ -21,6 +21,8 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import route_method_exception
 from syft.exceptions import TensorsNotCollocatedException
 
+import crypten
+
 
 class FrameworkHook(ABC):
     @abstractmethod
@@ -538,7 +540,8 @@ class FrameworkHook(ABC):
                 method = getattr(new_self, method_name)
                 response = method(*new_args, **new_kwargs)
 
-                response.parents = (self.id, new_self.id)
+                if isinstance(response, crypten.mpc.MPCTensor):
+                    return response
 
                 # For inplace methods, just directly return self
                 if syft.framework.is_inplace_method(method_name):
@@ -689,7 +692,7 @@ class FrameworkHook(ABC):
     def _string_input_args_adaptor(cls, args: Tuple[object]):
         """
            This method is used when hooking String methods.
-           
+
            Some 'String' methods which are overriden from 'str'
            such as the magic '__add__' method
            expects an object of type 'str' as its first
@@ -697,17 +700,17 @@ class FrameworkHook(ABC):
            here is hooked to a String type, it will receive
            arguments of type 'String' not 'str' in some cases.
            This won't worker for the underlying hooked method
-           '__add__' of the 'str' type. 
+           '__add__' of the 'str' type.
            That is why the 'String' argument to '__add__' should
            be peeled down to 'str'
-        
+
            Args:
                args: A tuple or positional arguments of the method
                      being hooked to the String class.
 
            Return:
                A list of adapted positional arguments.
-           
+
         """
 
         new_args = []
@@ -739,7 +742,7 @@ class FrameworkHook(ABC):
     @classmethod
     def _get_hooked_string_method(cls, attr):
         """
-           Hook a `str` method to a corresponding method  of 
+           Hook a `str` method to a corresponding method  of
           `String` with the same name.
 
            Args:
@@ -772,7 +775,7 @@ class FrameworkHook(ABC):
     @classmethod
     def _get_hooked_string_pointer_method(cls, attr):
         """
-           Hook a `String` method to a corresponding method  of 
+           Hook a `String` method to a corresponding method  of
           `StringPointer` with the same name.
 
            Args:

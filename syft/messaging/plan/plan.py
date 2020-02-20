@@ -382,7 +382,7 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-                return_placeholder.instantiate(response.child)
+                return_placeholder.instantiate(response)
 
             # This ensures that we return the output placeholder in the correct order
             output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))

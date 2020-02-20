@@ -32,7 +32,7 @@ from syft.messaging.message import SearchMessage
 from syft.messaging.message import CryptenInit
 from syft.messaging.plan import Plan
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.crypten import toy_func, run_party
+from syft.frameworks.crypten import run_party
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
@@ -410,7 +410,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         rank, world_size, master_addr, master_port = message
-        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+
+        plan = None
+        for key, val in self._objects.items():
+            if isinstance(val, Plan):
+                plan = val
+                break
+
+        return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
         return ObjectMessage(return_value)
 
     def execute_command(self, message: tuple) -> PointerTensor:
