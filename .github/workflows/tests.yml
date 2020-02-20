@@ -55,7 +55,7 @@ jobs:
             bandit -r syft -ll
     - name: Run tests
       run: |
-        coverage run -m pytest test --deselect=test/efficiency -m "not translation"
+        coverage run -m pytest test --deselect=test/efficiency --deselect=test/notebooks
     - name: Check test coverage
       run: |
         coverage report --ignore-errors --fail-under 95 -m
