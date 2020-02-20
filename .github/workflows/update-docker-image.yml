@@ -1,0 +1,38 @@
+name: Update Docker Image
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish:
+    name: Build and publish
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE: openmined/pysyft-notebook
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+
+      - name: Build image
+        run: docker build -t $IMAGE -f docker-images/pysyft-notebook/Dockerfile docker-images/pysyft-notebook
+
+      - name: Tag images
+        run: |
+          docker tag $IMAGE $IMAGE:latest
+          docker tag $IMAGE $IMAGE:$GITHUB_SHA
+
+      - name: Publish to docker hub
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" |  docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          docker push $IMAGE:latest
+          docker push $IMAGE:$GITHUB_SHA
+
+
