@@ -174,6 +174,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
 
+        self.worker_id_to_rank = {}
+
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
     def _send_msg(self, message: bin, location: "BaseWorker"):
@@ -409,9 +411,47 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        rank, world_size, master_addr, master_port = message
-        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+        worker_id_to_rank, world_size, master_addr, master_port = message
+
+        assert self.id in worker_id_to_rank
+
+        self.worker_id_to_rank = worker_id_to_rank
+
+        return_value = run_party(
+            toy_func, self.worker_id_to_rank[self.id], world_size, master_addr, master_port, (), {}
+        )
+
         return ObjectMessage(return_value)
+
+    def _set_worker_id_to_rank(self, worker_id_to_rank: dict):
+        """
+        Should be called only by the worker that initializes the connection
+        Initializes the self.worker_id_to_rank field of the worker
+
+        Args:
+            worker_id_to_rank: the dict containing the mapping worker_id --> rank
+        """
+        self.worker_id_to_rank = worker_id_to_rank
+
+    def get_rank_from_id(self, worker_id: str):
+        """
+        Get the rank for the torch distrib communication given a worker id
+
+        Args:
+            worker_id: the id of the worker
+
+        Returns:
+            An int representing the rank for that worker and -1 in case the the communication
+        is not initialized
+        """
+        from crypten.communicator import DistributedCommunicator
+
+        if not DistributedCommunicator.is_initialized():
+            return -1
+
+        print(self.worker_id_to_rank)
+
+        return self.worker_id_to_rank[worker_id]
 
     def execute_command(self, message: tuple) -> PointerTensor:
         """
