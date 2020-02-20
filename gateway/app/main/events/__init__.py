@@ -4,22 +4,25 @@ This file exists to provide a route to websocket events.
 from .. import ws
 
 from .webrtc_events import *
-from .scope_events import *
 from .control_events import *
+from .fl_events import *
+
 from .socket_handler import SocketHandler
 
-from ..codes import GRID_MSG
+from ..codes import *
 
 import json
 
 # Websocket events routes
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.
 routes = {
-    GRID_MSG.SOCKET_PING: socket_ping,
-    GRID_MSG.GET_PROTOCOL: get_protocol,
-    GRID_MSG.JOIN_ROOM: scope_broadcast,
-    GRID_MSG.INTERNAL_MSG: internal_message,
-    GRID_MSG.PEER_LEFT: scope_broadcast,
+    CONTROL_EVENTS.SOCKET_PING: socket_ping,
+    WEBRTC_EVENTS.JOIN_ROOM: scope_broadcast,
+    WEBRTC_EVENTS.INTERNAL_MSG: internal_message,
+    WEBRTC_EVENTS.PEER_LEFT: scope_broadcast,
+    FL_EVENTS.AUTHENTICATE: authenticate,
+    FL_EVENTS.CYCLE_REQUEST: cycle_request,
+    FL_EVENTS.REPORT: report,
 }
 
 
@@ -35,11 +38,9 @@ def route_requests(message, socket):
             message_response : message response.
     """
     global routes
-    try:
-        message = json.loads(message)
-        return routes[message[GRID_MSG.TYPE_FIELD]](message, socket)
-    except Exception as e:
-        return json.dumps({"error": "Invalid JSON format/field!"})
+
+    message = json.loads(message)
+    return routes[message[MSG_FIELD.TYPE]](message, socket)
 
 
 @ws.route("/")
@@ -54,9 +55,8 @@ def socket_api(socket):
         if not message:
             continue
         else:
+            # Process received message
             response = route_requests(message, socket)
-            if isinstance(response, bytearray):
-                socket.send(response, binary=True)
-            else:
-                socket.send(response)
+            socket.send(response)
+
     worker_id = handler.remove(socket)

@@ -9,7 +9,6 @@ class WorkerController:
 
     def create_worker(self, worker_id: str):
         """ Register a new worker
-            
             Args:
                 worker_id: id used to identify the new worker.
             Returns:
@@ -21,7 +20,6 @@ class WorkerController:
 
     def delete_worker(self, worker_id):
         """ Remove a registered worker.
-
             Args:
                 worker_id: Id used identify the desired worker. 
         """
@@ -29,7 +27,6 @@ class WorkerController:
 
     def get_worker(self, worker_id):
         """ Retrieve the desired worker.
-            
             Args:
                 worker_id: Id used to identify the desired worker.
             Returns:

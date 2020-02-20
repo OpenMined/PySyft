@@ -11,7 +11,7 @@ import requests
 
 from .persistence.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
-
+from .auth import workers
 
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
@@ -312,13 +312,14 @@ def download_model():
     worker_id = request.args.get("worker_id")
     request_key = request.args.get("request_key")
 
-    _validated = False
+    _worker = workers.get_worker(worker_id)
 
-    # check if cycle exist and hash matches
-    _cycle = processes.get_cycle(model_id)
-    _validated = _cycle.validate(worker_id, request_key) if _cycle else False
+    _cycle = None
+    if _worker:
+        cycle = _worker.get_cycle(request_key)
 
-    if _validated:
+    # If the worker own a cycle matching with the request_key
+    if _cycle:
         return Response(
             json.dumps(_cycle.fl_process.json()["model"]),
             status=200,

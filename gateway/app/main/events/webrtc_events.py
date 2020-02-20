@@ -1,6 +1,6 @@
 import json
 from ..scopes import scopes
-from ..codes import GRID_MSG
+from ..codes import MSG_FIELD
 from .socket_handler import SocketHandler
 
 handler = SocketHandler()
@@ -15,7 +15,7 @@ def scope_broadcast(message: dict, socket) -> str:
         Returns:
             response: An empty response or an error message.
     """
-    data = message[GRID_MSG.DATA_FIELD]
+    data = message[MSG_FIELD.DATA]
     try:
         scope_id = data.get("scopeId", None)
         worker_id = data.get("workerId", None)
@@ -37,7 +37,7 @@ def internal_message(message: dict, socket) -> str:
         Returns:
             response: An empty response or an error message.
     """
-    data = message[GRID_MSG.DATA_FIELD]
+    data = message[MSG_FIELD.DATA]
     try:
         destination = data.get("to", None)
         if destination:
