@@ -105,7 +105,10 @@ def test_notebooks_basic(isolated_filesystem, notebook):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
+<<<<<<< HEAD
 @pytest.mark.translation
+=======
+>>>>>>> Solve conflicts with master branch
 @pytest.mark.parametrize(
     "translated_notebook", sorted(set(translated_notebooks) - set(excluded_notebooks))
 )
@@ -124,7 +127,10 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
+<<<<<<< HEAD
 @pytest.mark.translation
+=======
+>>>>>>> Solve conflicts with master branch
 @pytest.mark.parametrize(
     "translated_notebook", sorted(set(translated_notebooks_diff) - set(excluded_notebooks))
 )
@@ -234,7 +240,10 @@ def test_all_notebooks_except_translations():
     assert len(untested_notebooks) == 0, untested_notebooks
 
 
+<<<<<<< HEAD
 @pytest.mark.translation
+=======
+>>>>>>> Solve conflicts with master branch
 def test_all_translation_notebooks():  # pragma: no cover
     untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks
