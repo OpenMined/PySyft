@@ -559,6 +559,34 @@ class Plan(AbstractObject, ObjectStorage):
 
         out += ">"
 
+        out += "\n"
+
+        def extract_index(p)
+            return [tag for tag in p.tags if 'input' not in tag and 'output' not in tag][0][1:]
+        for op in self.operations:
+            line = ""
+            if op.return_ids is not None:
+                if isinstance(op.return_ids, PlaceHolder):
+                    tag = extract_index(p)
+                    line += f'_{tag} = '
+                elif isinstance(op.return_ids, tuple):
+                    line += ', '.join(
+                        f'_{extract_index()}'
+                        str(r)
+                        for r in op.return_ids
+                    ) + ' = '
+                else:
+                    line += str(op.return_ids) + ' = '
+            if op.cmd_owner is not None:
+                line += str(op.cmd_owner) + '.'
+            line += op.cmd_name + '('
+            line += ', '.join(str(arg)  for arg in op.cmd_args)
+            if op.cmd_kwargs:
+                line += ', ' + ', '.join(f'{k}={w}' for k,w in op.cmd_kwargs.items())
+            line += ')\n'
+            out += line
+
+
         return out
 
     def __repr__(self):

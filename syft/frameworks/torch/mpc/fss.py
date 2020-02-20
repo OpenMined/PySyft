@@ -117,7 +117,7 @@ class DPF:
 
     @staticmethod
     def keygen():
-        beta = th.tensor([2], dtype=th.int32)
+        beta = th.tensor([1], dtype=th.int32)
         (alpha,) = th.randint(0, 2 ** n, (1,))
 
         α = bit_decomposition(alpha)
