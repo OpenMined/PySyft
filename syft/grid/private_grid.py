@@ -9,7 +9,7 @@ from typing import Union
 # Syft imports
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
-from syft.messaging.plan.plan import Plan
+from syft.execution.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 

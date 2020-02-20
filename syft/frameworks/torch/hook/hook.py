@@ -30,7 +30,7 @@ from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 
 from syft.exceptions import route_method_exception
 

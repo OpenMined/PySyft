@@ -29,7 +29,7 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError

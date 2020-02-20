@@ -8,9 +8,9 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import Operation
-from syft.messaging.plan.plan import Plan
-from syft.messaging.protocol import Protocol
-from syft.messaging.plan.state import State
+from syft.execution.plan import Plan
+from syft.execution.protocol import Protocol
+from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker

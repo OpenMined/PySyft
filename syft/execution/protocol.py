@@ -10,7 +10,7 @@ from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
-from syft_proto.messaging.v1.protocol_pb2 import Protocol as ProtocolPB
+from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 
 class Protocol(AbstractObject):

@@ -54,9 +54,9 @@ from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.string import String
-from syft.messaging.plan import Plan
-from syft.messaging.plan.state import State
-from syft.messaging.protocol import Protocol
+from syft.execution.plan import Plan
+from syft.execution.state import State
+from syft.execution.protocol import Protocol
 from syft.messaging.message import Message
 from syft.messaging.message import Operation
 from syft.messaging.message import ObjectMessage

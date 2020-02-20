@@ -9,7 +9,7 @@ import torch.optim as optim
 import syft as sy
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
 

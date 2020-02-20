@@ -7,8 +7,8 @@ import torch
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-from syft_proto.messaging.v1.state_pb2 import State as StatePB
-from syft_proto.messaging.v1.state_tensor_pb2 import StateTensor as StateTensorPB
+from syft_proto.execution.v1.state_pb2 import State as StatePB
+from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
