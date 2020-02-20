@@ -642,13 +642,13 @@ def test_comp():
 
 def test_dtype():
     x = torch.tensor([3.1]).fix_prec()
-    assert x.child.dtype == "long" and x.child.field == 2 ** 64
+    assert x.child.dtype == "long" and x.child.field == 2 ** 64 and isinstance(x.child.child, torch.LongTensor)
 
     x = torch.tensor([2.1]).fix_prec(dtype="int")
-    assert x.child.dtype == "int" and x.child.field == 2 ** 32
+    assert x.child.dtype == "int" and x.child.field == 2 ** 32 and isinstance(x.child.child, torch.IntTensor)
 
     x = torch.tensor([2.1]).fix_prec(dtype=None, field=2 ** 16)
-    assert x.child.dtype == "int" and x.child.field == 2 ** 32
+    assert x.child.dtype == "int" and x.child.field == 2 ** 32 and isinstance(x.child.child, torch.IntTensor)
 
     x = torch.tensor([3.1]).fix_prec(dtype=None, field=2 ** 62)
-    assert x.child.dtype == "long" and x.child.field == 2 ** 64
+    assert x.child.dtype == "long" and x.child.field == 2 ** 64 and isinstance(x.child.child, torch.LongTensor)

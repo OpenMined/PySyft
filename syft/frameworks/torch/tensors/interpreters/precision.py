@@ -42,20 +42,20 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
-        if dtype == "long":
-            self.dtype = "long"
+        if dtype == 'long':
+            self.dtype = 'long'
             self.field = 2 ** 64
-        elif dtype == "int":
-            self.dtype = "int"
+        elif dtype == 'int':
+            self.dtype = 'int'
             self.field = 2 ** 32
         else:
             # Since n mod 0 is not defined
             if type(field) == int and field > 0:
                 if field <= 2 ** 32:
-                    self.dtype = "int"
+                    self.dtype = 'int'
                     self.field = 2 ** 32
                 else:
-                    self.dtype = "long"
+                    self.dtype = 'long'
                     self.field = 2 ** 64
             else:
                 # Invalid args dtype and field
@@ -118,10 +118,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         field_element = upscaled
         field_element.owner = rational.owner
-        if self.dtype == "int":
-            self.child = field_element.type(torch.IntTensor)
-        else:
-            self.child = field_element.type(torch.LongTensor)
+        str_to_dtype= {'int': torch.int32, 'long': torch.int64}
+        self.child = field_element.type(str_to_dtype[self.dtype])
         return self
 
     def float_precision(self):
@@ -304,32 +302,16 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # sgn_self is 1 when new_self is positive else it's 0
             # The comparison is different if new_self is a torch tensor or an AST
-            sgn_self = (
-                (new_self < self.field // 2).long()
-                if isinstance(new_self, AdditiveSharingTensor)
-                else (new_self > 0).long()
-            )
+            sgn_self = (new_self > 0).long()
             pos_self = new_self * sgn_self
-            neg_self = (
-                (self.field - new_self) * (1 - sgn_self)
-                if isinstance(new_self, AdditiveSharingTensor)
-                else new_self * (sgn_self - 1)
-            )
+            neg_self = new_self * (sgn_self - 1)
             new_self = neg_self + pos_self
 
             # sgn_other is 1 when new_other is positive else it's 0
             # The comparison is different is new_other is a torch tensor or an AST
-            sgn_other = (
-                (new_other < self.field // 2).long()
-                if isinstance(new_other, AdditiveSharingTensor)
-                else (new_other > 0).long()
-            )
+            sgn_other = (new_other > 0).long()
             pos_other = new_other * sgn_other
-            neg_other = (
-                (self.field - new_other) * (1 - sgn_other)
-                if isinstance(new_other, AdditiveSharingTensor)
-                else new_other * (sgn_other - 1)
-            )
+            neg_other = new_other * (sgn_other - 1)
             new_other = neg_other + pos_other
 
             # If both have the same sign, sgn is 1 else it's 0
