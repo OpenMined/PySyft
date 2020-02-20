@@ -1,15 +1,15 @@
-name: Tutorials (Bengali)
+name: Tutorials
 
 on:
   push:
     branches:
     - master
     paths:
-    - "examples/tutorials/translations/bengali/**"
+    - "examples/tutorials/translations/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-    - "examples/tutorials/translations/bengali/**"
+    - "examples/tutorials/translations/**"
 
 jobs:
   build:
@@ -37,6 +37,8 @@ jobs:
         pip3 install -r pip-dep/requirements_notebooks.txt
         pip3 install scikit-learn
         python setup.py install
-    - name: Run the translated tutorials
+    - name: Test with pytest
       run: |
-        pytest test/notebooks/test_notebooks.py::test_basic_notebook_translations_in_bengali
+        git diff --name-only origin/${{ github.base_ref }} examples/tutorials/translations/ > ./test/notebooks/git-diff.txt
+        pytest test/notebooks/test_notebooks.py::test_notebooks_basic_translations_diff
+        [ -e ./test/notebooks/git-diff.txt ] && rm ./test/notebooks/git-diff.txt
