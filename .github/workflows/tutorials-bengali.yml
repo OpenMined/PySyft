@@ -5,11 +5,11 @@ on:
     branches:
     - master
     paths:
-    - "examples/tutorials/bengali"
+    - "examples/tutorials/translations/bengali/**"
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-    - "examples/tutorials/bengali"
+    - "examples/tutorials/translations/bengali/**"
 
 jobs:
   build:
@@ -21,7 +21,7 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
