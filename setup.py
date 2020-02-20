@@ -31,6 +31,7 @@ udacity_extras = read(os.path.join(REQ_DIR, "requirements_udacity.txt")).split("
 tensorflow_extras = read(os.path.join(REQ_DIR, "requirements_tensorflow.txt")).split("\n")
 notebook_extras = read(os.path.join(REQ_DIR, "requirements_notebooks.txt")).split("\n")
 dev_extras = read(os.path.join(REQ_DIR, "requirements_dev.txt")).split("\n")
+grid_extras = read(os.path.join(REQ_DIR, "requirements_grid.txt")).split("\n")
 sandbox_extras = ["scikit-learn>=0.21.0"]
 tests_require = ["pytest", "pytest-flake8"] + sandbox_extras + notebook_extras
 
@@ -55,6 +56,7 @@ setup(
         "dev": dev_extras,
         "sandbox": sandbox_extras,
         "tensorflow": tensorflow_extras,
+        "grid": grid_extras,
     },
     dependency_links=core_dependency_links,
     setup_requires=["pytest-runner"],
