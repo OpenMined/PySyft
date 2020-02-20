@@ -91,8 +91,10 @@ def start_remote_server_worker_only():  # pragma: no cover
     return _start_remote_worker
 
 
+# This fixture is only used by the notebook tests, which run separately from the
+# test coverage checker in CI and are thus excluded from the coverage checks.
 @pytest.yield_fixture(scope="function")
-def isolated_filesystem():
+def isolated_filesystem():  # pragma: no cover
     """A context manager that creates a temporary folder and changes
     the current working directory to it for isolated filesystem tests.
     """

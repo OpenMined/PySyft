@@ -35,11 +35,12 @@ samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 # PyTorch
 samples[torch.device] = make_torch_device
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
-samples[torch._C.Function] = make_torch_cfunction
+samples[torch.jit.ScriptFunction] = make_torch_scriptfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
+samples[torch.memory_format] = make_torch_memoryformat
 
 # PySyft
 samples[
@@ -55,7 +56,6 @@ samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_l
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.messaging.plan.plan.Plan] = make_plan
 samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.plan.procedure.Procedure] = make_procedure
 samples[syft.messaging.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
@@ -67,7 +67,7 @@ samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
-samples[syft.frameworks.torch.tensors.interpreters.promise.PromiseTensor] = make_promisetensor
+samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
 samples[syft.messaging.message.Message] = make_message
 samples[syft.messaging.message.Operation] = make_operation

@@ -36,11 +36,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the FixedPrecisionTensor.
         """
-        super().__init__(tags=tags, description=description)
-
-        self.owner = owner
-        self.id = id if id else syft.ID_PROVIDER.pop()
-        self.child = None
+        super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.field = field
         self.base = base
@@ -431,7 +427,6 @@ class FixedPrecisionTensor(AbstractTensor):
             new_self = other.child
             new_args = (self,)
             new_kwargs = kwargs
-
         else:
             # Replace all syft tensor with their child attribute
             new_self, new_args, new_kwargs = hook_args.unwrap_args_from_method(
