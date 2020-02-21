@@ -414,8 +414,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        rank, world_size, master_addr, master_port = message
-        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+        func_src, rank, world_size, master_addr, master_port = message
+        return_value = run_party(func_src, rank, world_size, master_addr, master_port, (), {})
         return ObjectMessage(return_value)
 
     def execute_command(self, message: tuple) -> PointerTensor:
