@@ -222,13 +222,15 @@ class Plan(AbstractObject, ObjectStorage):
 
             if node_type == "input":
                 if tensor.id not in self._tmp_args_ids:
-                    raise ValueError(f"The following tensor was used but is not known in "
-                                     f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
-                                     f"- This tensor is external to the plan and should be provided "
-                                     f"using the state. See more about plan.state to fix this.\n"
-                                     f"- This tensor was created internally using torch.Tensor, "
-                                     f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
-                                     f"Please use instead torch.tensor(..., dtype=torch.int32) for example.")
+                    raise ValueError(
+                        f"The following tensor was used but is not known in "
+                        f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
+                        f"- This tensor is external to the plan and should be provided "
+                        f"using the state. See more about plan.state to fix this.\n"
+                        f"- This tensor was created internally using torch.Tensor, "
+                        f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
+                        f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
+                    )
                 placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
             elif node_type == "output":
                 if tensor.id in self._tmp_result_ids:
@@ -560,6 +562,45 @@ class Plan(AbstractObject, ObjectStorage):
             out += " built"
 
         out += ">"
+
+        out += "\n"
+
+        def extract_tag(p):
+            return [tag for tag in p.tags if "input" not in tag and "output" not in tag][0][1:]
+
+        out += f"def {self.name}("
+        out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
+        out += "):\n"
+        for op in self.operations:
+            line = "    "
+            if op.return_ids is not None:
+                if isinstance(op.return_ids, PlaceHolder):
+                    tag = extract_tag(op.return_ids)
+                    line += f"_{tag} = "
+                elif isinstance(op.return_ids, tuple):
+                    line += (
+                        ", ".join(
+                            f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
+                            for o in op.return_ids
+                        )
+                        + " = "
+                    )
+                else:
+                    line += str(op.return_ids) + " = "
+            if op.cmd_owner is not None:
+                line += f"_{extract_tag(op.cmd_owner)}."
+            line += op.cmd_name + "("
+            line += ", ".join(
+                f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
+                for arg in op.cmd_args
+            )
+            if op.cmd_kwargs:
+                line += ", " + ", ".join(f"{k}={w}" for k, w in op.cmd_kwargs.items())
+            line += ")\n"
+            out += line
+
+        out += "    return "
+        out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
 
         return out
 
