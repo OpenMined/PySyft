@@ -565,31 +565,42 @@ class Plan(AbstractObject, ObjectStorage):
 
         out += "\n"
 
-        def extract_index(p)
-            return [tag for tag in p.tags if 'input' not in tag and 'output' not in tag][0][1:]
+        def extract_tag(p):
+            return [tag for tag in p.tags if "input" not in tag and "output" not in tag][0][1:]
+
+        out += f"def {self.name}("
+        out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
+        out += "):\n"
         for op in self.operations:
-            line = ""
+            line = "    "
             if op.return_ids is not None:
                 if isinstance(op.return_ids, PlaceHolder):
-                    tag = extract_index(p)
-                    line += f'_{tag} = '
+                    tag = extract_tag(op.return_ids)
+                    line += f"_{tag} = "
                 elif isinstance(op.return_ids, tuple):
-                    line += ', '.join(
-                        f'_{extract_index()}'
-                        str(r)
-                        for r in op.return_ids
-                    ) + ' = '
+                    line += (
+                        ", ".join(
+                            f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
+                            for o in op.return_ids
+                        )
+                        + " = "
+                    )
                 else:
-                    line += str(op.return_ids) + ' = '
+                    line += str(op.return_ids) + " = "
             if op.cmd_owner is not None:
-                line += str(op.cmd_owner) + '.'
-            line += op.cmd_name + '('
-            line += ', '.join(str(arg)  for arg in op.cmd_args)
+                line += f"_{extract_tag(op.cmd_owner)}."
+            line += op.cmd_name + "("
+            line += ", ".join(
+                f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
+                for arg in op.cmd_args
+            )
             if op.cmd_kwargs:
-                line += ', ' + ', '.join(f'{k}={w}' for k,w in op.cmd_kwargs.items())
-            line += ')\n'
+                line += ", " + ", ".join(f"{k}={w}" for k, w in op.cmd_kwargs.items())
+            line += ")\n"
             out += line
 
+        out += "    return "
+        out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
 
         return out
 
