@@ -47,3 +47,25 @@ jobs:
     - name: Test with pytest
       run: |
         coverage run -m pytest -v test
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
+
+    steps:
+      - name: checkout
+        if: github.event.pull_request.merged
+        uses: actions/checkout@v1
+        with:
+          ref: dev
+      - name: Login to DockerHub Registry
+        run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+      - name: Build images
+        run: |
+          sudo apt install gcc
+          docker build . --file ./app/websocket/Dockerfile --tag openmined/grid-node:latest
+          docker build . --file ./gateway/Dockerfile --tag openmined/grid-gateway:latest
+      - name: Push images
+        run: |
+          docker push openmined/grid-node:latest
+          docker push openmined/grid-gateway:latest

@@ -1,0 +1,30 @@
+name: Docker build
+
+on:
+  push:
+    branches:
+      - dev
+  schedule:
+    - cron: '0 2 * * 0' # Weekly on Sundays at 02:00
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Update PyGrid Gateway Image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: openmined/grid-gateway
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        cache: ${{ github.event_name != 'schedule' }}
+        workdir: gateway
+    - name: Update PyGrid Node Image
+      uses: elgohr/Publish-Docker-Github-Action@master
+      with:
+        name: openmined/grid-node
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        cache: ${{ github.event_name != 'schedule' }}
+        workdir: app/websocket 
