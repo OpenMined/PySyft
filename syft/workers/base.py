@@ -322,6 +322,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
+        requires_grad=False,
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -392,7 +393,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             pointer = obj
 
         # Send the object
-        self.send_obj(obj, worker)
+        self.send_obj(obj, worker, requires_grad=requires_grad)
 
         return pointer
 
@@ -542,8 +543,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if isinstance(obj, FrameworkTensor):
             tensor = obj
-            if tensor.requires_grad:
-                tensor.register_hook(tensor.trigger_origin_backward_hook(tensor.sender, tensor.origin_id))
+            if tensor.requires_grad and tensor.sender is not None and tensor.origin_id is not None:
+                tensor.register_hook(
+                    tensor.trigger_origin_backward_hook(tensor.sender, tensor.origin_id)
+                )
 
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
@@ -609,7 +612,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker"):
+    def send_obj(self, obj: object, location: "BaseWorker", requires_grad=False):
         """Send a torch object to a worker.
 
         Args:
@@ -617,7 +620,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(ObjectMessage(obj, sender=self.id, origin_id=obj.id), location)
+        if requires_grad:
+            kwargs = dict(sender=self.id, origin_id=obj.id)
+        else:
+            kwargs = dict(sender=None, origin_id=None)
+        return self.send_msg(ObjectMessage(obj, **kwargs), location)
 
     def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""

@@ -78,7 +78,7 @@ class TorchTensor(AbstractTensor):
                 self, location, id_at_location, garbage_collect_data=False
             )
             # set the gradient
-            self.owner.send_command(location, message=('set_grad', origin_ptr, (grad,), {}))
+            self.owner.send_command(location, message=("set_grad", origin_ptr, (grad,), {}))
 
             # call backward()
             origin_ptr.backward(grad)
@@ -393,6 +393,7 @@ class TorchTensor(AbstractTensor):
         inplace: bool = False,
         user=None,
         local_autograd=False,
+        requires_grad=False,
         preinitialize_grad=False,
         no_wrap=False,
         garbage_collect_data=True,
@@ -445,6 +446,7 @@ class TorchTensor(AbstractTensor):
                 self,
                 location,
                 local_autograd=local_autograd,
+                requires_grad=requires_grad,
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
             )
@@ -668,8 +670,8 @@ class TorchTensor(AbstractTensor):
                 current_tensor = current_tensor.child
         return True
 
-    def move(self, location):
-        self.child = self.child.move(location)
+    def move(self, location, requires_grad=False):
+        self.child = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the syft.local_worker
         self.child.owner.register_obj(self)

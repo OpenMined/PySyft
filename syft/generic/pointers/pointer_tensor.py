@@ -259,15 +259,17 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location):
-        ptr = self.owner.send(self, location)
-        ptr.remote_get()
+    def move(self, location, requires_grad):
+        if self.owner.id == location.id:
+            return self.get()
+
+        ptr = self.remote_send(location, requires_grad=requires_grad, change_location=True)
         # don't want it to accidentally delete the remote object
         # when this pointer is deleted
         ptr.garbage_collect_data = False
         return ptr
 
-    def remote_send(self, destination, change_location=False):
+    def remote_send(self, destination, requires_grad, change_location=False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
@@ -277,7 +279,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         will have 2 references pointing to it.
         """
         args = (destination,)
-        kwargs = {"inplace": True}
+        kwargs = {"inplace": False, "requires_grad": requires_grad}
         self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
         if change_location:
             self.location = destination
