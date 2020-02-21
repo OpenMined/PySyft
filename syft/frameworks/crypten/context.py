@@ -23,7 +23,8 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
         os.environ[key] = str(val)
 
     crypten.init()
-    return_value = func(*func_args, **func_kwargs)
+    return_value = func(*func_args, **func_kwargs).tolist()
+    #import pdb; pdb.set_trace()
     crypten.uninit()
 
     queue.put(return_value)

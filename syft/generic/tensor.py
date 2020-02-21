@@ -7,6 +7,7 @@ from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
 
+import torch as th
 
 class AbstractTensor(AbstractObject):
     def __init__(
@@ -19,6 +20,8 @@ class AbstractTensor(AbstractObject):
     ):
         super(AbstractTensor, self).__init__(id, owner, tags, description, child)
 
+    def get_plain_text(self):
+        return th.randn(self.shape)
 
     def wrap(self, register=True, type=None, **kwargs):
         """Wraps the class inside an empty object of class `type`.

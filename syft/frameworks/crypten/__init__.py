@@ -5,7 +5,7 @@ import crypten.communicator as comm
 import crypten
 
 
-def load(tag: str, src: int, id_worker: int):
+def load(tag: str, src: int, id_worker: int, size: tuple):
     if comm.get().get_rank() == src:
         worker = sy.local_worker.get_worker(id_worker)
         result = worker.search(tag)[0].get()
@@ -16,12 +16,6 @@ def load(tag: str, src: int, id_worker: int):
             load_type = torch.tensor(0, dtype=torch.long)
             comm.get().broadcast(load_type, src=src)
 
-            # Broadcast size to other parties.
-            dim = torch.tensor(result.dim(), dtype=torch.long)
-            size = torch.tensor(result.size(), dtype=torch.long)
-
-            comm.get().broadcast(dim, src=src)
-            comm.get().broadcast(size, src=src)
             result = crypten.mpc.MPCTensor(result, src=src)
     else:
         # Receive load type from source party
@@ -30,12 +24,7 @@ def load(tag: str, src: int, id_worker: int):
 
         # Load in tensor
         if load_type.item() == 0:
-            # Receive size from source party
-            dim = torch.empty(size=(), dtype=torch.long)
-            comm.get().broadcast(dim, src=src)
-            size = torch.empty(size=(dim.item(),), dtype=torch.long)
-            comm.get().broadcast(size, src=src)
-            result = crypten.mpc.MPCTensor(torch.empty(size=tuple(size.tolist())), src=src)
+            result = crypten.mpc.MPCTensor(torch.empty(size), src=src)
         else:
             raise TypeError("Unrecognized load type on src")
     # TODO: Encrypt modules before returning them

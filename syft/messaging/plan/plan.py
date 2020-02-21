@@ -19,6 +19,7 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.messaging.v1.plan_pb2 import Plan as PlanPB
 
+import crypten
 
 class func2plan(object):
     """Decorator which converts a function to a plan.
@@ -382,6 +383,10 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
+                    print(cmd)
+                    print(response)
+                    print(return_placeholder)
+
                 return_placeholder.instantiate(response)
 
             # This ensures that we return the output placeholder in the correct order

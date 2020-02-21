@@ -555,6 +555,7 @@ class FrameworkHook(ABC):
                     new_self=self,
                     wrap_args=self.get_class_attributes(),
                 )
+
                 if args:
                     response.parents = (self, args[0])
                 else:

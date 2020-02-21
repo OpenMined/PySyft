@@ -495,13 +495,6 @@ class TorchHook(FrameworkHook):
         new_func = get_hooked_crypten_func("load", crypten_load)
         setattr(crypten, "load", new_func)
 
-        # Hook get_plain_text
-        native_func = getattr(crypten.mpc.MPCTensor, "get_plain_text")
-        setattr(crypten, "native_get_plain_text", native_func)
-        setattr(crypten, "get_plain_text", crypten_load)
-
-        new_func = get_hooked_crypten_func("get_plain_text", crypten_load)
-        setattr(crypten, "get_plain_text", new_func)
 
     @classmethod
     def _get_hooked_func(cls, public_module_name, func_api_name, attr):

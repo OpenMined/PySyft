@@ -17,13 +17,13 @@ def test_context(workers):
 
     @sy.func2plan()
     def toy_func():
-        alice_tensor = crypten.load("crypten_data", 1, "alice")
-        bob_tensor = crypten.load("crypten_data", 2, "bob")
+        # crypten.load is actually syft_load
+        alice_tensor = crypten.load("crypten_data", 1, "alice", size=(2, ))
+        bob_tensor = crypten.load("crypten_data", 2, "bob", size=(2, ))
 
-        #crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
-        return (alice_tensor + bob_tensor).get_plain_text().tolist()
-
-    th.Tensor.get_plain_text = lambda x: th.tensor([1,2])
+        result = alice_tensor + bob_tensor
+        result = result.get_plain_text()
+        return result
 
     @run_multiworkers(toy_func, [alice, bob], master_addr="127.0.0.1")
     def test_three_parties():
@@ -32,7 +32,7 @@ def test_context(workers):
     return_values = test_three_parties()
     # A toy function is ran at each party, and they should all decrypt
     # a tensor with value [42, 53, 101, 32]
-    expected_value = [42, 53, 101, 32]
+    expected_value = [42, 53]
     for rank in range(n_workers):
         assert (
             return_values[rank] == expected_value

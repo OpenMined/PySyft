@@ -11,10 +11,12 @@ def get_hooked_crypten_func(func_api_name, func):
     @tracer(func_name=cmd_name)
     @wraps(func)
     def overloaded_func(*args, **kwargs):
+        assert "size" in kwargs
+
         try:
             response = func(*args, **kwargs)
         except Exception as e:
-            response = th.tensor([1,2])
+            response = th.rand(kwargs["size"])
 
         return response
 
