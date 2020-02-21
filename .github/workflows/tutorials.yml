@@ -1,15 +1,16 @@
-name: Tutorials (Romanian)
+name: Tutorials
 
 on:
   push:
     branches:
     - master
-    paths:
-    - "examples/tutorials/translations/romanian/**"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
+
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-    - "examples/tutorials/translations/romanian/**"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
 
 jobs:
   build:
@@ -37,6 +38,6 @@ jobs:
         pip3 install -r pip-dep/requirements_notebooks.txt
         pip3 install scikit-learn
         python setup.py install
-    - name: Run the translated tutorials
+    - name: Run the tutorials
       run: |
-        pytest test/notebooks/test_notebooks.py::test_basic_notebook_translations_in_romanian
+        pytest test/notebooks/test_notebooks.py -m "not translation"
