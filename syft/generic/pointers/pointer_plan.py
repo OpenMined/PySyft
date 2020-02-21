@@ -86,7 +86,14 @@ class PointerPlan(ObjectPointer):
         if len(self._locations) > 1 and isinstance(args[0], sy.MultiPointerTensor):
             responses = {}
             for location in self._locations:
-                child_args = list(map(lambda x: x.child[location.id] if isinstance(x, sy.MultiPointerTensor) else x, args))
+                child_args = list(
+                    map(
+                        lambda x: x.child[location.id]
+                        if isinstance(x, sy.MultiPointerTensor)
+                        else x,
+                        args,
+                    )
+                )
                 responses[location.id] = self.__call__(*child_args, **kwargs)
 
             return responses

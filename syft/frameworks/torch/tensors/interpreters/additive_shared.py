@@ -59,7 +59,9 @@ class AdditiveSharingTensor(AbstractTensor):
                 elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
                     self.child[location] = share.child
                 else:
-                    raise ValueError(f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}")
+                    raise ValueError(
+                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                    )
         else:
             self.child = None
 

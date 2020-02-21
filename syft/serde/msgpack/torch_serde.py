@@ -303,7 +303,7 @@ def _simplify_torch_dtype(worker: AbstractWorker, dtype: torch.dtype) -> Tuple[i
 
 def _detail_torch_dtype(worker: AbstractWorker, dtype: str) -> torch.dtype:
     if not isinstance(dtype, str):
-        dtype = str(dtype, 'utf-8')
+        dtype = str(dtype, "utf-8")
     return TORCH_STR_DTYPE[dtype]
 
 
