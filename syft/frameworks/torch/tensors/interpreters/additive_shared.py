@@ -24,6 +24,7 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
+        dtype=None,
         n_bits=None,
         crypto_provider=None,
         tags=None,
@@ -41,6 +42,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the AdditiveSharingTensor.
             field: size of the arithmetic field in which the shares live
+            dtype: dtype of the field in which shares live
             n_bits: linked to the field with the relation (2 ** nbits) == field
             crypto_provider: an optional BaseWorker providing crypto elements
                 such as Beaver triples
@@ -52,12 +54,28 @@ class AdditiveSharingTensor(AbstractTensor):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.child = shares
+        if dtype == "long":
+            self.dtype = "long"
+            self.field = 2 ** 64
+        elif dtype == "int":
+            self.dtype = "int"
+            self.field = 2 ** 32
+        else:
+            # Since n mod 0 is not defined
+            if type(field) == int and field > 0:
+                if field <= 2 ** 32:
+                    self.dtype = "int"
+                    self.field = 2 ** 32
+                else:
+                    self.dtype = "long"
+                    self.field = 2 ** 64
+            else:
+                # Default args
+                self.dtype = "long"
+                self.field = 2 ** securenn.Q_BITS
 
-        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 64 bits
-        self.n_bits = (
-            n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
-        )  # < 64 bits
-        # assert 2 ** self.n_bits == self.field
+        self.n_bits = round(math.log(self.field, 2))
+        assert 2 ** self.n_bits == self.field
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
@@ -115,7 +133,12 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
+        return {
+            "crypto_provider": self.crypto_provider,
+            "dtype": self.dtype,
+            "field": self.field,
+            "n_bits": self.n_bits,
+        }
 
     @property
     def grad(self):
@@ -145,8 +168,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         res_field = sum(shares)
 
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field / 2) * gate
+        gate = res_field.native_lt(0).long()
+        neg_nums = res_field * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -164,8 +187,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         res_field = sum(shares)
 
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field / 2) * gate
+        gate = res_field.native_lt(0).long()
+        neg_nums = (res_field) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
 
@@ -178,8 +201,12 @@ class AdditiveSharingTensor(AbstractTensor):
             *owners the list of shareholders. Can be of any length.
 
             """
+        str_to_dtype = {"long": torch.LongTensor, "int": torch.IntTensor}
         shares = self.generate_shares(
-            self.child, n_workers=len(owners), field=self.field, random_type=torch.LongTensor
+            self.child,
+            n_workers=len(owners),
+            field=self.field,
+            random_type=str_to_dtype[self.dtype],
         )
 
         shares_dict = {}
@@ -1010,6 +1037,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
             tensor.field,
+            tensor.dtype,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
         )
@@ -1027,13 +1055,14 @@ class AdditiveSharingTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, crypto_provider, chain = tensor_tuple
+        tensor_id, field, dtype, crypto_provider, chain = tensor_tuple
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=field,
+            dtype=dtype,
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
@@ -1073,7 +1102,7 @@ class AdditiveSharingTensor(AbstractTensor):
         )
 
         protobuf_tensor.field_size = tensor.field
-
+        protobuf_tensor.dtype = tensor.dtype
         return protobuf_tensor
 
     @staticmethod
@@ -1096,11 +1125,13 @@ class AdditiveSharingTensor(AbstractTensor):
             protobuf_tensor.crypto_provider_id
         )
         field = protobuf_tensor.field_size
+        dtype = protobuf_tensor.dtype
 
         tensor = AdditiveSharingTensor(
             owner=worker,
             id=tensor_id,
             field=field,
+            dtype=dtype,
             crypto_provider=worker.get_worker(crypto_provider_id),
         )
 

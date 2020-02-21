@@ -843,6 +843,7 @@ class TorchTensor(AbstractTensor):
         self,
         *owners: List[BaseWorker],
         field: Union[int, None] = None,
+        dtype: Union[str, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,
         no_wrap: bool = False,
@@ -863,12 +864,12 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs
             )
         else:
             shared_tensor = (
                 syft.AdditiveSharingTensor(
-                    field=field, crypto_provider=crypto_provider, owner=self.owner
+                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
                 )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)
