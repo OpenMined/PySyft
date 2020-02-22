@@ -1,0 +1,14 @@
+---
+- hosts: hosts
+  tasks:
+    - name: Destroy pygrid components
+      docker_container:
+        name: "{{ item.name }}"
+        state: absent
+      with_items:
+          - { name: redis }
+          - { name: grid_gateway_instance }
+          - { name: bob }
+          - { name: alice } 
+          - { name: bill } 
+          - { name: james }

@@ -1,0 +1,80 @@
+---
+- name: Pygrid components deployment
+  vars:
+    network_mode: "host"
+    gateway:
+      name: grid_gateway_instance
+      image: openmined/grid-gateway:latest
+      port: "5000"
+      secret: "ineedtoputasecrethere"
+      database_url: "sqlite:///databasegateway.db"
+    redis:
+      name: redis
+      image: redis:latest
+    node:
+      image: openmined/grid-node:latest
+      env:
+        local_host: "http://localhost"
+        grid_network_port: "5000"
+        redis_url: "redis:///localhost:6379"
+  hosts: hosts
+  gather_facts: False
+  pre_tasks:
+    - name: Install python
+      raw: bash -c "test -e /usr/bin/python || (sudo apt -qqy update && sudo apt install -qqy python-minimal python2.7)"
+      register: output
+      changed_when: output.stdout
+    - name: Gathering facts
+      setup:
+  
+  tasks:
+    - name: Update apt
+      apt:
+        upgrade: yes
+        update_cache: yes
+    
+    - name: Install pip
+      apt:
+        name: python-pip
+    
+    - name: Install docker
+      apt:
+        name: docker.io
+
+    - name: Install python docker
+      pip:
+        name: docker-py
+    
+    - name: Deploy PyGrid gateway
+      docker_container:
+        name: "{{ gateway.name }}"
+        image: "{{ gateway.image }}"
+        env:
+            PORT: "{{ gateway.port }}"
+            SECRET_KEY: "{{ gateway.secret }}"
+            DATABASE_URL: "{{ gateway.database_url }}"
+        network_mode: "{{ network_mode }}"
+
+    - name: Deploy redis service
+      docker_container:
+        name: "{{ redis.name }}"
+        image: "{{ redis.image }}"
+        network_mode: "{{ network_mode }}"
+    
+    - name: Deploy PyGrid nodes
+      docker_container:
+        name: "{{ item.name }}"
+        image: "{{ node.image }}"
+        env:
+            GRID_NETWORK_URL: "{{ node.env.local_host }}:{{ node.env.grid_network_port }}"
+            ID: "{{ item.id }}"
+            ADDRESS: "{{ node.env.local_host }}:{{ item.port }}"
+            REDISCLOUD_URL: "{{ node.env.redis_url }}"
+            PORT: "{{ item.port }}"
+        network_mode: "{{ network_mode }}"
+        
+      with_items:
+        - { name: bob, id: "Bob", port: "3000" }
+        - { name: alice, id: "Alice", port: "3001" } 
+        - { name: bill, id: "Bill", port: "3002" } 
+        - { name: james, id: "James", port: "3003" }
