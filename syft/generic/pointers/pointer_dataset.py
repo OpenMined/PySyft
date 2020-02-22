@@ -29,7 +29,6 @@ class PointerDataset(ObjectPointer):
             description=description,
         )
 
-
     def data(self):
         command = ("get_data", self.id_at_location, [], {})
         ptr = self.owner.send_command(message=command, recipient=self.location)
