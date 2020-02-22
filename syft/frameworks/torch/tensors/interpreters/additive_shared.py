@@ -1,5 +1,6 @@
 import math
 import torch
+import warnings
 
 import syft as sy
 from syft.frameworks.torch.mpc import spdz
@@ -25,7 +26,6 @@ class AdditiveSharingTensor(AbstractTensor):
         id=None,
         field=None,
         dtype=None,
-        n_bits=None,
         crypto_provider=None,
         tags=None,
         description=None,
@@ -43,7 +43,6 @@ class AdditiveSharingTensor(AbstractTensor):
             id: An optional string or integer id of the AdditiveSharingTensor.
             field: size of the arithmetic field in which the shares live
             dtype: dtype of the field in which shares live
-            n_bits: linked to the field with the relation (2 ** nbits) == field
             crypto_provider: an optional BaseWorker providing crypto elements
                 such as Beaver triples
             tags: an optional set of hashtags corresponding to this tensor
@@ -61,6 +60,7 @@ class AdditiveSharingTensor(AbstractTensor):
             self.dtype = "int"
             self.field = 2 ** 32
         else:
+            warnings.warn("Prefer to use dtype instead of field")
             # Since n mod 0 is not defined
             if type(field) == int and field > 0:
                 if field <= 2 ** 32:
@@ -70,6 +70,7 @@ class AdditiveSharingTensor(AbstractTensor):
                     self.dtype = "long"
                     self.field = 2 ** 64
             else:
+                warnings.warn("Default args selected")
                 # Default args
                 self.dtype = "long"
                 self.field = 2 ** securenn.Q_BITS
@@ -133,12 +134,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {
-            "crypto_provider": self.crypto_provider,
-            "dtype": self.dtype,
-            "field": self.field,
-            "n_bits": self.n_bits,
-        }
+        return {"crypto_provider": self.crypto_provider, "dtype": self.dtype, "field": self.field}
 
     @property
     def grad(self):
@@ -274,13 +270,10 @@ class AdditiveSharingTensor(AbstractTensor):
         Build an additive shared tensor of value zero with the same
         properties as self
         """
+        str_to_dtype = {"long": torch.int64, "int": torch.int32}
         shape = self.shape if self.shape else [1]
-        zero = (
-            torch.zeros(*shape)
-            .long()
-            .share(
-                *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
-            )
+        zero = torch.zeros(*shape, dtype=str_to_dtype[self.dtype]).share(
+            *self.locations, dtype=self.dtype, crypto_provider=self.crypto_provider, **no_wrap
         )
         return zero
 
@@ -363,13 +356,16 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
         if isinstance(other, int):
-            other = torch.LongTensor([other])
+            if self.dtype == "long":
+                other = torch.LongTensor([other])
+            else:
+                other = torch.IntTensor([other])
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(),
-                field=self.field,
+                dtype=self.dtype,
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
@@ -379,7 +375,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 torch.Tensor([other])
                 .share(
                     *self.child.keys(),
-                    field=self.field,
+                    dtype=self.dtype,
                     crypto_provider=self.crypto_provider,
                     **no_wrap,
                 )
@@ -413,13 +409,16 @@ class AdditiveSharingTensor(AbstractTensor):
         """
 
         if isinstance(other, int):
-            other = torch.LongTensor([other])
+            if self.dtype == "long":
+                other = torch.LongTensor([other])
+            else:
+                other = torch.IntTensor([other])
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(),
-                field=self.field,
+                dtype=self.dtype,
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
@@ -429,7 +428,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 torch.tensor([other])
                 .share(
                     *self.child.keys(),
-                    field=self.field,
+                    dtype=self.dtype,
                     crypto_provider=self.crypto_provider,
                     **no_wrap,
                 )
@@ -471,6 +470,8 @@ class AdditiveSharingTensor(AbstractTensor):
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
+        dtype_to_field = {"long": 2 ** 64, "int": 2 ** 32}
+        assert self.field == dtype_to_field[self.dtype], "Field value is wrong"
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
 
         return shares
@@ -599,10 +600,10 @@ class AdditiveSharingTensor(AbstractTensor):
             # For now, the solution works in most cases when the tensor is shared between 2 workers
             # The idea is to compute Q - (Q - pointer) / divisor for as many worker
             # as the number of times the sum of shares "crosses" Q/2.
-            if i_worker % 2 == 0:
-                divided_shares[location] = self.field / 2 - (self.field / 2 - pointer) / divisor
-            else:
-                divided_shares[location] = pointer / divisor
+            #if i_worker % 2 == 0:
+            #    divided_shares[location] = self.field - (self.field - pointer) / divisor
+            #else:
+            divided_shares[location] = pointer / divisor
 
         return divided_shares
 
@@ -911,7 +912,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Init max vals and idx to the first element
         max_value = values[0]
         max_index = torch.tensor([0]).share(
-            *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
+            *self.locations, dtype = self.dtype, crypto_provider=self.crypto_provider, **no_wrap
         )
 
         for i in range(1, len(values)):
