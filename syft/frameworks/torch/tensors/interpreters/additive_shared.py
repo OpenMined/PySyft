@@ -600,9 +600,9 @@ class AdditiveSharingTensor(AbstractTensor):
             # For now, the solution works in most cases when the tensor is shared between 2 workers
             # The idea is to compute Q - (Q - pointer) / divisor for as many worker
             # as the number of times the sum of shares "crosses" Q/2.
-            #if i_worker % 2 == 0:
+            # if i_worker % 2 == 0:
             #    divided_shares[location] = self.field - (self.field - pointer) / divisor
-            #else:
+            # else:
             divided_shares[location] = pointer / divisor
 
         return divided_shares
@@ -720,8 +720,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.unbind = unbind
 
-        @overloaded.function
-        def stack(tensors_shares, **kwargs):
+        def cat_and_stack(tensors_shares, cmd, **kwargs):
 
             results = {}
 
@@ -732,29 +731,24 @@ class AdditiveSharingTensor(AbstractTensor):
                 for tensor_shares in tensors_shares:
                     tensor_share = tensor_shares[worker]
                     tensors_share.append(tensor_share)
-                stacked_share = torch.stack(tensors_share, **kwargs)
-                results[worker] = stacked_share
+                result_share = (
+                    torch.cat(tensors_share, **kwargs)
+                    if cmd == "cat"
+                    else torch.stack(tensors_share, **kwargs)
+                )
+                results[worker] = result_share
 
             return results
+
+        @overloaded.function
+        def stack(tensors_shares, **kwargs):
+            return cat_and_stack(tensors_shares, "stack", **kwargs)
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            # The code is the same for cat and stack, maybe we could factorize
-
-            results = {}
-
-            workers = tensors_shares[0].keys()
-
-            for worker in workers:
-                cat_share = []
-                for tensor_shares in tensors_shares:
-                    tensor_share = tensor_shares[worker]
-                    cat_share.append(tensor_share)
-                results[worker] = torch.cat(cat_share, **kwargs)
-
-            return results
+            return cat_and_stack(tensors_shares, "cat", **kwargs)
 
         module.cat = cat
 
@@ -912,7 +906,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Init max vals and idx to the first element
         max_value = values[0]
         max_index = torch.tensor([0]).share(
-            *self.locations, dtype = self.dtype, crypto_provider=self.crypto_provider, **no_wrap
+            *self.locations, dtype=self.dtype, crypto_provider=self.crypto_provider, **no_wrap
         )
 
         for i in range(1, len(values)):
