@@ -41,3 +41,27 @@ class PointerDataset(ObjectPointer):
 
     def wrap(self):
         return self
+
+    def __repr__(self):
+        type_name = type(self).__name__
+        out = f"[" f"{type_name} | " f"owner: {str(self.owner.id)}, id:{self.id}"
+
+        if self.point_to_attr is not None:
+            out += "::" + str(self.point_to_attr).replace(".", "::")
+
+        big_str = False
+
+        if self.tags is not None and len(self.tags):
+            big_str = True
+            out += "\n\tTags: "
+            for tag in self.tags:
+                out += str(tag) + " "
+
+        if big_str and hasattr(self, "shape"):
+            out += "\n\tShape: " + str(self.shape)
+
+        if self.description is not None:
+            big_str = True
+            out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+
+        return out
