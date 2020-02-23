@@ -54,9 +54,9 @@ samples[
 ] = make_crtprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
-samples[syft.messaging.plan.plan.Plan] = make_plan
-samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.protocol.Protocol] = make_protocol
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.state.State] = make_state
+samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
