@@ -1,7 +1,7 @@
 Flask>=1.0.2
 flask_socketio>=3.3.2
 lz4>=2.1.6
-msgpack>=0.6.1
+msgpack>=1.0.0
 numpy>=1.16.0
 phe>=1.4.0
 Pillow<7

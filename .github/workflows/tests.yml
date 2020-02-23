@@ -17,7 +17,7 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -55,7 +55,7 @@ jobs:
             bandit -r syft -ll
     - name: Run tests
       run: |
-        coverage run -m pytest test --deselect=test/efficiency -m "not translation"
+        coverage run -m pytest test --deselect=test/efficiency --deselect=test/notebooks
     - name: Check test coverage
       run: |
         coverage report --ignore-errors --fail-under 95 -m

@@ -1,15 +1,16 @@
-name: Tutorials (Indonesian)
+name: Tutorials
 
 on:
   push:
     branches:
     - master
-    paths:
-    - "examples/tutorials/indonesian"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
+
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-    - "examples/tutorials/indonesian"
+    paths-ignore:
+    - "examples/tutorials/translations/**"
 
 jobs:
   build:
@@ -21,7 +22,7 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -37,6 +38,6 @@ jobs:
         pip3 install -r pip-dep/requirements_notebooks.txt
         pip3 install scikit-learn
         python setup.py install
-    - name: Run the translated tutorials
+    - name: Run the tutorials
       run: |
-        pytest test/notebooks/test_notebooks.py::test_basic_notebook_translations_in_indonesian
+        pytest test/notebooks/test_notebooks.py -m "not translation"
