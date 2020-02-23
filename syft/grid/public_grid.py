@@ -12,7 +12,7 @@ from typing import Dict
 from syft.grid.authentication.credential import AbstractCredential
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
-from syft.messaging.plan.plan import Plan
+from syft.execution.plan import Plan
 from syft.codes import GATEWAY_ENDPOINTS
 
 
