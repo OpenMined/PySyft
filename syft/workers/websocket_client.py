@@ -67,6 +67,7 @@ class WebsocketClientWorker(BaseWorker):
             args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
 
         self.ws = websocket.create_connection(**args)
+        self._log_msgs_remote(self.log_msgs)
 
     def close(self):
         self.ws.shutdown()
@@ -118,6 +119,12 @@ class WebsocketClientWorker(BaseWorker):
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
+
+    def _get_msg_remote(self, index):
+        return self._send_msg_and_deserialize("_get_msg", index=index)
+
+    def _log_msgs_remote(self, value=True):
+        return self._send_msg_and_deserialize("_log_msgs", value=value)
 
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)

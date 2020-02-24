@@ -1580,6 +1580,48 @@ def make_plancommandmessage(**kwargs):
     ]
 
 
+# ExecuteWorkerFunctionMessage
+def make_executeworkerfunctionmessage(**kwargs):
+    print(kwargs)
+    server, remote_proxy = kwargs["start_remote_worker"](
+        id=kwargs["id"], hook=kwargs["hook"], port=kwargs["port"]
+    )
+
+    remote_proxy._log_msgs_remote(value=True)
+    print("Remote connection healty?: {}".format(remote_proxy.ws.connected))
+    nr_objects = remote_proxy.objects_count_remote()
+    assert nr_objects == 0
+
+    objects_count_msg = remote_proxy._get_msg_remote(
+        index=-2
+    )  # index -2 as last message is _get_msg message
+
+    remote_proxy.close()
+    server.terminate()
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.ExecuteWorkerFunctionMessage
+        assert detailed.contents == original.contents
+        return True
+
+    return [
+        {
+            "value": objects_count_msg,
+            "simplified": (
+                CODE[syft.messaging.message.ExecuteWorkerFunctionMessage],
+                (
+                    (CODE[str], (b"objects_count",)),  # (str) command
+                    (
+                        CODE[tuple],
+                        ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ())),
+                    ),  # (tuple) args
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.exceptions.GetNotPermittedError
 def make_getnotpermittederror(**kwargs):
     try:

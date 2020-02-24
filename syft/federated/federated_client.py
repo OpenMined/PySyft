@@ -199,3 +199,6 @@ class FederatedClient(ObjectStorage):
             eval_result["histogram_target"] = hist_target
 
         return eval_result
+
+    def _log_msgs(self, value):
+        self.log_msgs = value
