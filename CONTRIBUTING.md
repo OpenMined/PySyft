@@ -1,4 +1,4 @@
-# Contributors Guidelines to Grid
+# Contributors Guidelines to PyGrid
 
 ## Getting Started
 
@@ -14,14 +14,14 @@ On <https://github.com/OpenMined/PyGrid/issues> you can find all open Issues. Yo
 
 ### Forking a Repository
 
-To contribute to Grid you will need to fork the OpenMind/PyGrid repository.
+To contribute to PyGrid you will need to fork the OpenMind/PyGrid repository.
 Then you can work risk-free on your fork.
 
 You will just need to fork once. After that you can call `git fetch upstream` and `git pull 'branch-name'` before you do your local changes to get the remote changes and be up-to-date
 
 ### Setting up Pre-Commit Hook
 
-Grid uses the python package `pre-commit` to make sure the correct formatting (black & flake) is applied.
+PyGrid uses the python package `pre-commit` to make sure the correct formatting (black & flake) is applied.
 
 You can install it via `pip install pre-commit`
 
@@ -60,7 +60,7 @@ PySyft: https://github.com/OpenMined/PySyft
 
 You can install most of the dependencies by running `pip install -r requirements.txt`.
 
-#### Building Grid
+#### Building PyGrid
 
 You can build grid by running: `python setup.py install`.
 
@@ -93,12 +93,12 @@ As with any software project it's important to keep the amount of code to a mini
 At any point in time you can create a pull request, so others can see your changes and give you feedback.
 Please create all pull requests to the `dev` branch.
 If your PR is still work in progress and not ready to be merged please add a `[WIP]` at the start of the title.
-Example:`[WIP] Websocket worker for Grid`
+Example:`[WIP] Websocket worker for PyGrid`
 
 ### Check CI and Wait for Reviews
 
-After each commit TravisCI will check your new code against the formatting guidelines (should not cause any problems when you setup your pre-commit hook) and execute the tests to check if the test coverage is high enough.
+After each commit GitHub Actions will check your new code against the formatting guidelines (should not cause any problems when you setup your pre-commit hook) and execute the tests to check if the test coverage is high enough.
 
-We will only merge PRs that pass the TravisCI checks.
+We will only merge PRs that pass the GitHub Actions checks.
 
 If your check fails don't worry you will still be able to make changes and make your code pass the checks.

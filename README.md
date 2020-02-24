@@ -53,12 +53,12 @@ A comprehensive list of tutorials can be found [here](https://github.com/OpenMin
 These tutorials cover how to create a PyGrid node and what operations you can perform.
 
 ## Start Contributing
-The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/dev/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
+The guide for contributors can be found [here](https://github.com/OpenMined/PyGrid/tree/dev/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PyGrid in an easy way.
 
-Also join the rapidly growing community of 2500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PyGrid/PySyft!
+Also join the rapidly growing community of 6500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PyGrid/PySyft!
 
-We also have a Github Project page for PySyft and PyGrid [here](https://github.com/orgs/OpenMined/projects/9).
-
+We also have a Github Project page for a Federated Learning MVP [here](https://github.com/orgs/OpenMined/projects/13).  
+You can check the PyGrid's official development and community roadmap [here](https://github.com/OpenMined/Roadmap/tree/master/pygrid_team).
 
 ## High-level Architecture
 
