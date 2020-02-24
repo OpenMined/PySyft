@@ -1582,13 +1582,11 @@ def make_plancommandmessage(**kwargs):
 
 # ExecuteWorkerFunctionMessage
 def make_executeworkerfunctionmessage(**kwargs):
-    print(kwargs)
     server, remote_proxy = kwargs["start_remote_worker"](
         id=kwargs["id"], hook=kwargs["hook"], port=kwargs["port"]
     )
 
     remote_proxy._log_msgs_remote(value=True)
-    print("Remote connection healty?: {}".format(remote_proxy.ws.connected))
     nr_objects = remote_proxy.objects_count_remote()
     assert nr_objects == 0
 
@@ -1611,10 +1609,7 @@ def make_executeworkerfunctionmessage(**kwargs):
                 CODE[syft.messaging.message.ExecuteWorkerFunctionMessage],
                 (
                     (CODE[str], (b"objects_count",)),  # (str) command
-                    (
-                        CODE[tuple],
-                        ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ())),
-                    ),  # (tuple) args
+                    (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),
                 ),
             ),
             "cmp_detailed": compare,
