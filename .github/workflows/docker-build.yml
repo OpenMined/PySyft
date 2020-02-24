@@ -8,11 +8,12 @@ on:
     - cron: '0 2 * * 0' # Weekly on Sundays at 02:00
 
 jobs:
-  update:
+  publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
     - name: Update PyGrid Gateway Image
+      if: github.repository == 'OpenMined/PyGrid'
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: openmined/grid-gateway
@@ -21,6 +22,7 @@ jobs:
         cache: ${{ github.event_name != 'schedule' }}
         workdir: gateway
     - name: Update PyGrid Node Image
+      if: github.repository == 'OpenMined/PyGrid'
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: openmined/grid-node
