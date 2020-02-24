@@ -13,11 +13,12 @@ from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.messaging.message import Operation
-from syft.messaging.plan.state import State
+from syft.execution.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+
+from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
-from syft_proto.messaging.v1.plan_pb2 import Plan as PlanPB
 
 
 class func2plan(object):
