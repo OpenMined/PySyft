@@ -12,6 +12,7 @@ import requests
 from .persistence.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
 from .auth import workers
+from .events.fl_events import report
 
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
@@ -324,6 +325,27 @@ def download_protocol():
 
         return Response(
             json.dumps(response_body), status=status_code, mimetype="application/json"
+        )
+
+
+@main.route("/federated/report", methods=["POST"])
+def report_diff():
+    """Allows reporting of (agg/non-agg) model diff after worker completes a cycle"""
+    response_body = {"message": None}
+
+    try:
+        data = json.loads(request.data)
+
+        resp = report(data, None)
+
+        return Response(resp, status=200, mimetype="application/json")
+
+    # JSON format not valid.
+    except ValueError or KeyError as e:
+        return Response(
+            json.dumps({"message": INVALID_JSON_FORMAT_MESSAGE}),
+            status=400,
+            mimetype="application/json",
         )
 
 

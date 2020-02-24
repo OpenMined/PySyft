@@ -76,7 +76,7 @@ def authenticate(message: dict, socket) -> str:
 
 
 def cycle_request(message: dict, socket) -> str:
-    """This event is where the worker is attempting to join an active federated learning cycle. 
+    """This event is where the worker is attempting to join an active federated learning cycle.
         Args:
             message : Message body sended by some client.
             socket: Socket descriptor.
