@@ -1025,7 +1025,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_pending_time = seconds
 
     @staticmethod
-    def create_message_execute_command(command_name: str, return_ids=None, *args, **kwargs):
+    def create_execute_worker_function_message(command_name: str, return_ids=None, *args, **kwargs):
         """helper function creating a message tuple for the execute_command call
 
         Args:

@@ -107,7 +107,9 @@ class WebsocketClientWorker(BaseWorker):
         return response
 
     def _send_msg_and_deserialize(self, command_name: str, *args, **kwargs):
-        message = self.create_message_execute_command(command_name=command_name, *args, **kwargs)
+        message = self.create_execute_worker_function_message(
+            command_name=command_name, *args, **kwargs
+        )
 
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(message)
@@ -148,7 +150,7 @@ class WebsocketClientWorker(BaseWorker):
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
         ) as websocket:
-            message = self.create_message_execute_command(
+            message = self.create_execute_worker_function_message(
                 command_name="fit", return_ids=return_ids, dataset_key=dataset_key
             )
 
