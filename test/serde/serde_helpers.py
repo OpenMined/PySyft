@@ -1306,7 +1306,7 @@ def make_message(**kwargs):
     ]
 
 
-# syft.messaging.message.Operation
+# syft.messaging.message.OperationMessage
 def make_operation(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -1334,7 +1334,7 @@ def make_operation(**kwargs):
             original.cmd_args,
             original.cmd_kwargs,
         )
-        assert type(detailed) == syft.messaging.message.Operation
+        assert type(detailed) == syft.messaging.message.OperationMessage
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1350,7 +1350,7 @@ def make_operation(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.Operation],
+                CODE[syft.messaging.message.OperationMessage],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1361,7 +1361,7 @@ def make_operation(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.Operation],
+                CODE[syft.messaging.message.OperationMessage],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
