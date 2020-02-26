@@ -169,11 +169,10 @@ def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     def _test_maxpool2d(x):
-        x_sh = x.share(alice, bob, crypto_provider=james).wrap()
+        x_sh = x.long().share(alice, bob, crypto_provider=james).wrap()
         y = maxpool2d(x_sh, kernel_size=kernel_size, stride=stride)
 
         torch_maxpool = torch.nn.MaxPool2d(kernel_size, stride=stride)
-
         assert torch.all(torch.eq(y.get(), torch_maxpool(x).long()))
 
     x1 = torch.Tensor(
