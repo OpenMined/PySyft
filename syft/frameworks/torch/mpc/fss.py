@@ -9,7 +9,7 @@ Note that the protocols are quite different in aspect from those papers
 """
 import torch as th
 import syft as sy
-from syft.messaging.plan import func2plan
+from syft.execution.plan import func2plan
 
 λ = 63  # 6  # 63  # security parameter
 n = 32  # 8  # 32  # bit precision
