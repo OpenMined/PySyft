@@ -2,452 +2,75 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="14034252-c19b-43e9-a1a9-47f9fda48966" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.flake8" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitattributes" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitbook.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/bug_report.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/ISSUE_TEMPLATE/feature_request.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/publish.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/tests.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/translated-tutorials.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/tutorials.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/update-docker-image.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.pre-commit-config.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.readthedocs.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/CONTRIBUTING.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/INSTALLATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ROADMAP.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/art/PySyft-Arch.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/art/PySyft-Arch.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/art/PySyftArch.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-images/pysyft-notebook/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-images/pysyft-notebook/entrypoint.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-images/pysyft-worker/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-images/pysyft-worker/entrypoint.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-images/pysyft-worker/worker-server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/make.bat" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/conf.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/source/index.rst" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/data/BostonHousing/boston_housing.pickle" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/deploy_workers/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/deploy_workers/deploy-and-connect.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/deploy_workers/docker-compose.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v1.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v2.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v3.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v4.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v5.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/DP Tensor Experimentation - v8.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/Federated Learning Experiment/FL Experiment.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/Federated Learning Experiment/server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/Federated Learning Reinforcement Learning Agent.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/Large Precision Tensor.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/NumpyTensor.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/PATE Analysis.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/PaillierTensor.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/PointersAhead.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/Private Tensor Mockup.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/PromiseTensor Mockup.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/experimental/plaintext_speed_regression.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/pen_testing/steal_data_over_sockets/Challenge Setup.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/pen_testing/steal_data_over_sockets/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/pen_testing/steal_data_over_sockets/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/pen_testing/steal_data_over_sockets/start_websocket_servers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 02 - Intro to Federated Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 03 - Advanced Remote Execution Tools.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 04 - Federated Learning via Trusted Aggregator.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 05 - Welcome to the Sandbox.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 06 - Federated Learning on MNIST using a CNN.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 07 - Federated Learning with Federated Dataset.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 08 - Introduction to Plans.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 08 bis - Introduction to Protocols.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 09 - Intro to Encrypted Programs.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 10 - Federated Learning with Secure Aggregation.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 11 - Secure Deep Learning Classification.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 12 bis - Encrypted Training on MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Build your own tensor type (advanced).ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Encrypted Linear Regression.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated CIFAR10.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated Dataset.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated Learning with TrainConfig/Introduction to TrainConfig.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated Learning with TrainConfig/start_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated Recurrent Neural Network.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated SMS Spam prediction/Federated SMS Spam prediction.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated SMS Spam prediction/handcrafted_GRU.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated SMS Spam prediction/preprocess.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Federated Word Vectors.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Monitor_Network_Traffic/metrics.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/Tutorial 1 - SplitNN Introduction.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/Tutorial 2 - MultiLayer Split Neural Network.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/Tutorial 3 - Folded Split Neural Network.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/AccuracyvsFlops.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/FoldedNN.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/MultiSplitNN.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/P2P-DL.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/bandwidth.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/Split Neural Network/images/computation.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST-parallel/Asynchronous-federated-learning-on-MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST-parallel/run_websocket_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST-parallel/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST-parallel/start_websocket_servers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST/Federated learning with websockets and federated averaging.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST/run_websocket_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/advanced/websockets-example-MNIST/start_websocket_servers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/Part 01 - Intro to Grid Platform.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/Part 02 - Grid as a Secure MLaaS to Cloud Providers.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/Part 03 - Grid applied to Smart Cities and Smart Homes.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/mnist/Fed.Learning MNIST [ Part-1 ] - Populate a Grid Network ( Dataset ).ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/mnist/Fed.Learning MNIST [ Part-2 ] - Train a Model.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/spam_prediction/Federated_SMS_Spam_prediction [Part 1] - Populate a Grid Network (Dataset).ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/spam_prediction/Federated_SMS_Spam_prediction [Part 2] - Train a Model.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/spam_prediction/handcrafted_GRU.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/federated_learning/spam_prediction/preprocess.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/images/secure_mlaas.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/grid/images/smart_home.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/material/smpc_illustration.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 02 - Intro to Federated Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 06 - Federated Learning on MNIST using a CNN.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 07 - Federated Learning with Federated Dataset.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 08 - Introduction to Plans.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 08 bis - Introduction to Protocols.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 09 - Intro to Encrypted Programs.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 10 - Federated Learning with Secure Aggregation.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 11 - Secure Deep Learning Classification.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 12 bis - Encrypted Training on MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/bengali/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 02 - Intro to Federated Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 03 - Advanced Remote Execution Tools.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 04 - Federated Learning via Trusted Aggregator.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 05 - Welcome to the Sandbox.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 06 - Federated Learning on MNIST using a CNN.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 07 - Federated Learning with Federated Dataset.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 08 - Introduction to Plans.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 08 bis - Introduction to Protocols.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 09 - Intro to Encrypted Programs.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 10 - Federated Learning with Secure Aggregation.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 11 - Secure Deep Learning Classification.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 12 bis - Encrypted Training on MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/chinese/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 01 - Herramientas básicas de aprendizaje profundo privado.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 02 - Intro al Aprendizaje Federado.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 03 - Herramientas avanzadas de ejecución remota.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 04 - Aprendizaje Federado via un Agregador Confiable.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 05 - Bienvenido a la caja de arena.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 06 - Aprendizaje federado en MNIST usando una red neuronal convolucional.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 07 - Aprendizaje Federado con Datos Federados.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 08 - Introducción a los Planes.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 08 bis - Introducción a Protocolos.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 09 - Intro a los Programas Encriptados.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 10 - Aprendizaje Federado con Agregación Segura.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 11 - Clasificación con Aprendizaje Profundo y Seguro.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 12 - Entrenar una red neuronal encriptada con datos encriptados .ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 12 bis - Entrenamiento Encriptado con MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 13a - Clasificación Segura con Syft Keras y TFE - Aprendizaje Público.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 13b - Clasificación Segura con Syft Keras y TFE - Proveer Predicciones desde un Modelo Seguro.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/español/Parte 13c - Clasificación Segura con Syft Keras y TFE - Prediccion Privada (Cliente).ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/french/Part_01_The_Basic_Tools_of_Private_Deep_Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 02 - Intro to Federated Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 03 - Advanced Remote Execution Tools.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 04 - Federated Learning via Trusted Aggregator.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 05 - Welcome to the Sandbox.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 06 - Federated Learning on MNIST using a CNN.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 07 - Federated Learning with Federated Dataset.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 08 - Introduction to Plans.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 08 bis - Introduction to Protocols.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 09 - Intro to Encrypted Programs.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 10 - Federated Learning with Secure Aggregation.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 11 - Secure Deep Learning Classification.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 12 - Train an Encrypted Neural Network on Encrypted Data.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 12 bis - Encrypted Training on MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 13a - Secure Classification with Syft Keras and TFE - Public Training.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 13b - Secure Classification with Syft Keras and TFE - Secure Model Serving.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/hindi/Part 13c - Secure Classification with Syft Keras and TFE - Private Prediction Client.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/indonesian/Bagian 01 - Peralatan Dasar untuk Privasi Pembelajaran Dalam.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/italian/Parte 01 - Gli strumenti di base per il deep learning privato.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/korean/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 01 - As Ferramentas Básicas do Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 02 - Introdução a Aprendizagem Federada.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 03 - Ferramentas Avançadas para Execução Remota.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 04 - Aprendizado Federado por meio de Agregador Confiável.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 05 - Bem-vindo ao Sandbox.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 06 - Aprendizado Federado com MNIST usando uma CNN.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 07 - Aprendizado Federado com Conjunto de Dados Federado.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 08 - Introdução a Planos.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 08 bis - Introdução a Protocolos.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 09 - Introdução à Programas Criptografados.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 10 - Aprendizagem Federada com Agregação Segura.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 11 - Classificação Segura Usando Aprendizagem Profunda.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 12 - Treinar uma Rede Neural criptografada com dados criptografados.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 12 bis - Treinamento criptografado no MNIST.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 13a - Classificação Segura com Syft Keras e TFE - Treinamento Público.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 13b - Classificação segura com Syft Keras e TFE - Servindo o modelo de forma segura.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/português/Parte 13c - Classificação Segura com Syft Keras e TFE - Cliente de predição privada.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/romanian/Part 01 - The Basic Tools of Private Deep Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/romanian/Part 02 - Intro to Federated Learning.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/translations/ukrainian/Part 01 - Основні засоби приватного глибинного навчання.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/websocket/WebsocketClientWorker.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/examples/tutorials/websocket/WebsocketServerWorker.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/microsoft_build_tools_choice.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/microsoft_build_tools_main.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/raais.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/sysdmcpl.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/sysdmcpl2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/sysdmcpl3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/images/visual_sudio_download.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/mypy.ini" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pip-dep/requirements.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pip-dep/requirements_dev.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pip-dep/requirements_notebooks.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pip-dep/requirements_tensorflow.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pip-dep/requirements_udacity.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.cfg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/codes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/common/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/common/util.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/dependency_check.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/exceptions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/execution/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/execution/plan.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/execution/protocol.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/execution/state.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/federated/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/federated/federated_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/federated/train_config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/layers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/layers/constructor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/model/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/keras/model/sequential.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/tensorflow/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/dp/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/dp/pate.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/fl/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/fl/dataloader.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/fl/dataset.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/fl/utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/functions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/he/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/he/paillier.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/hook/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/hook/hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/hook/hook_args.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/linalg/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/linalg/lr.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/linalg/operations.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/mpc/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/mpc/beaver.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/mpc/securenn.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/mpc/spdz.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/nn/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/nn/conv.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/nn/pool.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/nn/rnn.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/decorators/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/decorators/logging.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/additive_shared.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/autograd.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/build_gradients.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/crt_precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/derivatives.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/gradients.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/gradients_core.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/large_precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/native.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/numpy.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/paillier.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/placeholder.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/plusisminus.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/polynomial.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/tensors/interpreters/private.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/frameworks/torch/torch_attributes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/attributes.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/hook/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/hook/hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/hook/hook_args.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/hook/trace.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/overload.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/remote.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/frameworks/types.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/id_provider.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/metrics.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/object.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/object_storage.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/callable_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/multi_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/object_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/object_wrapper.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/pointer_plan.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/pointer_protocol.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/pointer_tensor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/pointers/string_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/string.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/generic/tensor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/abstract_grid.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/authentication/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/authentication/account.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/authentication/credential.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/private_grid.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/grid/public_grid.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/messaging/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/messaging/message.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/sandbox.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/compression.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/msgpack/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/msgpack/native_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/msgpack/proto.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/msgpack/serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/msgpack/torch_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/protobuf/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/protobuf/native_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/protobuf/proto.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/protobuf/serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/protobuf/torch_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/torch/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/serde/torch/serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/version.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/abstract.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/node_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/tfe.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/virtual.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/websocket_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/syft/workers/websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/common/test_util.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/conftest.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/efficiency/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/efficiency/assertions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/efficiency/test_activations_time.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/efficiency/test_linalg_time.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/execution/test_plan.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/execution/test_protocol.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/federated/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/federated/test_federated_client.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/federated/test_train_config.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/generic/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/generic/test_id_provider.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/generic/test_object_storage.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/generic/test_string.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/keras/test_sequential.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/message/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/message/test_message.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/notebooks/git-diff.txt" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/notebooks/test_notebooks.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/scripts/run_websocket_server.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/serde/msgpack/test_msgpack_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/serde/msgpack/test_msgpack_serde_full.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/serde/protobuf/test_protobuf_serde.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/serde/protobuf/test_protobuf_serde_full.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/serde/serde_helpers.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_dependency_check.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_exceptions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_grid.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_local_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_sandbox.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test_udacity.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/crypto/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/crypto/test_snn.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/differential_privacy/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/differential_privacy/test_pate.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/federated/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/federated/test_dataloader.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/federated/test_dataset.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/federated/test_utils.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/hook/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/hook/test_hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/hook/test_hook_args.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/linalg/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/linalg/test_lr.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/linalg/test_operations.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/nn/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/nn/test_conv.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/nn/test_pool.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/nn/test_rnn.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/pointers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/pointers/test_callable_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/pointers/test_pointer_plan.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/pointers/test_pointer_protocol.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/pointers/test_pointer_tensor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_additive_shared.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_autograd.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_crt_precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_gc.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_large_precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_logging.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_multi_pointer.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_native.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_numpy.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_paillier.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_parameter.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_polynomial.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_precision.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_private.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/tensors/test_tensor.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/test_federated_learning.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/test_functions.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/torch/test_hook.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/workers/__init__.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/workers/test_base.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/workers/test_virtual.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/workers/test_websocket_worker.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/workers/test_worker.py" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/syft-0.4.0-py3.6.egg" beforeDir="false" afterPath="$PROJECT_DIR$/dist/syft-0.4.0-py3.6.egg" afterDir="false" />
     </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="FileEditorManager">
+    <leaf>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/setup.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="165">
+              <caret line="18" lean-forward="true" selection-start-line="18" selection-end-line="18" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/.gitignore">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="45">
+              <caret line="3" column="5" lean-forward="true" selection-start-line="3" selection-start-column="5" selection-end-line="3" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="IdeDocumentHistory">
+    <option name="CHANGED_PATHS">
+      <list>
+        <option value="$PROJECT_DIR$/.gitignore" />
+      </list>
+    </option>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="5" />
+    <option name="y" value="23" />
+    <option name="width" value="1532" />
+    <option name="height" value="990" />
+  </component>
   <component name="ProjectId" id="1YMFDp000O8Nsi3U6aSDSPrMNib" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
+              <item name="PySyft" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="Scope" />
+    </panes>
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
@@ -455,7 +78,20 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -470,10 +106,49 @@
     </task>
     <servers />
   </component>
+  <component name="ToolWindowManager">
+    <frame x="0" y="23" width="1920" height="1177" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19905214" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info id="Favorites" order="2" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="Version Control" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
+      <window_info anchor="bottom" id="Python Console" order="10" />
+      <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
   <component name="WindowStateProjectService">
     <state x="864" y="504" key="com.intellij.ide.util.TipDialog" timestamp="1582744472129">
       <screen x="0" y="23" width="2560" height="1337" />
     </state>
     <state x="864" y="504" key="com.intellij.ide.util.TipDialog/-769.-1057.1920.1057/0.23.2560.1337/1151.-1057.1920.1057@0.23.2560.1337" timestamp="1582744472129" />
+  </component>
+  <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/setup.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="18" lean-forward="true" selection-start-line="18" selection-end-line="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" column="5" lean-forward="true" selection-start-line="3" selection-start-column="5" selection-end-line="3" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
   </component>
 </project>
