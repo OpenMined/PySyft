@@ -8,18 +8,18 @@ import crypten.communicator as comm
 import crypten
 
 
-def load(tag: str, id_worker: int):
-
-    src = syft.local_worker.get_rank_from_id(id_worker)
+def load(tag: str, src: int):
+    worker_id = syft.local_worker.get_worker_id_from_rank(src)
+    assert worker_id != -1
 
     try:
-        worker = syft.local_worker.get_worker(id_worker, fail_hard=True)
-
-        # It should be a tensor and not a pointer
+        worker = syft.local_worker.get_worker(worker_id, fail_hard=True)
         results = worker.search(tag)
+
+        # Make sure there is only one result
         assert len(results) == 1
 
-        result = results[0]
+        result = results[0].get()
 
         if torch.is_tensor(result):
 

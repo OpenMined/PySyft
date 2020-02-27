@@ -18,7 +18,7 @@ def test_context(workers):
         pass  # pragma: no cover
 
     return_values = test_three_parties()
-    print(return_values)
+
     # A toy function is ran at each party, and they should all decrypt
     # a tensor with value [42, 53, 101, 32]
     expected_value = [42, 53, 101, 32]

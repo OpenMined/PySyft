@@ -84,8 +84,8 @@ def _send_party_info(worker, rank, msg, return_values):
 
 
 def toy_func():
-    alice_tensor = syft_crypt.load("crypten_data", "alice")
-    bob_tensor = syft_crypt.load("crypten_data", "bob")
+    alice_tensor = syft_crypt.load("crypten_data", 1)
+    bob_tensor = syft_crypt.load("crypten_data", 2)
 
     crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
     return crypt.get_plain_text().tolist()
@@ -110,11 +110,11 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
-            worker_id_to_rank = dict(
-                zip([worker.id for worker in workers], range(1, len(workers) + 1))
+            rank_to_worker_id = dict(
+                zip(range(1, len(workers) + 1), [worker.id for worker in workers])
             )
 
-            sy.local_worker._set_worker_id_to_rank(worker_id_to_rank)
+            sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
 
             # Start local party
             process, queue = _new_party(toy_func, 0, world_size, master_addr, master_port, (), {})
@@ -139,8 +139,8 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             # Send messages to other workers so they start their parties
             threads = []
             for i in range(len(workers)):
-                rank = worker_id_to_rank[workers[i].id]
-                msg = CryptenInit((worker_id_to_rank, world_size, master_addr, master_port))
+                rank = i+1
+                msg = CryptenInit((rank_to_worker_id, world_size, master_addr, master_port))
                 thread = threading.Thread(
                     target=_send_party_info, args=(workers[i], rank, msg, return_values)
                 )

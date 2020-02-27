@@ -411,31 +411,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        worker_id_to_rank, world_size, master_addr, master_port = message
+        rank_to_worker_id, world_size, master_addr, master_port = message
 
-        assert self.id in worker_id_to_rank
+        worker_rank = None
+        for rank, worker_id in rank_to_worker_id.items():
+            if worker_id == self.id:
+                worker_rank = rank
+                break
 
-        self.worker_id_to_rank = worker_id_to_rank
+        assert worker_rank is not None
+
+        self.rank_to_worker_id = rank_to_worker_id
 
         return_value = run_party(
-            toy_func, self.worker_id_to_rank[self.id], world_size, master_addr, master_port, (), {}
+            toy_func, worker_rank, world_size, master_addr, master_port, (), {}
         )
 
         return ObjectMessage(return_value)
 
-    def _set_worker_id_to_rank(self, worker_id_to_rank: dict):
+    def get_worker_id_from_rank(self, rank: int):
         """
-        Should be called only by the worker that initializes the connection
-        Initializes the self.worker_id_to_rank field of the worker
-
-        Args:
-            worker_id_to_rank: the dict containing the mapping worker_id --> rank
-        """
-        self.worker_id_to_rank = worker_id_to_rank
-
-    def get_rank_from_id(self, worker_id: str):
-        """
-        Get the rank for the torch distrib communication given a worker id
+        Get the worker_id for the torch distrib communication given a worker id
 
         Args:
             worker_id: the id of the worker
@@ -449,9 +445,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if not DistributedCommunicator.is_initialized():
             return -1
 
-        print(self.worker_id_to_rank)
+        return self.rank_to_worker_id[rank]
 
-        return self.worker_id_to_rank[worker_id]
+    def _set_rank_to_worker_id(self, rank_to_worker_id: dict):
+        """
+        Should be called only by the worker that initializes the connection
+        Initializes the self.rank_to_worker_id field of the worker
+
+        Args:
+            rank_to_worker_id: the dict containing the mapping rank-->worker_id
+        """
+        self.rank_to_worker_id = rank_to_worker_id
 
     def execute_command(self, message: tuple) -> PointerTensor:
         """
