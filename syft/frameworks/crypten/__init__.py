@@ -2,24 +2,19 @@ import torch
 import syft
 
 from syft.frameworks.crypten.context import toy_func, run_party
-from syft.exceptions import WorkerNotFoundException
 
 import crypten.communicator as comm
 import crypten
 
 
-def load(tag: str, id_worker: int):
+def load(tag: str, src: int):
+    if src == comm.get().get_rank():
+        results = syft.local_worker.search(tag)
 
-    src = syft.local_worker.get_rank_from_id(id_worker)
-
-    try:
-        worker = syft.local_worker.get_worker(id_worker, fail_hard=True)
-
-        # It should be a tensor and not a pointer
-        results = worker.search(tag)
+        # Make sure there is only one result
         assert len(results) == 1
 
-        result = results[0]
+        result = results[0].get()
 
         if torch.is_tensor(result):
 
@@ -37,7 +32,7 @@ def load(tag: str, id_worker: int):
         else:
             raise TypeError("Unrecognized load type on src")
 
-    except WorkerNotFoundException:
+    else:
         # Receive load type from source party
         load_type = torch.tensor(-1, dtype=torch.long)
         comm.get().broadcast(load_type, src=src)
