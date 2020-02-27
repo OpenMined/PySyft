@@ -17,7 +17,7 @@ from .persistence.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
 from .events import handler
 from .auth import workers
-from .events.fl_events import report
+from .events.fl_events import cycle_request, report
 
 
 # All grid nodes registered at grid network will be stored here
@@ -29,6 +29,9 @@ INVALID_JSON_FORMAT_MESSAGE = (
 )
 INVALID_REQUEST_KEY_MESSAGE = (
     "Invalid request key."  # Default message for invalid request key.
+)
+WORKER_NOT_FOUND_MESSAGE = (
+    "Worker ID not found."  # Default message for worker not found.
 )
 INVALID_PROTOCOL_MESSAGE = "Protocol is None or the id does not exist."
 
@@ -405,6 +408,34 @@ def download_model():
         return Response(
             json.dumps(response_body), status=status_code, mimetype="application/json"
         )
+
+
+@main.route("/federated/cycle-request", methods=["POST"])
+def worker_cycle_request():
+
+    response_body = {"message": None}
+    status_code = None
+
+    try:
+        body = json.loads(request.data)
+        _worker = workers.get_worker(body["worker_id"])
+
+        if _worker:
+            response_body = cycle_request({"data": body}, None)
+            status_code = 200
+        else:
+            response_body["message"] = WORKER_NOT_FOUND_MESSAGE
+            response_body["status"] = "rejected"
+            status_code = 400
+
+    except ValueError or KeyError as e:
+        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
+        response_body["status"] = "rejected"
+        status_code = 400
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/req_join", methods=["GET"])
