@@ -243,12 +243,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
-    def zero(self):
+    def zero(self, shape=None):
         """
         Build an additive shared tensor of value zero with the same
         properties as self
         """
-        shape = self.shape if self.shape else [1]
+
+        if shape == None:
+            shape = self.shape if self.shape else [1]
         zero = (
             torch.zeros(*shape)
             .long()
@@ -347,6 +349,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
+        elif isinstance(other, AdditiveSharingTensor):
+            other = other.child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
@@ -482,11 +486,13 @@ class AdditiveSharingTensor(AbstractTensor):
                 other_is_zero = True
 
             if other_is_zero:
-                zero_shares = self.zero().child
-                return {
-                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
-                    for worker, share in shares.items()
-                }
+                res = {}
+                for i, (worker, share) in enumerate(shares.items()):
+                    cmd_res = cmd(share, other)
+                    if i == 0:
+                        zero_shares = self.zero(cmd_res.shape).child
+                    res[worker] = (cmd_res + zero_shares[worker]) % self.field
+                return res
             else:
                 return {
                     worker: (cmd(share, other) % self.field) for worker, share in shares.items()
