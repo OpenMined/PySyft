@@ -11,7 +11,7 @@ from syft.frameworks.torch.fl import utils
 PRINT_IN_UNITTESTS = False
 
 # To make execution deterministic to some extent
-# for more information - refer https://pytorch.org/docs/stable/notes/randomness.html
+# For more information - refer https://pytorch.org/docs/stable/notes/randomness.html
 torch.manual_seed(0)
 torch.cuda.manual_seed_all(0)
 torch.backends.cudnn.benchmark = False
@@ -19,22 +19,31 @@ torch.backends.cudnn.deterministic = True
 
 
 def test_add_dataset():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    
+    # Create a dataset
     dataset = "my_dataset"
+    
+    # "string_dataset" is the key value
     fed_client.add_dataset(dataset, "string_dataset")
 
     assert "string_dataset" in fed_client.datasets
 
 
 def test_add_dataset_with_duplicate_key():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    
+    # Create a dataset
     dataset = "my_dataset"
+    
+     # "string_dataset" is the key value
     fed_client.add_dataset(dataset, "string_dataset")
 
     assert "string_dataset" in fed_client.datasets
-
+    
+    # Raise error if the key is already exists
     with pytest.raises(ValueError):
         fed_client.add_dataset(dataset, "string_dataset")
 
