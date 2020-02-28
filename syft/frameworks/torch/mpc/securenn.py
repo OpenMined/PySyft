@@ -572,7 +572,7 @@ def maxpool_deriv(x_sh):
     # 3)
     t = k_sh.get()
     k = t % n
-    E_k = torch.zeros(n)
+    E_k = torch.zeros(n).long()
     E_k[k] = 1
     E_sh = E_k.share(alice, bob, **no_wrap)
 
