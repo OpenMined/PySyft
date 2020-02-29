@@ -24,7 +24,6 @@ def test_add_dataset():
     
     # Create a dataset
     dataset = "my_dataset"
-    
     # "string_dataset" is the key value
     fed_client.add_dataset(dataset, "string_dataset")
 
@@ -37,7 +36,6 @@ def test_add_dataset_with_duplicate_key():
     
     # Create a dataset
     dataset = "my_dataset"
-    
      # "string_dataset" is the key value
     fed_client.add_dataset(dataset, "string_dataset")
 
