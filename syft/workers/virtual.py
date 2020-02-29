@@ -7,7 +7,6 @@ from syft.federated.federated_client import FederatedClient
 class VirtualWorker(BaseWorker, FederatedClient):
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
         """send message to worker location"""
-        
         if self.message_pending_time > 0:
             if self.verbose:
                 print(f"pending time of {self.message_pending_time} seconds to send message...")
@@ -18,5 +17,4 @@ class VirtualWorker(BaseWorker, FederatedClient):
 
     def _recv_msg(self, message: bin) -> bin:
         """receieve message"""
-        
         return self.recv_msg(message)
