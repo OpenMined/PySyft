@@ -21,11 +21,11 @@ torch.backends.cudnn.deterministic = True
 def test_add_dataset():
     # Create a client to execute federated learning
     fed_client = FederatedClient()
-    
     # Create a dataset
     dataset = "my_dataset"
-    # "string_dataset" is the key value
-    fed_client.add_dataset(dataset, "string_dataset")
+    key = "string_dataset"
+    # add new dataset
+    fed_client.add_dataset(dataset, key)
 
     assert "string_dataset" in fed_client.datasets
 
@@ -33,28 +33,29 @@ def test_add_dataset():
 def test_add_dataset_with_duplicate_key():
     # Create a client to execute federated learning
     fed_client = FederatedClient()
-    
     # Create a dataset
     dataset = "my_dataset"
-     # "string_dataset" is the key value
-    fed_client.add_dataset(dataset, "string_dataset")
+    key = "string_dataset"
+    # add new dataset
+    fed_client.add_dataset(dataset, key)
 
     assert "string_dataset" in fed_client.datasets
-    
     # Raise error if the key is already exists
     with pytest.raises(ValueError):
         fed_client.add_dataset(dataset, "string_dataset")
 
 
 def test_remove_dataset():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    # Create a dataset
     dataset = "my_dataset"
     key = "string_dataset"
+    # add new dataset
     fed_client.add_dataset(dataset, key)
 
     assert key in fed_client.datasets
-
+    # remove new dataset
     fed_client.remove_dataset(key)
 
     assert key not in fed_client.datasets
