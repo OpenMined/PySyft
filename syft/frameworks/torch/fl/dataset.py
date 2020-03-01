@@ -231,7 +231,8 @@ class FederatedDataset:
         # Check that data and targets for a worker are consistent
         for worker_id in self.workers:
             dataset = self.datasets[worker_id]
-            assert (dataset.data.shape == dataset.targets.shape
+            assert (
+                dataset.data.shape == dataset.targets.shape
             ), "On each worker, the input and target must have the same number of rows."
 
     @property
