@@ -23,7 +23,7 @@ def test_cmd_message(workers):
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = x + x  # this is the test
-    assert isinstance(bob._get_msg(-1), message.Operation)
+    assert isinstance(bob._get_msg(-1), message.OperationMessage)
 
     y = y.get()
 

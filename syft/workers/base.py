@@ -22,7 +22,7 @@ from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
 from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import Operation
+from syft.messaging.message import OperationMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
@@ -114,7 +114,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            Operation: self.execute_command,
+            OperationMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -514,7 +514,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+                OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids),
+                location=recipient,
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -1056,7 +1057,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation(command_name, command_owner, args, kwargs, return_ids)
+        return OperationMessage(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

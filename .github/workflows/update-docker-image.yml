@@ -16,11 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.x'
-
       - name: Build image
         run: docker build -t $IMAGE -f docker-images/pysyft-notebook/Dockerfile docker-images/pysyft-notebook
 
