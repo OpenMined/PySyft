@@ -324,7 +324,7 @@ def test_torch_dtype_simplify(workers):
     )
 
     # the simplified torch.dtype
-    assert msgpack.serde._simplify(me, dtype)[1][0] == msgpack.serde._simplify(me, "int32")
+    assert msgpack.serde._simplify(me, dtype)[1] == "int32"
 
 
 def test_pointer_tensor_simplify(workers):
