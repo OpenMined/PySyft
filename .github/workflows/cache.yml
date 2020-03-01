@@ -11,11 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      id: cache
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('/pip-dep/requirements*.txt') }}
-
     - name: Install Dependencies
       if: steps.cache.outputs.cache-hit = 'true'
       run: |
