@@ -21,6 +21,7 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
+    - uses: actions/cache@v1.1.2
     - uses: actions/checkout@v2
     - run: |
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
