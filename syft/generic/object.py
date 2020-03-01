@@ -34,7 +34,7 @@ class AbstractObject(ABC):
             child: an optional tensor to put in the .child attribute to build
                 a chain of tensors
         """
-        self.owner = owner
+        self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
         self.tags = tags
         self.description = description

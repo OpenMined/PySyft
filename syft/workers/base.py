@@ -921,6 +921,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Returns:
             A list of valid results found.
+
+        TODO Search on description is not supported for the moment
         """
         if isinstance(query, (str, int)):
             query = [query]
