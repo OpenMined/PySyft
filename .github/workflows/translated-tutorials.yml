@@ -22,6 +22,8 @@ jobs:
 
     steps:
     - uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/pip
     - uses: actions/checkout@v2
     - run: |
         git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
