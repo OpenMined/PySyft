@@ -22,12 +22,13 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1.1.2
+    - uses: actions/cache@v1.1.2 
+      id: cache-reqs
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
     - name: Install dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.cache-reqs.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update
         python -m pip install --upgrade pip
