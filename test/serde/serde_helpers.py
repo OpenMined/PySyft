@@ -1184,7 +1184,6 @@ def make_baseworker(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor
 def make_autogradtensor(**kwargs):
-    me = kwargs["workers"]["me"]
 
     t = torch.tensor([1, 2, 3])
     agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
@@ -1209,7 +1208,6 @@ def make_autogradtensor(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor],
                 (
-                    me,  # owner
                     agt.id,  # (int)
                     msgpack.serde._simplify(
                         syft.hook.local_worker, agt.child
