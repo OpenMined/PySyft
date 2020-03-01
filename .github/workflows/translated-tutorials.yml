@@ -32,7 +32,7 @@ jobs:
       id: cache-reqs
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
     - name: Install dependencies
       run: |
         sudo apt-get update
