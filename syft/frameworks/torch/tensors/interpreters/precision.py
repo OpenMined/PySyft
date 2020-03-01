@@ -799,6 +799,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.linear = linear
 
+                module.conv2d = conv2d
+
             module.functional = functional
 
         # Modules should be registered just like functions
