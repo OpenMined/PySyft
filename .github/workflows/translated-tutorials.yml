@@ -34,7 +34,6 @@ jobs:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
     - name: Install dependencies
-      if: steps.cache-reqs.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update
         python -m pip install --upgrade pip
