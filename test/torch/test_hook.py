@@ -357,7 +357,7 @@ def test_local_remote_gradient_clipping(workers):
 
     # Is the output of the remote gradient clipping version equal to
     # the output of the local gradient clipping version?
-    assert total_norm_remote == total_norm_local
+    assert total_norm_remote.get() == total_norm_local
 
 
 # Input: None
