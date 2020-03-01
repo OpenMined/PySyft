@@ -312,6 +312,21 @@ def test_torch_device_simplify(workers):
     assert msgpack.serde._simplify(me, device)[1][0] == msgpack.serde._simplify(me, "cpu")
 
 
+def test_torch_dtype_simplify(workers):
+    """Test the simplification of torch.dtype"""
+
+    me = workers["me"]
+    dtype = torch.int32
+
+    assert (
+        msgpack.serde.detailers[msgpack.serde._simplify(me, dtype)[0]]
+        == torch_serde._detail_torch_dtype
+    )
+
+    # the simplified torch.dtype
+    assert msgpack.serde._simplify(me, dtype)[1][0] == msgpack.serde._simplify(me, "int32")
+
+
 def test_pointer_tensor_simplify(workers):
     """Test the simplification of PointerTensor"""
 
