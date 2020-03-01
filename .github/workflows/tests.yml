@@ -41,7 +41,7 @@ jobs:
     - name: Lint, format, and type-check
       run: |
         pip3 install flake8
-        - pip3 install flake8-docstrings
+        #- pip3 install flake8-docstrings
         pip3 install flake8-comprehensions
         pip3 install pep8-naming
         # stop the build if there are Python syntax errors or undefined names
