@@ -22,15 +22,15 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/cache@v1.1.2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('/pip-dep/requirements*.txt') }}
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
     - name: Install dependencies
       run: |
         sudo apt-get update
