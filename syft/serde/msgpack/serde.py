@@ -193,7 +193,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
         return _simplify(worker, obj)
 
 
-## SECTION: dinamically generate simplifiers and detailers
+## SECTION: dynamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
     """Generate simplifiers, forced full simplifiers and detailers,
     by registering native and torch types, syft objects with custom
@@ -258,7 +258,7 @@ def _serialize_msgpack_simple(
         worker = syft.framework.hook.local_worker
 
     # 1) Simplify
-    # simplify difficult-to-serialize objects. See the _simpliy method
+    # simplify difficult-to-serialize objects. See the _simplify method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
@@ -280,6 +280,7 @@ def _serialize_msgpack_binary(
 ) -> bin:
     # 2) Serialize
     # serialize into a binary
+    print(simple_objects)
     binary = msgpack_lib.dumps(simple_objects)
 
     # 3) Compress

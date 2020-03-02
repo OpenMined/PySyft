@@ -533,7 +533,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
@@ -615,7 +615,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used

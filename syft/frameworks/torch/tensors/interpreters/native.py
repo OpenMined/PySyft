@@ -36,9 +36,9 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**62-1 is not fun with precision tensors.
+    """Dealing with integers > 2**63-1 is not fun with precision tensors.
     """
-    return 62
+    return 63
 
 
 class TorchTensor(AbstractTensor):
@@ -853,6 +853,7 @@ class TorchTensor(AbstractTensor):
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
+            dtype (str or None): The dtype of shares
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.

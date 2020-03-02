@@ -111,10 +111,30 @@ def test_autograd_kwarg(workers):
 
 
 def test_send_get(workers):
+    # For int dtype
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    x_sh = torch.tensor([[3, 4]]).fix_prec(dtype='int').share(alice, bob, crypto_provider=james)
 
-    alice_t_id = x_sh.child.child["alice"].id_at_location
+    alice_t_id = x_sh.child.child.child["alice"].id_at_location
+    assert alice_t_id in alice._objects
+
+    ptr_x = x_sh.send(james)
+    ptr_x_id_at_location = ptr_x.id_at_location
+    assert ptr_x_id_at_location in james._objects
+    assert alice_t_id in alice._objects
+
+    x_sh_back = ptr_x.get()
+    assert ptr_x_id_at_location not in james._objects
+    assert alice_t_id in alice._objects
+
+    x = x_sh_back.get()
+    assert alice_t_id not in alice._objects
+
+    # For long dtype
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x_sh = torch.tensor([[3, 4]]).fix_prec().share(alice, bob, crypto_provider=james)
+
+    alice_t_id = x_sh.child.child.child["alice"].id_at_location
     assert alice_t_id in alice._objects
 
     ptr_x = x_sh.send(james)
