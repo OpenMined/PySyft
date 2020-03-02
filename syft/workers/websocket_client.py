@@ -10,8 +10,8 @@ import ssl
 import time
 
 import syft as sy
-from syft.messaging.message import ObjectRequestMessage
-from syft.messaging.message import SearchMessage
+from syft.messaging.object_request_message import ObjectRequestMessage
+from syft.messaging.search_message import SearchMessage
 from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
 

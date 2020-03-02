@@ -11,8 +11,8 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.message import ObjectMessage
-from syft.messaging.message import OperationMessage
+from syft.messaging.object_message import ObjectMessage
+from syft.messaging.operation_message import OperationMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
