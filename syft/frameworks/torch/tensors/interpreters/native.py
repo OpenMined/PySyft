@@ -858,6 +858,10 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if field==2**64:
+            # I believe there is no harm in doing this as it's a remote call
+            # and it will be converted to int during reconstruction
+            field=str(field)
         if self.has_child():
             chain = self.child
 

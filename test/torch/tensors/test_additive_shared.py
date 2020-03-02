@@ -113,7 +113,7 @@ def test_autograd_kwarg(workers):
 def test_send_get(workers):
     # For int dtype
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x_sh = torch.tensor([[3, 4]]).fix_prec(dtype='int').share(alice, bob, crypto_provider=james)
+    x_sh = torch.tensor([[3, 4]]).fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
 
     alice_t_id = x_sh.child.child.child["alice"].id_at_location
     assert alice_t_id in alice._objects
