@@ -2,9 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="14034252-c19b-43e9-a1a9-47f9fda48966" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/experimental/trask/Step 1 - Argument Typechecking.ipynb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/experimental/trask/Step 2 - Custom Constructor Method.ipynb" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/generic.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/jax_/__init__.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/numpy_/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/PKG-INFO" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/SOURCES.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/dependency_links.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/requires.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/top_level.txt" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/tensorflow_/__init__.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/torch_/__init__.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/syft/torch_/constructors.py" afterDir="false" />
@@ -31,8 +38,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/syft/generic.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="345">
-              <caret line="23" column="70" selection-start-line="23" selection-start-column="70" selection-end-line="23" selection-end-column="70" />
+            <state relative-caret-position="435">
+              <caret line="29" lean-forward="true" selection-start-line="29" selection-end-line="29" />
             </state>
           </provider>
         </entry>
@@ -350,8 +357,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/syft/generic.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="345">
-          <caret line="23" column="70" selection-start-line="23" selection-start-column="70" selection-end-line="23" selection-end-column="70" />
+        <state relative-caret-position="435">
+          <caret line="29" lean-forward="true" selection-start-line="29" selection-end-line="29" />
         </state>
       </provider>
     </entry>
