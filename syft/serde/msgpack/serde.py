@@ -280,7 +280,6 @@ def _serialize_msgpack_binary(
 ) -> bin:
     # 2) Serialize
     # serialize into a binary
-    print(simple_objects)
     binary = msgpack_lib.dumps(simple_objects)
 
     # 3) Compress

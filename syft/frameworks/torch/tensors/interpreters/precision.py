@@ -894,13 +894,13 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
-            tensor.field,
+            str(tensor.field),
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
-            tensor.dtype,
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
             syft.serde.msgpack.serde._simplify(worker, tensor.description),
+            tensor.dtype,
             chain,
         )
 
@@ -924,7 +924,7 @@ class FixedPrecisionTensor(AbstractTensor):
         tensor = FixedPrecisionTensor(
             owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
-            field=field,
+            field=int(field),
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
