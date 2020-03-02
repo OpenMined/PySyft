@@ -10,7 +10,6 @@ class VirtualWorker(BaseWorker, FederatedClient):
         if self.message_pending_time > 0:
             if self.verbose:
                 print(f"pending time of {self.message_pending_time} seconds to send message...")
-            # pending
             sleep(self.message_pending_time)
 
         return location._recv_msg(message)
