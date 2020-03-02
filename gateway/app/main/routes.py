@@ -13,12 +13,13 @@ import os
 import requests
 import logging
 
-from .persistence.manager import register_new_node, connected_nodes, delete_node
+from .storage.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
 from .events import handler
 from .auth import workers
 from .events.fl_events import cycle_request, report
-
+from .exceptions import InvalidRequestKeyError, PyGridError
+from .codes import MSG_FIELD, CYCLE, RESPONSE_MSG
 
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
@@ -27,13 +28,6 @@ SMPC_HOST_CHUNK = 4  # Minimum nodes required to host an encrypted model
 INVALID_JSON_FORMAT_MESSAGE = (
     "Invalid JSON format."  # Default message used to report Invalid JSON format.
 )
-INVALID_REQUEST_KEY_MESSAGE = (
-    "Invalid request key."  # Default message for invalid request key.
-)
-WORKER_NOT_FOUND_MESSAGE = (
-    "Worker ID not found."  # Default message for worker not found.
-)
-INVALID_PROTOCOL_MESSAGE = "Protocol is None or the id does not exist."
 
 
 @main.route("/", methods=["GET"])
@@ -298,43 +292,75 @@ def search_dataset_tags():
 def download_protocol():
     """Request a download of a protocol"""
 
-    response_body = {"message": None}
+    response_body = {}
     status_code = None
+    try:
+        worker_id = request.args.get("worker_id", None)
+        request_key = request.args.get("request_key", None)
+        protocol_id = request.args.get("protocol_id", None)
 
-    worker_id = request.args.get("worker_id")
-    request_key = request.args.get("request_key")
-    protocol_id = request.args.get("protocol_id")
+        # Retrieve Process Entities
+        _protocol = processes.get_protocol(id=protocol_id)
+        _cycle = processes.get_cycle(_protocol.fl_process_id)
+        _worker = workers.get(id=worker_id)
+        _accepted = processes.validate(_worker.id, _cycle.id, request_key)
 
-    _worker = workers.get_worker(worker_id)
+        if not _accepted:
+            raise InvalidRequestKeyError
 
-    _cycle = None
-    if _worker:
-        _cycle = _worker.get_cycle(request_key)
+        status_code = 200  # Success
+        response_body[CYCLE.PROTOCOLS] = _protocol.value
+    except InvalidRequestKeyError as e:
+        status_code = 401  # Unauthorized
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except PyGridError as e:
+        status_code = 400  # Bad request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG] = str(e)
 
-    if _cycle:
-        protocol_res = _cycle.fl_process.json()["client_protocols"]
-        if protocol_res != None and protocol_id in protocol_res.keys():
-            return Response(
-                json.dumps(protocol_res[protocol_id]),
-                status=200,
-                mimetype="application/json",
-            )
-        else:
-            response_body["message"] = INVALID_PROTOCOL_MESSAGE
-            status_code = 400
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
-            return Response(
-                json.dumps(response_body),
-                status=status_code,
-                mimetype="application/json",
-            )
-    else:
-        response_body["message"] = INVALID_REQUEST_KEY_MESSAGE
-        status_code = 400
 
-        return Response(
-            json.dumps(response_body), status=status_code, mimetype="application/json"
-        )
+@main.route("/federated/get-model", methods=["GET"])
+def download_model():
+    """Request a download of a model"""
+
+    response_body = {}
+    status_code = None
+    try:
+        worker_id = request.args.get("worker_id", None)
+        request_key = request.args.get("request_key", None)
+        model_id = request.args.get("model_id", None)
+
+        # Retrieve Process Entities
+        _model = processes.get_model(id=model_id)
+        _cycle = processes.get_cycle(_model.fl_process_id)
+        _worker = workers.get(id=worker_id)
+        _accepted = processes.validate(_worker.id, _cycle.id, request_key)
+
+        if not _accepted:
+            raise InvalidRequestKeyError
+
+        _last_checkpoint = processes.get_model_checkpoint(id=model_id)
+        status_code = 200  # Success
+        response_body[MSG_FIELD.MODEL] = _last_checkpoint
+    except InvalidRequestKeyError as e:
+        status_code = 401  # Unauthorized
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except PyGridError as e:
+        status_code = 400  # Bad request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG] = str(e)
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/federated/report", methods=["POST"])
@@ -345,7 +371,7 @@ def report_diff():
     try:
         data = json.loads(request.data)
 
-        resp = report(data, None)
+        resp = report({"data": data}, None)
 
         return Response(resp, status=200, mimetype="application/json")
 
@@ -378,64 +404,27 @@ def _get_model_hosting_nodes(model_id):
     return match_nodes
 
 
-@main.route("/federated/get-model", methods=["GET"])
-def download_model():
-    """ validate request key and download model
-    """
-
-    model_id = request.args.get("model_id")
-    worker_id = request.args.get("worker_id")
-    request_key = request.args.get("request_key")
-
-    _worker = workers.get_worker(worker_id)
-
-    _cycle = None
-    if _worker:
-        _cycle = _worker.get_cycle(request_key)
-
-    # If the worker own a cycle matching with the request_key
-    if _cycle:
-        return Response(
-            json.dumps(_cycle.fl_process.json()["model"]),
-            status=200,
-            mimetype="application/json",
-        )
-    else:
-        response_body = {"message": None}
-        response_body["message"] = INVALID_REQUEST_KEY_MESSAGE
-        status_code = 400
-
-        return Response(
-            json.dumps(response_body), status=status_code, mimetype="application/json"
-        )
-
-
 @main.route("/federated/cycle-request", methods=["POST"])
 def worker_cycle_request():
-
-    response_body = {"message": None}
+    """" This endpoint is where the worker is attempting to join an active federated learning cycle. """
+    response_body = {}
     status_code = None
 
     try:
         body = json.loads(request.data)
-        _worker = workers.get_worker(body["worker_id"])
+        response_body = cycle_request({"data": body}, None)
+    except PyGridError or json.decoder.JSONDecodeError as e:
+        status_code = 400  # Bad Request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+        response_body = json.dumps(response_body)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG.ERROR] = str(e)
 
-        if _worker:
-            response_body = cycle_request({"data": body}, None)
-            status_code = 200
-        else:
-            response_body["message"] = WORKER_NOT_FOUND_MESSAGE
-            response_body["status"] = "rejected"
-            status_code = 400
+    if isinstance(dict, response_body):
+        response_body = json.dumps(response_body)
 
-    except ValueError or KeyError as e:
-        response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
-        response_body["status"] = "rejected"
-        status_code = 400
-
-    return Response(
-        json.dumps(response_body), status=status_code, mimetype="application/json"
-    )
+    return Response(response_body, status=status_code, mimetype="application/json")
 
 
 @main.route("/req_join", methods=["GET"])

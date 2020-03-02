@@ -18,6 +18,7 @@ class WEBRTC_EVENTS(object):
 
 
 class FL_EVENTS(object):
+    HOST_FL_TRAINING = "federated/host-training"
     REPORT = "federated/report"
     AUTHENTICATE = "federated/authenticate"
     CYCLE_REQUEST = "federated/cycle-request"
@@ -37,7 +38,10 @@ class CYCLE(object):
     TIMEOUT = "timeout"
     DIFF = "diff"
     AVG_PLAN = "averaging_plan"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
 
 
 class RESPONSE_MSG(object):
     ERROR = "error"
+    SUCCESS = "success"

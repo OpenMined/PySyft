@@ -15,4 +15,4 @@ flask_sqlalchemy
 flask_migrate
 flask_testing
 psycopg2-binary
-
+-e git+https://github.com/OpenMined/PySyft@master#egg=syft

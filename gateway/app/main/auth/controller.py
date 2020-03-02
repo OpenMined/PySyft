@@ -1,35 +1,46 @@
 from .worker import Worker
+from ..storage.warehouse import Warehouse
+from ..storage import models
+from ..exceptions import WorkerNotFoundError
 
 
 class WorkerController:
     """ This class implements controller design pattern over the workers."""
 
     def __init__(self):
-        self.workers = {}
+        self._workers = Warehouse(models.Worker)
 
-    def create_worker(self, worker_id: str):
+    def create(self, worker_id: str):
         """ Register a new worker
             Args:
                 worker_id: id used to identify the new worker.
             Returns:
                 worker: a Worker instance.
         """
-        worker = Worker(worker_id)
-        self.workers[worker.worker_id] = worker
-        return self.workers[worker.worker_id]
+        new_worker = self._workers.register(id=worker_id)
+        return new_worker
 
-    def delete_worker(self, worker_id):
+    def delete(self, **kwargs):
         """ Remove a registered worker.
             Args:
                 worker_id: Id used identify the desired worker. 
         """
-        del self.workers[worker_id]
+        self._workers.delete(**kwargs)
 
-    def get_worker(self, worker_id):
+    def get(self, **kwargs):
         """ Retrieve the desired worker.
             Args:
                 worker_id: Id used to identify the desired worker.
             Returns:
                 worker: worker Instance or None if it wasn't found.
         """
-        return self.workers.get(worker_id, None)
+        _worker = self._workers.first(**kwargs)
+
+        if not _worker:
+            raise WorkerNotFoundError
+
+        return self._workers.first(**kwargs)
+
+    def update(self, worker):
+        """ Update Workers Attributes. """
+        return self._workers.update()

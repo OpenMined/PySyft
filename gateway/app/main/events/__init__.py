@@ -20,6 +20,7 @@ routes = {
     WEBRTC_EVENTS.JOIN_ROOM: scope_broadcast,
     WEBRTC_EVENTS.INTERNAL_MSG: internal_message,
     WEBRTC_EVENTS.PEER_LEFT: scope_broadcast,
+    FL_EVENTS.HOST_FL_TRAINING: host_federated_training,
     FL_EVENTS.AUTHENTICATE: authenticate,
     FL_EVENTS.CYCLE_REQUEST: cycle_request,
     FL_EVENTS.REPORT: report,
