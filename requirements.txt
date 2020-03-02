@@ -1,0 +1,4 @@
+jax>=0.1.59
+jaxlib>=0.1.39
+tensorflow>=2.1.0
+numpy
