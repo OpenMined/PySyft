@@ -635,14 +635,30 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.log = log
 
-        def tanh(tensor):
+        def tanh(tensor, maxval=6, terms=32):
             """
             Overloads torch.tanh to be able to use MPC
+
+            Implementation taken from FacebookResearch - CrypTen project
+            Computes tanh via Chebyshev approximation with truncation.
+            .. math::
+            tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
+            where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
+            The approximation is truncated to +/-1 outside [-maxval, maxval].
+            Args:
+                maxval (int): interval width used for computing chebyshev polynomials
+                terms (int): highest degree of Chebyshev polynomials.
+                             Must be even and at least 6.
             """
+            coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
+            tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(maxval), terms)
+            tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
 
-            result = 2 * sigmoid(2 * tensor) - 1
-
-            return result
+            out = tanh_polys_flipped.matmul(coeffs)
+            # truncate outside [-maxval, maxval]
+            out = torch.where(tensor > maxval, 1.0, out)
+            out = torch.where(tensor < -maxval, -1.0, out)
+            return out
 
         module.tanh = tanh
 
