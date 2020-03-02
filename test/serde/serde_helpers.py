@@ -681,19 +681,17 @@ def make_basedataset(**kwargs):
         {
             "value": dataset,
             "simplified": (
-                CODE[syft.frameworks.torch.fl.dataset.BaseDataset], (
+                CODE[syft.frameworks.torch.fl.dataset.BaseDataset],
+                (
                     (CODE[torch.Tensor], dataset.data),
                     (CODE[torch.Tensor], dataset.targets),
                     dataset.id,
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, dataset.child
-                    ),
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
                 ),
             ),
             "cmp_detailed": compare,
-
         }
     ]
 
