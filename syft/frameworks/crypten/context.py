@@ -110,12 +110,6 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
-            rank_to_worker_id = dict(
-                zip(range(1, len(workers) + 1), [worker.id for worker in workers])
-            )
-
-            sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
-
             # Start local party
             process, queue = _new_party(toy_func, 0, world_size, master_addr, master_port, (), {})
             was_initialized = DistributedCommunicator.is_initialized()
@@ -139,8 +133,8 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             # Send messages to other workers so they start their parties
             threads = []
             for i in range(len(workers)):
-                rank = i+1
-                msg = CryptenInit((rank_to_worker_id, world_size, master_addr, master_port))
+                rank = i + 1
+                msg = CryptenInit((rank, world_size, master_addr, master_port))
                 thread = threading.Thread(
                     target=_send_party_info, args=(workers[i], rank, msg, return_values)
                 )

@@ -174,8 +174,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
 
-        self.worker_id_to_rank = {}
-
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
     def _send_msg(self, message: bin, location: "BaseWorker"):
@@ -411,51 +409,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        rank_to_worker_id, world_size, master_addr, master_port = message
+        rank, world_size, master_addr, master_port = message
 
-        worker_rank = None
-        for rank, worker_id in rank_to_worker_id.items():
-            if worker_id == self.id:
-                worker_rank = rank
-                break
-
-        assert worker_rank is not None
-
-        self.rank_to_worker_id = rank_to_worker_id
-
-        return_value = run_party(
-            toy_func, worker_rank, world_size, master_addr, master_port, (), {}
-        )
+        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
 
         return ObjectMessage(return_value)
-
-    def get_worker_id_from_rank(self, rank: int):
-        """
-        Get the worker_id for the torch distrib communication given a worker id
-
-        Args:
-            worker_id: the id of the worker
-
-        Returns:
-            An int representing the rank for that worker and -1 in case the the communication
-        is not initialized
-        """
-        from crypten.communicator import DistributedCommunicator
-
-        if not DistributedCommunicator.is_initialized():
-            return -1
-
-        return self.rank_to_worker_id[rank]
-
-    def _set_rank_to_worker_id(self, rank_to_worker_id: dict):
-        """
-        Should be called only by the worker that initializes the connection
-        Initializes the self.rank_to_worker_id field of the worker
-
-        Args:
-            rank_to_worker_id: the dict containing the mapping rank-->worker_id
-        """
-        self.rank_to_worker_id = rank_to_worker_id
 
     def execute_command(self, message: tuple) -> PointerTensor:
         """
