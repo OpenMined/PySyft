@@ -13,7 +13,7 @@ def test_native_tensor_constructor():
 
 
 def test_native_parameter_constructor():
-    x = th.tensor([1, 2, 3, 4.])
+    x = th.tensor([1, 2, 3, 4.0])
 
     assert isinstance(x, _th.Tensor)
     assert isinstance(x, th.Tensor.type)
