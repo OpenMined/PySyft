@@ -78,11 +78,13 @@ class TorchTensor(AbstractTensor):
                 grad: the gradient tensor being set
             """
 
+            location = self.owner.get_worker(sender)
+
             origin_ptr = syft.PointerTensor.create_pointer(
-                self, location=sender, id_at_location=origin_id, garbage_collect_data=False
+                self, location=location, id_at_location=origin_id, garbage_collect_data=False
             )
             # set the gradient
-            self.owner.send_command(sender, message=("set_grad", origin_ptr, (grad,), {}))
+            self.owner.send_command(location, message=("set_grad", origin_ptr, (grad,), {}))
 
             # call backward()
             origin_ptr.backward(grad)
