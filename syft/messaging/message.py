@@ -13,9 +13,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.operation import Operation
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
-from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
-from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
@@ -216,60 +214,25 @@ class OperationMessage(Message):
             detailed.return_ids,
         )
 
+
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation: "OperationMessage") -> "OperationMessagePB":
+    def bufferize(worker: AbstractWorker, operation_message: "OperationMessage") -> "OperationMessagePB":
         """
         This function takes the attributes of a OperationMessage and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (OperationMessage): an OperationMessage
+            operation_message (OperationMessage): an OperationMessage
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
             data = bufferize(message)
         """
         protobuf_op_msg = OperationMessagePB()
-        protobuf_op = OperationPB()
-        protobuf_op.command = operation.cmd_name
-
-        if type(operation.cmd_owner) == sy.generic.pointers.pointer_tensor.PointerTensor:
-            protobuf_owner = protobuf_op.owner_pointer
-        elif (
-            type(operation.cmd_owner)
-            == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
-        ):
-            protobuf_owner = protobuf_op.owner_placeholder
-        else:
-            protobuf_owner = protobuf_op.owner_tensor
-
-        if operation.cmd_owner is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
-
-        if operation.cmd_args:
-            protobuf_op.args.extend(OperationMessage._bufferize_args(worker, operation.cmd_args))
-
-        if operation.cmd_kwargs:
-            for key, value in operation.cmd_kwargs.items():
-                protobuf_op.kwargs.get_or_create(key).CopyFrom(
-                    OperationMessage._bufferize_arg(worker, value)
-                )
-
-        if operation.return_ids is not None:
-            if type(operation.return_ids) == PlaceHolder:
-                return_ids = list((operation.return_ids,))
-            else:
-                return_ids = operation.return_ids
-
-            for return_id in return_ids:
-                if type(return_id) == PlaceHolder:
-                    protobuf_op.return_placeholders.extend(
-                        [sy.serde.protobuf.serde._bufferize(worker, return_id)]
-                    )
-                else:
-                    sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
+        protobuf_op = Operation.bufferize(worker, operation_message.operation)
 
         protobuf_op_msg.operation.CopyFrom(protobuf_op)
         return protobuf_op_msg
+
 
     @staticmethod
     def unbufferize(
@@ -290,80 +253,15 @@ class OperationMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
+        detailed = Operation.unbufferize(worker, protobuf_obj.operation)
 
-        command = protobuf_obj.operation.command
-        protobuf_owner = protobuf_obj.operation.WhichOneof("owner")
-        if protobuf_owner:
-            owner = sy.serde.protobuf.serde._unbufferize(
-                worker, getattr(protobuf_obj.operation, protobuf_obj.operation.WhichOneof("owner"))
-            )
-        else:
-            owner = None
-        args = OperationMessage._unbufferize_args(worker, protobuf_obj.operation.args)
-
-        kwargs = {}
-        for key in protobuf_obj.operation.kwargs:
-            kwargs[key] = OperationMessage._unbufferize_arg(
-                worker, protobuf_obj.operation.kwargs[key]
-            )
-
-        return_ids = [
-            sy.serde.protobuf.proto.get_protobuf_id(pb_id)
-            for pb_id in protobuf_obj.operation.return_ids
-        ]
-
-        return_placeholders = [
-            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_obj.operation.return_placeholders
-        ]
-
-        if return_placeholders:
-            if len(return_placeholders) == 1:
-                operation_msg = OperationMessage(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
-                )
-            else:
-                operation_msg = OperationMessage(
-                    command, owner, tuple(args), kwargs, return_placeholders
-                )
-        else:
-            operation_msg = OperationMessage(command, owner, tuple(args), kwargs, tuple(return_ids))
-
-        return operation_msg
-
-    @staticmethod
-    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
-        protobuf_args = []
-        for arg in args:
-            protobuf_args.append(OperationMessage._bufferize_arg(worker, arg))
-        return protobuf_args
-
-    @staticmethod
-    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
-        protobuf_arg = ArgPB()
-        try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
-        except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, arg)
-            )
-        return protobuf_arg
-
-    @staticmethod
-    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-        args = []
-        for protobuf_arg in protobuf_args:
-            args.append(OperationMessage._unbufferize_arg(worker, protobuf_arg))
-        return args
-
-    @staticmethod
-    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-        try:
-            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
-        except:
-            arg = protobuf_arg_field
-        return arg
+        return OperationMessage(
+            detailed.cmd_name,
+            detailed.cmd_owner,
+            detailed.cmd_args,
+            detailed.cmd_kwargs,
+            detailed.return_ids,
+        )
 
 
 class ObjectMessage(Message):
