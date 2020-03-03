@@ -7,8 +7,8 @@ import torch
 import syft as sy
 from syft import serde
 from syft.generic.pointers.object_wrapper import ObjectWrapper
-from syft.messaging.object_message import ObjectMessage
-from syft.messaging.object_request_message import ObjectRequestMessage
+from syft.messaging.message import ObjectMessage
+from syft.messaging.message import ObjectRequestMessage
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError

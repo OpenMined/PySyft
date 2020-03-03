@@ -5,7 +5,7 @@ import syft as sy
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.messaging.force_object_delete_message import ForceObjectDeleteMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 
