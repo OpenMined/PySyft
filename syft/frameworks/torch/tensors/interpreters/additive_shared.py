@@ -1031,7 +1031,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
-            str(tensor.field),
+            sy.serde.msgpack.serde._simplify(worker, tensor.field),
             tensor.dtype,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
@@ -1056,7 +1056,7 @@ class AdditiveSharingTensor(AbstractTensor):
         tensor = AdditiveSharingTensor(
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-            field=int(field),
+            field=sy.serde.msgpack.serde._detail(worker, field),
             dtype=dtype,
             crypto_provider=worker.get_worker(crypto_provider),
         )

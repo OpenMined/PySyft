@@ -414,6 +414,13 @@ def _detail_numpy_number(
 
     return nb
 
+def _simplify_int(worker: AbstractWorker, my_int: int) -> tuple:
+    str_int = str(my_int)
+    return (str_int.encode("utf-8"),)
+
+def _detail_int(worker: AbstractWorker, str_int_tuple: tuple) -> int:
+    return int(str_int_tuple[0].decode("utf-8"))
+
 
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: serialization constants for these objects need to be defined in `proto.json` file
@@ -433,5 +440,6 @@ MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         numpy.float64: (_simplify_numpy_number, _detail_numpy_number),
         numpy.int32: (_simplify_numpy_number, _detail_numpy_number),
         numpy.int64: (_simplify_numpy_number, _detail_numpy_number),
+        int: (_simplify_int, _detail_int),
     }
 )

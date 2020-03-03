@@ -1,4 +1,5 @@
 import torch
+import warnings
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -50,6 +51,7 @@ class FixedPrecisionTensor(AbstractTensor):
             self.field = 2 ** 32
         else:
             # Since n mod 0 is not defined
+            warnings.warn("Prefer to use dtype instead of field")
             if type(field) == int and field > 0:
                 if field <= 2 ** 32:
                     self.dtype = "int"
@@ -894,7 +896,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
-            str(tensor.field),
+            syft.serde.msgpack.serde._simplify(worker, tensor.field),
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
@@ -924,7 +926,7 @@ class FixedPrecisionTensor(AbstractTensor):
         tensor = FixedPrecisionTensor(
             owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
-            field=int(field),
+            field=syft.serde.msgpack.serde._detail(worker, field),
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
