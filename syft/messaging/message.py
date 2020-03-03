@@ -14,7 +14,7 @@ from syft.execution.operation import Operation
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
+from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 
 
 class Message:
