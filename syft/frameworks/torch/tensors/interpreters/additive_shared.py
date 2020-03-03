@@ -534,6 +534,9 @@ class AdditiveSharingTensor(AbstractTensor):
         self = self.mul(other)
         return self
 
+    def square(self):
+        return self.mul(self)
+
     def pow(self, power):
         """
         Compute integer power of a number by recursion using mul
