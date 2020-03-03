@@ -103,7 +103,6 @@ class Operation:
 
         return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
 
-
     @staticmethod
     def bufferize(worker: AbstractWorker, operation: "Operation") -> "OperationPB":
         """
@@ -157,11 +156,8 @@ class Operation:
 
         return protobuf_op
 
-
     @staticmethod
-    def unbufferize(
-        worker: AbstractWorker, protobuf_obj: "OperationPB"
-    ) -> "Operation":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationPB") -> "Operation":
         """
         This function takes the Protobuf version of this message and converts
         it into an Operation. The bufferize() method runs the inverse of this method.
@@ -189,13 +185,10 @@ class Operation:
 
         kwargs = {}
         for key in protobuf_obj.kwargs:
-            kwargs[key] = Operation._unbufferize_arg(
-                worker, protobuf_obj.kwargs[key]
-            )
+            kwargs[key] = Operation._unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = [
-            sy.serde.protobuf.proto.get_protobuf_id(pb_id)
-            for pb_id in protobuf_obj.return_ids
+            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
         ]
 
         return_placeholders = [
@@ -205,13 +198,9 @@ class Operation:
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                operation = Operation(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
-                )
+                operation = Operation(command, owner, tuple(args), kwargs, return_placeholders[0])
             else:
-                operation = Operation(
-                    command, owner, tuple(args), kwargs, return_placeholders
-                )
+                operation = Operation(command, owner, tuple(args), kwargs, return_placeholders)
         else:
             operation = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
 

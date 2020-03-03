@@ -214,9 +214,10 @@ class OperationMessage(Message):
             detailed.return_ids,
         )
 
-
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation_message: "OperationMessage") -> "OperationMessagePB":
+    def bufferize(
+        worker: AbstractWorker, operation_message: "OperationMessage"
+    ) -> "OperationMessagePB":
         """
         This function takes the attributes of a OperationMessage and saves them in Protobuf
         Args:
@@ -232,7 +233,6 @@ class OperationMessage(Message):
 
         protobuf_op_msg.operation.CopyFrom(protobuf_op)
         return protobuf_op_msg
-
 
     @staticmethod
     def unbufferize(
