@@ -222,7 +222,7 @@ class OperationMessage(Message):
         protobuf_op_msg = OperationMessagePB()
         protobuf_op = ComputationAction.bufferize(worker, operation_message.action)
 
-        protobuf_op_msg.operation.CopyFrom(protobuf_op)
+        protobuf_op_msg.action.CopyFrom(protobuf_op)
         return protobuf_op_msg
 
     @staticmethod
@@ -244,7 +244,7 @@ class OperationMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        detailed = ComputationAction.unbufferize(worker, protobuf_obj.operation)
+        detailed = ComputationAction.unbufferize(worker, protobuf_obj.action)
 
         return OperationMessage(
             detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids

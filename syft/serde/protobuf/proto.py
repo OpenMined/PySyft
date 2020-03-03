@@ -20,7 +20,7 @@ from syft.execution.state import State
 
 
 from google.protobuf.empty_pb2 import Empty
-from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
+from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft_proto.execution.v1.state_pb2 import State as StatePB
@@ -56,7 +56,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     # Syft types
     AdditiveSharingTensor: AdditiveSharingTensorPB,
     ObjectMessage: ObjectMessagePB,
-    ComputationAction: OperationPB,
+    ComputationAction: ComputationActionPB,
     OperationMessage: OperationMessagePB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,

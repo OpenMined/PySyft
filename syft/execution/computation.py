@@ -4,7 +4,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
-from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
+from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
@@ -97,7 +97,7 @@ class ComputationAction(Action):
         return ComputationAction(name, operand, args_, kwargs_, detailed_ids)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation: "ComputationAction") -> "OperationPB":
+    def bufferize(worker: AbstractWorker, operation: "ComputationAction") -> "ComputationActionPB":
         """
         This function takes the attributes of a Operation and saves them in Protobuf
         Args:
@@ -108,7 +108,7 @@ class ComputationAction(Action):
         Examples:
             data = bufferize(message)
         """
-        protobuf_op = OperationPB()
+        protobuf_op = ComputationActionPB()
         protobuf_op.command = operation.name
 
         if type(operation.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
@@ -150,7 +150,7 @@ class ComputationAction(Action):
         return protobuf_op
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationPB") -> "ComputationAction":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "ComputationActionPB") -> "ComputationAction":
         """
         This function takes the Protobuf version of this message and converts
         it into an Operation. The bufferize() method runs the inverse of this method.
@@ -158,7 +158,7 @@ class ComputationAction(Action):
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            protobuf_obj (OperationPB): the Protobuf message
+            protobuf_obj (ComputationActionPB): the Protobuf message
 
         Returns:
             obj (Operation): an Operation
