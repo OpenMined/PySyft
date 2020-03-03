@@ -10,7 +10,7 @@ All Syft message types extend the Message class.
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
-from syft.execution.operation import Operation
+from syft.execution.computation import ComputationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
@@ -115,7 +115,7 @@ class OperationMessage(Message):
     worker to take two tensors and add them together is an operation. However, sending an object
     from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids):
+    def __init__(self, name, operand, args_, kwargs_, return_ids):
         """Initialize an operation message
 
         Args:
@@ -132,27 +132,27 @@ class OperationMessage(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.operation = Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids)
+        self.action = ComputationAction(name, operand, args_, kwargs_, return_ids)
 
     @property
-    def cmd_name(self):
-        return self.operation.cmd_name
+    def name(self):
+        return self.action.name
 
     @property
-    def cmd_owner(self):
-        return self.operation.cmd_owner
+    def operand(self):
+        return self.action.operand
 
     @property
-    def cmd_args(self):
-        return self.operation.cmd_args
+    def args(self):
+        return self.action.args
 
     @property
-    def cmd_kwargs(self):
-        return self.operation.cmd_kwargs
+    def kwargs(self):
+        return self.action.kwargs
 
     @property
     def return_ids(self):
-        return self.operation.return_ids
+        return self.action.return_ids
 
     @property
     def contents(self):
@@ -164,14 +164,9 @@ class OperationMessage(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (
-            self.operation.cmd_name,
-            self.operation.cmd_owner,
-            self.operation.cmd_args,
-            self.operation.cmd_kwargs,
-        )
+        message = (self.action.name, self.action.operand, self.action.args, self.action.kwargs)
 
-        return (message, self.operation.return_ids)
+        return (message, self.action.return_ids)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "OperationMessage") -> tuple:
@@ -185,7 +180,7 @@ class OperationMessage(Message):
         Examples:
             data = simplify(ptr)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, ptr.operation),)
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.action),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "OperationMessage":
@@ -202,16 +197,12 @@ class OperationMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        operation = msg_tuple[0]
+        action = msg_tuple[0]
 
-        detailed = sy.serde.msgpack.serde._detail(worker, operation)
+        detailed = sy.serde.msgpack.serde._detail(worker, action)
 
         return OperationMessage(
-            detailed.cmd_name,
-            detailed.cmd_owner,
-            detailed.cmd_args,
-            detailed.cmd_kwargs,
-            detailed.return_ids,
+            detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
         )
 
     @staticmethod
@@ -229,7 +220,7 @@ class OperationMessage(Message):
             data = bufferize(message)
         """
         protobuf_op_msg = OperationMessagePB()
-        protobuf_op = Operation.bufferize(worker, operation_message.operation)
+        protobuf_op = ComputationAction.bufferize(worker, operation_message.action)
 
         protobuf_op_msg.operation.CopyFrom(protobuf_op)
         return protobuf_op_msg
@@ -253,14 +244,10 @@ class OperationMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        detailed = Operation.unbufferize(worker, protobuf_obj.operation)
+        detailed = ComputationAction.unbufferize(worker, protobuf_obj.operation)
 
         return OperationMessage(
-            detailed.cmd_name,
-            detailed.cmd_owner,
-            detailed.cmd_args,
-            detailed.cmd_kwargs,
-            detailed.return_ids,
+            detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
         )
 
 

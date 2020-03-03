@@ -1,28 +1,24 @@
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
+from syft.execution.action import Action
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
-class Operation:
-    """All syft operations use this message type
+class ComputationAction(Action):
+    """Describes mathematical operations performed on tensors"""
 
-    In Syft, an operation is when one worker wishes to tell another worker to do something with
-    objects contained in the worker._objects registry (or whatever the official object store is
-    backed with in the case that it's been overridden). Semantically, one could view all Messages
-    as a kind of operation, but when we say operation this is what we mean. For example, telling a
-    worker to take two tensors and add them together is an operation. However, sending an object
-    from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
-
-    def __init__(self, cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids):
-        """Initialize an operation message
+    def __init__(self, name, operand, args_, kwargs_, return_ids):
+        """Initialize an operation
 
         Args:
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the operation properly.
+            name (String): The name of the method to be invoked (e.g. "__add__")
+            operand (Tensor): The object to invoke the method on
+            args_ (Tuple): The arguments to the method call
+            kwargs_ (Dictionary): The keyword arguments to the method call
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
                 operation results are set by the client. This allows the client to be able to predict where
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
@@ -34,10 +30,10 @@ class Operation:
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.cmd_name = cmd_name
-        self.cmd_owner = cmd_owner
-        self.cmd_args = cmd_args
-        self.cmd_kwargs = cmd_kwargs
+        self.name = name
+        self.operand = operand
+        self.args = args_
+        self.kwargs = kwargs_
         self.return_ids = return_ids
 
     @property
@@ -50,12 +46,12 @@ class Operation:
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.cmd_name, self.cmd_owner, self.cmd_args, self.cmd_kwargs)
+        message = (self.name, self.operand, self.args, self.kwargs)
 
         return (message, self.return_ids)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "Operation") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "ComputationAction") -> tuple:
         """
         This function takes the attributes of a Operation and saves them in a tuple
         Args:
@@ -68,7 +64,7 @@ class Operation:
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        message = (ptr.cmd_name, ptr.cmd_owner, ptr.cmd_args, ptr.cmd_kwargs)
+        message = (ptr.name, ptr.operand, ptr.args, ptr.kwargs)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
@@ -76,7 +72,7 @@ class Operation:
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ComputationAction":
         """
         This function takes the simplified tuple version of this message and converts
         it into a Operation. The simplify() method runs the inverse of this method.
@@ -96,15 +92,12 @@ class Operation:
         detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
         detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
 
-        cmd_name = detailed_msg[0]
-        cmd_owner = detailed_msg[1]
-        cmd_args = detailed_msg[2]
-        cmd_kwargs = detailed_msg[3]
+        name, operand, args_, kwargs_ = detailed_msg
 
-        return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+        return ComputationAction(name, operand, args_, kwargs_, detailed_ids)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation: "Operation") -> "OperationPB":
+    def bufferize(worker: AbstractWorker, operation: "ComputationAction") -> "OperationPB":
         """
         This function takes the attributes of a Operation and saves them in Protobuf
         Args:
@@ -116,28 +109,28 @@ class Operation:
             data = bufferize(message)
         """
         protobuf_op = OperationPB()
-        protobuf_op.command = operation.cmd_name
+        protobuf_op.command = operation.name
 
-        if type(operation.cmd_owner) == sy.generic.pointers.pointer_tensor.PointerTensor:
+        if type(operation.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.owner_pointer
         elif (
-            type(operation.cmd_owner)
+            type(operation.operand)
             == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         ):
             protobuf_owner = protobuf_op.owner_placeholder
         else:
             protobuf_owner = protobuf_op.owner_tensor
 
-        if operation.cmd_owner is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
+        if operation.operand is not None:
+            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.operand))
 
-        if operation.cmd_args:
-            protobuf_op.args.extend(Operation._bufferize_args(worker, operation.cmd_args))
+        if operation.args:
+            protobuf_op.args.extend(ComputationAction._bufferize_args(worker, operation.args))
 
-        if operation.cmd_kwargs:
-            for key, value in operation.cmd_kwargs.items():
+        if operation.kwargs:
+            for key, value in operation.kwargs.items():
                 protobuf_op.kwargs.get_or_create(key).CopyFrom(
-                    Operation._bufferize_arg(worker, value)
+                    ComputationAction._bufferize_arg(worker, value)
                 )
 
         if operation.return_ids is not None:
@@ -157,7 +150,7 @@ class Operation:
         return protobuf_op
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationPB") -> "Operation":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationPB") -> "ComputationAction":
         """
         This function takes the Protobuf version of this message and converts
         it into an Operation. The bufferize() method runs the inverse of this method.
@@ -181,11 +174,11 @@ class Operation:
             )
         else:
             owner = None
-        args = Operation._unbufferize_args(worker, protobuf_obj.args)
+        args = ComputationAction._unbufferize_args(worker, protobuf_obj.args)
 
         kwargs = {}
         for key in protobuf_obj.kwargs:
-            kwargs[key] = Operation._unbufferize_arg(worker, protobuf_obj.kwargs[key])
+            kwargs[key] = ComputationAction._unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
@@ -198,11 +191,15 @@ class Operation:
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                operation = Operation(command, owner, tuple(args), kwargs, return_placeholders[0])
+                operation = ComputationAction(
+                    command, owner, tuple(args), kwargs, return_placeholders[0]
+                )
             else:
-                operation = Operation(command, owner, tuple(args), kwargs, return_placeholders)
+                operation = ComputationAction(
+                    command, owner, tuple(args), kwargs, return_placeholders
+                )
         else:
-            operation = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
+            operation = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
 
         return operation
 
@@ -210,7 +207,7 @@ class Operation:
     def _bufferize_args(worker: AbstractWorker, args: list) -> list:
         protobuf_args = []
         for arg in args:
-            protobuf_args.append(Operation._bufferize_arg(worker, arg))
+            protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
         return protobuf_args
 
     @staticmethod
@@ -228,7 +225,7 @@ class Operation:
     def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
         args = []
         for protobuf_arg in protobuf_args:
-            args.append(Operation._unbufferize_arg(worker, protobuf_arg))
+            args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
         return args
 
     @staticmethod

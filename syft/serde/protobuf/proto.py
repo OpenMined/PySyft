@@ -13,7 +13,7 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import OperationMessage
-from syft.execution.operation import Operation
+from syft.execution.computation import ComputationAction
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
@@ -56,7 +56,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     # Syft types
     AdditiveSharingTensor: AdditiveSharingTensorPB,
     ObjectMessage: ObjectMessagePB,
-    Operation: OperationPB,
+    ComputationAction: OperationPB,
     OperationMessage: OperationMessagePB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,

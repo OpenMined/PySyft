@@ -398,10 +398,10 @@ class Plan(AbstractObject, ObjectStorage):
 
             for i, op in enumerate(self.operations):
                 cmd, _self, args, kwargs, return_placeholder = (
-                    op.cmd_name,
-                    op.cmd_owner,  # cmd_owner is equivalent to the "self" in a method
-                    op.cmd_args,
-                    op.cmd_kwargs,
+                    op.name,
+                    op.operand,  # operand is equivalent to the "self" in a method
+                    op.args,
+                    op.kwargs,
                     op.return_ids,
                 )
                 if _self is None:

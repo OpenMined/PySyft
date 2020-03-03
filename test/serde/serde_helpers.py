@@ -455,11 +455,11 @@ def compare_operations(detailed, original):
     assert len(detailed) == len(original)
     for i, detailed_op in enumerate(detailed):
         original_op = original[i]
-        compare_placeholders_list(original_op.cmd_args, detailed_op.cmd_args)
+        compare_placeholders_list(original_op.args, detailed_op.args)
         # return_ids is not a list (why?)
         compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
-        assert original_op.cmd_name == detailed_op.cmd_name
-        assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
+        assert original_op.name == detailed_op.name
+        assert original_op.kwargs == detailed_op.kwargs
     return True
 
 
@@ -1315,35 +1315,25 @@ def make_message(**kwargs):
     ]
 
 
-# syft.execution.operation.Operation
-def make_operation(**kwargs):
+# syft.execution.computation.ComputationAction
+def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
     y = x * 2
-    op1 = bob._get_msg(-1).operation
+    op1 = bob._get_msg(-1).action
 
     a = torch.tensor([[1, 2], [3, 4]]).send(bob)
     b = a.sum(1, keepdim=True)
-    op2 = bob._get_msg(-1).operation
+    op2 = bob._get_msg(-1).action
 
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (
-            detailed.cmd_name,
-            detailed.cmd_owner,
-            detailed.cmd_args,
-            detailed.cmd_kwargs,
-        )
-        original_msg = (
-            original.cmd_name,
-            original.cmd_owner,
-            original.cmd_args,
-            original.cmd_kwargs,
-        )
-        assert type(detailed) == syft.messaging.message.Operation
+        detailed_msg = (detailed.name, detailed.operand, detailed.args, detailed.kwargs)
+        original_msg = (original.name, original.operand, original.args, original.kwargs)
+        assert type(detailed) == syft.messaging.message.ComputationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1352,14 +1342,14 @@ def make_operation(**kwargs):
         assert detailed.return_ids == original.return_ids
         return True
 
-    message1 = (op1.cmd_name, op1.cmd_owner, op1.cmd_args, op1.cmd_kwargs)
-    message2 = (op2.cmd_name, op2.cmd_owner, op2.cmd_args, op2.cmd_kwargs)
+    message1 = (op1.name, op1.operand, op1.args, op1.kwargs)
+    message2 = (op2.name, op2.operand, op2.args, op2.kwargs)
 
     return [
         {
             "value": op1,
             "simplified": (
-                CODE[syft.execution.operation.Operation],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1370,7 +1360,7 @@ def make_operation(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.execution.operation.Operation],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
@@ -1399,21 +1389,11 @@ def make_operation_message(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.OperationMessage
 
-        detailed = detailed.operation
-        original = original.operation
+        detailed = detailed.action
+        original = original.action
 
-        detailed_msg = (
-            detailed.cmd_name,
-            detailed.cmd_owner,
-            detailed.cmd_args,
-            detailed.cmd_kwargs,
-        )
-        original_msg = (
-            original.cmd_name,
-            original.cmd_owner,
-            original.cmd_args,
-            original.cmd_kwargs,
-        )
+        detailed_msg = (detailed.name, detailed.operand, detailed.args, detailed.kwargs)
+        original_msg = (original.name, original.operand, original.args, original.kwargs)
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1427,7 +1407,7 @@ def make_operation_message(**kwargs):
             "value": op1,
             "simplified": (
                 CODE[syft.messaging.message.OperationMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, op1.operation),),  # (Any) message
+                (msgpack.serde._simplify(syft.hook.local_worker, op1.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
@@ -1435,7 +1415,7 @@ def make_operation_message(**kwargs):
             "value": op2,
             "simplified": (
                 CODE[syft.messaging.message.OperationMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, op2.operation),),  # (Any) message
+                (msgpack.serde._simplify(syft.hook.local_worker, op2.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
