@@ -37,7 +37,7 @@ samples[syft.execution.state.State] = make_state
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.OperationMessage] = make_operation
+samples[syft.messaging.message.OperationMessage] = make_operation_message
 
 
 def test_serde_coverage():

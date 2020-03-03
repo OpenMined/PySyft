@@ -1315,18 +1315,18 @@ def make_message(**kwargs):
     ]
 
 
-# syft.messaging.message.OperationMessage
+# syft.execution.operation.Operation
 def make_operation(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
     y = x * 2
-    op1 = bob._get_msg(-1)
+    op1 = bob._get_msg(-1).operation
 
     a = torch.tensor([[1, 2], [3, 4]]).send(bob)
     b = a.sum(1, keepdim=True)
-    op2 = bob._get_msg(-1)
+    op2 = bob._get_msg(-1).operation
 
     bob.log_msgs = False
 
@@ -1343,7 +1343,7 @@ def make_operation(**kwargs):
             original.cmd_args,
             original.cmd_kwargs,
         )
-        assert type(detailed) == syft.messaging.message.OperationMessage
+        assert type(detailed) == syft.messaging.message.Operation
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1359,7 +1359,7 @@ def make_operation(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.operation.Operation],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1370,11 +1370,72 @@ def make_operation(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.operation.Operation],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
                 ),
+            ),
+            "cmp_detailed": compare,
+        },
+    ]
+
+
+# syft.messaging.message.OperationMessage
+def make_operation_message(**kwargs):
+    bob = kwargs["workers"]["bob"]
+    bob.log_msgs = True
+
+    x = torch.tensor([1, 2, 3, 4]).send(bob)
+    y = x * 2
+    op1 = bob._get_msg(-1)
+
+    a = torch.tensor([[1, 2], [3, 4]]).send(bob)
+    b = a.sum(1, keepdim=True)
+    op2 = bob._get_msg(-1)
+
+    bob.log_msgs = False
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.OperationMessage
+
+        detailed = detailed.operation
+        original = original.operation
+
+        detailed_msg = (
+            detailed.cmd_name,
+            detailed.cmd_owner,
+            detailed.cmd_args,
+            detailed.cmd_kwargs,
+        )
+        original_msg = (
+            original.cmd_name,
+            original.cmd_owner,
+            original.cmd_args,
+            original.cmd_kwargs,
+        )
+        for i in range(len(original_msg)):
+            if type(original_msg[i]) != torch.Tensor:
+                assert detailed_msg[i] == original_msg[i]
+            else:
+                assert detailed_msg[i].equal(original_msg[i])
+        assert detailed.return_ids == original.return_ids
+        return True
+
+    return [
+        {
+            "value": op1,
+            "simplified": (
+                CODE[syft.messaging.message.OperationMessage],
+                (msgpack.serde._simplify(syft.hook.local_worker, op1.operation),),  # (Any) message
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": op2,
+            "simplified": (
+                CODE[syft.messaging.message.OperationMessage],
+                (msgpack.serde._simplify(syft.hook.local_worker, op2.operation),),  # (Any) message
             ),
             "cmp_detailed": compare,
         },

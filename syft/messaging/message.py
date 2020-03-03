@@ -134,11 +134,27 @@ class OperationMessage(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.cmd_name = cmd_name
-        self.cmd_owner = cmd_owner
-        self.cmd_args = cmd_args
-        self.cmd_kwargs = cmd_kwargs
-        self.return_ids = return_ids
+        self.operation = Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids)
+
+    @property
+    def cmd_name(self):
+        return self.operation.cmd_name
+
+    @property
+    def cmd_owner(self):
+        return self.operation.cmd_owner
+
+    @property
+    def cmd_args(self):
+        return self.operation.cmd_args
+
+    @property
+    def cmd_kwargs(self):
+        return self.operation.cmd_kwargs
+
+    @property
+    def return_ids(self):
+        return self.operation.return_ids
 
     @property
     def contents(self):
@@ -150,9 +166,14 @@ class OperationMessage(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.cmd_name, self.cmd_owner, self.cmd_args, self.cmd_kwargs)
+        message = (
+            self.operation.cmd_name,
+            self.operation.cmd_owner,
+            self.operation.cmd_args,
+            self.operation.cmd_kwargs,
+        )
 
-        return (message, self.return_ids)
+        return (message, self.operation.return_ids)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "OperationMessage") -> tuple:
@@ -166,14 +187,7 @@ class OperationMessage(Message):
         Examples:
             data = simplify(ptr)
         """
-        # NOTE: we can skip calling _simplify on return_ids because they should already be
-        # a list of simple types.
-        message = (ptr.cmd_name, ptr.cmd_owner, ptr.cmd_args, ptr.cmd_kwargs)
-
-        return (
-            sy.serde.msgpack.serde._simplify(worker, message),
-            sy.serde.msgpack.serde._simplify(worker, ptr.return_ids),
-        )
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.operation),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "OperationMessage":
@@ -190,18 +204,17 @@ class OperationMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        message = msg_tuple[0]
-        return_ids = msg_tuple[1]
+        operation = msg_tuple[0]
 
-        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
-        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
+        detailed = sy.serde.msgpack.serde._detail(worker, operation)
 
-        cmd_name = detailed_msg[0]
-        cmd_owner = detailed_msg[1]
-        cmd_args = detailed_msg[2]
-        cmd_kwargs = detailed_msg[3]
-
-        return OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+        return OperationMessage(
+            detailed.cmd_name,
+            detailed.cmd_owner,
+            detailed.cmd_args,
+            detailed.cmd_kwargs,
+            detailed.return_ids,
+        )
 
     @staticmethod
     def bufferize(worker: AbstractWorker, operation: "OperationMessage") -> "OperationMessagePB":
