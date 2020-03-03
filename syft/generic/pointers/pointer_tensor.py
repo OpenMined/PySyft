@@ -178,10 +178,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     @staticmethod
     def create_pointer(
         tensor,
-        location: AbstractWorker = None,
+        location: Union[AbstractWorker, str] = None,
         id_at_location: (str or int) = None,
         register: bool = False,
-        owner: AbstractWorker = None,
+        owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
@@ -259,7 +259,18 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location, requires_grad):
+    def move(self, location: AbstractWorker, requires_grad: bool):
+        """
+        Will move the remove value from self.location to location
+
+        Args:
+            location: the new location of the remote data
+            requires_grad: see send() for details
+
+        Returns:
+            A pointer to location
+        """
+        # move to local target is equivalent to doing .get()
         if self.owner.id == location.id:
             return self.get()
 
@@ -269,7 +280,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr.garbage_collect_data = False
         return ptr
 
-    def remote_send(self, destination, requires_grad, change_location=False):
+    def remote_send(
+        self, destination: AbstractWorker, requires_grad: bool, change_location: bool = False
+    ):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
@@ -277,6 +290,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Considering the same example as before with ptr.remote_send(B, change_location=True):
         C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
         will have 2 references pointing to it.
+
+        Args:
+            destination: where the remote value should be sent
+            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
+                a message to update the gradient of the value on A.
+            change_location: if true, returns a pointer directly to the remote value on B. If False,
+                return a pointer to A which points to B.
         """
         args = (destination,)
         kwargs = {"inplace": False, "requires_grad": requires_grad}

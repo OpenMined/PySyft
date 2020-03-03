@@ -619,6 +619,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj: A torch Tensor or Variable object to be sent.
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
+            requires_grad: Default to False. If true, whenever the remote value of this tensor
+                will have its gradient updated (for example when calling .backward()), a call
+                will be made to set back the local gradient value.
         """
         if requires_grad:
             kwargs = dict(sender=self.id, origin_id=obj.id)
