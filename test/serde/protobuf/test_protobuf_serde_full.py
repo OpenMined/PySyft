@@ -30,14 +30,14 @@ samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
-samples[syft.messaging.plan.Plan] = make_plan
+samples[syft.execution.plan.Plan] = make_plan
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
-samples[syft.messaging.protocol.Protocol] = make_protocol
-samples[syft.messaging.plan.state.State] = make_state
+samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.state.State] = make_state
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.Operation] = make_operation
+samples[syft.messaging.message.OperationMessage] = make_operation
 
 
 def test_serde_coverage():

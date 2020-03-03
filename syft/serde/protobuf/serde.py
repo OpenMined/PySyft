@@ -7,10 +7,10 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
-from syft.messaging.message import Operation
-from syft.messaging.plan.plan import Plan
-from syft.messaging.protocol import Protocol
-from syft.messaging.plan.state import State
+from syft.messaging.message import OperationMessage
+from syft.execution.plan import Plan
+from syft.execution.protocol import Protocol
+from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
@@ -41,7 +41,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
     ObjectMessage,
-    Operation,
+    OperationMessage,
     PlaceHolder,
     Plan,
     PointerTensor,
@@ -237,7 +237,7 @@ def serialize(
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
-    elif obj_type == Operation:
+    elif obj_type == OperationMessage:
         msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
