@@ -12,13 +12,13 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.messaging.message import OperationMessage
+from syft.execution.computation import ComputationAction
 from syft.execution.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
 class func2plan(object):
@@ -96,7 +96,7 @@ class Plan(AbstractObject, ObjectStorage):
         state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        operations: List[OperationMessage] = None,
+        operations: List[ComputationAction] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         forward_func=None,
         state_tensors=None,
@@ -297,12 +297,11 @@ class Plan(AbstractObject, ObjectStorage):
 
         for log in sy.hook.trace.logs:
             command, response = log
-            command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, node_type="input"),
-                self.replace_with_placeholders(response, node_type="output"),
-            )
+            command_placeholders = self.replace_with_placeholders(command, node_type="input")
+            return_placeholders = self.replace_with_placeholders(response, node_type="output")
+
             # We're cheating a bit here because we put placeholders instead of return_ids
-            operation = OperationMessage(*command_placeholders, return_ids=return_placeholders)
+            operation = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.operations.append(operation)
 
         sy.hook.trace.clear()
@@ -599,7 +598,7 @@ class Plan(AbstractObject, ObjectStorage):
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
 
         protobuf_operations = [
-            sy.serde.protobuf.serde._bufferize(worker, operation).operation
+            sy.serde.protobuf.serde._bufferize(worker, operation)
             for operation in plan.operations
         ]
         protobuf_plan.operations.extend(protobuf_operations)
@@ -641,8 +640,8 @@ class Plan(AbstractObject, ObjectStorage):
 
         operations = []
         for operation in protobuf_plan.operations:
-            op_msg = OperationMessagePB()
-            op_msg.operation.CopyFrom(operation)
+            op_msg = ComputationActionPB()
+            op_msg.CopyFrom(operation)
             operations.append(op_msg)
 
         operations = [
