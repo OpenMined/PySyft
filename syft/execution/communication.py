@@ -1,13 +1,20 @@
+from typing import List
+from typing import Union
+
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
 
+from syft_proto.execution.v1.communication_action_pb2 import (
+    CommunicationAction as CommunicationActionPB,
+)
+
 
 class CommunicationAction(Action):
     """Describes communication actions performed on tensors"""
 
-    def __init__(self, object, source: AbstractWorker, *destinations: AbstractWorker, **kwargs):
+    def __init__(self, obj, source: Union[str, int], destinations: List[Union[str, int]], **kwargs):
         """Initialize an communication action
 
         Args:
@@ -79,7 +86,18 @@ class CommunicationAction(Action):
         Examples:
             data = bufferize(sy.local_worker, communication)
         """
-        pass
+        protobuf_obj = CommunicationActionPB()
+
+        protobuf_obj.obj = sy.serde.protobuf.serde._bufferize(worker, communication.obj)
+
+        protobuf_obj.source = communication.source
+        protobuf_obj.destinations = communication.destinations
+
+        if operation.kwargs:
+            for key, value in operation.kwargs.items():
+                protobuf_op.kwargs.get_or_create(key).CopyFrom(
+                    CommunicationAction._bufferize_arg(worker, value)
+                )
 
     @staticmethod
     def unbufferize(
@@ -100,4 +118,48 @@ class CommunicationAction(Action):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        pass
+        obj = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj.obj)
+
+        source = protobuf_obj.source
+        destinations = protobuf_obj.destinations
+
+        kwargs = {
+            key: ComputationAction._unbufferize_arg(worker, kwarg)
+            for key, kwarg in protobuf_obj.items()
+        }
+
+        return CommunicationAction(obj, source, destinations, **kwargs)
+
+    @staticmethod
+    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
+        protobuf_args = []
+        for arg in args:
+            protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
+        return protobuf_args
+
+    @staticmethod
+    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
+        protobuf_arg = ArgPB()
+        try:
+            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
+        except:
+            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
+                sy.serde.protobuf.serde._bufferize(worker, arg)
+            )
+        return protobuf_arg
+
+    @staticmethod
+    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
+        args = []
+        for protobuf_arg in protobuf_args:
+            args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
+        return args
+
+    @staticmethod
+    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
+        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+        try:
+            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
+        except:
+            arg = protobuf_arg_field
+        return arg
