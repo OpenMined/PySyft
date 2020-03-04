@@ -124,16 +124,14 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
             "type": "federated/host-training",
             "data": {
                 "model": serialized_plan_model,
-                "plans": json.dumps(
-                    {
-                        "foo_1": serialized_plan_method_1,
-                        "foo_2": serialized_plan_method_2,
-                    }
-                ),
-                "protocols": json.dumps({"protocol_1": "serialized_protocol_mockup"}),
+                "plans": {
+                    "foo_1": serialized_plan_method_1,
+                    "foo_2": serialized_plan_method_2,
+                },
+                "protocols": {"protocol_1": "serialized_protocol_mockup"},
                 "averaging_plan": serialized_avg_plan,
-                "client_config": json.dumps(client_config),
-                "server_config": json.dumps(server_config),
+                "client_config": client_config,
+                "server_config": server_config,
             },
         }
 
