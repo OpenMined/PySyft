@@ -5,7 +5,6 @@ import os
 
 import syft as sy
 from syft.messaging.message import CryptenInit
-from syft.frameworks import crypten as syft_crypt
 
 import crypten
 from crypten.communicator import DistributedCommunicator
@@ -24,7 +23,9 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
         os.environ[key] = str(val)
 
     crypten.init()
-    return_value = func(*func_args, **func_kwargs)
+    if rank == 1:
+        import pdb; pdb.set_trace()
+    return_value = func(*func_args, **func_kwargs).tolist()
     crypten.uninit()
 
     queue.put(return_value)
@@ -65,7 +66,8 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     process.join()
     if was_initialized:
         crypten.init()
-    return queue.get()
+    res = queue.get()
+    return res
 
 
 def _send_party_info(worker, rank, msg, return_values):
@@ -83,15 +85,7 @@ def _send_party_info(worker, rank, msg, return_values):
     return_values[rank] = response.contents
 
 
-def toy_func():
-    alice_tensor = syft_crypt.load("crypten_data", 1)
-    bob_tensor = syft_crypt.load("crypten_data", 2)
-
-    crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
-    return crypt.get_plain_text().tolist()
-
-
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
+def run_multiworkers(workers: list, master_addr: str, master_port: int = 15448):
     """Defines decorator to run function across multiple workers.
 
     Args:
@@ -100,8 +94,8 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
         master_port (int, str): port of the master party (party with rank 0), default is 15987.
     """
 
-    def decorator(func):
-        @functools.wraps(func)
+    def decorator(plan):
+        @functools.wraps(plan)
         def wrapper(*args, **kwargs):
             # TODO:
             # - check if workers are reachable / they can handle the computation
@@ -110,12 +104,28 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
+            plan.build()
+
+            # Mark the plan so the other workers will use that tag to retrieve the plan
+            plan.tags = ["crypten_plan"]
+
+            rank_to_worker_id = dict(
+                zip(range(1, len(workers) + 1), [worker.id for worker in workers])
+            )
+
+            sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
+
+            for worker in workers:
+                plan.send(worker)
+
             # Start local party
-            process, queue = _new_party(toy_func, 0, world_size, master_addr, master_port, (), {})
+            process, queue = _new_party(plan, 0, world_size, master_addr, master_port, (), {})
+
             was_initialized = DistributedCommunicator.is_initialized()
             if was_initialized:
                 crypten.uninit()
             process.start()
+
             # Run TTP if required
             # TODO: run ttp in a specified worker
             if crypten.mpc.ttp_required():
@@ -134,7 +144,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             threads = []
             for i in range(len(workers)):
                 rank = i + 1
-                msg = CryptenInit((rank, world_size, master_addr, master_port))
+                msg = CryptenInit((rank_to_worker_id, world_size, master_addr, master_port))
                 thread = threading.Thread(
                     target=_send_party_info, args=(workers[i], rank, msg, return_values)
                 )

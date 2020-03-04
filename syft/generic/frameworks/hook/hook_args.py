@@ -228,6 +228,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
     hash_wrap_args = hash(frozenset(wrap_args.items()))
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
+    #import pdb; pdb.set_trace()
 
     try:
         assert attr not in ambiguous_functions
@@ -263,6 +264,7 @@ def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
     # Inspect the call to find tensor arguments and return a rule whose
     # structure is the same as the response object, with 1 where there was
     # (framework or syft) tensors and 0 when not (ex: number, str, ...)
+
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
     # (but not pointer) with their child in the args objects

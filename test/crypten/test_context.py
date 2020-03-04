@@ -1,6 +1,8 @@
 import pytest
+import syft as sy
 from syft.frameworks.crypten.context import run_multiworkers
 import torch as th
+import crypten
 
 
 def test_context(workers):
@@ -10,18 +12,24 @@ def test_context(workers):
     alice = workers["alice"]
     bob = workers["bob"]
 
-    alice_tensor_ptr = th.tensor([42, 53]).tag("crypten_data").send(alice)
-    bob_tensor_ptr = th.tensor([101, 32]).tag("crypten_data").send(bob)
+    alice_tensor_ptr = th.tensor([42, 53, 3, 2]).tag("crypten_data").send(alice)
+    bob_tensor_ptr = th.tensor([101, 32, 29, 2]).tag("crypten_data").send(bob)
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
-    def test_three_parties():
-        pass  # pragma: no cover
+    @sy.func2plan()
+    def plan_func():
+        alice_tensor = crypten.load("crypten_data", 1)
+        bob_tensor = crypten.load("crypten_data", 2)
 
-    return_values = test_three_parties()
+        crypt = alice_tensor + bob_tensor
+        result = crypt.get_plain_text()
+        return result
+
+    return_values = plan_func()
 
     # A toy function is ran at each party, and they should all decrypt
-    # a tensor with value [42, 53, 101, 32]
-    expected_value = [42, 53, 101, 32]
+    # a tensor with value [143, 85]
+    expected_value = [143, 85, 32, 4]
     for rank in range(n_workers):
         assert (
             return_values[rank] == expected_value

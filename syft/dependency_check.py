@@ -14,10 +14,11 @@ try:
 except ImportError:
     tensorflow_available = False
 
-
 tfe_spec = util.find_spec("tf_encrypted")
 tfe_available = tfe_spec is not None
 
-
 torch_spec = util.find_spec("torch")
 torch_available = torch_spec is not None
+
+crypten_spec = util.find_spec("crypten")
+crypten_available = crypten_spec is not None

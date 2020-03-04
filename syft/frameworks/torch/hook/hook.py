@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 from functools import wraps
 import logging
 from math import inf
@@ -8,6 +9,8 @@ import types
 import weakref
 
 import syft
+from syft import dependency_check
+from syft.frameworks.torch.tensors.crypten.syft_crypten import SyftCrypTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.hook.trace import Trace
@@ -34,6 +37,8 @@ from syft.execution.plan import Plan
 
 from syft.exceptions import route_method_exception
 
+if dependency_check.crypten_available:
+    import crypten
 
 class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
@@ -130,9 +135,14 @@ class TorchHook(FrameworkHook):
         else:
             self.local_worker.hook = self
 
-        self.to_auto_overload = {}
+        self.to_auto_overload = defaultdict(set)
 
         self.args_hook_for_overloaded_attr = {}
+
+        # Hook the Crypten module
+        # We do because SyftCrypTensor (wrapper in Syft) and MPCTensor (from Crypten)
+        if dependency_check.crypten_available:
+            self._hook_crypten()
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
@@ -160,6 +170,11 @@ class TorchHook(FrameworkHook):
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
+
+        # Add all hooked tensor methods to SyftCrypTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(SyftCrypTensor)
 
         # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
@@ -254,9 +269,8 @@ class TorchHook(FrameworkHook):
 
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
-        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type
-        )
+        to_overload = self._which_methods_should_we_auto_overload(tensor_type)
+        self.to_auto_overload[tensor_type].update(to_overload)
 
         # [We don't rename native methods as torch tensors are not hooked] Rename native functions
         # #self._rename_native_functions(tensor_type)
@@ -472,6 +486,22 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
+
+    def _hook_crypten(self):
+        from syft.frameworks.crypten import load as crypten_load
+        from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
+        from syft.frameworks.torch.tensors.crypten.syft_crypten import SyftCrypTensor
+
+        native_func = getattr(crypten, "load")
+        setattr(crypten, "native_load", native_func) # Currenty we do nothing with the native load
+
+        new_func = get_hooked_crypten_func("load", crypten_load)
+        setattr(crypten, "load", new_func)
+
+        crypten_specific_methods = ["get_plain_text"]
+        for method in crypten_specific_methods:
+            self.to_auto_overload[torch.Tensor].add(method)
+
     @classmethod
     def _get_hooked_func(cls, public_module_name, func_api_name, attr):
         """Torch-specific implementation. See the subclass for more."""
@@ -580,6 +610,45 @@ class TorchHook(FrameworkHook):
             "__le__",
         ]
         cls._transfer_methods_to_framework_class(tensor_type, syft_type, exclude)
+
+
+    @classmethod
+    def _transfer_methods_to_crypten_tensor(cls, syft_type):
+        exclude = set([
+            "__class__",
+            "__delattr__",
+            "__dir__",
+            "__doc__",
+            "__dict__",
+            "__format__",
+            "__getattribute__",
+            "__hash__",
+            "__init__",
+            "__init_subclass__",
+            "__weakref__",
+            "__module__",
+            "__ne__",
+            "__new__",
+            "__reduce__",
+            "__reduce_ex__",
+            "__setattr__",
+            "__sizeof__",
+            "__subclasshook__",
+            "_get_type",
+             "__eq__",
+            "__gt__",
+            "grad",
+            "clone",
+            "to",
+            "__ge__",
+            "__lt__",
+            "__le__",
+        ])
+
+        exclude.update(set(dir(crypten.mpc.MPCTensor)).difference(set(dir(syft_type))))
+
+        cls._transfer_methods_to_framework_class(crypten.mpc.MPCTensor, syft_type, exclude)
+
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module

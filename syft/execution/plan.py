@@ -9,6 +9,7 @@ import torch
 import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
+
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
@@ -19,6 +20,8 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
+
+import crypten
 
 
 class func2plan(object):
@@ -383,6 +386,7 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
+
                 return_placeholder.instantiate(response.child)
 
             # This ensures that we return the output placeholder in the correct order

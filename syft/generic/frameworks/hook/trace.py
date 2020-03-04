@@ -75,6 +75,7 @@ def tracer(func_name=None, method_name=None):
                 syft.hook.trace.out_of_operation = False
 
                 response = func(*args, **kwargs)
+                print(f"This is it {response}")
 
                 syft.hook.trace.out_of_operation = True
 

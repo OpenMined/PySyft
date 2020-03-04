@@ -32,7 +32,8 @@ from syft.messaging.message import SearchMessage
 from syft.execution.plan import Plan
 from syft.messaging.message import CryptenInit
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.crypten import toy_func, run_party
+from syft.frameworks.crypten import run_party
+
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import WorkerNotFoundException
@@ -178,6 +179,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
+
+        self.rank_to_worker_id = None
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -414,10 +417,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        rank, world_size, master_addr, master_port = message
+        self.rank_to_worker_id, world_size, master_addr, master_port = message
 
-        return_value = run_party(toy_func, rank, world_size, master_addr, master_port, (), {})
+        plans = self.search("crypten_plan")
+        assert len(plans) == 1
 
+        plan = plans[0].get()
+
+        rank = None
+        for r, worker_id in self.rank_to_worker_id.items():
+            if worker_id == self.id:
+                rank = r
+                break
+
+        assert rank != None
+
+        return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
         return ObjectMessage(return_value)
 
     def execute_command(self, message: tuple) -> PointerTensor:
@@ -700,6 +715,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             return self._get_worker_based_on_id(id_or_worker, fail_hard=fail_hard)
         else:
             return self._get_worker(id_or_worker)
+
+    def get_worker_from_rank(self, rank: int):
+        return self._get_worker_based_on_id(self.rank_to_worker_id[rank])
+
+    def _set_rank_to_worker_id(self, rank_to_worker_id):
+        self.rank_to_worker_id = rank_to_worker_id
 
     def _get_worker(self, worker: AbstractWorker):
         if worker.id not in self._known_workers:
