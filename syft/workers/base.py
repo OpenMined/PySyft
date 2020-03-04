@@ -22,14 +22,14 @@ from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
 from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import Operation
+from syft.messaging.message import OperationMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -84,6 +84,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             primarily a development/testing feature.
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
+        message_pending_time (optional): A number of seconds to delay the messages to be sent.
+            The argument may be a floating point number for subsecond 
+            precision.
     """
 
     def __init__(
@@ -95,6 +98,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         log_msgs: bool = False,
         verbose: bool = False,
         auto_add: bool = True,
+        message_pending_time: Union[int, float] = 0,
     ):
         """Initializes a BaseWorker."""
         super().__init__()
@@ -105,11 +109,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.log_msgs = log_msgs
         self.verbose = verbose
         self.auto_add = auto_add
+        self._message_pending_time = message_pending_time
         self.msg_history = list()
 
         # For performance, we cache all possible message types
         self._message_router = {
-            Operation: self.execute_command,
+            OperationMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -509,7 +514,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+                OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids),
+                location=recipient,
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -975,6 +981,29 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return sy.serde.deserialize(self.msg_history[index], worker=self)
 
+    @property
+    def message_pending_time(self):
+        """
+        Returns:
+            The pending time in seconds for messaging between virtual workers.
+        """
+        return self._message_pending_time
+
+    @message_pending_time.setter
+    def message_pending_time(self, seconds: Union[int, float]) -> None:
+        """Sets the pending time to send messaging between workers.
+
+        Args:
+            seconds: A number of seconds to delay the messages to be sent.
+            The argument may be a floating point number for subsecond 
+            precision.
+
+        """
+        if self.verbose:
+            print(f"Set message pending time to {seconds} seconds.")
+
+        self._message_pending_time = seconds
+
     @staticmethod
     def create_message_execute_command(
         command_name: str, command_owner=None, return_ids=None, *args, **kwargs
@@ -995,7 +1024,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation(command_name, command_owner, args, kwargs, return_ids)
+        return OperationMessage(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
