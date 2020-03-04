@@ -14,6 +14,8 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
+from syft.execution.computation import ComputationAction
+from syft.execution.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
@@ -320,10 +322,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         for log in sy.hook.trace.logs:
             command, response = log
-            command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, node_type="input"),
-                self.replace_with_placeholders(response, node_type="output"),
-            )
+            command_placeholders = self.replace_with_placeholders(command, node_type="input")
+            return_placeholders = self.replace_with_placeholders(response, node_type="output")
+
             # We're cheating a bit here because we put placeholders instead of return_ids
             action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.actions.append(action)
