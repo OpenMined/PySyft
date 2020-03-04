@@ -150,7 +150,9 @@ class ComputationAction(Action):
         return protobuf_op
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "ComputationActionPB") -> "ComputationAction":
+    def unbufferize(
+        worker: AbstractWorker, protobuf_obj: "ComputationActionPB"
+    ) -> "ComputationAction":
         """
         This function takes the Protobuf version of this message and converts
         it into an Operation. The bufferize() method runs the inverse of this method.
