@@ -1,6 +1,6 @@
 flask_socketio~=4.2.1
 Flask~=1.1.1
-git+git://github.com/karlhigley/syft-proto@refactor/actions#egg=syft-proto
+git+git://github.com/Jasopaum/syft-proto@refactor/actions#egg=syft-proto
 lz4~=3.0.2
 msgpack~=1.0.0
 numpy~=1.18.1
