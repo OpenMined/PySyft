@@ -203,6 +203,23 @@ def qr(t, mode="reduced", norm_factor=None):
 
 
 def masked_inv(t):
+    """
+    This function performs the inversion of a secret shared 2d-tensor using a mask and
+    computing the inverse in the crypto provider.
+
+    Please note that for reasonable results the tensor should have a precision_fractional factor
+    higher than 4.
+
+    Args:
+        t: 2-dim square tensor. It should be an AdditiveSharedTensor
+    """
+
+    # Check if t is 2-dim
+    assert len(t.shape) == 2
+
+    # Check if t is an AdditiveSharedTensor
+    if not (t.has_child() and isinstance(t.child.child, AdditiveSharingTensor)):
+        raise TypeError("The provided matrix should be an AdditiveSharedTensor")
 
     # check if the tensor is a square matrix
     rows, cols = t.shape
@@ -225,12 +242,20 @@ def masked_inv(t):
     # Mask the tensor
     t_masked = M @ t
 
-    # Send it to the cryto crypto_provider
+    # Send it to the crypto_provider
     t_masked = t_masked.send(crypto_prov).remote_get().float_precision()
 
-    # Compute inverse in the crypto_provider and share it back
-    t_masked_inv = t_masked.inverse()
-    t_masked_inv = t_masked_inv.fix_precision().share(*workers, crypto_provider=crypto_prov).get()
+    # Normalize tensor using Frobenius norm
+    F = (t_masked ** 2).mean() ** (1 / 2)
+    t_masked_normalized = t_masked / F
+
+    # Compute inverse (unormalizing it) in the crypto_provider and share it back
+    t_masked_inv = t_masked_normalized.inverse() / F
+    t_masked_inv = (
+        t_masked_inv.fix_precision(precision_fractional=prec_frac)
+        .share(*workers, crypto_provider=crypto_prov)
+        .get()
+    )
 
     # Unmask it and return result
     t_inv = t_masked_inv @ M
