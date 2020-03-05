@@ -3,7 +3,6 @@ This file exists to provide a route to websocket events.
 """
 from .. import ws
 
-from .webrtc_events import *
 from .control_events import *
 from .fl_events import *
 
@@ -17,9 +16,6 @@ import json
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.
 routes = {
     CONTROL_EVENTS.SOCKET_PING: socket_ping,
-    WEBRTC_EVENTS.JOIN_ROOM: scope_broadcast,
-    WEBRTC_EVENTS.INTERNAL_MSG: internal_message,
-    WEBRTC_EVENTS.PEER_LEFT: scope_broadcast,
     FL_EVENTS.HOST_FL_TRAINING: host_federated_training,
     FL_EVENTS.AUTHENTICATE: authenticate,
     FL_EVENTS.CYCLE_REQUEST: cycle_request,

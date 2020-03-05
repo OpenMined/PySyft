@@ -15,7 +15,7 @@ class Worker:
                 hash_key: Key used to map the cycle.
                 fl_cycle: FederatedLearning Cycle instance.
         """
-        self._cycle[hash_key] = fl_cycle
+        self._cycles[hash_key] = fl_cycle
 
     def get_cycle(self, hash_key: str):
         """ Retrieve a specific cycle mapped by hash key.
@@ -24,7 +24,7 @@ class Worker:
             Retrurns:
                 cycle: A Cycle instance of None (if not found).
         """
-        return self._cycle.get(hash_key, None)
+        return self._cycles.get(hash_key, None)
 
     def worker_id(self) -> str:
         """ Get the id of this worker.
