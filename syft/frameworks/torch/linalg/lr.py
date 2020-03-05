@@ -47,6 +47,11 @@ class EncryptedLinearRegression:
         fit_intercept:  whether to calculate the intercept for this model. If set
             to False, no intercept will be used in calculations (e.g. data is
             expected to be already centered)
+        inv_mpc: whether or not to perform matrix inversion in MPC. If false, the inversion
+            of the Gram matrix will be performed by masking it and obtaining the inverse of
+            the masked matrix in the crypto provider server. While the option to perform
+            matrix inversion using the masking in the crypto provider is much more time
+            efficient than its MPC counterpart, such operation is less statistically private.
 
     Attributes:
         coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
@@ -327,6 +332,12 @@ class DASH:
             but will attempt to learn all possible information from legitimately
             received messages.
         precision_fractional: precision chosen for FixedPrecisionTensors
+        inv_mpc: whether or not to perform matrix inversion in MPC. If false, the inversion
+            of the upper triangular matrix in the QR composition will be performed by
+            masking it and obtaining the inverse of the masked matrix in the crypto provider server.
+            While the option to perform matrix inversion using the masking in the crypto provider
+            is much more time efficient than its MPC counterpart, such operation is less
+            statistically private.
 
     Attributes:
         coef: torch.Tensor of shape (n_features, ). Estimated coefficients for
@@ -337,12 +348,17 @@ class DASH:
     """
 
     def __init__(
-        self, crypto_provider: BaseWorker, hbc_worker: BaseWorker, precision_fractional: int = 6
+        self,
+        crypto_provider: BaseWorker,
+        hbc_worker: BaseWorker,
+        precision_fractional: int = 6,
+        inv_mpc: bool = True,
     ):
 
         self.crypto_provider = crypto_provider
         self.hbc_worker = hbc_worker
         self.precision_fractional = precision_fractional
+        self.inv_mpc = inv_mpc
 
     def fit(
         self, X_ptrs: List[torch.Tensor], C_ptrs: List[torch.Tensor], y_ptrs: List[torch.Tensor]
@@ -380,7 +396,7 @@ class DASH:
         _, R_shared = qr(R_cat_shared, norm_factor=self.total_size ** (1 / 2))
 
         # Compute inverse of upper matrix
-        R_shared_inv = self._inv_upper(R_shared)
+        R_shared_inv = self._inv_upper(R_shared) if self.inv_mpc else masked_inv(R_shared)
 
         Qy = R_shared_inv.t() @ Cy_shared
         QX = R_shared_inv.t() @ CX_shared
