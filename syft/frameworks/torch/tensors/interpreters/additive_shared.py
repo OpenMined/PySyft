@@ -249,7 +249,7 @@ class AdditiveSharingTensor(AbstractTensor):
         properties as self
         """
 
-        if shape == None:
+        if shape == None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
         zero = (
             torch.zeros(*shape)
@@ -487,11 +487,16 @@ class AdditiveSharingTensor(AbstractTensor):
 
             if other_is_zero:
                 res = {}
-                for i, (worker, share) in enumerate(shares.items()):
+
+                it = iter(shares.items())
+                worker, share = next(it)
+                first_cmd = cmd(share, other)
+                zero_shares = self.zero(first_cmd.shape).child
+                res[worker] = (first_cmd + zero_shares[worker]) % self.field
+
+                for worker, share in it:
                     cmd_res = cmd(share, other)
-                    if i == 0:
-                        zero_shares = self.zero(cmd_res.shape).child
-                    res[worker] = (cmd_res + zero_shares[worker]) % self.field
+                    res[worker] = (cmd(share, other) + zero_shares[worker]) % self.field
                 return res
             else:
                 return {
