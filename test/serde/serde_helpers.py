@@ -662,7 +662,7 @@ def make_multipointertensor(**kwargs):
     ]
 
 
-# syft.messaging.plan.plan.Plan
+# syft.execution.plan.Plan
 def make_plan(**kwargs):
     # Function to plan
     @syft.func2plan([torch.Size((3,))])
@@ -688,7 +688,7 @@ def make_plan(**kwargs):
         model_plan.build(torch.tensor([1.0, 2.0, 3.0]))
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.plan.plan.Plan
+        assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
         compare_placeholders_dict(detailed.placeholders, original.placeholders)
         compare_operations(detailed.operations, original.operations)
@@ -714,7 +714,7 @@ def make_plan(**kwargs):
         {
             "value": plan,
             "simplified": (
-                CODE[syft.messaging.plan.plan.Plan],
+                CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
                     msgpack.serde._simplify(syft.hook.local_worker, plan.operations),
@@ -735,7 +735,7 @@ def make_plan(**kwargs):
         {
             "value": model_plan,
             "simplified": (
-                CODE[syft.messaging.plan.plan.Plan],
+                CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.operations),
@@ -764,10 +764,10 @@ def make_state(**kwargs):
     p1, p2 = syft.PlaceHolder(), syft.PlaceHolder()
     p1.tag("state1"), p2.tag("state2")
     p1.instantiate(t1), p2.instantiate(t2)
-    state = syft.messaging.plan.state.State(owner=me, state_placeholders=[p1, p2])
+    state = syft.execution.state.State(owner=me, state_placeholders=[p1, p2])
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.plan.state.State
+        assert type(detailed) == syft.execution.state.State
         compare_placeholders_list(detailed.state_placeholders, original.state_placeholders)
         for i in range(len(original.tensors())):
             assert detailed.tensors()[i].equal(original.tensors()[i])
@@ -777,7 +777,7 @@ def make_state(**kwargs):
         {
             "value": state,
             "simplified": (
-                CODE[syft.messaging.plan.state.State],
+                CODE[syft.execution.state.State],
                 (
                     (
                         CODE[list],
@@ -813,12 +813,12 @@ def make_protocol(**kwargs):
     with me.registration_enabled():
         me.register_obj(plan)
 
-    protocol = syft.messaging.protocol.Protocol([("me", plan), ("me", plan)])
+    protocol = syft.execution.protocol.Protocol([("me", plan), ("me", plan)])
     protocol.tag("aaa")
     protocol.describe("desc")
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.protocol.Protocol
+        assert type(detailed) == syft.execution.protocol.Protocol
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -831,7 +831,7 @@ def make_protocol(**kwargs):
         {
             "value": protocol,
             "simplified": (
-                CODE[syft.messaging.protocol.Protocol],
+                CODE[syft.execution.protocol.Protocol],
                 (
                     protocol.id,  # (int)
                     (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
@@ -942,7 +942,7 @@ def make_pointerprotocol(**kwargs):
         x = torch.abs(x)
         return x
 
-    protocol = syft.messaging.protocol.Protocol(
+    protocol = syft.execution.protocol.Protocol(
         [("worker1", plan), ("worker2", plan)], tags=["aaa", "bbb"], description="desc"
     )
     protocol.send(alice)
@@ -1306,7 +1306,7 @@ def make_message(**kwargs):
     ]
 
 
-# syft.messaging.message.Operation
+# syft.messaging.message.OperationMessage
 def make_operation(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -1334,7 +1334,7 @@ def make_operation(**kwargs):
             original.cmd_args,
             original.cmd_kwargs,
         )
-        assert type(detailed) == syft.messaging.message.Operation
+        assert type(detailed) == syft.messaging.message.OperationMessage
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1350,7 +1350,7 @@ def make_operation(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.Operation],
+                CODE[syft.messaging.message.OperationMessage],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1361,7 +1361,7 @@ def make_operation(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.Operation],
+                CODE[syft.messaging.message.OperationMessage],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids

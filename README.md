@@ -1,20 +1,30 @@
 # Introduction
 
-[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master) [![Build Status](https://travis-ci.org/OpenMined/PySyft.svg?branch=torch_1)](https://travis-ci.org/OpenMined/PySyft) [![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft) [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
+![](https://github.com/OpenMined/PySyft/workflows/Tests/badge.svg)
+![](https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg)
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/OpenMined/PySyft/master)
+[![Chat on Slack](https://img.shields.io/badge/chat-on%20slack-7A5979.svg)](https://openmined.slack.com/messages/team_pysyft)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft.svg?type=small)](https://app.fossa.io/projects/git%2Bgithub.com%2Fmatthew-mcateer%2FPySyft?ref=badge_small)
+
 
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
-and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
+and Encrypted Computation (like 
+[Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
+and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
+within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[white paper on arxiv](https://arxiv.org/abs/1811.04017)
+[white paper on Arxiv](https://arxiv.org/abs/1811.04017)
 
 PySyft has also been explained in videos on YouTube:
+ - [Introduction to Privacy Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
+ - [Differential Privacy & Federated Learning explained using PySyft by Jordan Harrod](https://www.youtube.com/watch?v=MOcTGM_UteM)
 
 ## Pre-Installation
 
@@ -41,7 +51,7 @@ make venv
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.3
+> PySyft supports Python >= 3.6 and PyTorch 1.4
 
 ```bash
 pip install syft[udacity]
@@ -140,7 +150,7 @@ federated learning and differential privacy using PySyft.
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 5000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 

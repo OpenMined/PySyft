@@ -12,9 +12,9 @@ from syft.workers.abstract import AbstractWorker
 
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
+from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
-from syft_proto.types.syft.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
@@ -106,7 +106,7 @@ class Message:
         return self.__str__()
 
 
-class Operation(Message):
+class OperationMessage(Message):
     """All syft operations use this message type
 
     In Syft, an operation is when one worker wishes to tell another worker to do something with
@@ -154,12 +154,12 @@ class Operation(Message):
         return (message, self.return_ids)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "Operation") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "OperationMessage") -> tuple:
         """
-        This function takes the attributes of a Operation and saves them in a tuple
+        This function takes the attributes of a OperationMessage and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Operation): a Message
+            ptr (OperationMessage): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
@@ -175,7 +175,7 @@ class Operation(Message):
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Operation":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "OperationMessage":
         """
         This function takes the simplified tuple version of this message and converts
         it into a Operation. The simplify() method runs the inverse of this method.
@@ -185,7 +185,7 @@ class Operation(Message):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Operation): a Operation.
+            ptr (OperationMessage): an OperationMessage.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -200,15 +200,15 @@ class Operation(Message):
         cmd_args = detailed_msg[2]
         cmd_kwargs = detailed_msg[3]
 
-        return Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+        return OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation: "Operation") -> "OperationMessagePB":
+    def bufferize(worker: AbstractWorker, operation: "OperationMessage") -> "OperationMessagePB":
         """
-        This function takes the attributes of a Operation and saves them in Protobuf
+        This function takes the attributes of a OperationMessage and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Operation): a Message
+            ptr (OperationMessage): an OperationMessage
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
@@ -232,12 +232,12 @@ class Operation(Message):
             protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.cmd_owner))
 
         if operation.cmd_args:
-            protobuf_op.args.extend(Operation._bufferize_args(worker, operation.cmd_args))
+            protobuf_op.args.extend(OperationMessage._bufferize_args(worker, operation.cmd_args))
 
         if operation.cmd_kwargs:
             for key, value in operation.cmd_kwargs.items():
                 protobuf_op.kwargs.get_or_create(key).CopyFrom(
-                    Operation._bufferize_arg(worker, value)
+                    OperationMessage._bufferize_arg(worker, value)
                 )
 
         if operation.return_ids is not None:
@@ -258,18 +258,20 @@ class Operation(Message):
         return protobuf_op_msg
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "OperationMessagePB") -> "Operation":
+    def unbufferize(
+        worker: AbstractWorker, protobuf_obj: "OperationMessagePB"
+    ) -> "OperationMessage":
         """
         This function takes the Protobuf version of this message and converts
-        it into an Operation. The bufferize() method runs the inverse of this method.
+        it into an OperationMessage. The bufferize() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            protobuf_obj (OperationPB): the Protobuf message
+            protobuf_obj (OperationMessagePB): the Protobuf message
 
         Returns:
-            obj (Operation): an Operation
+            obj (OperationMessage): an OperationMessage
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
@@ -283,11 +285,13 @@ class Operation(Message):
             )
         else:
             owner = None
-        args = Operation._unbufferize_args(worker, protobuf_obj.operation.args)
+        args = OperationMessage._unbufferize_args(worker, protobuf_obj.operation.args)
 
         kwargs = {}
         for key in protobuf_obj.operation.kwargs:
-            kwargs[key] = Operation._unbufferize_arg(worker, protobuf_obj.operation.kwargs[key])
+            kwargs[key] = OperationMessage._unbufferize_arg(
+                worker, protobuf_obj.operation.kwargs[key]
+            )
 
         return_ids = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id)
@@ -301,13 +305,15 @@ class Operation(Message):
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                operation_msg = Operation(
+                operation_msg = OperationMessage(
                     command, owner, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
-                operation_msg = Operation(command, owner, tuple(args), kwargs, return_placeholders)
+                operation_msg = OperationMessage(
+                    command, owner, tuple(args), kwargs, return_placeholders
+                )
         else:
-            operation_msg = Operation(command, owner, tuple(args), kwargs, tuple(return_ids))
+            operation_msg = OperationMessage(command, owner, tuple(args), kwargs, tuple(return_ids))
 
         return operation_msg
 
@@ -315,7 +321,7 @@ class Operation(Message):
     def _bufferize_args(worker: AbstractWorker, args: list) -> list:
         protobuf_args = []
         for arg in args:
-            protobuf_args.append(Operation._bufferize_arg(worker, arg))
+            protobuf_args.append(OperationMessage._bufferize_arg(worker, arg))
         return protobuf_args
 
     @staticmethod
@@ -333,7 +339,7 @@ class Operation(Message):
     def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
         args = []
         for protobuf_arg in protobuf_args:
-            args.append(Operation._unbufferize_arg(worker, protobuf_arg))
+            args.append(OperationMessage._unbufferize_arg(worker, protobuf_arg))
         return args
 
     @staticmethod
