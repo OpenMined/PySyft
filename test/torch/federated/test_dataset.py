@@ -15,7 +15,7 @@ def test_base_dataset(workers):
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
 
-    dataset.send(bob)
+    dataset = dataset.send(bob)
     assert dataset.data.location.id == "bob"
     assert dataset.targets.location.id == "bob"
     assert dataset.location.id == "bob"
@@ -61,8 +61,7 @@ def test_federated_dataset(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert len(fed_dataset) == 6
 
-    fed_dataset["alice"].get()
-    assert (fed_dataset["alice"].data == alice_base_dataset.data).all()
+    assert (fed_dataset["alice"].get().data == alice_base_dataset.data).all()
     assert fed_dataset["alice"][2] == (5, 5)
     assert len(fed_dataset["alice"]) == 4
     assert len(fed_dataset) == 6

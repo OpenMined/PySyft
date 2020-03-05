@@ -39,7 +39,7 @@ def test_get_dataset(workers):
     dataset = ptr.get()
 
     assert torch.equal(dataset.data, data) == 1
-    assert torch.equal(dataset.target, target) == 1
+    assert torch.equal(dataset.targets, target) == 1
     assert dataset.location == me
 
 
@@ -50,8 +50,8 @@ def test_get_data_targets(workers):
     target = torch.tensor([5, 6, 7, 8])
     dataset = BaseDataset(data, target)
     ptr = dataset.send(alice)
-    remote_targets = ptr.targets().get()
-    remote_data = ptr.data().get()
+    remote_targets = ptr.targets.get()
+    remote_data = ptr.data.get()
 
     assert torch.equal(remote_data, data) == 1
     assert torch.equal(remote_targets, target) == 1
