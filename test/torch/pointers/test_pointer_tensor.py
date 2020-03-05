@@ -280,7 +280,7 @@ def test_grad_pointer(workers):
 
 
 def test_move(workers):
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    alice, bob, james, me = workers["alice"], workers["bob"], workers["james"], workers["me"]
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
@@ -289,7 +289,7 @@ def test_move(workers):
 
     x.move(alice)
 
-    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in bob._objects
     assert x.id_at_location in alice._objects
 
     x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
@@ -299,7 +299,7 @@ def test_move(workers):
 
     x.move(alice)
 
-    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in bob._objects
     assert x.id_at_location in alice._objects
 
     alice.clear_objects()
@@ -318,6 +318,15 @@ def test_move(workers):
     assert remote_ptr.id in james._objects.keys()
     remote_ptr2 = remote_ptr.move(alice)
     assert remote_ptr2.id in james._objects.keys()
+
+    # Test .move back to myself
+
+    alice.clear_objects()
+    bob.clear_objects()
+    x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
+    y = x.move(alice)
+    z = y.move(me)
+    assert (z == x).all()
 
 
 def test_combine_pointers(workers):

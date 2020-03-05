@@ -259,7 +259,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location: AbstractWorker, requires_grad: bool):
+    def move(self, location: AbstractWorker, requires_grad: bool = False):
         """
         Will move the remove value from self.location to location
 
@@ -281,7 +281,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return ptr
 
     def remote_send(
-        self, destination: AbstractWorker, requires_grad: bool, change_location: bool = False
+        self,
+        destination: AbstractWorker,
+        requires_grad: bool = False,
+        change_location: bool = False,
     ):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
