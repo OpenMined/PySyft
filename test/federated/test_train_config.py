@@ -141,6 +141,7 @@ def test_train_config_with_jit_trace(hook, workers):  # pragma: no cover
 
 
 def test_train_config_with_jit_trace_send_twice_with_fit(hook, workers):  # pragma: no cover
+    torch.manual_seed(0)
     alice = workers["alice"]
     model, loss_fn, data, target, loss_before, dataset_key = prepare_training(hook, alice)
 

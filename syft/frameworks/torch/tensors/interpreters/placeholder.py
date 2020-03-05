@@ -4,6 +4,9 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft_proto.frameworks.torch.tensors.interpreters.v1.placeholder_pb2 import (
+    Placeholder as PlaceholderPB,
+)
 
 
 class PlaceHolder(AbstractTensor):
@@ -95,6 +98,54 @@ class PlaceHolder(AbstractTensor):
         tensor_id = syft.serde.msgpack.serde._detail(worker, tensor_id)
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
+
+        if not hasattr(worker, "_tmp_placeholders"):
+            worker._tmp_placeholders = {}
+
+        if tensor_id not in worker._tmp_placeholders:
+            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
+            worker._tmp_placeholders[tensor_id] = tensor
+
+        return worker._tmp_placeholders[tensor_id]
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, tensor: "PlaceHolder") -> PlaceholderPB:
+        """Takes the attributes of a PlaceHolder and saves them in a Protobuf message.
+
+        Args:
+            worker: the worker doing the serialization
+            tensor: a PlaceHolder.
+
+        Returns:
+            PlaceholderPB: a Protobuf message holding the unique attributes of the PlaceHolder.
+        """
+
+        protobuf_placeholder = PlaceholderPB()
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id)
+        protobuf_placeholder.tags.extend(tensor.tags)
+
+        if tensor.description:
+            protobuf_placeholder.description = tensor.description
+
+        return protobuf_placeholder
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_placeholder: PlaceholderPB) -> "PlaceHolder":
+        """
+            This function reconstructs a PlaceHolder given it's attributes in form of a Protobuf message.
+            Args:
+                worker: the worker doing the deserialization
+                protobuf_placeholder: a Protobuf message holding the attributes of the PlaceHolder
+            Returns:
+                PlaceHolder: a PlaceHolder
+            """
+
+        tensor_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_placeholder.id)
+        tags = set(protobuf_placeholder.tags)
+
+        description = None
+        if bool(protobuf_placeholder.description):
+            description = protobuf_placeholder.description
 
         if not hasattr(worker, "_tmp_placeholders"):
             worker._tmp_placeholders = {}

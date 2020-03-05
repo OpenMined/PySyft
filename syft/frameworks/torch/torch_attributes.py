@@ -158,21 +158,3 @@ class TorchAttributes(FrameworkAttributes):
             is_inplace = method_name[-1] == "_" and "__" not in method_name
             self.inplace_methods[method_name] = is_inplace
             return is_inplace
-
-    @staticmethod
-    def apply_fix16922(torch):
-        """
-        Apply the fix made in PR16922 of PyTorch until people use PyTorch 1.0.2
-        :param torch: the pytorch module
-        """
-        broken_funcs = [
-            "max_pool1d",
-            "max_pool2d",
-            "max_pool3d",
-            "adaptive_max_pool1d",
-            "adaptive_max_pool2d",
-            "adaptive_max_pool3d",
-        ]
-        for broken_func in broken_funcs:
-            getattr(torch.nn.functional, broken_func).__module__ = "torch.nn.functional"
-            getattr(torch.nn.functional, broken_func).__name__ = broken_func
