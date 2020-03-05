@@ -5,14 +5,16 @@ import os
 import re
 import ast
 from dill.source import getsource
-from RestrictedPython import compile_restricted
-from RestrictedPython import safe_builtins
+from RestrictedPython import compile_restricted, safe_builtins
+from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getitem
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence, guarded_setattr
+from RestrictedPython.PrintCollector import PrintCollector
 
+import torch
+import crypten
 import syft as sy
 from syft.messaging.message import CryptenInit
 from syft.frameworks import crypten as syft_crypt
-
-import crypten
 from crypten.communicator import DistributedCommunicator
 
 
@@ -47,13 +49,53 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
         queue.put(-1)
         return
 
+    # Provide it in global for replicating tutorial 7 of crypten.
+    # The parties need to know about the classes so here we define them statically.
+    class ExampleNet(torch.nn.Module):
+        def __init__(self):
+            super(ExampleNet, self).__init__()
+            self.conv1 = torch.nn.Conv2d(1, 16, kernel_size=5, padding=0)
+            self.fc1 = torch.nn.Linear(16 * 12 * 12, 100)
+            self.fc2 = torch.nn.Linear(100, 2) # For binary classification, final layer needs only 2 outputs
+
+        def forward(self, x):
+            out = self.conv1(x)
+            out = torch.nn.functional.relu(out)
+            out = torch.nn.functional.max_pool2d(out, 2)
+            out = out.view(out.size(0), -1)
+            out = self.fc1(out)
+            out = torch.nn.functional.relu(out)
+            out = self.fc2(out)
+            return out
+
+
+    # Update load function
+    setattr(crypten, 'load', syft_crypt.load)
+
     # TODO: error handling
     exec_globals = {'__builtins__': safe_builtins}
     exec_globals['crypten'] = crypten
+    exec_globals['torch'] = torch
+    exec_globals['syft'] = sy
+    exec_globals['ExampleNet'] = ExampleNet()
+    exec_globals['_getiter_'] = default_guarded_getiter
+    exec_globals['_getitem_'] = default_guarded_getitem
+    exec_globals['_getattr_'] = getattr
+    # for a, b in
+    exec_globals['_iter_unpack_sequence_'] = guarded_iter_unpack_sequence
+    # for a in
+    exec_globals['_unpack_sequence_'] = guarded_unpack_sequence
+    # unrestricted write of attr
+    exec_globals['_write_'] = lambda x: x
+    # Collecting printed strings and saved in printed local variable
+    exec_globals['_print_'] = PrintCollector
+    exec_globals['__name__'] = '__main__'
+
     exec_locals = {}
     compiled = compile_restricted(func_src)
     exec(compiled, exec_globals, exec_locals)
     func = exec_locals[func_name]
+
     crypten.init()
     return_value = func(*func_args, **func_kwargs)
     crypten.uninit()

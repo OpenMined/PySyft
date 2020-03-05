@@ -1,0 +1,42 @@
+diff --git a/crypten/mpc/mpc.py b/crypten/mpc/mpc.py
+index 090f8c6..fdf41f9 100644
+--- a/crypten/mpc/mpc.py
++++ b/crypten/mpc/mpc.py
+@@ -857,7 +857,7 @@ class MPCTensor(CrypTensor):
+     def pow_(self, p, **kwargs):
+         """In-place version of pow_ function"""
+         result = self.pow(p)
+-        self.share.data = result.share.data
++        self.share.set_(result.share.data)
+         return self
+ 
+     def pos_pow(self, p):
+diff --git a/crypten/mpc/primitives/arithmetic.py b/crypten/mpc/primitives/arithmetic.py
+index a9c1a3f..0914f0c 100644
+--- a/crypten/mpc/primitives/arithmetic.py
++++ b/crypten/mpc/primitives/arithmetic.py
+@@ -228,9 +228,9 @@ class ArithmeticSharedTensor(CrypTensor):
+             else:  # ['mul', 'matmul', 'conv2d', 'conv_transpose2d']
+                 # NOTE: 'mul_' calls 'mul' here
+                 # Must copy _tensor.data here to support 'mul_' being inplace
+-                result.share.data = getattr(beaver, op)(
++                result.share.set_(getattr(beaver, op)(
+                     result, y, *args, **kwargs
+-                ).share.data
++                ).share.data)
+         else:
+             raise TypeError("Cannot %s %s with %s" % (op, type(y), type(self)))
+ 
+diff --git a/crypten/mpc/primitives/binary.py b/crypten/mpc/primitives/binary.py
+index 0365553..ef55d40 100644
+--- a/crypten/mpc/primitives/binary.py
++++ b/crypten/mpc/primitives/binary.py
+@@ -137,7 +137,7 @@ class BinarySharedTensor(CrypTensor):
+         if torch.is_tensor(y) or isinstance(y, int):
+             self.share &= y
+         elif isinstance(y, BinarySharedTensor):
+-            self.share.data = beaver.AND(self, y).share.data
++            self.share.set_(beaver.AND(self, y).share.data)
+         else:
+             raise TypeError("Cannot AND %s with %s." % (type(y), type(self)))
+         return self
