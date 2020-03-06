@@ -38,9 +38,9 @@ target_alice = target_alice.send(alice)
 # organize pointers into a list
 datasets = [(data_bob,target_bob),(data_alice,target_alice)]
 
-# change : applying separate optimizer
-
-
+"""
+changes are done on line : 45,46,48 and 52
+"""
 
 opt_bob= optim.Adagrad(params=model.parameters(),lr=0.1)
 opt_alice = optim.SGD(params=model.parameters(),lr=0.1)
