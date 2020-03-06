@@ -477,7 +477,7 @@ def test_torch_tanh_approx(workers):
 
     fix_prec_tolerance_by_method = {
         "chebyshev": {3: 3 / 100, 4: 3 / 100, 5: 3 / 100},
-        "sigmoid": {3: 7 / 100, 4: 15 / 100, 5: 15 / 100},
+        "sigmoid": {3: 10 / 100, 4: 15 / 100, 5: 15 / 100},
     }
 
     for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
