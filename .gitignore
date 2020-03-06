@@ -2,3 +2,4 @@ dist
 build
 .ipynb_checkpoints
 .idea
+.pyc
