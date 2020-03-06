@@ -669,10 +669,11 @@ def make_basedataset(**kwargs):
     dataset = syft.BaseDataset(torch.tensor([1, 2, 3, 4]), torch.tensor([5, 6, 7, 8]))
     dataset.tag("#tag1").describe("desc")
 
+
     def compare(detailed, original):
         assert type(detailed) == syft.BaseDataset
-        assert detailed.data.equal(original.data)
-        assert detailed.targets.equal(original.targets)
+        assert (detailed.data == original.data).all()
+        assert (detailed.targets == original.targets).all()
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -684,11 +685,11 @@ def make_basedataset(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.fl.dataset.BaseDataset],
                 (
-                    (CODE[torch.Tensor], dataset.data),
-                    (CODE[torch.Tensor], dataset.targets),
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.data),
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.targets),
                     dataset.id,
-                    (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
-                    (CODE[str], (b"desc",)),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.tags),  # (set of str) tags
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.description),  # (str) description
                     msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
                 ),
             ),
