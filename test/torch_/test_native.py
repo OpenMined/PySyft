@@ -1,25 +1,28 @@
-import syft.torch_ as th
-import torch as _th
+import syft.torch_ as th_
+import torch as th
+from torch import nn
 
 
-def test_native_tensor_constructor():
+def test_lowercase_tensor_constructor():
     x = th.tensor([1, 2, 3, 4])
 
-    assert isinstance(x, _th.Tensor)
-    assert isinstance(x, th.Tensor.type)
-    assert isinstance(x, th.tensor.type)
-
+    assert isinstance(x, th.Tensor)
     assert (x == th.Tensor([1, 2, 3, 4])).all()
 
 
-def test_native_parameter_constructor():
+def test_uppercase_tensor_constructor():
+    x = th.Tensor([1, 2, 3, 4])
+
+    assert isinstance(x, th.Tensor)
+    assert (x == th.Tensor([1, 2, 3, 4])).all()
+
+
+def test_parameter_constructor():
     x = th.tensor([1, 2, 3, 4.0])
 
-    assert isinstance(x, _th.Tensor)
-    assert isinstance(x, th.Tensor.type)
-    assert isinstance(x, th.tensor.type)
+    assert isinstance(x, th.Tensor)
 
-    p = th.Parameter(x)
+    p = nn.Parameter(x)
 
-    assert isinstance(p, th.Parameter.type)
+    assert isinstance(p, nn.Parameter)
     assert (p.data == th.Tensor([1, 2, 3, 4])).all()

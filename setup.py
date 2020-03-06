@@ -152,7 +152,7 @@ setup(
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
     #
-    # Alternatively, if you just want to distribute a single Python file, use
+    # Alteroriginally, if you just want to distribute a single Python file, use
     # the `py_modules` argument instead as follows, which will expect a file
     # called `my_module.py` to exist:
     #

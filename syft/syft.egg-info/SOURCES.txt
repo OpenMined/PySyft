@@ -9,4 +9,4 @@ syft/syft.egg-info/requires.txt
 syft/syft.egg-info/top_level.txt
 syft/tensorflow_/__init__.py
 syft/torch_/__init__.py
-syft/torch_/native.py
+syft/torch_/original.py

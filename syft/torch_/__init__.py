@@ -1,1 +1,3 @@
-from syft.torch_.constructors import *
+from syft.torch_.lowercase_tensor import LowercaseTensorConstructor
+from syft.torch_.uppercase_tensor import UppercaseTensorConstructor
+from syft.torch_.parameter import ParameterConstructor

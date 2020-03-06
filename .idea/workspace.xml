@@ -2,25 +2,29 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="14034252-c19b-43e9-a1a9-47f9fda48966" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/experimental/trask/Step 1 - Argument Typechecking.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/experimental/trask/Step 2 - Custom Constructor Method.ipynb" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/generic.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/jax_/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/numpy_/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/PKG-INFO" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/SOURCES.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/dependency_links.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/requires.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/syft.egg-info/top_level.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/tensorflow_/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/torch_/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/torch_/constructors.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/torch_/native_parameter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/syft/torch_/native_tensor.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/torch_/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/torch_/test_native.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/tensorflow_/constant.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/tensorflow_/eager_tensor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/tensorflow_/variable.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/torch_/lowercase_tensor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/torch_/parameter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/torch_/uppercase_tensor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/syft/util.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/tensorflow_/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/tensorflow_/test_native.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/PySyft.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/PySyft.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experimental/trask/Step 2 - Custom Constructor Method.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/experimental/trask/Step 2 - Custom Constructor Method.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/experimental/trask/Syft 0.4 Development Roadmap.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/experimental/trask/Syft 0.4 Development Roadmap.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/setup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/generic.py" beforeDir="false" afterPath="$PROJECT_DIR$/syft/generic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/syft.egg-info/SOURCES.txt" beforeDir="false" afterPath="$PROJECT_DIR$/syft/syft.egg-info/SOURCES.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/tensorflow_/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/syft/tensorflow_/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/torch_/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/syft/torch_/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/torch_/constructors.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/torch_/native_parameter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/syft/torch_/native_tensor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/torch_/test_native.py" beforeDir="false" afterPath="$PROJECT_DIR$/test/torch_/test_native.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -29,102 +33,148 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/syft/__init__.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/syft/generic.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="435">
-              <caret line="29" lean-forward="true" selection-start-line="29" selection-end-line="29" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test/torch_/__init__.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/syft/torch_/native_tensor.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="105">
-              <caret line="7" column="24" selection-start-line="7" selection-start-column="18" selection-end-line="7" selection-end-column="24" />
-              <folding>
-                <element signature="e#0#46#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/syft/torch_/native_parameter.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
-              <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
-              <folding>
-                <element signature="e#0#42#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/syft/torch_/constructors.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" column="21" lean-forward="true" selection-start-line="9" selection-start-column="21" selection-end-line="9" selection-end-column="21" />
-              <folding>
-                <element signature="e#0#61#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/syft/torch_/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret column="38" lean-forward="true" selection-start-column="38" selection-end-column="38" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/test/torch_/test_native.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="24" column="52" lean-forward="true" selection-start-line="24" selection-start-column="52" selection-end-line="24" selection-end-column="52" />
-              <folding>
-                <element signature="e#0#11#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/requirements.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="4" selection-start-line="4" selection-end-line="4" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/dev_requirements.txt">
-          <provider selected="true" editor-type-id="text-editor">
-            <state>
-              <caret selection-end-column="11" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-    </leaf>
+    <splitter split-orientation="horizontal" split-proportion="0.5">
+      <split-first>
+        <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/torch_/uppercase_tensor.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="225">
+                  <caret line="15" selection-start-line="15" selection-end-line="16" selection-end-column="58" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/generic.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="45">
+                  <caret line="3" selection-start-line="3" selection-end-line="3" />
+                  <folding>
+                    <element signature="e#0#51#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/torch_/lowercase_tensor.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="210">
+                  <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/tensorflow_/constant.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="240">
+                  <caret line="17" lean-forward="true" selection-start-line="17" selection-end-line="17" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/tensorflow_/variable.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="210">
+                  <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/syft/tensorflow_/eager_tensor.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="240">
+                  <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/torch_/parameter.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="210">
+                  <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+                  <folding>
+                    <element signature="e#0#42#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/tensorflow_/__init__.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="45">
+                  <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+                  <folding>
+                    <element signature="e#0#73#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/syft/torch_/__init__.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="45">
+                  <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+                  <folding>
+                    <element signature="e#0#67#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-first>
+      <split-second>
+        <leaf>
+          <file pinned="false" current-in-tab="true">
+            <entry file="file://$PROJECT_DIR$/test/tensorflow_/test_native.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="345">
+                  <caret line="23" lean-forward="true" selection-start-line="23" selection-end-line="23" />
+                  <folding>
+                    <element signature="e#0#30#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+          <file pinned="false" current-in-tab="false">
+            <entry file="file://$PROJECT_DIR$/test/torch_/test_native.py">
+              <provider selected="true" editor-type-id="text-editor">
+                <state relative-caret-position="420">
+                  <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
+                  <folding>
+                    <element signature="e#0#25#0" expanded="true" />
+                  </folding>
+                </state>
+              </provider>
+            </entry>
+          </file>
+        </leaf>
+      </split-second>
+    </splitter>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -132,6 +182,27 @@
         <option value="Python Script" />
       </list>
     </option>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>obj_type_name</find>
+      <find>obj_location</find>
+      <find>obj_type</find>
+      <find>native_obj_name</find>
+      <find>underlying_framework_init</find>
+      <find>native_</find>
+      <find>obj</find>
+      <find>native</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>constructor_name</replace>
+      <replace>constructor_location</replace>
+      <replace>original_constructor</replace>
+      <replace>native_constructor_name</replace>
+      <replace>init</replace>
+      <replace>original_</replace>
+      <replace>original</replace>
+    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -144,20 +215,34 @@
         <option value="$PROJECT_DIR$/syft/__init__.py" />
         <option value="$PROJECT_DIR$/requirements.txt" />
         <option value="$PROJECT_DIR$/syft/torch_/native.py" />
-        <option value="$PROJECT_DIR$/syft/torch_/__init__.py" />
-        <option value="$PROJECT_DIR$/syft/torch_/native_tensor.py" />
-        <option value="$PROJECT_DIR$/syft/torch_/native_parameter.py" />
-        <option value="$PROJECT_DIR$/syft/generic.py" />
         <option value="$PROJECT_DIR$/syft/torch_/constructors.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/constructors.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/native_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/util.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/native_constant.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/native_eager_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/native_variable.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/native_lowercase_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/native_parameter.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/native_uppercase_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/__init__.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/__init__.py" />
+        <option value="$PROJECT_DIR$/syft/generic.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/uppercase_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/parameter.py" />
+        <option value="$PROJECT_DIR$/syft/torch_/lowercase_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/variable.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/eager_tensor.py" />
+        <option value="$PROJECT_DIR$/syft/tensorflow_/constant.py" />
         <option value="$PROJECT_DIR$/test/torch_/test_native.py" />
+        <option value="$PROJECT_DIR$/test/tensorflow_/test_native.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="5" />
     <option name="y" value="23" />
-    <option name="width" value="1532" />
-    <option name="height" value="990" />
+    <option name="width" value="1360" />
+    <option name="height" value="1025" />
   </component>
   <component name="ProjectId" id="1YMFDp000O8Nsi3U6aSDSPrMNib" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
@@ -166,7 +251,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -183,12 +267,24 @@
               <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
               <item name="PySyft" type="462c0819:PsiDirectoryNode" />
               <item name="syft" type="462c0819:PsiDirectoryNode" />
+              <item name="tensorflow_" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
+              <item name="PySyft" type="462c0819:PsiDirectoryNode" />
+              <item name="syft" type="462c0819:PsiDirectoryNode" />
               <item name="torch_" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
               <item name="PySyft" type="462c0819:PsiDirectoryNode" />
               <item name="test" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
+              <item name="PySyft" type="462c0819:PsiDirectoryNode" />
+              <item name="test" type="462c0819:PsiDirectoryNode" />
+              <item name="tensorflow_" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="PySyft" type="b2602c69:ProjectViewProjectNode" />
@@ -200,6 +296,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="ProjectViewState">
@@ -211,7 +308,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -245,10 +342,10 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="1920" height="1177" extended-state="6" />
+    <frame x="0" y="23" width="1680" height="1025" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19905214" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.21398433" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -259,7 +356,7 @@
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
-      <window_info anchor="bottom" id="Terminal" order="8" />
+      <window_info anchor="bottom" id="Terminal" order="8" weight="0.3299539" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="10" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -288,12 +385,8 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/dev_requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret selection-end-column="11" />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/test/torch_/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
@@ -302,63 +395,135 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/syft/torch_/native_parameter.py">
+    <entry file="file://$PROJECT_DIR$/dev_requirements.txt">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
+        <state>
+          <caret selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/tensorflow_/constructors.py" />
+    <entry file="file://$PROJECT_DIR$/syft/torch_/constructors.py" />
+    <entry file="file://$PROJECT_DIR$/syft/util.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="840">
+          <caret line="56" column="65" selection-start-line="56" selection-start-column="65" selection-end-line="56" selection-end-column="65" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/test/tensorflow_/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/generic.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="45">
+          <caret line="3" selection-start-line="3" selection-end-line="3" />
           <folding>
-            <element signature="e#0#42#0" expanded="true" />
+            <element signature="e#0#51#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/syft/torch_/native_tensor.py">
+    <entry file="file://$PROJECT_DIR$/syft/tensorflow_/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="105">
-          <caret line="7" column="24" selection-start-line="7" selection-start-column="18" selection-end-line="7" selection-end-column="24" />
+        <state relative-caret-position="45">
+          <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
           <folding>
-            <element signature="e#0#46#0" expanded="true" />
+            <element signature="e#0#73#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/syft/torch_/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="38" lean-forward="true" selection-start-column="38" selection-end-column="38" />
+        <state relative-caret-position="45">
+          <caret line="3" lean-forward="true" selection-start-line="3" selection-end-line="3" />
+          <folding>
+            <element signature="e#0#67#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/test/torch_/__init__.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/syft/__init__.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/syft/torch_/constructors.py">
+    <entry file="file://$PROJECT_DIR$/syft/torch_/uppercase_tensor.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" column="21" lean-forward="true" selection-start-line="9" selection-start-column="21" selection-end-line="9" selection-end-column="21" />
+        <state relative-caret-position="225">
+          <caret line="15" selection-start-line="15" selection-end-line="16" selection-end-column="58" />
           <folding>
-            <element signature="e#0#61#0" expanded="true" />
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/torch_/parameter.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/torch_/lowercase_tensor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/tensorflow_/variable.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="15" column="58" selection-start-line="15" selection-start-column="58" selection-end-line="15" selection-end-column="58" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/tensorflow_/constant.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="17" lean-forward="true" selection-start-line="17" selection-end-line="17" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test/torch_/test_native.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="24" column="52" lean-forward="true" selection-start-line="24" selection-start-column="52" selection-end-line="24" selection-end-column="52" />
+        <state relative-caret-position="420">
+          <caret line="28" lean-forward="true" selection-start-line="28" selection-end-line="28" />
           <folding>
-            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#0#25#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/syft/generic.py">
+    <entry file="file://$PROJECT_DIR$/test/tensorflow_/test_native.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="435">
-          <caret line="29" lean-forward="true" selection-start-line="29" selection-end-line="29" />
+        <state relative-caret-position="345">
+          <caret line="23" lean-forward="true" selection-start-line="23" selection-end-line="23" />
+          <folding>
+            <element signature="e#0#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/syft/tensorflow_/eager_tensor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="240">
+          <caret line="16" lean-forward="true" selection-start-line="16" selection-end-line="16" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
