@@ -669,7 +669,6 @@ def make_basedataset(**kwargs):
     dataset = syft.BaseDataset(torch.tensor([1, 2, 3, 4]), torch.tensor([5, 6, 7, 8]))
     dataset.tag("#tag1").describe("desc")
 
-
     def compare(detailed, original):
         assert type(detailed) == syft.BaseDataset
         assert (detailed.data == original.data).all()
@@ -688,8 +687,12 @@ def make_basedataset(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, dataset.data),
                     msgpack.serde._simplify(syft.hook.local_worker, dataset.targets),
                     dataset.id,
-                    msgpack.serde._simplify(syft.hook.local_worker, dataset.tags),  # (set of str) tags
-                    msgpack.serde._simplify(syft.hook.local_worker, dataset.description),  # (str) description
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.tags
+                    ),  # (set of str) tags
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.description
+                    ),  # (str) description
                     msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
                 ),
             ),
