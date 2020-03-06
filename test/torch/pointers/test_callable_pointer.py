@@ -72,7 +72,7 @@ def test_call_callable_pointer(workers):
     Tests that the correct result after an operation is
     returned when `callable_pointer` is called.
     """
-    
+
     def foo(x):
         """ Adds 2 to a given input `x`."""
         return x + 2
