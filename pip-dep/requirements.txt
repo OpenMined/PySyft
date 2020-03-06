@@ -13,4 +13,3 @@ torchvision~=0.5.0
 torch~=1.4.0
 websocket_client~=0.57.0
 websockets~=8.1.0
-zstd~=1.4.4.0
