@@ -449,7 +449,7 @@ def test_torch_sigmoid_approx(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     fix_prec_tolerance_by_method = {
-        "exp": {3: 5 / 100, 4: 1 / 100, 5: 1 / 100},
+        "exp": {3: 6 / 100, 4: 1 / 100, 5: 1 / 100},
         "maclaurin": {3: 7 / 100, 4: 15 / 100, 5: 15 / 100},
     }
 

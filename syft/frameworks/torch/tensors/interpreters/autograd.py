@@ -75,6 +75,8 @@ class AutogradTensor(AbstractTensor):
         return attr_val
 
     def __add__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.add(other)
 
     def __iadd__(self, other):
@@ -83,6 +85,8 @@ class AutogradTensor(AbstractTensor):
         self.grad_fn = result.grad_fn
 
     def __sub__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.sub(other)
 
     def __isub__(self, other):
@@ -91,9 +95,14 @@ class AutogradTensor(AbstractTensor):
         self.grad_fn = result.grad_fn
 
     def __mul__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.mul(other)
 
     def __matmul__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
+
         return self.matmul(other)
 
     def __pow__(self, power, **kwargs):
@@ -181,6 +190,9 @@ class AutogradTensor(AbstractTensor):
         module.div = div
 
         def addmm(bias, input_tensor, weight):
+            if not isinstance(input_tensor, AutogradTensor):
+                input_tensor = AutogradTensor(requires_grad=False).on(input_tensor, wrap=False)
+
             matmul = input_tensor.matmul(weight)
             result = bias.add(matmul)
             return result
@@ -311,7 +323,7 @@ class AutogradTensor(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AutogradTensor":
         """
-            This function reconstructs (deserializes) an AutogradTensors given its attributes in form of a tuple.
+            This function reconstructs (deserializes) an AutogradTensor given its attributes in form of a tuple.
             Args:
                 worker: the worker doing the deserialization
                 tensor_tuple: a tuple holding the attributes of the AutogradTensor
