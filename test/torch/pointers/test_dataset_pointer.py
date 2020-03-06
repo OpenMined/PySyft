@@ -40,7 +40,7 @@ def test_get_dataset(workers):
 
     assert torch.equal(dataset.data, data) == 1
     assert torch.equal(dataset.targets, target) == 1
-    assert dataset.location == me
+    assert dataset.owner == me
 
 
 def test_get_data_targets(workers):

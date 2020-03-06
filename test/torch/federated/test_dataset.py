@@ -20,12 +20,6 @@ def test_base_dataset(workers):
     assert dataset.targets.location.id == "bob"
     assert dataset.location.id == "bob"
 
-    dataset.get()
-    with pytest.raises(AttributeError):
-        assert dataset.data.location.id == 0
-    with pytest.raises(AttributeError):
-        assert dataset.targets.location.id == 0
-
 
 def test_base_dataset_transform():
 
@@ -61,10 +55,12 @@ def test_federated_dataset(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert len(fed_dataset) == 6
 
-    assert (fed_dataset["alice"].get().data == alice_base_dataset.data).all()
-    assert fed_dataset["alice"][2] == (5, 5)
-    assert len(fed_dataset["alice"]) == 4
-    assert len(fed_dataset) == 6
+    alice_remote_data = fed_dataset["alice"].get()
+    del fed_dataset.datasets["alice"]
+    assert (alice_remote_data.data == alice_base_dataset.data).all()
+    assert alice_remote_data[2] == (5, 5)
+    assert len(alice_remote_data) == 4
+    assert len(fed_dataset) == 2
 
     assert isinstance(fed_dataset.__str__(), str)
 
