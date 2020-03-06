@@ -54,9 +54,9 @@ samples[
 ] = make_crtprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
-samples[syft.messaging.plan.plan.Plan] = make_plan
-samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.protocol.Protocol] = make_protocol
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.state.State] = make_state
+samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
@@ -70,7 +70,7 @@ samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
 samples[syft.messaging.message.Message] = make_message
-samples[syft.messaging.message.Operation] = make_operation
+samples[syft.messaging.message.OperationMessage] = make_operation
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
