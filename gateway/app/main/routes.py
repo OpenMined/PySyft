@@ -611,3 +611,46 @@ def fl_cycle_application_decision():
         status=400,
         mimetype="application/json",
     )
+
+
+@main.route("/federated/get-plan", methods=["GET"])
+def download_plan():
+    """Request a download of a plan"""
+
+    response_body = {}
+    status_code = None
+
+    try:
+        worker_id = request.args.get("worker_id", None)
+        request_key = request.args.get("request_key", None)
+        plan_id = request.args.get("plan_id", None)
+        receive_operations_as = request.args.get("receive_operations_as", None)
+
+        # Retrieve Process Entities
+        _plan = processes.get_plan(name=plan_id)
+        _cycle = processes.get_cycle(_plan.fl_process_id)
+        _worker = workers.get(id=worker_id)
+        _accepted = processes.validate(_worker.id, _cycle.id, request_key)
+
+        if not _accepted:
+            raise InvalidRequestKeyError
+
+        status_code = 200  # Success
+
+        if receive_operations_as == "torchscript":
+            response_body[CYCLE.PLANS] = _plan.value_ts
+        else:
+            response_body[CYCLE.PLANS] = _plan.value
+    except InvalidRequestKeyError as e:
+        status_code = 401  # Unauthorized
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except PyGridError as e:
+        status_code = 400  # Bad request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG] = str(e)
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
