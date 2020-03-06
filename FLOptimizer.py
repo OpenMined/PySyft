@@ -1,22 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import torch
 from torch import nn
 from torch import optim
 
-
-# In[2]:
-
-
 import syft as sy
 hook = sy.TorchHook(torch)
-
-
-# In[3]:
 
 
 # create a couple workers
@@ -24,8 +14,6 @@ hook = sy.TorchHook(torch)
 bob = sy.VirtualWorker(hook, id="bob")
 alice = sy.VirtualWorker(hook, id="alice")
 
-
-# In[7]:
 
 
 data = torch.tensor([[0,0],[0,1],[1,0],[1,1.]], requires_grad=True)
@@ -50,27 +38,14 @@ target_alice = target_alice.send(alice)
 # organize pointers into a list
 datasets = [(data_bob,target_bob),(data_alice,target_alice)]
 
-
-
-# > create a FLOptimizer which will - under the hood - 
-#   maintain a list of optimizer objects, one for each worker 
-#   and use them in the appropriate context,.
-# 
-
-# In[10]:
+# change : applying separate optimizer
 
 
 
 opt_bob= optim.Adagrad(params=model.parameters(),lr=0.1)
-
-#opt_bob = optim.ADAM(params=model.parameters(),lr=0.1)
 opt_alice = optim.SGD(params=model.parameters(),lr=0.1)
 
 optimizer = [opt_bob, opt_alice]
-
-
-# In[11]:
-
 
 def train():
     # Training Logic
@@ -105,17 +80,8 @@ def train():
             # 6) print our progress
             print(loss.get()) # NEW) slight edit... need to call .get() on loss\
     
-# federated averaging
-
-
-# In[12]:
-
 
 train()
-
-
-# In[ ]:
-
 
 
 
