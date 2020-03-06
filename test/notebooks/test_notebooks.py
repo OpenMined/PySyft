@@ -35,7 +35,6 @@ excluded_translated_notebooks = [
     Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
 ]
 
-
 # Include only the translations that have been changed
 gitdiff = Path("test/notebooks/git-diff.txt")
 changed_files = []
@@ -123,6 +122,7 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
         timeout=300,
     )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
 @pytest.mark.translation

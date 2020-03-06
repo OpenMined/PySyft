@@ -33,8 +33,8 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
+from syft.execution.plan import Plan
 from syft.messaging.message import CryptenInit
-from syft.messaging.plan import Plan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.crypten import toy_func, run_party
 
