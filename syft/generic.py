@@ -88,7 +88,9 @@ class ObjectConstructor(object):
             if isinstance(self.original_constructor, type):
 
                 # copy static methods from previous constructor to new one
-                copy_static_methods(from_class=self.original_constructor, to_class=type(self))
+                copy_static_methods(
+                    from_class=self.original_constructor, to_class=type(self)
+                )
         else:
             raise AttributeError(
                 f"You have already installed a custom constructor at location {self.constructor_location}."
@@ -106,7 +108,9 @@ class ObjectConstructor(object):
         """
 
         # get the name of the place you want to move the original constructor to
-        self.original_constructor_name = get_original_constructor_name(object_name=self.constructor_name)
+        self.original_constructor_name = get_original_constructor_name(
+            object_name=self.constructor_name
+        )
 
         # save the original_constructor
         original_constructor = getattr(self.constructor_location, self.constructor_name)

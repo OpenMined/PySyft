@@ -8,7 +8,9 @@ def type_hints(decorated):
             try:
                 arg_value = getattr(args, arg_name)
             except AttributeError as e:
-                raise AttributeError(f"'{arg_name}' was passed into a function as an arg instead of a kwarg. Please pass in arguments as kwargs.")
+                raise AttributeError(
+                    f"'{arg_name}' was passed into a function as an arg instead of a kwarg. Please pass in arguments as kwargs."
+                )
 
             if not isinstance(arg_value, arg_type):
                 raise AttributeError(
@@ -23,8 +25,8 @@ def type_hints(decorated):
 
     return decorator
 
-def max_one_arg(decorated):
 
+def max_one_arg(decorated):
     @require(
         "Please use args for at most 1 variable, kwargs for all other variables. Note that 'self' is counted as 1 variable.",
         lambda args: len(args.args) <= 1,
@@ -34,8 +36,8 @@ def max_one_arg(decorated):
 
     return decorator
 
-def kwargs_only_function(decorated):
 
+def kwargs_only_function(decorated):
     @require(
         "Please only use kwargs when calling this function",
         lambda args: len(args.args) == 0,
@@ -45,8 +47,8 @@ def kwargs_only_function(decorated):
 
     return decorator
 
-def kwargs_only_method(decorated):
 
+def kwargs_only_method(decorated):
     @require(
         "Please only use kwargs when calling this method",
         lambda args: len(args.args) <= 1,

@@ -1,8 +1,9 @@
 from syft import check
 import inspect
 
+
 @check.type_hints
-def is_static_method(klass:type, attr:str):
+def is_static_method(klass: type, attr: str):
     """Test if a value of a class is static method.
 
     Example:
@@ -38,8 +39,9 @@ def is_static_method(klass:type, attr:str):
                     return True
     return False
 
+
 @check.type_hints
-def copy_static_methods(from_class:type, to_class:type):
+def copy_static_methods(from_class: type, to_class: type):
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
@@ -58,8 +60,9 @@ def copy_static_methods(from_class:type, to_class:type):
         if is_static_method(klass=from_class, attr=attr):
             setattr(to_class, attr, getattr(from_class, attr))
 
+
 @check.type_hints
-def get_original_constructor_name(object_name:str):
+def get_original_constructor_name(object_name: str):
     """Generate name for original constructor
 
     For each custom constructor, we move the original constructor to a consistent location relative to
