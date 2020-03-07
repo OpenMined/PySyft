@@ -36,4 +36,3 @@ class ConstantConstructor(ObjectConstructor):
 
 # Step 3: create constructor and install it in the library
 ConstantConstructor().install_inside_library()
-e
