@@ -28,7 +28,7 @@ class LowercaseTensorConstructor(ObjectConstructor):
             out (SyftObject): returns the underlying syft object.
         """
 
-        # obj = self.assign_id(obj)
+        obj = self.assign_id(obj=obj)
 
         return obj
 

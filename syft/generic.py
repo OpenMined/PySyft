@@ -205,7 +205,7 @@ class ObjectConstructor(object):
 
     @check.type_hints
     def assign_id(self, obj: object):
-        self.obj.id = generate_cryptographically_secure_random_id()
+        obj.id = generate_cryptographically_secure_random_id()
         return obj
 
     @property
