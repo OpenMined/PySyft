@@ -4,3 +4,4 @@ build
 .idea
 .pyc
 __pycache__
+.idea
