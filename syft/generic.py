@@ -199,7 +199,7 @@ class ObjectConstructor(object):
             out (SyftObject): returns the underlying syft object.
         """
 
-        # obj = self.assign_id(obj=obj)
+        obj = self.assign_id(obj=obj)
 
         return obj
 

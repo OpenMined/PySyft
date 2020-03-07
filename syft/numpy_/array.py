@@ -29,8 +29,6 @@ class ArrayConstructor(ObjectConstructor):
             out (SyftObject): returns the underlying syft object.
         """
 
-        # obj = self.assign_id(obj=obj)
-
         return obj
 
 # Step 3: create constructor and install it in the library
