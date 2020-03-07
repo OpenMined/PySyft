@@ -1,7 +1,7 @@
 from syft.util import get_original_constructor_name
 from syft.util import copy_static_methods
 from syft import check
-from syft.random import generate_random_id
+from syft.random import generate_cryptographically_secure_random_id
 
 
 class ObjectConstructor(object):
@@ -204,8 +204,8 @@ class ObjectConstructor(object):
         return obj
 
     @check.type_hints
-    def assign_id(self, obj:object):
-        self.obj.id = generate_random_id()
+    def assign_id(self, obj: object):
+        self.obj.id = generate_cryptographically_secure_random_id()
         return obj
 
     @property

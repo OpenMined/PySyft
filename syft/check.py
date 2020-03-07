@@ -2,6 +2,16 @@ from dpcontracts import require, ensure
 
 
 def type_hints(decorated):
+    # """If __debug__ is set to true, enforce python argument type hints
+    #
+    #   As a convention across PySyft,
+    #
+    #   Arg:
+    #       decorated (func): the function on which we want to check argument types
+    #
+    #   Returns:
+    #       decorator (func): the decorated function which checks argument types
+    #   """
 
     def check_argument_types(args):
 
