@@ -40,6 +40,7 @@ conda create -n pysyft python=3
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
 conda install jupyter notebook
 ```
+**Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
 Another alternative is to use python venvs. Those are our preferred
 environments for development purposes. We provide a direct install
