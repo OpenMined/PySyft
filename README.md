@@ -10,7 +10,7 @@
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
-and Encrypted Computation (like 
+and Encrypted Computation (like
 [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
 and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
@@ -69,19 +69,6 @@ yourself. If you feel you've received an unexpected
 installation error related to PyTorch or TF Encrypted, please
 open an issue on Github or reach out to `#team_pysyft` in
 Slack.
-
-If you have an installation error regarding zstd, run this command and then re-try installing syft.
-
-```bash
-pip install --upgrade --force-reinstall zstd
-```
-If this still doesn't work, and you happen to be on OSX, make
-sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
-
-If this still fails, and you are on a Conda environment. It could be
-because conda provides its own compiler and linker tools which might
-conflict with your system's. In that case we recommend to use a python venv
-and try again.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
