@@ -1,4 +1,5 @@
 from syft.generic import ObjectConstructor
+from syft import check
 
 import tensorflow as tf
 

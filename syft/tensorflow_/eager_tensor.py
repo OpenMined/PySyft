@@ -1,6 +1,7 @@
 from syft.generic import ObjectConstructor
-from tensorflow.python.framework import ops
+from syft import check
 
+from tensorflow.python.framework import ops
 
 class EagerTensorConstructor(ObjectConstructor):
     # Step 1: Store the attribute name that this constructor is replacing
