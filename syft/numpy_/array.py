@@ -4,6 +4,18 @@ from syft import check
 import numpy as np
 
 
+class array(np.ndarray):
+
+    @property
+    def id(self):
+        return self._id
+
+    @id.setter
+    def id(self, new_id):
+        self._id = new_id
+
+np.array = array
+
 class ArrayConstructor(ObjectConstructor):
 
     # Step 1: Store the attribute name that this constructor is replacing
@@ -14,22 +26,6 @@ class ArrayConstructor(ObjectConstructor):
     # self.install_inside_library()
     constructor_location = np
 
-    @check.type_hints
-    def post_init(self, obj: object, *args, **kwargs):
-        """Execute functionality after object has been created.
-
-        This method executes functionality which can only be run after an object has been initailized. It is
-        particularly useful for logic which registers the created object into an appropriate registry. It is
-        also useful for adding arbitrary attributes to the object after initialization.
-
-        Args:
-            *args (tuple): the arguments being used to initialize the object
-            **kwargs (dict): the kwarguments eeing used to initialize the object
-        Returns:
-            out (SyftObject): returns the underlying syft object.
-        """
-
-        return obj
 
 # Step 3: create constructor and install it in the library
 ArrayConstructor().install_inside_library()
