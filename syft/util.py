@@ -54,8 +54,6 @@ def copy_static_methods(from_class, to_class):
 
     """
 
-    print(f"copying static methods from:{from_class} to {to_class}")
-
     for attr in dir(from_class):
         if is_static_method(from_class, attr):
             setattr(to_class, attr, getattr(from_class, attr))
