@@ -2,6 +2,7 @@ from dpcontracts import require, ensure
 
 
 def type_hints(decorated):
+
     def check_argument_types(args):
 
         for arg_name, arg_type in decorated.__annotations__.items():
