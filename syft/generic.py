@@ -1,5 +1,6 @@
 from syft.util import get_original_constructor_name
 from syft.util import copy_static_methods
+from syft import check
 
 
 class ObjectConstructor(object):
@@ -83,8 +84,11 @@ class ObjectConstructor(object):
             # save this constructor in its place
             setattr(self.constructor_location, self.constructor_name, self)
 
-            # copy static methods from previous constructor to new one
-            copy_static_methods(self.original_constructor, self)
+            # If the original constructor is a class (not just a standalone func like tf.constant or th.tensor)
+            if isinstance(self.original_constructor, type):
+
+                # copy static methods from previous constructor to new one
+                copy_static_methods(from_class=self.original_constructor, to_class=type(self))
         else:
             raise AttributeError(
                 f"You have already installed a custom constructor at location {self.constructor_location}."
@@ -102,9 +106,7 @@ class ObjectConstructor(object):
         """
 
         # get the name of the place you want to move the original constructor to
-        self.original_constructor_name = get_original_constructor_name(
-            self.constructor_name
-        )
+        self.original_constructor_name = get_original_constructor_name(object_name=self.constructor_name)
 
         # save the original_constructor
         original_constructor = getattr(self.constructor_location, self.constructor_name)
@@ -137,7 +139,7 @@ class ObjectConstructor(object):
 
         new_args, new_kwargs = self.pre_init(*args, **kwargs)
         obj = self.init(*new_args, **new_kwargs)
-        obj = self.post_init(obj, *new_args, **new_kwargs)
+        obj = self.post_init(obj=obj, args=new_args, kwargs=new_kwargs)
 
         return obj
 
@@ -170,14 +172,15 @@ class ObjectConstructor(object):
         the initialied object
 
         Args:
-            *args (list): the arguments being used to initialize the object
+            *args (tuple): the arguments being used to initialize the object
             **kwargs (dict): the kwarguments eeing used to initialize the object
         Returns:
             out (SyftObject): returns the underlying syft object.
         """
         return self.original_constructor(*args, **kwargs)
 
-    def post_init(self, obj, *args, **kwargs):
+    @check.type_hints
+    def post_init(self, obj: object, *args, **kwargs):
         """Execute functionality after object has been created.
 
         This method executes functionality which can only be run after an object has been initailized. It is
@@ -185,7 +188,7 @@ class ObjectConstructor(object):
         also useful for adding arbitrary attributes to the object after initialization.
 
         Args:
-            *args (list): the arguments being used to initialize the object
+            *args (tuple): the arguments being used to initialize the object
             **kwargs (dict): the kwarguments eeing used to initialize the object
         Returns:
             out (SyftObject): returns the underlying syft object.
@@ -229,6 +232,6 @@ class ObjectConstructor(object):
             instance,
             getattr(
                 cls.constructor_location,
-                get_original_constructor_name(cls.constructor_name),
+                get_original_constructor_name(object_name=cls.constructor_name),
             ),
         )

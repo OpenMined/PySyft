@@ -1,7 +1,8 @@
+from syft import check
 import inspect
 
-
-def is_static_method(klass, attr, value=None):
+@check.type_hints
+def is_static_method(klass:type, attr:str):
     """Test if a value of a class is static method.
 
     Example:
@@ -14,7 +15,6 @@ def is_static_method(klass, attr, value=None):
     Args:
         klass (type): the class on which we want to check whether the method is statically implemented
         attr (str): the name of the method we want to check.
-        value (obj): the value of the attribute (i typically leave this empty)
 
     Returns:
         bool: whether or not a method named <attr> is a static method of class <klass>
@@ -23,11 +23,10 @@ def is_static_method(klass, attr, value=None):
     if not inspect.isclass(klass):
         return False
 
-    if value is None:
-        if hasattr(klass, attr):
-            value = getattr(klass, attr)
-        else:
-            return False
+    if hasattr(klass, attr):
+        value = getattr(klass, attr)
+    else:
+        return False
 
     assert getattr(klass, attr) == value
 
@@ -39,8 +38,8 @@ def is_static_method(klass, attr, value=None):
                     return True
     return False
 
-
-def copy_static_methods(from_class, to_class):
+@check.type_hints
+def copy_static_methods(from_class:type, to_class:type):
     """Copies all static methods from one class to another class
 
     This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
@@ -53,11 +52,12 @@ def copy_static_methods(from_class, to_class):
         to_class (Type): the class onto which we copy all static methods found in <from_class>
 
     """
+    # there are no static methods if from_class itself is not a type (sometimes funcs get passed in)
 
     for attr in dir(from_class):
-        if is_static_method(from_class, attr):
+        if is_static_method(klass=from_class, attr=attr):
             setattr(to_class, attr, getattr(from_class, attr))
 
-
-def get_original_constructor_name(object_name):
+@check.type_hints
+def get_original_constructor_name(object_name:str):
     return f"original_{object_name}"
