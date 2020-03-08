@@ -399,7 +399,7 @@ class Plan(AbstractObject, ObjectStorage):
             for i, op in enumerate(self.actions):
                 cmd, _self, args, kwargs, return_placeholder = (
                     op.name,
-                    op.operand,  # operand is equivalent to the "self" in a method
+                    op.target,  # target is equivalent to the "self" in a method
                     op.args,
                     op.kwargs,
                     op.return_ids,

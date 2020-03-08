@@ -11,12 +11,12 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 class ComputationAction(Action):
     """Describes mathematical operations performed on tensors"""
 
-    def __init__(self, name, operand, args_, kwargs_, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids):
         """Initialize an action
 
         Args:
             name (String): The name of the method to be invoked (e.g. "__add__")
-            operand (Tensor): The object to invoke the method on
+            target (Tensor): The object to invoke the method on
             args_ (Tuple): The arguments to the method call
             kwargs_ (Dictionary): The keyword arguments to the method call
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
@@ -31,7 +31,7 @@ class ComputationAction(Action):
         super().__init__()
 
         self.name = name
-        self.operand = operand
+        self.target = target
         self.args = args_
         self.kwargs = kwargs_
         self.return_ids = return_ids
@@ -46,7 +46,7 @@ class ComputationAction(Action):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.name, self.operand, self.args, self.kwargs)
+        message = (self.name, self.target, self.args, self.kwargs)
 
         return (message, self.return_ids)
 
@@ -64,7 +64,7 @@ class ComputationAction(Action):
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        message = (ptr.name, ptr.operand, ptr.args, ptr.kwargs)
+        message = (ptr.name, ptr.target, ptr.args, ptr.kwargs)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
@@ -92,9 +92,9 @@ class ComputationAction(Action):
         detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
         detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
 
-        name, operand, args_, kwargs_ = detailed_msg
+        name, target, args_, kwargs_ = detailed_msg
 
-        return ComputationAction(name, operand, args_, kwargs_, detailed_ids)
+        return ComputationAction(name, target, args_, kwargs_, detailed_ids)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, action: "ComputationAction") -> "ComputationActionPB":
@@ -111,17 +111,17 @@ class ComputationAction(Action):
         protobuf_op = ComputationActionPB()
         protobuf_op.command = action.name
 
-        if type(action.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
+        if type(action.target) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.target_pointer
         elif (
-            type(action.operand) == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+            type(action.target) == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         ):
             protobuf_owner = protobuf_op.target_placeholder
         else:
             protobuf_owner = protobuf_op.target_tensor
 
-        if action.operand is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.operand))
+        if action.target is not None:
+            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
 
         if action.args:
             protobuf_op.args.extend(ComputationAction._bufferize_args(worker, action.args))

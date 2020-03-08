@@ -507,11 +507,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        name, operand, args_, kwargs_ = message
+        name, target, args_, kwargs_ = message
 
         try:
             ret_val = self.send_msg(
-                CommandMessage(name, operand, args_, kwargs_, return_ids), location=recipient
+                CommandMessage(name, target, args_, kwargs_, return_ids), location=recipient
             )
         except ResponseSignatureError as e:
             ret_val = None

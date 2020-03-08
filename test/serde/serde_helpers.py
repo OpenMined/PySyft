@@ -1331,8 +1331,8 @@ def make_computation_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.name, detailed.operand, detailed.args, detailed.kwargs)
-        original_msg = (original.name, original.operand, original.args, original.kwargs)
+        detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
+        original_msg = (original.name, original.target, original.args, original.kwargs)
         assert type(detailed) == syft.messaging.message.ComputationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
@@ -1342,8 +1342,8 @@ def make_computation_action(**kwargs):
         assert detailed.return_ids == original.return_ids
         return True
 
-    message1 = (op1.name, op1.operand, op1.args, op1.kwargs)
-    message2 = (op2.name, op2.operand, op2.args, op2.kwargs)
+    message1 = (op1.name, op1.target, op1.args, op1.kwargs)
+    message2 = (op2.name, op2.target, op2.args, op2.kwargs)
 
     return [
         {
@@ -1392,8 +1392,8 @@ def make_command_message(**kwargs):
         detailed = detailed.action
         original = original.action
 
-        detailed_msg = (detailed.name, detailed.operand, detailed.args, detailed.kwargs)
-        original_msg = (original.name, original.operand, original.args, original.kwargs)
+        detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
+        original_msg = (original.name, original.target, original.args, original.kwargs)
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]

@@ -115,7 +115,7 @@ class CommandMessage(Message):
     worker to take two tensors and add them together is an action. However, sending an object
     from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, name, operand, args_, kwargs_, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids):
         """Initialize an action message
 
         Args:
@@ -132,15 +132,15 @@ class CommandMessage(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.action = ComputationAction(name, operand, args_, kwargs_, return_ids)
+        self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
 
     @property
     def name(self):
         return self.action.name
 
     @property
-    def operand(self):
-        return self.action.operand
+    def target(self):
+        return self.action.target
 
     @property
     def args(self):
@@ -164,7 +164,7 @@ class CommandMessage(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.action.name, self.action.operand, self.action.args, self.action.kwargs)
+        message = (self.action.name, self.action.target, self.action.args, self.action.kwargs)
 
         return (message, self.action.return_ids)
 
@@ -202,7 +202,7 @@ class CommandMessage(Message):
         detailed = sy.serde.msgpack.serde._detail(worker, action)
 
         return CommandMessage(
-            detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
+            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
         )
 
     @staticmethod
@@ -243,7 +243,7 @@ class CommandMessage(Message):
         detailed = ComputationAction.unbufferize(worker, protobuf_obj.action)
 
         return CommandMessage(
-            detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
+            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
         )
 
 
