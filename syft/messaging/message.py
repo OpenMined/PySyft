@@ -14,7 +14,7 @@ from syft.execution.computation import ComputationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
-from syft_proto.messaging.v1.message_pb2 import ActionMessage as ActionMessagePB
+from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
 
 
 class Message:
@@ -105,7 +105,7 @@ class Message:
         return self.__str__()
 
 
-class ActionMessage(Message):
+class CommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
@@ -169,12 +169,12 @@ class ActionMessage(Message):
         return (message, self.action.return_ids)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "ActionMessage") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
         """
-        This function takes the attributes of a ActionMessage and saves them in a tuple
+        This function takes the attributes of a CommandMessage and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (ActionMessage): a Message
+            ptr (CommandMessage): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
@@ -183,7 +183,7 @@ class ActionMessage(Message):
         return (sy.serde.msgpack.serde._simplify(worker, ptr.action),)
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ActionMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
         """
         This function takes the simplified tuple version of this message and converts
         it into a Operation. The simplify() method runs the inverse of this method.
@@ -193,7 +193,7 @@ class ActionMessage(Message):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (ActionMessage): an ActionMessage.
+            ptr (CommandMessage): an CommandMessage.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -201,48 +201,48 @@ class ActionMessage(Message):
 
         detailed = sy.serde.msgpack.serde._detail(worker, action)
 
-        return ActionMessage(
+        return CommandMessage(
             detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
         )
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, action_message: "ActionMessage") -> "ActionMessagePB":
+    def bufferize(worker: AbstractWorker, action_message: "CommandMessage") -> "CommandMessagePB":
         """
-        This function takes the attributes of a ActionMessage and saves them in Protobuf
+        This function takes the attributes of a CommandMessage and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            action_message (ActionMessage): an ActionMessage
+            action_message (CommandMessage): an CommandMessage
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
             data = bufferize(message)
         """
-        protobuf_op_msg = ActionMessagePB()
+        protobuf_op_msg = CommandMessagePB()
         protobuf_op = ComputationAction.bufferize(worker, action_message.action)
 
         protobuf_op_msg.action.CopyFrom(protobuf_op)
         return protobuf_op_msg
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "ActionMessagePB") -> "ActionMessage":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "CommandMessagePB") -> "CommandMessage":
         """
         This function takes the Protobuf version of this message and converts
-        it into an ActionMessage. The bufferize() method runs the inverse of this method.
+        it into an CommandMessage. The bufferize() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            protobuf_obj (ActionMessagePB): the Protobuf message
+            protobuf_obj (CommandMessagePB): the Protobuf message
 
         Returns:
-            obj (ActionMessage): an ActionMessage
+            obj (CommandMessage): an CommandMessage
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         detailed = ComputationAction.unbufferize(worker, protobuf_obj.action)
 
-        return ActionMessage(
+        return CommandMessage(
             detailed.name, detailed.operand, detailed.args, detailed.kwargs, detailed.return_ids
         )
 

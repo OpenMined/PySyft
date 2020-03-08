@@ -1371,8 +1371,8 @@ def make_computation_action(**kwargs):
     ]
 
 
-# syft.messaging.message.ActionMessage
-def make_action_message(**kwargs):
+# syft.messaging.message.CommandMessage
+def make_command_message(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
@@ -1387,7 +1387,7 @@ def make_action_message(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.ActionMessage
+        assert type(detailed) == syft.messaging.message.CommandMessage
 
         detailed = detailed.action
         original = original.action
@@ -1406,7 +1406,7 @@ def make_action_message(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.ActionMessage],
+                CODE[syft.messaging.message.CommandMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, op1.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
@@ -1414,7 +1414,7 @@ def make_action_message(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.ActionMessage],
+                CODE[syft.messaging.message.CommandMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, op2.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
