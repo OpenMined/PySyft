@@ -450,7 +450,7 @@ def make_torch_size(**kwargs):
 # Utility functions
 
 
-def compare_operations(detailed, original):
+def compare_actions(detailed, original):
     """Compare 2 Operation's"""
     assert len(detailed) == len(original)
     for i, detailed_op in enumerate(detailed):
@@ -699,7 +699,7 @@ def make_plan(**kwargs):
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
         compare_placeholders_dict(detailed.placeholders, original.placeholders)
-        compare_operations(detailed.operations, original.operations)
+        compare_actions(detailed.actions, original.actions)
         # State
         compare_placeholders_list(
             detailed.state.state_placeholders, original.state.state_placeholders
@@ -725,7 +725,7 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.operations),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.actions),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
                     plan.is_built,  # (bool) is_built
@@ -746,7 +746,7 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.operations),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.actions),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
                     model_plan.include_state,  # (bool) include_state
                     model_plan.is_built,  # (bool) is_built
@@ -1371,8 +1371,8 @@ def make_computation_action(**kwargs):
     ]
 
 
-# syft.messaging.message.OperationMessage
-def make_operation_message(**kwargs):
+# syft.messaging.message.ActionMessage
+def make_action_message(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
@@ -1387,7 +1387,7 @@ def make_operation_message(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.OperationMessage
+        assert type(detailed) == syft.messaging.message.ActionMessage
 
         detailed = detailed.action
         original = original.action
@@ -1406,7 +1406,7 @@ def make_operation_message(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.messaging.message.ActionMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, op1.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
@@ -1414,7 +1414,7 @@ def make_operation_message(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.messaging.message.ActionMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, op2.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
