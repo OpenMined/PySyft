@@ -89,16 +89,39 @@ class CommunicationAction(Action):
         """
         protobuf_obj = CommunicationActionPB()
 
-        protobuf_obj.obj = sy.serde.protobuf.serde._bufferize(worker, communication.obj)
+        # TODO check types
+        obj = protobuf_obj.obj.arg_tensor
+        # if type(communication.obj) == sy.frameworks.torch.shape:
+        #     obj = protobuf_obj.obj.arg_shape
+        # elif type(communication.obj) == sy.frameworks.torch.params:
+        #     obj = protobuf_obj.obj.arg_torch_param
+        # elif type(communication.obj) == sy.frameworks.torch.tensors.native:
+        #     obj = protobuf_obj.obj.arg_tensor
+        # elif type(communication.obj) == sy.generic.pointers.pointer_tensor:
+        #     obj = protobuf_obj.obj.arg_pointer_tensor
+        # elif (
+        #     type(communication.obj)
+        #     == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+        # ):
+        #     obj = protobuf_obj.obj.arg_placeholder
+        # else:
+        #     # TODO error
+        #     assert False
 
-        protobuf_obj.source = communication.source
-        protobuf_obj.destinations = communication.destinations
+        obj.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, communication.obj))
 
-        if operation.kwargs:
-            for key, value in operation.kwargs.items():
-                protobuf_op.kwargs.get_or_create(key).CopyFrom(
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
+
+        for destination in communication.destinations:
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.destinations.add(), destination)
+
+        if communication.kwargs:
+            for key, value in communication.kwargs.items():
+                protobuf_obj.kwargs.get_or_create(key).CopyFrom(
                     CommunicationAction._bufferize_arg(worker, value)
                 )
+
+        return protobuf_obj
 
     @staticmethod
     def unbufferize(
@@ -119,17 +142,19 @@ class CommunicationAction(Action):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        obj = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj.obj)
+        obj = CommunicationAction._unbufferize_arg(worker, protobuf_obj.obj)
 
-        source = protobuf_obj.source
-        destinations = protobuf_obj.destinations
+        source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
+        destinations = [
+            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
+        ]
 
         kwargs = {
-            key: ComputationAction._unbufferize_arg(worker, kwarg)
-            for key, kwarg in protobuf_obj.items()
+            key: CommunicationAction._unbufferize_arg(worker, kwarg)
+            for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj, source, destinations, **kwargs)
+        return CommunicationAction(obj, source, destinations, kwargs)
 
     @staticmethod
     def _bufferize_args(worker: AbstractWorker, args: list) -> list:

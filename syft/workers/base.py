@@ -476,10 +476,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def execute_communication(self, message: tuple) -> PointerTensor:
         (obj, source, destinations, kwargs) = message
 
-        response = source.send(obj, *destinations, **kwargs)
+        source_worker = self.get_worker(source)
+        response = source_worker.send(obj, *destinations, **kwargs)
 
         response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-        self.rm_obj(obj.id)
+        # self.rm_obj(obj.id)
         return response
 
     def execute_plan_command(self, message: tuple):

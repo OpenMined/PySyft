@@ -112,17 +112,17 @@ class ComputationAction(Action):
         protobuf_op.command = operation.name
 
         if type(operation.target) == sy.generic.pointers.pointer_tensor.PointerTensor:
-            protobuf_owner = protobuf_op.owner_pointer
+            protobuf_target = protobuf_op.target_pointer
         elif (
             type(operation.target)
             == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         ):
-            protobuf_owner = protobuf_op.owner_placeholder
+            protobuf_target = protobuf_op.target_placeholder
         else:
-            protobuf_owner = protobuf_op.owner_tensor
+            protobuf_target = protobuf_op.target_tensor
 
         if operation.target is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.target))
+            protobuf_target.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.target))
 
         if operation.args:
             protobuf_op.args.extend(ComputationAction._bufferize_args(worker, operation.args))
@@ -167,13 +167,13 @@ class ComputationAction(Action):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         command = protobuf_obj.command
-        protobuf_owner = protobuf_obj.WhichOneof("owner")
-        if protobuf_owner:
-            owner = sy.serde.protobuf.serde._unbufferize(
-                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("owner"))
+        protobuf_target = protobuf_obj.WhichOneof("target")
+        if protobuf_target:
+            target = sy.serde.protobuf.serde._unbufferize(
+                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
             )
         else:
-            owner = None
+            target = None
         args = ComputationAction._unbufferize_args(worker, protobuf_obj.args)
 
         kwargs = {}
@@ -192,14 +192,14 @@ class ComputationAction(Action):
         if return_placeholders:
             if len(return_placeholders) == 1:
                 operation = ComputationAction(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
+                    command, target, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
                 operation = ComputationAction(
-                    command, owner, tuple(args), kwargs, return_placeholders
+                    command, target, tuple(args), kwargs, return_placeholders
                 )
         else:
-            operation = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
+            operation = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
         return operation
 

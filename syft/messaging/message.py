@@ -344,7 +344,6 @@ class CommunicationMessage(Message):
         Examples:
             data = simplify(ptr)
         """
-        print("1")
         return (sy.serde.msgpack.serde._simplify(worker, msg.communication),)
 
     @staticmethod
