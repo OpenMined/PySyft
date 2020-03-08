@@ -7,6 +7,9 @@ Tensorflow, etc.).
 All Syft message types extend the Message class.
 """
 
+from typing import Union
+from typing import List
+
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
@@ -310,6 +313,25 @@ class CommunicationMessage(Message):
 
         self.communication = CommunicationAction(obj, source, destinations, kwargs)
 
+    @property
+    def contents(self):
+        """Return a tuple with the contents of the operation (backwards compatability)
+
+        Some of our codebase still assumes that all message types have a .contents attribute. However,
+        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
+        might be. Since we know this message is a operation, we instead choose to store contents in two pieces,
+        self.message and self.return_ids, which allows for more efficient simplification (we don't have to
+        simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
+
+        message = (
+            self.communication.obj,
+            self.communication.source,
+            self.communication.destinations,
+            self.communication.kwargs,
+        )
+
+        return message
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "CommunicationMessage") -> tuple:
         """
@@ -322,6 +344,7 @@ class CommunicationMessage(Message):
         Examples:
             data = simplify(ptr)
         """
+        print("1")
         return (sy.serde.msgpack.serde._simplify(worker, msg.communication),)
 
     @staticmethod
@@ -342,8 +365,7 @@ class CommunicationMessage(Message):
         communication = msg_tuple[0]
 
         detailed = sy.serde.msgpack.serde._detail(worker, communication)
-
-        return CommunicationAction(
+        return CommunicationMessage(
             detailed.obj, detailed.source, detailed.destinations, detailed.kwargs
         )
 
@@ -388,7 +410,7 @@ class CommunicationMessage(Message):
         """
         detailed = CommunicationAction.unbufferize(worker, protobuf_obj.action)
 
-        return OperationMessage(
+        return CommunicationMessage(
             detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
         )
 

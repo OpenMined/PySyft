@@ -10,6 +10,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.messaging.message import CommunicationMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -278,7 +279,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         args = (destination,)
         kwargs = {"inplace": True}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
+        message = CommunicationMessage(self, self.location, [destination], kwargs)
+        self.owner.send_msg(message=message, location=self.location)
         if change_location:
             self.location = destination
         return self

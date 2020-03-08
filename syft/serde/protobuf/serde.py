@@ -10,6 +10,7 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import OperationMessage
+from syft.messaging.message import CommunicationMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
@@ -46,6 +47,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     ComputationAction,
     CommunicationAction,
     OperationMessage,
+    CommunicationMessage,
     PlaceHolder,
     Plan,
     PointerTensor,
@@ -243,6 +245,8 @@ def serialize(
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
     elif obj_type == OperationMessage:
         msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
+    elif obj_type == CommunicationMessage:
+        msg_wrapper.contents_communication_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

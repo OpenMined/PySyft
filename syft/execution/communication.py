@@ -15,7 +15,7 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 class CommunicationAction(Action):
     """Describes communication actions performed on tensors"""
 
-    def __init__(self, obj, source: Union[str, int], destinations: List[Union[str, int]], **kwargs):
+    def __init__(self, obj, source: Union[str, int], destinations: List[Union[str, int]], kwargs):
         """Initialize an communication action
 
         Args:

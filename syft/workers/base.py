@@ -115,6 +115,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # For performance, we cache all possible message types
         self._message_router = {
             OperationMessage: self.execute_command,
+            CommunicationMessage: self.execute_communication,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -471,6 +472,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 )
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
+
+    def execute_communication(self, message: tuple) -> PointerTensor:
+        (obj, source, destinations, kwargs) = message
+
+        response = source.send(obj, *destinations, **kwargs)
+
+        response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
+        self.rm_obj(obj.id)
+        return response
 
     def execute_plan_command(self, message: tuple):
         """Executes commands related to plans.
