@@ -240,7 +240,7 @@ def serialize(
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
     elif obj_type == ActionMessage:
-        msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
+        msg_wrapper.contents_action_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary

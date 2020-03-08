@@ -246,7 +246,7 @@ class FrameworkHook(ABC):
         """
         Add hooked version of all methods of the tensor_type to the
         Private Tensor: It'll add references to its parents and save
-        command/operations history.
+        command/actions history.
         """
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:

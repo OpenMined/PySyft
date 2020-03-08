@@ -106,26 +106,26 @@ class Message:
 
 
 class ActionMessage(Message):
-    """All syft operations use this message type
+    """All syft actions use this message type
 
-    In Syft, an operation is when one worker wishes to tell another worker to do something with
+    In Syft, an action is when one worker wishes to tell another worker to do something with
     objects contained in the worker._objects registry (or whatever the official object store is
     backed with in the case that it's been overridden). Semantically, one could view all Messages
-    as a kind of operation, but when we say operation this is what we mean. For example, telling a
-    worker to take two tensors and add them together is an operation. However, sending an object
-    from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
+    as a kind of action, but when we say action this is what we mean. For example, telling a
+    worker to take two tensors and add them together is an action. However, sending an object
+    from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
     def __init__(self, name, operand, args_, kwargs_, return_ids):
-        """Initialize an operation message
+        """Initialize an action message
 
         Args:
             message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the operation properly.
+                can be any information necessary to execute the action properly.
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                operation results are set by the client. This allows the client to be able to predict where
+                action results are set by the client. This allows the client to be able to predict where
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the operation has yet executed. It also
-                reduces the size of the response from the operation (which is very often empty).
+                pointers to the future data, regardless of whether the action has yet executed. It also
+                reduces the size of the response from the action (which is very often empty).
 
         """
 
@@ -156,11 +156,11 @@ class ActionMessage(Message):
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the operation (backwards compatability)
+        """Return a tuple with the contents of the action (backwards compatability)
 
         Some of our codebase still assumes that all message types have a .contents attribute. However,
         the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a operation, we instead choose to store contents in two pieces,
+        might be. Since we know this message is a action, we instead choose to store contents in two pieces,
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
@@ -206,19 +206,19 @@ class ActionMessage(Message):
         )
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation_message: "ActionMessage") -> "ActionMessagePB":
+    def bufferize(worker: AbstractWorker, action_message: "ActionMessage") -> "ActionMessagePB":
         """
         This function takes the attributes of a ActionMessage and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            operation_message (ActionMessage): an ActionMessage
+            action_message (ActionMessage): an ActionMessage
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
             data = bufferize(message)
         """
         protobuf_op_msg = ActionMessagePB()
-        protobuf_op = ComputationAction.bufferize(worker, operation_message.action)
+        protobuf_op = ComputationAction.bufferize(worker, action_message.action)
 
         protobuf_op_msg.action.CopyFrom(protobuf_op)
         return protobuf_op_msg
@@ -502,7 +502,7 @@ class PlanCommandMessage(Message):
 
     @property
     def contents(self):
-        """Returns a tuple with the contents of the operation (backwards compatability)."""
+        """Returns a tuple with the contents of the action (backwards compatability)."""
         return (self.command_name, self.message)
 
     @staticmethod

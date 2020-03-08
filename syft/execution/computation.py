@@ -12,7 +12,7 @@ class ComputationAction(Action):
     """Describes mathematical operations performed on tensors"""
 
     def __init__(self, name, operand, args_, kwargs_, return_ids):
-        """Initialize an operation
+        """Initialize an action
 
         Args:
             name (String): The name of the method to be invoked (e.g. "__add__")
@@ -20,10 +20,10 @@ class ComputationAction(Action):
             args_ (Tuple): The arguments to the method call
             kwargs_ (Dictionary): The keyword arguments to the method call
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                operation results are set by the client. This allows the client to be able to predict where
+                action results are set by the client. This allows the client to be able to predict where
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the operation has yet executed. It also
-                reduces the size of the response from the operation (which is very often empty).
+                pointers to the future data, regardless of whether the action has yet executed. It also
+                reduces the size of the response from the action (which is very often empty).
 
         """
 
@@ -38,11 +38,11 @@ class ComputationAction(Action):
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the operation (backwards compatability)
+        """Return a tuple with the contents of the action (backwards compatability)
 
         Some of our codebase still assumes that all message types have a .contents attribute. However,
         the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a operation, we instead choose to store contents in two pieces,
+        might be. Since we know this message is a action, we instead choose to store contents in two pieces,
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
@@ -97,47 +97,46 @@ class ComputationAction(Action):
         return ComputationAction(name, operand, args_, kwargs_, detailed_ids)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, operation: "ComputationAction") -> "ComputationActionPB":
+    def bufferize(worker: AbstractWorker, action: "ComputationAction") -> "ComputationActionPB":
         """
         This function takes the attributes of a Operation and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            operation (Operation): an Operation
+            action (Operation): an Operation
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
             data = bufferize(message)
         """
         protobuf_op = ComputationActionPB()
-        protobuf_op.command = operation.name
+        protobuf_op.command = action.name
 
-        if type(operation.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
+        if type(action.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.target_pointer
         elif (
-            type(operation.operand)
-            == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+            type(action.operand) == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         ):
             protobuf_owner = protobuf_op.target_placeholder
         else:
             protobuf_owner = protobuf_op.target_tensor
 
-        if operation.operand is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.operand))
+        if action.operand is not None:
+            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.operand))
 
-        if operation.args:
-            protobuf_op.args.extend(ComputationAction._bufferize_args(worker, operation.args))
+        if action.args:
+            protobuf_op.args.extend(ComputationAction._bufferize_args(worker, action.args))
 
-        if operation.kwargs:
-            for key, value in operation.kwargs.items():
+        if action.kwargs:
+            for key, value in action.kwargs.items():
                 protobuf_op.kwargs.get_or_create(key).CopyFrom(
                     ComputationAction._bufferize_arg(worker, value)
                 )
 
-        if operation.return_ids is not None:
-            if type(operation.return_ids) == PlaceHolder:
-                return_ids = list((operation.return_ids,))
+        if action.return_ids is not None:
+            if type(action.return_ids) == PlaceHolder:
+                return_ids = list((action.return_ids,))
             else:
-                return_ids = operation.return_ids
+                return_ids = action.return_ids
 
             for return_id in return_ids:
                 if type(return_id) == PlaceHolder:
@@ -193,17 +192,15 @@ class ComputationAction(Action):
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                operation = ComputationAction(
+                action = ComputationAction(
                     command, owner, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
-                operation = ComputationAction(
-                    command, owner, tuple(args), kwargs, return_placeholders
-                )
+                action = ComputationAction(command, owner, tuple(args), kwargs, return_placeholders)
         else:
-            operation = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
+            action = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
 
-        return operation
+        return action
 
     @staticmethod
     def _bufferize_args(worker: AbstractWorker, args: list) -> list:

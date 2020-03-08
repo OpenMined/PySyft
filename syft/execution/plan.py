@@ -72,11 +72,11 @@ def method2plan(*args, **kwargs):
 
 class Plan(AbstractObject, ObjectStorage):
     """
-    A Plan stores a sequence of torch operations, just like a function.
+    A Plan stores a sequence of torch actions, just like a function.
 
-    A Plan is intended to store a sequence of torch operations, just like a function,
-    but it allows to send this sequence of operations to remote workers and to keep a
-    reference to it. This way, to compute remotely this sequence of operations on some remote
+    A Plan is intended to store a sequence of torch actions, just like a function,
+    but it allows to send this sequence of actions to remote workers and to keep a
+    reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
 
@@ -89,7 +89,7 @@ class Plan(AbstractObject, ObjectStorage):
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
         placeholders: dict of placeholders used in the plan
-        operations: list of commands (called operations)
+        actions: list of commands (called actions)
         forward_func: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
         id: plan id
@@ -104,7 +104,7 @@ class Plan(AbstractObject, ObjectStorage):
         state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        operations: List[ActionMessage] = None,
+        actions: List[ActionMessage] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         forward_func=None,
         state_tensors=None,
@@ -122,7 +122,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.name = name or self.__class__.__name__
         self.owner = owner
 
-        self.operations = operations or []
+        self.actions = actions or []
 
         # Keep a local reference to all placeholders, stored by id
         self.placeholders = placeholders or {}
@@ -178,7 +178,7 @@ class Plan(AbstractObject, ObjectStorage):
     # For backward compatibility
     @property
     def readable_plan(self):
-        return self.operations
+        return self.actions
 
     def parameters(self):
         """
@@ -290,14 +290,14 @@ class Plan(AbstractObject, ObjectStorage):
         """Builds the plan.
 
         First, run the function to be converted in a plan in a context which
-        activates the tracing and record the operations in trace.logs
+        activates the tracing and record the actions in trace.logs
 
         Second, store the result ids temporarily to helper ordering the output
         placeholders at return time
 
         Third, loop through the trace logs and replace the tensors found in the
-        operations logged by PlaceHolders. Record those operations in
-        plan.operations
+        actions logged by PlaceHolders. Record those actions in
+        plan.actions
 
         Args:
             args: Input arguments to run the plan
@@ -325,8 +325,8 @@ class Plan(AbstractObject, ObjectStorage):
                 self.replace_with_placeholders(response, node_type="output"),
             )
             # We're cheating a bit here because we put placeholders instead of return_ids
-            operation = ActionMessage(*command_placeholders, return_ids=return_placeholders)
-            self.operations.append(operation)
+            action = ActionMessage(*command_placeholders, return_ids=return_placeholders)
+            self.actions.append(action)
 
         sy.hook.trace.clear()
         del self._tmp_result_ids
@@ -342,7 +342,7 @@ class Plan(AbstractObject, ObjectStorage):
             state=self.state.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
-            operations=self.operations,
+            actions=self.actions,
             placeholders=self.placeholders,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
@@ -378,9 +378,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         When possible, run the original function to improve efficiency. When
         it's not, for example if you fetched the plan from a remote worker,
-        then run it from the tape of operations:
+        then run it from the tape of actions:
         - Instantiate input placeholders
-        - for each recorded operation, run the operation on the placeholders
+        - for each recorded action, run the action on the placeholders
           and use the result(s) to instantiate to appropriate placeholder.
         - Return the instantiation of all the output placeholders.
         """
@@ -396,7 +396,7 @@ class Plan(AbstractObject, ObjectStorage):
             for placeholder, arg in zip(input_placeholders, args):
                 placeholder.instantiate(arg)
 
-            for i, op in enumerate(self.operations):
+            for i, op in enumerate(self.actions):
                 cmd, _self, args, kwargs, return_placeholder = (
                     op.name,
                     op.operand,  # operand is equivalent to the "self" in a method
@@ -461,7 +461,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         Args:
             locations: List of workers.
-            force: A boolean indicating if this operation should be forced.
+            force: A boolean indicating if this action should be forced.
         """
         if not self.is_built and not force:
             raise RuntimeError("A plan needs to be built before being sent to a worker.")
@@ -621,7 +621,7 @@ class Plan(AbstractObject, ObjectStorage):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, plan.id),
-            sy.serde.msgpack.serde._simplify(worker, plan.operations),
+            sy.serde.msgpack.serde._simplify(worker, plan.actions),
             sy.serde.msgpack.serde._simplify(worker, plan.state),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
@@ -643,7 +643,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         (
             id,
-            operations,
+            actions,
             state,
             include_state,
             is_built,
@@ -655,14 +655,14 @@ class Plan(AbstractObject, ObjectStorage):
 
         worker._tmp_placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
-        operations = sy.serde.msgpack.serde._detail(worker, operations)
+        actions = sy.serde.msgpack.serde._detail(worker, actions)
         state = sy.serde.msgpack.serde._detail(worker, state)
         placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
 
         plan = sy.Plan(
             include_state=include_state,
             is_built=is_built,
-            operations=operations,
+            actions=actions,
             placeholders=placeholders,
             id=id,
             owner=worker,
@@ -693,11 +693,10 @@ class Plan(AbstractObject, ObjectStorage):
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
 
-        protobuf_operations = [
-            sy.serde.protobuf.serde._bufferize(worker, operation).action
-            for operation in plan.operations
+        protobuf_actions = [
+            sy.serde.protobuf.serde._bufferize(worker, action).action for action in plan.actions
         ]
-        protobuf_plan.actions.extend(protobuf_operations)
+        protobuf_plan.actions.extend(protobuf_actions)
 
         protobuf_plan.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.state))
 
@@ -734,15 +733,13 @@ class Plan(AbstractObject, ObjectStorage):
         worker._tmp_placeholders = {}
         id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
-        operations = []
+        actions = []
         for action in protobuf_plan.actions:
             op_msg = ActionMessagePB()
             op_msg.action.CopyFrom(action)
-            operations.append(op_msg)
+            actions.append(op_msg)
 
-        operations = [
-            sy.serde.protobuf.serde._unbufferize(worker, operation) for operation in operations
-        ]
+        actions = [sy.serde.protobuf.serde._unbufferize(worker, action) for action in actions]
         state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.state)
 
         placeholders = [
@@ -754,7 +751,7 @@ class Plan(AbstractObject, ObjectStorage):
         plan = sy.Plan(
             include_state=protobuf_plan.include_state,
             is_built=protobuf_plan.is_built,
-            operations=operations,
+            actions=actions,
             placeholders=placeholders,
             id=id,
             owner=worker,
