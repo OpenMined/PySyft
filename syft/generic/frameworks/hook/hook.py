@@ -26,6 +26,8 @@ class FrameworkHook(ABC):
     def __init__(self, framework_module, local_worker: BaseWorker = None, is_client: bool = True):
         pass
 
+    boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
+
     ### Public API: framework-specific factory methods ###
     @classmethod
     @abstractmethod
@@ -185,8 +187,6 @@ class FrameworkHook(ABC):
         Returns:
             A list of methods to be overloaded.
         """
-
-        self.boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
 
         to_overload = self.boolean_comparators.copy()
 

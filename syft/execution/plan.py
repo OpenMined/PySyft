@@ -55,13 +55,12 @@ class func2plan(object):
             try:
                 plan.build(*args)
             except TypeError as e:
-                print(
+                raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
                     " - you have provided the correct number of shapes in args_shape\n"
                     " - you have no simple numbers like int or float as args. If you do "
                     "so, please consider using a tensor instead."
                 )
-                raise e
         return plan
 
 
@@ -421,7 +420,8 @@ class Plan(AbstractObject, ObjectStorage):
             else:
                 return tuple(response)
 
-    def instantiate(self, placeholder, response):
+    @staticmethod
+    def instantiate(placeholder, response):
         """
         Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
         """
@@ -430,7 +430,7 @@ class Plan(AbstractObject, ObjectStorage):
                 placeholder.instantiate(response)
             elif isinstance(placeholder, (list, tuple)):
                 for ph, rep in zip(placeholder, response):
-                    self.instantiate(ph, rep)
+                    Plan.instantiate(ph, rep)
             else:
                 raise ValueError(
                     f"Response of type {type(response)} is not supported in plan operations"

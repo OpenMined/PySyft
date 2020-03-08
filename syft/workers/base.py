@@ -929,27 +929,28 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             query = [query]
         # Empty query returns all the tagged and registered values
         elif len(query) == 0:
-            results = []
-            for obj in self._objects.values():
-                if hasattr(obj, "tags") and obj.tags is not None and len(obj.tags) > 0:
-                    results.append(obj)
-            return results
+            result_ids = set()
+            for tag, object_ids in self._tag_to_object_ids.items():
+                result_ids = result_ids.intersection(object_ids)
+            return [self.get_obj(result_id) for result_id in result_ids]
 
         results = None
         for query_item in query:
-            results_item = set()
+            # Search by id is supported but it's not the preferred option
+            # It will return a single element and discard tags if the query
+            # Mixed an id with tags
             result_by_id = self.find_by_id(query_item)
             if result_by_id:
-                results_item.add(result_by_id)
-            else:
-                results_item = set(self.find_by_tag(query_item))
-                # results_by_tag can be the empty list
+                results = {result_by_id}
+                break
+
+            # results_by_tag can be the empty list
+            results_by_tag = set(self.find_by_tag(query_item))
 
             if results:
-                results = results.intersection(results_item)
+                results = results.intersection(results_by_tag)
             else:
-                results = results_item
-
+                results = results_by_tag
         if results is not None:
             return list(results)
         else:
