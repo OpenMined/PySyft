@@ -7,18 +7,18 @@ from typing import Union
 import torch
 
 import syft as sy
+from syft.execution.computation import ComputationAction
+from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.messaging.message import ActionMessage
-from syft.execution.state import State
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.messaging.v1.message_pb2 import ActionMessage as ActionMessagePB
+from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
 class func2plan(object):
@@ -104,7 +104,7 @@ class Plan(AbstractObject, ObjectStorage):
         state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        actions: List[ActionMessage] = None,
+        actions: List[ComputationAction] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         forward_func=None,
         state_tensors=None,
@@ -325,7 +325,7 @@ class Plan(AbstractObject, ObjectStorage):
                 self.replace_with_placeholders(response, node_type="output"),
             )
             # We're cheating a bit here because we put placeholders instead of return_ids
-            action = ActionMessage(*command_placeholders, return_ids=return_placeholders)
+            action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.actions.append(action)
 
         sy.hook.trace.clear()
@@ -694,7 +694,7 @@ class Plan(AbstractObject, ObjectStorage):
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
 
         protobuf_actions = [
-            sy.serde.protobuf.serde._bufferize(worker, action).action for action in plan.actions
+            sy.serde.protobuf.serde._bufferize(worker, action) for action in plan.actions
         ]
         protobuf_plan.actions.extend(protobuf_actions)
 
@@ -733,13 +733,9 @@ class Plan(AbstractObject, ObjectStorage):
         worker._tmp_placeholders = {}
         id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
-        actions = []
-        for action in protobuf_plan.actions:
-            op_msg = ActionMessagePB()
-            op_msg.action.CopyFrom(action)
-            actions.append(op_msg)
-
-        actions = [sy.serde.protobuf.serde._unbufferize(worker, action) for action in actions]
+        actions = [
+            sy.serde.protobuf.serde._unbufferize(worker, action) for action in protobuf_plan.actions
+        ]
         state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.state)
 
         placeholders = [
