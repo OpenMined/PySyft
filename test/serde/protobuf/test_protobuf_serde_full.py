@@ -31,6 +31,7 @@ samples[
 ] = make_additivesharingtensor
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.execution.protocol.Protocol] = make_protocol

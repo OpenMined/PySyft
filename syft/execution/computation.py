@@ -168,13 +168,13 @@ class ComputationAction(Action):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         command = protobuf_obj.command
-        protobuf_owner = protobuf_obj.WhichOneof("target")
-        if protobuf_owner:
-            owner = sy.serde.protobuf.serde._unbufferize(
+        protobuf_target = protobuf_obj.WhichOneof("target")
+        if protobuf_target:
+            target = sy.serde.protobuf.serde._unbufferize(
                 worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
             )
         else:
-            owner = None
+            target = None
         args = ComputationAction._unbufferize_args(worker, protobuf_obj.args)
 
         kwargs = {}
@@ -192,13 +192,15 @@ class ComputationAction(Action):
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                action = ComputationAction(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
+                operation = ComputationAction(
+                    command, target, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
-                action = ComputationAction(command, owner, tuple(args), kwargs, return_placeholders)
+                operation = ComputationAction(
+                    command, target, tuple(args), kwargs, return_placeholders
+                )
         else:
-            action = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
+            operation = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
         return action
 
