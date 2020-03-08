@@ -413,7 +413,7 @@ class FixedPrecisionTensor(AbstractTensor):
             ), "In matmul, all args should have the same precision_fractional"
 
         if isinstance(self.child, AdditiveSharingTensor) and isinstance(other.child, torch.Tensor):
-            # If we try to matmul a FPT>(wrap)>AST with a FPT>(wrap)>torch.tensor,
+            # If we try to matmul a FPT>AST with a FPT>torch.tensor,
             # we want to perform AST @ torch.tensor
             new_self = self.child
             new_args = (other,)
@@ -422,7 +422,7 @@ class FixedPrecisionTensor(AbstractTensor):
         elif isinstance(other.child, AdditiveSharingTensor) and isinstance(
             self.child, torch.Tensor
         ):
-            # If we try to matmul a FPT>(wrap)>torch.tensor with a FPT>(wrap)>AST,
+            # If we try to matmul a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
             new_args = (self,)

@@ -349,8 +349,6 @@ class AdditiveSharingTensor(AbstractTensor):
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
-        elif isinstance(other, AdditiveSharingTensor):
-            other = other.child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
@@ -487,15 +485,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
             if other_is_zero:
                 res = {}
+                first_it = True
 
-                it = iter(shares.items())
-                worker, share = next(it)
-                first_cmd = cmd(share, other)
-                zero_shares = self.zero(first_cmd.shape).child
-                res[worker] = (first_cmd + zero_shares[worker]) % self.field
-
-                for worker, share in it:
+                for worker, share in shares.items():
                     cmd_res = cmd(share, other)
+                    if first_it:
+                        first_it = False
+                        zero_shares = self.zero(cmd_res.shape).child
+
                     res[worker] = (cmd(share, other) + zero_shares[worker]) % self.field
                 return res
             else:
