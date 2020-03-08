@@ -4,6 +4,7 @@ import inspect
 import syft
 from syft import dependency_check
 from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -44,6 +45,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     ObjectMessage,
     ComputationAction,
     CommandMessage,
+    CommunicationAction,
     PlaceHolder,
     Plan,
     PointerTensor,

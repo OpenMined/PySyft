@@ -11,12 +11,12 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 class ComputationAction(Action):
     """Describes mathematical operations performed on tensors"""
 
-    def __init__(self, name, operand, args_, kwargs_, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids):
         """Initialize an operation
 
         Args:
             name (String): The name of the method to be invoked (e.g. "__add__")
-            operand (Tensor): The object to invoke the method on
+            target (Tensor): The object to invoke the method on
             args_ (Tuple): The arguments to the method call
             kwargs_ (Dictionary): The keyword arguments to the method call
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of

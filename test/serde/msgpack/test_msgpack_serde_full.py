@@ -58,6 +58,7 @@ samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipoin
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
