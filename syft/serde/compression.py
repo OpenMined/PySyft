@@ -2,7 +2,7 @@
 This file exists to provide one common place for all compression methods used in
 simplifying and serializing PySyft objects.
 """
-
+import zlib
 import lz4
 from lz4 import (  # noqa: F401
     frame,
@@ -13,9 +13,11 @@ from syft.exceptions import CompressionNotFoundException
 # COMPRESSION SCHEME INT CODES
 NO_COMPRESSION = 40
 LZ4 = 41
+ZLIB = 42
 scheme_to_bytes = {
     NO_COMPRESSION: NO_COMPRESSION.to_bytes(1, byteorder="big"),
     LZ4: LZ4.to_bytes(1, byteorder="big"),
+    ZLIB: ZLIB.to_bytes(1, byteorder="big"),
 }
 
 ## SECTION: chosen Compression Algorithm
@@ -30,6 +32,20 @@ def _apply_compress_scheme(decompressed_input_bin) -> tuple:
         decompressed_input_bin: the binary to be compressed
     """
     return apply_lz4_compression(decompressed_input_bin)
+
+
+def apply_zlib_compression(decompressed_input_bin) -> tuple:
+    """
+    Apply zlib compression to the input
+
+    Args:
+        decompressed_input_bin: the binary to be compressed
+
+    Returns:
+        a tuple (compressed_result, ZLIB)
+    """
+
+    return zlib.compress(decompressed_input_bin), ZLIB
 
 
 def apply_lz4_compression(decompressed_input_bin) -> tuple:
@@ -101,6 +117,8 @@ def _decompress(binary: bin) -> bin:
     # 1)  Decompress or return the original stream
     if compress_scheme == LZ4:
         return lz4.frame.decompress(binary)
+    elif compress_scheme == ZLIB:
+        return zlib.decompress(binary)
     elif compress_scheme == NO_COMPRESSION:
         return binary
     else:
