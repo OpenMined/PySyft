@@ -697,7 +697,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.protobuf.serde._bufferize(worker, operation).action
             for operation in plan.operations
         ]
-        protobuf_plan.operations.extend(protobuf_operations)
+        protobuf_plan.actions.extend(protobuf_operations)
 
         protobuf_plan.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.state))
 
@@ -735,9 +735,9 @@ class Plan(AbstractObject, ObjectStorage):
         id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
         operations = []
-        for operation in protobuf_plan.operations:
+        for action in protobuf_plan.actions:
             op_msg = OperationMessagePB()
-            op_msg.action.CopyFrom(operation)
+            op_msg.action.CopyFrom(action)
             operations.append(op_msg)
 
         operations = [
