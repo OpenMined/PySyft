@@ -36,7 +36,7 @@ Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
 work from the command line.
 
 ```bash
-conda create -n pysyft python=3
+conda create -n pysyft python=3.7
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
 conda install jupyter notebook
 ```
