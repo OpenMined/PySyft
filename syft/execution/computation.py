@@ -112,14 +112,14 @@ class ComputationAction(Action):
         protobuf_op.command = operation.name
 
         if type(operation.operand) == sy.generic.pointers.pointer_tensor.PointerTensor:
-            protobuf_owner = protobuf_op.owner_pointer
+            protobuf_owner = protobuf_op.target_pointer
         elif (
             type(operation.operand)
             == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
         ):
-            protobuf_owner = protobuf_op.owner_placeholder
+            protobuf_owner = protobuf_op.target_placeholder
         else:
-            protobuf_owner = protobuf_op.owner_tensor
+            protobuf_owner = protobuf_op.target_tensor
 
         if operation.operand is not None:
             protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, operation.operand))
@@ -169,10 +169,10 @@ class ComputationAction(Action):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         command = protobuf_obj.command
-        protobuf_owner = protobuf_obj.WhichOneof("owner")
+        protobuf_owner = protobuf_obj.WhichOneof("target")
         if protobuf_owner:
             owner = sy.serde.protobuf.serde._unbufferize(
-                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("owner"))
+                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
             )
         else:
             owner = None
