@@ -10,12 +10,14 @@ All Syft message types extend the Message class.
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
+from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
+from syft_proto.messaging.v1.message_pb2 import CommunicationMessage as CommunicationMessagePB
 
 
 class Message:
@@ -116,7 +118,7 @@ class OperationMessage(Message):
     worker to take two tensors and add them together is an operation. However, sending an object
     from one worker to another is not an operation (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids):
         """Initialize an operation message
 
         Args:
@@ -133,11 +135,27 @@ class OperationMessage(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.cmd_name = cmd_name
-        self.cmd_owner = cmd_owner
-        self.cmd_args = cmd_args
-        self.cmd_kwargs = cmd_kwargs
-        self.return_ids = return_ids
+        self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
+
+    @property
+    def name(self):
+        return self.action.name
+
+    @property
+    def target(self):
+        return self.action.target
+
+    @property
+    def args(self):
+        return self.action.args
+
+    @property
+    def kwargs(self):
+        return self.action.kwargs
+
+    @property
+    def return_ids(self):
+        return self.action.return_ids
 
     @property
     def contents(self):
@@ -149,7 +167,7 @@ class OperationMessage(Message):
         self.message and self.return_ids, which allows for more efficient simplification (we don't have to
         simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
 
-        message = (self.cmd_name, self.cmd_owner, self.cmd_args, self.cmd_kwargs)
+        message = (self.action.name, self.action.target, self.action.args, self.action.kwargs)
 
         return (message, self.return_ids)
 
@@ -195,12 +213,9 @@ class OperationMessage(Message):
         detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
         detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
 
-        cmd_name = detailed_msg[0]
-        cmd_owner = detailed_msg[1]
-        cmd_args = detailed_msg[2]
-        cmd_kwargs = detailed_msg[3]
-
-        return OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, detailed_ids)
+        return OperationMessage(
+            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
+        )
 
     @staticmethod
     def bufferize(worker: AbstractWorker, operation: "OperationMessage") -> "OperationMessagePB":
@@ -277,79 +292,105 @@ class OperationMessage(Message):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
 
-        command = protobuf_obj.operation.command
-        protobuf_owner = protobuf_obj.operation.WhichOneof("owner")
-        if protobuf_owner:
-            owner = sy.serde.protobuf.serde._unbufferize(
-                worker, getattr(protobuf_obj.operation, protobuf_obj.operation.WhichOneof("owner"))
-            )
-        else:
-            owner = None
-        args = OperationMessage._unbufferize_args(worker, protobuf_obj.operation.args)
+        return OperationMessage(
+            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
+        )
 
-        kwargs = {}
-        for key in protobuf_obj.operation.kwargs:
-            kwargs[key] = OperationMessage._unbufferize_arg(
-                worker, protobuf_obj.operation.kwargs[key]
-            )
 
-        return_ids = [
-            sy.serde.protobuf.proto.get_protobuf_id(pb_id)
-            for pb_id in protobuf_obj.operation.return_ids
-        ]
+class CommunicationMessage(Message):
+    """
+    """
 
-        return_placeholders = [
-            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_obj.operation.return_placeholders
-        ]
+    def __init__(self, obj, source: Union[str, int], destinations: List[Union[str, int]], kwargs):
+        """
+        """
 
-        if return_placeholders:
-            if len(return_placeholders) == 1:
-                operation_msg = OperationMessage(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
-                )
-            else:
-                operation_msg = OperationMessage(
-                    command, owner, tuple(args), kwargs, return_placeholders
-                )
-        else:
-            operation_msg = OperationMessage(command, owner, tuple(args), kwargs, tuple(return_ids))
+        # call the parent constructor - setting the type integer correctly
+        super().__init__()
 
-        return operation_msg
+        self.communication = CommunicationAction(obj, source, destinations, kwargs)
 
     @staticmethod
-    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
-        protobuf_args = []
-        for arg in args:
-            protobuf_args.append(OperationMessage._bufferize_arg(worker, arg))
-        return protobuf_args
+    def simplify(worker: AbstractWorker, msg: "CommunicationMessage") -> tuple:
+        """
+        This function takes the attributes of a OperationMessage and saves them in a tuple
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (CommunicationMessage): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(ptr)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.communication),)
 
     @staticmethod
-    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
-        protobuf_arg = ArgPB()
-        try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
-        except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, arg)
-            )
-        return protobuf_arg
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommunicationMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a Operation. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (CommunicationMessage): a CommunicationMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        communication = msg_tuple[0]
+
+        detailed = sy.serde.msgpack.serde._detail(worker, communication)
+
+        return CommunicationAction(
+            detailed.obj, detailed.source, detailed.destinations, detailed.kwargs
+        )
 
     @staticmethod
-    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-        args = []
-        for protobuf_arg in protobuf_args:
-            args.append(OperationMessage._unbufferize_arg(worker, protobuf_arg))
-        return args
+    def bufferize(
+        worker: AbstractWorker, communication_message: "CommunicationMessage"
+    ) -> "CommunicationMessagePB":
+        """
+        This function takes the attributes of a OperationMessage and saves them in Protobuf
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            operation_message (OperationMessage): an OperationMessage
+        Returns:
+            protobuf_obj: a Protobuf message holding the unique attributes of the message
+        Examples:
+            data = bufferize(message)
+        """
+        protobuf_op_msg = CommunicationMessagePB()
+        protobuf_op = CommunicationAction.bufferize(worker, communication_message.communication)
+
+        protobuf_op_msg.communication.CopyFrom(protobuf_op)
+        return protobuf_op_msg
 
     @staticmethod
-    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-        try:
-            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
-        except:
-            arg = protobuf_arg_field
-        return arg
+    def unbufferize(
+        worker: AbstractWorker, protobuf_obj: "CommunicationMessagePB"
+    ) -> "CommunicationMessage":
+        """
+        This function takes the Protobuf version of this message and converts
+        it into an OperationMessage. The bufferize() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            protobuf_obj (OperationMessagePB): the Protobuf message
+
+        Returns:
+            obj (OperationMessage): an OperationMessage
+
+        Examples:
+            message = unbufferize(sy.local_worker, protobuf_msg)
+        """
+        detailed = CommunicationAction.unbufferize(worker, protobuf_obj.action)
+
+        return OperationMessage(
+            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
+        )
 
 
 class ObjectMessage(Message):

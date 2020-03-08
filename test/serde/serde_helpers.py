@@ -1306,8 +1306,66 @@ def make_message(**kwargs):
     ]
 
 
-# syft.messaging.message.OperationMessage
-def make_operation(**kwargs):
+# syft.execution.communication.CommunicationAction
+def make_communication_action(**kwargs):
+    bob = kwargs["workers"]["bob"]
+    alice = kwargs["workers"]["alice"]
+    bob.log_msgs = True
+
+    x = torch.tensor([1, 2, 3, 4]).send(bob)
+    y = x.move(alice)
+    op1 = bob._get_msg(-1)
+    print(op1)
+
+    a = torch.tensor([[1, 2], [3, 4]]).send(bob)
+    b = a.sum(1, keepdim=True)
+    op2 = bob._get_msg(-1).action
+
+    bob.log_msgs = False
+
+    def compare(detailed, original):
+        detailed_msg = (detailed.name, detailed.operand, detailed.args, detailed.kwargs)
+        original_msg = (original.name, original.operand, original.args, original.kwargs)
+        assert type(detailed) == syft.messaging.message.ComputationAction
+        for i in range(len(original_msg)):
+            if type(original_msg[i]) != torch.Tensor:
+                assert detailed_msg[i] == original_msg[i]
+            else:
+                assert detailed_msg[i].equal(original_msg[i])
+        assert detailed.return_ids == original.return_ids
+        return True
+
+    message1 = (op1.name, op1.operand, op1.args, op1.kwargs)
+    message2 = (op2.name, op2.operand, op2.args, op2.kwargs)
+
+    return [
+        {
+            "value": op1,
+            "simplified": (
+                CODE[syft.execution.computation.ComputationAction],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
+                    (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
+                ),
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": op2,
+            "simplified": (
+                CODE[syft.execution.computation.ComputationAction],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
+                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
+                ),
+            ),
+            "cmp_detailed": compare,
+        },
+    ]
+
+
+# syft.execution.communication.CommunicationAction
+def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 

@@ -3,6 +3,8 @@ from collections import OrderedDict
 import inspect
 import syft
 from syft import dependency_check
+from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -41,6 +43,8 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
     ObjectMessage,
+    ComputationAction,
+    CommunicationAction,
     OperationMessage,
     PlaceHolder,
     Plan,

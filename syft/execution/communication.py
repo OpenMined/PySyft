@@ -9,6 +9,7 @@ from syft.execution.action import Action
 from syft_proto.execution.v1.communication_action_pb2 import (
     CommunicationAction as CommunicationActionPB,
 )
+from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class CommunicationAction(Action):
