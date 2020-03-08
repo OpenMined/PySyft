@@ -10,6 +10,7 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import CommandMessage
+from syft.messaging.message import CommunicationMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
@@ -46,6 +47,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     ComputationAction,
     CommandMessage,
     CommunicationAction,
+    CommunicationMessage,
     PlaceHolder,
     Plan,
     PointerTensor,

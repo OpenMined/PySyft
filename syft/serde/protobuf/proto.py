@@ -13,6 +13,7 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import CommandMessage
+from syft.messaging.message import CommunicationMessage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.execution.plan import Plan
@@ -35,6 +36,7 @@ from syft_proto.frameworks.torch.tensors.interpreters.v1.placeholder_pb2 import 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
+from syft_proto.messaging.v1.message_pb2 import CommunicationMessage as CommunicationMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
@@ -61,6 +63,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ComputationAction: ComputationActionPB,
     CommandMessage: CommandMessagePB,
     CommunicationAction: CommunicationActionPB,
+    CommunicationMessage: CommunicationMessagePB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,
     PointerTensor: PointerTensorPB,

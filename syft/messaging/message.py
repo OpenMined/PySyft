@@ -7,6 +7,9 @@ Tensorflow, etc.).
 All Syft message types extend the Message class.
 """
 
+from typing import Union
+from typing import List
+
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
