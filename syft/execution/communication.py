@@ -35,7 +35,7 @@ class CommunicationAction(Action):
 
     def __eq__(self, other):
         return (
-            self.obj.equal(other.obj) and
+            self.obj == other.obj and
             self.source == other.source and
             self.destinations == other.destinations and
             self.kwargs == other.kwargs
@@ -103,27 +103,7 @@ class CommunicationAction(Action):
         """
         protobuf_obj = CommunicationActionPB()
 
-        # TODO check types
-        obj = protobuf_obj.obj.arg_tensor
-        # if type(communication.obj) == sy.frameworks.torch.shape:
-        #     obj = protobuf_obj.obj.arg_shape
-        # elif type(communication.obj) == sy.frameworks.torch.params:
-        #     obj = protobuf_obj.obj.arg_torch_param
-        # elif type(communication.obj) == sy.frameworks.torch.tensors.native:
-        #     obj = protobuf_obj.obj.arg_tensor
-        # elif type(communication.obj) == sy.generic.pointers.pointer_tensor:
-        #     obj = protobuf_obj.obj.arg_pointer_tensor
-        # elif (
-        #     type(communication.obj)
-        #     == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
-        # ):
-        #     obj = protobuf_obj.obj.arg_placeholder
-        # else:
-        #     # TODO error
-        #     assert False
-
-        obj.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, communication.obj))
-
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj, communication.obj)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
 
         for destination in communication.destinations:
@@ -156,8 +136,7 @@ class CommunicationAction(Action):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        obj = CommunicationAction._unbufferize_arg(worker, protobuf_obj.obj)
-
+        obj = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj)
         source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
         destinations = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
