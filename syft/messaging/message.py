@@ -13,6 +13,7 @@ from typing import List
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
+from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
@@ -222,9 +223,14 @@ class CommandMessage(Message):
             data = bufferize(message)
         """
         protobuf_op_msg = CommandMessagePB()
-        protobuf_op = ComputationAction.bufferize(worker, action_message.action)
 
-        protobuf_op_msg.action.CopyFrom(protobuf_op)
+        if isinstance(action_message.action, ComputationAction):
+            protobuf_op = ComputationAction.bufferize(worker, action_message.action)
+            protobuf_op_msg.computation.CopyFrom(protobuf_op)
+        elif isinstance(action_message.action, CommunicationAction):
+            protobuf_op = CommunicationAction.bufferize(worker, action_message.action)
+            protobuf_op_msg.communication.CopyFrom(protobuf_op)
+
         return protobuf_op_msg
 
     @staticmethod

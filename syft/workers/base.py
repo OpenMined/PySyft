@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.execution.plan import Plan
+from syft.execution.computation import ComputationAction
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
@@ -22,6 +23,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -115,7 +117,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # For performance, we cache all possible message types
         self._message_router = {
             CommandMessage: self.execute_command,
-            CommunicationMessage: self.execute_communication,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -402,7 +403,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def execute_command(self, message: tuple) -> PointerTensor:
+    def execute_command(self, message) -> PointerTensor:
+        if isinstance(message, ComputationAction):
+            return self.execute_computation(message)
+        else:
+            return self.execute_communication(message)
+
+    def execute_computation(self, message) -> PointerTensor:
         """
         Executes commands received from other workers.
 
@@ -413,7 +420,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A pointer to the result.
         """
 
-        (command_name, _self, args, kwargs), return_ids = message
+        (command_name, _self, args, kwargs), return_ids = message.contents
 
         # TODO add kwargs
         command_name = command_name
@@ -473,8 +480,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
-    def execute_communication(self, message: tuple) -> PointerTensor:
-        (obj, source, destinations, kwargs) = message
+    def execute_communication(self, message) -> PointerTensor:
+        (obj, source, destinations, kwargs) = message.contents
 
         source_worker = self.get_worker(source)
         response = source_worker.send(obj, *destinations, **kwargs)
@@ -521,9 +528,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         name, target, args_, kwargs_ = message
 
         try:
-            ret_val = self.send_msg(
-                CommandMessage(name, target, args_, kwargs_, return_ids), location=recipient
-            )
+            action = ComputationAction(name, target, args_, kwargs_, return_ids)
+            message = CommandMessage(action)
+            ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated
@@ -1066,7 +1073,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return CommandMessage(command_name, command_owner, args, kwargs, return_ids)
+        action = ComputationAction(command_name, command_owner, args, kwargs, return_ids)
+        return CommandMessage(action)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
