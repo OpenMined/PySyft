@@ -39,14 +39,15 @@ samples[syft.execution.state.State] = make_state
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.OperationMessage] = make_operation
+samples[syft.messaging.message.OperationMessage] = make_operation_message
+samples[syft.messaging.message.CommunicationMessage] = make_communication_message
 
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in protobuf.serde.bufferizers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, "Serde for %s is not tested" % cls
 
 
 @pytest.mark.parametrize("cls", samples)

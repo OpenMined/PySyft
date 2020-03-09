@@ -27,6 +27,14 @@ class CommunicationAction(Action):
         self.destinations = destinations
         self.kwargs = kwargs
 
+    def __eq__(self, other):
+        return (
+            self.obj.equal(other.obj) and
+            self.source == other.source and
+            self.destinations == other.destinations and
+            self.kwargs == other.kwargs
+        )
+
     @staticmethod
     def simplify(worker: AbstractWorker, communication: "CommunicationAction") -> tuple:
         """

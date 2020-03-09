@@ -1348,7 +1348,7 @@ def make_communication_action(**kwargs):
     ]
 
 
-# syft.execution.communication.CommunicationAction
+# syft.execution.communication.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -1366,7 +1366,7 @@ def make_computation_action(**kwargs):
     def compare(detailed, original):
         detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
         original_msg = (original.name, original.target, original.args, original.kwargs)
-        assert type(detailed) == syft.messaging.message.ComputationAction
+        assert type(detailed) == syft.execution.computation.ComputationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1452,6 +1452,37 @@ def make_operation_message(**kwargs):
             ),
             "cmp_detailed": compare,
         },
+    ]
+
+
+# syft.messaging.message.CommunicationMessage
+def make_communication_message(**kwargs):
+    bob = kwargs["workers"]["bob"]
+    alice = kwargs["workers"]["alice"]
+    bob.log_msgs = True
+
+    x = torch.tensor([1, 2, 3, 4]).send(bob)
+    x.remote_send(alice)
+    msg = bob._get_msg(-1)
+
+    bob.log_msgs = False
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CommunicationMessage
+        assert detailed.communication == original.communication
+        return True
+
+    return [
+        {
+            "value": msg,
+            "simplified": (
+                CODE[syft.messaging.message.CommunicationMessage],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, msg.communication),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
     ]
 
 

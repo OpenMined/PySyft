@@ -407,10 +407,10 @@ class CommunicationMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        detailed = CommunicationAction.unbufferize(worker, protobuf_obj.action)
+        detailed = CommunicationAction.unbufferize(worker, protobuf_obj.communication)
 
         return CommunicationMessage(
-            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
+            detailed.obj, detailed.source, detailed.destinations, detailed.kwargs,
         )
 
 
