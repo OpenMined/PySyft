@@ -64,6 +64,7 @@ class AbstractObject(ABC):
         for tag in tags:
             self.tags.add(tag)
             if self.owner is not None:
+                # NOTE: this is a fix to correct faulty registration that can sometimes happen
                 if self.id not in self.owner._objects:
                     self.owner.register_obj(self)
                 # note: this is a defaultdict(set)
