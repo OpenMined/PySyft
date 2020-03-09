@@ -150,13 +150,6 @@ class CommunicationAction(Action):
         return CommunicationAction(obj, source, destinations, kwargs)
 
     @staticmethod
-    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
-        protobuf_args = []
-        for arg in args:
-            protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
-        return protobuf_args
-
-    @staticmethod
     def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
         protobuf_arg = ArgPB()
         try:
@@ -166,13 +159,6 @@ class CommunicationAction(Action):
                 sy.serde.protobuf.serde._bufferize(worker, arg)
             )
         return protobuf_arg
-
-    @staticmethod
-    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-        args = []
-        for protobuf_arg in protobuf_args:
-            args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
-        return args
 
     @staticmethod
     def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
