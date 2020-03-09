@@ -280,7 +280,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         args = (destination,)
         kwargs = {"inplace": True}
-        action = CommunicationAction(self, self.location.id, [destination.id], kwargs)
+        action = CommunicationAction(self.id_at_location, self.location.id, [destination.id], kwargs)
         message = CommandMessage(action)
         self.owner.send_msg(message=message, location=self.location)
         if change_location:
