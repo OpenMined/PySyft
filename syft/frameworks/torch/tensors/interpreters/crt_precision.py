@@ -67,9 +67,9 @@ class CRTPrecisionTensor(AbstractTensor):
                 assert (
                     r.child.precision_fractional == prec_frac
                 ), "All residue tensors of CRTPrecisionTensor must have the same precision_fractional"
-                #assert (
+                # assert (
                 #    f == r.child.field
-                #), str(f)+"=="+str(r.child.field)+"All residue tensors of CRTPrecisionTensor must be in the same field"
+                # ), str(f)+"=="+str(r.child.field)+"All residue tensors of CRTPrecisionTensor must be in the same field"
                 assert (
                     r.shape == res_shape
                 ), "All residue tensors of CRTPrecisionTensor must have the same shape"
@@ -227,7 +227,7 @@ class CRTPrecisionTensor(AbstractTensor):
         and 2) the output tensor will have the same moduli.
         This is why we store them after having computed them once.
         """
-        
+
         def modular_inverse(a, b):
             """ Computes the modular inverse x = a^(-1) mod b
             with Euclid's extended algorithm.

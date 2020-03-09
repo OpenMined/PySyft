@@ -64,7 +64,7 @@ def _random_common_value(max_value, *workers):
     Return n in [-max_value, max_value-1] chosen by a worker and sent to all workers,
     in the form of a MultiPointerTensor
     """
-    pointer = torch.LongTensor([1]).send(workers[0], **no_wrap).random_(-max_value, max_value-1)
+    pointer = torch.LongTensor([1]).send(workers[0], **no_wrap).random_(-max_value, max_value - 1)
     pointers = [pointer]
     for worker in workers[1:]:
         pointers.append(pointer.copy().move(worker))
@@ -188,7 +188,7 @@ def private_compare(x_bit_sh, r, beta):
     c_else = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
 
     # Mask for the case r == 2^l −1
-    r_mask = (r == ((L//2) - 1)).long()
+    r_mask = (r == ((L // 2) - 1)).long()
     r_mask = r_mask.unsqueeze(-1)
 
     # Mask combination to execute the if / else statements of 4), 7), 10)
@@ -245,7 +245,7 @@ def msb(a_sh):
     u = _shares_of_zero(1, L, crypto_provider, alice, bob)
 
     # 1)
-    x = torch.LongTensor(a_sh.shape).random_(L//2 - 1)
+    x = torch.LongTensor(a_sh.shape).random_(L // 2 - 1)
     x_bit = decompose(x)
     x_sh = x.share(bob, alice, field=L - 1, crypto_provider=crypto_provider, **no_wrap)
     x_bit_0 = x_bit[..., 0]
@@ -257,7 +257,7 @@ def msb(a_sh):
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.reconstruct() % (L//2 - 1)  # convert an additive sharing in multi pointer Tensor
+    r = r_sh.reconstruct() % (L // 2 - 1)  # convert an additive sharing in multi pointer Tensor
     r_0 = decompose(r)[..., 0]
 
     # 4)
@@ -308,7 +308,7 @@ def share_convert(a_sh):
 
     # Common randomness
     eta_pp = _random_common_bit(*workers)
-    r = _random_common_value(int(L/2), *workers)
+    r = _random_common_value(int(L / 2), *workers)
 
     # Share remotely r
     r_sh = (
@@ -321,7 +321,7 @@ def share_convert(a_sh):
     r_shares = r_sh.child
 
     alpha0 = (
-        (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) >= L//2 - 1 
+        (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) >= L // 2 - 1
     ).long()
     alpha1 = alpha0.copy().move(workers[1])
     alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
@@ -331,15 +331,15 @@ def share_convert(a_sh):
     # 2)
     a_tilde_sh = a_sh + r_sh
     a_shares = a_sh.child
-    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L//2 - 1).long()
-    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L//2 - 1).long()
+    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) >= L // 2 - 1).long()
+    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) >= L // 2 - 1).long()
     beta = sy.MultiPointerTensor(children=[beta0, beta1])
 
     # 4)
     a_tilde_shares = a_tilde_sh.child
     delta = (
         (a_tilde_shares[workers[0].id].copy().get() + a_tilde_shares[workers[1].id].copy().get())
-        >= L//2 - 1
+        >= L // 2 - 1
     ).long()
     x = a_tilde_sh.get()
 
@@ -558,7 +558,7 @@ def maxpool_deriv(x_sh):
 
     # Common Randomness
     U_sh = _shares_of_zero(n, L, crypto_provider, alice, bob)
-    r = _random_common_value(int(L/2)-1, alice, bob)
+    r = _random_common_value(int(L / 2) - 1, alice, bob)
 
     # 1)
     _, ind_max_sh = maxpool(x_sh)

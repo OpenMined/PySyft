@@ -79,7 +79,7 @@ def test_private_compare(workers):
 
     # Negative values
     x_val = -105
-    r_val = -52 # The protocol works only for values in Zq
+    r_val = -52  # The protocol works only for values in Zq
     x_bit_sh = decompose(torch.LongTensor([x_val])).share(alice, bob, crypto_provider=james).child
     r = torch.LongTensor([r_val]).send(alice, bob).child
 
@@ -99,13 +99,13 @@ def test_share_convert(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     L = 2 ** 64
     x_bit_sh = (
-        torch.LongTensor([13, 3567, 2**60])
+        torch.LongTensor([13, 3567, 2 ** 60])
         .share(alice, bob, crypto_provider=james, field=L)
         .child
     )
 
     res = share_convert(x_bit_sh)
-    #assert res.field == L - 1 will cause overflow
+    # assert res.field == L - 1 will cause overflow
     assert (res.get() == torch.LongTensor([13, 3567, 2 ** 60])).all()
 
 

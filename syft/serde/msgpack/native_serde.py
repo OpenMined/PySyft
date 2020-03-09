@@ -414,6 +414,7 @@ def _detail_numpy_number(
 
     return nb
 
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
