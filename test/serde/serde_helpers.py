@@ -1357,7 +1357,7 @@ def make_communication_action(**kwargs):
     ]
 
 
-# syft.execution.communication.CommunicationAction
+# syft.execution.communication.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
@@ -1375,7 +1375,7 @@ def make_computation_action(**kwargs):
     def compare(detailed, original):
         detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
         original_msg = (original.name, original.target, original.args, original.kwargs)
-        assert type(detailed) == syft.messaging.message.ComputationAction
+        assert type(detailed) == syft.execution.computation.ComputationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]

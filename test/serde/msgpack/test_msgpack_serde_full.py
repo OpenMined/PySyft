@@ -95,7 +95,7 @@ def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, "Serde for %s is not tested" % cls
 
 
 @pytest.mark.parametrize("cls", samples)
@@ -147,4 +147,6 @@ def test_serde_simplify(cls, workers):
             # Custom simplified objects comparison function.
             assert sample.get("cmp_simplified")(simplified_obj, expected_simplified_obj) is True
         else:
+            print(simplified_obj)
+            print(expected_simplified_obj)
             assert simplified_obj == expected_simplified_obj
