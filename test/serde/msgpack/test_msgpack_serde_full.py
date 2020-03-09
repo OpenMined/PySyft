@@ -34,6 +34,7 @@ samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 
 # PyTorch
 samples[torch.device] = make_torch_device
+samples[torch.dtype] = make_torch_dtype
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
 samples[torch.jit.ScriptFunction] = make_torch_scriptfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule

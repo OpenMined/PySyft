@@ -254,6 +254,14 @@ def make_torch_device(**kwargs):
     ]
 
 
+# torch.dtype
+def make_torch_dtype(**kwargs):
+    torch_dtype = torch.int32
+    return [
+        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32"),}  # (str) device
+    ]
+
+
 # torch.jit.ScriptModule
 def make_torch_scriptmodule(**kwargs):
     class ScriptModule(torch.jit.ScriptModule):
@@ -924,6 +932,7 @@ def make_pointerplan(**kwargs):
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
+                    None,  # (set or None) tags
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1175,6 +1184,7 @@ def make_baseworker(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor
 def make_autogradtensor(**kwargs):
+
     t = torch.tensor([1, 2, 3])
     agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
     agt.tag("aaa")
@@ -1198,7 +1208,6 @@ def make_autogradtensor(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor],
                 (
-                    None,  # owner
                     agt.id,  # (int)
                     msgpack.serde._simplify(
                         syft.hook.local_worker, agt.child

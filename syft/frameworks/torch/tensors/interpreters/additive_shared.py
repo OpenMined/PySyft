@@ -52,6 +52,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
+
         self.child = shares
         if dtype == "long":
             self.dtype = "long"
@@ -75,6 +76,21 @@ class AdditiveSharingTensor(AbstractTensor):
                 self.dtype = "long"
                 self.field = 2 ** securenn.Q_BITS
 
+        if shares is not None:
+            self.child = {}
+            for location, share in shares.items():
+                if isinstance(share, sy.PointerTensor):
+                    self.child[location] = share
+                elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
+                    self.child[location] = share.child
+                else:
+                    raise ValueError(
+                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                    )
+        else:
+            self.child = None
+
+
         self.n_bits = round(math.log(self.field, 2))
         assert 2 ** self.n_bits == self.field
         self.crypto_provider = (
@@ -87,8 +103,9 @@ class AdditiveSharingTensor(AbstractTensor):
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
-        for v in self.child.values():
-            out += "\n\t-> " + str(v)
+        if self.child is not None:
+            for v in self.child.values():
+                out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
             out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
         return out
@@ -265,13 +282,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
-    def zero(self):
+    def zero(self, shape=None):
         """
         Build an additive shared tensor of value zero with the same
         properties as self
         """
+
         str_to_dtype = {"long": torch.int64, "int": torch.int32}
-        shape = self.shape if self.shape else [1]
+        if shape == None or len(shape) == 0:
+            shape = self.shape if self.shape else [1]
         zero = torch.zeros(*shape, dtype=str_to_dtype[self.dtype]).share(
             *self.locations, dtype=self.dtype, crypto_provider=self.crypto_provider, **no_wrap
         )
@@ -507,11 +526,17 @@ class AdditiveSharingTensor(AbstractTensor):
                 other_is_zero = True
 
             if other_is_zero:
-                zero_shares = self.zero().child
-                return {
-                    worker: ((cmd(share, other) + zero_shares[worker]))
-                    for worker, share in shares.items()
-                }
+                res = {}
+                first_it = True
+
+                for worker, share in shares.items():
+                    cmd_res = cmd(share, other)
+                    if first_it:
+                        first_it = False
+                        zero_shares = self.zero(cmd_res.shape).child
+
+                    res[worker] = (cmd(share, other) + zero_shares[worker])
+                return res
             else:
                 return {worker: (cmd(share, other)) for worker, share in shares.items()}
 

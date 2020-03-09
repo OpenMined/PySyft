@@ -52,7 +52,15 @@ class func2plan(object):
         # Build the plan automatically
         if self.args_shape:
             args = Plan._create_placeholders(self.args_shape)
-            plan.build(*args)
+            try:
+                plan.build(*args)
+            except TypeError as e:
+                raise ValueError(
+                    "Automatic build using @func2plan failed!\nCheck that:\n"
+                    " - you have provided the correct number of shapes in args_shape\n"
+                    " - you have no simple numbers like int or float as args. If you do "
+                    "so, please consider using a tensor instead."
+                )
         return plan
 
 
@@ -128,7 +136,7 @@ class Plan(AbstractObject, ObjectStorage):
             assert state is None
             for tensor in state_tensors:
                 placeholder = sy.PlaceHolder(
-                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id
+                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
                 )
                 self.var_count += 1
                 placeholder.instantiate(tensor)
@@ -141,10 +149,8 @@ class Plan(AbstractObject, ObjectStorage):
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
 
-        if forward_func is not None:
-            self.forward = forward_func
-        elif self.is_built:
-            self.forward = None
+        if not hasattr(self, "forward"):
+            self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
@@ -209,10 +215,22 @@ class Plan(AbstractObject, ObjectStorage):
             node_type: Should be "input" or "output", used to tag like this: #<type>-*
         """
         if tensor.id not in self.placeholders.keys():
-            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"}, id=tensor.id)
+            placeholder = sy.PlaceHolder(
+                tags={f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
+            )
             self.placeholders[tensor.id] = placeholder
 
             if node_type == "input":
+                if tensor.id not in self._tmp_args_ids:
+                    raise ValueError(
+                        f"The following tensor was used but is not known in "
+                        f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
+                        f"- This tensor is external to the plan and should be provided "
+                        f"using the state. See more about plan.state to fix this.\n"
+                        f"- This tensor was created internally using torch.Tensor, "
+                        f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
+                        f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
+                    )
                 placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
             elif node_type == "output":
                 if tensor.id in self._tmp_result_ids:
@@ -235,12 +253,17 @@ class Plan(AbstractObject, ObjectStorage):
             return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
         elif isinstance(obj, FrameworkTensor):
             return self.add_placeholder(obj, **kw)
-        elif isinstance(obj, (int, float, str, bool)):
+        elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
             return obj
         elif obj is None:
             return None
         else:
-            raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
+            # We are restrictive on the type of args/kwargs that we support, but are less
+            # strict on the response
+            if kw.get("node_type") == "input":
+                raise ValueError(f"Type {type(obj)} not supported in plans args/kwargs")
+            else:
+                return None
 
     def find_placeholders(self, *search_tags):
         """
@@ -338,7 +361,9 @@ class Plan(AbstractObject, ObjectStorage):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"}, id=value.id)
+            placeholder = sy.PlaceHolder(
+                tags={"#state", f"#{self.var_count + 1}"}, id=value.id, owner=self.owner
+            )
             self.var_count += 1
             placeholder.instantiate(value)
             self.state.state_placeholders.append(placeholder)
@@ -383,7 +408,8 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-                return_placeholder.instantiate(response.child)
+
+                self.instantiate(return_placeholder, response)
 
             # This ensures that we return the output placeholder in the correct order
             output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
@@ -393,6 +419,22 @@ class Plan(AbstractObject, ObjectStorage):
                 return response[0]
             else:
                 return tuple(response)
+
+    @staticmethod
+    def instantiate(placeholder, response):
+        """
+        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
+        """
+        if placeholder is not None:
+            if isinstance(placeholder, PlaceHolder):
+                placeholder.instantiate(response)
+            elif isinstance(placeholder, (list, tuple)):
+                for ph, rep in zip(placeholder, response):
+                    Plan.instantiate(ph, rep)
+            else:
+                raise ValueError(
+                    f"Response of type {type(response)} is not supported in plan operations"
+                )
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
@@ -481,13 +523,27 @@ class Plan(AbstractObject, ObjectStorage):
     share = share_
 
     def create_pointer(
-        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+        self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
     ):
+        """
+        Create a pointer to the plan
+
+        Args:
+            owner: the owner of the pointer
+            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+            location: the location of the pointer
+            id_at_location: the remote id at location
+            tags: the tags inherited from the Plan
+
+        Returns:
+            PointerPlan: pointer to the plan
+        """
         return PointerPlan(
             owner=owner,
             location=location or self.owner,
             id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
+            tags=tags,
         )
 
     def __str__(self):
@@ -507,6 +563,45 @@ class Plan(AbstractObject, ObjectStorage):
             out += " built"
 
         out += ">"
+
+        out += "\n"
+
+        def extract_tag(p):
+            return [tag for tag in p.tags if "input" not in tag and "output" not in tag][0][1:]
+
+        out += f"def {self.name}("
+        out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
+        out += "):\n"
+        for op in self.operations:
+            line = "    "
+            if op.return_ids is not None:
+                if isinstance(op.return_ids, PlaceHolder):
+                    tag = extract_tag(op.return_ids)
+                    line += f"_{tag} = "
+                elif isinstance(op.return_ids, tuple):
+                    line += (
+                        ", ".join(
+                            f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
+                            for o in op.return_ids
+                        )
+                        + " = "
+                    )
+                else:
+                    line += str(op.return_ids) + " = "
+            if op.cmd_owner is not None:
+                line += f"_{extract_tag(op.cmd_owner)}."
+            line += op.cmd_name + "("
+            line += ", ".join(
+                f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
+                for arg in op.cmd_args
+            )
+            if op.cmd_kwargs:
+                line += ", " + ", ".join(f"{k}={w}" for k, w in op.cmd_kwargs.items())
+            line += ")\n"
+            out += line
+
+        out += "    return "
+        out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
 
         return out
 
@@ -682,12 +777,17 @@ def tag_sort(keyword):
     """
     Utility function to sort tensors by their (unique) tag including "keyword"
     """
-    # TODO is only works up to 9 return values, because comparison is done on str and '7' > '16'
+
     def extract_key(placeholder):
         for tag in placeholder.tags:
             if keyword in tag:
-                return tag
+                try:
+                    return int(tag.split("-")[-1])
+                except ValueError:
+                    raise ValueError(
+                        f"Tags used in tag_sort should follow the <str>-<int> structure, but found: {tag}"
+                    )
 
-        return TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
+        raise TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
 
     return extract_key

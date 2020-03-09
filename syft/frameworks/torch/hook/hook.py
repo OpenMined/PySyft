@@ -11,6 +11,7 @@ import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.hook.trace import Trace
+from syft.generic.frameworks.hook.trace import tracer
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -174,7 +175,7 @@ class TorchHook(FrameworkHook):
         # Add all hooked tensor methods to PlaceHolder tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
-        self._hook_private_tensor_methods(PlaceHolder)
+        self._hook_syft_placeholder_methods(self.torch.Tensor, PlaceHolder)
 
         # Add all hooked tensor methods to AdditiveSharingTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
@@ -246,8 +247,6 @@ class TorchHook(FrameworkHook):
                 the tensor_type class. In practice this is always TorchTensor.
                 Read more about it there.
         """
-        # Reinitialize init method of Torch tensor with Syft init
-        self._add_registration_to___init__(tensor_type, is_tensor=True)
 
         # Overload Torch tensor properties with Syft properties
         self._hook_properties(tensor_type)
@@ -472,14 +471,6 @@ class TorchHook(FrameworkHook):
 
                 self._perform_function_overloading(module_name, torch_module, func)
 
-    @classmethod
-    def _get_hooked_func(cls, public_module_name, func_api_name, attr):
-        """Torch-specific implementation. See the subclass for more."""
-        if attr.__module__ is None:
-            attr.__module__ = "torch"
-
-        return super()._get_hooked_func(attr.__module__, func_api_name, attr)
-
     def _get_hooked_additive_shared_method(hook_self, attr):
         """
         Hook a method to send it multiple remote workers
@@ -531,6 +522,7 @@ class TorchHook(FrameworkHook):
         if "native_tensor" not in dir(hook_self.torch):
             hook_self.torch.native_tensor = hook_self.torch.tensor
 
+        @tracer(func_name="torch.tensor")
         def new_tensor(*args, owner=None, id=None, register=True, **kwargs):
             current_tensor = hook_self.torch.native_tensor(*args, **kwargs)
             _apply_args(hook_self, current_tensor, owner, id)
