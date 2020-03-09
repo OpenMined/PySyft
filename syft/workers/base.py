@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import syft as sy
 from syft import codes
+from syft.execution.plan import Plan
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
@@ -21,15 +22,14 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
-from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import OperationMessage
+from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import PlanCommandMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
-from syft.execution.plan import Plan
+from syft.messaging.message import PlanCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -114,7 +114,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            OperationMessage: self.execute_command,
+            CommandMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -507,15 +507,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        cmd_name = message[0]
-        cmd_owner = message[1]
-        cmd_args = message[2]
-        cmd_kwargs = message[3]
+        name, target, args_, kwargs_ = message
 
         try:
             ret_val = self.send_msg(
-                OperationMessage(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids),
-                location=recipient,
+                CommandMessage(name, target, args_, kwargs_, return_ids), location=recipient
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -1059,7 +1055,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return OperationMessage(command_name, command_owner, args, kwargs, return_ids)
+        return CommandMessage(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
