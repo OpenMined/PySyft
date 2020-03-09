@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 
 import syft
+from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -10,7 +11,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
-from syft.messaging.message import CommunicationMessage
+from syft.messaging.message import CommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -279,7 +280,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         args = (destination,)
         kwargs = {"inplace": True}
-        message = CommunicationMessage(self, self.location.id, [destination.id], kwargs)
+        action = CommunicationAction(self, self.location.id, [destination.id], kwargs)
+        message = CommandMessage(action)
         self.owner.send_msg(message=message, location=self.location)
         if change_location:
             self.location = destination

@@ -60,8 +60,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.execution.protocol import Protocol
 from syft.messaging.message import Message
-from syft.messaging.message import OperationMessage
-from syft.messaging.message import CommunicationMessage
+from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
@@ -125,8 +124,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     BaseWorker,
     AutogradTensor,
     Message,
-    OperationMessage,
-    CommunicationMessage,
+    CommandMessage,
     ObjectMessage,
     ObjectRequestMessage,
     IsNoneMessage,

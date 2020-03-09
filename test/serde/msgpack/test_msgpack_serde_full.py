@@ -72,8 +72,7 @@ samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
 samples[syft.messaging.message.Message] = make_message
-samples[syft.messaging.message.OperationMessage] = make_operation_message
-samples[syft.messaging.message.CommunicationMessage] = make_communication_message
+samples[syft.messaging.message.CommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage

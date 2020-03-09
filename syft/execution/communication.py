@@ -27,6 +27,12 @@ class CommunicationAction(Action):
         self.destinations = destinations
         self.kwargs = kwargs
 
+    @property
+    def contents(self):
+        """Return a tuple with the contents of the operation (backwards compatability)."""
+
+        return (self.obj, self.source, self.destinations, self.kwargs)
+
     def __eq__(self, other):
         return (
             self.obj.equal(other.obj) and
