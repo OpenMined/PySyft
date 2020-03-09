@@ -44,7 +44,7 @@ class Message:
         Some of our codebase still assumes that all message types have a .contents attribute. However,
         the contents attribute is very opaque in that it doesn't put any constraints on what the contents
         might be. Some message types can be more efficient by storing their contents more explicitly (see
-        Operation). They can override this property to return a tuple view on their other properties.
+        CommandMessage). They can override this property to return a tuple view on their other properties.
         """
         if hasattr(self, "_contents"):
             return self._contents
@@ -84,7 +84,7 @@ class Message:
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Message): a Operation.
+            ptr (Message): a Message.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -186,7 +186,7 @@ class CommandMessage(Message):
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a Operation. The simplify() method runs the inverse of this method.
+        it into a CommandMessage. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read

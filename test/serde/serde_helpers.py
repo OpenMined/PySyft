@@ -451,7 +451,7 @@ def make_torch_size(**kwargs):
 
 
 def compare_actions(detailed, original):
-    """Compare 2 Operation's"""
+    """Compare 2 Actions"""
     assert len(detailed) == len(original)
     for i, detailed_op in enumerate(detailed):
         original_op = original[i]

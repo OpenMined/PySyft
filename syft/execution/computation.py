@@ -53,10 +53,10 @@ class ComputationAction(Action):
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "ComputationAction") -> tuple:
         """
-        This function takes the attributes of a Operation and saves them in a tuple
+        This function takes the attributes of a Action and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Operation): a Message
+            ptr (Action): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
@@ -75,14 +75,14 @@ class ComputationAction(Action):
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ComputationAction":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a Operation. The simplify() method runs the inverse of this method.
+        it into a Action. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Operation): an Operation.
+            ptr (Action): an Action.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -99,10 +99,10 @@ class ComputationAction(Action):
     @staticmethod
     def bufferize(worker: AbstractWorker, action: "ComputationAction") -> "ComputationActionPB":
         """
-        This function takes the attributes of a Operation and saves them in Protobuf
+        This function takes the attributes of a Action and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            action (Operation): an Operation
+            action (Action): an Action
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
@@ -154,7 +154,7 @@ class ComputationAction(Action):
     ) -> "ComputationAction":
         """
         This function takes the Protobuf version of this message and converts
-        it into an Operation. The bufferize() method runs the inverse of this method.
+        it into an Action. The bufferize() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -162,7 +162,7 @@ class ComputationAction(Action):
             protobuf_obj (ComputationActionPB): the Protobuf message
 
         Returns:
-            obj (Operation): an Operation
+            obj (Action): an Action
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
