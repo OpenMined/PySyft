@@ -18,7 +18,6 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
-from syft_proto.execution.v1.operation_pb2 import Operation as OperationPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
 
@@ -134,39 +133,25 @@ class CommandMessage(Message):
 
         self.action = action
 
-    # @property
-    # def name(self):
-    #     return self.action.name
+    @property
+    def name(self):
+        return self.action.name
 
-    # @property
-    # def target(self):
-    #     return self.action.target
+    @property
+    def target(self):
+        return self.action.target
 
-    # @property
-    # def args(self):
-    #     return self.action.args
+    @property
+    def args(self):
+        return self.action.args
 
-    # @property
-    # def kwargs(self):
-    #     return self.action.kwargs
+    @property
+    def kwargs(self):
+        return self.action.kwargs
 
-    # @property
-    # def return_ids(self):
-    #     return self.action.return_ids
-
-    # @property
-    # def contents(self):
-    #     """Return a tuple with the contents of the operation (backwards compatability)
-
-    #     Some of our codebase still assumes that all message types have a .contents attribute. However,
-    #     the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-    #     might be. Since we know this message is a operation, we instead choose to store contents in two pieces,
-    #     self.message and self.return_ids, which allows for more efficient simplification (we don't have to
-    #     simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
-
-    #     message = (self.action.name, self.action.target, self.action.args, self.action.kwargs)
-
-    #     return (message, self.action.return_ids)
+    @property
+    def return_ids(self):
+        return self.action.return_ids
 
     @property
     def contents(self):

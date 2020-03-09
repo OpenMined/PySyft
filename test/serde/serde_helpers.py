@@ -442,16 +442,16 @@ def make_torch_size(**kwargs):
 # Utility functions
 
 
-def compare_operations(detailed, original):
-    """Compare 2 Operation's"""
+def compare_actions(detailed, original):
+    """Compare 2 Actions"""
     assert len(detailed) == len(original)
     for i, detailed_op in enumerate(detailed):
         original_op = original[i]
-        compare_placeholders_list(original_op.cmd_args, detailed_op.cmd_args)
+        compare_placeholders_list(original_op.args, detailed_op.args)
         # return_ids is not a list (why?)
         compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
-        assert original_op.cmd_name == detailed_op.cmd_name
-        assert original_op.cmd_kwargs == detailed_op.cmd_kwargs
+        assert original_op.name == detailed_op.name
+        assert original_op.kwargs == detailed_op.kwargs
     return True
 
 
@@ -691,7 +691,7 @@ def make_plan(**kwargs):
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
         compare_placeholders_dict(detailed.placeholders, original.placeholders)
-        compare_operations(detailed.operations, original.operations)
+        compare_actions(detailed.actions, original.actions)
         # State
         compare_placeholders_list(
             detailed.state.state_placeholders, original.state.state_placeholders
@@ -717,7 +717,7 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.operations),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.actions),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
                     plan.include_state,  # (bool) include_state
                     plan.is_built,  # (bool) is_built
@@ -738,7 +738,7 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.operations),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.actions),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
                     model_plan.include_state,  # (bool) include_state
                     model_plan.is_built,  # (bool) is_built
@@ -1348,18 +1348,18 @@ def make_communication_action(**kwargs):
     ]
 
 
-# syft.execution.communication.ComputationAction
+# syft.execution.computation.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
     y = x * 2
-    op1 = bob._get_msg(-1)
+    op1 = bob._get_msg(-1).action
 
     a = torch.tensor([[1, 2], [3, 4]]).send(bob)
     b = a.sum(1, keepdim=True)
-    op2 = bob._get_msg(-1)
+    op2 = bob._get_msg(-1).action
 
     bob.log_msgs = False
 
@@ -1382,7 +1382,7 @@ def make_computation_action(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1393,7 +1393,7 @@ def make_computation_action(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
@@ -1430,7 +1430,6 @@ def make_command_message(**kwargs):
             original = original.action
 
             detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-            print(detailed_msg)
             original_msg = (original.name, original.target, original.args, original.kwargs)
             for i in range(len(original_msg)):
                 if type(original_msg[i]) != torch.Tensor:
@@ -1446,8 +1445,6 @@ def make_command_message(**kwargs):
 
         else:
             return False
-
-    print("====>", cmd3.action)
 
     return [
         {
