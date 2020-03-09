@@ -396,13 +396,13 @@ class Plan(AbstractObject, ObjectStorage):
             for placeholder, arg in zip(input_placeholders, args):
                 placeholder.instantiate(arg)
 
-            for i, op in enumerate(self.actions):
+            for i, action in enumerate(self.actions):
                 cmd, _self, args, kwargs, return_placeholder = (
-                    op.name,
-                    op.target,  # target is equivalent to the "self" in a method
-                    op.args,
-                    op.kwargs,
-                    op.return_ids,
+                    action.name,
+                    action.target,  # target is equivalent to the "self" in a method
+                    action.args,
+                    action.kwargs,
+                    action.return_ids,
                 )
                 if _self is None:
                     response = eval(cmd)(*args, **kwargs)  # nosec
@@ -433,7 +433,7 @@ class Plan(AbstractObject, ObjectStorage):
                     Plan.instantiate(ph, rep)
             else:
                 raise ValueError(
-                    f"Response of type {type(response)} is not supported in plan operations"
+                    f"Response of type {type(response)} is not supported in plan actions"
                 )
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
@@ -572,31 +572,31 @@ class Plan(AbstractObject, ObjectStorage):
         out += f"def {self.name}("
         out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
         out += "):\n"
-        for op in self.operations:
+        for action in self.actions:
             line = "    "
-            if op.return_ids is not None:
-                if isinstance(op.return_ids, PlaceHolder):
-                    tag = extract_tag(op.return_ids)
+            if action.return_ids is not None:
+                if isinstance(action.return_ids, PlaceHolder):
+                    tag = extract_tag(action.return_ids)
                     line += f"_{tag} = "
-                elif isinstance(op.return_ids, tuple):
+                elif isinstance(action.return_ids, tuple):
                     line += (
                         ", ".join(
                             f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
-                            for o in op.return_ids
+                            for o in action.return_ids
                         )
                         + " = "
                     )
                 else:
-                    line += str(op.return_ids) + " = "
-            if op.cmd_owner is not None:
-                line += f"_{extract_tag(op.cmd_owner)}."
-            line += op.cmd_name + "("
+                    line += str(action.return_ids) + " = "
+            if action.cmd_owner is not None:
+                line += f"_{extract_tag(action.cmd_owner)}."
+            line += action.cmd_name + "("
             line += ", ".join(
                 f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
-                for arg in op.cmd_args
+                for arg in action.cmd_args
             )
-            if op.cmd_kwargs:
-                line += ", " + ", ".join(f"{k}={w}" for k, w in op.cmd_kwargs.items())
+            if action.cmd_kwargs:
+                line += ", " + ", ".join(f"{k}={w}" for k, w in action.cmd_kwargs.items())
             line += ")\n"
             out += line
 
