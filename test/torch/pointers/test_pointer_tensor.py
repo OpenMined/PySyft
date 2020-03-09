@@ -2,6 +2,7 @@ import torch
 import torch as th
 import syft
 
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
@@ -461,6 +462,22 @@ def test_float_prec_on_pointer_of_pointer(workers):
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
+
+
+def test_share_get(workers):
+    """
+    Ensure .share() works as expected.
+    """
+    bob = workers["bob"]
+
+    tensor = torch.tensor([1, 2, 3])
+    ptr = tensor.send(bob)
+
+    ptr = ptr.share()
+    remote_tensor = bob._objects[ptr.id_at_location]
+
+    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(remote_tensor.child, AdditiveSharingTensor)
 
 
 def test_registration_of_action_on_pointer_of_pointer(workers):
