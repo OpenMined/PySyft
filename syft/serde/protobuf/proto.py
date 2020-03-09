@@ -22,7 +22,9 @@ from syft.execution.state import State
 
 from google.protobuf.empty_pb2 import Empty
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
-from syft_proto.execution.v1.communication_action_pb2 import CommunicationAction as CommunicationActionPB
+from syft_proto.execution.v1.communication_action_pb2 import (
+    CommunicationAction as CommunicationActionPB,
+)
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft_proto.execution.v1.state_pb2 import State as StatePB

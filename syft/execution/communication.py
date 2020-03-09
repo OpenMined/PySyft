@@ -35,10 +35,10 @@ class CommunicationAction(Action):
 
     def __eq__(self, other):
         return (
-            self.obj == other.obj and
-            self.source == other.source and
-            self.destinations == other.destinations and
-            self.kwargs == other.kwargs
+            self.obj == other.obj
+            and self.source == other.source
+            and self.destinations == other.destinations
+            and self.kwargs == other.kwargs
         )
 
     @staticmethod
