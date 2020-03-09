@@ -421,7 +421,7 @@ def worker_cycle_request():
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
 
-    if isinstance(dict, response_body):
+    if isinstance(response_body, dict):
         response_body = json.dumps(response_body)
 
     return Response(response_body, status=status_code, mimetype="application/json")

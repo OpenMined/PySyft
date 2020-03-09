@@ -48,12 +48,12 @@ class Warehouse:
             .first()
         )
 
-    def contains(self, id):
+    def contains(self, **kwargs):
         """ Check if the object id already exists into the database.
             Args:
                 id: Object ID.
         """
-        return self._schema.query.filter_by(id=id) != None
+        return self.first(**kwargs) != None
 
     def delete(self, **kwargs):
         """ Delete an object from the database.

@@ -24,6 +24,12 @@ class FLProcessNotFoundError(PyGridError):
         super().__init__(message)
 
 
+class FLProcessConflict(PyGridError):
+    def __init__(self):
+        message = "FL Process already exists."
+        super().__init__(message)
+
+
 class ProtocolNotFoundError(PyGridError):
     def __init__(self):
         message = "Protocol ID not found!"

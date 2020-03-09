@@ -37,11 +37,9 @@ def host_federated_training(message: dict, socket) -> str:
         client_config = data.get(CYCLE.CLIENT_CONFIG, None)  # Only one
         server_config = data.get(CYCLE.SERVER_CONFIG, None)  # Only one
 
-        model = deserialize(serialized_model)
-
         # Create a new FL Process
         processes.create_process(
-            model=model,
+            model=serialized_model,
             client_plans=serialized_client_plans,
             client_protocols=serialized_client_protocols,
             server_averaging_plan=serialized_avg_plan,
@@ -99,7 +97,7 @@ def cycle_request(message: dict, socket) -> str:
     try:
         # Retrieve JSON values
         worker_id = data.get(MSG_FIELD.WORKER_ID, None)
-        model_id = data.get(MSG_FIELD.MODEL, None)
+        name = data.get(MSG_FIELD.MODEL, None)
         version = data.get(CYCLE.VERSION, None)
         ping = int(data.get(CYCLE.PING, None))
         download = float(data.get(CYCLE.DOWNLOAD, None))
@@ -114,10 +112,10 @@ def cycle_request(message: dict, socket) -> str:
         workers.update(worker)  # Update database worker attributes
 
         # The last time this worker was assigned for this model/version.
-        last_participation = processes.last_participation(worker_id, model_id, version)
+        last_participation = processes.last_participation(worker_id, name, version)
 
         # Assign
-        response = processes.assign(model_id, version, worker, last_participation)
+        response = processes.assign(name, version, worker, last_participation)
     except Exception as e:
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[RESPONSE_MSG.ERROR] = str(e)

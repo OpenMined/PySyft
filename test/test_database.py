@@ -95,7 +95,7 @@ class TestDatabase(unittest.TestCase):
         self.db.session.commit()
 
     def testCreateModel(self):
-        new_model = models.Model(id="my_new_model", version="0.0.1")
+        new_model = models.Model(version="0.0.1")
 
         self.db.session.add(new_model)
         self.db.session.commit()
@@ -105,9 +105,7 @@ class TestDatabase(unittest.TestCase):
 
         self.db.session.add(new_fl_process)
 
-        new_model = models.Model(
-            id="other_model", version="0.0.1", flprocess=new_fl_process
-        )
+        new_model = models.Model(version="0.0.1", flprocess=new_fl_process)
 
         self.db.session.add(new_model)
 
@@ -214,9 +212,7 @@ class TestDatabase(unittest.TestCase):
 
         self.db.session.add(new_fl_process)
 
-        new_model = models.Model(
-            id="mnist_model", version="0.0.1", flprocess=new_fl_process
-        )
+        new_model = models.Model(version="0.0.1", flprocess=new_fl_process)
 
         self.db.session.add(new_model)
 
