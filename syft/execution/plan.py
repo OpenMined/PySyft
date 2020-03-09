@@ -588,15 +588,15 @@ class Plan(AbstractObject, ObjectStorage):
                     )
                 else:
                     line += str(action.return_ids) + " = "
-            if action.cmd_owner is not None:
-                line += f"_{extract_tag(action.cmd_owner)}."
-            line += action.cmd_name + "("
+            if action.target is not None:
+                line += f"_{extract_tag(action.target)}."
+            line += action.name + "("
             line += ", ".join(
                 f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
-                for arg in action.cmd_args
+                for arg in action.args
             )
-            if action.cmd_kwargs:
-                line += ", " + ", ".join(f"{k}={w}" for k, w in action.cmd_kwargs.items())
+            if action.kwargs:
+                line += ", " + ", ".join(f"{k}={w}" for k, w in action.kwargs.items())
             line += ")\n"
             out += line
 
