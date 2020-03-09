@@ -85,7 +85,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
         message_pending_time (optional): A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
     """
 
@@ -995,7 +995,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             seconds: A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
 
         """
