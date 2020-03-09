@@ -63,7 +63,6 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ComputationAction: ComputationActionPB,
     CommandMessage: CommandMessagePB,
     CommunicationAction: CommunicationActionPB,
-    CommandMessage: CommandMessagePB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,
     PointerTensor: PointerTensorPB,

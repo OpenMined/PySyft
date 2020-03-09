@@ -46,7 +46,6 @@ OBJ_PROTOBUF_TRANSLATORS = [
     ComputationAction,
     CommandMessage,
     CommunicationAction,
-    CommandMessage,
     PlaceHolder,
     Plan,
     PointerTensor,

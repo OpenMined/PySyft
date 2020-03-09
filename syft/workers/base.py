@@ -22,16 +22,15 @@ from syft.generic.object import AbstractObject
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.message import Message
-from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import CommandMessage
+from syft.messaging.message import ForceObjectDeleteMessage
+from syft.messaging.message import GetShapeMessage
+from syft.messaging.message import Message
+from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
-from syft.messaging.message import IsNoneMessage
-from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
+from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError

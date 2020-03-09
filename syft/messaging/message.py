@@ -120,7 +120,7 @@ class CommandMessage(Message):
     worker to take two tensors and add them together is an action. However, sending an object
     from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, action):
+    def __init__(self, action: Action):
         """Initialize an action message
 
         Args:
