@@ -653,12 +653,3 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
 
     res = torch.stack(res).reshape(batch_size, nb_channels, nb_rows_out, nb_cols_out)
     return res
-
-
-hook = sy.TorchHook(torch)
-alice = sy.VirtualWorker(hook, id="alice")
-bob = sy.VirtualWorker(hook, id="bob")
-charlie = sy.VirtualWorker(hook, id="charlie")
-crypto = sy.VirtualWorker(hook, id="crypto")
-a = torch.tensor([1,2,3,4]).send(alice).share(alice, bob, charlie, crypto_provider=crypto, field=2**60).get().child
-print(share_convert(a).get())
