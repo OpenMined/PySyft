@@ -120,7 +120,7 @@ class CommandMessage(Message):
     worker to take two tensors and add them together is an action. However, sending an object
     from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, name, target, args_, kwargs_, return_ids):
+    def __init__(self, action):
         """Initialize an action message
 
         Args:
@@ -137,7 +137,7 @@ class CommandMessage(Message):
         # call the parent constructor - setting the type integer correctly
         super().__init__()
 
-        self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        self.action = action
 
     @property
     def name(self):
@@ -161,17 +161,7 @@ class CommandMessage(Message):
 
     @property
     def contents(self):
-        """Return a tuple with the contents of the action (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a action, we instead choose to store contents in two pieces,
-        self.message and self.return_ids, which allows for more efficient simplification (we don't have to
-        simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
-
-        message = (self.action.name, self.action.target, self.action.args, self.action.kwargs)
-
-        return (message, self.action.return_ids)
+        return self.action
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
@@ -202,13 +192,11 @@ class CommandMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        action = msg_tuple[0]
+        simplified_action = msg_tuple[0]
 
-        detailed = sy.serde.msgpack.serde._detail(worker, action)
+        detailed_action = sy.serde.msgpack.serde._detail(worker, simplified_action)
 
-        return CommandMessage(
-            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
-        )
+        return CommandMessage(detailed_action)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, action_message: "CommandMessage") -> "CommandMessagePB":

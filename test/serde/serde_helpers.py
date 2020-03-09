@@ -1357,18 +1357,18 @@ def make_communication_action(**kwargs):
     ]
 
 
-# syft.execution.communication.ComputationAction
+# syft.execution.computation.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
     y = x * 2
-    op1 = bob._get_msg(-1)
+    op1 = bob._get_msg(-1).action
 
     a = torch.tensor([[1, 2], [3, 4]]).send(bob)
     b = a.sum(1, keepdim=True)
-    op2 = bob._get_msg(-1)
+    op2 = bob._get_msg(-1).action
 
     bob.log_msgs = False
 
@@ -1391,7 +1391,7 @@ def make_computation_action(**kwargs):
         {
             "value": op1,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
@@ -1402,7 +1402,7 @@ def make_computation_action(**kwargs):
         {
             "value": op2,
             "simplified": (
-                CODE[syft.messaging.message.OperationMessage],
+                CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
@@ -1439,7 +1439,6 @@ def make_command_message(**kwargs):
             original = original.action
 
             detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-            print(detailed_msg)
             original_msg = (original.name, original.target, original.args, original.kwargs)
             for i in range(len(original_msg)):
                 if type(original_msg[i]) != torch.Tensor:

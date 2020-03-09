@@ -9,10 +9,10 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class ComputationAction(Action):
-    """Describes mathematical operations performed on tensors"""
+    """Describes mathematical actions performed on tensors"""
 
     def __init__(self, name, target, args_, kwargs_, return_ids):
-        """Initialize an operation
+        """Initialize an action
 
         Args:
             name (String): The name of the method to be invoked (e.g. "__add__")
@@ -20,10 +20,10 @@ class ComputationAction(Action):
             args_ (Tuple): The arguments to the method call
             kwargs_ (Dictionary): The keyword arguments to the method call
             return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                operation results are set by the client. This allows the client to be able to predict where
+                action results are set by the client. This allows the client to be able to predict where
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the operation has yet executed. It also
-                reduces the size of the response from the operation (which is very often empty).
+                pointers to the future data, regardless of whether the action has yet executed. It also
+                reduces the size of the response from the action (which is very often empty).
 
         """
 
@@ -192,15 +192,15 @@ class ComputationAction(Action):
 
         if return_placeholders:
             if len(return_placeholders) == 1:
-                operation = ComputationAction(
+                action = ComputationAction(
                     command, target, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
-                operation = ComputationAction(
+                action = ComputationAction(
                     command, target, tuple(args), kwargs, return_placeholders
                 )
         else:
-            operation = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
+            action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
         return action
 

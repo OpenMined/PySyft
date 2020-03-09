@@ -147,6 +147,4 @@ def test_serde_simplify(cls, workers):
             # Custom simplified objects comparison function.
             assert sample.get("cmp_simplified")(simplified_obj, expected_simplified_obj) is True
         else:
-            print(simplified_obj)
-            print(expected_simplified_obj)
             assert simplified_obj == expected_simplified_obj

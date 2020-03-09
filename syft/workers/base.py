@@ -481,6 +481,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication(self, message) -> PointerTensor:
+        print(message)
         (obj_id, source, destinations, kwargs) = message.contents
 
         obj = self.get_obj(obj_id)
