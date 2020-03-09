@@ -858,10 +858,6 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
-        if field==2**64:
-            # I believe there is no harm in doing this as it's a remote call
-            # and it will be converted to int during reconstruction
-            field=str(field)
         if self.has_child():
             chain = self.child
 
@@ -869,7 +865,7 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, crypto_provider=crypto_provider, **kwargs
             )
         else:
             if self.type() == "torch.FloatTensor":

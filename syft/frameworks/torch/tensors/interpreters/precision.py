@@ -913,12 +913,12 @@ class FixedPrecisionTensor(AbstractTensor):
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             syft.serde.msgpack.serde._simplify(worker, tensor.field),
+            tensor.dtype,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
             syft.serde.msgpack.serde._simplify(worker, tensor.description),
-            tensor.dtype,
             chain,
         )
 
@@ -935,7 +935,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, base, precision_fractional, kappa, tags, description, dtype, chain = (
+        tensor_id, field, dtype, base, precision_fractional, kappa, tags, description, chain = (
             tensor_tuple
         )
 
@@ -943,12 +943,12 @@ class FixedPrecisionTensor(AbstractTensor):
             owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             field=syft.serde.msgpack.serde._detail(worker, field),
+            dtype=dtype,
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
-            dtype=dtype,
         )
 
         if chain is not None:
