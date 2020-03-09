@@ -7,6 +7,8 @@ from typing import Dict
 from typing import Union
 
 # Syft imports
+
+import syft
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
 from syft.execution.plan import Plan
@@ -31,7 +33,7 @@ class PrivateGridNetwork(AbstractGrid):
         results = {}
 
         for worker in self.workers:
-            worker_results = worker.search(query)
+            worker_results = syft.local_worker.request_search(query, location=worker)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results
