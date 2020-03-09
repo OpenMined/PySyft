@@ -396,6 +396,11 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # for this type. If there is, return the simplified object.
     # breakpoint()
     current_type = type(obj)
+
+    if current_type == int and obj>=2**64:
+        obj=str(obj)
+        current_type = type(obj)
+
     # print(current_type, current_type in simplifiers)
     if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
@@ -457,6 +462,10 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
             deserializing directly.
     """
     if type(obj) in (list, tuple):
-        return detailers[obj[0]](worker, obj[1], **kwargs)
+        val=detailers[obj[0]](worker, obj[1], **kwargs)
+        if obj[0]==5 and val=='18446744073709551616':
+            return int(val)
+        else:
+            return val
     else:
         return obj
