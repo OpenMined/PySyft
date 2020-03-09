@@ -931,7 +931,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         elif len(query) == 0:
             result_ids = set()
             for tag, object_ids in self._tag_to_object_ids.items():
-                result_ids = result_ids.intersection(object_ids)
+                result_ids = result_ids.union(object_ids)
             return [self.get_obj(result_id) for result_id in result_ids]
 
         results = None
@@ -998,6 +998,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         results = self.find_by_tag(tag)
         if results:
+            assert all(result.location.id == location.id for result in results)
             return results
         else:
             return self.request_search(tag, location=location)
