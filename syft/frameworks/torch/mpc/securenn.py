@@ -2,7 +2,7 @@
 This is an implementation of the SecureNN paper
 https://eprint.iacr.org/2018/442.pdf
 
-Extended to a general case with N parties by Daniel Hurtado (knexator)
+Extended to a general case with N parties
 
 Note that there is a difference here in that our shares can be
 negative numbers while they are always positive in the paper
@@ -129,8 +129,8 @@ def private_compare(x_bit_sh, r, beta):
 
     args:
         x (AdditiveSharedTensor): the private tensor
-        r (MultiPointerTensor): the threshold commonly held by alice and bob
-        beta (MultiPointerTensor): a boolean commonly held by alice and bob to
+        r (MultiPointerTensor): the threshold commonly held by the workers
+        beta (MultiPointerTensor): a boolean commonly held by the workers to
             hide the result of computation for the crypto provider
 
     return:
@@ -272,7 +272,7 @@ def msb(a_sh):
 
     # 7)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i==0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
     )
     gamma = beta_prime_sh + (j * beta) - (2 * beta * beta_prime_sh)
 
@@ -290,19 +290,31 @@ def msb(a_sh):
     else:
         return a
 
-# Calculates how many times the shares of a will wrap around L
-# a SHOULD BE A PUBLIC VALUE
+
 def wrap(a_sh, L):
+    """
+    Calculates how many times the shares of a will wrap around L when added together
+
+    Args:
+        a_sh (AdditiveSharingTensor): the tensor of study. It's value should be public
+        L (int): The value at which to wrap
+    Return:
+        The tensor in which each entry is how many times does that entry of a wrap around L
+    """
     # The code could be simpler, but then there are some overflow errors
-    total = torch.zeros(a_sh.shape)
-    remainders = torch.zeros(a_sh.shape)
-    for w in a_sh.locations:
-        cur = a_sh.child[w.id].copy().get()
+    workers = a_sh.locations
+    total = torch.zeros(a_sh.shape).send(workers[0]).child
+    remainders = torch.zeros(a_sh.shape).send(workers[0]).child
+    for i, worker in enumerate(workers):
+        cur = a_sh.child[worker.id].copy()
+        if i != 0:
+            cur = cur.move(workers[0])
         total += cur // L
         remainders += cur % L
         total += remainders // L
         remainders = remainders % L
     return total.long()
+
 
 def share_convert(a_sh):
     """
@@ -335,7 +347,7 @@ def share_convert(a_sh):
     )
     r_shares = r_sh.child
 
-    alpha0 = wrap(r_sh, L).send(workers[0]).child
+    alpha0 = wrap(r_sh, L)
     alphas = [alpha0.copy().move(w) for w in workers[1:]]
     alpha = sy.MultiPointerTensor(children=[alpha0, *alphas])
 
@@ -349,7 +361,7 @@ def share_convert(a_sh):
 
     # 4)
     a_tilde_shares = a_tilde_sh.child
-    delta = wrap(a_tilde_sh, L)
+    delta = wrap(a_tilde_sh, L).get()
     x = a_tilde_sh.get() % L
 
     # 5)
@@ -641,3 +653,12 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
 
     res = torch.stack(res).reshape(batch_size, nb_channels, nb_rows_out, nb_cols_out)
     return res
+
+
+hook = sy.TorchHook(torch)
+alice = sy.VirtualWorker(hook, id="alice")
+bob = sy.VirtualWorker(hook, id="bob")
+charlie = sy.VirtualWorker(hook, id="charlie")
+crypto = sy.VirtualWorker(hook, id="crypto")
+a = torch.tensor([1,2,3,4]).send(alice).share(alice, bob, charlie, crypto_provider=crypto, field=2**60).get().child
+print(share_convert(a).get())
