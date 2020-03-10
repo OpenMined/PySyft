@@ -169,6 +169,22 @@ class CommandMessage(Message):
         return self.action.contents
 
     @staticmethod
+    def computation(name, target, args_, kwargs_, return_ids):
+        """ Helper function to build a CommandMessage containing a ComputationAction
+        directly from the action arguments. 
+        """
+        action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        return CommandMessage(action)
+
+    @staticmethod
+    def communication(obj_id, source, destinations, kwargs):
+        """ Helper function to build a CommandMessage containing a CommunicationAction
+        directly from the action arguments. 
+        """
+        action = CommunicationAction(obj_id, source, destinations, kwargs)
+        return CommandMessage(action)
+    
+    @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
         """
         This function takes the attributes of a CommandMessage and saves them in a tuple

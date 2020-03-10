@@ -529,8 +529,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         name, target, args_, kwargs_ = message
 
         try:
-            action = ComputationAction(name, target, args_, kwargs_, return_ids)
-            message = CommandMessage(action)
+            message = CommandMessage.computation(name, target, args_, kwargs_, return_ids)
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
@@ -1074,8 +1073,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        action = ComputationAction(command_name, command_owner, args, kwargs, return_ids)
-        return CommandMessage(action)
+        return CommandMessage.computation(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
