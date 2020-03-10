@@ -129,9 +129,6 @@ class CommandMessage(Message):
 
         """
 
-        # call the parent constructor - setting the type integer correctly
-        super().__init__()
-
         self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
 
     @property
@@ -242,10 +239,7 @@ class ObjectMessage(Message):
     """
 
     def __init__(self, object_):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.object = object_
 
@@ -318,10 +312,7 @@ class ObjectRequestMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, obj_id, user, reason):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.object_id = obj_id
         self.user = user
@@ -379,10 +370,7 @@ class IsNoneMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, obj_id):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.object_id = obj_id
 
@@ -433,10 +421,7 @@ class GetShapeMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, tensor):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.tensor = tensor
 
@@ -485,10 +470,7 @@ class ForceObjectDeleteMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, obj_id):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.object_id = obj_id
 
@@ -537,10 +519,7 @@ class SearchMessage(Message):
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, query):
-        """Initialize the message using default Message constructor.
-
-        See Message.__init__ for details."""
-        super().__init__()
+        """Initialize the message."""
 
         self.query = query
 
@@ -591,9 +570,6 @@ class PlanCommandMessage(Message):
             message (Tuple): this is typically the args and kwargs of a method call on the client, but it
                 can be any information necessary to execute the command properly.
         """
-
-        # call the parent constructor - setting the type integer correctly
-        super().__init__()
 
         self.command_name = command_name
         self.args = args_
