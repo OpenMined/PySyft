@@ -9,7 +9,7 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class ComputationAction(Action):
-    """Describes mathematical actions performed on tensors"""
+    """Describes mathematical operations performed on tensors"""
 
     def __init__(self, name, target, args_, kwargs_, return_ids):
         """Initialize an action

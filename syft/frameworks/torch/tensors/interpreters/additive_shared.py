@@ -341,12 +341,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @overloaded.method
     def add(self, shares: dict, other):
-        """Adds target to the self AST instance.
+        """Adds operand to the self AST instance.
 
         Args:
             shares: a dictionary <location_id -> PointerTensor) of shares corresponding to
                 self. Equivalent to calling self.child.
-            other: the target being added to self, can be:
+            other: the operand being added to self, can be:
                 - a dictionary <location_id -> PointerTensor) of shares
                 - a torch tensor
                 - a constant
