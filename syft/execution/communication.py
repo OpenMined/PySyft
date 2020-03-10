@@ -15,14 +15,20 @@ from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 class CommunicationAction(Action):
     """Describes communication actions performed on tensors"""
 
-    def __init__(self, obj, source: Union[str, int], destinations: List[Union[str, int]], kwargs):
+    def __init__(
+        self,
+        obj_id: Union[str, int],
+        source: Union[str, int],
+        destinations: List[Union[str, int]],
+        kwargs,
+    ):
         """Initialize an communication action
 
         Args:
         """
         super().__init__()
 
-        self.obj = obj
+        self.obj_id = obj_id
         self.source = source
         self.destinations = destinations
         self.kwargs = kwargs
@@ -31,11 +37,11 @@ class CommunicationAction(Action):
     def contents(self):
         """Return a tuple with the contents of the operation (backwards compatability)."""
 
-        return (self.obj, self.source, self.destinations, self.kwargs)
+        return (self.obj_id, self.source, self.destinations, self.kwargs)
 
     def __eq__(self, other):
         return (
-            self.obj == other.obj
+            self.obj_id == other.obj_id
             and self.source == other.source
             and self.destinations == other.destinations
             and self.kwargs == other.kwargs
@@ -54,7 +60,7 @@ class CommunicationAction(Action):
             data = simplify(worker, communication)
         """
         return (
-            sy.serde.msgpack.serde._simplify(worker, communication.obj),
+            sy.serde.msgpack.serde._simplify(worker, communication.obj_id),
             sy.serde.msgpack.serde._simplify(worker, communication.source),
             sy.serde.msgpack.serde._simplify(worker, communication.destinations),
             sy.serde.msgpack.serde._simplify(worker, communication.kwargs),
@@ -76,9 +82,9 @@ class CommunicationAction(Action):
             communication = detail(sy.local_worker, communication_tuple)
         """
 
-        (obj, source, destinations, kwargs) = communication_tuple
+        (obj_id, source, destinations, kwargs) = communication_tuple
 
-        detailed_obj = sy.serde.msgpack.serde._detail(worker, obj)
+        detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
         detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs)
@@ -103,7 +109,7 @@ class CommunicationAction(Action):
         """
         protobuf_obj = CommunicationActionPB()
 
-        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj, communication.obj)
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
 
         for destination in communication.destinations:
@@ -131,12 +137,12 @@ class CommunicationAction(Action):
             protobuf_obj (CommunicationActionPB): the Protobuf message
 
         Returns:
-            obj (CommunicationAction): a CommunicationAction
+            obj_id (CommunicationAction): a CommunicationAction
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        obj = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj)
+        obj_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj_id)
         source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
         destinations = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
@@ -147,7 +153,7 @@ class CommunicationAction(Action):
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj, source, destinations, kwargs)
+        return CommunicationAction(obj_id, source, destinations, kwargs)
 
     @staticmethod
     def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
