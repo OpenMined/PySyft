@@ -468,6 +468,36 @@ def test_torch_sigmoid_approx(workers):
             assert (diff / (tolerance * norm)) < 1
 
 
+def test_torch_tanh_approx(workers):
+    """
+    Test the approximate tanh with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    fix_prec_tolerance_by_method = {
+        "chebyshev": {3: 3 / 100, 4: 3 / 100, 5: 3 / 100},
+        "sigmoid": {3: 10 / 100, 4: 15 / 100, 5: 15 / 100},
+    }
+
+    for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
+        for prec_frac, tolerance in fix_prec_tolerance.items():
+            t = torch.tensor(range(-6, 6)) * 0.5
+            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+                alice, bob, crypto_provider=james
+            )
+            r_sh = t_sh.tanh(method)
+            r = r_sh.get().float_prec()
+            t = t.tanh()
+            print(method, prec_frac, tolerance)
+            print(r)
+            print(t)
+            diff = (r - t).abs().max()
+            norm = (r + t).abs().max() / 2
+
+            assert (diff / (tolerance * norm)) < 1
+
+
 def test_torch_log_approx(workers):
     """
     Test the approximate logarithm with different tolerance depending on

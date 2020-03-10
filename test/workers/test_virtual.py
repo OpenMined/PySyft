@@ -41,10 +41,12 @@ def test_send_msg():
     me.send_msg(ObjectMessage(obj), bob)
     elapsed_time = time() - start_time
 
+    me.message_pending_time = 0
+
     # ensure that object is now on bob's machine
     assert obj_id in bob._objects
     # ensure that object was sent 0.1 secs later
-    assert abs(elapsed_time - me.message_pending_time) < 0.1
+    assert elapsed_time > 0.1
 
 
 def test_send_msg_using_tensor_api():
