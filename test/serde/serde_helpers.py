@@ -258,7 +258,7 @@ def make_torch_device(**kwargs):
 def make_torch_dtype(**kwargs):
     torch_dtype = torch.int32
     return [
-        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32"),}  # (str) device
+        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32")}  # (str) device
     ]
 
 

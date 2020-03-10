@@ -52,7 +52,6 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-
         self.child = shares
         if dtype == "long":
             self.dtype = "long"
@@ -89,7 +88,6 @@ class AdditiveSharingTensor(AbstractTensor):
                     )
         else:
             self.child = None
-
 
         self.n_bits = round(math.log(self.field, 2))
         assert 2 ** self.n_bits == self.field
@@ -535,7 +533,7 @@ class AdditiveSharingTensor(AbstractTensor):
                         first_it = False
                         zero_shares = self.zero(cmd_res.shape).child
 
-                    res[worker] = (cmd(share, other) + zero_shares[worker])
+                    res[worker] = cmd(share, other) + zero_shares[worker]
                 return res
             else:
                 return {worker: (cmd(share, other)) for worker, share in shares.items()}
