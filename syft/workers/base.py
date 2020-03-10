@@ -328,6 +328,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
+        create_pointer=True,
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -378,6 +379,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
+        # Send the object
+        self.send_obj(obj, worker)
+
+        # If we don't need to create the pointer
+        return None
+
+        # Create the pointer if needed
         if hasattr(obj, "create_pointer") and not isinstance(
             obj, sy.Protocol
         ):  # TODO: this seems like hack to check a type
@@ -396,9 +404,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             )
         else:
             pointer = obj
-
-        # Send the object
-        self.send_obj(obj, worker)
 
         return pointer
 
@@ -484,6 +489,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         (obj_id, source, destinations, kwargs) = message.contents
 
         obj = self.get_obj(obj_id)
+        # TODO do we need to check that source_worker is self?
         source_worker = self.get_worker(source)
         response = source_worker.send(obj, *destinations, **kwargs)
 

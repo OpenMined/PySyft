@@ -262,21 +262,23 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return ptr
 
     def move(self, location):
-        ptr = self.owner.send(self, location)
-        ptr.remote_get()
-        # don't want it to accidentally delete the remote object
-        # when this pointer is deleted
-        ptr.garbage_collect_data = False
-        return ptr
+        args = (destination,)
+        kwargs = {"inplace": True, "create_pointer": False}
+        message = CommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        self.owner.send_msg(message=message, location=self.location)
 
-    def remote_send(self, destination, change_location=False):
+        # Change location of the pointer to point to the new object owner
+        self.location = location
+
+        return self
+
+
+    def remote_send(self, destination):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-        If change_location is set to True, the original pointer will point to the moved object.
-        Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
-        will have 2 references pointing to it.
         """
         args = (destination,)
         kwargs = {"inplace": True}
@@ -284,8 +286,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
         self.owner.send_msg(message=message, location=self.location)
-        if change_location:
-            self.location = destination
         return self
 
     def remote_get(self):
