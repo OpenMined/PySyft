@@ -39,8 +39,11 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     delta_epsilon = cmd(delta, epsilon)
 
     # Trick to keep only one child in the MultiPointerTensor (like in SNN)
-    j1 = torch.ones(delta_epsilon.shape).long().send(locations[0], **no_wrap)
-    j0 = torch.zeros(delta_epsilon.shape).long().send(*locations[1:], **no_wrap)
+    field_to_dtype = {2 ** 32: torch.int32, 2 ** 64: torch.int64}
+    j1 = torch.ones(delta_epsilon.shape).type(field_to_dtype[field]).send(locations[0], **no_wrap)
+    j0 = (
+        torch.zeros(delta_epsilon.shape).type(field_to_dtype[field]).send(*locations[1:], **no_wrap)
+    )
     if len(locations) == 2:
         j = sy.MultiPointerTensor(children=[j1, j0])
     else:

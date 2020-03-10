@@ -178,8 +178,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share)
 
         res_field = sum(shares)
-
-        gate = res_field.native_lt(0).long()
+        str_to_dtype = {"int": torch.int32, "long": torch.int64}
+        gate = res_field.native_lt(0).type(str_to_dtype[self.dtype])
         neg_nums = res_field * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
@@ -198,7 +198,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         res_field = sum(shares)
 
-        gate = res_field.native_lt(0).long()
+        str_to_dtype = {"int": torch.int32, "long": torch.int64}
+        gate = res_field.native_lt(0).type(str_to_dtype[self.dtype])
         neg_nums = (res_field) * gate
         pos_nums = res_field * (1 - gate)
         result = neg_nums + pos_nums
