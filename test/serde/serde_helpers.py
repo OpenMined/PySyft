@@ -1497,7 +1497,7 @@ def make_isnonemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.IsNoneMessage
         # torch tensors
-        assert detailed.contents.equal(original.contents)
+        assert detailed.object_id.equal(original.object_id)
         return True
 
     return [
@@ -1505,11 +1505,7 @@ def make_isnonemessage(**kwargs):
             "value": nm,
             "simplified": (
                 CODE[syft.messaging.message.IsNoneMessage],
-                (
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, nm.contents
-                    ),  # (Any) simplified contents
-                ),
+                (msgpack.serde._simplify(syft.hook.local_worker, nm.object_id),),
             ),
             "cmp_detailed": compare,
         }
@@ -1562,7 +1558,7 @@ def make_forceobjectdeletemessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ForceObjectDeleteMessage
-        assert detailed.contents == original.contents
+        assert detailed.object_id == original.object_id
         return True
 
     return [
@@ -1583,7 +1579,7 @@ def make_searchmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.SearchMessage
-        assert detailed.contents == original.contents
+        assert detailed.query == original.query
         return True
 
     return [
