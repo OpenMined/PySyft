@@ -215,16 +215,16 @@ class CommandMessage(Message):
         Examples:
             data = bufferize(message)
         """
-        protobuf_op_msg = CommandMessagePB()
+        protobuf_action_msg = CommandMessagePB()
+
+        protobuf_action = sy.serde.protobuf.serde._bufferize(worker, action_message.action)
 
         if isinstance(action_message.action, ComputationAction):
-            protobuf_op = ComputationAction.bufferize(worker, action_message.action)
-            protobuf_op_msg.computation.CopyFrom(protobuf_op)
+            protobuf_action_msg.computation.CopyFrom(protobuf_action)
         elif isinstance(action_message.action, CommunicationAction):
-            protobuf_op = CommunicationAction.bufferize(worker, action_message.action)
-            protobuf_op_msg.communication.CopyFrom(protobuf_op)
+            protobuf_action_msg.communication.CopyFrom(protobuf_action)
 
-        return protobuf_op_msg
+        return protobuf_action_msg
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_obj: "CommandMessagePB") -> "CommandMessage":
