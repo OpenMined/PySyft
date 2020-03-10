@@ -50,9 +50,6 @@ samples[
 samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
-samples[
-    syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
-] = make_crtprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.execution.plan.Plan] = make_plan
