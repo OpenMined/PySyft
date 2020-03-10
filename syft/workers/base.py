@@ -494,6 +494,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response = source_worker.send(obj, *destinations, **kwargs)
 
         response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
+        # TODO we should rm here but this make _get_msg fail
         # self.rm_obj(obj.id)
         return response
 

@@ -262,7 +262,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return ptr
 
     def move(self, location):
-        args = (destination,)
         kwargs = {"inplace": True, "create_pointer": False}
         message = CommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
@@ -280,7 +279,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
         """
-        args = (destination,)
         kwargs = {"inplace": True}
         message = CommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
