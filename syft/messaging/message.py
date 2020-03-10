@@ -574,11 +574,6 @@ class PlanCommandMessage(Message):
         self.command_name = command_name
         self.args = args_
 
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the action (backwards compatability)."""
-        return (self.command_name, self.args)
-
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "PlanCommandMessage") -> tuple:
         """
