@@ -161,7 +161,12 @@ class CommandMessage(Message):
 
     @property
     def contents(self):
-        return self.action
+        """Return a tuple with the contents of the action (backwards compatability)
+
+        Some of our codebase still assumes that all message types have a .contents attribute. However,
+        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
+        might be. Don't use this in new code."""
+        return self.action.contents
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
