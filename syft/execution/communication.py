@@ -20,7 +20,7 @@ class CommunicationAction(Action):
         obj_id: Union[str, int],
         source: Union[str, int],
         destinations: List[Union[str, int]],
-        kwargs,
+        kwargs_: dict,
     ):
         """Initialize an communication action
 
@@ -31,7 +31,7 @@ class CommunicationAction(Action):
         self.obj_id = obj_id
         self.source = source
         self.destinations = destinations
-        self.kwargs = kwargs
+        self.kwargs = kwargs_
 
     @property
     def contents(self):
@@ -82,12 +82,12 @@ class CommunicationAction(Action):
             communication = detail(sy.local_worker, communication_tuple)
         """
 
-        (obj_id, source, destinations, kwargs) = communication_tuple
+        (obj_id, source, destinations, kwargs_) = communication_tuple
 
         detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
-        detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs)
+        detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
 
         return CommunicationAction(
             detailed_obj, detailed_source, detailed_destinations, detailed_kwargs
@@ -148,12 +148,12 @@ class CommunicationAction(Action):
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
         ]
 
-        kwargs = {
+        kwargs_ = {
             key: CommunicationAction._unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj_id, source, destinations, kwargs)
+        return CommunicationAction(obj_id, source, destinations, kwargs_)
 
     @staticmethod
     def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
