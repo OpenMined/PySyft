@@ -116,11 +116,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_router = {
             CommandMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
-            ObjectMessage: self.set_obj,
+            ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
             ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
             IsNoneMessage: self.is_tensor_none,
-            GetShapeMessage: self.get_tensor_shape,
+            GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
             ForceObjectDeleteMessage: self.force_rm_obj,
         }
@@ -312,7 +312,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} received {type(msg).__name__} {msg.contents}")
 
         # Step 1: route message to appropriate function
-        response = self._message_router[type(msg)](msg.contents)
+        response = self._message_router[type(msg)](msg)
 
         # Step 2: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
@@ -401,21 +401,32 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def execute_command(self, message: tuple) -> PointerTensor:
+    def handle_object_msg(self, obj_msg: ObjectMessage):
+        # This should be a good seam for separating Workers from ObjectStorage (someday),
+        # so that Workers have ObjectStores instead of being ObjectStores. That would open
+        # up the possibility of having a separate ObjectStore for each user, or for each
+        # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
+        # that will probably be useful for providing security and permissioning. In that
+        # future, this might look like `self.object_store.set_obj(obj_msg.object)`
+        if obj_msg.object is not None:
+            self.set_obj(obj_msg.object)
+
+    def execute_command(self, cmd: CommandMessage) -> PointerTensor:
         """
         Executes commands received from other workers.
 
         Args:
-            message: A tuple specifying the command and the args.
+            msg: A CommandMessage specifying the command and the args.
 
         Returns:
             A pointer to the result.
         """
+        command_name = cmd.name
+        _self = cmd.target
+        args = cmd.args
+        kwargs = cmd.kwargs
+        return_ids = cmd.return_ids
 
-        (command_name, _self, args, kwargs), return_ids = message
-
-        # TODO add kwargs
-        command_name = command_name
         # Handle methods
         if _self is not None:
             if type(_self) == int:
@@ -472,16 +483,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
-    def execute_plan_command(self, message: tuple):
+    def execute_plan_command(self, msg: PlanCommandMessage):
         """Executes commands related to plans.
 
         This method is intended to execute all commands related to plans and
         avoiding having several new message types specific to plans.
 
         Args:
-            message: A tuple specifying the command and args.
+            msg: A PlanCommandMessage specifying the command and args.
         """
-        command_name, args = message
+        command_name = msg.command_name
+        args = msg.args
+
         try:
             command = self._plan_command_router[command_name]
         except KeyError:
@@ -555,13 +568,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, request_msg: tuple):
+    def respond_to_obj_req(self, msg: ObjectRequestMessage):
         """Returns the deregistered object from registry.
 
         Args:
             request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-        obj_id, user, reason = request_msg
+        obj_id = msg.object_id
+        user = msg.user
+        reason = msg.reason
+
         obj = self.get_obj(obj_id)
         if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
@@ -622,7 +638,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -809,7 +825,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.send_msg(IsNoneMessage(pointer), location=pointer.location)
 
     @staticmethod
-    def get_tensor_shape(tensor: FrameworkTensorType) -> List:
+    def handle_get_shape_message(msg: GetShapeMessage) -> List:
         """
         Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
@@ -820,7 +836,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A list containing the tensor shape.
         """
-        return list(tensor.shape)
+        return list(msg.tensor.shape)
 
     def request_remote_tensor_shape(self, pointer: PointerTensor) -> FrameworkShape:
         """
@@ -952,13 +968,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             return list()
 
-    def respond_to_search(
-        self, query: Union[List[Union[str, int]], str, int]
-    ) -> List[PointerTensor]:
+    def respond_to_search(self, msg: SearchMessage) -> List[PointerTensor]:
         """
         When remote worker calling search on this worker, forwarding the call and
         replace found elements by pointers
         """
+        query = msg.query
         objects = self.search(query)
         results = []
         for obj in objects:

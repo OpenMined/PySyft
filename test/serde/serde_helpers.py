@@ -258,7 +258,7 @@ def make_torch_device(**kwargs):
 def make_torch_dtype(**kwargs):
     torch_dtype = torch.int32
     return [
-        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32"),}  # (str) device
+        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32")}  # (str) device
     ]
 
 
@@ -1433,7 +1433,7 @@ def make_objectmessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ObjectMessage
         # torch tensors
-        assert detailed.contents.equal(original.contents)
+        assert detailed.object.equal(original.object)
         return True
 
     return [
@@ -1443,8 +1443,8 @@ def make_objectmessage(**kwargs):
                 CODE[syft.messaging.message.ObjectMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, obj.contents
-                    ),  # (Any) simplified contents
+                        syft.hook.local_worker, obj.object
+                    ),  # (Any) simplified object
                 ),
             ),
             "cmp_detailed": compare,
@@ -1463,7 +1463,9 @@ def make_objectrequestmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ObjectRequestMessage
-        assert detailed.contents == original.contents
+        assert detailed.object_id == original.object_id
+        assert detailed.user == original.user
+        assert detailed.reason == original.reason
         return True
 
     return [
@@ -1472,9 +1474,9 @@ def make_objectrequestmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.ObjectRequestMessage],
                 (
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, obj_req.contents
-                    ),  # (Any) simplified contents
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.object_id),
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.user),
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.reason),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1528,7 +1530,7 @@ def make_getshapemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.GetShapeMessage
         # torch tensor
-        assert detailed.contents.equal(original.contents)
+        assert detailed.tensor.equal(original.tensor)
         return True
 
     return [
@@ -1538,8 +1540,8 @@ def make_getshapemessage(**kwargs):
                 CODE[syft.messaging.message.GetShapeMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, shape_message.contents
-                    ),  # (Any) simplified contents
+                        syft.hook.local_worker, shape_message.tensor
+                    ),  # (Any) simplified tensor
                 ),
             ),
             "cmp_detailed": compare,
