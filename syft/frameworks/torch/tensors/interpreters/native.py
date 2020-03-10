@@ -868,6 +868,9 @@ class TorchTensor(AbstractTensor):
                 *owners, field=field, protocol=protocol, crypto_provider=crypto_provider, **kwargs
             )
         else:
+            if self.type() == "torch.FloatTensor":
+                raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
+
             shared_tensor = (
                 syft.AdditiveSharingTensor(
                     field=field,

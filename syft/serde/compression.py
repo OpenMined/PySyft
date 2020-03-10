@@ -7,18 +7,15 @@ import lz4
 from lz4 import (  # noqa: F401
     frame,
 )  # needed as otherwise we will get: module 'lz4' has no attribute 'frame'
-import zstd
 
 from syft.exceptions import CompressionNotFoundException
 
 # COMPRESSION SCHEME INT CODES
 NO_COMPRESSION = 40
 LZ4 = 41
-ZSTD = 42
 scheme_to_bytes = {
     NO_COMPRESSION: NO_COMPRESSION.to_bytes(1, byteorder="big"),
     LZ4: LZ4.to_bytes(1, byteorder="big"),
-    ZSTD: ZSTD.to_bytes(1, byteorder="big"),
 }
 
 ## SECTION: chosen Compression Algorithm
@@ -46,20 +43,6 @@ def apply_lz4_compression(decompressed_input_bin) -> tuple:
         a tuple (compressed_result, LZ4)
     """
     return lz4.frame.compress(decompressed_input_bin), LZ4
-
-
-def apply_zstd_compression(decompressed_input_bin) -> tuple:
-    """
-    Apply ZSTD compression to the input
-
-    Args:
-        decompressed_input_bin: the binary to be compressed
-
-    Returns:
-        a tuple (compressed_result, ZSTD)
-    """
-
-    return zstd.compress(decompressed_input_bin), ZSTD
 
 
 def apply_no_compression(decompressed_input_bin) -> tuple:
@@ -118,8 +101,6 @@ def _decompress(binary: bin) -> bin:
     # 1)  Decompress or return the original stream
     if compress_scheme == LZ4:
         return lz4.frame.decompress(binary)
-    elif compress_scheme == ZSTD:
-        return zstd.decompress(binary)
     elif compress_scheme == NO_COMPRESSION:
         return binary
     else:

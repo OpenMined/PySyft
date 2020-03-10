@@ -8,7 +8,7 @@ import syft as sy
 
 class LoggingTensor(AbstractTensor):
     def __init__(self, owner=None, id=None, tags=None, description=None):
-        """Initializes a LoggingTensor, whose behaviour is to log all operations
+        """Initializes a LoggingTensor, whose behaviour is to log all actions
         applied on it.
 
         Args:

@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List
 from typing import Union
 
@@ -18,7 +19,7 @@ class ObjectStorage:
         # This is the collection of objects being stored.
         self._objects = {}
         # This is an index to retrieve objects from their tags in an efficient way
-        self._tag_to_object_ids = {}
+        self._tag_to_object_ids = defaultdict(set)
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -136,10 +137,7 @@ class ObjectStorage:
 
     def find_by_id(self, id):
         """Local search by id"""
-        if id in self._objects:
-            return self._objects[id]
-        else:
-            return None
+        return self._objects.get(id)
 
     def find_by_tag(self, tag):
         """Local search by tag

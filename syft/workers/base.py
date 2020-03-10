@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import syft as sy
 from syft import codes
+from syft.execution.plan import Plan
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
@@ -21,15 +22,14 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import Message
-from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import Operation
+from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import PlanCommandMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
-from syft.execution.plan import Plan
+from syft.messaging.message import PlanCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -85,7 +85,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         auto_add: Determines whether to automatically add this worker to the
             list of known workers.
         message_pending_time (optional): A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
     """
 
@@ -114,7 +114,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            Operation: self.execute_command,
+            CommandMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.set_obj,
             ObjectRequestMessage: self.respond_to_obj_req,
@@ -507,14 +507,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        cmd_name = message[0]
-        cmd_owner = message[1]
-        cmd_args = message[2]
-        cmd_kwargs = message[3]
+        name, target, args_, kwargs_ = message
 
         try:
             ret_val = self.send_msg(
-                Operation(cmd_name, cmd_owner, cmd_args, cmd_kwargs, return_ids), location=recipient
+                CommandMessage(name, target, args_, kwargs_, return_ids), location=recipient
             )
         except ResponseSignatureError as e:
             ret_val = None
@@ -921,31 +918,35 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Returns:
             A list of valid results found.
+
+        TODO Search on description is not supported for the moment
         """
         if isinstance(query, (str, int)):
             query = [query]
         # Empty query returns all the tagged and registered values
         elif len(query) == 0:
-            results = []
-            for obj in self._objects.values():
-                if hasattr(obj, "tags") and obj.tags is not None and len(obj.tags) > 0:
-                    results.append(obj)
-            return results
+            result_ids = set()
+            for tag, object_ids in self._tag_to_object_ids.items():
+                result_ids = result_ids.union(object_ids)
+            return [self.get_obj(result_id) for result_id in result_ids]
 
         results = None
         for query_item in query:
-            results_item = set()
+            # Search by id is supported but it's not the preferred option
+            # It will return a single element and discard tags if the query
+            # Mixed an id with tags
             result_by_id = self.find_by_id(query_item)
             if result_by_id:
-                results_item.add(result_by_id)
-            else:
-                results_item = set(self.find_by_tag(query_item))
-                # results_by_tag can be the empty list
+                results = {result_by_id}
+                break
+
+            # results_by_tag can be the empty list
+            results_by_tag = set(self.find_by_tag(query_item))
 
             if results:
-                results = results.intersection(results_item)
+                results = results.intersection(results_by_tag)
             else:
-                results = results_item
+                results = results_by_tag
 
         if results is not None:
             return list(results)
@@ -994,6 +995,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         results = self.find_by_tag(tag)
         if results:
+            assert all(result.location.id == location.id for result in results)
             return results
         else:
             return self.request_search(tag, location=location)
@@ -1025,7 +1027,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             seconds: A number of seconds to delay the messages to be sent.
-            The argument may be a floating point number for subsecond 
+            The argument may be a floating point number for subsecond
             precision.
 
         """
@@ -1054,7 +1056,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return Operation(command_name, command_owner, args, kwargs, return_ids)
+        return CommandMessage(command_name, command_owner, args, kwargs, return_ids)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

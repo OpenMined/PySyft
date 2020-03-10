@@ -34,7 +34,7 @@ class AbstractObject(ABC):
             child: an optional tensor to put in the .child attribute to build
                 a chain of tensors
         """
-        self.owner = owner
+        self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
         self.tags = tags
         self.description = description
@@ -64,12 +64,11 @@ class AbstractObject(ABC):
         for tag in tags:
             self.tags.add(tag)
             if self.owner is not None:
+                # NOTE: this is a fix to correct faulty registration that can sometimes happen
                 if self.id not in self.owner._objects:
                     self.owner.register_obj(self)
-                if tag not in self.owner._tag_to_object_ids:
-                    self.owner._tag_to_object_ids[tag] = {self.id}
-                else:
-                    self.owner._tag_to_object_ids[tag].add(self.id)
+                # note: this is a defaultdict(set)
+                self.owner._tag_to_object_ids[tag].add(self.id)
             else:
                 raise RuntimeError("Can't tag a tensor which doesn't have an owner")
         return self
