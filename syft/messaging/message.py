@@ -243,18 +243,9 @@ class CommandMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        if protobuf_obj.computation.ByteSize():
-            detailed = ComputationAction.unbufferize(worker, protobuf_obj.computation)
-            action = ComputationAction(
-                detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
-            )
-        elif protobuf_obj.communication.ByteSize():
-            detailed = CommunicationAction.unbufferize(worker, protobuf_obj.communication)
-            action = CommunicationAction(
-                detailed.obj, detailed.source, detailed.destinations, detailed.kwargs
-            )
-
-        return CommandMessage(action)
+        action = getattr(protobuf_obj, protobuf_obj.WhichOneof("action"))
+        detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
+        return CommandMessage(detailed_action)
 
 
 class ObjectMessage(Message):
