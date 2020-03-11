@@ -13,6 +13,7 @@ import torch
 
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
@@ -127,7 +128,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
 
     if tensor.grad is not None:
         if hasattr(tensor, "child"):
-            if isinstance(tensor.child, PointerTensor):
+            if isinstance(tensor.child, (PointerTensor, MultiPointerTensor)):
                 grad_chain = None
             else:
                 grad_chain = _simplify_torch_tensor(worker, tensor.grad)
