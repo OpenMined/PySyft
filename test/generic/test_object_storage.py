@@ -4,17 +4,17 @@ from syft.generic import object_storage
 
 
 def test_clear_objects():
-    """ 
-    
-    Asserts that objects in storage are cleared 
-    
     """
-    obj_storage = object_storage.ObjectStorage() #obj_storage is a wrapper object to a collection of objects
-
+    Asserts that objects in storage are cleared
+    """
+    obj_storage = object_storage.ObjectStorage()
+    """
+    obj_storage is a wrapper object to a collection of objects 
+    """
     x = torch.tensor(1)
     obj_storage.set_obj(x)
 
-    objs = obj_storage.current_objects() #Returns a copy of the objects present in obj_storage (here : x)
+    objs = obj_storage.current_objects()#Returns a copy of the objects in obj_storage(here:x)
 
     assert len(objs) == 1
     assert objs[x.id] == x
@@ -27,10 +27,8 @@ def test_clear_objects():
 
 
 def test_clear_objects_return_None():
-    """ 
-   
-    Asserts that objects are cleared and returned as none 
-   
+    """
+    Asserts that objects are cleared and returned as none
     """
     obj_storage = object_storage.ObjectStorage()
 
