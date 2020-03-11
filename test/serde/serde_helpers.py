@@ -1497,7 +1497,7 @@ def make_isnonemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.IsNoneMessage
         # torch tensors
-        assert detailed.object_id.equal(original.object_id)
+        assert detailed.object_id == original.object_id
         return True
 
     return [
@@ -1526,7 +1526,7 @@ def make_getshapemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.GetShapeMessage
         # torch tensor
-        assert detailed.tensor.equal(original.tensor)
+        assert detailed.tensor_id == original.tensor_id
         return True
 
     return [
@@ -1536,7 +1536,7 @@ def make_getshapemessage(**kwargs):
                 CODE[syft.messaging.message.GetShapeMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, shape_message.tensor
+                        syft.hook.local_worker, shape_message.tensor_id
                     ),  # (Any) simplified tensor
                 ),
             ),

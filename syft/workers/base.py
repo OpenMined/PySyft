@@ -856,8 +856,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         return self.send_msg(IsNoneMessage(pointer.id_at_location), location=pointer.location)
 
-    @staticmethod
-    def handle_get_shape_message(msg: GetShapeMessage) -> List:
+    def handle_get_shape_message(self, msg: GetShapeMessage) -> List:
         """
         Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
@@ -868,7 +867,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A list containing the tensor shape.
         """
-        return list(msg.tensor.shape)
+        tensor = self.get_obj(msg.tensor_id)
+        return list(tensor.shape)
 
     def request_remote_tensor_shape(self, pointer: PointerTensor) -> FrameworkShape:
         """
@@ -881,7 +881,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location)
+        shape = self.send_msg(GetShapeMessage(pointer.id_at_location), location=pointer.location)
         return sy.hook.create_shape(shape)
 
     def fetch_plan(

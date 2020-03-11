@@ -420,10 +420,10 @@ class GetShapeMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, tensor):
+    def __init__(self, tensor_id):
         """Initialize the message."""
 
-        self.tensor = tensor
+        self.tensor_id = tensor_id
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "GetShapeMessage") -> tuple:
@@ -438,7 +438,7 @@ class GetShapeMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, msg.tensor),)
+        return (sy.serde.msgpack.serde._simplify(worker, msg.tensor_id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "GetShapeMessage":
