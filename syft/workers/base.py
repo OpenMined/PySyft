@@ -492,10 +492,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
                 Returns:
                     A pointer to the result.
-                """
-        command_name, (args, kwargs, return_ids) = message
+        """
+        command_name = message.command_name
+        args, kwargs, return_ids = message.message
 
-        command_name = command_name
         response = getattr(self, command_name)(*args, **kwargs)
         #  TODO [midokura-silvia]: send the tensor directly
         #  TODO this code is currently necessary for the async_fit method in websocket_client.py
