@@ -511,7 +511,10 @@ def make_additivesharingtensor(**kwargs):
                 ],
                 (
                     ast.id,  # (int or str) id
-                    ast.field,  # (int) field
+                    (CODE[str], (str(ast.field).encode("utf-8"),))
+                    if ast.field == 2 ** 64
+                    else ast.field,  # (int or str) field
+                    ast.dtype,  # (str) dtype
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
                         syft.hook.local_worker, ast.child
@@ -559,7 +562,10 @@ def make_fixedprecisiontensor(**kwargs):
                 CODE[syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor],
                 (
                     fpt.id,  # (int or str) id
-                    fpt.field,  # (int) field
+                    (CODE[str], (str(fpt.field).encode("utf-8"),))
+                    if fpt.field == 2 ** 64
+                    else fpt.field,  # (int or str) field
+                    fpt.dtype,  # (str) dtype
                     12,  # (int) base
                     5,  # (int) precision_fractional
                     fpt.kappa,  # (int) kappa

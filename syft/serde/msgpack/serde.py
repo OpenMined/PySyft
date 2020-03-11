@@ -367,6 +367,14 @@ def deserialize(binary: bin, worker: AbstractWorker = None) -> object:
     return _deserialize_msgpack_simple(simple_objects, worker)
 
 
+def _simplify_field(obj):
+    current_type = type(obj)
+    if current_type == int and obj >= 2 ** 64:
+        obj = str(obj)
+        current_type = str
+    return current_type, obj
+
+
 def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """
     This function takes an object as input and returns a simple
@@ -393,11 +401,8 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
     # breakpoint()
-    current_type = type(obj)
-
-    if current_type == int and obj >= 2 ** 64:
-        obj = str(obj)
-        current_type = type(obj)
+    # current_type = type(obj)
+    current_type, obj = _simplify_field(obj)
 
     # print(current_type, current_type in simplifiers)
     if current_type in simplifiers:
@@ -443,6 +448,13 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return obj
 
 
+def _detail_field(typeCode, val):
+    if typeCode == 5 and val == "18446744073709551616":
+        return int(val)
+    else:
+        return val
+
+
 def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """Reverses the functionality of _simplify.
     Where applicable, it converts simple objects into more complex objects such
@@ -461,9 +473,6 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """
     if type(obj) in (list, tuple):
         val = detailers[obj[0]](worker, obj[1], **kwargs)
-        if obj[0] == 5 and val == "18446744073709551616":
-            return int(val)
-        else:
-            return val
+        return _detail_field(obj[0], val)
     else:
         return obj
