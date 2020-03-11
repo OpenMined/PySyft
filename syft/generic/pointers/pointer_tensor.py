@@ -261,18 +261,17 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location):
+    def move(self, destination):
         kwargs = {"inplace": True, "create_pointer": False}
         message = CommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
-        self.owner.send_msg(message=message, location=self.location)
+        self.owner.send_msg(message=message, location=destination)
 
         # Change location of the pointer to point to the new object owner
-        self.location = location
+        self.location = destination
 
         return self
-
 
     def remote_send(self, destination):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
