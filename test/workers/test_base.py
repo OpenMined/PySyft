@@ -68,7 +68,7 @@ def test_create_already_existing_worker_with_different_type(hook, start_proc):
     server.terminate()
 
 
-def test_execute_command_self(hook):
+def test_execute_worker_function(hook):
     sy.VirtualWorker.mocked_function = MethodType(
         mock.Mock(return_value="bob_mocked_function"), sy.VirtualWorker
     )
@@ -76,7 +76,7 @@ def test_execute_command_self(hook):
     bob = sy.VirtualWorker(hook, "bob")
     x = th.tensor([1, 2, 3]).send(bob)
 
-    message = bob.create_message_execute_command(
+    message = bob.create_execute_worker_function_message(
         command_name="mocked_function", command_owner="self"
     )
 

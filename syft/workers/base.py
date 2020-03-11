@@ -29,7 +29,9 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
+from syft.messaging.message import ExecuteWorkerFunctionMessage
 from syft.messaging.message import PlanCommandMessage
+from syft.execution.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -123,6 +125,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             GetShapeMessage: self.get_tensor_shape,
             SearchMessage: self.respond_to_search,
             ForceObjectDeleteMessage: self.force_rm_obj,
+            ExecuteWorkerFunctionMessage: self.execute_worker_function,
         }
 
         self._plan_command_router = {
@@ -422,8 +425,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
-            if type(_self) == str and _self == "self":
-                _self = self
             if sy.framework.is_inplace_method(command_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
@@ -471,6 +472,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 )
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
+
+    def execute_worker_function(self, message: tuple):
+        """Executes commands received from other workers.
+
+                Args:
+                    message: A tuple specifying the command and the args.
+
+                Returns:
+                    A pointer to the result.
+                """
+        command_name, (args, kwargs, return_ids) = message
+
+        command_name = command_name
+        response = getattr(self, command_name)(*args, **kwargs)
+        #  TODO [midokura-silvia]: send the tensor directly
+        #  TODO this code is currently necessary for the async_fit method in websocket_client.py
+        if isinstance(response, FrameworkTensor):
+            self.register_obj(obj=response, obj_id=return_ids[0])
+            return None
+        return response
 
     def execute_plan_command(self, message: tuple):
         """Executes commands related to plans.
@@ -1036,9 +1057,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_pending_time = seconds
 
     @staticmethod
-    def create_message_execute_command(
-        command_name: str, command_owner=None, return_ids=None, *args, **kwargs
-    ):
+    def create_execute_worker_function_message(command_name: str, return_ids=None, *args, **kwargs):
         """helper function creating a message tuple for the execute_command call
 
         Args:
@@ -1055,7 +1074,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return CommandMessage(command_name, command_owner, args, kwargs, return_ids)
+        return ExecuteWorkerFunctionMessage(command_name, (args, kwargs, return_ids))
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
