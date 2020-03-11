@@ -431,10 +431,14 @@ def test_ndarray_serde(compress):
     assert numpy.array_equal(arr, arr_serialized_deserialized)
 
 
-@pytest.mark.parametrize("compress_scheme", [compression.LZ4, compression.NO_COMPRESSION])
+@pytest.mark.parametrize(
+    "compress_scheme", [compression.LZ4, compression.ZLIB, compression.NO_COMPRESSION]
+)
 def test_compress_decompress(compress_scheme):
     if compress_scheme == compression.LZ4:
         compression._apply_compress_scheme = compression.apply_lz4_compression
+    elif compress_scheme == compression.ZLIB:
+        compression._apply_compress_scheme = compression.apply_zlib_compression
     else:
         compression._apply_compress_scheme = compression.apply_no_compression
 
@@ -445,10 +449,14 @@ def test_compress_decompress(compress_scheme):
     assert original == decompressed
 
 
-@pytest.mark.parametrize("compress_scheme", [compression.LZ4, compression.NO_COMPRESSION])
+@pytest.mark.parametrize(
+    "compress_scheme", [compression.LZ4, compression.ZLIB, compression.NO_COMPRESSION]
+)
 def test_compressed_serde(compress_scheme):
     if compress_scheme == compression.LZ4:
         compression._apply_compress_scheme = compression.apply_lz4_compression
+    elif compress_scheme == compression.ZLIB:
+        compression._apply_compress_scheme = compression.apply_zlib_compression
     else:
         compression._apply_compress_scheme = compression.apply_no_compression
 
@@ -633,6 +641,8 @@ def test_float(compress):
     [
         (True, compression.LZ4),
         (False, compression.LZ4),
+        (True, compression.ZLIB),
+        (False, compression.ZLIB),
         (True, compression.NO_COMPRESSION),
         (False, compression.NO_COMPRESSION),
     ],
@@ -641,6 +651,8 @@ def test_hooked_tensor(compress, compress_scheme):
     if compress:
         if compress_scheme == compression.LZ4:
             compression._apply_compress_scheme = compression.apply_lz4_compression
+        elif compress_scheme == compression.ZLIB:
+            compression._apply_compress_scheme = compression.apply_zlib_compression
         else:
             compression._apply_compress_scheme = compression.apply_no_compression
     else:
