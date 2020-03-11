@@ -907,6 +907,44 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
+    def request_run_plan(
+        self, tag: str, location: "BaseWorker"
+    ) -> "Plan":  # noqa: F821
+        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for local execution.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
+        """
+        message = PlanCommandMessage("run_plan", (tag, ))
+        plan = self.send_msg(message, location=location)
+
+        return plan
+
+    def run_plan(self, tag = str) -> "Plan":  # noqa: F821
+        """Fetches a copy of a the plan with the given `plan_id` from the worker registry.
+
+        This method is executed for remote execution.
+
+        Args:
+            plan_id: A string indicating the plan id.
+
+        Returns:
+            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
+        """
+        results = self.search(tag)
+        assert len(results) == 1 and isinstance(results[0], sy.Plan)
+
+        plan = results[0]
+
+        plan()
+
+        return None
+
     def search(self, query: Union[List[Union[str, int]], str, int]) -> List:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
