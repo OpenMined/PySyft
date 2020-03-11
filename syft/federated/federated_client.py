@@ -57,7 +57,8 @@ class FederatedClient(ObjectStorage):
 
         if optimizer_name in dir(th.optim):
             optimizer = getattr(th.optim, optimizer_name)
-            self.optimizer = optimizer(model.parameters(), **optimizer_args)
+            optimizer_args.setdefault("params", model.parameters())
+            self.optimizer = optimizer(**optimizer_args)
         else:
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer

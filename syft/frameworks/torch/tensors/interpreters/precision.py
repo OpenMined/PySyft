@@ -413,7 +413,7 @@ class FixedPrecisionTensor(AbstractTensor):
             ), "In matmul, all args should have the same precision_fractional"
 
         if isinstance(self.child, AdditiveSharingTensor) and isinstance(other.child, torch.Tensor):
-            # If we try to matmul a FPT>(wrap)>AST with a FPT>torch.tensor,
+            # If we try to matmul a FPT>AST with a FPT>torch.tensor,
             # we want to perform AST @ torch.tensor
             new_self = self.child
             new_args = (other,)
@@ -422,7 +422,7 @@ class FixedPrecisionTensor(AbstractTensor):
         elif isinstance(other.child, AdditiveSharingTensor) and isinstance(
             self.child, torch.Tensor
         ):
-            # If we try to matmul a FPT>torch.tensor with a FPT>(wrap)>AST,
+            # If we try to matmul a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
             new_args = (self,)
@@ -551,6 +551,58 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return y
 
+    @staticmethod
+    def _tanh_chebyshev(tensor, maxval: int = 6, terms: int = 32):
+        """
+        Implementation taken from FacebookResearch - CrypTen project
+        Computes tanh via Chebyshev approximation with truncation.
+          tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
+          where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
+        The approximation is truncated to +/-1 outside [-maxval, maxval].
+        Args:
+            maxval (int): interval width used for computing chebyshev polynomials
+            terms (int): highest degree of Chebyshev polynomials.
+                         Must be even and at least 6.
+        More details can be found in the paper:
+           Guo, Chuan and Hannun, Awni and Knott, Brian and van der Maaten,
+           Laurens and Tygert, Mark and Zhu, Ruiyu,
+           "Secure multiparty computations in floating-point arithmetic", Jan-2020
+           Link: http://tygert.com/realcrypt.pdf
+
+        """
+
+        coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
+        coeffs = coeffs.fix_precision(**tensor.get_class_attributes()) % tensor.field
+        coeffs = coeffs.unsqueeze(1)
+
+        value = torch.tensor(maxval).fix_precision(**tensor.get_class_attributes()) % tensor.field
+        tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(value.child), terms)
+        tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
+
+        out = tanh_polys_flipped.matmul(coeffs.child)
+
+        # truncate outside [-maxval, maxval]
+        gate_up = tensor > value
+        gate_down = -tensor > value
+        res = gate_up - gate_down
+        out = out.squeeze(1) * (1 - gate_up - gate_down)
+        out = res + out
+
+        return out
+
+    @staticmethod
+    def _tanh_sigmoid(tensor):
+        """
+        Compute the tanh using the sigmoid
+
+        """
+        return 2 * torch.sigmoid(2 * tensor) - 1
+
+    def tanh(tensor, method="chebyshev"):
+        tanh_f = getattr(tensor, f"_tanh_{method}")
+
+        return tanh_f(tensor)
+
     # Binary ops
     @overloaded.method
     def __gt__(self, _self, other):
@@ -635,30 +687,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.log = log
 
-        def tanh(tensor, maxval=6, terms=32):
-            """
-            Overloads torch.tanh to be able to use MPC
-
-            Implementation taken from FacebookResearch - CrypTen project
-            Computes tanh via Chebyshev approximation with truncation.
-            .. math::
-            tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
-            where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
-            The approximation is truncated to +/-1 outside [-maxval, maxval].
-            Args:
-                maxval (int): interval width used for computing chebyshev polynomials
-                terms (int): highest degree of Chebyshev polynomials.
-                             Must be even and at least 6.
-            """
-            coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
-            tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(maxval), terms)
-            tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
-
-            out = tanh_polys_flipped.matmul(coeffs)
-            # truncate outside [-maxval, maxval]
-            out = torch.where(tensor > maxval, 1.0, out)
-            out = torch.where(tensor < -maxval, -1.0, out)
-            return out
+        def tanh(tensor):
+            return tensor.tanh()
 
         module.tanh = tanh
 
@@ -814,6 +844,8 @@ class FixedPrecisionTensor(AbstractTensor):
                     return torch.nn.functional.native_linear(*args)
 
                 module.linear = linear
+
+                module.conv2d = conv2d
 
             module.functional = functional
 

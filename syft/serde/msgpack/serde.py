@@ -56,9 +56,10 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.string import String
 from syft.execution.plan import Plan
 from syft.execution.state import State
+from syft.execution.computation import ComputationAction
 from syft.execution.protocol import Protocol
 from syft.messaging.message import Message
-from syft.messaging.message import OperationMessage
+from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
@@ -112,6 +113,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ObjectPointer,
     Plan,
     State,
+    ComputationAction,
     Protocol,
     PointerTensor,
     PointerPlan,
@@ -121,7 +123,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     BaseWorker,
     AutogradTensor,
     Message,
-    OperationMessage,
+    CommandMessage,
     ObjectMessage,
     ObjectRequestMessage,
     IsNoneMessage,
