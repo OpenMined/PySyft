@@ -34,7 +34,7 @@ def _apply_compress_scheme(decompressed_input_bin) -> tuple:
     return apply_lz4_compression(decompressed_input_bin)
 
 
-def apply_zlib_compression(decompressed_input_bin) -> tuple:
+def apply_zlib_compression(uncompressed_input_bin) -> tuple:
     """
     Apply zlib compression to the input
 
