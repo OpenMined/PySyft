@@ -31,13 +31,13 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import ExecuteWorkerFunctionMessage
 from syft.messaging.message import PlanCommandMessage
-from syft.execution.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
-from syft.exceptions import WorkerNotFoundException
-from syft.exceptions import ResponseSignatureError
+from syft.exceptions import ObjectNotFoundError
 from syft.exceptions import PlanCommandUnknownError
+from syft.exceptions import ResponseSignatureError
+from syft.exceptions import WorkerNotFoundException
 
 
 # this if statement avoids circular imports between base.py and pointer.py
@@ -122,7 +122,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             ObjectRequestMessage: self.respond_to_obj_req,
             ForceObjectDeleteMessage: self.handle_delete_object_msg,  # FIXME: there is no ObjectDeleteMessage
             ForceObjectDeleteMessage: self.handle_force_delete_object_msg,
-            IsNoneMessage: self.is_tensor_none,
+            IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
             ExecuteWorkerFunctionMessage: self.execute_worker_function,
@@ -833,8 +833,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def __getitem__(self, idx):
         return self._objects.get(idx, None)
 
-    @staticmethod
-    def is_tensor_none(obj):
+    def is_object_none(self, msg):
+        obj_id = msg.object_id
+        if obj_id not in self._objects:
+            # If the object is not present on the worker, raise an error
+            raise ObjectNotFoundError(obj_id, self)
+        obj = self.get_obj(msg.object_id)
         return obj is None
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
@@ -850,7 +854,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(IsNoneMessage(pointer), location=pointer.location)
+        return self.send_msg(IsNoneMessage(pointer.id_at_location), location=pointer.location)
 
     @staticmethod
     def handle_get_shape_message(msg: GetShapeMessage) -> List:
