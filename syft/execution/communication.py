@@ -118,7 +118,7 @@ class CommunicationAction(Action):
         if communication.kwargs:
             for key, value in communication.kwargs.items():
                 protobuf_obj.kwargs.get_or_create(key).CopyFrom(
-                    CommunicationAction._bufferize_arg(worker, value)
+                    syft.serde.protobuf.serde.bufferize_arg(worker, value)
                 )
 
         return protobuf_obj
@@ -149,28 +149,8 @@ class CommunicationAction(Action):
         ]
 
         kwargs_ = {
-            key: CommunicationAction._unbufferize_arg(worker, kwarg)
+            key: syft.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
         return CommunicationAction(obj_id, source, destinations, kwargs_)
-
-    @staticmethod
-    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
-        protobuf_arg = ArgPB()
-        try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
-        except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, arg)
-            )
-        return protobuf_arg
-
-    @staticmethod
-    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-        try:
-            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
-        except:
-            arg = protobuf_arg_field
-        return arg

@@ -124,12 +124,12 @@ class ComputationAction(Action):
             protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
 
         if action.args:
-            protobuf_op.args.extend(ComputationAction._bufferize_args(worker, action.args))
+            protobuf_op.args.extend(syft.serde.protobuf.serde.bufferize_args(worker, action.args))
 
         if action.kwargs:
             for key, value in action.kwargs.items():
                 protobuf_op.kwargs.get_or_create(key).CopyFrom(
-                    ComputationAction._bufferize_arg(worker, value)
+                    syft.serde.protobuf.serde.bufferize_arg(worker, value)
                 )
 
         if action.return_ids is not None:
@@ -175,11 +175,11 @@ class ComputationAction(Action):
             )
         else:
             target = None
-        args = ComputationAction._unbufferize_args(worker, protobuf_obj.args)
+        args = syft.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
 
         kwargs = {}
         for key in protobuf_obj.kwargs:
-            kwargs[key] = ComputationAction._unbufferize_arg(worker, protobuf_obj.kwargs[key])
+            kwargs[key] = syft.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
@@ -203,37 +203,3 @@ class ComputationAction(Action):
             action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
         return action
-
-    @staticmethod
-    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
-        protobuf_args = []
-        for arg in args:
-            protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
-        return protobuf_args
-
-    @staticmethod
-    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
-        protobuf_arg = ArgPB()
-        try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
-        except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, arg)
-            )
-        return protobuf_arg
-
-    @staticmethod
-    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-        args = []
-        for protobuf_arg in protobuf_args:
-            args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
-        return args
-
-    @staticmethod
-    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-        try:
-            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
-        except:
-            arg = protobuf_arg_field
-        return arg

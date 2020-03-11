@@ -378,3 +378,37 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return unbufferizers[current_type](worker, obj, **kwargs)
     else:
         raise Exception(f"No unbufferizer found for {current_type}")
+
+
+def bufferize_args(worker: AbstractWorker, args: list) -> list:
+    protobuf_args = []
+    for arg in args:
+        protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
+    return protobuf_args
+
+
+def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
+    protobuf_arg = ArgPB()
+    try:
+        setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
+    except:
+        getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
+            sy.serde.protobuf.serde._bufferize(worker, arg)
+        )
+    return protobuf_arg
+
+
+def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
+    args = []
+    for protobuf_arg in protobuf_args:
+        args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
+    return args
+
+
+def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
+    protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+    try:
+        arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
+    except:
+        arg = protobuf_arg_field
+    return arg
