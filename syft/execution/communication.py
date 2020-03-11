@@ -118,7 +118,7 @@ class CommunicationAction(Action):
         if communication.kwargs:
             for key, value in communication.kwargs.items():
                 protobuf_obj.kwargs.get_or_create(key).CopyFrom(
-                    syft.serde.protobuf.serde.bufferize_arg(worker, value)
+                    sy.serde.protobuf.serde.bufferize_arg(worker, value)
                 )
 
         return protobuf_obj
@@ -149,7 +149,7 @@ class CommunicationAction(Action):
         ]
 
         kwargs_ = {
-            key: syft.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
+            key: sy.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
