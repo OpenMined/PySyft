@@ -120,11 +120,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             PlanCommandMessage: self.execute_plan_command,
             ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
-            ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
+            ForceObjectDeleteMessage: self.handle_delete_object_msg,  # FIXME: there is no ObjectDeleteMessage
+            ForceObjectDeleteMessage: self.handle_force_delete_object_msg,
             IsNoneMessage: self.is_tensor_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
-            ForceObjectDeleteMessage: self.force_rm_obj,
             ExecuteWorkerFunctionMessage: self.execute_worker_function,
         }
 
@@ -413,6 +413,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
         if obj_msg.object is not None:
             self.set_obj(obj_msg.object)
+
+    def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
+        # NOTE cannot currently be used because there is no ObjectDeleteMessage
+        self.rm_obj(msg.object_id)
+
+    def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
+        self.force_rm_obj(msg.object_id)
 
     def execute_command(self, cmd: CommandMessage) -> PointerTensor:
         """
