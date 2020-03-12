@@ -654,7 +654,7 @@ def register_response(
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}".format(attr)
+    attr_id = f"{attr}"
 
     try:
         assert attr not in ambiguous_functions
