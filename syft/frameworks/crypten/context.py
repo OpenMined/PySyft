@@ -98,7 +98,7 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
 
     exec_locals = {}
     compiled = compile_restricted(func_src)
-    exec(compiled, exec_globals, exec_locals)
+    exec(compiled, exec_globals, exec_locals)  # nosec
     func = exec_locals[func_name]
 
     crypten.init()
