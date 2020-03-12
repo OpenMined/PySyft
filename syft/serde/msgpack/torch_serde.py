@@ -13,6 +13,7 @@ import torch
 
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
@@ -127,7 +128,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
 
     if tensor.grad is not None:
         if hasattr(tensor, "child"):
-            if isinstance(tensor.child, PointerTensor):
+            if isinstance(tensor.child, (PointerTensor, MultiPointerTensor)):
                 grad_chain = None
             else:
                 grad_chain = _simplify_torch_tensor(worker, tensor.grad)
@@ -297,6 +298,16 @@ def _detail_torch_mem_format(worker: AbstractWorker, mem_format: int) -> torch.m
     return TORCH_ID_MFORMAT[mem_format]
 
 
+def _simplify_torch_dtype(worker: AbstractWorker, dtype: torch.dtype) -> Tuple[int]:
+    return TORCH_DTYPE_STR[dtype]
+
+
+def _detail_torch_dtype(worker: AbstractWorker, dtype: str) -> torch.dtype:
+    if not isinstance(dtype, str):
+        dtype = str(dtype, "utf-8")
+    return TORCH_STR_DTYPE[dtype]
+
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: serialization constants for these objects need to be defined
 # in `proto.json` file of https://github.com/OpenMined/proto
@@ -310,5 +321,6 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
         torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.memory_format: (_simplify_torch_mem_format, _detail_torch_mem_format),
+        torch.dtype: (_simplify_torch_dtype, _detail_torch_dtype),
     }
 )

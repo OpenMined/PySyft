@@ -191,7 +191,7 @@ def prepare_training(hook, alice):  # pragma: no cover
 
     @hook.torch.jit.script
     def loss_fn(pred, target):
-        return ((target.float() - pred.float()) ** 2).mean()
+        return ((pred - target.unsqueeze(1)) ** 2).mean()
 
     class Net(torch.nn.Module):
         def __init__(self):
@@ -199,10 +199,6 @@ def prepare_training(hook, alice):  # pragma: no cover
             self.fc1 = nn.Linear(2, 3)
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
-
-            nn.init.xavier_uniform_(self.fc1.weight)
-            nn.init.xavier_uniform_(self.fc2.weight)
-            nn.init.xavier_uniform_(self.fc3.weight)
 
         def forward(self, x):
             x = F.relu(self.fc1(x))

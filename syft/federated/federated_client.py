@@ -57,7 +57,8 @@ class FederatedClient(ObjectStorage):
 
         if optimizer_name in dir(th.optim):
             optimizer = getattr(th.optim, optimizer_name)
-            self.optimizer = optimizer(model.parameters(), **optimizer_args)
+            optimizer_args.setdefault("params", model.parameters())
+            self.optimizer = optimizer(**optimizer_args)
         else:
             raise ValueError("Unknown optimizer: {}".format(optimizer_name))
         return self.optimizer
@@ -144,6 +145,7 @@ class FederatedClient(ObjectStorage):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -198,3 +200,6 @@ class FederatedClient(ObjectStorage):
             eval_result["histogram_target"] = hist_target
 
         return eval_result
+
+    def _log_msgs(self, value):
+        self.log_msgs = value

@@ -10,16 +10,21 @@
 PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using
 [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
 [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
-and [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
+and Encrypted Computation (like
+[Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
+and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
+within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
 [Slack](http://slack.openmined.org/).
 
 ## PySyft in Detail
 
 A more detailed explanation of PySyft can be found in the
-[white paper on arxiv](https://arxiv.org/abs/1811.04017)
+[white paper on Arxiv](https://arxiv.org/abs/1811.04017)
 
 PySyft has also been explained in videos on YouTube:
+ - [Introduction to Privacy Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
  - [Introduction to PySyft codebase by @andreiliphd](https://www.youtube.com/watch?v=1Zw08_4ufHw)
+ - [Differential Privacy & Federated Learning explained using PySyft by Jordan Harrod](https://www.youtube.com/watch?v=MOcTGM_UteM)
 
 ## Pre-Installation
 
@@ -31,10 +36,11 @@ Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
 work from the command line.
 
 ```bash
-conda create -n pysyft python=3
+conda create -n pysyft python=3.7
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
 conda install jupyter notebook
 ```
+**Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
 Another alternative is to use python venvs. Those are our preferred
 environments for development purposes. We provide a direct install
@@ -46,7 +52,7 @@ make venv
 
 ## Installation
 
-> PySyft supports Python >= 3.6 and PyTorch 1.3
+> PySyft supports Python >= 3.6 and PyTorch 1.4
 
 ```bash
 pip install syft[udacity]
@@ -63,19 +69,6 @@ yourself. If you feel you've received an unexpected
 installation error related to PyTorch or TF Encrypted, please
 open an issue on Github or reach out to `#team_pysyft` in
 Slack.
-
-If you have an installation error regarding zstd, run this command and then re-try installing syft.
-
-```bash
-pip install --upgrade --force-reinstall zstd
-```
-If this still doesn't work, and you happen to be on OSX, make
-sure you have [OSX command line tools](https://railsapps.github.io/xcode-command-line-tools.html) installed and try again.
-
-If this still fails, and you are on a Conda environment. It could be
-because conda provides its own compiler and linker tools which might
-conflict with your system's. In that case we recommend to use a python venv
-and try again.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
@@ -145,7 +138,7 @@ federated learning and differential privacy using PySyft.
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 5000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 
