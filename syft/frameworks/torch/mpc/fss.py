@@ -11,12 +11,14 @@ import hashlib
 
 import torch as th
 import syft as sy
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.execution.plan import func2plan
 from syft.generic.frameworks.hook.trace import tracer
+from syft.workers.base import BaseWorker
 
 
-λ = 6#63  # 6  # 63  # security parameter
-n = 8#32  # 8  # 32  # bit precision
+λ = 6  # 63  # 6  # 63  # security parameter
+n = 8  # 32  # 8  # 32  # bit precision
 
 no_wrap = {"no_wrap": True}
 
@@ -26,50 +28,130 @@ def manual_init_store(worker):
     This is called manually for the moment, to build the plan used to perform
     Function Secret Sharing on a specific worker.
     """
-    # Init the plans for equality and comparison
-    for type_op, fss_class in zip(["eq", "comp"], [DPF, DIF]):
-        keygen = func2plan()(fss_class.keygen)
-        keygen.build()
+    # # Init the plans for equality and comparison
+    # for type_op, fss_class in zip(["eq", "comp"], [DPF, DIF]):
+    #     keygen = func2plan()(fss_class.keygen)
+    #     keygen.build()
+    #
+    #     alpha, s_00, s_01, *CW = keygen()
+    #     k = [(s_00, *CW), (s_01, *CW)]
+    #     evaluate = func2plan()(fss_class.eval)
+    #     evaluate.build(th.IntTensor([0]), alpha, *k[0])
+    #
+    #     keygen.owner = worker
+    #     keygen.tag(f"#fss-{type_op}-keygen")
+    #     evaluate.owner = worker
+    #     evaluate.tag(f"#fss-{type_op}-eval")
+    #
+    #     keygen.forward = None
+    #     evaluate.forward = None
 
-        alpha, s_00, s_01, *CW = keygen()
-        k = [(s_00, *CW), (s_01, *CW)]
-        evaluate = func2plan()(fss_class.eval)
-        evaluate.build(th.IntTensor([0]), alpha, *k[0])
+    # (future)
+    # eq_plan_1 = sy.Plan(forward_func=mask_builder, owner=worker, tags=["#fss_eq_plan_1"], is_built=True)
+    # worker.register_obj(eq_plan_1)
+    # eq_plan_2 = sy.Plan(forward_func=eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True)
+    # worker.register_obj(eq_plan_2)
 
-        keygen.owner = worker
-        keygen.tag(f"#fss-{type_op}-keygen")
-        evaluate.owner = worker
-        evaluate.tag(f"#fss-{type_op}-eval")
+    #
+    x1 = th.tensor([1, 2])
+    x1.owner = worker
+    x2 = th.tensor([3, 2])
+    x2.owner = worker
+    eq_plan_1 = func2plan()(mask_builder)
+    eq_plan_1.build(x1, x2)
+    eq_plan_1.owner = worker
+    eq_plan_1.forward = None
+    eq_plan_1.tag(f"#fss_eq_plan_1")
 
-        keygen.forward = None
-        evaluate.forward = None
+    b = th.IntTensor([0])
+    b.owner = worker
+    x_masked = th.tensor([19])
+    x_masked.owner = worker
+    eq_plan_2 = func2plan()(eval_plan)
+    eq_plan_2.build(b, x_masked)
+    eq_plan_2.owner = worker
+    eq_plan_2.forward = None
+    eq_plan_2.tag(f"#fss_eq_plan_2")
 
 
-def fss_op_tracer(x1, x2, type_op):
+def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
+    response_ids = [sy.ID_PROVIDER.pop()]
+    args = [args, response_ids]
+
+    command = ("run", plan_tag, args, kwargs)
+
+    response = worker.send_command(
+        message=command, recipient=location, return_ids=response_ids, return_value=return_value
+    )
+    return response
+
+
+def fss_op_tracer(x1, x2, type_op="eq"):
 
     me = sy.local_worker
     locations = x1.locations
-    crypto_provider = x1.crypto_provider
 
+    shares = []
     for location in locations:
-        me.request_run_plan('#foo', location)
+        share = request_run_plan(
+            me,
+            "#fss_eq_plan_1",
+            location,
+            return_value=True,
+            args=(x1.child[location.id], x2.child[location.id]),
+        )
+        shares.append(share)
+
+    mask_value = sum(shares) % 2 ** n
+
+    shares = {}
+    for i, location in enumerate(locations):
+        b = th.IntTensor([i])
+        b.owner = location
+        mask_value.owner = location
+        share = request_run_plan(
+            me, "#fss_eq_plan_2", location, return_value=False, args=(b, mask_value)
+        )
+        shares[location] = share
+
+    response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
+
+    return response
 
 
+@tracer(func_name="sy.frameworks.torch.mpc.fss.get_keys")
+def get_keys(worker_id, remove=True):
+    worker: BaseWorker = sy.local_worker.get_worker(worker_id)
+    try:
+        if remove:
+            return worker.crypto_store.fss_eq.pop(0)
+        else:
+            return worker.crypto_store.fss_eq[0]
+    except IndexError:
+        raise EmptyCryptoPrimitiveStoreError(worker.crypto_store, "fss_eq")
 
-    # get keys + shares of alpha (in advance)
-    # compute shares diff and add alpha share
-    # reveal result (communication)
-    # Run evaluation
+
+@tracer(func_name="sy.frameworks.torch.mpc.fss.evaluation")
+def evaluation(b, x_masked):
+    if hasattr(x_masked, "child"):
+        x_masked = x_masked.child
+        b = b.child
+    alpha, s_0, *CW = get_keys(x_masked.owner.id, remove=True)
+    share = DPF.eval(b, x_masked, s_0, *CW)
+    return share
 
 
-@tracer(func_name="")
-def keygen():
-    sy.local_worker.find_by_tag(f"#fss-{type_op}-keygen", location=crypto_provider)
-
-
+# share level
 def mask_builder(x1, x2):
     x = x1 - x2
+    # Keep the primitive in store as we use it after
+    alpha, s_0, *CW = get_keys(x1.owner.id, remove=False)
+    return x + alpha
 
+
+# share level
+def eval_plan(b, x_masked):
+    return evaluation(b, x_masked)
 
 
 def fss_op(x1, x2, type_op):
@@ -150,6 +232,7 @@ class DPF:
     def keygen():
         beta = th.tensor([1], dtype=th.int32)
         (alpha,) = th.randint(0, 2 ** n, (1,))
+        print("alpha", alpha)
 
         α = bit_decomposition(alpha)
         s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 * (λ + 1))
@@ -246,11 +329,14 @@ def G(seed):
     th.manual_seed(Convert(seed))
     return th.randint(2, size=(2 * (λ + 1),), dtype=th.uint8)
 
+
 @tracer(func_name="sy.frameworks.torch.mpc.fss.prg")
 def prg(seed):
     h = hashlib.sha3_256(str(seed).encode())
     r = h.digest()
-    r = th.tensor(int.from_bytes(r, byteorder="big") % 2**(2*(λ + 1)), dtype=th.long) # r >> (256 - 2*(λ + 1))
+    r = th.tensor(
+        int.from_bytes(r, byteorder="big") % 2 ** (2 * (λ + 1)), dtype=th.long
+    )  # r >> (256 - 2*(λ + 1))
     bit_pow_n = th.flip(2 ** th.arange(2 * (λ + 1)), (0,))
     return ((r & bit_pow_n) > 0).to(th.uint8)
 
