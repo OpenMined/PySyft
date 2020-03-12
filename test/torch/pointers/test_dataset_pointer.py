@@ -24,7 +24,7 @@ def test_search_dataset(workers):
     target = torch.tensor([5, 6, 7, 8])
     dataset = BaseDataset(data, target).tag("#test").describe("test search dataset")
     ptr = dataset.send(alice)
-    results = alice.search(["#test"])
+    results = me.request_search(["#test"], location=alice)
 
     assert results[0].id_at_location == ptr.id_at_location
 
