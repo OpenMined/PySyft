@@ -1065,6 +1065,29 @@ def test_dtype(workers):
         and (x.get() == torch.IntTensor([4, 5, 6])).all()
     )
 
+    # With dtype custom
+    x = torch.tensor([1, 2, 3]).share(alice, bob, james, dtype="custom", field=67)
+    assert (
+        x.child.dtype == "custom"
+        and x.child.field == 67
+        and isinstance(
+            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
+            torch.IntTensor,
+        )
+        and (x.get() == torch.IntTensor([1, 2, 3])).all()
+    )
+
+    x = torch.tensor([4, 5, 6]).share(alice, bob, james, dtype="custom", field=2 ** 64 - 1)
+    assert (
+        x.child.dtype == "custom"
+        and x.child.field == ((2 ** 64) - 1)
+        and isinstance(
+            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
+            torch.LongTensor,
+        )
+        and (x.get() == torch.LongTensor([4, 5, 6])).all()
+    )
+
     # With fix_prec
     x = torch.tensor([1.1, 2.2, 3.3]).fix_prec().share(alice, bob, james)
     assert (

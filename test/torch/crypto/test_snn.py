@@ -78,8 +78,8 @@ def test_private_compare(workers):
     assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
 
     # Negative values
-    x_val = -105
-    r_val = -52  # The protocol works only for values in Zq
+    x_val = -105 % 2 ** 63
+    r_val = -52 % 2 ** 63  # The protocol works only for values in Zq
     x_bit_sh = decompose(torch.LongTensor([x_val])).share(alice, bob, crypto_provider=james).child
     r = torch.LongTensor([r_val]).send(alice, bob).child
 
@@ -105,7 +105,8 @@ def test_share_convert(workers):
     )
 
     res = share_convert(x_bit_sh)
-    # assert res.field == L - 1 will cause overflow
+    # assert res.dtype == "custom"
+    # assert res.field == L - 1
     assert (res.get() == torch.LongTensor([13, 3567, 2 ** 60])).all()
 
 
@@ -162,9 +163,7 @@ def test_maxpool_deriv(workers):
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
 
 
-@pytest.mark.parametrize(
-    "kernel_size, stride", [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 3)]
-)
+@pytest.mark.parametrize("kernel_size, stride", [(1, 1)])
 def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
