@@ -1288,33 +1288,6 @@ def make_placeholder(**kwargs):
     ]
 
 
-# Message
-def make_message(**kwargs):
-    def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.Message
-        assert detailed.contents == original.contents
-        return True
-
-    return [
-        {
-            "value": syft.messaging.message.Message([1, 2, 3]),
-            "simplified": (
-                CODE[syft.messaging.message.Message],
-                ((CODE[list], (1, 2, 3)),),  # (Any) simplified content
-            ),
-            "cmp_detailed": compare,
-        },
-        {
-            "value": syft.messaging.message.Message((1, 2, 3)),
-            "simplified": (
-                CODE[syft.messaging.message.Message],
-                ((CODE[tuple], (1, 2, 3)),),  # (Any) simplified content
-            ),
-            "cmp_detailed": compare,
-        },
-    ]
-
-
 # syft.execution.computation.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
