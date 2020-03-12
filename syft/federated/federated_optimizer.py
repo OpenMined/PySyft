@@ -1,15 +1,11 @@
 from torch import optim
 from collections import defaultdict
-"""
-Todo:
-    * For Adam optimizer internal averages are not shared as of now
-      when transitioning from the one worker to other.
-"""
 
 
 class FLOptimier():
     """Creates a remote optimizer object
     which manage an optimizer for each worker"""
+
     def __init__(self, optimizer_class, **kwargs):
         """
         Args:
@@ -21,18 +17,23 @@ class FLOptimier():
         self.kwargs = kwargs
 
     def get_optimizer(self, model):
-        """
+        """ adds an optimizer for the worker and returns the optimizer
+
         Args:
             model: model belonging to a worker
         """
         if hasattr(model, 'location'):
-            opt = self.opt_dict.setdefault(model.location,
-                                           self.optimizer_class(
-                                            model.parameters(),
-                                            **self.kwargs))
+            opt = self.opt_dict.setdefault(
+                model.location,
+                self.optimizer_class(
+                model.parameters(),
+                **self.kwargs)
+            )
             return opt
-        opt = self.opt_dict.setdefault('central',
-                                       self.optimizer_class(
-                                        model.parameters(),
-                                        **self.kwargs))
+        opt = self.opt_dict.setdefault(
+            'central',
+            self.optimizer_class(
+            model.parameters(),
+            **self.kwargs)
+            )
         return opt
