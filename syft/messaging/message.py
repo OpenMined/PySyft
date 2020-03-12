@@ -7,6 +7,8 @@ Tensorflow, etc.).
 All Syft message types extend the Message class.
 """
 
+from abc import ABC
+
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
@@ -17,7 +19,7 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
 
 
-class Message:
+class Message(ABC):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
