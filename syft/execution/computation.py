@@ -5,7 +5,6 @@ from syft.execution.action import Action
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class ComputationAction(Action):

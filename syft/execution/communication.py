@@ -9,7 +9,6 @@ from syft.execution.action import Action
 from syft_proto.execution.v1.communication_action_pb2 import (
     CommunicationAction as CommunicationActionPB,
 )
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class CommunicationAction(Action):
@@ -118,7 +117,7 @@ class CommunicationAction(Action):
         if communication.kwargs:
             for key, value in communication.kwargs.items():
                 protobuf_obj.kwargs.get_or_create(key).CopyFrom(
-                    syft.serde.protobuf.serde.bufferize_arg(worker, value)
+                    sy.serde.protobuf.serde.bufferize_arg(worker, value)
                 )
 
         return protobuf_obj
@@ -149,7 +148,7 @@ class CommunicationAction(Action):
         ]
 
         kwargs_ = {
-            key: syft.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
+            key: sy.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
