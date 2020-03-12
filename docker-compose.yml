@@ -2,6 +2,7 @@ version: '3'
 services:
     gateway:
         image: openmined/grid-gateway:latest
+        build: ./gateway/
         environment:
                 - PORT=5000
                 - SECRET_KEY=ineedtoputasecrethere
@@ -14,6 +15,7 @@ services:
             - 6379:6379
     bob:
         image: openmined/grid-node:latest
+        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=Bob
@@ -40,6 +42,7 @@ services:
             - 3001:3001
     bill:
         image: openmined/grid-node:latest
+        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=Bill
@@ -53,6 +56,7 @@ services:
             - 3002:3002
     james:
         image: openmined/grid-node:latest
+        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=James
