@@ -386,7 +386,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.send_obj(obj, worker)
 
         # If we don't need to create the pointer
-        return None
+        if not create_pointer:
+            return None
 
         # Create the pointer if needed
         if hasattr(obj, "create_pointer") and not isinstance(
