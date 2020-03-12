@@ -115,7 +115,7 @@ class CommandMessage(Message):
     worker to take two tensors and add them together is an action. However, sending an object
     from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, name, target, args_, kwargs_, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids, return_value):
         """Initialize an action message
 
         Args:
@@ -133,6 +133,7 @@ class CommandMessage(Message):
         super().__init__()
 
         self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        self.return_value = return_value
 
     @property
     def name(self):
@@ -166,7 +167,7 @@ class CommandMessage(Message):
 
         message = (self.action.name, self.action.target, self.action.args, self.action.kwargs)
 
-        return (message, self.action.return_ids)
+        return (message, self.action.return_ids, self.return_value)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
@@ -180,7 +181,10 @@ class CommandMessage(Message):
         Examples:
             data = simplify(ptr)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, ptr.action),)
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.action),
+            sy.serde.msgpack.serde._simplify(worker, ptr.return_value),
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
@@ -198,11 +202,18 @@ class CommandMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         action = msg_tuple[0]
+        return_value = msg_tuple[1]
 
         detailed = sy.serde.msgpack.serde._detail(worker, action)
+        return_value = sy.serde.msgpack.serde._detail(worker, return_value)
 
         return CommandMessage(
-            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
+            detailed.name,
+            detailed.target,
+            detailed.args,
+            detailed.kwargs,
+            detailed.return_ids,
+            return_value,
         )
 
     @staticmethod

@@ -415,19 +415,23 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             message: A tuple specifying the command and the args.
 
         Returns:
-            A pointer to the result.
+            The result or None if return_value is False.
         """
 
-        (command_name, _self, args, kwargs), return_ids = message
+        (command_name, _self, args, kwargs), return_ids, return_value = message
 
         # TODO add kwargs
         command_name = command_name
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = BaseWorker.get_obj(self, _self)
+                _self = self.get_obj(_self)
                 if _self is None:
                     return
+            elif isinstance(_self, str):
+                res: list = self.search(_self)
+                assert len(res) == 1
+                _self = res[0]
             if sy.framework.is_inplace_method(command_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
@@ -465,7 +469,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 response = hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )
-                return response
+                return response if return_value else None
             except ResponseSignatureError:
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)
@@ -479,12 +483,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def execute_worker_function(self, message: tuple):
         """Executes commands received from other workers.
 
-                Args:
-                    message: A tuple specifying the command and the args.
+        Args:
+            message: A tuple specifying the command and the args.
 
-                Returns:
-                    A pointer to the result.
-                """
+        Returns:
+            A pointer to the result.
+        """
         command_name, (args, kwargs, return_ids) = message
 
         command_name = command_name
@@ -514,7 +518,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args)
 
     def send_command(
-        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
+        self,
+        recipient: "BaseWorker",
+        message: tuple,
+        return_ids: str = None,
+        return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
@@ -535,7 +543,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         try:
             ret_val = self.send_msg(
-                CommandMessage(name, target, args_, kwargs_, return_ids), location=recipient
+                CommandMessage(name, target, args_, kwargs_, return_ids, return_value),
+                location=recipient,
             )
         except ResponseSignatureError as e:
             ret_val = None

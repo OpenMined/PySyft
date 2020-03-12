@@ -717,6 +717,8 @@ def register_tensor(
 
     owner.register_obj(tensor)
 
+    return tensor
+
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
     """
