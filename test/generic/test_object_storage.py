@@ -7,19 +7,19 @@ def test_clear_objects():
     """
     Asserts that objects in storage are cleared
     """
-    obj_storage = object_storage.ObjectStorage()
-    """
-    obj_storage is a wrapper object to a collection of objects 
-    """
+    obj_storage = (
+        object_storage.ObjectStorage()
+    )  #  obj_storage is a wrapper object to a collection of objects
+
     x = torch.tensor(1)
     obj_storage.set_obj(x)
 
-    objs = obj_storage.current_objects()#Returns a copy of the objects in obj_storage(here:x)
+    objs = obj_storage.current_objects()  # Returns a copy of the objects in obj_storage(here:x)
 
     assert len(objs) == 1
     assert objs[x.id] == x
 
-    ret_val = obj_storage.clear_objects() #Completely removes all objects from obj_storage
+    ret_val = obj_storage.clear_objects()  # Completely removes all objects from obj_storage
 
     objs = obj_storage.current_objects()
     assert len(objs) == 0
