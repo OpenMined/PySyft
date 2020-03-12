@@ -46,32 +46,35 @@ def manual_init_store(worker):
     #     keygen.forward = None
     #     evaluate.forward = None
 
-    # (future)
-    # eq_plan_1 = sy.Plan(forward_func=mask_builder, owner=worker, tags=["#fss_eq_plan_1"], is_built=True)
-    # worker.register_obj(eq_plan_1)
-    # eq_plan_2 = sy.Plan(forward_func=eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True)
-    # worker.register_obj(eq_plan_2)
+    eq_plan_1 = sy.Plan(
+        forward_func=mask_builder, owner=worker, tags=["#fss_eq_plan_1"], is_built=True
+    )
+    worker.register_obj(eq_plan_1)
+    eq_plan_2 = sy.Plan(
+        forward_func=eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
+    )
+    worker.register_obj(eq_plan_2)
 
+    # #
+    # x1 = th.tensor([1, 2])
+    # x1.owner = worker
+    # x2 = th.tensor([3, 2])
+    # x2.owner = worker
+    # eq_plan_1 = func2plan()(mask_builder)
+    # eq_plan_1.build(x1, x2)
+    # eq_plan_1.owner = worker
+    # eq_plan_1.forward = None
+    # eq_plan_1.tag(f"#fss_eq_plan_1")
     #
-    x1 = th.tensor([1, 2])
-    x1.owner = worker
-    x2 = th.tensor([3, 2])
-    x2.owner = worker
-    eq_plan_1 = func2plan()(mask_builder)
-    eq_plan_1.build(x1, x2)
-    eq_plan_1.owner = worker
-    eq_plan_1.forward = None
-    eq_plan_1.tag(f"#fss_eq_plan_1")
-
-    b = th.IntTensor([0])
-    b.owner = worker
-    x_masked = th.tensor([19])
-    x_masked.owner = worker
-    eq_plan_2 = func2plan()(eval_plan)
-    eq_plan_2.build(b, x_masked)
-    eq_plan_2.owner = worker
-    eq_plan_2.forward = None
-    eq_plan_2.tag(f"#fss_eq_plan_2")
+    # b = th.IntTensor([0])
+    # b.owner = worker
+    # x_masked = th.tensor([19])
+    # x_masked.owner = worker
+    # eq_plan_2 = func2plan()(eval_plan)
+    # eq_plan_2.build(b, x_masked)
+    # eq_plan_2.owner = worker
+    # eq_plan_2.forward = None
+    # eq_plan_2.tag(f"#fss_eq_plan_2")
 
 
 def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
@@ -93,13 +96,8 @@ def fss_op_tracer(x1, x2, type_op="eq"):
 
     shares = []
     for location in locations:
-        share = request_run_plan(
-            me,
-            "#fss_eq_plan_1",
-            location,
-            return_value=True,
-            args=(x1.child[location.id], x2.child[location.id]),
-        )
+        args = (x1.child[location.id], x2.child[location.id])
+        share = request_run_plan(me, "#fss_eq_plan_1", location, return_value=True, args=args,)
         shares.append(share)
 
     mask_value = sum(shares) % 2 ** n
@@ -109,9 +107,8 @@ def fss_op_tracer(x1, x2, type_op="eq"):
         b = th.IntTensor([i])
         b.owner = location
         mask_value.owner = location
-        share = request_run_plan(
-            me, "#fss_eq_plan_2", location, return_value=False, args=(b, mask_value)
-        )
+        args = (b, mask_value)
+        share = request_run_plan(me, "#fss_eq_plan_2", location, return_value=False, args=args)
         shares[location] = share
 
     response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
@@ -215,7 +212,7 @@ def fss_op(x1, x2, type_op):
 
 
 def eq(x1, x2):
-    return fss_op(x1, x2, "eq")
+    return fss_op_tracer(x1, x2, "eq")
 
 
 def le(x1, x2):
@@ -232,7 +229,6 @@ class DPF:
     def keygen():
         beta = th.tensor([1], dtype=th.int32)
         (alpha,) = th.randint(0, 2 ** n, (1,))
-        print("alpha", alpha)
 
         α = bit_decomposition(alpha)
         s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 * (λ + 1))
@@ -324,7 +320,7 @@ class DIF:
 
 # PRG
 def G(seed):
-    return prg(seed)
+    #return prg(seed)
     assert len(seed) == λ
     th.manual_seed(Convert(seed))
     return th.randint(2, size=(2 * (λ + 1),), dtype=th.uint8)

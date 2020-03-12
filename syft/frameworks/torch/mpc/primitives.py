@@ -62,7 +62,6 @@ class PrimitiveStorage:
                 ]
 
         for i, worker in enumerate(workers):
-            # print(worker, worker_types_primitives[worker])
             worker_message = self._owner.create_execute_worker_function_message(
                 "feed_crypto_primitive_store", None, worker_types_primitives[worker]
             )
