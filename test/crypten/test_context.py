@@ -15,11 +15,11 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     def test_three_parties():
-        alice_tensor = syft_crypt.load("crypten_data", 1, "alice")
-        bob_tensor = syft_crypt.load("crypten_data", 2, "bob")
+        alice_tensor = syft_crypt.load("crypten_data", 1, "alice")  # noqa: F821
+        bob_tensor = syft_crypt.load("crypten_data", 2, "bob")  # noqa: F821
 
-        crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
-        return crypt.get_plain_text().tolist()
+        crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)  # noqa: F821
+        return crypt.get_plain_text().tolist()  # noqa: F821
 
     return_values = test_three_parties()
     # The function is run at each party, and they should all decrypt
