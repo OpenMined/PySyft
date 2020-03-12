@@ -11,7 +11,7 @@ from syft.grid.public_grid import PublicGridNetwork
 # deployed on Heroku:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)) + "/../app/pg_rest_api")
 
-from test import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
+from . import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
 import time
 import requests
 import json

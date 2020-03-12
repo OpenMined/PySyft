@@ -4,7 +4,7 @@ import unittest
 import json
 import random
 import torch as th
-from test import PORTS, IDS, GATEWAY_URL
+from . import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
 import torch.nn.functional as F
 
 import syft as sy

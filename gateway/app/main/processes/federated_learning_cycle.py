@@ -25,6 +25,7 @@ class FederatedLearningCycle:
         self.cycle_time = cycle_time
         self._sequence_number = sequence_number
         self._workers = []
+        self._diffs = []
 
     @property
     def hash(self) -> str:
@@ -55,7 +56,7 @@ class FederatedLearningCycle:
         last_participation: int,
     ) -> bool:
         """ Include a new worker in this cycle.
-            
+
             Args:
                 worker_id:  Worker's ID.
                 up_speed: Worker's upload speed.

@@ -1,6 +1,7 @@
 import uuid
 import json
 from binascii import unhexlify
+import torch as th
 
 from .socket_handler import SocketHandler
 from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE
@@ -132,20 +133,116 @@ def report(message: dict, socket) -> str:
         Returns:
             response : String response to the client
     """
-    # data = message[MSG_FIELD.DATA]
+    data = message[MSG_FIELD.DATA]
     response = {}
 
     try:
-        # model_id = data.get(MSG_FIELD.MODEL, None)
-        # request_key = data.get(CYCLE.KEY, None)
-        # diff = data.get(CYCLE.DIFF, None)
+        model_id = data.get(MSG_FIELD.MODEL, None)
+        request_key = data.get(CYCLE.KEY, None)
+        diff = data.get(CYCLE.DIFF, None)
 
         # TODO:
         # Perform Secure Aggregation
         # Update Model weights
+
+        """ stub some variables """
+
+        received_diffs_exceeds_min_worker = (
+            True  # get this from persisted server_config for model_id and self._diffs
+        )
+        received_diffs_exceeds_max_worker = (
+            False  # get this from persisted server_config for model_id and self._diffs
+        )
+        cycle_ended = True  # check cycle.cycle_time (but we should probably track cycle startime too)
+        ready_to_avarege = (
+            True
+            if (
+                (received_diffs_exceeds_max_worker or cycle_ended)
+                and received_diffs_exceeds_min_worker
+            )
+            else False
+        )
+        no_protocol = True  # only deal with plans for now
+
+        """ end variable stubs """
+
+        if ready_to_avarege and no_protocol:
+            # may need to deserialize
+            _diff_state = diff
+            _average_plan_diffs(model_id, _diff_state)
+            # assume _diff_state produced the same as here
+            # https://github.com/OpenMined/PySyft/blob/ryffel/syft-core/examples/experimental/FL%20Training%20Plan/Execute%20Plan.ipynb
+            # see step 7
 
         response[CYCLE.STATUS] = RESPONSE_MSG.SUCCESS
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
         response[RESPONSE_MSG.ERROR] = str(e)
 
     return json.dumps(response)
+
+
+from syft.execution.state import State
+from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+import random
+import numpy as np
+from syft.serde import protobuf
+import syft as sy
+from functools import reduce
+
+
+def _average_plan_diffs(model_id, _diff_state):
+    """ skeleton code
+            Plan only
+            - get cycle
+            - track how many has reported successfully
+            - get diffs: list of (worker_id, diff_from_this_worker) on cycle._diffs
+            - check if we have enough diffs? vs. max_worker
+            - if enough diffs => average every param (by turning tensors into python matrices => reduce th.add => torch.div by number of diffs)
+            - save as new model value => M_prime (save params new values)
+            - create new cycle & new checkpoint
+            at this point new workers can join because a cycle for a model exists
+    """
+    sy.hook(globals())
+
+    _model = processes[model_id]  # de-seriallize if needed
+    _model_params = _model.get_params()
+    _cycle = processes.get_cycle(model_id, _model.client_config.version)
+    diffs_to_average = range(len(_cycle.diffs))
+
+    if len(_cycle.diffs) > _model.server_config.max_worker:
+        # random select max
+        diffs_to_average = random.sample(
+            range(len(_cycle.diffs)), _model.server_config.max_worker
+        )
+
+    raw_diffs = [
+        [
+            _cycle.diffs[diff_from_worker][model_param].tolist()
+            for diff_from_worker in diffs_to_average
+        ]
+        for model_param in range(len(_model_params))
+    ]
+
+    sums = [reduce(th.add, [x for x in t_list]) for t_list in raw_diffs]
+
+    _updated_model_params = [th.div(param, len(diffs_to_average)) for param in sums]
+
+    model_params_state = State(
+        owner=None,
+        state_placeholders=[
+            PlaceHolder().instantiate(_updated_model_params[param])
+            for param in _updated_model_params
+        ],
+    )
+
+    # make fake local worker for serialization
+    local_worker = hook.local_worker
+
+    pb = protobuf.serde._bufferize(local_worker, model_params_state)
+    serialized_state = pb.SerializeToString()
+
+    # make new checkpoint and cycle
+    _new_checkpoint = processes._model_checkpoints.register(
+        id=str(uuid.uuid4()), values=serialized_state, model_id=model_id
+    )
+    _new_cycle = processes.create_cycle(model_id, _model.client_config.version)
