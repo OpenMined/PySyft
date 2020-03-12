@@ -15,11 +15,14 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     def test_three_parties():
-        pass  # pragma: no cover
+        alice_tensor = syft_crypt.load("crypten_data", 1, "alice")
+        bob_tensor = syft_crypt.load("crypten_data", 2, "bob")
+
+        crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
+        return crypt.get_plain_text().tolist()
 
     return_values = test_three_parties()
-    print(return_values)
-    # A toy function is ran at each party, and they should all decrypt
+    # The function is run at each party, and they should all decrypt
     # a tensor with value [42, 53, 101, 32]
     expected_value = [42, 53, 101, 32]
     for rank in range(n_workers):
