@@ -8,6 +8,7 @@ All Syft message types extend the Message class.
 """
 
 from abc import ABC
+from abc import abstractmethod
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
@@ -32,79 +33,19 @@ class Message(ABC):
     You can read more abouty detailers and simplifiers in syft/serde/serde.py.
     """
 
-    def __init__(self, contents=None):
+    @abstractmethod
+    def __init__(self):
+        pass
 
-        # saves us a write op but costs us a check op to only sometimes
-        # set ._contents
-        if contents is not None:
-            self._contents = contents
-
-    @property
-    def contents(self):
-        """Return a tuple with the contents of the message (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Some message types can be more efficient by storing their contents more explicitly (see
-        CommandMessage). They can override this property to return a tuple view on their other properties.
-        """
-        if hasattr(self, "_contents"):
-            return self._contents
-        else:
-            return None
-
-    def _simplify(self):
-        return (self.contents,)
-
+    @abstractmethod
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.contents})"
+        pass
 
+    # Intentionally not abstract
     def __repr__(self):
         """Return a human readable version of this message"""
         return self.__str__()
-
-    @staticmethod
-    def simplify(worker: AbstractWorker, msg: "Message") -> tuple:
-        """
-        This function takes the attributes of a Message and saves them in a tuple.
-        The detail() method runs the inverse of this method.
-        Args:
-            worker (AbstractWorker): a reference to the worker doing the serialization
-            msg (Message): a Message
-        Returns:
-            tuple: a tuple holding the unique attributes of the message
-        Examples:
-            data = simplify(msg)
-        """
-
-        return (sy.serde.msgpack.serde._simplify(worker, msg.contents),)
-
-    @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
-        """
-        This function takes the simplified tuple version of this message and converts
-        it into a message. The simplify() method runs the inverse of this method.
-
-        This method shouldn't get called very often. It exists as a backup but in theory
-        every message type should have its own detailer.
-
-        Args:
-            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
-                syft/serde/serde.py for more information on why this is necessary.
-            msg_tuple (Tuple): the raw information being detailed.
-        Returns:
-            msg (Message): a Message.
-        Examples:
-            message = detail(sy.local_worker, msg_tuple)
-        """
-
-        # TODO: attempt to use the msg_tuple[0] to return the correct type instead of Message
-        # https://github.com/OpenMined/PySyft/issues/2514
-        # TODO: as an alternative, this detailer could raise NotImplementedException
-        # https://github.com/OpenMined/PySyft/issues/2514
-
-        return Message(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
 
 class CommandMessage(Message):
@@ -152,6 +93,10 @@ class CommandMessage(Message):
     @property
     def return_ids(self):
         return self.action.return_ids
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.action})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
@@ -245,6 +190,10 @@ class ObjectMessage(Message):
 
         self.object = object_
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object})"
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectMessage") -> tuple:
         """
@@ -320,6 +269,10 @@ class ObjectRequestMessage(Message):
         self.user = user
         self.reason = reason
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.obj_id, self.user, self.reason)})"
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
         """
@@ -376,6 +329,10 @@ class IsNoneMessage(Message):
 
         self.object_id = obj_id
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object_id})"
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "IsNoneMessage") -> tuple:
         """
@@ -427,6 +384,10 @@ class GetShapeMessage(Message):
 
         self.tensor_id = tensor_id
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.tensor_id})"
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "GetShapeMessage") -> tuple:
         """
@@ -476,6 +437,10 @@ class ForceObjectDeleteMessage(Message):
 
         self.object_id = obj_id
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object_id})"
+
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ForceObjectDeleteMessage") -> tuple:
         """
@@ -524,6 +489,10 @@ class SearchMessage(Message):
         """Initialize the message."""
 
         self.query = query
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.query})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "SearchMessage") -> tuple:
@@ -575,6 +544,10 @@ class PlanCommandMessage(Message):
 
         self.command_name = command_name
         self.args = args_
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.command_name, self.args)})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "PlanCommandMessage") -> tuple:
@@ -633,6 +606,10 @@ class ExecuteWorkerFunctionMessage(Message):
 
         self.command_name = command_name
         self.message = message
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.command_name, self.message)})"
 
     @property
     def contents(self):

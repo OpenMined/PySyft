@@ -1610,7 +1610,8 @@ def make_plancommandmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.PlanCommandMessage
-        assert detailed.contents == original.contents
+        assert detailed.command_name == original.command_name
+        assert detailed.args == original.args
         return True
 
     return [

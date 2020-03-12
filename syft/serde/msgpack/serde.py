@@ -122,7 +122,6 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     TrainConfig,
     BaseWorker,
     AutogradTensor,
-    Message,
     CommandMessage,
     ObjectMessage,
     ObjectRequestMessage,
