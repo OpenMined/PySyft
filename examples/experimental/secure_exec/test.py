@@ -67,7 +67,7 @@ def run_encrypted_training():
     
     # Initialize a plaintext model and convert to CrypTen model
     dummy_input = torch.empty(1, 1, 28, 28)
-    model = crypten.nn.from_pytorch(ExampleNet, dummy_input)
+    model = crypten.nn.from_pytorch(ExampleNet, dummy_input) # noqa: F821
     model.encrypt()
     
     # Set train mode
@@ -117,7 +117,7 @@ def run_encrypted_training():
                 print(f"\tBatch {(batch + 1)} of {num_batches} Loss {batch_loss.item():.4f}")
 
     # the execution environment keeps all printed strings in the printed variable
-    return printed
+    return printed # noqa: F821
 
 
 print("[%] Starting computation")
