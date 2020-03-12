@@ -32,9 +32,15 @@ def host_federated_training(message: dict, socket) -> str:
         serialized_model = unhexlify(
             data.get(MSG_FIELD.MODEL, None).encode()
         )  # Only one
-        serialized_client_plans = data.get(CYCLE.PLANS, None)  # 1 or *
-        serialized_client_protocols = data.get(CYCLE.PROTOCOLS, None)  # 0 or *
-        serialized_avg_plan = data.get(CYCLE.AVG_PLAN, None)  # Only one
+        serialized_client_plans = {
+            k: unhexlify(v.encode()) for k, v in data.get(CYCLE.PLANS, {}).items()
+        }  # 1 or *
+        serialized_client_protocols = {
+            k: unhexlify(v.encode()) for k, v in data.get(CYCLE.PROTOCOLS, {}).items()
+        }  # 0 or *
+        serialized_avg_plan = unhexlify(
+            data.get(CYCLE.AVG_PLAN, None).encode()
+        )  # Only one
         client_config = data.get(CYCLE.CLIENT_CONFIG, None)  # Only one
         server_config = data.get(CYCLE.SERVER_CONFIG, None)  # Only one
 

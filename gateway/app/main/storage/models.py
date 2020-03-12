@@ -64,15 +64,15 @@ class Plan(db.Model):
             value (String): String  (List of operations)
             value_ts (String): String (TorchScript)
             is_avg_plan (Boolean) : Boolean flag to indicate if it is the avg plan
-            fl_process_id (Integer, Foreign Key) : Referece to FL Process.
+            fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
     __tablename__ = "__plan__"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())
-    value = db.Column(db.String())
-    value_ts = db.Column(db.String())
+    value = db.Column(db.LargeBinary)
+    value_ts = db.Column(db.LargeBinary)
     is_avg_plan = db.Column(db.Boolean, default=False)
     fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
 
@@ -89,15 +89,15 @@ class Protocol(db.Model):
             name (String): protocol name.
             value: String  (List of operations)
             value_ts: String (TorchScript)
-            fl_process_id (Integer, Foreign Key) : Referece to FL Process.
+            fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
     __tablename__ = "__protocol__"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())
-    value = db.Column(db.String())
-    value_ts = db.Column(db.String())
+    value = db.Column(db.LargeBinary)
+    value_ts = db.Column(db.LargeBinary)
     fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
 
     def __str__(self):

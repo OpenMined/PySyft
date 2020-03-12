@@ -2,7 +2,7 @@
     All Gateway routes (REST API).
 """
 
-from flask import render_template, Response, request, current_app
+from flask import render_template, Response, request, current_app, send_file
 from math import floor
 import numpy as np
 from scipy.stats import poisson
@@ -12,6 +12,7 @@ import random
 import os
 import requests
 import logging
+import io
 
 from .storage.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
@@ -346,8 +347,11 @@ def download_model():
             raise InvalidRequestKeyError
 
         _last_checkpoint = processes.get_model_checkpoint(id=model_id)
-        status_code = 200  # Success
-        response_body[MSG_FIELD.MODEL] = _last_checkpoint
+
+        return send_file(
+            io.BytesIO(_last_checkpoint.values), mimetype="application/octet-stream"
+        )
+
     except InvalidRequestKeyError as e:
         status_code = 401  # Unauthorized
         response_body[RESPONSE_MSG.ERROR] = str(e)
@@ -356,7 +360,7 @@ def download_model():
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
         status_code = 500  # Internal Server Error
-        response_body[RESPONSE_MSG] = str(e)
+        response_body[RESPONSE_MSG.ERROR] = str(e)
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -627,8 +631,8 @@ def download_plan():
         receive_operations_as = request.args.get("receive_operations_as", None)
 
         # Retrieve Process Entities
-        _plan = processes.get_plan(name=plan_id)
-        _cycle = processes.get_cycle(_plan.fl_process_id)
+        _plan = processes.get_plan(id=plan_id, is_avg_plan=False)
+        _cycle = processes.get_cycle(fl_process_id=_plan.fl_process_id)
         _worker = workers.get(id=worker_id)
         _accepted = processes.validate(_worker.id, _cycle.id, request_key)
 
@@ -638,9 +642,14 @@ def download_plan():
         status_code = 200  # Success
 
         if receive_operations_as == "torchscript":
-            response_body[CYCLE.PLANS] = _plan.value_ts
+            # TODO leave only torchscript plan
+            pass
         else:
-            response_body[CYCLE.PLANS] = _plan.value
+            # TODO leave only list of ops plan
+            pass
+
+        return send_file(io.BytesIO(_plan.value), mimetype="application/octet-stream")
+
     except InvalidRequestKeyError as e:
         status_code = 401  # Unauthorized
         response_body[RESPONSE_MSG.ERROR] = str(e)
@@ -649,7 +658,7 @@ def download_plan():
         response_body[RESPONSE_MSG.ERROR] = str(e)
     except Exception as e:
         status_code = 500  # Internal Server Error
-        response_body[RESPONSE_MSG] = str(e)
+        response_body[RESPONSE_MSG.ERROR] = str(e)
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
