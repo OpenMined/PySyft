@@ -425,7 +425,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Handle methods
         if _self is not None:
             if type(_self) == int:
-                _self = self.get_obj(_self)
+                _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
             elif isinstance(_self, str):
@@ -469,7 +469,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 response = hook_args.register_response(
                     command_name, response, list(return_ids), self
                 )
-                return response if return_value else None
+                if return_value or isinstance(response, (int, float, bool, str)):
+                    return response
+                else:
+                    return None
+                # return response # if return_value else None
             except ResponseSignatureError:
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)

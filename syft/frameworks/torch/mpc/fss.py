@@ -17,8 +17,8 @@ from syft.generic.frameworks.hook.trace import tracer
 from syft.workers.base import BaseWorker
 
 
-λ = 6  # 63  # 6  # 63  # security parameter
-n = 8  # 32  # 8  # 32  # bit precision
+λ = 110  # 6  # 63  # security parameter
+n = 32  # 8  # 32  # bit precision
 
 no_wrap = {"no_wrap": True}
 
@@ -28,24 +28,6 @@ def manual_init_store(worker):
     This is called manually for the moment, to build the plan used to perform
     Function Secret Sharing on a specific worker.
     """
-    # # Init the plans for equality and comparison
-    # for type_op, fss_class in zip(["eq", "comp"], [DPF, DIF]):
-    #     keygen = func2plan()(fss_class.keygen)
-    #     keygen.build()
-    #
-    #     alpha, s_00, s_01, *CW = keygen()
-    #     k = [(s_00, *CW), (s_01, *CW)]
-    #     evaluate = func2plan()(fss_class.eval)
-    #     evaluate.build(th.IntTensor([0]), alpha, *k[0])
-    #
-    #     keygen.owner = worker
-    #     keygen.tag(f"#fss-{type_op}-keygen")
-    #     evaluate.owner = worker
-    #     evaluate.tag(f"#fss-{type_op}-eval")
-    #
-    #     keygen.forward = None
-    #     evaluate.forward = None
-
     eq_plan_1 = sy.Plan(
         forward_func=mask_builder, owner=worker, tags=["#fss_eq_plan_1"], is_built=True
     )
@@ -54,27 +36,6 @@ def manual_init_store(worker):
         forward_func=eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
     )
     worker.register_obj(eq_plan_2)
-
-    # #
-    # x1 = th.tensor([1, 2])
-    # x1.owner = worker
-    # x2 = th.tensor([3, 2])
-    # x2.owner = worker
-    # eq_plan_1 = func2plan()(mask_builder)
-    # eq_plan_1.build(x1, x2)
-    # eq_plan_1.owner = worker
-    # eq_plan_1.forward = None
-    # eq_plan_1.tag(f"#fss_eq_plan_1")
-    #
-    # b = th.IntTensor([0])
-    # b.owner = worker
-    # x_masked = th.tensor([19])
-    # x_masked.owner = worker
-    # eq_plan_2 = func2plan()(eval_plan)
-    # eq_plan_2.build(b, x_masked)
-    # eq_plan_2.owner = worker
-    # eq_plan_2.forward = None
-    # eq_plan_2.tag(f"#fss_eq_plan_2")
 
 
 def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
@@ -89,7 +50,21 @@ def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwa
     return response
 
 
-def fss_op_tracer(x1, x2, type_op="eq"):
+def fss_op(x1, x2, type_op="eq"):
+    """
+    Define the workflow for a binary operation using Function Secret Sharing
+
+    Currently supported operand are = & <=, respectively corresponding to
+    type_op = 'eq' and 'comp'
+
+    Args:
+        x1: first AST
+        x2: second AST
+        type_op: type of operation to perform, should be 'eq' or 'comp'
+
+    Returns:
+        shares of the comparison
+    """
 
     me = sy.local_worker
     locations = x1.locations
@@ -104,10 +79,7 @@ def fss_op_tracer(x1, x2, type_op="eq"):
 
     shares = {}
     for i, location in enumerate(locations):
-        b = th.IntTensor([i])
-        b.owner = location
-        mask_value.owner = location
-        args = (b, mask_value)
+        args = (th.IntTensor([i]), mask_value)
         share = request_run_plan(me, "#fss_eq_plan_2", location, return_value=False, args=args)
         shares[location] = share
 
@@ -116,9 +88,16 @@ def fss_op_tracer(x1, x2, type_op="eq"):
     return response
 
 
-@tracer(func_name="sy.frameworks.torch.mpc.fss.get_keys")
-def get_keys(worker_id, remove=True):
-    worker: BaseWorker = sy.local_worker.get_worker(worker_id)
+def get_keys(worker, remove=True):
+    """
+    Return FSS keys primitives
+
+    Args:
+        worker: worker which is doing the computation and has the crypto primitives
+        remove: if true, pop out the primitive. If false, only read it. Read mode is
+            needed because we're working on virtual workers and they need to gather
+            a some point and then re-access the keys.
+    """
     try:
         if remove:
             return worker.crypto_store.fss_eq.pop(0)
@@ -128,91 +107,23 @@ def get_keys(worker_id, remove=True):
         raise EmptyCryptoPrimitiveStoreError(worker.crypto_store, "fss_eq")
 
 
-@tracer(func_name="sy.frameworks.torch.mpc.fss.evaluation")
-def evaluation(b, x_masked):
-    if hasattr(x_masked, "child"):
-        x_masked = x_masked.child
-        b = b.child
-    alpha, s_0, *CW = get_keys(x_masked.owner.id, remove=True)
-    share = DPF.eval(b, x_masked, s_0, *CW)
-    return share
-
-
 # share level
 def mask_builder(x1, x2):
     x = x1 - x2
     # Keep the primitive in store as we use it after
-    alpha, s_0, *CW = get_keys(x1.owner.id, remove=False)
+    alpha, s_0, *CW = get_keys(x1.owner, remove=False)
     return x + alpha
 
 
 # share level
 def eval_plan(b, x_masked):
-    return evaluation(b, x_masked)
-
-
-def fss_op(x1, x2, type_op):
-    """
-    Define the workflow for a binary operation using Function Secret Sharing
-
-    Currently supported operand are = & <=, respectively corresponding to
-    type_op = 'eq' and 'comp'
-
-    Args:
-        x1: first AST
-        x2: second AST
-        type_op: type of operation to perform, should be 'eq' or 'comp'
-    """
-
-    # Equivalence x1==x2 ~ x1-x2==0
-    x_sh = x1 - x2
-
-    locations = x1.locations
-    crypto_provider = x1.crypto_provider
-    me = sy.local_worker
-
-    # Retrieve keygen plan
-    (keygen_ptr,) = me.find_or_request(f"#fss-{type_op}-keygen", location=crypto_provider)
-
-    # Run key generation
-    alpha, s_00, s_01, *CW = keygen_ptr()
-
-    # build shares of the mask
-    alpha_sh = alpha.share(*locations, crypto_provider=crypto_provider, **no_wrap).get().child
-
-    # reveal masked values and send to locations
-    x_masked = (x_sh + alpha_sh).get().send(*x_sh.locations, **no_wrap)
-
-    s_0 = sy.MultiPointerTensor(children=[s.move(loc) for s, loc in zip([s_00, s_01], locations)])
-    k = [s_0] + [c.get().send(*locations, **no_wrap) for c in CW]
-
-    # Eval
-    b = sy.MultiPointerTensor(
-        children=[th.IntTensor([i]).send(loc, **no_wrap) for i, loc in enumerate(locations)]
-    )
-
-    # Search multi ptr plan Eval
-    eval_tag = f"#fss-{type_op}-eval-{'-'.join([loc.id for loc in locations])}"
-    if not me.find_by_tag(eval_tag):  # if not registered, build it
-        (evaluate_ptr,) = me.find_or_request(f"#fss-{type_op}-eval", location=crypto_provider)
-        evaluate_ptr = evaluate_ptr.get().send(*locations).tag(eval_tag)
-    else:  # else retrieve it directly
-        (evaluate_ptr,) = me.find_by_tag(eval_tag)
-
-    # Run evaluation
-    int_shares = evaluate_ptr(b, x_masked, *k)
-
-    # Build response
-    long_shares = {k: v.long() for k, v in int_shares.items()}
-    response = sy.AdditiveSharingTensor(long_shares, **x_sh.get_class_attributes())
-    # # Response is binary
-    # response.field = 2
-
-    return response
+    alpha, s_0, *CW = get_keys(x_masked.owner, remove=True)
+    result_share = DPF.eval(b, x_masked, s_0, *CW)
+    return result_share
 
 
 def eq(x1, x2):
-    return fss_op_tracer(x1, x2, "eq")
+    return fss_op(x1, x2, "eq")
 
 
 def le(x1, x2):
@@ -320,21 +231,11 @@ class DIF:
 
 # PRG
 def G(seed):
-    #return prg(seed)
-    assert len(seed) == λ
-    th.manual_seed(Convert(seed))
-    return th.randint(2, size=(2 * (λ + 1),), dtype=th.uint8)
-
-
-@tracer(func_name="sy.frameworks.torch.mpc.fss.prg")
-def prg(seed):
-    h = hashlib.sha3_256(str(seed).encode())
+    enc_str = str(seed.tolist()).encode()
+    h = hashlib.sha3_256(enc_str)
     r = h.digest()
-    r = th.tensor(
-        int.from_bytes(r, byteorder="big") % 2 ** (2 * (λ + 1)), dtype=th.long
-    )  # r >> (256 - 2*(λ + 1))
-    bit_pow_n = th.flip(2 ** th.arange(2 * (λ + 1)), (0,))
-    return ((r & bit_pow_n) > 0).to(th.uint8)
+    binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + (2 * (λ + 1))]
+    return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
 
 
 def H(seed):
