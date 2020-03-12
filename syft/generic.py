@@ -3,6 +3,7 @@ from syft.util import copy_static_methods
 from syft import check
 from syft.random import generate_cryptographically_secure_random_id
 
+import inspect
 
 class ObjectConstructor(object):
     """Syft allows for the extension and remote execution of a range of python libraries. As such,
@@ -72,6 +73,10 @@ class ObjectConstructor(object):
     # is 'torch.Tensor', then constructor_location is 'torch'.
     constructor_location = None  # some python module on which the constructor lives
 
+    # OPTIONAL: if constructor_name is actually a function which isn't init, meaning that the constructor produces
+    # an object with a different name, deposit that object type here
+    constructor_produces_type = None
+
     def install_inside_library(self):
         """Installs this custom constructor by replacing the library constructor with itself"""
 
@@ -100,6 +105,50 @@ class ObjectConstructor(object):
                 f"concatenating their pre_init, init, and post_init methods."
             )
 
+    def install_id_attribute(self, original_constructor):
+
+        if (inspect.isclass(original_constructor) or self.constructor_produces_type is not None):
+
+            if self.constructor_produces_type is not None:
+                type_to_subclass = self.constructor_produces_type
+            else:
+                type_to_subclass = original_constructor
+
+            try:
+                # if you are allowed to subclass this type
+
+                class OriginalConstructorSubclass(type_to_subclass):
+
+                    __name__ = type_to_subclass.__name__
+
+                    @property
+                    def id(self):
+                        return self.__id
+
+                    @id.setter
+                    def id(self, new_id):
+                        self.__id = new_id
+
+                original_constructor = OriginalConstructorSubclass
+
+            # If this raises 'TypeError: type <> is not an acceptable base type'
+            # then it's a special class of which Python cannot subtype
+            # for more on this, see discussion:
+            # https://stackoverflow.com/questions/10061752/which-classes-cannot-be-subclassed
+            except TypeError as e:
+
+                @property
+                def id(self):
+                    return self.__id
+
+                @id.setter
+                def id(self, new_id):
+                    self.__id = new_id
+
+                original_constructor.id = id
+
+        return original_constructor
+
     def store_original_constructor(self):
         """Copies current object constructor to original_<constructor_name>
 
@@ -115,6 +164,8 @@ class ObjectConstructor(object):
 
         # save the original_constructor
         original_constructor = getattr(self.constructor_location, self.constructor_name)
+
+        original_constructor = self.install_id_attribute(original_constructor)
 
         # copies the original constructor to a safe place for later use
         if not hasattr(self.constructor_location, self.original_constructor_name):
@@ -198,7 +249,6 @@ class ObjectConstructor(object):
         Returns:
             out (SyftObject): returns the underlying syft object.
         """
-
         obj = self.assign_id(obj=obj)
 
         return obj
@@ -206,6 +256,7 @@ class ObjectConstructor(object):
     @check.type_hints
     def assign_id(self, obj: object):
         obj.id = generate_cryptographically_secure_random_id()
+        print("assigning id:" + str(obj.id) + " type:" + str(type(obj)))
         return obj
 
     @property

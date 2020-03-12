@@ -12,25 +12,6 @@ class EagerTensorConstructor(ObjectConstructor):
     # self.install_inside_library()
     constructor_location = ops
 
-    @check.type_hints
-    def post_init(self, obj: object, *args, **kwargs):
-        """Execute functionality after object has been created.
-
-        This method executes functionality which can only be run after an object has been initailized. It is
-        particularly useful for logic which registers the created object into an appropriate registry. It is
-        also useful for adding arbitrary attributes to the object after initialization.
-
-        Args:
-            *args (tuple): the arguments being used to initialize the object
-            **kwargs (dict): the kwarguments eeing used to initialize the object
-        Returns:
-            out (SyftObject): returns the underlying syft object.
-        """
-
-        # obj = self.assign_id(obj)
-
-        return obj
-
 
 # Step 3: create constructor and install it in the library
 EagerTensorConstructor().install_inside_library()
