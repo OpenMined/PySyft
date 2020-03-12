@@ -12,6 +12,7 @@ import syft as sy
 from syft import codes
 from syft.execution.plan import Plan
 from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
@@ -429,20 +430,25 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.force_rm_obj(msg.object_id)
 
     def execute_command(self, cmd: CommandMessage) -> PointerTensor:
+        if isinstance(cmd.action, ComputationAction):
+            return self.execute_computation(cmd.action)
+        else:
+            return self.execute_communication(cmd.action)
+
+    def execute_computation(self, action: ComputationAction) -> PointerTensor:
         """
         Executes commands received from other workers.
-
         Args:
-            msg: A CommandMessage specifying the command and the args.
-
+            message: A tuple specifying the command and the args.
         Returns:
             A pointer to the result.
         """
-        command_name = cmd.name
-        _self = cmd.target
-        args = cmd.args
-        kwargs = cmd.kwargs
-        return_ids = cmd.return_ids
+
+        op_name = action.name
+        _self = action.target
+        args = action.args
+        kwargs = action.kwargs
+        return_ids = action.return_ids
 
         # Handle methods
         if _self is not None:
@@ -450,29 +456,31 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
-            if sy.framework.is_inplace_method(command_name):
+            if type(_self) == str and _self == "self":
+                _self = self
+            if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
-                getattr(_self, command_name)(*args, **kwargs)
+                getattr(_self, op_name)(*args, **kwargs)
                 return
             else:
                 try:
-                    response = getattr(_self, command_name)(*args, **kwargs)
+                    response = getattr(_self, op_name)(*args, **kwargs)
                 except TypeError:
                     # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
                     new_args = [
                         arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
                     ]
-                    response = getattr(_self, command_name)(*new_args, **kwargs)
+                    response = getattr(_self, op_name)(*new_args, **kwargs)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
 
-            sy.framework.command_guard(command_name)
+            sy.framework.command_guard(op_name)
 
-            paths = command_name.split(".")
+            paths = op_name.split(".")
             command = self
             for path in paths:
                 command = getattr(command, path)
@@ -484,33 +492,34 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if response is not None:
             # Register response and create pointers for tensor elements
             try:
-                response = hook_args.register_response(
-                    command_name, response, list(return_ids), self
-                )
+                response = hook_args.register_response(op_name, response, list(return_ids), self)
                 return response
             except ResponseSignatureError:
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)
                 return_id_provider.start_recording_ids()
-                response = hook_args.register_response(
-                    command_name, response, return_id_provider, self
-                )
+                response = hook_args.register_response(op_name, response, return_id_provider, self)
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
-    def execute_communication(self, message) -> PointerTensor:
-        print(message)
-        (obj_id, source, destinations, kwargs) = message.contents
+    def execute_communication(self, action: CommunicationAction) -> PointerTensor:
+        print(action)
+        obj_id = action.obj_id
+        source = action.source
+        destinations = action.destinations
+        kwargs = action.kwargs
 
-        obj = self.get_obj(obj_id)
-        # TODO do we need to check that source_worker is self?
         source_worker = self.get_worker(source)
-        response = source_worker.send(obj, *destinations, **kwargs)
+        if source_worker != self:
+            return None
+        else:
+            obj = self.get_obj(obj_id)
+            response = source_worker.send(obj, *destinations, **kwargs)
 
-        response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-        # TODO we should rm here but this make _get_msg fail
-        # self.rm_obj(obj.id)
-        return response
+            response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
+            # TODO we should rm here but this make _get_msg fail
+            # self.rm_obj(obj.id)
+            return response
 
     def execute_worker_function(self, message: tuple):
         """Executes commands received from other workers.
