@@ -23,10 +23,11 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import CommandMessage
+from syft.messaging.message import ExecuteWorkerFunctionMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import Message
 from syft.messaging.message import IsNoneMessage
+from syft.messaging.message import Message
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
@@ -34,9 +35,10 @@ from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
-from syft.exceptions import WorkerNotFoundException
-from syft.exceptions import ResponseSignatureError
+from syft.exceptions import ObjectNotFoundError
 from syft.exceptions import PlanCommandUnknownError
+from syft.exceptions import ResponseSignatureError
+from syft.exceptions import WorkerNotFoundException
 
 
 # this if statement avoids circular imports between base.py and pointer.py
@@ -117,13 +119,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_router = {
             CommandMessage: self.execute_command,
             PlanCommandMessage: self.execute_plan_command,
-            ObjectMessage: self.set_obj,
+            ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
-            ForceObjectDeleteMessage: self.rm_obj,  # FIXME: there is no ObjectDeleteMessage
-            IsNoneMessage: self.is_tensor_none,
-            GetShapeMessage: self.get_tensor_shape,
+            ForceObjectDeleteMessage: self.handle_delete_object_msg,  # FIXME: there is no ObjectDeleteMessage
+            ForceObjectDeleteMessage: self.handle_force_delete_object_msg,
+            IsNoneMessage: self.is_object_none,
+            GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
-            ForceObjectDeleteMessage: self.force_rm_obj,
+            ExecuteWorkerFunctionMessage: self.execute_worker_function,
         }
 
         self._plan_command_router = {
@@ -313,7 +316,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             print(f"worker {self} received {type(msg).__name__} {msg.contents}")
 
         # Step 1: route message to appropriate function
-        response = self._message_router[type(msg)](msg.contents)
+        response = self._message_router[type(msg)](msg)
 
         # Step 2: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
@@ -407,35 +410,45 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def execute_command(self, message) -> PointerTensor:
-        if isinstance(message, ComputationAction):
-            return self.execute_computation(message)
-        else:
-            return self.execute_communication(message)
+    def handle_object_msg(self, obj_msg: ObjectMessage):
+        # This should be a good seam for separating Workers from ObjectStorage (someday),
+        # so that Workers have ObjectStores instead of being ObjectStores. That would open
+        # up the possibility of having a separate ObjectStore for each user, or for each
+        # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
+        # that will probably be useful for providing security and permissioning. In that
+        # future, this might look like `self.object_store.set_obj(obj_msg.object)`
+        if obj_msg.object is not None:
+            self.set_obj(obj_msg.object)
 
-    def execute_computation(self, message) -> PointerTensor:
+    def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
+        # NOTE cannot currently be used because there is no ObjectDeleteMessage
+        self.rm_obj(msg.object_id)
+
+    def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
+        self.force_rm_obj(msg.object_id)
+
+    def execute_command(self, cmd: CommandMessage) -> PointerTensor:
         """
         Executes commands received from other workers.
 
         Args:
-            message: A tuple specifying the command and the args.
+            msg: A CommandMessage specifying the command and the args.
 
         Returns:
             A pointer to the result.
         """
+        command_name = cmd.name
+        _self = cmd.target
+        args = cmd.args
+        kwargs = cmd.kwargs
+        return_ids = cmd.return_ids
 
-        (command_name, _self, args, kwargs), return_ids = message.contents
-
-        # TODO add kwargs
-        command_name = command_name
         # Handle methods
         if _self is not None:
             if type(_self) == int:
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
-            if type(_self) == str and _self == "self":
-                _self = self
             if sy.framework.is_inplace_method(command_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
@@ -498,16 +511,38 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # self.rm_obj(obj.id)
         return response
 
-    def execute_plan_command(self, message: tuple):
+    def execute_worker_function(self, message: tuple):
+        """Executes commands received from other workers.
+
+                Args:
+                    message: A tuple specifying the command and the args.
+
+                Returns:
+                    A pointer to the result.
+        """
+        command_name = message.command_name
+        args, kwargs, return_ids = message.message
+
+        response = getattr(self, command_name)(*args, **kwargs)
+        #  TODO [midokura-silvia]: send the tensor directly
+        #  TODO this code is currently necessary for the async_fit method in websocket_client.py
+        if isinstance(response, FrameworkTensor):
+            self.register_obj(obj=response, obj_id=return_ids[0])
+            return None
+        return response
+
+    def execute_plan_command(self, msg: PlanCommandMessage):
         """Executes commands related to plans.
 
         This method is intended to execute all commands related to plans and
         avoiding having several new message types specific to plans.
 
         Args:
-            message: A tuple specifying the command and args.
+            msg: A PlanCommandMessage specifying the command and args.
         """
-        command_name, args = message
+        command_name = msg.command_name
+        args = msg.args
+
         try:
             command = self._plan_command_router[command_name]
         except KeyError:
@@ -580,13 +615,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return obj
 
-    def respond_to_obj_req(self, request_msg: tuple):
+    def respond_to_obj_req(self, msg: ObjectRequestMessage):
         """Returns the deregistered object from registry.
 
         Args:
             request_msg (tuple): Tuple containing object id, user credentials and reason.
         """
-        obj_id, user, reason = request_msg
+        obj_id = msg.object_id
+        user = msg.user
+        reason = msg.reason
+
         obj = self.get_obj(obj_id)
         if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
@@ -647,7 +685,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage((obj_id, user, reason)), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
         return obj
 
     # SECTION: Manage the workers network
@@ -814,8 +852,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def __getitem__(self, idx):
         return self._objects.get(idx, None)
 
-    @staticmethod
-    def is_tensor_none(obj):
+    def is_object_none(self, msg):
+        obj_id = msg.object_id
+        if obj_id not in self._objects:
+            # If the object is not present on the worker, raise an error
+            raise ObjectNotFoundError(obj_id, self)
+        obj = self.get_obj(msg.object_id)
         return obj is None
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
@@ -831,10 +873,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A boolean stating if the remote value is None.
         """
-        return self.send_msg(IsNoneMessage(pointer), location=pointer.location)
+        return self.send_msg(IsNoneMessage(pointer.id_at_location), location=pointer.location)
 
-    @staticmethod
-    def get_tensor_shape(tensor: FrameworkTensorType) -> List:
+    def handle_get_shape_message(self, msg: GetShapeMessage) -> List:
         """
         Returns the shape of a tensor casted into a list, to bypass the serialization of
         a torch.Size object.
@@ -845,6 +886,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A list containing the tensor shape.
         """
+        tensor = self.get_obj(msg.tensor_id)
         return list(tensor.shape)
 
     def request_remote_tensor_shape(self, pointer: PointerTensor) -> FrameworkShape:
@@ -858,7 +900,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A torch.Size object for the shape.
         """
-        shape = self.send_msg(GetShapeMessage(pointer), location=pointer.location)
+        shape = self.send_msg(GetShapeMessage(pointer.id_at_location), location=pointer.location)
         return sy.hook.create_shape(shape)
 
     def fetch_plan(
@@ -977,13 +1019,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             return list()
 
-    def respond_to_search(
-        self, query: Union[List[Union[str, int]], str, int]
-    ) -> List[PointerTensor]:
+    def respond_to_search(self, msg: SearchMessage) -> List[PointerTensor]:
         """
         When remote worker calling search on this worker, forwarding the call and
         replace found elements by pointers
         """
+        query = msg.query
         objects = self.search(query)
         results = []
         for obj in objects:
@@ -1061,9 +1102,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_pending_time = seconds
 
     @staticmethod
-    def create_message_execute_command(
-        command_name: str, command_owner=None, return_ids=None, *args, **kwargs
-    ):
+    def create_execute_worker_function_message(command_name: str, return_ids=None, *args, **kwargs):
         """helper function creating a message tuple for the execute_command call
 
         Args:
@@ -1080,7 +1119,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if return_ids is None:
             return_ids = []
-        return CommandMessage.computation(command_name, command_owner, args, kwargs, return_ids)
+        return ExecuteWorkerFunctionMessage(command_name, (args, kwargs, return_ids))
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

@@ -145,6 +145,7 @@ class FederatedClient(ObjectStorage):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -199,3 +200,6 @@ class FederatedClient(ObjectStorage):
             eval_result["histogram_target"] = hist_target
 
         return eval_result
+
+    def _log_msgs(self, value):
+        self.log_msgs = value

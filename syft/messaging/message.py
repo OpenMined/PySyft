@@ -7,6 +7,8 @@ Tensorflow, etc.).
 All Syft message types extend the Message class.
 """
 
+from abc import ABC
+from abc import abstractmethod
 from typing import Union
 from typing import List
 
@@ -22,7 +24,7 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
 
 
-class Message:
+class Message(ABC):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
@@ -35,76 +37,16 @@ class Message:
     You can read more abouty detailers and simplifiers in syft/serde/serde.py.
     """
 
-    def __init__(self, contents=None):
+    @abstractmethod
+    def __init__(self):
+        pass
 
-        # saves us a write op but costs us a check op to only sometimes
-        # set ._contents
-        if contents is not None:
-            self._contents = contents
-
-    @property
-    def contents(self):
-        """Return a tuple with the contents of the message (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Some message types can be more efficient by storing their contents more explicitly (see
-        CommandMessage). They can override this property to return a tuple view on their other properties.
-        """
-        if hasattr(self, "_contents"):
-            return self._contents
-        else:
-            return None
-
-    def _simplify(self):
-        return (self.contents,)
-
-    @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "Message") -> tuple:
-        """
-        This function takes the attributes of a Message and saves them in a tuple.
-        The detail() method runs the inverse of this method.
-        Args:
-            worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Message): a Message
-        Returns:
-            tuple: a tuple holding the unique attributes of the message
-        Examples:
-            data = simplify(ptr)
-        """
-
-        return (sy.serde.msgpack.serde._simplify(worker, ptr.contents),)
-
-    @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "Message":
-        """
-        This function takes the simplified tuple version of this message and converts
-        it into a message. The simplify() method runs the inverse of this method.
-
-        This method shouldn't get called very often. It exists as a backup but in theory
-        every message type should have its own detailer.
-
-        Args:
-            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
-                syft/serde/serde.py for more information on why this is necessary.
-            msg_tuple (Tuple): the raw information being detailed.
-        Returns:
-            ptr (Message): a Message.
-        Examples:
-            message = detail(sy.local_worker, msg_tuple)
-        """
-
-        # TODO: attempt to use the msg_tuple[0] to return the correct type instead of Message
-        # https://github.com/OpenMined/PySyft/issues/2514
-        # TODO: as an alternative, this detailer could raise NotImplementedException
-        # https://github.com/OpenMined/PySyft/issues/2514
-
-        return Message(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
-
+    @abstractmethod
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.contents})"
+        pass
 
+    # Intentionally not abstract
     def __repr__(self):
         """Return a human readable version of this message"""
         return self.__str__()
@@ -134,9 +76,6 @@ class CommandMessage(Message):
 
         """
 
-        # call the parent constructor - setting the type integer correctly
-        super().__init__()
-
         self.action = action
 
     @property
@@ -159,19 +98,14 @@ class CommandMessage(Message):
     def return_ids(self):
         return self.action.return_ids
 
-    @property
-    def contents(self):
-        """Return a tuple with the contents of the action (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Don't use this in new code."""
-        return self.action.contents
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.action})"
 
     @staticmethod
     def computation(name, target, args_, kwargs_, return_ids):
         """ Helper function to build a CommandMessage containing a ComputationAction
-        directly from the action arguments. 
+        directly from the action arguments.
         """
         action = ComputationAction(name, target, args_, kwargs_, return_ids)
         return CommandMessage(action)
@@ -179,11 +113,11 @@ class CommandMessage(Message):
     @staticmethod
     def communication(obj_id, source, destinations, kwargs):
         """ Helper function to build a CommandMessage containing a CommunicationAction
-        directly from the action arguments. 
+        directly from the action arguments.
         """
         action = CommunicationAction(obj_id, source, destinations, kwargs)
         return CommandMessage(action)
-    
+
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
         """
@@ -272,11 +206,29 @@ class ObjectMessage(Message):
     to do so.
     """
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, object_):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.object = object_
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "ObjectMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectMessage":
@@ -308,15 +260,15 @@ class ObjectMessage(Message):
         """
 
         protobuf_obj_msg = ObjectMessagePB()
-        bufferized_contents = sy.serde.protobuf.serde._bufferize(worker, message.contents)
-        protobuf_obj_msg.tensor.CopyFrom(bufferized_contents)
+        bufferized_obj = sy.serde.protobuf.serde._bufferize(worker, message.object)
+        protobuf_obj_msg.tensor.CopyFrom(bufferized_obj)
         return protobuf_obj_msg
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_obj: "ObjectMessagePB") -> "ObjectMessage":
-        protobuf_contents = protobuf_obj.tensor
-        contents = sy.serde.protobuf.serde._unbufferize(worker, protobuf_contents)
-        object_msg = ObjectMessage(contents)
+        protobuf_obj = protobuf_obj.tensor
+        object_ = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj)
+        object_msg = ObjectMessage(object_)
 
         return object_msg
 
@@ -331,11 +283,35 @@ class ObjectRequestMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, obj_id, user, reason):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.object_id = obj_id
+        self.user = user
+        self.reason = reason
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.obj_id, self.user, self.reason)})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(worker, msg.object_id),
+            sy.serde.msgpack.serde._simplify(worker, msg.user),
+            sy.serde.msgpack.serde._simplify(worker, msg.reason),
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectRequestMessage":
@@ -352,7 +328,11 @@ class ObjectRequestMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectRequestMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        return ObjectRequestMessage(
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
+        )
 
 
 class IsNoneMessage(Message):
@@ -365,11 +345,29 @@ class IsNoneMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, obj_id):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.object_id = obj_id
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object_id})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "IsNoneMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object_id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "IsNoneMessage":
@@ -402,11 +400,29 @@ class GetShapeMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, tensor_id):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.tensor_id = tensor_id
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.tensor_id})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "GetShapeMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.tensor_id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "GetShapeMessage":
@@ -419,7 +435,7 @@ class GetShapeMessage(Message):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (GetShapeMessage): a GetShapeMessage.
+            msg (GetShapeMessage): a GetShapeMessage.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -437,11 +453,29 @@ class ForceObjectDeleteMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, obj_id):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.object_id = obj_id
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object_id})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "ForceObjectDeleteMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object_id),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ForceObjectDeleteMessage":
@@ -454,7 +488,7 @@ class ForceObjectDeleteMessage(Message):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (ForceObjectDeleteMessage): a ForceObjectDeleteMessage.
+            msg (ForceObjectDeleteMessage): a ForceObjectDeleteMessage.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -472,11 +506,29 @@ class SearchMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, contents):
-        """Initialize the message using default Message constructor.
+    def __init__(self, query):
+        """Initialize the message."""
 
-        See Message.__init__ for details."""
-        super().__init__(contents)
+        self.query = query
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.query})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "SearchMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, msg.query),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "SearchMessage":
@@ -502,7 +554,7 @@ class PlanCommandMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, command_name: str, message: tuple):
+    def __init__(self, command_name: str, args_: tuple):
         """Initialize a PlanCommandMessage.
 
         Args:
@@ -511,32 +563,28 @@ class PlanCommandMessage(Message):
                 can be any information necessary to execute the command properly.
         """
 
-        # call the parent constructor - setting the type integer correctly
-        super().__init__()
-
         self.command_name = command_name
-        self.message = message
+        self.args = args_
 
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the action (backwards compatability)."""
-        return (self.command_name, self.message)
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.command_name, self.args)})"
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "PlanCommandMessage") -> tuple:
+    def simplify(worker: AbstractWorker, msg: "PlanCommandMessage") -> tuple:
         """
         This function takes the attributes of a PlanCommandMessage and saves them in a tuple
 
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (PlanCommandMessage): a Message
+            msg (PlanCommandMessage): a Message
 
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
         return (
-            sy.serde.msgpack.serde._simplify(worker, ptr.command_name),
-            sy.serde.msgpack.serde._simplify(worker, ptr.message),
+            sy.serde.msgpack.serde._simplify(worker, msg.command_name),
+            sy.serde.msgpack.serde._simplify(worker, msg.args),
         )
 
     @staticmethod
@@ -552,8 +600,75 @@ class PlanCommandMessage(Message):
         Returns:
             ptr (PlanCommandMessage): a PlanCommandMessage.
         """
-        command_name, message = msg_tuple
+        command_name, args_ = msg_tuple
         return PlanCommandMessage(
+            sy.serde.msgpack.serde._detail(worker, command_name),
+            sy.serde.msgpack.serde._detail(worker, args_),
+        )
+
+
+class ExecuteWorkerFunctionMessage(Message):
+    """Message used to execute a function of the remote worker."""
+
+    # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
+
+    def __init__(self, command_name: str, message: tuple):
+        """Initialize a ExecuteWorkerFunctionMessage.
+
+        Args:
+            command_name (str): name used to identify the command.
+            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
+                can be any information necessary to execute the command properly.
+        """
+
+        # call the parent constructor - setting the type integer correctly
+        super().__init__()
+
+        self.command_name = command_name
+        self.message = message
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {(self.command_name, self.message)})"
+
+    @property
+    def contents(self):
+        """Returns a tuple with the contents of the operation (backwards compatability)."""
+        return (self.command_name, self.message)
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, ptr: "ExecuteWorkerFunctionMessage") -> tuple:
+        """
+        This function takes the attributes of a ExecuteWorkerFunctionMessage and saves them in a tuple
+
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (ExecuteWorkerFunctionMessage): a Message
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.command_name),
+            sy.serde.msgpack.serde._simplify(worker, ptr.message),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ExecuteWorkerFunctionMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a ExecuteWorkerFunctionMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (ExecuteWorkerFunctionMessage): a ExecuteWorkerFunctionMessage.
+        """
+        command_name, message = msg_tuple
+        return ExecuteWorkerFunctionMessage(
             sy.serde.msgpack.serde._detail(worker, command_name),
             sy.serde.msgpack.serde._detail(worker, message),
         )

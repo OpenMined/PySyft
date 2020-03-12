@@ -72,7 +72,6 @@ samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = ma
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
-samples[syft.messaging.message.Message] = make_message
 samples[syft.messaging.message.CommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
@@ -81,6 +80,7 @@ samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
 samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
+samples[syft.messaging.message.ExecuteWorkerFunctionMessage] = make_executeworkerfunctionmessage
 
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 
@@ -99,9 +99,15 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip(cls, workers):
+def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
-    _samples = samples[cls](workers=workers)
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9000,
+        id="roundtrip",
+    )
     for sample in _samples:
         _simplify = (
             msgpack.serde._simplify
@@ -129,9 +135,15 @@ def test_serde_roundtrip(cls, workers):
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_simplify(cls, workers):
+def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
-    _samples = samples[cls](workers=workers)
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9001,
+        id="simplify",
+    )
     for sample in _samples:
         obj, expected_simplified_obj = sample.get("value"), sample.get("simplified")
         _simplify = (
