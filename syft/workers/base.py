@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.execution.plan import Plan
+from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
@@ -18,9 +19,9 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.object import AbstractObject
-from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.tensor import AbstractTensor
 from syft.messaging.message import Message
 from syft.messaging.message import CommandMessage
 from syft.messaging.message import ObjectMessage
@@ -31,7 +32,6 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import ExecuteWorkerFunctionMessage
 from syft.messaging.message import PlanCommandMessage
-from syft.execution.plan import Plan
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -178,6 +178,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
+
+        # storage object for crypto primitives
+        self.crypto_store = PrimitiveStorage(owner=self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -404,7 +407,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def execute_command(self, message: tuple) -> PointerTensor:
+    def execute_command(self, message: tuple) -> FrameworkTensor:
         """
         Executes commands received from other workers.
 
@@ -928,44 +931,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return None
 
-    def request_run_plan(
-        self, tag: str, location: "BaseWorker"
-    ) -> "Plan":  # noqa: F821
-        """Fetchs a copy of a the plan with the given `plan_id` from the worker registry.
-
-        This method is executed for local execution.
-
-        Args:
-            plan_id: A string indicating the plan id.
-
-        Returns:
-            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
-        """
-        message = PlanCommandMessage("run_plan", (tag, ))
-        plan = self.send_msg(message, location=location)
-
-        return plan
-
-    def run_plan(self, tag = str) -> "Plan":  # noqa: F821
-        """Fetches a copy of a the plan with the given `plan_id` from the worker registry.
-
-        This method is executed for remote execution.
-
-        Args:
-            plan_id: A string indicating the plan id.
-
-        Returns:
-            A plan if a plan with the given `plan_id` exists. Returns None otherwise.
-        """
-        results = self.search(tag)
-        assert len(results) == 1 and isinstance(results[0], sy.Plan)
-
-        plan = results[0]
-
-        plan()
-
-        return None
-
     def search(self, query: Union[List[Union[str, int]], str, int]) -> List:
         """Search for a match between the query terms and a tensor's Id, Tag, or Description.
 
@@ -1114,6 +1079,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = []
         return ExecuteWorkerFunctionMessage(command_name, (args, kwargs, return_ids))
+
+    def feed_crypto_primitive_store(self, types_primitives: dict):
+        self.crypto_store.add_primitives(types_primitives)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

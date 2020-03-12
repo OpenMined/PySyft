@@ -356,6 +356,19 @@ class UndefinedProtocolTypePropertyError(Exception):
     pass
 
 
+class EmptyCryptoPrimitiveStoreError(Exception):
+    """Raised when trying to get crypto primtives from an empty crypto store"""
+
+    def __init__(self, crypto_store, crypto_type):
+        message = (
+            f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
+            f"but its crypto_store doesn't have any primitive left for the type "
+            f"'{crypto_type}'. Use your crypto_provider to `provide_primitives` to your "
+            f"worker."
+        )
+        super().__init__(message)
+
+
 def route_method_exception(exception, self, args, kwargs):
     try:
         if self.is_wrapper:
