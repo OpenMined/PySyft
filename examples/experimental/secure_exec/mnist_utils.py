@@ -45,9 +45,7 @@ def _get_norm_mnist(dir, reduced=None, binary=False):
     return mnist_norm, mnist_labels
 
 
-def split_features(
-    split=0.5, dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False
-):
+def split_features(split=0.5, dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False):
     """Splits features between Party 1 and Party 2"""
     mnist_norm, mnist_labels = _get_norm_mnist(dir, reduced, binary)
     mnist_train_norm, mnist_test_norm = mnist_norm
@@ -102,9 +100,7 @@ def split_observations(
     torch.save(party2_test_labels, os.path.join(dir, party2 + "_test_labels.pth"))
 
 
-def split_features_v_labels(
-    dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False
-):
+def split_features_v_labels(dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False):
     """Gives Party 1 features and Party 2 labels"""
     mnist_norm, mnist_labels = _get_norm_mnist(dir, reduced, binary)
     mnist_train_norm, mnist_test_norm = mnist_norm
@@ -116,9 +112,7 @@ def split_features_v_labels(
     torch.save(mnist_test_labels, os.path.join(dir, party2 + "_test_labels.pth"))
 
 
-def split_train_v_test(
-    dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False
-):
+def split_train_v_test(dir="/tmp", party1="alice", party2="bob", reduced=None, binary=False):
     """Gives Party 1 training data and Party 2 the test data """
     mnist_norm, mnist_labels = _get_norm_mnist(dir, reduced, binary)
     mnist_train_norm, mnist_test_norm = mnist_norm
@@ -133,9 +127,7 @@ def split_train_v_test(
 def main():
     parser = argparse.ArgumentParser("Split data for use in Tutorials")
     parser.add_argument(
-        "--option",
-        type=str,
-        choices={"features", "data", "features_v_labels", "train_v_test"},
+        "--option", type=str, choices={"features", "data", "features_v_labels", "train_v_test"},
     )
     parser.add_argument("--ratio", type=float, default=0.72)
     parser.add_argument("--name_party1", type=str, default="alice")

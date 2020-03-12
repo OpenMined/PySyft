@@ -7,7 +7,11 @@ import ast
 from dill.source import getsource
 from RestrictedPython import compile_restricted, safe_builtins
 from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getitem
-from RestrictedPython.Guards import guarded_iter_unpack_sequence, guarded_unpack_sequence, guarded_setattr
+from RestrictedPython.Guards import (
+    guarded_iter_unpack_sequence,
+    guarded_unpack_sequence,
+    guarded_setattr,
+)
 from RestrictedPython.PrintCollector import PrintCollector
 
 import torch
@@ -56,7 +60,9 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
             super(ExampleNet, self).__init__()
             self.conv1 = torch.nn.Conv2d(1, 16, kernel_size=5, padding=0)
             self.fc1 = torch.nn.Linear(16 * 12 * 12, 100)
-            self.fc2 = torch.nn.Linear(100, 2) # For binary classification, final layer needs only 2 outputs
+            self.fc2 = torch.nn.Linear(
+                100, 2
+            )  # For binary classification, final layer needs only 2 outputs
 
         def forward(self, x):
             out = self.conv1(x)
@@ -68,28 +74,27 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
             out = self.fc2(out)
             return out
 
-
     # Update load function
-    setattr(crypten, 'load', syft_crypt.load)
+    setattr(crypten, "load", syft_crypt.load)
 
     # TODO: error handling
-    exec_globals = {'__builtins__': safe_builtins}
-    exec_globals['crypten'] = crypten
-    exec_globals['torch'] = torch
-    exec_globals['syft'] = sy
-    exec_globals['ExampleNet'] = ExampleNet()
-    exec_globals['_getiter_'] = default_guarded_getiter
-    exec_globals['_getitem_'] = default_guarded_getitem
-    exec_globals['_getattr_'] = getattr
+    exec_globals = {"__builtins__": safe_builtins}
+    exec_globals["crypten"] = crypten
+    exec_globals["torch"] = torch
+    exec_globals["syft"] = sy
+    exec_globals["ExampleNet"] = ExampleNet()
+    exec_globals["_getiter_"] = default_guarded_getiter
+    exec_globals["_getitem_"] = default_guarded_getitem
+    exec_globals["_getattr_"] = getattr
     # for a, b in
-    exec_globals['_iter_unpack_sequence_'] = guarded_iter_unpack_sequence
+    exec_globals["_iter_unpack_sequence_"] = guarded_iter_unpack_sequence
     # for a in
-    exec_globals['_unpack_sequence_'] = guarded_unpack_sequence
+    exec_globals["_unpack_sequence_"] = guarded_unpack_sequence
     # unrestricted write of attr
-    exec_globals['_write_'] = lambda x: x
+    exec_globals["_write_"] = lambda x: x
     # Collecting printed strings and saved in printed local variable
-    exec_globals['_print_'] = PrintCollector
-    exec_globals['__name__'] = '__main__'
+    exec_globals["_print_"] = PrintCollector
+    exec_globals["__name__"] = "__main__"
 
     exec_locals = {}
     compiled = compile_restricted(func_src)
@@ -182,10 +187,10 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
 
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
-            
+
             # Get func_src without decorators
-            re_decorator = r'@[^\(]+\([^\)]*\)'
-            func_src = re.sub(re_decorator, '', getsource(func))
+            re_decorator = r"@[^\(]+\([^\)]*\)"
+            func_src = re.sub(re_decorator, "", getsource(func))
 
             # Start local party
             process, queue = _new_party(func_src, 0, world_size, master_addr, master_port, (), {})
