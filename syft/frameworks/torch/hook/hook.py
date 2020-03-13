@@ -294,8 +294,7 @@ class TorchHook(FrameworkHook):
         @wraps(attr)
         def overloaded_attr(self_torch, *args, **kwargs):
             ptr = hook_self.local_worker.send_command(
-                recipient=self_torch.worker(),
-                message=(f"{'torch'}.{attr}", None, args, kwargs),
+                recipient=self_torch.worker(), message=(f"{'torch'}.{attr}", None, args, kwargs)
             )
 
             return ptr.wrap()
@@ -590,7 +589,7 @@ class TorchHook(FrameworkHook):
         def create_grad_objects(model):
             """Assigns gradient to model parameters if not assigned"""
             for p in model.parameters():
-                if p.requires_grad:
+                if p.requires_grad:  # check if the object requires a grad object
                     o = p.sum()
                     o.backward()
                     if p.grad is not None:
