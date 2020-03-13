@@ -23,18 +23,12 @@ class FLOptimier:
         Args:
             model: model belonging to a worker
         """
-        if hasattr(model, 'location'):
+        if hasattr(model, "location"):
             opt = self.opt_dict.setdefault(
-                model.location,
-                self.optimizer_class(
-                    model.parameters(),
-                    **self.kwargs)
+                model.location, self.optimizer_class(model.parameters(), **self.kwargs)
             )
             return opt
         opt = self.opt_dict.setdefault(
-            'central',
-            self.optimizer_class(
-                model.parameters(),
-                **self.kwargs)
+            "central", self.optimizer_class(model.parameters(), **self.kwargs)
         )
         return opt
