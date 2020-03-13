@@ -72,7 +72,7 @@ def test_serde_roundtrip_protobuf(cls, workers):
 
         if sample.get("cmp_detailed", None):
             # Custom detailed objects comparison function.
-            assert sample.get("cmp_detailed")(roundtrip_obj, obj) is True
+            assert sample.get("cmp_detailed")(roundtrip_obj, obj)
         else:
             assert type(roundtrip_obj) == type(obj)
             assert roundtrip_obj == obj

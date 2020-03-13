@@ -392,9 +392,7 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
     try:
         setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
     except:
-        getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-            syft.serde.protobuf.serde._bufferize(worker, arg)
-        )
+        getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(_bufferize(worker, arg))
     return protobuf_arg
 
 
@@ -408,7 +406,7 @@ def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
     protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
     try:
-        arg = syft.serde.protobuf.serde.unbufferize(worker, protobuf_arg_field)
+        arg = _unbufferize(worker, protobuf_arg_field)
     except:
         arg = protobuf_arg_field
     return arg

@@ -148,7 +148,7 @@ class CommunicationAction(Action):
         ]
 
         kwargs_ = {
-            key: sy.serde.protobuf.serde._unbufferize_arg(worker, kwarg)
+            key: sy.serde.protobuf.serde.unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 

@@ -453,8 +453,7 @@ def make_torch_size(**kwargs):
 def compare_actions(detailed, original):
     """Compare 2 Actions"""
     assert len(detailed) == len(original)
-    for i, detailed_op in enumerate(detailed):
-        original_op = original[i]
+    for original_op, detailed_op in zip(original, detailed):
         compare_placeholders_list(original_op.args, detailed_op.args)
         # return_ids is not a list (why?)
         compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
@@ -466,8 +465,7 @@ def compare_actions(detailed, original):
 def compare_placeholders_list(detailed, original):
     """Compare 2 lists of placeholders"""
     assert len(detailed) == len(original)
-    for i, detailed_ph in enumerate(detailed):
-        original_ph = original[i]
+    for original_ph, detailed_ph in zip(original, detailed):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
@@ -1301,8 +1299,8 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.obj, detailed.source, detailed.destinations, detailed.kwargs)
-        original_msg = (original.obj, original.source, original.destinations, original.kwargs)
+        detailed_msg = (detailed.obj_id, detailed.source, detailed.destinations, detailed.kwargs)
+        original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
         assert type(detailed) == syft.messaging.message.CommunicationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
@@ -1311,7 +1309,7 @@ def make_communication_action(**kwargs):
                 assert detailed_msg[i].equal(original_msg[i])
         return True
 
-    msg = (com.obj, com.source, com.destinations, com.kwargs)
+    msg = (com.obj_id, com.source, com.destinations, com.kwargs)
 
     return [
         {
@@ -1319,7 +1317,7 @@ def make_communication_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.communication.CommunicationAction],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, com.obj),
+                    msgpack.serde._simplify(syft.hook.local_worker, com.obj_id),
                     msgpack.serde._simplify(syft.hook.local_worker, com.source),
                     msgpack.serde._simplify(syft.hook.local_worker, com.destinations),
                     msgpack.serde._simplify(syft.hook.local_worker, com.kwargs),
