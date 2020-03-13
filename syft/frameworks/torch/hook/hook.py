@@ -295,7 +295,7 @@ class TorchHook(FrameworkHook):
         def overloaded_attr(self_torch, *args, **kwargs):
             ptr = hook_self.local_worker.send_command(
                 recipient=self_torch.worker(),
-                message=("{}.{}".format("torch", attr), None, args, kwargs),
+                message=(f"{'torch'}.{attr}", None, args, kwargs),
             )
 
             return ptr.wrap()
