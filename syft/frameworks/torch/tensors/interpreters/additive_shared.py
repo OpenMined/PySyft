@@ -111,7 +111,7 @@ class AdditiveSharingTensor(AbstractTensor):
             for v in self.child.values():
                 out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
-            out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
+            out += f"\n\t*crypto provider: {self.crypto_provider.id}*"
         return out
 
     def __bool__(self):

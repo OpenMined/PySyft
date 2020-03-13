@@ -494,7 +494,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(
-        id="test_fetch_stateful_plan_remote_{}".format(is_func2plan), hook=hook, port=8802
+        id=f"test_fetch_stateful_plan_remote_{is_func2plan}", hook=hook, port=8802
     )
 
     if is_func2plan:

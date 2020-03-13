@@ -154,7 +154,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def clone(self):
         """
         Clone should keep ids unchanged, contrary to copy.
-        We make the choice that a clone operation is local, and can't affect
+        We make the choice that a clone action is local, and can't affect
         the remote tensors, so garbage_collect_data is always False, both
         for the tensor cloned and the clone.
         """

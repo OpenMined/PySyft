@@ -212,7 +212,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
         # If the model is a Plan we send the model
         # and host the plan version created after
-        # the send operation
+        # the send action
         if isinstance(model, Plan):
             # We need to use the same id in the model
             # as in the POST request.

@@ -28,7 +28,7 @@ class State(object):
         out = "<"
         out += "State:"
         for state_placeholder in self.state_placeholders:
-            out += " {}".format(state_placeholder)
+            out += f" {state_placeholder}"
         out += ">"
         return out
 

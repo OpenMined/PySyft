@@ -122,8 +122,8 @@ def create_gaussian_mixture_toy_data(nr_samples: int):  # pragma: no cover
     """
     sample_dim = 2
     one_half = int(nr_samples / 2)
-    X1 = torch.randn(one_half, sample_dim, requires_grad=True)
-    X2 = torch.randn(one_half, sample_dim, requires_grad=True) + 2
+    X1 = torch.randn(one_half, sample_dim, requires_grad=True) - 5
+    X2 = torch.randn(one_half, sample_dim, requires_grad=True) + 5
     X = torch.cat([X1, X2], dim=0)
     Y1 = torch.zeros(one_half, requires_grad=False).long()
     Y2 = torch.ones(one_half, requires_grad=False).long()
