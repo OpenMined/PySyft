@@ -163,7 +163,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = ObjectRequestMessage((return_ids[0], None, ""))
+        msg = ObjectRequestMessage(return_ids[0], None, "")
         serialized_message = sy.serde.serialize(msg)
         response = self._send_msg(serialized_message)
 
@@ -186,7 +186,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
 
-        msg = ObjectRequestMessage((return_ids[0], None, ""))
+        msg = ObjectRequestMessage(return_ids[0], None, "")
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._send_msg(serialized_message)
