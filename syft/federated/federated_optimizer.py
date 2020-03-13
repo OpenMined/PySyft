@@ -1,4 +1,5 @@
-from torch import optim
+"""maintains an optimizer for each worker"""
+
 from collections import defaultdict
 
 
