@@ -29,12 +29,12 @@ class FLOptimier:
                 self.optimizer_class(
                     model.parameters(),
                     **self.kwargs)
-                )
+            )
             return opt
         opt = self.opt_dict.setdefault(
             'central',
             self.optimizer_class(
                 model.parameters(),
                 **self.kwargs)
-            )
+        )
         return opt
