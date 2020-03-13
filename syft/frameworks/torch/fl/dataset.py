@@ -121,8 +121,17 @@ class BaseDataset(AbstractObject):
         return self
 
     def create_pointer(
-        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+            self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
     ):
+        if owner is None:
+            owner = self.owner
+
+        if location is None:
+            location = self.owner
+
+        owner = self.owner.get_worker(owner)
+        location = self.owner.get_worker(location)
+
         return PointerDataset(
             owner=owner,
             location=location,
@@ -175,6 +184,7 @@ class BaseDataset(AbstractObject):
         dataset = BaseDataset(
             syft.serde.msgpack.serde._detail(worker, data),
             syft.serde.msgpack.serde._detail(worker, targets),
+            owner=worker,
             id=id,
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
@@ -182,7 +192,6 @@ class BaseDataset(AbstractObject):
         if chain is not None:
             chain = syft.serde.msgpack.serde._detail(worker, chain)
             dataset.child = chain
-
         return dataset
 
 
