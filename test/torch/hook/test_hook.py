@@ -67,9 +67,7 @@ def test_send_frozen():
     d_in, h, d_out = 1000, 100, 10
 
     model = torch.nn.Sequential(
-        torch.nn.Linear(d_in, h),
-        torch.nn.ReLU(),
-        torch.nn.Linear(h, d_out),
+        torch.nn.Linear(d_in, h), torch.nn.ReLU(), torch.nn.Linear(h, d_out)
     )
 
     for param in model.parameters():
@@ -93,7 +91,7 @@ def test_send_partially_frozen():
     )
 
     for layer_idx, param in enumerate(model.parameters()):
-        if layer_idx > 2:
+        if layer_idx > 2:  # freezing the first two layers
             pass
         param.requires_grad = False
 
