@@ -162,7 +162,7 @@ class Plan(AbstractObject, ObjectStorage):
         mapped_shapes = []
         for shape in args_shape:
             if list(filter(lambda x: x < -1, shape)):
-                raise ValueError("Invalid shape {}".format(shape))
+                raise ValueError(f"Invalid shape {shape}")
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [sy.framework.hook.create_zeros(shape) for shape in mapped_shapes]

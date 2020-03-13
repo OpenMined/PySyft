@@ -135,7 +135,7 @@ def dataset_federate(dataset, workers):
     into a sy.FederatedDataset. The dataset given is split in len(workers)
     part and sent to each workers
     """
-    logger.info("Scanning and sending data to {}...".format(", ".join([w.id for w in workers])))
+    logger.info(f"Scanning and sending data to {', '.join([w.id for w in workers])}...")
 
     # take ceil to have exactly len(workers) sets after splitting
     data_size = math.ceil(len(dataset) / len(workers))
@@ -203,6 +203,6 @@ class FederatedDataset:
     def __repr__(self):
 
         fmt_str = "FederatedDataset\n"
-        fmt_str += "    Distributed accross: {}\n".format(", ".join(str(x) for x in self.workers))
-        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
+        fmt_str += f"    Distributed accross: {', '.join(str(x) for x in self.workers)}\n"
+        fmt_str += f"    Number of datapoints: {self.__len__()}\n"
         return fmt_str

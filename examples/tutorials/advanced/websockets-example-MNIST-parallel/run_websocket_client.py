@@ -162,10 +162,10 @@ def evaluate_model_on_worker(
     logger.info(
         "%s: Average loss: %s, Accuracy: %s/%s (%s%%)",
         model_identifier,
-        "{:.4f}".format(test_loss),
+        f"{test_loss:.4f}",
         correct,
         len_dataset,
-        "{:.2f}".format(100.0 * correct / len_dataset),
+        f"{100.0 * correct / len_dataset:.2f}",
     )
 
 

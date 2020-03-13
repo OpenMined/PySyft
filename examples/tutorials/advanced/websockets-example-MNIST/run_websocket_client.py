@@ -127,9 +127,7 @@ def train(
     counter = 0
 
     while True:
-        logger.debug(
-            "Starting training round, batches [{}, {}]".format(counter, counter + nr_batches)
-        )
+        logger.debug(f"Starting training round, batches [{counter}, {counter + nr_batches}]")
         data_for_all_workers = True
         for worker in batches:
             curr_batches = batches[worker]
