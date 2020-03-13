@@ -45,7 +45,7 @@ def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in protobuf.serde.bufferizers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample is True, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
