@@ -46,7 +46,7 @@ class PointerDataset(ObjectPointer):
 
     def __repr__(self):
         type_name = type(self).__name__
-        out = f"[" f"{type_name} | " f"owner: {str(self.owner.id)}, id:{self.id} | location:{self.location.id}, id_at_location:{self.id_at_location}"
+        out = f"[" f"{type_name} | " f"owner: {str(self.owner.id)}, id:{self.id}"
 
         if self.point_to_attr is not None:
             out += "::" + str(self.point_to_attr).replace(".", "::")
