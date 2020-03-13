@@ -5,7 +5,6 @@ from syft.execution.action import Action
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class ComputationAction(Action):
@@ -51,24 +50,24 @@ class ComputationAction(Action):
         return (message, self.return_ids)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "ComputationAction") -> tuple:
+    def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
         """
         This function takes the attributes of a Action and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Action): a Message
+            action (ComputationAction): the ComputationAction object to simplify
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
-            data = simplify(ptr)
+            data = simplify(sy.local_worker, action)
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        message = (ptr.name, ptr.target, ptr.args, ptr.kwargs)
+        message = (action.name, action.target, action.args, action.kwargs)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
-            sy.serde.msgpack.serde._simplify(worker, ptr.return_ids),
+            sy.serde.msgpack.serde._simplify(worker, action.return_ids),
         )
 
     @staticmethod
@@ -82,9 +81,9 @@ class ComputationAction(Action):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Action): an Action.
+            action (ComputationAction): a ComputationAction.
         Examples:
-            message = detail(sy.local_worker, msg_tuple)
+            action = detail(sy.local_worker, msg_tuple)
         """
         message = msg_tuple[0]
         return_ids = msg_tuple[1]
@@ -162,7 +161,7 @@ class ComputationAction(Action):
             protobuf_obj (ComputationActionPB): the Protobuf message
 
         Returns:
-            obj (Action): an Action
+            obj (ComputationAction): a ComputationAction
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)

@@ -119,9 +119,6 @@ def test_list_objects_remote(hook, start_remote_worker):
 
     res = remote_proxy.list_objects_remote()
 
-    x = torch.tensor([1, 2, 3]).send(remote_proxy)
-
-    res = remote_proxy.list_objects_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 1
 
