@@ -121,9 +121,9 @@ class BaseDataset(AbstractObject):
         return self
 
     def create_pointer(
-            self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
     ):
-        """creats a pointer to the self dataset."""
+        """creats a pointer to the self dataset"""
         if owner is None:
             owner = self.owner
 
