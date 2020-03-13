@@ -572,6 +572,7 @@ def maxpool_deriv(x_sh):
 
     n1, n2 = x_sh.shape
     n = n1 * n2
+    assert L % n == 0
     x_sh = x_sh.view(-1)
 
     # Common Randomness
