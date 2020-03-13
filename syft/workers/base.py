@@ -503,12 +503,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication(self, action: CommunicationAction) -> PointerTensor:
-        print(action)
         obj_id = action.obj_id
         source = action.source
         destinations = action.destinations
         kwargs = action.kwargs
-
         source_worker = self.get_worker(source)
         if source_worker != self:
             return None
@@ -518,7 +516,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
             # TODO we should rm here but this make _get_msg fail
-            # self.rm_obj(obj.id)
+            self.rm_obj(obj_id)
             return response
 
     def execute_worker_function(self, message: tuple):

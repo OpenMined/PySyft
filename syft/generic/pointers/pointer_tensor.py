@@ -266,7 +266,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = CommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
-        self.owner.send_msg(message=message, location=destination)
+        self.owner.send_msg(message=message, location=self.location)
 
         # Change location of the pointer to point to the new object owner
         self.location = destination
