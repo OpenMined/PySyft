@@ -8,7 +8,7 @@ class Optims:
 
     def __init__(self, workers, optim):
         """
-        Args:
+        args:
             workers: list of worker ids
             optim: class of pytorch optimizer
         """
@@ -20,7 +20,10 @@ class Optims:
             self.optimizers[str(worker)].load_state_dict((self.optim).state_dict())
 
     def get_optim(self, worker):
-        """returns optimizer for worker"""
+        """returns optimizer for worker
+        args: 
+            worker: worker id
+        """
         return self.optimizers[str(worker)]
 
     def count(self):
