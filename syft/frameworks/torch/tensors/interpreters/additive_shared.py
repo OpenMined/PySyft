@@ -824,6 +824,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.relu = relu
 
+                def dropout(input, p=0.5, training=True, inplace=False):
+                    """
+                    The dropout class calls functional dropout. Hence overloading functional dropout
+                    so that even dropout layer class can work with AST.
+                    Ref:  https://stackoverflow.com/questions/54109617/implementing-dropout-from-scratch
+                    """
+                    if training:
+                        binomial = torch.distributions.binomial.Binomial(probs=1 - p)
+                        noise = binomial.sample(input.shape)
+
+                        return input * noise * (1.0 / (1 - p))
+                    return input
+
+                module.dropout = dropout
+
                 @overloaded.function
                 def pad(input_shares, pad, mode="constant", value=0):
                     padded_shares = {}
