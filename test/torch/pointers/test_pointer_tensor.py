@@ -151,7 +151,6 @@ def test_repeated_send(workers):
 
     # create tensor
     x = torch.Tensor([1, 2])
-    print(x.id)
 
     # send tensor to bob
     x_ptr = x.send(bob)
