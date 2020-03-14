@@ -1303,10 +1303,7 @@ def make_communication_action(**kwargs):
         original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
         assert type(detailed) == syft.messaging.message.CommunicationAction
         for i in range(len(original_msg)):
-            if type(original_msg[i]) != torch.Tensor:
-                assert detailed_msg[i] == original_msg[i]
-            else:
-                assert detailed_msg[i].equal(original_msg[i])
+            assert detailed_msg[i] == original_msg[i]
         return True
 
     msg = (com.obj_id, com.source, com.destinations, com.kwargs)
@@ -1422,9 +1419,6 @@ def make_command_message(**kwargs):
         elif isinstance(detailed.action, syft.execution.communication.CommunicationAction):
             assert detailed.action == original.action
             return True
-
-        else:
-            return False
 
     return [
         {
