@@ -7,6 +7,11 @@ class Optims:
     """to create a list of optimizer objects"""
 
     def __init__(self, workers, optim):
+        """
+        Args:
+            workers: list of worker ids
+            optim: class of pytorch optimizer
+        """
         self.optim = optim
         self.workers = workers
         self.optimizers = {}
