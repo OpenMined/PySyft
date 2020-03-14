@@ -60,7 +60,7 @@ class FederatedClient(ObjectStorage):
             optimizer_args.setdefault("params", model.parameters())
             self.optimizer = optimizer(**optimizer_args)
         else:
-            raise ValueError("Unknown optimizer: {}".format(optimizer_name))
+            raise ValueError(f"Unknown optimizer: {optimizer_name}")
         return self.optimizer
 
     def fit(self, dataset_key: str, device: str = "cpu", **kwargs):
@@ -76,7 +76,7 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
@@ -158,7 +158,7 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
         eval_result = dict()
         model = self.get_obj(self.train_config._model_id).obj
