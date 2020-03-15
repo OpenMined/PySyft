@@ -16,7 +16,7 @@ Authors:
 
 Installing PySyft on Linux is really straight forward. Here are the steps:
 
-### 1. Make sure you have Python >= 3.6
+### 1. Make sure you have Python >= 3.6 < 3.8
 
 ### 2. Install PyTorch 1.4
 
@@ -34,9 +34,17 @@ NOTE: Use exact version `1.4.0`, not just `1.4`. E.g. `pip install torch==1.4.0`
 
 ### 5. Install PySyft
 
-`python setup.py install udacity`
+`python setup.py install`
 
-### 6. Test your installation
+### 6. Install TF Encrypteddependencies
+
+This will install the TF Encrypted
+dependencies, which are required for running the tutorials
+from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
+
+`pip install -r pip-dep/requirements_udacity.txt`
+
+### 7. Test your installation
 
 `python setup.py test`
 
@@ -55,7 +63,7 @@ xcode-select --install
  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
-This will install **Homebrew**. Then, install python (version 3.6 or above) by running:
+This will install **Homebrew**. Then, install python (version >= 3.6 < 3.8) by running:
 
 `brew install python3`
 
@@ -79,7 +87,13 @@ First, you need to enter the PySyft folder you cloned earlier:
 
 Then, run this to install the PySyft package:
 
-`python setup.py install udacity`
+`python setup.py install`
+
+Then install the TF Encrypted
+dependencies, which are required for running the tutorials
+from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
+
+`pip install -r pip-dep/requirements_udacity.txt`
 
 You can test your installation by running:
 
@@ -91,7 +105,7 @@ You can test your installation by running:
 
 ### 1. Install Python
 
-PySyft requires python version 3.6 or above.
+PySyft requires python version Python >= 3.6 < 3.8
 
 Here is the link to install python [www.python.org/downloads](https://www.python.org/downloads)
 
@@ -166,6 +180,12 @@ Then
 `python setup.py install`
 
 This will install PySyft and its requirements to your system. You should see no errors.
+
+Then install the TF Encrypted
+dependencies, which are required for running the tutorials
+from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
+
+`pip install -r pip-dep/requirements_udacity.txt`
 
 You can also test your installation by running:
 
