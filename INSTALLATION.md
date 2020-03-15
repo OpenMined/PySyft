@@ -36,7 +36,7 @@ NOTE: Use exact version `1.4.0`, not just `1.4`. E.g. `pip install torch==1.4.0`
 
 `python setup.py install`
 
-### 6. Install TF Encrypteddependencies
+### 6. Install TF Encrypted dependencies
 
 This will install the TF Encrypted
 dependencies, which are required for running the tutorials
