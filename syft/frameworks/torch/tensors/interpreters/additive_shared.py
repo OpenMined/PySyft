@@ -832,9 +832,10 @@ class AdditiveSharingTensor(AbstractTensor):
                     """
                     if training:
                         binomial = torch.distributions.binomial.Binomial(probs=1 - p)
-                        noise = binomial.sample(input.shape)
+                        noise = binomial.sample(input.shape).fix_prec().child
 
-                        return input * noise * (1.0 / (1 - p))
+                        # TODO : Convert back to floating values
+                        return (input * noise) * (1.0 / (1.0 - p))
                     return input
 
                 module.dropout = dropout
