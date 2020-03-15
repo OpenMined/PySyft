@@ -9,11 +9,15 @@ All Syft message types extend the Message class.
 
 from abc import ABC
 from abc import abstractmethod
+from typing import Union
+from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
+from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
@@ -58,7 +62,7 @@ class CommandMessage(Message):
     worker to take two tensors and add them together is an action. However, sending an object
     from one worker to another is not an action (and would instead use the ObjectMessage type)."""
 
-    def __init__(self, name, target, args_, kwargs_, return_ids):
+    def __init__(self, action: Action):
         """Initialize an action message
 
         Args:
@@ -72,7 +76,7 @@ class CommandMessage(Message):
 
         """
 
-        self.action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        self.action = action
 
     @property
     def name(self):
@@ -97,6 +101,22 @@ class CommandMessage(Message):
     def __str__(self):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {self.action})"
+
+    @staticmethod
+    def computation(name, target, args_, kwargs_, return_ids):
+        """ Helper function to build a CommandMessage containing a ComputationAction
+        directly from the action arguments.
+        """
+        action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        return CommandMessage(action)
+
+    @staticmethod
+    def communication(obj_id, source, destinations, kwargs):
+        """ Helper function to build a CommandMessage containing a CommunicationAction
+        directly from the action arguments.
+        """
+        action = CommunicationAction(obj_id, source, destinations, kwargs)
+        return CommandMessage(action)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
@@ -127,13 +147,11 @@ class CommandMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        action = msg_tuple[0]
+        simplified_action = msg_tuple[0]
 
-        detailed = sy.serde.msgpack.serde._detail(worker, action)
+        detailed_action = sy.serde.msgpack.serde._detail(worker, simplified_action)
 
-        return CommandMessage(
-            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
-        )
+        return CommandMessage(detailed_action)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, action_message: "CommandMessage") -> "CommandMessagePB":
@@ -147,11 +165,16 @@ class CommandMessage(Message):
         Examples:
             data = bufferize(message)
         """
-        protobuf_op_msg = CommandMessagePB()
-        protobuf_op = ComputationAction.bufferize(worker, action_message.action)
+        protobuf_action_msg = CommandMessagePB()
 
-        protobuf_op_msg.action.CopyFrom(protobuf_op)
-        return protobuf_op_msg
+        protobuf_action = sy.serde.protobuf.serde._bufferize(worker, action_message.action)
+
+        if isinstance(action_message.action, ComputationAction):
+            protobuf_action_msg.computation.CopyFrom(protobuf_action)
+        elif isinstance(action_message.action, CommunicationAction):
+            protobuf_action_msg.communication.CopyFrom(protobuf_action)
+
+        return protobuf_action_msg
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_obj: "CommandMessagePB") -> "CommandMessage":
@@ -170,11 +193,9 @@ class CommandMessage(Message):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        detailed = ComputationAction.unbufferize(worker, protobuf_obj.action)
-
-        return CommandMessage(
-            detailed.name, detailed.target, detailed.args, detailed.kwargs, detailed.return_ids
-        )
+        action = getattr(protobuf_obj, protobuf_obj.WhichOneof("action"))
+        detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
+        return CommandMessage(detailed_action)
 
 
 class ObjectMessage(Message):

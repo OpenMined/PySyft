@@ -644,8 +644,8 @@ class TorchTensor(AbstractTensor):
         self.child.owner.register_obj(self)
         return self
 
-    def remote_send(self, location, change_location=False):
-        self.child.remote_send(location, change_location)
+    def remote_send(self, location):
+        self.child.remote_send(location)
         return self
 
     def attr(self, attr_name):
@@ -871,12 +871,6 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
-
-    def keep(self, obj):
-        """ Call .keep() on self's child if the child is a Promise (otherwise an error is raised).
-        .keep() is used to fulfill a promise with a value.
-        """
-        return self.child.keep(obj)
 
     def value(self):
         """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).

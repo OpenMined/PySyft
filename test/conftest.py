@@ -129,6 +129,7 @@ def workers(hook):
     syft.local_worker.clear_objects()
     hook_args.hook_method_args_functions = {}
     hook_args.hook_method_response_functions = {}
+    hook_args.register_response_functions = {}
     hook_args.get_tensor_type_functions = {}
 
     # Define 4 virtual workers
