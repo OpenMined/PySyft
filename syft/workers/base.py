@@ -431,11 +431,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
-            return self.execute_computation(cmd.action)
+            return self.execute_computation_action(cmd.action)
         else:
-            return self.execute_communication(cmd.action)
+            return self.execute_communication_action(cmd.action)
 
-    def execute_computation(self, action: ComputationAction) -> PointerTensor:
+    def execute_computation_action(self, action: ComputationAction) -> PointerTensor:
         """
         Executes commands received from other workers.
         Args:
@@ -502,7 +502,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
-    def execute_communication(self, action: CommunicationAction) -> PointerTensor:
+    def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
         obj_id = action.obj_id
         source = action.source
         destinations = action.destinations
