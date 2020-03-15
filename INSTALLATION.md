@@ -36,7 +36,7 @@ NOTE: Use exact version `1.4.0`, not just `1.4`. E.g. `pip install torch==1.4.0`
 
 `python setup.py install`
 
-### 6. Install TF Encrypted dependencies
+### 6. (Optional)Install TF Encrypted dependencies
 
 This will install the TF Encrypted
 dependencies, which are required for running the tutorials
@@ -89,7 +89,7 @@ Then, run this to install the PySyft package:
 
 `python setup.py install`
 
-Then install the TF Encrypted
+(Optional)Then install the TF Encrypted
 dependencies, which are required for running the tutorials
 from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended). Run:
 
@@ -181,7 +181,7 @@ Then
 
 This will install PySyft and its requirements to your system. You should see no errors.
 
-Then install the TF Encrypted
+(Optional)Then install the TF Encrypted
 dependencies, which are required for running the tutorials
 from [Udacity's "Secure & Private AI" course](https://www.udacity.com/course/secure-and-private-ai--ud185)  (recommended).
 
