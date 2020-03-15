@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 
 import syft
+from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -10,6 +11,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.messaging.message import CommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -259,28 +261,28 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location):
-        ptr = self.owner.send(self, location)
-        ptr.remote_get()
-        # don't want it to accidentally delete the remote object
-        # when this pointer is deleted
-        ptr.garbage_collect_data = False
-        return ptr
+    def move(self, destination):
+        kwargs = {"inplace": True, "create_pointer": False}
+        message = CommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        self.owner.send_msg(message=message, location=self.location)
 
-    def remote_send(self, destination, change_location=False):
+        # Change location of the pointer to point to the new object owner
+        self.location = destination
+
+        return self
+
+    def remote_send(self, destination):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-        If change_location is set to True, the original pointer will point to the moved object.
-        Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
-        will have 2 references pointing to it.
         """
-        args = (destination,)
         kwargs = {"inplace": True}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
-        if change_location:
-            self.location = destination
+        message = CommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
@@ -383,21 +385,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         # Send the command
         command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def keep(self, *args, **kwargs):
-        """
-        Send a command to remote worker to keep a promise
-
-        Returns:
-            A pointer to a Tensor
-        """
-
-        # Send the command
-        command = ("keep", self, args, kwargs)
 
         response = self.owner.send_command(self.location, command)
 

@@ -329,10 +329,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         for log in sy.hook.trace.logs:
             command, response = log
-            command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, node_type="input"),
-                self.replace_with_placeholders(response, node_type="output"),
-            )
+            command_placeholders = self.replace_with_placeholders(command, node_type="input")
+            return_placeholders = self.replace_with_placeholders(response, node_type="output")
+
             # We're cheating a bit here because we put placeholders instead of return_ids
             action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.actions.append(action)

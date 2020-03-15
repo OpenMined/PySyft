@@ -118,4 +118,4 @@ def test_is_none_message(workers):
 
     assert y.child.is_none()
 
-    bob.log_msgs = True
+    bob.log_msgs = False
