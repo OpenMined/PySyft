@@ -58,6 +58,7 @@ samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipoin
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
@@ -94,7 +95,7 @@ def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():
         has_sample = cls in samples
-        assert has_sample is True, f"Serde for {cls} is not tested"
+        assert has_sample, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
