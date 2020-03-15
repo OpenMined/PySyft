@@ -1097,6 +1097,7 @@ def test_plan_can_be_jit_traced(hook, workers):
 
     assert (y == th.tensor([3.0, 5])).all()
 
+
 def test_plan_input_usage(hook):
     x11 = th.tensor([-1, 2.0]).tag("input_data")
     x12 = th.tensor([1, -2.0]).tag("input_data2")
