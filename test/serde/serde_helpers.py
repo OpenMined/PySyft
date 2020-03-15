@@ -1381,7 +1381,7 @@ def make_computation_action(**kwargs):
     ]
 
 
-# syft.messaging.message.CommandMessage
+# syft.messaging.message.TensorCommandMessage
 def make_command_message(**kwargs):
     bob = kwargs["workers"]["bob"]
     alice = kwargs["workers"]["alice"]
@@ -1424,7 +1424,7 @@ def make_command_message(**kwargs):
         {
             "value": cmd1,
             "simplified": (
-                CODE[syft.messaging.message.CommandMessage],
+                CODE[syft.messaging.message.TensorCommandMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, cmd1.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
@@ -1432,7 +1432,7 @@ def make_command_message(**kwargs):
         {
             "value": cmd2,
             "simplified": (
-                CODE[syft.messaging.message.CommandMessage],
+                CODE[syft.messaging.message.TensorCommandMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, cmd2.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
@@ -1440,7 +1440,7 @@ def make_command_message(**kwargs):
         {
             "value": cmd3,
             "simplified": (
-                CODE[syft.messaging.message.CommandMessage],
+                CODE[syft.messaging.message.TensorCommandMessage],
                 (msgpack.serde._simplify(syft.hook.local_worker, cmd3.action),),
             ),
             "cmp_detailed": compare,
@@ -1655,8 +1655,8 @@ def make_plancommandmessage(**kwargs):
     ]
 
 
-# ExecuteWorkerFunctionMessage
-def make_executeworkerfunctionmessage(**kwargs):
+# WorkerCommandMessage
+def make_workercommandmessage(**kwargs):
     server, remote_proxy = kwargs["start_remote_worker"](
         id=kwargs["id"], hook=kwargs["hook"], port=kwargs["port"]
     )
@@ -1673,7 +1673,7 @@ def make_executeworkerfunctionmessage(**kwargs):
     server.terminate()
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.ExecuteWorkerFunctionMessage
+        assert type(detailed) == syft.messaging.message.WorkerCommandMessage
         assert detailed.contents == original.contents
         return True
 
@@ -1681,7 +1681,7 @@ def make_executeworkerfunctionmessage(**kwargs):
         {
             "value": objects_count_msg,
             "simplified": (
-                CODE[syft.messaging.message.ExecuteWorkerFunctionMessage],
+                CODE[syft.messaging.message.WorkerCommandMessage],
                 (
                     (CODE[str], (b"objects_count",)),  # (str) command
                     (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),

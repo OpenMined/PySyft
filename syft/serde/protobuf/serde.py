@@ -9,7 +9,7 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
-from syft.messaging.message import CommandMessage
+from syft.messaging.message import TensorCommandMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
@@ -44,7 +44,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
     ObjectMessage,
     ComputationAction,
-    CommandMessage,
+    TensorCommandMessage,
     CommunicationAction,
     PlaceHolder,
     Plan,
@@ -241,7 +241,7 @@ def serialize(
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
-    elif obj_type == CommandMessage:
+    elif obj_type == TensorCommandMessage:
         msg_wrapper.contents_action_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize

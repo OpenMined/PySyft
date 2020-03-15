@@ -72,7 +72,7 @@ samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = ma
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
-samples[syft.messaging.message.CommandMessage] = make_command_message
+samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
@@ -80,7 +80,7 @@ samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
 samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
-samples[syft.messaging.message.ExecuteWorkerFunctionMessage] = make_executeworkerfunctionmessage
+samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 
