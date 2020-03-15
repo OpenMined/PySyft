@@ -231,16 +231,17 @@ class Plan(AbstractObject, ObjectStorage):
                         f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
                         f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
                     )
-                placeholder.tags.add(f"#input-{arg_ids.index(tensor.id)}")
-                if tensor.id in result_ids:
-                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+
+                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
+                if tensor.id in self._tmp_result_ids:
+                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
 
             elif node_type == "output":
-                if tensor.id in result_ids:
-                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+                if tensor.id in self._tmp_result_ids:
+                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
 
-                if tensor.id in arg_ids:
-                    placeholder.tags.add(f"#input-{result_ids.index(tensor.id)}")
+                if tensor.id in self._tmp_args_ids:
+                    placeholder.tags.add(f"#input-{self._tmp_result_ids.index(tensor.id)}")
             else:
                 raise ValueError("node_type should be 'input' or 'output'.")
 
@@ -329,6 +330,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         for arg in args:
             self.replace_with_placeholders(arg, arg_ids, result_ids, node_type="input")
+
+        for arg in args:
+            self.replace_with_placeholders(arg, node_type="input")
 
         for log in sy.hook.trace.logs:
             command, response = log
