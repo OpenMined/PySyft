@@ -11,7 +11,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
-from syft.messaging.message import CommandMessage
+from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -263,7 +263,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def move(self, destination):
         kwargs = {"inplace": True, "create_pointer": False}
-        message = CommandMessage.communication(
+        message = TensorCommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
         self.owner.send_msg(message=message, location=self.location)
@@ -279,7 +279,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         C will hold a pointer to a pointer on A which points to the tensor on B.
         """
         kwargs = {"inplace": True}
-        message = CommandMessage.communication(
+        message = TensorCommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
         self.owner.send_msg(message=message, location=self.location)
