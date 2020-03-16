@@ -183,14 +183,10 @@ class AdditiveSharingTensor(AbstractTensor):
             else:
                 shares.append(share)
 
-        res_field = (
+        result = (
             torch.fmod(sum(shares), self.field // 2) if self.dtype == "custom" else sum(shares)
         )
-        gate = res_field.native_lt(0).type(self.field_to_torch_dtype)
-        neg_nums = res_field * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
+        print("Result: ", result)
         return result
 
     def virtual_get(self):
@@ -203,15 +199,9 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        res_field = (
+        result = (
             torch.fmod(sum(shares), self.field // 2) if self.dtype == "custom" else sum(shares)
         )
-
-        gate = res_field.native_lt(0).type(self.field_to_torch_dtype)
-        neg_nums = (res_field) * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
         return result
 
     def init_shares(self, *owners):
@@ -266,10 +256,8 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            if dtype == "custom":
-                torch.fmod(share, field // 2)
-            shares.append(share)
-
+            shares.append(torch.fmod(share, field//2) if dtype=="custom" else share)
+        print("Shares: ", shares)
         return shares
 
     def reconstruct(self):
@@ -418,12 +406,13 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
+            print("Self: ",v.location._objects," Other: ",other[k].location._objects)
             new_shares[k] = (
                 torch.fmod(other[k] + v, self.field // 2)
                 if self.dtype == "custom"
                 else other[k] + v
             )
-
+        print("Sum shares: ", new_shares["alice"].location._objects)
         return new_shares
 
     __add__ = add
@@ -557,7 +546,6 @@ class AdditiveSharingTensor(AbstractTensor):
                     if first_it:
                         first_it = False
                         zero_shares = self.zero(cmd_res.shape).child
-                    # TODO: refactor idea save self.field as field//2 to begin with
                     res[worker] = (
                         torch.fmod(cmd(share, other) + zero_shares[worker], self.field // 2)
                         if self.dtype == "custom"
