@@ -668,6 +668,45 @@ def make_multipointertensor(**kwargs):
     ]
 
 
+# syft.frameworks.torch.fl.dataset
+def make_basedataset(**kwargs):
+    workers = kwargs["workers"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    dataset = syft.BaseDataset(torch.tensor([1, 2, 3, 4]), torch.tensor([5, 6, 7, 8]))
+    dataset.tag("#tag1").describe("desc")
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.BaseDataset
+        assert (detailed.data == original.data).all()
+        assert (detailed.targets == original.targets).all()
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        return True
+
+    return [
+        {
+            "value": dataset,
+            "simplified": (
+                CODE[syft.frameworks.torch.fl.dataset.BaseDataset],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.data),
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.targets),
+                    dataset.id,
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.tags
+                    ),  # (set of str) tags
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.description
+                    ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
     # Function to plan
