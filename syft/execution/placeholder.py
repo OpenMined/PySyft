@@ -1,5 +1,3 @@
-import torch
-
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
