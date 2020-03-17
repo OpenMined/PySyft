@@ -17,6 +17,7 @@ import io
 from .storage.manager import register_new_node, connected_nodes, delete_node
 from .processes import processes
 from .events import handler
+from .events.fl_events import authenticate as fl_events_auth
 from .auth import workers
 from .events.fl_events import cycle_request, report
 from .exceptions import InvalidRequestKeyError, PyGridError
@@ -365,6 +366,21 @@ def download_model():
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
     )
+
+
+@main.route("/federated/authenticate", methods=["POST"])
+def auth():
+    """returns worker_id !!!currently!!! does not have auth logic"""
+    response_body = {}
+    status_code = 200
+    try:
+        auth_token = request.args.get("auth_token", None)
+        resp = fl_events_auth({"auth_token": auth_token}, None)
+        resp = json.loads(resp)["data"]
+    except Exception as e:
+        status_code = 401
+        resp = {"error_auth_failed": e}
+    return Response(json.dumps(resp), status=status_code, mimetype="application/json")
 
 
 @main.route("/federated/report", methods=["POST"])
