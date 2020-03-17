@@ -210,12 +210,10 @@ class ObjectMessage(Message):
     to do so.
     """
 
-    def __init__(self, object_, sender=None, origin_id=None):
+    def __init__(self, object_):
         """Initialize the message."""
 
         self.object = object_
-        self.object.sender = sender
-        self.object.origin_id = origin_id
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -234,11 +232,7 @@ class ObjectMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, msg.object),
-            sy.serde.msgpack.serde._simplify(worker, msg.object.sender),
-            sy.serde.msgpack.serde._simplify(worker, msg.object.origin_id),
-        )
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectMessage":
@@ -255,11 +249,7 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectMessage(
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
-        )
+        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, message: "ObjectMessage") -> "ObjectMessagePB":

@@ -384,8 +384,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
+        if requires_grad:
+            obj.sender = self.id
+            obj.origin_id = obj.id
+
         # Send the object
-        # self.send_obj(obj, worker)
+        self.send_obj(obj, worker)
+
+        if requires_grad:
+            obj.sender = None
+            obj.origin_id = None
 
         # If we don't need to create the pointer
         if not create_pointer:
@@ -410,9 +418,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             )
         else:
             pointer = obj
-
-        # Send the object
-        self.send_obj(obj, worker, requires_grad=requires_grad)
 
         return pointer
 
@@ -541,11 +546,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def execute_worker_command(self, message: tuple):
         """Executes commands received from other workers.
 
-                Args:
-                    message: A tuple specifying the command and the args.
+        Args:
+            message: A tuple specifying the command and the args.
 
-                Returns:
-                    A pointer to the result.
+        Returns:
+            A pointer to the result.
         """
         command_name = message.command_name
         args, kwargs, return_ids = message.message
@@ -688,22 +693,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker", requires_grad=False):
+    def send_obj(self, obj: object, location: "BaseWorker"):
         """Send a torch object to a worker.
 
         Args:
             obj: A torch Tensor or Variable object to be sent.
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
-            requires_grad: Default to False. If true, whenever the remote value of this tensor
-                will have its gradient updated (for example when calling .backward()), a call
-                will be made to set back the local gradient value.
         """
-        if requires_grad:
-            kwargs = dict(sender=self.id, origin_id=obj.id)
-        else:
-            kwargs = dict(sender=None, origin_id=None)
-        return self.send_msg(ObjectMessage(obj, **kwargs), location)
+        return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""

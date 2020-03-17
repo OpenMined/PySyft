@@ -263,10 +263,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
-        Will move the remove value from self.location to location
+        Will move the remove value from self.location to destination
 
         Args:
-            location: the new location of the remote data
+            destination: the new location of the remote data
             requires_grad: see send() for details
 
         Returns:
@@ -276,51 +276,33 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
-        # kwargs = {"inplace": True, "create_pointer": False}
-        # message = TensorCommandMessage.communication(
-        #    self.id_at_location, self.location.id, [destination.id], kwargs
-        # )
-        # self.owner.send_msg(message=message, location=self.location)
+        ptr = self.remote_send(destination, requires_grad=requires_grad)
 
-        # Change location of the pointer to point to the new object owner
-        # self.location = destination
+        # We make the pointer point at the remote value. As the id doesn't change,
+        # we don't update ptr.id_at_location
+        # Note that you have now 2 pointers on different locations pointing to the
+        # same tensor.
+        ptr.location = destination
 
-        # return self
-
-        ptr = self.remote_send(destination, requires_grad=requires_grad, change_location=True)
-        # don't want it to accidentally delete the remote object
-        # when this pointer is deleted
-        ptr.garbage_collect_data = False
         return ptr
 
     def remote_send(
-        self,
-        destination: AbstractWorker,
-        requires_grad: bool = False,
-        change_location: bool = False,
+        self, destination: AbstractWorker, requires_grad: bool = False,
     ):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-        If change_location is set to True, the original pointer will point to the moved object.
-        Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
-        will have 2 references pointing to it.
 
         Args:
             destination: where the remote value should be sent
             requires_grad: if true updating the grad of the remote tensor on destination B will trigger
                 a message to update the gradient of the value on A.
-            change_location: if true, returns a pointer directly to the remote value on B. If False,
-                return a pointer to A which points to B.
         """
         kwargs = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
         self.owner.send_msg(message=message, location=self.location)
-        if change_location:
-            self.location = destination
         return self
 
     def remote_get(self):

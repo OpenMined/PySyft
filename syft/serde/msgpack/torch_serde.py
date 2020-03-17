@@ -148,6 +148,9 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
+    sender = tensor.sender if hasattr(tensor, "sender") else None
+    origin_id = tensor.origin_id if hasattr(tensor, "origin_id") else None
+
     return (
         tensor.id,
         tensor_bin,
@@ -156,6 +159,8 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         serde._simplify(worker, tensor.tags),
         serde._simplify(worker, tensor.description),
         serde._simplify(worker, worker.serializer),
+        serde._simplify(worker, sender),
+        serde._simplify(worker, origin_id),
     )
 
 
@@ -174,7 +179,17 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain, tags, description, serializer = tensor_tuple
+    (
+        tensor_id,
+        tensor_bin,
+        chain,
+        grad_chain,
+        tags,
+        description,
+        serializer,
+        sender,
+        origin_id,
+    ) = tensor_tuple
 
     tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
 
@@ -194,6 +209,8 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor.tags = serde._detail(worker, tags)
     tensor.description = serde._detail(worker, description)
+    tensor.sender = serde._detail(worker, sender)
+    tensor.origin_id = serde._detail(worker, origin_id)
 
     return tensor
 
@@ -255,6 +272,8 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param.id = param_id
     param.grad = grad
     param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
+    param.sender = tensor.sender
+    param.origin_id = tensor.origin_id
 
     return param
 
