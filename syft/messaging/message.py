@@ -249,7 +249,7 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),)
+        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
     @staticmethod
     def bufferize(worker: AbstractWorker, message: "ObjectMessage") -> "ObjectMessagePB":

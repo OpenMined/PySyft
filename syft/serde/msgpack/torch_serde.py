@@ -272,8 +272,15 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param.id = param_id
     param.grad = grad
     param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
-    param.sender = tensor.sender
-    param.origin_id = tensor.origin_id
+
+    # Note: should be
+    #  param.sender = tensor.sender
+    #  param.origin_id = tensor.origin_id
+    # but the wrapper is lost at serialisation because of the way we hook parameter.data
+    # TODO: fix serialisation of parameters (check in particular .child & .data)
+    # Below is just a fix:
+    param.sender = tensor.sender if hasattr(tensor, "sender") else None
+    param.sender = tensor.sender if hasattr(tensor, "origin_id") else None
 
     return param
 
