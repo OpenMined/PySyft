@@ -43,4 +43,24 @@ def load(tag: str, src: int, id_worker: int):
     return result
 
 
+def crypten_to_torch_modules(model):
+    """Converts crypten modules to torch ones."""
+
+    for name, curr_module in model._modules.items():
+        # module_name = curr_module.__class__.split('.')[-1]
+        if isinstance(curr_module, crypten.nn.module.Linear):
+            out_nodes, in_nodes = curr_module._parameters['weight'].size()
+            new_module = torch.nn.Linear(in_nodes, out_nodes)
+            # Copy weights and biases
+            weights = curr_module._parameters['weight']
+            biases = curr_module._parameters['bias']
+            new_module._parameters['weight'] = weights.get_plain_text()
+            new_module._parameters['bias'] = biases.get_plain_text()
+            model._modules[name] = new_module
+        elif isinstance(curr_module, crypten.nn.module.ReLU):
+            model._modules[name] = torch.nn.ReLU()
+
+    return model
+
+
 __all__ = ["toy_func", "run_party", "load"]
