@@ -273,27 +273,27 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             A pointer to location
         """
         # move to local target is equivalent to doing .get()
-        if self.owner.id == location.id:
+        if self.owner.id == destination.id:
             return self.get()
-          
-        #kwargs = {"inplace": True, "create_pointer": False}
-        #message = TensorCommandMessage.communication(
+
+        # kwargs = {"inplace": True, "create_pointer": False}
+        # message = TensorCommandMessage.communication(
         #    self.id_at_location, self.location.id, [destination.id], kwargs
-        #)
-        #self.owner.send_msg(message=message, location=self.location)
+        # )
+        # self.owner.send_msg(message=message, location=self.location)
 
         # Change location of the pointer to point to the new object owner
-        #self.location = destination
+        # self.location = destination
 
-        #return self
-        
-        ptr = self.remote_send(location, requires_grad=requires_grad, change_location=True)
+        # return self
+
+        ptr = self.remote_send(destination, requires_grad=requires_grad, change_location=True)
         # don't want it to accidentally delete the remote object
         # when this pointer is deleted
         ptr.garbage_collect_data = False
         return ptr
 
-     def remote_send(
+    def remote_send(
         self,
         destination: AbstractWorker,
         requires_grad: bool = False,

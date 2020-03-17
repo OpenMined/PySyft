@@ -214,8 +214,8 @@ class ObjectMessage(Message):
         """Initialize the message."""
 
         self.object = object_
-        self.sender = sender
-        self.origin_id = origin_id
+        self.object.sender = sender
+        self.object.origin_id = origin_id
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -236,8 +236,8 @@ class ObjectMessage(Message):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, msg.object),
-            sy.serde.msgpack.serde._simplify(worker, msg.sender),
-            sy.serde.msgpack.serde._simplify(worker, msg.origin_id),
+            sy.serde.msgpack.serde._simplify(worker, msg.object.sender),
+            sy.serde.msgpack.serde._simplify(worker, msg.object.origin_id),
         )
 
     @staticmethod
