@@ -423,7 +423,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
-            
+
         # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Receive an object from a another worker
 
@@ -431,7 +431,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             obj: a Framework Tensor or a subclass of an AbstractTensor with an id
         """
         obj = obj_msg.object
-        
+
         self.set_obj(obj)
 
         if isinstance(obj, FrameworkTensor):
@@ -440,7 +440,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 tensor.register_hook(
                     tensor.trigger_origin_backward_hook(tensor.sender, tensor.origin_id)
                 )
-
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
@@ -536,7 +535,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
 
-            self.rm_obj(obj_id)
+            # self.rm_obj(obj_id) #TODO put it back
             return response
 
     def execute_worker_command(self, message: tuple):
