@@ -540,7 +540,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
 
-            # self.rm_obj(obj_id) #TODO put it back
+            # @lariffle: We only remove remote objects when the operations are inplace
+            # otherwise we could have stale pointers which we really want to avoid.
+            # TODO: needs more discussion
+            if kwargs.get("inplace"):
+                self.rm_obj(obj_id)
             return response
 
     def execute_worker_command(self, message: tuple):

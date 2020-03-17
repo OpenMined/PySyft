@@ -685,6 +685,9 @@ class TorchTensor(AbstractTensor):
         """
         Move acts on a pointer to A to move the remote value to B (=location).
 
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
+
         Args:
             location: the worker where the remote value should be moved
             requires_grad: see send() for details

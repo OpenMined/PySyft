@@ -263,7 +263,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
-        Will move the remove value from self.location to destination
+        Will move the remove value from self.location A to destination B
+
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
 
         Args:
             destination: the new location of the remote data
