@@ -856,6 +856,12 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if crypto_provider == None:
+            raise ValueError ("'crypto_provider' should not be None.")
+        else:
+            if crypto_provider in owners:
+                raise ValueError("client worker cannot be a crypto_provider.")
+        
         if self.has_child():
             chain = self.child
 
