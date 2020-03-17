@@ -1126,3 +1126,75 @@ def test_plan_input_usage(hook):
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
     assert (result == x12).all
+
+
+def test_plan_wrong_number_of_parameters(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test(x, y, z, t):
+        return x
+
+    pointer_to_data_1 = device_1.search("input_data")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    dummy_input_list = [th.tensor([1, -2]), th.tensor([1, 2]), 2, False]
+    input_list = [pointer_to_data_1, pointer_to_data_2, 5, True]
+    corect_number_of_params = 4
+
+    for i in range(len(input_list)):
+        plan_test.build(*dummy_input_list)
+        pointer_plan = plan_test.send(device_1)
+
+        if i == corect_number_of_params:
+            pointer_plan(*input_list[:i])
+        else:
+            with pytest.raises(RuntimeError) as e:
+                pointer_plan(*input_list[:i])
+
+            assert f"Plan plan_test requires {len(input_list)} arguments, received {i}." == str(
+                e.value
+            )
+
+
+def test_plan_warnings_typecheck(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test(x, y, z, t):
+        return x
+
+    pointer_to_data_1 = device_1.search("input_data")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    dummy_input_list = [th.tensor([1, -2]), th.tensor([1, 2]), 2, False]
+
+    wrong_type_inputs = [
+        [pointer_to_data_1, pointer_to_data_2, 2, 2],
+        [pointer_to_data_1, pointer_to_data_2, 2.0, False],
+        [pointer_to_data_1, 2, 2.0, False],
+        [pointer_to_data_1, 2.0, 2, False],
+        [True, pointer_to_data_2, 2.0, False],
+    ]
+
+    for test_number, wrong_type_input in enumerate(wrong_type_inputs):
+        plan_test.build(*dummy_input_list)
+        with pytest.warns(RuntimeWarning) as e:
+            plan_test(*wrong_type_input)
+
+        if test_number == 0:
+            assert len(e) == 1
+        elif test_number == 1:
+            assert len(e) == 1
+        elif test_number == 2:
+            assert len(e) == 2
+        elif test_number == 3:
+            assert len(e) == 1
+        elif test_number == 4:
+            assert len(e) == 2

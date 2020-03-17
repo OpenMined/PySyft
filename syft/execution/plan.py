@@ -1,4 +1,6 @@
 import re
+import warnings
+
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -48,7 +50,6 @@ class func2plan(object):
             id=sy.ID_PROVIDER.pop(),
             owner=sy.local_worker,
         )
-
         # Build the plan automatically
         if self.args_shape:
             args = Plan._create_placeholders(self.args_shape)
@@ -236,18 +237,35 @@ class Plan(AbstractObject, ObjectStorage):
                 if tensor.id in self._tmp_result_ids:
                     placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
 
+                placeholder.tags.add(f"#type_FrameworkTensor")
             elif node_type == "output":
                 if tensor.id in self._tmp_result_ids:
                     placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
 
                 if tensor.id in self._tmp_args_ids:
-                    placeholder.tags.add(f"#input-{self._tmp_result_ids.index(tensor.id)}")
+                    placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
             else:
                 raise ValueError("node_type should be 'input' or 'output'.")
 
             self.var_count += 1
 
         return self.placeholders[tensor.id]
+
+    def add_placeholder_nontensor(self, obj, node_type=None):
+        if id(obj) not in self.placeholders.keys():
+            placeholder = sy.PlaceHolder(
+                tags={f"#{self.var_count + 1}"}, id=id(obj), owner=self.owner
+            )
+            self.placeholders[id(obj)] = placeholder
+
+            if node_type == "nontensor_input":
+                if id(obj) in self._tmp_args_ids:
+                    placeholder.tags.add(f"#nontensor_input-{self._tmp_args_ids.index(id(obj))}")
+                    type_tag = "type_" + str(type(obj)).split("'")[1]
+                    placeholder.tags.add(f"#{type_tag}")
+            else:
+                raise ValueError("node_type should be 'nontensor_input'")
+            self.var_count += 1
 
     def replace_with_placeholders(self, obj, arg_ids, result_ids, **kw):
         """
@@ -312,8 +330,8 @@ class Plan(AbstractObject, ObjectStorage):
         Args:
             args: Input arguments to run the plan
         """
-
         self.owner.init_plan = self
+        self._tmp_args_ids = [t.id if isinstance(t, FrameworkTensor) else id(t) for t in args]
 
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
@@ -332,7 +350,10 @@ class Plan(AbstractObject, ObjectStorage):
             self.replace_with_placeholders(arg, arg_ids, result_ids, node_type="input")
 
         for arg in args:
-            self.replace_with_placeholders(arg, node_type="input")
+            if isinstance(arg, FrameworkTensor):
+                self.replace_with_placeholders(arg, node_type="input")
+            else:
+                self.add_placeholder_nontensor(arg, node_type="nontensor_input")
 
         for log in sy.hook.trace.logs:
             command, response = log
@@ -375,7 +396,6 @@ class Plan(AbstractObject, ObjectStorage):
         in the owner's registry
         """
         object.__setattr__(self, name, value)
-
         if isinstance(value, FrameworkTensor):
             placeholder = sy.PlaceHolder(
                 tags={"#state", f"#{self.var_count + 1}"}, id=value.id, owner=self.owner
@@ -400,41 +420,74 @@ class Plan(AbstractObject, ObjectStorage):
           and use the result(s) to instantiate to appropriate placeholder.
         - Return the instantiation of all the output placeholders.
         """
-        if self.forward is not None:  # if not self.is_built:
+        if not self.is_built:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
 
-        else:
-            # Instantiate all the input placeholders in the correct order
+        def extract_type(obj: PlaceHolder) -> str:
+            for tag in obj.tags:
+                if "type_" in tag:
+                    return tag[6:]
 
-            input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
-            for placeholder, arg in zip(input_placeholders, args):
-                placeholder.instantiate(arg)
+        # Instantiate all the input placeholders in the correct order
+        input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
+        nontensor_inputs = self.find_placeholders("#nontensor_input")
+        inputs = sorted(input_placeholders + nontensor_inputs, key=tag_sort("input"))
+        if len(inputs) != len(args):
+            raise RuntimeError(
+                f"Plan {self.name} requires {len(inputs)} arguments, received {len(args)}."
+            )
 
-            for i, action in enumerate(self.actions):
-                cmd, _self, args, kwargs, return_placeholder = (
-                    action.name,
-                    action.target,  # target is equivalent to the "self" in a method
-                    action.args,
-                    action.kwargs,
-                    action.return_ids,
+        for index, arg in enumerate(args):
+            placeholder_type = extract_type(inputs[index])
+            argument_type = str(type(arg)).split("'")[1]
+
+            tensor_type_error = (
+                isinstance(arg, FrameworkTensor) == placeholder_type == "FrameworkTensor"
+            )
+            variable_type_eror = (
+                not isinstance(arg, FrameworkTensor)
+            ) and argument_type != placeholder_type
+
+            if tensor_type_error or variable_type_eror:
+                warnings.warn(
+                    f"Argument {index} of plan {self.name} has been built with type {placeholder_type},"
+                    f" but received type {argument_type}.",
+                    RuntimeWarning,
                 )
-                if _self is None:
-                    response = eval(cmd)(*args, **kwargs)  # nosec
-                else:
-                    response = getattr(_self, cmd)(*args, **kwargs)
 
-                self.instantiate(return_placeholder, response)
+        if self.forward is not None:
+            if self.include_state:
+                args = (*args, self.state)
+            return self.forward(*args)
 
-            # This ensures that we return the output placeholder in the correct order
-            output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
-            response = [p.child for p in output_placeholders]
+        for placeholder, arg in zip(input_placeholders, args):
+            placeholder.instantiate(arg)
 
-            if len(response) == 1:
-                return response[0]
+        for i, action in enumerate(self.actions):
+            cmd, _self, args, kwargs, return_placeholder = (
+                action.name,
+                action.target,  # target is equivalent to the "self" in a method
+                action.args,
+                action.kwargs,
+                action.return_ids,
+            )
+            if _self is None:
+                response = eval(cmd)(*args, **kwargs)  # nosec
             else:
-                return tuple(response)
+                response = getattr(_self, cmd)(*args, **kwargs)
+
+            self.instantiate(return_placeholder, response)
+
+        # This ensures that we return the output placeholder in the correct order
+        output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
+        response = [p.child for p in output_placeholders]
+
+        if len(response) == 1:
+            return response[0]
+        else:
+            return tuple(response)
 
     @staticmethod
     def instantiate(placeholder, response):
