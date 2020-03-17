@@ -17,12 +17,14 @@ class PrimitiveStorage:
         self.fss_eq: list = []
         self.fss_comp: list = []
         self.beaver: list = []
+        self.xor_add_couple: list = []  # couple of the same value shared via ^ or + op
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
             "fss_eq": self.build_fss_keys(type_op="eq"),
             "fss_comp": self.build_fss_keys(type_op="comp"),
             "beaver": self.build_triples,
+            "xor_add_couple": self.build_xor_add_couple,
         }
 
     def provide_primitives(
@@ -103,6 +105,15 @@ class PrimitiveStorage:
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys
+
+    @staticmethod
+    def build_xor_add_couple(nbits):
+        r = th.randint(2, size=(nbits,))
+        mask1 = th.randint(2, size=(nbits,))
+        mask2 = th.randint(2, size=(nbits,))
+
+        return [(r ^ mask1, r - mask2), (mask1, mask2)]
+
 
     def build_triples(self, **kwargs):
         raise NotImplementedError

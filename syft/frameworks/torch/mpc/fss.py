@@ -23,19 +23,37 @@ n = 32  # 8  # 32  # bit precision
 no_wrap = {"no_wrap": True}
 
 
-def manual_init_store(worker):
+def initialize_crypto_plans(worker):
     """
     This is called manually for the moment, to build the plan used to perform
     Function Secret Sharing on a specific worker.
     """
     eq_plan_1 = sy.Plan(
-        forward_func=mask_builder, owner=worker, tags=["#fss_eq_plan_1"], is_built=True
+        forward_func=lambda x, y: mask_builder(x, y, 'eq'), owner=worker, tags=["#fss_eq_plan_1"], is_built=True
     )
     worker.register_obj(eq_plan_1)
     eq_plan_2 = sy.Plan(
-        forward_func=eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
+        forward_func=eq_eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
     )
     worker.register_obj(eq_plan_2)
+
+    comp_plan_1 = sy.Plan(
+        forward_func=lambda x, y: mask_builder(x, y, 'comp'), owner=worker, tags=["#fss_comp_plan_1"], is_built=True
+    )
+    worker.register_obj(comp_plan_1)
+    comp_plan_2 = sy.Plan(
+        forward_func=comp_eval_plan, owner=worker, tags=["#fss_comp_plan_2"], is_built=True
+    )
+    worker.register_obj(comp_plan_2)
+
+    xor_add_plan = sy.Plan(
+        forward_func=xor_add_convert_1, owner=worker, tags=["#xor_add_1"], is_built=True
+    )
+    worker.register_obj(xor_add_plan)
+    xor_add_plan = sy.Plan(
+        forward_func=xor_add_convert_2, owner=worker, tags=["#xor_add_2"], is_built=True
+    )
+    worker.register_obj(xor_add_plan)
 
 
 def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
@@ -72,23 +90,43 @@ def fss_op(x1, x2, type_op="eq"):
     shares = []
     for location in locations:
         args = (x1.child[location.id], x2.child[location.id])
-        share = request_run_plan(me, "#fss_eq_plan_1", location, return_value=True, args=args,)
+        share = request_run_plan(me, f"#fss_{type_op}_plan_1", location, return_value=True, args=args)
         shares.append(share)
 
     mask_value = sum(shares) % 2 ** n
 
-    shares = {}
+    shares = []
     for i, location in enumerate(locations):
         args = (th.IntTensor([i]), mask_value)
-        share = request_run_plan(me, "#fss_eq_plan_2", location, return_value=False, args=args)
-        shares[location] = share
+        share = request_run_plan(me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args)
+        shares.append(share)
+
+    for share in shares:
+        print('\t', share.location._objects[share.id_at_location])
+
+    if type_op == "comp":
+        prev_shares = shares
+        shares = []
+        for prev_share, location in zip(prev_shares, locations):
+            share = request_run_plan(me, f"#xor_add_1", location, return_value=False, args=(prev_share, ))
+            shares.append(share)
+
+        masked_value = shares[0] ^ shares[1]  # TODO case >2 workers ?
+        args = (masked_value,)
+
+        shares = {}
+        for prev_share, location in zip(prev_shares, locations):
+            share = request_run_plan(me, f"#xor_add_2", location, return_value=False, args=args)
+            shares[location] = share
+
+    for w, share in shares.items():
+        print('\t', share.location._objects[share.id_at_location])
 
     response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
-
     return response
 
 
-def get_keys(worker, remove=True):
+def get_keys(worker, type_op, remove=True):
     """
     Return FSS keys primitives
 
@@ -98,28 +136,48 @@ def get_keys(worker, remove=True):
             needed because we're working on virtual workers and they need to gather
             a some point and then re-access the keys.
     """
+    primitive_stack = {
+        'eq': worker.crypto_store.fss_eq,
+        'comp': worker.crypto_store.fss_comp
+    }[type_op]
+
     try:
         if remove:
-            return worker.crypto_store.fss_eq.pop(0)
+            return primitive_stack.pop(0)
         else:
-            return worker.crypto_store.fss_eq[0]
+            return primitive_stack[0]
     except IndexError:
-        raise EmptyCryptoPrimitiveStoreError(worker.crypto_store, "fss_eq")
+        raise EmptyCryptoPrimitiveStoreError(worker.crypto_store, f"fss_{type_op}")
 
 
 # share level
-def mask_builder(x1, x2):
+def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
-    alpha, s_0, *CW = get_keys(x1.owner, remove=False)
+    alpha, s_0, *CW = get_keys(x1.owner, type_op, remove=False)
     return x + alpha
 
 
 # share level
-def eval_plan(b, x_masked):
-    alpha, s_0, *CW = get_keys(x_masked.owner, remove=True)
+def eq_eval_plan(b, x_masked):
+    alpha, s_0, *CW = get_keys(x_masked.owner, type_op='eq', remove=True)
     result_share = DPF.eval(b, x_masked, s_0, *CW)
     return result_share
+
+# share level
+def comp_eval_plan(b, x_masked):
+    alpha, s_0, *CW = get_keys(x_masked.owner, type_op='comp', remove=True)
+    result_share = DIF.eval(b, x_masked, s_0, *CW)
+    return result_share
+
+
+def xor_add_convert_1(x):
+    xor_share, add_share = x.worker.crypto_store.xor_add_couple[0]
+    return x ^ xor_share
+
+def xor_add_convert_2(x):
+    xor_share, add_share = x.worker.crypto_store.xor_add_couple.pop(0)
+    return add_share * (1 - 2 * x) + x
 
 
 def eq(x1, x2):
@@ -231,6 +289,7 @@ class DIF:
 
 # PRG
 def G(seed):
+    assert len(seed) == λ
     enc_str = str(seed.tolist()).encode()
     h = hashlib.sha3_256(enc_str)
     r = h.digest()
@@ -240,8 +299,11 @@ def G(seed):
 
 def H(seed):
     assert len(seed) == λ
-    th.manual_seed(Convert(seed))
-    return th.randint(2, size=(2 + 2 * (λ + 1),), dtype=th.uint8)
+    enc_str = str(seed.tolist()).encode()
+    h = hashlib.sha3_256(enc_str)
+    r = h.digest()
+    binary_str = bin(int.from_bytes(r, byteorder="big"))[2: 2 + 2 + (2 * (λ + 1))]
+    return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
 
 
 # bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).to(th.uint8)
