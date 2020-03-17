@@ -1,4 +1,5 @@
 jupyter~=1.0.0
+notebook==5.7.8
 matplotlib~=3.1.1
 nltk~=3.4.5
 papermill~=2.0.0

@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 
 import syft
+from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -10,6 +11,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -154,7 +156,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def clone(self):
         """
         Clone should keep ids unchanged, contrary to copy.
-        We make the choice that a clone operation is local, and can't affect
+        We make the choice that a clone action is local, and can't affect
         the remote tensors, so garbage_collect_data is always False, both
         for the tensor cloned and the clone.
         """
@@ -259,7 +261,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location: AbstractWorker, requires_grad: bool = False):
+    def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
         Will move the remove value from self.location to location
 
@@ -273,14 +275,25 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # move to local target is equivalent to doing .get()
         if self.owner.id == location.id:
             return self.get()
+          
+        #kwargs = {"inplace": True, "create_pointer": False}
+        #message = TensorCommandMessage.communication(
+        #    self.id_at_location, self.location.id, [destination.id], kwargs
+        #)
+        #self.owner.send_msg(message=message, location=self.location)
 
+        # Change location of the pointer to point to the new object owner
+        #self.location = destination
+
+        #return self
+        
         ptr = self.remote_send(location, requires_grad=requires_grad, change_location=True)
         # don't want it to accidentally delete the remote object
         # when this pointer is deleted
         ptr.garbage_collect_data = False
         return ptr
 
-    def remote_send(
+     def remote_send(
         self,
         destination: AbstractWorker,
         requires_grad: bool = False,
@@ -301,9 +314,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             change_location: if true, returns a pointer directly to the remote value on B. If False,
                 return a pointer to A which points to B.
         """
-        args = (destination,)
         kwargs = {"inplace": False, "requires_grad": requires_grad}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
+        message = TensorCommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        self.owner.send_msg(message=message, location=self.location)
         if change_location:
             self.location = destination
         return self
@@ -408,21 +423,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         # Send the command
         command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def keep(self, *args, **kwargs):
-        """
-        Send a command to remote worker to keep a promise
-
-        Returns:
-            A pointer to a Tensor
-        """
-
-        # Send the command
-        command = ("keep", self, args, kwargs)
 
         response = self.owner.send_command(self.location, command)
 

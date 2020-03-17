@@ -92,7 +92,7 @@ Example:
 
 ```python
 @pytest.mark.parametrize(
-        "compress, compressScheme", [(True, "lz4"), (False, "lz4"), (True, "zstd"), (False, "zstd")]
+        "compress, compressScheme", [(True, "lz4"), (False, "lz4")]
     )
 def test_hooked_tensor(self, compress, compressScheme):
     TorchHook(torch)

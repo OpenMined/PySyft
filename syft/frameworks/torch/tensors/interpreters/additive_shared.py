@@ -51,7 +51,19 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.child = shares
+        if shares is not None:
+            self.child = {}
+            for location, share in shares.items():
+                if isinstance(share, sy.PointerTensor):
+                    self.child[location] = share
+                elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
+                    self.child[location] = share.child
+                else:
+                    raise ValueError(
+                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                    )
+        else:
+            self.child = None
 
         self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
         self.n_bits = (
@@ -68,10 +80,11 @@ class AdditiveSharingTensor(AbstractTensor):
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
-        for v in self.child.values():
-            out += "\n\t-> " + str(v)
+        if self.child is not None:
+            for v in self.child.values():
+                out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
-            out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
+            out += f"\n\t*crypto provider: {self.crypto_provider.id}*"
         return out
 
     def __bool__(self):
@@ -243,12 +256,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
-    def zero(self):
+    def zero(self, shape=None):
         """
         Build an additive shared tensor of value zero with the same
         properties as self
         """
-        shape = self.shape if self.shape else [1]
+
+        if shape == None or len(shape) == 0:
+            shape = self.shape if self.shape else [1]
         zero = (
             torch.zeros(*shape)
             .long()
@@ -482,11 +497,17 @@ class AdditiveSharingTensor(AbstractTensor):
                 other_is_zero = True
 
             if other_is_zero:
-                zero_shares = self.zero().child
-                return {
-                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
-                    for worker, share in shares.items()
-                }
+                res = {}
+                first_it = True
+
+                for worker, share in shares.items():
+                    cmd_res = cmd(share, other)
+                    if first_it:
+                        first_it = False
+                        zero_shares = self.zero(cmd_res.shape).child
+
+                    res[worker] = (cmd(share, other) + zero_shares[worker]) % self.field
+                return res
             else:
                 return {
                     worker: (cmd(share, other) % self.field) for worker, share in shares.items()

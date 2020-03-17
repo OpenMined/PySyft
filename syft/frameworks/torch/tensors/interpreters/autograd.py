@@ -309,7 +309,6 @@ class AutogradTensor(AbstractTensor):
         )
 
         return (
-            tensor.owner,
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             chain,
             tensor.requires_grad,
@@ -333,7 +332,6 @@ class AutogradTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
         (
-            owner,
             tensor_id,
             chain,
             requires_grad,
@@ -347,7 +345,7 @@ class AutogradTensor(AbstractTensor):
             chain = syft.serde.msgpack.serde._detail(worker, chain)
 
         tensor = AutogradTensor(
-            owner=owner,
+            owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,

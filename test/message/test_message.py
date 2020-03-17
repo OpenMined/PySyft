@@ -5,15 +5,6 @@ import syft as sy
 from syft.messaging import message
 
 
-def test_message_serde():
-
-    x = message.Message([1, 2, 3])
-    x_bin = sy.serde.serialize(x)
-    y = sy.serde.deserialize(x_bin, sy.local_worker)
-
-    assert x.contents == y.contents
-
-
 def test_cmd_message(workers):
 
     bob = workers["bob"]
@@ -23,7 +14,7 @@ def test_cmd_message(workers):
     x = th.tensor([1, 2, 3, 4]).send(bob)
 
     y = x + x  # this is the test
-    assert isinstance(bob._get_msg(-1), message.OperationMessage)
+    assert isinstance(bob._get_msg(-1), message.TensorCommandMessage)
 
     y = y.get()
 
@@ -127,14 +118,4 @@ def test_is_none_message(workers):
 
     assert y.child.is_none()
 
-    bob.log_msgs = True
-
-
-def test_search_message_serde():
-
-    x = message.SearchMessage([1, 2, 3])
-
-    x_bin = sy.serde.serialize(x)
-    y = sy.serde.deserialize(x_bin, sy.local_worker)
-
-    assert x.contents == y.contents
+    bob.log_msgs = False

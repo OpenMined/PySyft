@@ -929,7 +929,7 @@ def test_cnn_model(workers):
 
 
 def test_correct_tag_and_description_after_send(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
 
     x = torch.tensor([1, 2, 3]).share(alice, bob, james)
     x.tags = ["tag_additive_test1", "tag_additive_test2"]
@@ -937,6 +937,5 @@ def test_correct_tag_and_description_after_send(workers):
 
     pointer_x = x.send(alice)
 
-    assert alice.search("tag_additive_test1")
-    assert alice.search("tag_additive_test2")
-    assert alice.search("description_additive_test")
+    assert me.request_search("tag_additive_test1", location=alice)
+    assert me.request_search("tag_additive_test2", location=alice)

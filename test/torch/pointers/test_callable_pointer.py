@@ -4,6 +4,9 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 
 
 def test_create_callable_pointer(workers):
+    """
+    Asserts that a callable pointer is correctly created.
+    """
     alice = workers["alice"]
     bob = workers["bob"]
     callable_pointer.create_callable_pointer(
@@ -34,6 +37,10 @@ def test_create_callable_pointer(workers):
 
 
 def test_get_obj_callable_pointer(workers):
+    """
+    Asserts that correct object values are returned when
+    `callable_pointer` is called.
+    """
     alice = workers["alice"]
     bob = workers["bob"]
 
@@ -61,7 +68,13 @@ def test_get_obj_callable_pointer(workers):
 
 
 def test_call_callable_pointer(workers):
+    """
+    Tests that the correct result after an operation is
+    returned when `callable_pointer` is called.
+    """
+
     def foo(x):
+        """ Adds 2 to a given input `x`."""
         return x + 2
 
     alice = workers["alice"]

@@ -12,6 +12,7 @@ from syft.workers import websocket_client
 from syft.frameworks.torch.fl import utils
 
 LOG_INTERVAL = 25
+logger = logging.getLogger("run_websocket_client")
 
 
 # Loss function
@@ -161,10 +162,10 @@ def evaluate_model_on_worker(
     logger.info(
         "%s: Average loss: %s, Accuracy: %s/%s (%s%%)",
         model_identifier,
-        "{:.4f}".format(test_loss),
+        f"{test_loss:.4f}",
         correct,
         len_dataset,
-        "{:.2f}".format(100.0 * correct / len_dataset),
+        f"{100.0 * correct / len_dataset:.2f}",
     )
 
 
@@ -226,7 +227,7 @@ async def main():
                     model=worker_model,
                     nr_bins=10,
                     batch_size=128,
-                    device=args.device,
+                    device=device,
                     print_target_hist=False,
                 )
 
@@ -246,7 +247,7 @@ async def main():
                 model=traced_model,
                 nr_bins=10,
                 batch_size=128,
-                device=args.device,
+                device=device,
                 print_target_hist=False,
             )
 
@@ -261,7 +262,6 @@ if __name__ == "__main__":
     # Logging setup
     FORMAT = "%(asctime)s | %(message)s"
     logging.basicConfig(format=FORMAT)
-    logger = logging.getLogger("run_websocket_client")
     logger.setLevel(level=logging.DEBUG)
 
     # Websockets setup
