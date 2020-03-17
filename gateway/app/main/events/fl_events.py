@@ -4,7 +4,7 @@ from binascii import unhexlify
 import torch as th
 
 from .socket_handler import SocketHandler
-from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE
+from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
 from ..processes import processes
 from ..auth import workers
 from syft.serde.serde import deserialize
@@ -57,6 +57,8 @@ def host_federated_training(message: dict, socket) -> str:
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
         response[RESPONSE_MSG.ERROR] = str(e)
 
+    response = {MSG_FIELD.TYPE: FL_EVENTS.HOST_FL_TRAINING, MSG_FIELD.DATA: response}
+
     return json.dumps(response)
 
 
@@ -87,6 +89,7 @@ def authenticate(message: dict, socket) -> str:
         response[CYCLE.STATUS] = RESPONSE_MSG.ERROR
         response[RESPONSE_MSG.ERROR] = str(e)
 
+    response = {MSG_FIELD.TYPE: FL_EVENTS.AUTHENTICATE, MSG_FIELD.DATA: response}
     return json.dumps(response)
 
 
@@ -127,6 +130,7 @@ def cycle_request(message: dict, socket) -> str:
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[RESPONSE_MSG.ERROR] = str(e)
 
+    response = {MSG_FIELD.TYPE: FL_EVENTS.CYCLE_REQUEST, MSG_FIELD.DATA: response}
     return json.dumps(response)
 
 
@@ -184,6 +188,7 @@ def report(message: dict, socket) -> str:
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
         response[RESPONSE_MSG.ERROR] = str(e)
 
+    response = {MSG_FIELD.TYPE: FL_EVENTS.REPORT, MSG_FIELD.DATA: response}
     return json.dumps(response)
 
 

@@ -140,7 +140,7 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
 
         # Send host_training message
         response = await send_ws_message(host_training_message)
-        self.assertEqual(response, {"status": "success"})
+        self.assertEqual(response["data"], {"status": "success"})
 
         """ 2 - Authentication Request """
 
@@ -149,8 +149,8 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
 
         # Send worker authentication message
         response = await send_ws_message(auth_msg)
-        self.assertEqual(response["status"], "success")
-        worker_id = response.get("worker_id", None)
+        self.assertEqual(response["data"]["status"], "success")
+        worker_id = response["data"].get("worker_id", None)
 
         assert worker_id != None
 
@@ -169,7 +169,7 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
 
         # Send worker authentication message
         response = await send_ws_message(message)
-        self.assertEqual(response["status"], "accepted")
+        self.assertEqual(response["data"]["status"], "accepted")
 
         response_fields = [
             "request_key",
@@ -181,4 +181,4 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
 
         # Check if response fields are empty
         for field in response_fields:
-            assert response.get(field, None) != None
+            assert response["data"].get(field, None) != None
