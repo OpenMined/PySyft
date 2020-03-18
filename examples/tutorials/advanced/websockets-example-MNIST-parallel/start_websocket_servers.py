@@ -5,7 +5,12 @@ from torchvision import transforms
 
 import signal
 import sys
+import os
 
+if os.name == "nt":
+    python = "python"
+else:
+    python = "python" + sys.version[0:3]
 
 # Downloads MNIST dataset
 mnist_trainset = datasets.MNIST(
@@ -18,7 +23,7 @@ mnist_trainset = datasets.MNIST(
 )
 
 call_alice = [
-    "python",
+    python,
     "run_websocket_server.py",
     "--port",
     "8777",
@@ -29,7 +34,7 @@ call_alice = [
 ]
 
 call_bob = [
-    "python",
+    python,
     "run_websocket_server.py",
     "--port",
     "8778",
@@ -40,7 +45,7 @@ call_bob = [
 ]
 
 call_charlie = [
-    "python",
+    python,
     "run_websocket_server.py",
     "--port",
     "8779",
@@ -51,7 +56,7 @@ call_charlie = [
 ]
 
 call_testing = [
-    "python",
+    python,
     "run_websocket_server.py",
     "--port",
     "8780",
