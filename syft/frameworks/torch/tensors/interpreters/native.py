@@ -859,8 +859,8 @@ class TorchTensor(AbstractTensor):
         if crypto_provider == None:
             raise ValueError ("'crypto_provider' should not be None.")
         else:
-            if crypto_provider in owners:
-                raise ValueError("client worker cannot be a crypto_provider.")
+            if crypto_provider.is_client_worker:
+                raise ValueError ("client worker cannot be a crypto_provider.")
         
         if self.has_child():
             chain = self.child
