@@ -332,6 +332,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
+        requires_grad=False,
         create_pointer=True,
         **kwargs,
     ) -> ObjectPointer:
@@ -342,15 +343,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/framework tensor/object to send.
+            obj: A syft/framework tensor/object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
                 the object on the remote worker(s).
-            local_autograd: Use autograd system on the local machine instead of PyTorch's
-                autograd on the workers.
-            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
             garbage_collect_data: argument passed down to create_pointer()
+            requires_grad: Default to False. If true, whenever the remote value of this tensor
+                will have its gradient updated (for example when calling .backward()), a call
+                will be made to set back the local gradient value.
+            create_pointer: if set to False, no pointer to the remote value will be built.
 
         Example:
             >>> import torch
@@ -383,8 +385,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
+        if requires_grad:
+            obj.origin = self.id
+            obj.id_at_origin = obj.id
+
         # Send the object
         self.send_obj(obj, worker)
+
+        if requires_grad:
+            obj.origin = None
+            obj.id_at_origin = None
 
         # If we don't need to create the pointer
         if not create_pointer:
@@ -419,8 +429,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
-        if obj_msg.object is not None:
-            self.set_obj(obj_msg.object)
+
+        # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
+        """Receive an object from a another worker
+
+        Args:
+            obj: a Framework Tensor or a subclass of an AbstractTensor with an id
+        """
+        obj = obj_msg.object
+
+        self.set_obj(obj)
+
+        if isinstance(obj, FrameworkTensor):
+            tensor = obj
+            if (
+                tensor.requires_grad
+                and tensor.origin is not None
+                and tensor.id_at_origin is not None
+            ):
+                tensor.register_hook(
+                    tensor.trigger_origin_backward_hook(tensor.origin, tensor.id_at_origin)
+                )
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
@@ -516,17 +545,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
 
-            self.rm_obj(obj_id)
+            # @lariffle: We only remove remote objects when the operations are inplace
+            # otherwise we could have stale pointers which we really want to avoid.
+            # TODO: needs more discussion
+            if kwargs.get("inplace"):
+                self.rm_obj(obj_id)
             return response
 
     def execute_worker_command(self, message: tuple):
         """Executes commands received from other workers.
 
-                Args:
-                    message: A tuple specifying the command and the args.
+        Args:
+            message: A tuple specifying the command and the args.
 
-                Returns:
-                    A pointer to the result.
+        Returns:
+            A pointer to the result.
         """
         command_name = message.command_name
         args, kwargs, return_ids = message.message
