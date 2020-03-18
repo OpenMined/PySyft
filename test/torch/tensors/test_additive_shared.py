@@ -179,7 +179,7 @@ def test_add(workers):
 
     # 2 workers and custom dtype
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, dtype="custom", field=2**64-1)
+    x = torch.tensor([1, 2, 3]).share(bob, alice, dtype="custom", field=2 ** 64 - 1)
 
     y = (x + x).get()
 
@@ -195,7 +195,7 @@ def test_add(workers):
     assert (y == (t + t)).all()
 
     t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, dtype="custom", field=2**64-1)
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, dtype="custom", field=2 ** 64 - 1)
 
     y = (x + x).get()
 
@@ -290,7 +290,7 @@ def test_sub(workers):
 
     # negative numbers and custom dtype
     t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, field=2**64 -1, dtype="custom")
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, field=2 ** 64 - 1, dtype="custom")
 
     y = (x - x).get()
 
@@ -371,35 +371,35 @@ def test_mul(workers):
     # 2 workers
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, crypto_provider=james)
-    y = (x * x)
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     # 3 workers
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, charlie, crypto_provider=james)
-    y = (x * x)
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     # 2 workers and custom dtype
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, crypto_provider=james, field=67, dtype="custom")
-    y = (x * x)
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, crypto_provider=james, field=2**64 -1, dtype="custom")
-    y = (x * x)
+    x = t.share(bob, alice, crypto_provider=james, field=2 ** 64 - 1, dtype="custom")
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     # 3 workers and custom dtype
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, charlie, crypto_provider=james, field=67, dtype="custom")
-    y = (x * x)
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, charlie, crypto_provider=james, field=2**64-1, dtype="custom")
-    y = (x * x)
+    x = t.share(bob, alice, charlie, crypto_provider=james, field=2 ** 64 - 1, dtype="custom")
+    y = x * x
     assert (y.get() == (t * t)).all()
 
     # with fixed precision

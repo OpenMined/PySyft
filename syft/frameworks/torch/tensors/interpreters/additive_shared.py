@@ -173,14 +173,14 @@ class AdditiveSharingTensor(AbstractTensor):
         pass
 
     def modulo(self, x, field):
-        mask_pos = (x > ((field-1)//2))
-        mask_neg = (x < -(field//2))
+        mask_pos = x > ((field - 1) // 2)
+        mask_neg = x < -(field // 2)
         if mask_pos.any():
             mask_pos = mask_pos.type(self.field_to_torch_dtype)
-            return self.modulo(x - mask_pos*field, field)
+            return self.modulo(x - mask_pos * field, field)
         elif mask_neg.any():
             mask_neg = mask_neg.type(self.field_to_torch_dtype)
-            return self.modulo(x + mask_neg*field, field)
+            return self.modulo(x + mask_neg * field, field)
         else:
             return x
 
@@ -195,9 +195,7 @@ class AdditiveSharingTensor(AbstractTensor):
             else:
                 shares.append(share)
 
-        result = (
-            self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
-        )
+        result = self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
         return result
 
     def virtual_get(self):
@@ -210,9 +208,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        result = (
-            self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
-        )
+        result = self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
         return result
 
     def init_shares(self, *owners):
@@ -257,7 +253,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(-(field // 2), (field-1)//2)
+            share.random_(-(field // 2), (field - 1) // 2)
         shares = []
         for i in range(n_workers):
             if i == 0:
@@ -266,7 +262,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            shares.append(self.modulo(share, field) if dtype=="custom" else share)
+            shares.append(self.modulo(share, field) if dtype == "custom" else share)
         return shares
 
     def reconstruct(self):
@@ -416,9 +412,7 @@ class AdditiveSharingTensor(AbstractTensor):
         new_shares = {}
         for k, v in shares.items():
             new_shares[k] = (
-                self.modulo(other[k] + v, self.field)
-                if self.dtype == "custom"
-                else other[k] + v
+                self.modulo(other[k] + v, self.field) if self.dtype == "custom" else other[k] + v
             )
         return new_shares
 
@@ -471,9 +465,7 @@ class AdditiveSharingTensor(AbstractTensor):
         new_shares = {}
         for k, v in shares.items():
             new_shares[k] = (
-                self.modulo(v - other[k], self.field)
-                if self.dtype == "custom"
-                else v - other[k]
+                self.modulo(v - other[k], self.field) if self.dtype == "custom" else v - other[k]
             )
 
         return new_shares
