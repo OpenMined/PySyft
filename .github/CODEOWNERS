@@ -53,3 +53,7 @@
 /syft/torch/tensors/interpreters/autograd.py @OpenMined/crypto-team
 /syft/torch/tensors/interpreters/paillier.py @OpenMined/crypto-team
 /syft/torch/tensors/interpreters/precision.py @OpenMined/crypto-team
+
+# NLP Team
+/syft/generic/string.py @OpenMined/nlp-team
+/syft/generic/pointers/string_pointer.py @OpenMined/nlp-team
