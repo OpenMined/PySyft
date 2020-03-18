@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -56,12 +57,12 @@ class TorchTensor(AbstractTensor):
     """
 
     origin = None
-    origin_id = None
+    id_at_origin = None
 
     def has_child(self):
         return hasattr(self, "child")
 
-    def trigger_origin_backward_hook(self, origin: str, origin_id: int):
+    def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
         """
         This hook is triggered when a tensor which was received from a sender has
         a gradient update. It will send back to this sender and his original tensor
@@ -70,7 +71,7 @@ class TorchTensor(AbstractTensor):
 
         Args:
             origin (str): id of the worker where this tensor comes from
-            origin_id (int): what was its original id
+            id_at_origin (int): what was its original id
         """
 
         def trigger_origin_backward(grad):
@@ -83,14 +84,13 @@ class TorchTensor(AbstractTensor):
 
             location = self.owner.get_worker(origin)
 
-            origin_ptr = syft.PointerTensor.create_pointer(
-                self, location=location, id_at_location=origin_id, garbage_collect_data=False
-            )
-            # set the gradient
-            self.owner.send_command(location, message=("set_grad", origin_ptr, (grad,), {}))
+            # set gradient at the origin
+            message = TensorCommandMessage.computation("set_grad", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
 
             # call backward()
-            origin_ptr.backward(grad)
+            message = TensorCommandMessage.computation("backward", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
 
         return trigger_origin_backward
 

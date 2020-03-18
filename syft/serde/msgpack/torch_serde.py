@@ -149,7 +149,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # TODO fix pointer bug
 
     origin = tensor.origin
-    origin_id = tensor.origin_id
+    id_at_origin = tensor.id_at_origin
 
     return (
         tensor.id,
@@ -160,7 +160,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         serde._simplify(worker, tensor.description),
         serde._simplify(worker, worker.serializer),
         serde._simplify(worker, origin),
-        serde._simplify(worker, origin_id),
+        serde._simplify(worker, id_at_origin),
     )
 
 
@@ -188,7 +188,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         description,
         serializer,
         origin,
-        origin_id,
+        id_at_origin,
     ) = tensor_tuple
 
     tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
@@ -210,7 +210,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
     tensor.tags = serde._detail(worker, tags)
     tensor.description = serde._detail(worker, description)
     tensor.origin = serde._detail(worker, origin)
-    tensor.origin_id = serde._detail(worker, origin_id)
+    tensor.id_at_origin = serde._detail(worker, id_at_origin)
 
     return tensor
 
@@ -276,7 +276,7 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     # Note:  the wrapper is lost at serialisation because of the way we hook parameter.data
     # TODO: fix serialisation of parameters (check in particular .child & .data) See #3214
     param.origin = tensor.origin
-    param.origin_id = tensor.origin_id
+    param.id_at_origin = tensor.id_at_origin
 
     return param
 

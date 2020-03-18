@@ -387,14 +387,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if requires_grad:
             obj.origin = self.id
-            obj.origin_id = obj.id
+            obj.id_at_origin = obj.id
 
         # Send the object
         self.send_obj(obj, worker)
 
         if requires_grad:
             obj.origin = None
-            obj.origin_id = None
+            obj.id_at_origin = None
 
         # If we don't need to create the pointer
         if not create_pointer:
@@ -442,9 +442,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         if isinstance(obj, FrameworkTensor):
             tensor = obj
-            if tensor.requires_grad and tensor.origin is not None and tensor.origin_id is not None:
+            if (
+                tensor.requires_grad
+                and tensor.origin is not None
+                and tensor.id_at_origin is not None
+            ):
                 tensor.register_hook(
-                    tensor.trigger_origin_backward_hook(tensor.origin, tensor.origin_id)
+                    tensor.trigger_origin_backward_hook(tensor.origin, tensor.id_at_origin)
                 )
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
