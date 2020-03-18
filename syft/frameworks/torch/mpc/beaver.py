@@ -8,6 +8,7 @@ def request_triple(
     crypto_provider: AbstractWorker,
     cmd: Callable,
     field: int,
+    dtype: str,
     a_size: tuple,
     b_size: tuple,
     locations: list,
@@ -33,7 +34,7 @@ def request_triple(
 
     res = torch.cat((a.view(-1), b.view(-1), c.view(-1)))
 
-    shares = res.share(*locations, field=field, crypto_provider=crypto_provider).get().child
+    shares = res.share(*locations, field=field, dtype=dtype, crypto_provider=crypto_provider).get().child
 
     a_shared = shares[: a.numel()].reshape(a_size)
     b_shared = shares[a.numel() : -c.numel()].reshape(b_size)

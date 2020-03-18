@@ -9,7 +9,7 @@ from syft.workers.abstract import AbstractWorker
 no_wrap = {"no_wrap": True}
 
 
-def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: int):
+def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: int, dtype: str):
     """Abstractly multiplies two tensors (mul or matmul)
 
     Args:
@@ -28,7 +28,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     locations = x_sh.locations
 
     # Get triples
-    a, b, a_mul_b = request_triple(crypto_provider, cmd, field, x_sh.shape, y_sh.shape, locations)
+    a, b, a_mul_b = request_triple(crypto_provider, cmd, field, dtype, x_sh.shape, y_sh.shape, locations)
 
     delta = x_sh - a
     epsilon = y_sh - b

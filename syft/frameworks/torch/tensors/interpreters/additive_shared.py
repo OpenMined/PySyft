@@ -172,6 +172,18 @@ class AdditiveSharingTensor(AbstractTensor):
         we just ignore the call."""
         pass
 
+    def modulo(self, x, field):
+        mask_pos = (x > ((field-1)//2))
+        mask_neg = (x < (-field//2))
+        if mask_pos.any():
+            mask_pos = mask_pos.type(self.field_to_torch_dtype)
+            return self.modulo(x - mask_pos*field, field)
+        elif mask_neg.any():
+            mask_neg = mask_neg.type(self.field_to_torch_dtype)
+            return self.modulo(x + mask_neg*field, field)
+        else:
+            return x
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
@@ -184,7 +196,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share)
 
         result = (
-            torch.fmod(sum(shares), self.field // 2) if self.dtype == "custom" else sum(shares)
+            self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
         )
         print("Result: ", result)
         return result
@@ -200,7 +212,7 @@ class AdditiveSharingTensor(AbstractTensor):
             shares.append(share)
 
         result = (
-            torch.fmod(sum(shares), self.field // 2) if self.dtype == "custom" else sum(shares)
+            self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
         )
         return result
 
@@ -227,8 +239,8 @@ class AdditiveSharingTensor(AbstractTensor):
         self.child = shares_dict
         return self
 
-    @staticmethod
-    def generate_shares(secret, n_workers, field, dtype, random_type):
+    # @staticmethod
+    def generate_shares(self, secret, n_workers, field, dtype, random_type):
         """The cryptographic method for generating shares given a secret tensor.
 
         Args:
@@ -246,8 +258,7 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(int(-field / 2), int(field / 2) - 1)
-
+            share.random_(-(field // 2), (field-1)//2)
         shares = []
         for i in range(n_workers):
             if i == 0:
@@ -256,7 +267,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            shares.append(torch.fmod(share, field//2) if dtype=="custom" else share)
+            shares.append(self.modulo(share, field) if dtype=="custom" else share)
         print("Shares: ", shares)
         return shares
 
@@ -406,13 +417,11 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            print("Self: ",v.location._objects," Other: ",other[k].location._objects)
             new_shares[k] = (
-                torch.fmod(other[k] + v, self.field // 2)
+                self.modulo(other[k] + v, self.field)
                 if self.dtype == "custom"
                 else other[k] + v
             )
-        print("Sum shares: ", new_shares["alice"].location._objects)
         return new_shares
 
     __add__ = add
@@ -464,7 +473,7 @@ class AdditiveSharingTensor(AbstractTensor):
         new_shares = {}
         for k, v in shares.items():
             new_shares[k] = (
-                torch.fmod(v - other[k], self.field // 2)
+                self.modulo(v - other[k], self.field)
                 if self.dtype == "custom"
                 else v - other[k]
             )
@@ -496,7 +505,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
-        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
+        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
 
         return shares
 
@@ -523,7 +532,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if isinstance(other, dict):
             return {
                 worker: (
-                    torch.fmod(cmd(share, other[worker]), self.field // 2)
+                    self.modulo(cmd(share, other[worker]), self.field)
                     if self.dtype == "custom"
                     else cmd(share, other[worker])
                 )
@@ -547,7 +556,7 @@ class AdditiveSharingTensor(AbstractTensor):
                         first_it = False
                         zero_shares = self.zero(cmd_res.shape).child
                     res[worker] = (
-                        torch.fmod(cmd(share, other) + zero_shares[worker], self.field // 2)
+                        self.modulo(cmd(share, other) + zero_shares[worker], self.field)
                         if self.dtype == "custom"
                         else cmd(share, other) + zero_shares[worker]
                     )
@@ -555,7 +564,7 @@ class AdditiveSharingTensor(AbstractTensor):
             else:
                 return {
                     worker: (
-                        torch.fmod(cmd(share, other), self.field // 2)
+                        self.modulo(cmd(share, other), self.field)
                         if self.dtype == "custom"
                         else cmd(share, other)
                     )
