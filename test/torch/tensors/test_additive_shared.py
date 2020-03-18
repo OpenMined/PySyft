@@ -177,6 +177,30 @@ def test_add(workers):
 
     assert (y == (t + t)).all()
 
+    # 2 workers and custom dtype
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, dtype="custom", field=2**64-1)
+
+    y = (x + x).get()
+
+    # 3 workers and custom dtype
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james, dtype="custom", field=67)
+
+    y = (x + x).get()
+
+    # negative numbers and custom dtype
+    assert (y == (t + t)).all()
+
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, dtype="custom", field=2**64-1)
+
+    y = (x + x).get()
+
+    assert (y == (t + t)).all()
+
     # with fixed precisions
     t = torch.tensor([1.0, -2, 3])
     x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
@@ -242,7 +266,7 @@ def test_sub(workers):
 
     # 3 workers
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, james, field=67, dtype="custom")
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james)
 
     y = (x - x).get()
 
@@ -250,7 +274,23 @@ def test_sub(workers):
 
     # negative numbers
     t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, field=67, dtype="custom")
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james)
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # 3 workers and custom dtype
+    t = torch.tensor([1, 2, 3])
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james, field=67, dtype="custom")
+
+    y = (x - x).get()
+
+    assert (y == (t - t)).all()
+
+    # negative numbers and custom dtype
+    t = torch.tensor([1, -2, 3])
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, field=2**64 -1, dtype="custom")
 
     y = (x - x).get()
 
@@ -337,6 +377,28 @@ def test_mul(workers):
     # 3 workers
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, charlie, crypto_provider=james)
+    y = (x * x)
+    assert (y.get() == (t * t)).all()
+
+    # 2 workers and custom dtype
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, crypto_provider=james, field=67, dtype="custom")
+    y = (x * x)
+    assert (y.get() == (t * t)).all()
+
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, crypto_provider=james, field=2**64 -1, dtype="custom")
+    y = (x * x)
+    assert (y.get() == (t * t)).all()
+
+    # 3 workers and custom dtype
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, charlie, crypto_provider=james, field=67, dtype="custom")
+    y = (x * x)
+    assert (y.get() == (t * t)).all()
+
+    t = torch.tensor([1, 2, 3, 4])
+    x = t.share(bob, alice, charlie, crypto_provider=james, field=2**64-1, dtype="custom")
     y = (x * x)
     assert (y.get() == (t * t)).all()
 
@@ -487,55 +549,7 @@ def test_div(workers):
     y = (x1 / x2).get().float_prec()
     assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
 
-    # With scalar
-    t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james, dtype="custom", field=67)
-    y = (x / 3).get().float_prec()
-
-    assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
-
-    # With another encrypted tensor of same shape
-    t1 = torch.tensor([[25, 9], [10, 30]])
-    t2 = torch.tensor([[5, 12], [2, 7]])
-    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james, dtype="custom", field=67)
-    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james, dtype="custom", field=67)
-
-    y = (x1 / x2).get().float_prec()
-    assert (y == torch.tensor([[5.0, 0.75], [5.0, 4.285]])).all()
-
-    # With another encrypted single value
-    t1 = torch.tensor([[25.0, 9], [10, 30]])
-    t2 = torch.tensor([5.0])
-    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james, dtype="custom", field=67)
-    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james, dtype="custom", field=67)
-
-    y = (x1 / x2).get().float_prec()
-    assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
-
-    # With scalar
-    t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james, dtype="int")
-    y = (x / 3).get().float_prec()
-
-    assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
-
-    # With another encrypted tensor of same shape
-    t1 = torch.tensor([[25, 9], [10, 30]])
-    t2 = torch.tensor([[5, 12], [2, 7]])
-    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james, dtype="int")
-    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james, dtype="int")
-
-    y = (x1 / x2).get().float_prec()
-    assert (y == torch.tensor([[5.0, 0.75], [5.0, 4.285]])).all()
-
-    # With another encrypted single value
-    t1 = torch.tensor([[25.0, 9], [10, 30]])
-    t2 = torch.tensor([5.0])
-    x1 = t1.fix_prec().share(bob, alice, crypto_provider=james, dtype="int")
-    x2 = t2.fix_prec().share(bob, alice, crypto_provider=james, dtype="int")
-
-    y = (x1 / x2).get().float_prec()
-    assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
+    # TODO: With dtype int (once securenn is resolved)
 
 
 def test_pow(workers):
