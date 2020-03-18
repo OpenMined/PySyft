@@ -148,6 +148,9 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
+    origin = tensor.origin
+    id_at_origin = tensor.id_at_origin
+
     return (
         tensor.id,
         tensor_bin,
@@ -156,6 +159,8 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         serde._simplify(worker, tensor.tags),
         serde._simplify(worker, tensor.description),
         serde._simplify(worker, worker.serializer),
+        serde._simplify(worker, origin),
+        serde._simplify(worker, id_at_origin),
     )
 
 
@@ -174,7 +179,17 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain, tags, description, serializer = tensor_tuple
+    (
+        tensor_id,
+        tensor_bin,
+        chain,
+        grad_chain,
+        tags,
+        description,
+        serializer,
+        origin,
+        id_at_origin,
+    ) = tensor_tuple
 
     tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
 
@@ -194,6 +209,8 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor.tags = serde._detail(worker, tags)
     tensor.description = serde._detail(worker, description)
+    tensor.origin = serde._detail(worker, origin)
+    tensor.id_at_origin = serde._detail(worker, id_at_origin)
 
     return tensor
 
@@ -255,6 +272,15 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param.id = param_id
     param.grad = grad
     param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
+
+    # Note: should be
+    #  param.origin = tensor.origin
+    #  param.id_at_origin = tensor.id_at_origin
+    # but the wrapper is lost at serialisation because of the way we hook parameter.data
+    # TODO: fix serialisation of parameters (check in particular .child & .data) See #3214
+    # Below is just a fix:
+    param.origin = tensor.origin if hasattr(tensor, "origin") else None
+    param.id_at_origin = tensor.id_at_origin if hasattr(tensor, "id_at_origin") else None
 
     return param
 

@@ -23,8 +23,8 @@ from syft.generic.object import AbstractObject
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.message import CommandMessage
-from syft.messaging.message import ExecuteWorkerFunctionMessage
+from syft.messaging.message import TensorCommandMessage
+from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import IsNoneMessage
@@ -118,8 +118,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # For performance, we cache all possible message types
         self._message_router = {
-            CommandMessage: self.execute_command,
+            TensorCommandMessage: self.execute_tensor_command,
             PlanCommandMessage: self.execute_plan_command,
+            WorkerCommandMessage: self.execute_worker_command,
             ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
             ForceObjectDeleteMessage: self.handle_delete_object_msg,  # FIXME: there is no ObjectDeleteMessage
@@ -127,7 +128,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
-            ExecuteWorkerFunctionMessage: self.execute_worker_function,
         }
 
         self._plan_command_router = {
@@ -171,7 +171,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             self.framework = None
         else:
             # TODO[jvmancuso]: avoid branching here if possible, maybe by changing code in
-            #     execute_command or command_guard to not expect an attribute named "torch"
+            #     execute_tensor_command or command_guard to not expect an attribute named "torch"
             #     (#2530)
             self.framework = hook.framework
             if hasattr(hook, "torch"):
@@ -332,6 +332,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         workers: "BaseWorker",
         ptr_id: Union[str, int] = None,
         garbage_collect_data=None,
+        requires_grad=False,
         create_pointer=True,
         **kwargs,
     ) -> ObjectPointer:
@@ -342,15 +343,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         remote storage address.
 
         Args:
-            tensor: A syft/framework tensor/object to send.
+            obj: A syft/framework tensor/object to send.
             workers: A BaseWorker object representing the worker(s) that will
                 receive the object.
             ptr_id: An optional string or integer indicating the remote id of
                 the object on the remote worker(s).
-            local_autograd: Use autograd system on the local machine instead of PyTorch's
-                autograd on the workers.
-            preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
             garbage_collect_data: argument passed down to create_pointer()
+            requires_grad: Default to False. If true, whenever the remote value of this tensor
+                will have its gradient updated (for example when calling .backward()), a call
+                will be made to set back the local gradient value.
+            create_pointer: if set to False, no pointer to the remote value will be built.
 
         Example:
             >>> import torch
@@ -383,8 +385,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         worker = self.get_worker(worker)
 
+        if requires_grad:
+            obj.origin = self.id
+            obj.id_at_origin = obj.id
+
         # Send the object
         self.send_obj(obj, worker)
+
+        if requires_grad:
+            obj.origin = None
+            obj.id_at_origin = None
 
         # If we don't need to create the pointer
         if not create_pointer:
@@ -419,8 +429,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
-        if obj_msg.object is not None:
-            self.set_obj(obj_msg.object)
+
+        # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
+        """Receive an object from a another worker
+
+        Args:
+            obj: a Framework Tensor or a subclass of an AbstractTensor with an id
+        """
+        obj = obj_msg.object
+
+        self.set_obj(obj)
+
+        if isinstance(obj, FrameworkTensor):
+            tensor = obj
+            if (
+                tensor.requires_grad
+                and tensor.origin is not None
+                and tensor.id_at_origin is not None
+            ):
+                tensor.register_hook(
+                    tensor.trigger_origin_backward_hook(tensor.origin, tensor.id_at_origin)
+                )
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
@@ -429,13 +458,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         self.force_rm_obj(msg.object_id)
 
-    def execute_command(self, cmd: CommandMessage) -> PointerTensor:
+    def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
-            return self.execute_computation(cmd.action)
+            return self.execute_computation_action(cmd.action)
         else:
-            return self.execute_communication(cmd.action)
+            return self.execute_communication_action(cmd.action)
 
-    def execute_computation(self, action: ComputationAction) -> PointerTensor:
+    def execute_computation_action(self, action: ComputationAction) -> PointerTensor:
         """
         Executes commands received from other workers.
         Args:
@@ -502,7 +531,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
-    def execute_communication(self, action: CommunicationAction) -> PointerTensor:
+    def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
         obj_id = action.obj_id
         source = action.source
         destinations = action.destinations
@@ -516,17 +545,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
 
-            self.rm_obj(obj_id)
+            # @lariffle: We only remove remote objects when the operations are inplace
+            # otherwise we could have stale pointers which we really want to avoid.
+            # TODO: needs more discussion
+            if kwargs.get("inplace"):
+                self.rm_obj(obj_id)
             return response
 
-    def execute_worker_function(self, message: tuple):
+    def execute_worker_command(self, message: tuple):
         """Executes commands received from other workers.
 
-                Args:
-                    message: A tuple specifying the command and the args.
+        Args:
+            message: A tuple specifying the command and the args.
 
-                Returns:
-                    A pointer to the result.
+        Returns:
+            A pointer to the result.
         """
         command_name = message.command_name
         args, kwargs, return_ids = message.message
@@ -579,7 +612,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         name, target, args_, kwargs_ = message
 
         try:
-            message = CommandMessage.computation(name, target, args_, kwargs_, return_ids)
+            message = TensorCommandMessage.computation(name, target, args_, kwargs_, return_ids)
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
@@ -1110,24 +1143,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self._message_pending_time = seconds
 
     @staticmethod
-    def create_execute_worker_function_message(command_name: str, return_ids=None, *args, **kwargs):
-        """helper function creating a message tuple for the execute_command call
+    def create_worker_command_message(command_name: str, return_ids=None, *args, **kwargs):
+        """helper function creating a worker command message
 
         Args:
             command_name: name of the command that shall be called
-            command_owner: owner of the function (None for torch functions, "self" for classes derived from
-                           workers.base or ptr_id for remote objects
             return_ids: optionally set the ids of the return values (for remote objects)
             *args:  will be passed to the call of command_name
             **kwargs:  will be passed to the call of command_name
 
         Returns:
-            tuple: (command_name, command_owner, args, kwargs), return_ids
+            cmd_msg: a WorkerCommandMessage
 
         """
         if return_ids is None:
             return_ids = []
-        return ExecuteWorkerFunctionMessage(command_name, (args, kwargs, return_ids))
+        return WorkerCommandMessage(command_name, (args, kwargs, return_ids))
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

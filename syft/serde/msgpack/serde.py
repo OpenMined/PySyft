@@ -45,7 +45,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -58,7 +58,7 @@ from syft.execution.state import State
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.execution.protocol import Protocol
-from syft.messaging.message import CommandMessage
+from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import IsNoneMessage
@@ -66,11 +66,12 @@ from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
-from syft.messaging.message import ExecuteWorkerFunctionMessage
+from syft.messaging.message import WorkerCommandMessage
 from syft.serde import compression
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.frameworks.torch.fl import BaseDataset
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
@@ -121,7 +122,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     TrainConfig,
     BaseWorker,
     AutogradTensor,
-    CommandMessage,
+    TensorCommandMessage,
     ObjectMessage,
     ObjectRequestMessage,
     IsNoneMessage,
@@ -129,9 +130,10 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     ForceObjectDeleteMessage,
     SearchMessage,
     PlanCommandMessage,
+    WorkerCommandMessage,
     GradFunc,
     String,
-    ExecuteWorkerFunctionMessage,
+    BaseDataset,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
