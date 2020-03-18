@@ -6,7 +6,7 @@ from syft import dependency_check
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage

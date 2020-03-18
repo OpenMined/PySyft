@@ -2,7 +2,7 @@ import syft as sy
 from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
@@ -112,9 +112,7 @@ class ComputationAction(Action):
 
         if type(action.target) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.target_pointer
-        elif (
-            type(action.target) == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
-        ):
+        elif type(action.target) == sy.execution.placeholder.PlaceHolder:
             protobuf_owner = protobuf_op.target_placeholder
         else:
             protobuf_owner = protobuf_op.target_tensor

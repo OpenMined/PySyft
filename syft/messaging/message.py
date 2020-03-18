@@ -18,7 +18,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB

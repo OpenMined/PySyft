@@ -1,12 +1,8 @@
-import torch
-
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
-from syft_proto.frameworks.torch.tensors.interpreters.v1.placeholder_pb2 import (
-    Placeholder as PlaceholderPB,
-)
+from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
