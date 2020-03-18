@@ -148,8 +148,8 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
-    sender = tensor.sender if hasattr(tensor, "sender") else None
-    origin_id = tensor.origin_id if hasattr(tensor, "origin_id") else None
+    origin = tensor.origin
+    origin_id = tensor.origin_id
 
     return (
         tensor.id,
@@ -159,7 +159,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         serde._simplify(worker, tensor.tags),
         serde._simplify(worker, tensor.description),
         serde._simplify(worker, worker.serializer),
-        serde._simplify(worker, sender),
+        serde._simplify(worker, origin),
         serde._simplify(worker, origin_id),
     )
 
@@ -187,7 +187,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         tags,
         description,
         serializer,
-        sender,
+        origin,
         origin_id,
     ) = tensor_tuple
 
@@ -209,7 +209,7 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor.tags = serde._detail(worker, tags)
     tensor.description = serde._detail(worker, description)
-    tensor.sender = serde._detail(worker, sender)
+    tensor.origin = serde._detail(worker, origin)
     tensor.origin_id = serde._detail(worker, origin_id)
 
     return tensor
@@ -273,14 +273,10 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param.grad = grad
     param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
 
-    # Note: should be
-    #  param.sender = tensor.sender
-    #  param.origin_id = tensor.origin_id
-    # but the wrapper is lost at serialisation because of the way we hook parameter.data
-    # TODO: fix serialisation of parameters (check in particular .child & .data)
-    # Below is just a fix:
-    param.sender = tensor.sender if hasattr(tensor, "sender") else None
-    param.sender = tensor.sender if hasattr(tensor, "origin_id") else None
+    # Note:  the wrapper is lost at serialisation because of the way we hook parameter.data
+    # TODO: fix serialisation of parameters (check in particular .child & .data) See #3214
+    param.origin = tensor.origin
+    param.origin_id = tensor.origin_id
 
     return param
 

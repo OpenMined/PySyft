@@ -55,10 +55,13 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    origin = None
+    origin_id = None
+
     def has_child(self):
         return hasattr(self, "child")
 
-    def trigger_origin_backward_hook(self, sender: str, origin_id: int):
+    def trigger_origin_backward_hook(self, origin: str, origin_id: int):
         """
         This hook is triggered when a tensor which was received from a sender has
         a gradient update. It will send back to this sender and his original tensor
@@ -66,7 +69,7 @@ class TorchTensor(AbstractTensor):
         backward(), the backward command is also forwarded back.
 
         Args:
-            sender (str): id of the worker where this tensor comes from
+            origin (str): id of the worker where this tensor comes from
             origin_id (int): what was its original id
         """
 
@@ -78,7 +81,7 @@ class TorchTensor(AbstractTensor):
                 grad: the gradient tensor being set
             """
 
-            location = self.owner.get_worker(sender)
+            location = self.owner.get_worker(origin)
 
             origin_ptr = syft.PointerTensor.create_pointer(
                 self, location=location, id_at_location=origin_id, garbage_collect_data=False
