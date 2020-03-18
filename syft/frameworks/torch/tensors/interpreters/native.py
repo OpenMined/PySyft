@@ -815,7 +815,7 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs
             )
         else:
             if self.type() == "torch.FloatTensor":

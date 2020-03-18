@@ -174,7 +174,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def modulo(self, x, field):
         mask_pos = (x > ((field-1)//2))
-        mask_neg = (x < (-field//2))
+        mask_neg = (x < -(field//2))
         if mask_pos.any():
             mask_pos = mask_pos.type(self.field_to_torch_dtype)
             return self.modulo(x - mask_pos*field, field)
@@ -198,7 +198,6 @@ class AdditiveSharingTensor(AbstractTensor):
         result = (
             self.modulo(sum(shares), self.field) if self.dtype == "custom" else sum(shares)
         )
-        print("Result: ", result)
         return result
 
     def virtual_get(self):
@@ -268,7 +267,6 @@ class AdditiveSharingTensor(AbstractTensor):
             else:
                 share = secret - random_shares[i - 1]
             shares.append(self.modulo(share, field) if dtype=="custom" else share)
-        print("Shares: ", shares)
         return shares
 
     def reconstruct(self):

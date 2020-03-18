@@ -28,14 +28,15 @@ def request_triple(
     Returns:
         A triple of AdditiveSharedTensors such that c_shared = cmd(a_shared, b_shared).
     """
-    a = crypto_provider.remote.torch.randint(int(-field / 2), int(field / 2) - 1, a_size)
-    b = crypto_provider.remote.torch.randint(int(-field / 2), int(field / 2) - 1, b_size)
+    a = crypto_provider.remote.torch.randint(-(field//2), (field-1)//2, a_size)
+    b = crypto_provider.remote.torch.randint(-(field//2), (field-1)//2, b_size)
     c = cmd(a, b)
 
     res = torch.cat((a.view(-1), b.view(-1), c.view(-1)))
 
     shares = res.share(*locations, field=field, dtype=dtype, crypto_provider=crypto_provider).get().child
-
+    #print(shares.child["alice"].location._objects[shares.child["alice"].id_at_location])
+    #print(shares.child["bob"].location._objects[shares.child["bob"].id_at_location])
     a_shared = shares[: a.numel()].reshape(a_size)
     b_shared = shares[a.numel() : -c.numel()].reshape(b_size)
     c_shared = shares[-c.numel() :].reshape(c.shape)
