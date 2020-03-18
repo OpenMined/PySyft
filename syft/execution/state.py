@@ -6,6 +6,7 @@ from typing import Dict
 import torch
 
 import syft as sy
+from syft.generic.object_id import ObjectId
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
@@ -68,7 +69,7 @@ class State(object):
                     placeholder.tags = set()
                     placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
                     parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.placeholders[placeholder.child.id] = placeholder
+                    parent_plan.placeholders[ObjectId(placeholder.child.id)] = placeholder
                     parent_plan.var_count += 1
 
         tensors = []
