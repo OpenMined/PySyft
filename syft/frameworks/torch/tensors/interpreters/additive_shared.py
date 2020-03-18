@@ -134,7 +134,12 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "field": self.field, "n_bits": self.n_bits}
+        return {
+            "crypto_provider": self.crypto_provider,
+            "field": self.field,
+            "n_bits": self.n_bits,
+            "protocol": self.protocol,
+        }
 
     @property
     def grad(self):

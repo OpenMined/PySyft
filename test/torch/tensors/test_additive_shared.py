@@ -678,12 +678,17 @@ def test_get_item(workers):
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_eq(workers, protocol):
-    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
 
     if protocol == "fss":
-        from syft.frameworks.torch.mpc.fss import manual_init_store
-
-        manual_init_store(crypto_provider)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=6
+        )
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -706,12 +711,17 @@ def test_eq(workers, protocol):
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_comp(workers, protocol):
-    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
 
     if protocol == "fss":
-        from syft.frameworks.torch.mpc.fss import manual_init_store
-
-        manual_init_store(crypto_provider)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
+        )
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -751,12 +761,17 @@ def test_comp(workers, protocol):
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_max(workers, protocol):
-    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
 
     if protocol == "fss":
-        from syft.frameworks.torch.mpc.fss import manual_init_store
-
-        manual_init_store(crypto_provider)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
+        )
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -779,12 +794,17 @@ def test_max(workers, protocol):
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_argmax(workers, protocol):
-    alice, bob, crypto_provider = workers["alice"], workers["bob"], workers["james"]
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
 
     if protocol == "fss":
-        from syft.frameworks.torch.mpc.fss import manual_init_store
-
-        manual_init_store(crypto_provider)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
+        )
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)

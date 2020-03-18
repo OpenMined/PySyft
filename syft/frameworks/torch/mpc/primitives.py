@@ -107,13 +107,15 @@ class PrimitiveStorage:
         return build_separate_fss_keys
 
     @staticmethod
-    def build_xor_add_couple(nbits):
+    def build_xor_add_couple(n_party, nbits=1):
+        assert (
+            n_party == 2
+        ), f"build_xor_add_couple is only implemented for 2 workers, {n_party} were provided."
         r = th.randint(2, size=(nbits,))
         mask1 = th.randint(2, size=(nbits,))
         mask2 = th.randint(2, size=(nbits,))
 
         return [(r ^ mask1, r - mask2), (mask1, mask2)]
-
 
     def build_triples(self, **kwargs):
         raise NotImplementedError

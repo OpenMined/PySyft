@@ -29,7 +29,10 @@ def initialize_crypto_plans(worker):
     Function Secret Sharing on a specific worker.
     """
     eq_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, 'eq'), owner=worker, tags=["#fss_eq_plan_1"], is_built=True
+        forward_func=lambda x, y: mask_builder(x, y, "eq"),
+        owner=worker,
+        tags=["#fss_eq_plan_1"],
+        is_built=True,
     )
     worker.register_obj(eq_plan_1)
     eq_plan_2 = sy.Plan(
@@ -38,7 +41,10 @@ def initialize_crypto_plans(worker):
     worker.register_obj(eq_plan_2)
 
     comp_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, 'comp'), owner=worker, tags=["#fss_comp_plan_1"], is_built=True
+        forward_func=lambda x, y: mask_builder(x, y, "comp"),
+        owner=worker,
+        tags=["#fss_comp_plan_1"],
+        is_built=True,
     )
     worker.register_obj(comp_plan_1)
     comp_plan_2 = sy.Plan(
@@ -90,7 +96,9 @@ def fss_op(x1, x2, type_op="eq"):
     shares = []
     for location in locations:
         args = (x1.child[location.id], x2.child[location.id])
-        share = request_run_plan(me, f"#fss_{type_op}_plan_1", location, return_value=True, args=args)
+        share = request_run_plan(
+            me, f"#fss_{type_op}_plan_1", location, return_value=True, args=args
+        )
         shares.append(share)
 
     mask_value = sum(shares) % 2 ** n
@@ -98,29 +106,34 @@ def fss_op(x1, x2, type_op="eq"):
     shares = []
     for i, location in enumerate(locations):
         args = (th.IntTensor([i]), mask_value)
-        share = request_run_plan(me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args)
+        share = request_run_plan(
+            me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args
+        )
         shares.append(share)
-
-    for share in shares:
-        print('\t', share.location._objects[share.id_at_location])
 
     if type_op == "comp":
         prev_shares = shares
         shares = []
         for prev_share, location in zip(prev_shares, locations):
-            share = request_run_plan(me, f"#xor_add_1", location, return_value=False, args=(prev_share, ))
+            share = request_run_plan(
+                me, f"#xor_add_1", location, return_value=True, args=(prev_share,)
+            )
             shares.append(share)
 
         masked_value = shares[0] ^ shares[1]  # TODO case >2 workers ?
-        args = (masked_value,)
 
         shares = {}
-        for prev_share, location in zip(prev_shares, locations):
-            share = request_run_plan(me, f"#xor_add_2", location, return_value=False, args=args)
-            shares[location] = share
-
-    for w, share in shares.items():
-        print('\t', share.location._objects[share.id_at_location])
+        for i, prev_share, location in zip(range(len(locations)), prev_shares, locations):
+            share = request_run_plan(
+                me,
+                f"#xor_add_2",
+                location,
+                return_value=False,
+                args=(th.IntTensor([i]), masked_value),
+            )
+            shares[location.id] = share
+    else:
+        shares = {loc.id: share for loc, share in zip(locations, shares)}
 
     response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
     return response
@@ -137,8 +150,9 @@ def get_keys(worker, type_op, remove=True):
             a some point and then re-access the keys.
     """
     primitive_stack = {
-        'eq': worker.crypto_store.fss_eq,
-        'comp': worker.crypto_store.fss_comp
+        "eq": worker.crypto_store.fss_eq,
+        "comp": worker.crypto_store.fss_comp,
+        "xor_add": worker.crypto_store.xor_add_couple,
     }[type_op]
 
     try:
@@ -160,24 +174,26 @@ def mask_builder(x1, x2, type_op):
 
 # share level
 def eq_eval_plan(b, x_masked):
-    alpha, s_0, *CW = get_keys(x_masked.owner, type_op='eq', remove=True)
+    alpha, s_0, *CW = get_keys(x_masked.owner, type_op="eq", remove=True)
     result_share = DPF.eval(b, x_masked, s_0, *CW)
     return result_share
 
+
 # share level
 def comp_eval_plan(b, x_masked):
-    alpha, s_0, *CW = get_keys(x_masked.owner, type_op='comp', remove=True)
+    alpha, s_0, *CW = get_keys(x_masked.owner, type_op="comp", remove=True)
     result_share = DIF.eval(b, x_masked, s_0, *CW)
     return result_share
 
 
 def xor_add_convert_1(x):
-    xor_share, add_share = x.worker.crypto_store.xor_add_couple[0]
+    xor_share, add_share = get_keys(x.owner, type_op="xor_add", remove=False)
     return x ^ xor_share
 
-def xor_add_convert_2(x):
-    xor_share, add_share = x.worker.crypto_store.xor_add_couple.pop(0)
-    return add_share * (1 - 2 * x) + x
+
+def xor_add_convert_2(b, x):
+    xor_share, add_share = get_keys(x.owner, type_op="xor_add", remove=True)
+    return add_share * (1 - 2 * x) + x * b
 
 
 def eq(x1, x2):
@@ -302,7 +318,7 @@ def H(seed):
     enc_str = str(seed.tolist()).encode()
     h = hashlib.sha3_256(enc_str)
     r = h.digest()
-    binary_str = bin(int.from_bytes(r, byteorder="big"))[2: 2 + 2 + (2 * (λ + 1))]
+    binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
     return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
 
 
