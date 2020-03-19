@@ -19,6 +19,7 @@ torch.backends.cudnn.deterministic = True
 
 
 def test_add_dataset():
+    """Test to add a dataset to a client for executing federated learning"""
     # Create a client to execute federated learning
     fed_client = FederatedClient()
     # Create a dataset
@@ -31,6 +32,7 @@ def test_add_dataset():
 
 
 def test_add_dataset_with_duplicate_key():
+    """Test to check no two datasets for same key"""
     # Create a client to execute federated learning
     fed_client = FederatedClient()
     # Create a dataset
@@ -46,6 +48,7 @@ def test_add_dataset_with_duplicate_key():
 
 
 def test_remove_dataset():
+    """Test to successfully remove a dataset from a federated learning client"""
     # Create a client to execute federated learning
     fed_client = FederatedClient()
     # Create a dataset

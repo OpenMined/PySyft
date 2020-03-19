@@ -225,6 +225,7 @@ def test_fl_with_websockets_and_averaging(
 
 ### These tests must always be last
 def test_all_notebooks_except_translations():
+    """Test that all notebooks except translations have been tested"""
     untested_notebooks = (
         set(all_notebooks)
         - set(excluded_notebooks)
@@ -236,5 +237,6 @@ def test_all_notebooks_except_translations():
 
 @pytest.mark.translation
 def test_all_translation_notebooks():  # pragma: no cover
+    """Test that all translation notebooks have been tested"""
     untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks

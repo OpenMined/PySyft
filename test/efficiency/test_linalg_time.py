@@ -8,6 +8,7 @@ from test.efficiency.assertions import assert_time
 
 @assert_time(max_time=40)
 def test_inv_sym(hook, workers):
+    """Tests the proper execution of inversion of a symmetric matrix"""
     torch.manual_seed(42)  # Truncation might not always work so we set the random seed
     N = 100
     K = 2
