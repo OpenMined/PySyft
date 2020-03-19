@@ -684,7 +684,6 @@ class Plan(AbstractObject, ObjectStorage):
             placeholders,
         ) = plan_tuple
 
-        worker._tmp_placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
         placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
         actions = sy.serde.msgpack.serde._detail(worker, actions)
@@ -698,7 +697,6 @@ class Plan(AbstractObject, ObjectStorage):
             id=id,
             owner=worker,
         )
-        del worker._tmp_placeholders
 
         plan.state = state
         state.plan = plan
