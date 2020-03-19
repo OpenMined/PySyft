@@ -1,17 +1,23 @@
 import torch
 import syft
+
 from syft.frameworks.crypten.context import toy_func, run_party
+
 import crypten.communicator as comm
 import crypten
 
 
-def load(tag: str, src: int, id_worker: int):
-    if comm.get().get_rank() == src:
-        worker = syft.local_worker.get_worker(id_worker)
-        result = worker.search(tag)[0].get()
+def load(tag: str, src: int):
+    if src == comm.get().get_rank():
+        results = syft.local_worker.search(tag)
 
-        # file contains torch.tensor
+        # Make sure there is only one result
+        assert len(results) == 1
+
+        result = results[0].get()
+
         if torch.is_tensor(result):
+
             # Broadcast load type
             load_type = torch.tensor(0, dtype=torch.long)
             comm.get().broadcast(load_type, src=src)
@@ -23,6 +29,9 @@ def load(tag: str, src: int, id_worker: int):
             comm.get().broadcast(dim, src=src)
             comm.get().broadcast(size, src=src)
             result = crypten.mpc.MPCTensor(result, src=src)
+        else:
+            raise TypeError("Unrecognized load type on src")
+
     else:
         # Receive load type from source party
         load_type = torch.tensor(-1, dtype=torch.long)
@@ -38,7 +47,6 @@ def load(tag: str, src: int, id_worker: int):
             result = crypten.mpc.MPCTensor(torch.empty(size=tuple(size.tolist())), src=src)
         else:
             raise TypeError("Unrecognized load type on src")
-    # TODO: Encrypt modules before returning them
 
     return result
 
