@@ -153,7 +153,7 @@ class Plan(AbstractObject, ObjectStorage):
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
 
-        # self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
+        self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
     @staticmethod
     def _create_placeholders(args_shape):
@@ -300,6 +300,7 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             A list of placeholders found
         """
+        # TODO this can return several time the same placeholder
         results = []
         for placeholder in self.placeholders.values():
             for search_tag in search_tags:
@@ -704,6 +705,13 @@ class Plan(AbstractObject, ObjectStorage):
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
+
+        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # TODO this definitely isn't the right strategy. Maybe state shouldn't contain
+        # instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
+        plan.placeholders = {**plan.placeholders, **state_placeholders}
 
         return plan
 

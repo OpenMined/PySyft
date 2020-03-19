@@ -23,7 +23,8 @@ class PlaceHolder(AbstractTensor):
 
         # TODO currently we only use ObjectId on placeholder but if we use them, we
         # should use them everywhere
-        self.id = ObjectId(id)
+        if not isinstance(self.id, ObjectId):
+            self.id = ObjectId(self.id)
         self.child = None
 
     def instantiate(self, tensor):
