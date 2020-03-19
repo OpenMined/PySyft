@@ -398,6 +398,8 @@ def make_torch_tensor(**kwargs):
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"torch",)),  # (str) framework
+                    None,  # (int) origin
+                    None,  # (int) id_at_origin
                 ),
             ),
             "cmp_detailed": compare,
@@ -426,6 +428,8 @@ def make_torch_tensor(**kwargs):
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"all",)),  # (str) framework
+                    None,  # (int) origin
+                    None,  # (int) id_at_origin
                 ),
             ),
             "cmp_detailed": compare,
