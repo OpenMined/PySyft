@@ -5,7 +5,7 @@ from torchvision import transforms
 
 import signal
 import sys
-
+import os
 
 # Downloads MNIST dataset
 mnist_trainset = datasets.MNIST(
@@ -17,50 +17,19 @@ mnist_trainset = datasets.MNIST(
     ),
 )
 
-call_alice = [
-    "python",
-    "run_websocket_server.py",
-    "--port",
-    "8777",
-    "--id",
-    "alice",
-    "--host",
-    "0.0.0.0",
-]
 
-call_bob = [
-    "python",
-    "run_websocket_server.py",
-    "--port",
-    "8778",
-    "--id",
-    "bob",
-    "--host",
-    "0.0.0.0",
-]
+if os.name == "nt":
+    python = "python"
+else:
+    python = "python" + sys.version[0:3]
 
-call_charlie = [
-    "python",
-    "run_websocket_server.py",
-    "--port",
-    "8779",
-    "--id",
-    "charlie",
-    "--host",
-    "0.0.0.0",
-]
+call_alice = [python, "run_websocket_server.py", "--port", "8777", "--id", "alice","--host","0.0.0.0"]
 
-call_testing = [
-    "python",
-    "run_websocket_server.py",
-    "--port",
-    "8780",
-    "--id",
-    "testing",
-    "--testing",
-    "--host",
-    "0.0.0.0",
-]
+call_bob = [python, "run_websocket_server.py", "--port", "8778", "--id", "bob","--host","0.0.0.0"]
+
+call_charlie = [python, "run_websocket_server.py", "--port", "8779", "--id", "charlie","--host","0.0.0.0"]
+
+call_testing = [python, "run_websocket_server.py", "--port", "8780", "--id", "testing","--testing","--host","0.0.0.0"]
 
 print("Starting server for Alice")
 process_alice = subprocess.Popen(call_alice)
