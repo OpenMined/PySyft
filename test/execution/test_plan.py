@@ -1145,7 +1145,7 @@ def test_plan_wrong_number_of_parameters(hook):
     input_list = [pointer_to_data_1, pointer_to_data_2, 5, True]
     corect_number_of_params = 4
 
-    for i in range(len(input_list)):
+    for i in range(len(input_list) + 1):
         plan_test.build(*dummy_input_list)
         pointer_plan = plan_test.send(device_1)
 
