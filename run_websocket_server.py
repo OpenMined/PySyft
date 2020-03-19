@@ -1,11 +1,10 @@
 from multiprocessing import Process
-
-import syft as sy
-from syft.workers.websocket_server import WebsocketServerWorker
-import torch
 import argparse
 import os
 import logging
+import syft as sy
+from syft.workers.websocket_server import WebsocketServerWorker
+import torch
 import numpy as np
 from torchvision import datasets
 from torchvision import transforms
@@ -19,12 +18,11 @@ KEEP_LABELS_DICT = {
     None: list(range(10)),
 }
 
+
 def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=None, training=True):
     """Helper function for spinning up a websocket server and setting up the local datasets."""
 
-    server = WebsocketServerWorker(
-        id=id, host=host, port=port, hook=hook, verbose=verbose
-    )
+    server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
 
     # Setup toy data (mnist example)
     mnist_dataset = datasets.MNIST(
@@ -87,6 +85,7 @@ def start_proc(participant, kwargs):  # pragma: no cover
     p.start()
     return p
 
+
 def start_proc_steal_data_over_sockets(participant, kwargs):  # pragma: no cover
     """ helper function for spinning up a websocket participant """
 
@@ -101,6 +100,7 @@ def start_proc_steal_data_over_sockets(participant, kwargs):  # pragma: no cover
     p.start()
     return p
 
+
 if __name__ == "__main__":
 
     # Logging setup
@@ -112,7 +112,10 @@ if __name__ == "__main__":
     # Parse args
     parser = argparse.ArgumentParser(description="Run websocket server worker.")
     parser.add_argument(
-        "--port", "-p", type=int, help="port number of the websocket server worker, e.g. --port 8777"
+        "--port",
+        "-p",
+        type=int,
+        help="port number of the websocket server worker, e.g. --port 8777",
     )
     parser.add_argument("--host", type=str, default="localhost", help="host for the connection")
     parser.add_argument(
@@ -127,13 +130,16 @@ if __name__ == "__main__":
         "--verbose",
         "-v",
         action="store_true",
-        help="if set, websocket server worker will be started in verbose mode",
+        help="""if set, websocket server worker will be started in verbose mode""",
     )
     parser.add_argument(
         "--notebook",
         type=str,
         default="normal",
-        help="can run websocket server for websockets examples of mnist/mnist-parallel or pen_testing/steal_data_over_sockets. Type 'mnist' for starting server for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel and 'steal_data' for pen_tesing stealing data over sockets",
+        help="""can run websocket server for websockets examples of mnist/mnist-parallel or
+        pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
+        for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
+        and 'steal_data' for pen_tesing stealing data over sockets""",
     )
     args = parser.parse_args()
 
@@ -141,7 +147,7 @@ if __name__ == "__main__":
     hook = sy.TorchHook(torch)
 
     # server = start_proc(WebsocketServerWorker, kwargs)
-    if(args.notebook=="normal" or args.notebook=="mnist" or args.notebook=="steal_data"):
+    if args.notebook == "normal" or args.notebook == "mnist" or args.notebook == "steal_data":
         kwargs = {
             "id": args.id,
             "host": args.host,
@@ -149,14 +155,14 @@ if __name__ == "__main__":
             "hook": hook,
             "verbose": args.verbose,
         }
-        if os.name != "nt" and (args.notebook=="normal" or args.notebook=="mnist"):
+        if os.name != "nt" and (args.notebook == "normal" or args.notebook == "mnist"):
             server = start_proc(WebsocketServerWorker, kwargs)
-        elif os.name != "nt" and args.notebook=="steal_data":
+        elif os.name != "nt" and args.notebook == "steal_data":
             server = start_proc_steal_data_over_sockets(WebsocketServerWorker, kwargs)
         else:
             server = WebsocketServerWorker(**kwargs)
             server.start()
-    elif(args.notebook=="mnist-parallel"):
+    elif args.notebook == "mnist-parallel":
         server = start_websocket_server_worker(
             id=args.id,
             host=args.host,
