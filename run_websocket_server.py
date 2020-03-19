@@ -130,10 +130,10 @@ if __name__ == "__main__":
         help="if set, websocket server worker will be started in verbose mode",
     )
     parser.add_argument(
-        "--type",
+        "--notebook",
         type=str,
         default="normal",
-        help="can run websocket server for websockets examples of mnist/mnist-parallel or pen_testing/steal_data_over_sockets. Type 'mnist' for satrting server for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel and 'steal_data' for pen_tesing stealing data over sockets",
+        help="can run websocket server for websockets examples of mnist/mnist-parallel or pen_testing/steal_data_over_sockets. Type 'mnist' for starting server for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel and 'steal_data' for pen_tesing stealing data over sockets",
     )
     args = parser.parse_args()
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     hook = sy.TorchHook(torch)
 
     # server = start_proc(WebsocketServerWorker, kwargs)
-    if(args.type=="normal" or args.type=="mnist" or args.type=="steal_data"):
+    if(args.notebook=="normal" or args.notebook=="mnist" or args.notebook=="steal_data"):
         kwargs = {
             "id": args.id,
             "host": args.host,
@@ -149,14 +149,14 @@ if __name__ == "__main__":
             "hook": hook,
             "verbose": args.verbose,
         }
-        if os.name != "nt" and (args.type=="normal" or args.type=="mnist"):
+        if os.name != "nt" and (args.notebook=="normal" or args.notebook=="mnist"):
             server = start_proc(WebsocketServerWorker, kwargs)
-        elif os.name != "nt" and args.type=="steal_data":
+        elif os.name != "nt" and args.notebook=="steal_data":
             server = start_proc_steal_data_over_sockets(WebsocketServerWorker, kwargs)
         else:
             server = WebsocketServerWorker(**kwargs)
             server.start()
-    elif(args.type=="mnist-parallel"):
+    elif(args.notebook=="mnist-parallel"):
         server = start_websocket_server_worker(
             id=args.id,
             host=args.host,

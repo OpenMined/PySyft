@@ -23,13 +23,13 @@ if os.name == "nt":
 else:
     python = "python" + sys.version[0:3]
 
-call_alice = [python, "../../../../run_websocket_server.py", "--port", "8777", "--id", "alice","--host","0.0.0.0", "--type","mnist-parallel"]
+call_alice = [python, "../../../../run_websocket_server.py", "--port", "8777", "--id", "alice","--host","0.0.0.0", "--notebook","mnist-parallel"]
 
-call_bob = [python, "../../../../run_websocket_server.py", "--port", "8778", "--id", "bob","--host","0.0.0.0", "--type","mnist-parallel"]
+call_bob = [python, "../../../../run_websocket_server.py", "--port", "8778", "--id", "bob","--host","0.0.0.0", "--notebook","mnist-parallel"]
 
-call_charlie = [python, "../../../../run_websocket_server.py", "--port", "8779", "--id", "charlie","--host","0.0.0.0", "--type","mnist-parallel"]
+call_charlie = [python, "../../../../run_websocket_server.py", "--port", "8779", "--id", "charlie","--host","0.0.0.0", "--notebook","mnist-parallel"]
 
-call_testing = [python, "../../../../run_websocket_server.py", "--port", "8780", "--id", "testing","--testing","--host","0.0.0.0", "--type","mnist-parallel"]
+call_testing = [python, "../../../../run_websocket_server.py", "--port", "8780", "--id", "testing","--testing","--host","0.0.0.0", "--notebook","mnist-parallel"]
 
 print("Starting server for Alice")
 process_alice = subprocess.Popen(call_alice)
