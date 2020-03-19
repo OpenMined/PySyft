@@ -258,7 +258,7 @@ def make_torch_device(**kwargs):
 def make_torch_dtype(**kwargs):
     torch_dtype = torch.int32
     return [
-        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32"),}  # (str) device
+        {"value": torch_dtype, "simplified": (CODE[type(torch_dtype)], "int32")}  # (str) device
     ]
 
 
@@ -398,6 +398,8 @@ def make_torch_tensor(**kwargs):
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"torch",)),  # (str) framework
+                    None,  # (int) origin
+                    None,  # (int) id_at_origin
                 ),
             ),
             "cmp_detailed": compare,
@@ -426,6 +428,8 @@ def make_torch_tensor(**kwargs):
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     (CODE[str], (b"all",)),  # (str) framework
+                    None,  # (int) origin
+                    None,  # (int) id_at_origin
                 ),
             ),
             "cmp_detailed": compare,
@@ -453,8 +457,7 @@ def make_torch_size(**kwargs):
 def compare_actions(detailed, original):
     """Compare 2 Actions"""
     assert len(detailed) == len(original)
-    for i, detailed_op in enumerate(detailed):
-        original_op = original[i]
+    for original_op, detailed_op in zip(original, detailed):
         compare_placeholders_list(original_op.args, detailed_op.args)
         # return_ids is not a list (why?)
         compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
@@ -466,8 +469,7 @@ def compare_actions(detailed, original):
 def compare_placeholders_list(detailed, original):
     """Compare 2 lists of placeholders"""
     assert len(detailed) == len(original)
-    for i, detailed_ph in enumerate(detailed):
-        original_ph = original[i]
+    for original_ph, detailed_ph in zip(original, detailed):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
@@ -663,6 +665,45 @@ def make_multipointertensor(**kwargs):
                 (
                     mpt.id,  # (int or str) id
                     msgpack.serde._simplify(syft.hook.local_worker, mpt.child),  # (dict)
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.frameworks.torch.fl.dataset
+def make_basedataset(**kwargs):
+    workers = kwargs["workers"]
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+    dataset = syft.BaseDataset(torch.tensor([1, 2, 3, 4]), torch.tensor([5, 6, 7, 8]))
+    dataset.tag("#tag1").describe("desc")
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.BaseDataset
+        assert (detailed.data == original.data).all()
+        assert (detailed.targets == original.targets).all()
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        return True
+
+    return [
+        {
+            "value": dataset,
+            "simplified": (
+                CODE[syft.frameworks.torch.fl.dataset.BaseDataset],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.data),
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.targets),
+                    dataset.id,
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.tags
+                    ),  # (set of str) tags
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, dataset.description
+                    ),  # (str) description
+                    msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1261,12 +1302,12 @@ def make_privatetensor(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
-    ph = syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder()
+    ph = syft.execution.placeholder.PlaceHolder()
     ph.tag("tag1")
     ph.describe("just a placeholder")
 
     def compare(detailed, original):
-        assert type(detailed) == syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
+        assert type(detailed) == syft.execution.placeholder.PlaceHolder
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -1276,7 +1317,7 @@ def make_placeholder(**kwargs):
         {
             "value": ph,
             "simplified": (
-                CODE[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder],
+                CODE[syft.execution.placeholder.PlaceHolder],
                 (
                     ph.id,  # (int) id
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
@@ -1288,30 +1329,42 @@ def make_placeholder(**kwargs):
     ]
 
 
-# Message
-def make_message(**kwargs):
+# syft.execution.communication.CommunicationAction
+def make_communication_action(**kwargs):
+    bob = kwargs["workers"]["bob"]
+    alice = kwargs["workers"]["alice"]
+    bob.log_msgs = True
+
+    x = torch.tensor([1, 2, 3, 4]).send(bob)
+    x.remote_send(alice)
+    com = bob._get_msg(-1).action
+
+    bob.log_msgs = False
+
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.Message
-        assert detailed.contents == original.contents
+        detailed_msg = (detailed.obj_id, detailed.source, detailed.destinations, detailed.kwargs)
+        original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
+        assert type(detailed) == syft.messaging.message.CommunicationAction
+        for i in range(len(original_msg)):
+            assert detailed_msg[i] == original_msg[i]
         return True
+
+    msg = (com.obj_id, com.source, com.destinations, com.kwargs)
 
     return [
         {
-            "value": syft.messaging.message.Message([1, 2, 3]),
+            "value": com,
             "simplified": (
-                CODE[syft.messaging.message.Message],
-                ((CODE[list], (1, 2, 3)),),  # (Any) simplified content
+                CODE[syft.execution.communication.CommunicationAction],
+                (
+                    msgpack.serde._simplify(syft.hook.local_worker, com.obj_id),
+                    msgpack.serde._simplify(syft.hook.local_worker, com.source),
+                    msgpack.serde._simplify(syft.hook.local_worker, com.destinations),
+                    msgpack.serde._simplify(syft.hook.local_worker, com.kwargs),
+                ),
             ),
             "cmp_detailed": compare,
-        },
-        {
-            "value": syft.messaging.message.Message((1, 2, 3)),
-            "simplified": (
-                CODE[syft.messaging.message.Message],
-                ((CODE[tuple], (1, 2, 3)),),  # (Any) simplified content
-            ),
-            "cmp_detailed": compare,
-        },
+        }
     ]
 
 
@@ -1333,7 +1386,7 @@ def make_computation_action(**kwargs):
     def compare(detailed, original):
         detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
         original_msg = (original.name, original.target, original.args, original.kwargs)
-        assert type(detailed) == syft.messaging.message.ComputationAction
+        assert type(detailed) == syft.execution.computation.ComputationAction
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1371,51 +1424,67 @@ def make_computation_action(**kwargs):
     ]
 
 
-# syft.messaging.message.CommandMessage
+# syft.messaging.message.TensorCommandMessage
 def make_command_message(**kwargs):
     bob = kwargs["workers"]["bob"]
+    alice = kwargs["workers"]["alice"]
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
     y = x * 2
-    op1 = bob._get_msg(-1)
+    cmd1 = bob._get_msg(-1)
 
     a = torch.tensor([[1, 2], [3, 4]]).send(bob)
     b = a.sum(1, keepdim=True)
-    op2 = bob._get_msg(-1)
+    cmd2 = bob._get_msg(-1)
+
+    x = torch.tensor([1, 2, 3, 4]).send(bob)
+    x.remote_send(alice)
+    cmd3 = bob._get_msg(-1)
 
     bob.log_msgs = False
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.CommandMessage
+        if isinstance(detailed.action, syft.execution.computation.ComputationAction):
+            detailed = detailed.action
+            original = original.action
 
-        detailed = detailed.action
-        original = original.action
+            detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
+            original_msg = (original.name, original.target, original.args, original.kwargs)
+            for i in range(len(original_msg)):
+                if type(original_msg[i]) != torch.Tensor:
+                    assert detailed_msg[i] == original_msg[i]
+                else:
+                    assert detailed_msg[i].equal(original_msg[i])
+            assert detailed.return_ids == original.return_ids
+            return True
 
-        detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-        original_msg = (original.name, original.target, original.args, original.kwargs)
-        for i in range(len(original_msg)):
-            if type(original_msg[i]) != torch.Tensor:
-                assert detailed_msg[i] == original_msg[i]
-            else:
-                assert detailed_msg[i].equal(original_msg[i])
-        assert detailed.return_ids == original.return_ids
-        return True
+        elif isinstance(detailed.action, syft.execution.communication.CommunicationAction):
+            assert detailed.action == original.action
+            return True
 
     return [
         {
-            "value": op1,
+            "value": cmd1,
             "simplified": (
-                CODE[syft.messaging.message.CommandMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, op1.action),),  # (Any) message
+                CODE[syft.messaging.message.TensorCommandMessage],
+                (msgpack.serde._simplify(syft.hook.local_worker, cmd1.action),),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
         {
-            "value": op2,
+            "value": cmd2,
             "simplified": (
-                CODE[syft.messaging.message.CommandMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, op2.action),),  # (Any) message
+                CODE[syft.messaging.message.TensorCommandMessage],
+                (msgpack.serde._simplify(syft.hook.local_worker, cmd2.action),),  # (Any) message
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": cmd3,
+            "simplified": (
+                CODE[syft.messaging.message.TensorCommandMessage],
+                (msgpack.serde._simplify(syft.hook.local_worker, cmd3.action),),
             ),
             "cmp_detailed": compare,
         },
@@ -1433,7 +1502,7 @@ def make_objectmessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ObjectMessage
         # torch tensors
-        assert detailed.contents.equal(original.contents)
+        assert detailed.object.equal(original.object)
         return True
 
     return [
@@ -1443,8 +1512,8 @@ def make_objectmessage(**kwargs):
                 CODE[syft.messaging.message.ObjectMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, obj.contents
-                    ),  # (Any) simplified contents
+                        syft.hook.local_worker, obj.object
+                    ),  # (Any) simplified object
                 ),
             ),
             "cmp_detailed": compare,
@@ -1463,7 +1532,9 @@ def make_objectrequestmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ObjectRequestMessage
-        assert detailed.contents == original.contents
+        assert detailed.object_id == original.object_id
+        assert detailed.user == original.user
+        assert detailed.reason == original.reason
         return True
 
     return [
@@ -1472,9 +1543,9 @@ def make_objectrequestmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.ObjectRequestMessage],
                 (
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, obj_req.contents
-                    ),  # (Any) simplified contents
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.object_id),
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.user),
+                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.reason),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1495,7 +1566,7 @@ def make_isnonemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.IsNoneMessage
         # torch tensors
-        assert detailed.contents.equal(original.contents)
+        assert detailed.object_id == original.object_id
         return True
 
     return [
@@ -1503,11 +1574,7 @@ def make_isnonemessage(**kwargs):
             "value": nm,
             "simplified": (
                 CODE[syft.messaging.message.IsNoneMessage],
-                (
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, nm.contents
-                    ),  # (Any) simplified contents
-                ),
+                (msgpack.serde._simplify(syft.hook.local_worker, nm.object_id),),
             ),
             "cmp_detailed": compare,
         }
@@ -1528,7 +1595,7 @@ def make_getshapemessage(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.GetShapeMessage
         # torch tensor
-        assert detailed.contents.equal(original.contents)
+        assert detailed.tensor_id == original.tensor_id
         return True
 
     return [
@@ -1538,8 +1605,8 @@ def make_getshapemessage(**kwargs):
                 CODE[syft.messaging.message.GetShapeMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, shape_message.contents
-                    ),  # (Any) simplified contents
+                        syft.hook.local_worker, shape_message.tensor_id
+                    ),  # (Any) simplified tensor
                 ),
             ),
             "cmp_detailed": compare,
@@ -1560,7 +1627,7 @@ def make_forceobjectdeletemessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ForceObjectDeleteMessage
-        assert detailed.contents == original.contents
+        assert detailed.object_id == original.object_id
         return True
 
     return [
@@ -1581,7 +1648,7 @@ def make_searchmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.SearchMessage
-        assert detailed.contents == original.contents
+        assert detailed.query == original.query
         return True
 
     return [
@@ -1612,7 +1679,8 @@ def make_plancommandmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.PlanCommandMessage
-        assert detailed.contents == original.contents
+        assert detailed.command_name == original.command_name
+        assert detailed.args == original.args
         return True
 
     return [
@@ -1630,8 +1698,8 @@ def make_plancommandmessage(**kwargs):
     ]
 
 
-# ExecuteWorkerFunctionMessage
-def make_executeworkerfunctionmessage(**kwargs):
+# WorkerCommandMessage
+def make_workercommandmessage(**kwargs):
     server, remote_proxy = kwargs["start_remote_worker"](
         id=kwargs["id"], hook=kwargs["hook"], port=kwargs["port"]
     )
@@ -1648,7 +1716,7 @@ def make_executeworkerfunctionmessage(**kwargs):
     server.terminate()
 
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.ExecuteWorkerFunctionMessage
+        assert type(detailed) == syft.messaging.message.WorkerCommandMessage
         assert detailed.contents == original.contents
         return True
 
@@ -1656,7 +1724,7 @@ def make_executeworkerfunctionmessage(**kwargs):
         {
             "value": objects_count_msg,
             "simplified": (
-                CODE[syft.messaging.message.ExecuteWorkerFunctionMessage],
+                CODE[syft.messaging.message.WorkerCommandMessage],
                 (
                     (CODE[str], (b"objects_count",)),  # (str) command
                     (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),

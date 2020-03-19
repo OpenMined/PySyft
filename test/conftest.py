@@ -63,7 +63,7 @@ def start_remote_worker():  # pragma: no cover
     """Helper function for starting a websocket worker."""
 
     def _start_remote_worker(
-        id, hook, dataset: str = None, host="localhost", port=8768, max_tries=5, sleep_time=0.01
+        id, hook, dataset: str = None, host="0.0.0.0", port=8768, max_tries=5, sleep_time=0.01
     ):
         kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
@@ -129,6 +129,7 @@ def workers(hook):
     syft.local_worker.clear_objects()
     hook_args.hook_method_args_functions = {}
     hook_args.hook_method_response_functions = {}
+    hook_args.register_response_functions = {}
     hook_args.get_tensor_type_functions = {}
 
     # Define 4 virtual workers

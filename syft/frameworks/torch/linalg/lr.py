@@ -174,17 +174,17 @@ class EncryptedLinearRegression:
         print("-" * 52)
         for i, cf in enumerate(self.coef):
             print(
-                "coef" + "{:<3d}".format(i + 1),
-                "{:>14.4f}".format(cf),
-                "{:>14.4f}".format(self.se_coef[i]),
-                "{:>14.4f}".format(self.pvalue_coef[i]),
+                "coef" + f"{i + 1:<3d}",
+                f"{cf:>14.4f}",
+                f"{self.se_coef[i]:>14.4f}",
+                f"{self.pvalue_coef[i]:>14.4f}",
             )
         if self.fit_intercept:
             print(
                 "intercept",
-                "{:>12.4f}".format(self.intercept),
-                "{:>14.4f}".format(self.se_intercept),
-                "{:>14.4f}".format(self.pvalue_intercept),
+                f"{self.intercept:>12.4f}",
+                f"{self.se_intercept:>14.4f}",
+                f"{self.pvalue_intercept:>14.4f}",
             )
         print("-" * 52)
 

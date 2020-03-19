@@ -2,10 +2,9 @@ import syft as sy
 from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
-from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 
 class ComputationAction(Action):
@@ -51,24 +50,24 @@ class ComputationAction(Action):
         return (message, self.return_ids)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "ComputationAction") -> tuple:
+    def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
         """
         This function takes the attributes of a Action and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (Action): a Message
+            action (ComputationAction): the ComputationAction object to simplify
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
-            data = simplify(ptr)
+            data = simplify(sy.local_worker, action)
         """
         # NOTE: we can skip calling _simplify on return_ids because they should already be
         # a list of simple types.
-        message = (ptr.name, ptr.target, ptr.args, ptr.kwargs)
+        message = (action.name, action.target, action.args, action.kwargs)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
-            sy.serde.msgpack.serde._simplify(worker, ptr.return_ids),
+            sy.serde.msgpack.serde._simplify(worker, action.return_ids),
         )
 
     @staticmethod
@@ -82,9 +81,9 @@ class ComputationAction(Action):
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (Action): an Action.
+            action (ComputationAction): a ComputationAction.
         Examples:
-            message = detail(sy.local_worker, msg_tuple)
+            action = detail(sy.local_worker, msg_tuple)
         """
         message = msg_tuple[0]
         return_ids = msg_tuple[1]
@@ -113,9 +112,7 @@ class ComputationAction(Action):
 
         if type(action.target) == sy.generic.pointers.pointer_tensor.PointerTensor:
             protobuf_owner = protobuf_op.target_pointer
-        elif (
-            type(action.target) == sy.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder
-        ):
+        elif type(action.target) == sy.execution.placeholder.PlaceHolder:
             protobuf_owner = protobuf_op.target_placeholder
         else:
             protobuf_owner = protobuf_op.target_tensor
@@ -124,12 +121,12 @@ class ComputationAction(Action):
             protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
 
         if action.args:
-            protobuf_op.args.extend(ComputationAction._bufferize_args(worker, action.args))
+            protobuf_op.args.extend(sy.serde.protobuf.serde.bufferize_args(worker, action.args))
 
         if action.kwargs:
             for key, value in action.kwargs.items():
                 protobuf_op.kwargs.get_or_create(key).CopyFrom(
-                    ComputationAction._bufferize_arg(worker, value)
+                    sy.serde.protobuf.serde.bufferize_arg(worker, value)
                 )
 
         if action.return_ids is not None:
@@ -162,24 +159,24 @@ class ComputationAction(Action):
             protobuf_obj (ComputationActionPB): the Protobuf message
 
         Returns:
-            obj (Action): an Action
+            obj (ComputationAction): a ComputationAction
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         command = protobuf_obj.command
-        protobuf_owner = protobuf_obj.WhichOneof("target")
-        if protobuf_owner:
-            owner = sy.serde.protobuf.serde._unbufferize(
+        protobuf_target = protobuf_obj.WhichOneof("target")
+        if protobuf_target:
+            target = sy.serde.protobuf.serde._unbufferize(
                 worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
             )
         else:
-            owner = None
-        args = ComputationAction._unbufferize_args(worker, protobuf_obj.args)
+            target = None
+        args = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
 
         kwargs = {}
         for key in protobuf_obj.kwargs:
-            kwargs[key] = ComputationAction._unbufferize_arg(worker, protobuf_obj.kwargs[key])
+            kwargs[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
@@ -193,45 +190,13 @@ class ComputationAction(Action):
         if return_placeholders:
             if len(return_placeholders) == 1:
                 action = ComputationAction(
-                    command, owner, tuple(args), kwargs, return_placeholders[0]
+                    command, target, tuple(args), kwargs, return_placeholders[0]
                 )
             else:
-                action = ComputationAction(command, owner, tuple(args), kwargs, return_placeholders)
+                action = ComputationAction(
+                    command, target, tuple(args), kwargs, return_placeholders
+                )
         else:
-            action = ComputationAction(command, owner, tuple(args), kwargs, tuple(return_ids))
+            action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
         return action
-
-    @staticmethod
-    def _bufferize_args(worker: AbstractWorker, args: list) -> list:
-        protobuf_args = []
-        for arg in args:
-            protobuf_args.append(ComputationAction._bufferize_arg(worker, arg))
-        return protobuf_args
-
-    @staticmethod
-    def _bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
-        protobuf_arg = ArgPB()
-        try:
-            setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
-        except:
-            getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, arg)
-            )
-        return protobuf_arg
-
-    @staticmethod
-    def _unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-        args = []
-        for protobuf_arg in protobuf_args:
-            args.append(ComputationAction._unbufferize_arg(worker, protobuf_arg))
-        return args
-
-    @staticmethod
-    def _unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-        protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-        try:
-            arg = sy.serde.protobuf.serde._unbufferize(worker, protobuf_arg_field)
-        except:
-            arg = protobuf_arg_field
-        return arg
