@@ -43,24 +43,81 @@ def load(tag: str, src: int, id_worker: int):
     return result
 
 
-def crypten_to_torch_modules(model):
-    """Converts crypten modules to torch ones."""
+class _WrappedCryptenModel():
+    """Wrap a crypten model to offer the same API as syft does for
+    torch modules.
+    """
 
-    for name, curr_module in model._modules.items():
-        # module_name = curr_module.__class__.split('.')[-1]
-        if isinstance(curr_module, crypten.nn.module.Linear):
-            out_nodes, in_nodes = curr_module._parameters['weight'].size()
-            new_module = torch.nn.Linear(in_nodes, out_nodes)
-            # Copy weights and biases
-            weights = curr_module._parameters['weight']
-            biases = curr_module._parameters['bias']
-            new_module._parameters['weight'] = weights.get_plain_text()
-            new_module._parameters['bias'] = biases.get_plain_text()
-            model._modules[name] = new_module
-        elif isinstance(curr_module, crypten.nn.module.ReLU):
-            model._modules[name] = torch.nn.ReLU()
+    # TODO: forward any other function call to the underlying crypten model
 
-    return model
+    def __init__(self, crypten_model):
+        if crypten_model.encrypted:
+            raise TypeError("Crypten model must be unencrypted.")
+        self._model = crypten_model
+
+    def share(self, *args, **kwargs):
+        for p in self._model.parameters():
+            p.share_(*args, **kwargs)
+        return self
+
+    def forward(self, *args, **kwargs):
+        return  self._model.forward(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
+
+    def fix_prec(self, *args, **kwargs):
+        for p in self._model.parameters():
+            p.fix_precision_(*args, **kwargs)
+        return self
+
+    def float_prec(self):
+        for p in self._model.parameters():
+            p.float_prec()
+        return self
+
+    def send(self, *dest, **kwargs):
+        for p in self._model.parameters():
+            p.send_(*dest, **kwargs)
+        return self
+
+    def move(self, dest):
+        for p in self._model.parameters():
+            p.move(dest)
+        return self
+
+    def get(self):
+        for p in self._model.parameters():
+            p.get_()
+        return self
+
+    def copy(self):
+        pass
+
+    @property
+    def owner(self):
+        for p in self._model.parameters():
+            return p.owner
+
+    @property
+    def location(self):
+        try:
+            for p in self._model.parameters():
+                return p.location
+        except AttributeError:
+            raise AttributeError(
+                "Module has no attribute location, did you already send it to some location?"
+            )
 
 
-__all__ = ["toy_func", "run_party", "load"]
+def crypten_to_syft_model(crypten_model):
+    """Transform a crypten model to an object that have the same
+    API as syft does for torch modules.
+
+    Args:
+        crypten_model: the crypten.nn.Module object to be transformed.
+    """
+    return _WrappedCryptenModel(crypten_model)
+
+
+__all__ = ["toy_func", "run_party", "load", "crypten_to_syft_model"]
