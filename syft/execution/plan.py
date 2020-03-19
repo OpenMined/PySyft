@@ -251,21 +251,39 @@ class Plan(AbstractObject, ObjectStorage):
 
         return self.placeholders[tensor.id]
 
-    def add_placeholder_nontensor(self, obj, node_type=None):
-        if id(obj) not in self.placeholders.keys():
+    def add_placeholder_fcall(self, obj, node_type=None):
+        """
+        Create a placeholder for the arguments, even if they are not tensors. These placeholders are used for
+        type check at the runtime of the plan. Every placeholder that is created or is already existing will
+        receive the #fcall tag.
+
+        The placeholders created will use the same unique incremental index.
+
+        Args:
+            obj: The object from the arguments of the build.
+            node_type: Only accepts "fcall".
+        """
+        if isinstance(obj, FrameworkTensor):
+            obj_id = obj.id
+        else:
+            obj_id = id(obj)
+
+        if obj_id not in self.placeholders.keys():
             placeholder = sy.PlaceHolder(
                 tags={f"#{self.var_count + 1}"}, id=id(obj), owner=self.owner
             )
-            self.placeholders[id(obj)] = placeholder
+            self.placeholders[obj_id] = placeholder
 
-            if node_type == "nontensor_input":
-                if id(obj) in self._tmp_args_ids:
-                    placeholder.tags.add(f"#nontensor_input-{self._tmp_args_ids.index(id(obj))}")
-                    type_tag = "type_" + str(type(obj)).split("'")[1]
+            if node_type == "fcall":
+                if obj_id in self._tmp_args_ids:
+                    placeholder.tags.add(f"#fcall-{self._tmp_args_ids.index(obj_id)}")
+                    type_tag = "type_" + type(obj).__name__
                     placeholder.tags.add(f"#{type_tag}")
             else:
-                raise ValueError("node_type should be 'nontensor_input'")
+                raise ValueError("node_type should be 'fcall'")
             self.var_count += 1
+        else:
+            self.placeholders[obj_id].tags.add(f"#fcall-{self._tmp_args_ids.index(obj_id)}")
 
     def replace_with_placeholders(self, obj, arg_ids, result_ids, **kw):
         """
@@ -330,8 +348,36 @@ class Plan(AbstractObject, ObjectStorage):
         Args:
             args: Input arguments to run the plan
         """
+
+        def generate_input_ids(plan, args, fcall_argvs=False):
+            """
+            Add all input tensors to _tmp_args_ids, even if they are in nested structures.
+
+            Note: Only supports dict, list and tuples, might be better to check if the object is iterable for
+            better support.
+
+            Arguments:
+                plan: the current plan.
+                args: arguments of the plan at build time.
+                fcall_argvs: we want the original set of inputs of the build to be added to _tmp_args_ids, even if
+                they are not tensors, useful for the type check.
+            """
+            for arg in args:
+                if isinstance(arg, FrameworkTensor):
+                    plan._tmp_args_ids.append(arg.id)
+                    continue
+
+                if isinstance(arg, dict):
+                    generate_input_ids(plan, list(arg.values()))
+                elif isinstance(arg, list):
+                    generate_input_ids(plan, arg)
+
+                if fcall_argvs:
+                    plan._tmp_args_ids.append(id(arg))
+
         self.owner.init_plan = self
-        self._tmp_args_ids = [t.id if isinstance(t, FrameworkTensor) else id(t) for t in args]
+        self._tmp_args_ids = []
+        generate_input_ids(self, args, fcall_argvs=True)
 
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
@@ -350,10 +396,9 @@ class Plan(AbstractObject, ObjectStorage):
             self.replace_with_placeholders(arg, arg_ids, result_ids, node_type="input")
 
         for arg in args:
-            if isinstance(arg, FrameworkTensor):
-                self.replace_with_placeholders(arg, node_type="input")
-            else:
-                self.add_placeholder_nontensor(arg, node_type="nontensor_input")
+            # adding the input tag to the tensors, even if nested, adding fcall tag to every argument
+            self.replace_with_placeholders(arg, node_type="input")
+            self.add_placeholder_fcall(arg, node_type="fcall")
 
         for log in sy.hook.trace.logs:
             command, response = log
@@ -408,32 +453,25 @@ class Plan(AbstractObject, ObjectStorage):
             for tensor_name, tensor in value.named_tensors():
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
 
-    def __call__(self, *args, **kwargs):
+    def validate_input(self, args, kwargs):
         """
-        Calls a plan execution with some arguments.
+        Function used in __call__ to validate the input based on the input received at build time.
 
-        When possible, run the original function to improve efficiency. When
-        it's not, for example if you fetched the plan from a remote worker,
-        then run it from the tape of actions:
-        - Instantiate input placeholders
-        - for each recorded action, run the action on the placeholders
-          and use the result(s) to instantiate to appropriate placeholder.
-        - Return the instantiation of all the output placeholders.
+        Args:
+            args: original args received on __call__.
+            kwargs: original kwargs received on __call__.
         """
-        if not self.is_built:
-            if self.include_state:
-                args = (*args, self.state)
-            return self.forward(*args)
 
         def extract_type(obj: PlaceHolder) -> str:
+            """
+            Function to extract type on the
+            """
             for tag in obj.tags:
                 if "type_" in tag:
                     return tag[6:]
 
-        # Instantiate all the input placeholders in the correct order
-        input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
-        nontensor_inputs = self.find_placeholders("#nontensor_input")
-        inputs = sorted(input_placeholders + nontensor_inputs, key=tag_sort("input"))
+        inputs = sorted(self.find_placeholders("#fcall"), key=tag_sort("fcall"))
+
         if len(inputs) != len(args):
             raise RuntimeError(
                 f"Plan {self.name} requires {len(inputs)} arguments, received {len(args)}."
@@ -441,7 +479,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         for index, arg in enumerate(args):
             placeholder_type = extract_type(inputs[index])
-            argument_type = str(type(arg)).split("'")[1]
+            argument_type = type(arg).__name__
 
             tensor_type_error = (
                 isinstance(arg, FrameworkTensor) == placeholder_type == "FrameworkTensor"
@@ -457,13 +495,55 @@ class Plan(AbstractObject, ObjectStorage):
                     RuntimeWarning,
                 )
 
+    def __call__(self, *args, **kwargs):
+        """
+        Calls a plan execution with some arguments.
+
+        When possible, run the original function to improve efficiency. When
+        it's not, for example if you fetched the plan from a remote worker,
+        then run it from the tape of actions:
+        - Instantiate input placeholders
+        - for each recorded action, run the action on the placeholders
+          and use the result(s) to instantiate to appropriate placeholder.
+        - Return the instantiation of all the output placeholders.
+        """
+
+        def instantiate_input(input_placeholders, args):
+            """
+                Function to instantiate all the placeholders in order, even if in nested structures.
+
+                Args:
+                    input_placeholders: the input placeholders generated at build time.
+                    args: the arguments received on __call__
+            """
+
+            for arg in args:
+                if isinstance(arg, FrameworkTensor):
+                    placeholder = input_placeholders.pop(0)
+                    placeholder.instantiate(arg)
+                elif isinstance(arg, (list, tuple, set)):
+                    instantiate_input(input_placeholders, arg)
+                elif isinstance(arg, dict):
+                    instantiate_input(input_placeholders, list(arg.values()))
+
+        # If the function was not built, we can't make typechecking.
+        if not self.is_built:
+            if self.include_state:
+                args = (*args, self.state)
+            return self.forward(*args)
+
+        # Input validation based on build input.
+        self.validate_input(args, kwargs)
+
+        # Instantiate all the input placeholders in the correct order
+        input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
+
         if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
 
-        for placeholder, arg in zip(input_placeholders, args):
-            placeholder.instantiate(arg)
+        instantiate_input(input_placeholders, args)
 
         for i, action in enumerate(self.actions):
             cmd, _self, args, kwargs, return_placeholder = (

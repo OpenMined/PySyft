@@ -1178,23 +1178,105 @@ def test_plan_warnings_typecheck(hook):
     wrong_type_inputs = [
         [pointer_to_data_1, pointer_to_data_2, 2, 2],
         [pointer_to_data_1, pointer_to_data_2, 2.0, False],
-        [pointer_to_data_1, 2, 2.0, False],
-        [pointer_to_data_1, 2.0, 2, False],
-        [True, pointer_to_data_2, 2.0, False],
     ]
 
     for test_number, wrong_type_input in enumerate(wrong_type_inputs):
         plan_test.build(*dummy_input_list)
+        pointer_plan = plan_test.send(device_1)
         with pytest.warns(RuntimeWarning) as e:
-            plan_test(*wrong_type_input)
+            pointer_plan(*wrong_type_input)
 
         if test_number == 0:
             assert len(e) == 1
         elif test_number == 1:
             assert len(e) == 1
-        elif test_number == 2:
-            assert len(e) == 2
-        elif test_number == 3:
-            assert len(e) == 1
-        elif test_number == 4:
-            assert len(e) == 2
+
+
+def test_plan_list(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data1")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    @sy.func2plan()
+    def plan_list(data, x):
+        y = data[0] + data[1]
+        z = data[0] + x
+        return y + z
+
+    device_1 = sy.VirtualWorker(hook, id="test_plan_list", data=(x11, x12))
+
+    plan_list.build([th.tensor([1, 2]), th.tensor([2, 3])], th.tensor([0, 0]))
+    pointer_to_plan = plan_list.send(device_1)
+    pointer_to_data_1 = device_1.search("input_data1")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+    result = pointer_to_plan([pointer_to_data_1, pointer_to_data_2], th.tensor([1, 1]))
+    assert (result.get() == th.tensor([0, 3])).all()
+
+
+def test_plan_dict(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data1")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    @sy.func2plan()
+    def plan_dict(data, x):
+        y = data["input1"] + data["input2"]
+        z = data["input1"] + x
+        return y + z
+
+    device_1 = sy.VirtualWorker(hook, id="test_plan_dict", data=(x11, x12))
+    plan_dict.build({"input1": th.tensor([1, 2]), "input2": th.tensor([2, 3])}, th.tensor([0, 0]))
+    pointer_to_plan = plan_dict.send(device_1)
+    pointer_to_data_1 = device_1.search("input_data1")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+    result = pointer_to_plan(
+        {"input1": pointer_to_data_1, "input2": pointer_to_data_2}, th.tensor([1, 1])
+    )
+    assert (result.get() == th.tensor([0, 3])).all()
+
+
+def test_plan_nested_structures(hook):
+    x1 = th.tensor([-1, 2.0]).tag("input_data1")
+    x2 = th.tensor([1, -2.0]).tag("input_data2")
+    x3 = th.tensor([2, -1]).tag("input_data3")
+    x4 = th.tensor([2, 1]).tag("input_data4")
+
+    @sy.func2plan()
+    def plan_nested(dict):
+        """
+        dict:
+            "tensors":
+                "test1": [tensor(-1, 2), tensor(1, -2), [tensor(-1, 2), tensor(2, 1)]]
+                "test2": tensor(2, 1)
+            "tensor_list": [tensor(-1, 2), tensor(2, -1)]
+        """
+        x = dict["tensors"]["test1"][0]
+        y = dict["tensors"]["test1"][1]
+        z = dict["tensors"]["test2"]
+        t = dict["tensor_list"][0]
+        return x + y + z + t
+
+    dummy_build = {
+        "tensors": {
+            "test1": [th.tensor([0, 0]), th.tensor([0, 0]), [th.tensor([0, 0]), th.tensor([0, 0])]],
+            "test2": th.tensor([0, 0]),
+        },
+        "tensor_list": [th.tensor([-1, 2]), th.tensor([1, -2])],
+    }
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2, x3, x4))
+    plan_nested.build(dummy_build)
+
+    pointer_to_data_1 = device_1.search("input_data1")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_3 = device_1.search("input_data3")[0]
+    pointer_to_data_4 = device_1.search("input_data4")[0]
+
+    call_build = {
+        "tensors": {
+            "test1": [pointer_to_data_1, pointer_to_data_2, [pointer_to_data_1, pointer_to_data_4]],
+            "test2": pointer_to_data_4,
+        },
+        "tensor_list": [pointer_to_data_1, pointer_to_data_3],
+    }
+    pointer_to_plan = plan_nested.send(device_1)
+    result = pointer_to_plan(call_build)
+    assert (result.get() == th.tensor([1, 3])).all()
