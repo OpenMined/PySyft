@@ -77,3 +77,14 @@ def set_protobuf_id(field, id):
 
 def get_protobuf_id(field):
     return getattr(field, field.WhichOneof("id"))
+
+def set_protobuf_field(field, field_size):
+    assert type(field_size)==int
+    if field_size >= 2**64:
+        field.field_str = str(field_size)
+    else:
+        field.field_int = field_size
+
+
+def get_protobuf_field(field):
+    return getattr(field, field.WhichOneof("field_size"))
