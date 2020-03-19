@@ -87,6 +87,20 @@ def start_proc(participant, kwargs):  # pragma: no cover
     p.start()
     return p
 
+def start_proc_steal_data_over_sockets(participant, kwargs):  # pragma: no cover
+    """ helper function for spinning up a websocket participant """
+
+    def target():
+        server = participant(**kwargs)
+        private_data = torch.tensor([1, 1, 1, 1, 1])
+        private_data.private = True
+        server._objects[1] = private_data
+        server.start()
+
+    p = Process(target=target)
+    p.start()
+    return p
+
 if __name__ == "__main__":
 
     # Logging setup
@@ -119,7 +133,7 @@ if __name__ == "__main__":
         "--type",
         type=str,
         default="normal",
-        help="can run websocket server for websockets examples of mnist or mnist-parallel. Type 'mnist' for satrting server for websockets-example-MNIST  while `mnist-parallel` for websockets-example-MNIST-parallel",
+        help="can run websocket server for websockets examples of mnist/mnist-parallel or pen_testing/steal_data_over_sockets. Type 'mnist' for satrting server for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel and 'steal_data' for pen_tesing stealing data over sockets",
     )
     args = parser.parse_args()
 
@@ -127,7 +141,7 @@ if __name__ == "__main__":
     hook = sy.TorchHook(torch)
 
     # server = start_proc(WebsocketServerWorker, kwargs)
-    if(args.type=="normal" or args.type=="mnist"):
+    if(args.type=="normal" or args.type=="mnist" or args.type=="steal_data"):
         kwargs = {
             "id": args.id,
             "host": args.host,
@@ -135,8 +149,10 @@ if __name__ == "__main__":
             "hook": hook,
             "verbose": args.verbose,
         }
-        if os.name != "nt":
+        if os.name != "nt" and (args.type=="normal" or args.type=="mnist"):
             server = start_proc(WebsocketServerWorker, kwargs)
+        elif os.name != "nt" and args.type=="steal_data":
+            server = start_proc_steal_data_over_sockets(WebsocketServerWorker, kwargs)
         else:
             server = WebsocketServerWorker(**kwargs)
             server.start()
