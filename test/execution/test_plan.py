@@ -1143,7 +1143,7 @@ def test_plan_wrong_number_of_parameters(hook):
 
     dummy_input_list = [th.tensor([1, -2]), th.tensor([1, 2]), 2, False]
     input_list = [pointer_to_data_1, pointer_to_data_2, 5, True]
-    corect_number_of_params = 5
+    corect_number_of_params = 4
 
     for i in range(len(input_list)):
         plan_test.build(*dummy_input_list)
