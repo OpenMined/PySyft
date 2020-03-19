@@ -386,22 +386,26 @@ def auth():
 @main.route("/federated/report", methods=["POST"])
 def report_diff():
     """Allows reporting of (agg/non-agg) model diff after worker completes a cycle"""
-    response_body = {"message": None}
+    response_body = {}
+    status_code = None
 
     try:
-        data = json.loads(request.data)
+        body = json.loads(request.data)
+        response_body = report({MSG_FIELD.DATA: body}, None)
+    except PyGridError or json.decoder.JSONDecodeError as e:
+        status_code = 400  # Bad Request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+        response_body = json.dumps(response_body)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG.ERROR] = str(e)
 
-        resp = report({"data": data}, None)
+    if isinstance(response_body, str):
+        # Consider just data field as a response
+        response_body = json.loads(response_body)[MSG_FIELD.DATA]
 
-        return Response(resp, status=200, mimetype="application/json")
-
-    # JSON format not valid.
-    except ValueError or KeyError as e:
-        return Response(
-            json.dumps({"message": INVALID_JSON_FORMAT_MESSAGE}),
-            status=400,
-            mimetype="application/json",
-        )
+    response_body = json.dumps(response_body)
+    return Response(response_body, status=status_code, mimetype="application/json")
 
 
 def _get_model_hosting_nodes(model_id):
@@ -432,7 +436,7 @@ def worker_cycle_request():
 
     try:
         body = json.loads(request.data)
-        response_body = cycle_request({"data": body}, None)
+        response_body = cycle_request({MSG_FIELD.DATA: body}, None)
     except PyGridError or json.decoder.JSONDecodeError as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
@@ -441,9 +445,11 @@ def worker_cycle_request():
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
 
-    if isinstance(response_body, dict):
-        response_body = json.dumps(response_body)
+    if isinstance(response_body, str):
+        # Consider just data field as a response
+        response_body = json.loads(response_body)[MSG_FIELD.DATA]
 
+    response_body = json.dumps(response_body)
     return Response(response_body, status=status_code, mimetype="application/json")
 
 
