@@ -289,9 +289,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def remote_send(
-        self, destination: AbstractWorker, requires_grad: bool = False,
-    ):
+    def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
