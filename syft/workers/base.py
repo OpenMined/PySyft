@@ -436,7 +436,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
 
-        # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Receive an object from a another worker
 
         Args:
@@ -484,7 +483,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         args = action.args
         kwargs = action.kwargs
         return_ids = action.return_ids
-        return_value = actions.return_value
+        return_value = action.return_value
 
         # Handle methods
         if _self is not None:
@@ -497,7 +496,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                     _self = self
                 else:
                     res: list = self.search(_self)
-                    assert len(res) == 1
+                    assert (
+                        len(res) == 1
+                    ), f"Searching for {_self} on {self.id}. /!\\ {len(res)} found"
                     _self = res[0]
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
@@ -535,7 +536,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return response #TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 else:
                     return None
             except ResponseSignatureError:
@@ -631,7 +632,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         name, target, args_, kwargs_ = message
 
         try:
-            message = TensorCommandMessage.computation(name, target, args_, kwargs_, return_ids, return_value)
+            message = TensorCommandMessage.computation(
+                name, target, args_, kwargs_, return_ids, return_value
+            )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None

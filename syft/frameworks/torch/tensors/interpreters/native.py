@@ -698,15 +698,17 @@ class TorchTensor(AbstractTensor):
         Returns:
             A pointer to the worker location
         """
-        self.child = self.child.move(location, requires_grad)
+        new_ptr = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the syft.local_worker
         self.child.owner.register_obj(self)
-        return self
+        if isinstance(new_ptr, PointerTensor):
+            return new_ptr.wrap()
+        else:
+            return new_ptr
 
     def remote_send(self, location):
-        self.child.remote_send(location)
-        return self
+        return self.child.remote_send(location).wrap()
 
     def attr(self, attr_name):
         """"""

@@ -297,7 +297,7 @@ class LargePrecisionTensor(AbstractTensor):
             )
         return LargePrecisionTensor(**kwargs).on(tensor, wrap=False)
 
-    def share(self, *owners, field=None, crypto_provider=None):
+    def share(self, *owners, field=None, protocol=None, crypto_provider=None):
         if field is None:
             field = self.internal_field
         else:
@@ -308,7 +308,7 @@ class LargePrecisionTensor(AbstractTensor):
                     must be the same as the one of the original tensor"
 
         self.child = self.child.share(
-            *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
+            *owners, field=field, protocol=protocol, crypto_provider=crypto_provider, no_wrap=True
         )
         return self
 

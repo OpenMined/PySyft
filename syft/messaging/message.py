@@ -98,16 +98,20 @@ class TensorCommandMessage(Message):
     def return_ids(self):
         return self.action.return_ids
 
+    @property
+    def return_value(self):
+        return self.action.return_value
+
     def __str__(self):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {self.action})"
 
     @staticmethod
-    def computation(name, target, args_, kwargs_, return_ids):
+    def computation(name, target, args_, kwargs_, return_ids, return_value=False):
         """ Helper function to build a TensorCommandMessage containing a ComputationAction
         directly from the action arguments.
         """
-        action = ComputationAction(name, target, args_, kwargs_, return_ids)
+        action = ComputationAction(name, target, args_, kwargs_, return_ids, return_value)
         return TensorCommandMessage(action)
 
     @staticmethod
@@ -130,10 +134,7 @@ class TensorCommandMessage(Message):
         Examples:
             data = simplify(ptr)
         """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, ptr.action),
-            sy.serde.msgpack.serde._simplify(worker, ptr.return_value),
-        )
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.action),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "TensorCommandMessage":
