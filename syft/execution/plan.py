@@ -20,7 +20,6 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
 class func2plan(object):
@@ -233,17 +232,17 @@ class Plan(AbstractObject, ObjectStorage):
                         f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
                     )
 
-                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
-                if tensor.id in self._tmp_result_ids:
-                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
+                placeholder.tags.add(f"#input-{arg_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
 
                 placeholder.tags.add(f"#type_FrameworkTensor")
             elif node_type == "output":
-                if tensor.id in self._tmp_result_ids:
-                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
 
-                if tensor.id in self._tmp_args_ids:
-                    placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
+                if tensor.id in arg_ids:
+                    placeholder.tags.add(f"#input-{result_ids.index(tensor.id)}")
             else:
                 raise ValueError("node_type should be 'input' or 'output'.")
 
@@ -251,7 +250,7 @@ class Plan(AbstractObject, ObjectStorage):
 
         return self.placeholders[tensor.id]
 
-    def add_placeholder_fcall(self, obj, node_type=None):
+    def add_placeholder_fcall(self, obj, arg_ids, node_type=None):
         """
         Create a placeholder for the arguments, even if they are not tensors. These placeholders are used for
         type check at the runtime of the plan. Every placeholder that is created or is already existing will
@@ -275,15 +274,15 @@ class Plan(AbstractObject, ObjectStorage):
             self.placeholders[obj_id] = placeholder
 
             if node_type == "fcall":
-                if obj_id in self._tmp_args_ids:
-                    placeholder.tags.add(f"#fcall-{self._tmp_args_ids.index(obj_id)}")
+                if obj_id in arg_ids:
+                    placeholder.tags.add(f"#fcall-{arg_ids.index(obj_id)}")
                     type_tag = "type_" + type(obj).__name__
                     placeholder.tags.add(f"#{type_tag}")
             else:
                 raise ValueError("node_type should be 'fcall'")
             self.var_count += 1
         else:
-            self.placeholders[obj_id].tags.add(f"#fcall-{self._tmp_args_ids.index(obj_id)}")
+            self.placeholders[obj_id].tags.add(f"#fcall-{arg_ids.index(obj_id)}")
 
     def replace_with_placeholders(self, obj, arg_ids, result_ids, **kw):
         """
@@ -349,9 +348,9 @@ class Plan(AbstractObject, ObjectStorage):
             args: Input arguments to run the plan
         """
 
-        def generate_input_ids(plan, args, fcall_argvs=False):
+        def generate_input_ids(args, arg_ids, fcall_argvs=False):
             """
-            Add all input tensors to _tmp_args_ids, even if they are in nested structures.
+            Add all input tensors to arg_ids, even if they are in nested structures.
 
             Note: Only supports dict, list and tuples, might be better to check if the object is iterable for
             better support.
@@ -359,26 +358,25 @@ class Plan(AbstractObject, ObjectStorage):
             Arguments:
                 plan: the current plan.
                 args: arguments of the plan at build time.
-                fcall_argvs: we want the original set of inputs of the build to be added to _tmp_args_ids, even if
+                fcall_argvs: we want the original set of inputs of the build to be added to arg_ids, even if
                 they are not tensors, useful for the type check.
             """
             for arg in args:
                 if isinstance(arg, FrameworkTensor):
-                    plan._tmp_args_ids.append(arg.id)
+                    arg_ids.append(arg.id)
                     continue
 
                 if isinstance(arg, dict):
-                    generate_input_ids(plan, list(arg.values()))
+                    generate_input_ids(list(arg.values()), arg_ids)
                 elif isinstance(arg, list):
-                    generate_input_ids(plan, arg)
+                    generate_input_ids(arg, arg_ids)
 
                 if fcall_argvs:
-                    plan._tmp_args_ids.append(id(arg))
+                    arg_ids.append(id(arg))
 
         self.owner.init_plan = self
-        self._tmp_args_ids = []
-        generate_input_ids(self, args, fcall_argvs=True)
-
+        arg_ids = []
+        generate_input_ids(args, arg_ids, fcall_argvs=True)
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
             # using @func2plan and we need therefore to add the state manually
@@ -389,7 +387,6 @@ class Plan(AbstractObject, ObjectStorage):
 
         results = (results,) if not isinstance(results, tuple) else results
 
-        arg_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
         result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
 
         for arg in args:
@@ -397,8 +394,8 @@ class Plan(AbstractObject, ObjectStorage):
 
         for arg in args:
             # adding the input tag to the tensors, even if nested, adding fcall tag to every argument
-            self.replace_with_placeholders(arg, node_type="input")
-            self.add_placeholder_fcall(arg, node_type="fcall")
+            self.replace_with_placeholders(arg, arg_ids, result_ids, node_type="input")
+            self.add_placeholder_fcall(arg, arg_ids, node_type="fcall")
 
         for log in sy.hook.trace.logs:
             command, response = log

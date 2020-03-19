@@ -1125,7 +1125,7 @@ def test_plan_input_usage(hook):
     pointer_plan = plan_test_2.send(device_1)
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
-    assert (result == x12).all
+    assert (result == x12).all()
 
 
 def test_plan_wrong_number_of_parameters(hook):
