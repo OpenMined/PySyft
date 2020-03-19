@@ -239,6 +239,7 @@ class FLController:
             return {
                 CYCLE.STATUS: "accepted",
                 CYCLE.KEY: _worker_cycle.request_key,
+                CYCLE.VERSION: _cycle.version,
                 MSG_FIELD.MODEL: name,
                 CYCLE.PLANS: _plans,
                 CYCLE.PROTOCOLS: _protocols,
@@ -248,8 +249,24 @@ class FLController:
                 MSG_FIELD.MODEL_ID: _model.id,
             }
         else:
-            remaining = _cycle.end - datetime.now()
-            return {CYCLE.STATUS: "rejected", CYCLE.TIMEOUT: str(remaining)}
+            n_completed_cycles = self._cycles.count(
+                fl_process_id=_fl_process.id, is_completed=True
+            )
+
+            _max_cycles = server.config.get["num_cycles"]
+
+            response = {
+                CYCLE.STATUS: "rejected",
+                MSG_FIELD.MODEL: name,
+                CYCLE.VERSION: _cycle.version,
+            }
+
+            # If it's not the last cycle, add the remaining time to the next cycle.
+            if n_completed_cycles < _max_cycles:
+                remaining = _cycle.end - datetime.now()
+                response[CYCLE.TIMEOUT] = str(remaining)
+
+            return response
 
     def _generate_hash_key(self, primary_key: str) -> str:
         """ Generate SHA256 Hash to give access to the cycle.

@@ -174,6 +174,7 @@ class GatewaySocketsTest(aiounittest.AsyncTestCase):
         response_fields = [
             "request_key",
             "model",
+            "version",
             "plans",
             "protocols",
             "client_config",
