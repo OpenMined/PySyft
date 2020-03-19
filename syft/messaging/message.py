@@ -18,10 +18,10 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
-from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
+from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 
 
 class Message(ABC):
@@ -52,7 +52,7 @@ class Message(ABC):
         return self.__str__()
 
 
-class CommandMessage(Message):
+class TensorCommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
@@ -104,27 +104,27 @@ class CommandMessage(Message):
 
     @staticmethod
     def computation(name, target, args_, kwargs_, return_ids):
-        """ Helper function to build a CommandMessage containing a ComputationAction
+        """ Helper function to build a TensorCommandMessage containing a ComputationAction
         directly from the action arguments.
         """
         action = ComputationAction(name, target, args_, kwargs_, return_ids)
-        return CommandMessage(action)
+        return TensorCommandMessage(action)
 
     @staticmethod
     def communication(obj_id, source, destinations, kwargs):
-        """ Helper function to build a CommandMessage containing a CommunicationAction
+        """ Helper function to build a TensorCommandMessage containing a CommunicationAction
         directly from the action arguments.
         """
         action = CommunicationAction(obj_id, source, destinations, kwargs)
-        return CommandMessage(action)
+        return TensorCommandMessage(action)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "CommandMessage") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "TensorCommandMessage") -> tuple:
         """
-        This function takes the attributes of a CommandMessage and saves them in a tuple
+        This function takes the attributes of a TensorCommandMessage and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (CommandMessage): a Message
+            ptr (TensorCommandMessage): a Message
         Returns:
             tuple: a tuple holding the unique attributes of the message
         Examples:
@@ -133,17 +133,17 @@ class CommandMessage(Message):
         return (sy.serde.msgpack.serde._simplify(worker, ptr.action),)
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommandMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "TensorCommandMessage":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a CommandMessage. The simplify() method runs the inverse of this method.
+        it into a TensorCommandMessage. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (CommandMessage): an CommandMessage.
+            ptr (TensorCommandMessage): an TensorCommandMessage.
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
@@ -151,15 +151,17 @@ class CommandMessage(Message):
 
         detailed_action = sy.serde.msgpack.serde._detail(worker, simplified_action)
 
-        return CommandMessage(detailed_action)
+        return TensorCommandMessage(detailed_action)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, action_message: "CommandMessage") -> "CommandMessagePB":
+    def bufferize(
+        worker: AbstractWorker, action_message: "TensorCommandMessage"
+    ) -> "CommandMessagePB":
         """
-        This function takes the attributes of a CommandMessage and saves them in Protobuf
+        This function takes the attributes of a TensorCommandMessage and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            action_message (CommandMessage): an CommandMessage
+            action_message (TensorCommandMessage): an TensorCommandMessage
         Returns:
             protobuf_obj: a Protobuf message holding the unique attributes of the message
         Examples:
@@ -177,10 +179,12 @@ class CommandMessage(Message):
         return protobuf_action_msg
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "CommandMessagePB") -> "CommandMessage":
+    def unbufferize(
+        worker: AbstractWorker, protobuf_obj: "CommandMessagePB"
+    ) -> "TensorCommandMessage":
         """
         This function takes the Protobuf version of this message and converts
-        it into an CommandMessage. The bufferize() method runs the inverse of this method.
+        it into an TensorCommandMessage. The bufferize() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -188,14 +192,14 @@ class CommandMessage(Message):
             protobuf_obj (CommandMessagePB): the Protobuf message
 
         Returns:
-            obj (CommandMessage): an CommandMessage
+            obj (TensorCommandMessage): an TensorCommandMessage
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         action = getattr(protobuf_obj, protobuf_obj.WhichOneof("action"))
         detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
-        return CommandMessage(detailed_action)
+        return TensorCommandMessage(detailed_action)
 
 
 class ObjectMessage(Message):
@@ -607,14 +611,14 @@ class PlanCommandMessage(Message):
         )
 
 
-class ExecuteWorkerFunctionMessage(Message):
+class WorkerCommandMessage(Message):
     """Message used to execute a function of the remote worker."""
 
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
     def __init__(self, command_name: str, message: tuple):
-        """Initialize a ExecuteWorkerFunctionMessage.
+        """Initialize a WorkerCommandMessage.
 
         Args:
             command_name (str): name used to identify the command.
@@ -638,13 +642,13 @@ class ExecuteWorkerFunctionMessage(Message):
         return (self.command_name, self.message)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "ExecuteWorkerFunctionMessage") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "WorkerCommandMessage") -> tuple:
         """
-        This function takes the attributes of a ExecuteWorkerFunctionMessage and saves them in a tuple
+        This function takes the attributes of a WorkerCommandMessage and saves them in a tuple
 
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (ExecuteWorkerFunctionMessage): a Message
+            ptr (WorkerCommandMessage): a Message
 
         Returns:
             tuple: a tuple holding the unique attributes of the message
@@ -655,20 +659,20 @@ class ExecuteWorkerFunctionMessage(Message):
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ExecuteWorkerFunctionMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "WorkerCommandMessage":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a ExecuteWorkerFunctionMessage. The simplify() method runs the inverse of this method.
+        it into a WorkerCommandMessage. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
             msg_tuple (Tuple): the raw information being detailed.
         Returns:
-            ptr (ExecuteWorkerFunctionMessage): a ExecuteWorkerFunctionMessage.
+            ptr (WorkerCommandMessage): a WorkerCommandMessage.
         """
         command_name, message = msg_tuple
-        return ExecuteWorkerFunctionMessage(
+        return WorkerCommandMessage(
             sy.serde.msgpack.serde._detail(worker, command_name),
             sy.serde.msgpack.serde._detail(worker, message),
         )

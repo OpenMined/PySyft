@@ -658,6 +658,7 @@ def register_response(
 
     try:
         assert attr not in ambiguous_functions
+        assert attr not in ambiguous_methods
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]

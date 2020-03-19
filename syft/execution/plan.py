@@ -15,7 +15,7 @@ from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
@@ -203,7 +203,7 @@ class Plan(AbstractObject, ObjectStorage):
         self.de_register_obj(obj)
         return obj
 
-    def add_placeholder(self, tensor, node_type=None):
+    def add_placeholder(self, tensor, arg_ids, result_ids, node_type=None):
         """
         Create and register a new placeholder if not already existing (else return
         the existing one).
@@ -221,7 +221,7 @@ class Plan(AbstractObject, ObjectStorage):
             self.placeholders[tensor.id] = placeholder
 
             if node_type == "input":
-                if tensor.id not in self._tmp_args_ids:
+                if tensor.id not in arg_ids:
                     raise ValueError(
                         f"The following tensor was used but is not known in "
                         f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
@@ -231,10 +231,16 @@ class Plan(AbstractObject, ObjectStorage):
                         f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
                         f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
                     )
-                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
+                placeholder.tags.add(f"#input-{arg_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+
             elif node_type == "output":
-                if tensor.id in self._tmp_result_ids:
-                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+
+                if tensor.id in arg_ids:
+                    placeholder.tags.add(f"#input-{result_ids.index(tensor.id)}")
             else:
                 raise ValueError("node_type should be 'input' or 'output'.")
 
@@ -242,17 +248,20 @@ class Plan(AbstractObject, ObjectStorage):
 
         return self.placeholders[tensor.id]
 
-    def replace_with_placeholders(self, obj, **kw):
+    def replace_with_placeholders(self, obj, arg_ids, result_ids, **kw):
         """
         Replace in an object all FrameworkTensors with Placeholders
         """
         if isinstance(obj, (tuple, list)):
-            r = [self.replace_with_placeholders(o, **kw) for o in obj]
+            r = [self.replace_with_placeholders(o, arg_ids, result_ids, **kw) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
+            return {
+                key: self.replace_with_placeholders(value, arg_ids, result_ids, **kw)
+                for key, value in obj.items()
+            }
         elif isinstance(obj, FrameworkTensor):
-            return self.add_placeholder(obj, **kw)
+            return self.add_placeholder(obj, arg_ids, result_ids, **kw)
         elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
             return obj
         elif obj is None:
@@ -305,8 +314,6 @@ class Plan(AbstractObject, ObjectStorage):
 
         self.owner.init_plan = self
 
-        self._tmp_args_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
-
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
             # using @func2plan and we need therefore to add the state manually
@@ -316,21 +323,27 @@ class Plan(AbstractObject, ObjectStorage):
                 results = self.forward(*args)
 
         results = (results,) if not isinstance(results, tuple) else results
-        self._tmp_result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
+
+        arg_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
+        result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
+
+        for arg in args:
+            self.replace_with_placeholders(arg, arg_ids, result_ids, node_type="input")
 
         for log in sy.hook.trace.logs:
             command, response = log
-            command_placeholders = self.replace_with_placeholders(command, node_type="input")
-            return_placeholders = self.replace_with_placeholders(response, node_type="output")
+            command_placeholders = self.replace_with_placeholders(
+                command, arg_ids, result_ids, node_type="input"
+            )
+            return_placeholders = self.replace_with_placeholders(
+                response, arg_ids, result_ids, node_type="output"
+            )
 
             # We're cheating a bit here because we put placeholders instead of return_ids
             action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.actions.append(action)
 
         sy.hook.trace.clear()
-        del self._tmp_result_ids
-        del self._tmp_args_ids
-
         self.is_built = True
         self.owner.init_plan = None
 
