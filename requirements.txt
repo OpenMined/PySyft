@@ -1,6 +1,7 @@
 black
 coverage
 Flask
+Flask-Executor==0.9.3
 numpy>=1.14.0
 pre-commit
 pytest

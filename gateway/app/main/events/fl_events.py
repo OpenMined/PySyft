@@ -1,16 +1,14 @@
 import uuid
 import json
 from binascii import unhexlify
-import torch as th
-
 from .socket_handler import SocketHandler
 from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
+from ..exceptions import CycleNotFoundError
 from ..processes import processes
 from ..auth import workers
-from syft.serde.serde import deserialize
-from .. import hook
+from ..tasks.cycle import complete_cycle, run_task_once
 import traceback
-
+import base64
 
 # Singleton socket handler
 handler = SocketHandler()
@@ -55,7 +53,7 @@ def host_federated_training(message: dict, socket) -> str:
         )
         response[CYCLE.STATUS] = RESPONSE_MSG.SUCCESS
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
-        response[RESPONSE_MSG.ERROR] = str(e)
+        response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
     response = {MSG_FIELD.TYPE: FL_EVENTS.HOST_FL_TRAINING, MSG_FIELD.DATA: response}
 
@@ -126,9 +124,12 @@ def cycle_request(message: dict, socket) -> str:
 
         # Assign
         response = processes.assign(name, version, worker, last_participation)
+    except CycleNotFoundError:
+        # Nothing to do
+        response[CYCLE.STATUS] = CYCLE.REJECTED
     except Exception as e:
         response[CYCLE.STATUS] = CYCLE.REJECTED
-        response[RESPONSE_MSG.ERROR] = str(e)
+        response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
     response = {MSG_FIELD.TYPE: FL_EVENTS.CYCLE_REQUEST, MSG_FIELD.DATA: response}
     return json.dumps(response)
@@ -147,113 +148,22 @@ def report(message: dict, socket) -> str:
     response = {}
 
     try:
-        model_id = data.get(MSG_FIELD.MODEL, None)
+        worker_id = data.get(MSG_FIELD.WORKER_ID, None)
         request_key = data.get(CYCLE.KEY, None)
-        diff = data.get(CYCLE.DIFF, None)
 
-        # TODO:
-        # Perform Secure Aggregation
-        # Update Model weights
+        # It's simpler for client (and more efficient for bandwidth) to use base64
+        # diff = unhexlify()
+        diff = base64.b64decode(data.get(CYCLE.DIFF, None).encode())
 
-        """ stub some variables """
+        cycle_id = processes.add_worker_diff(worker_id, request_key, diff)
 
-        received_diffs_exceeds_min_worker = (
-            True  # get this from persisted server_config for model_id and self._diffs
-        )
-        received_diffs_exceeds_max_worker = (
-            False  # get this from persisted server_config for model_id and self._diffs
-        )
-        cycle_ended = True  # check cycle.cycle_time (but we should probably track cycle startime too)
-        ready_to_avarege = (
-            True
-            if (
-                (received_diffs_exceeds_max_worker or cycle_ended)
-                and received_diffs_exceeds_min_worker
-            )
-            else False
-        )
-        no_protocol = True  # only deal with plans for now
-
-        """ end variable stubs """
-
-        if ready_to_avarege and no_protocol:
-            # may need to deserialize
-            _diff_state = diff
-            _average_plan_diffs(model_id, _diff_state)
-            # assume _diff_state produced the same as here
-            # https://github.com/OpenMined/PySyft/blob/ryffel/syft-core/examples/experimental/FL%20Training%20Plan/Execute%20Plan.ipynb
-            # see step 7
+        # Run cycle end task async to we don't block report request
+        # (for prod we probably should be replace this with Redis queue + separate worker)
+        run_task_once("complete_cycle", complete_cycle, processes, cycle_id)
 
         response[CYCLE.STATUS] = RESPONSE_MSG.SUCCESS
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
-        response[RESPONSE_MSG.ERROR] = str(e)
+        response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
     response = {MSG_FIELD.TYPE: FL_EVENTS.REPORT, MSG_FIELD.DATA: response}
     return json.dumps(response)
-
-
-from syft.execution.state import State
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
-import random
-import numpy as np
-from syft.serde import protobuf
-import syft as sy
-from functools import reduce
-
-
-def _average_plan_diffs(model_id, _diff_state):
-    """ skeleton code
-            Plan only
-            - get cycle
-            - track how many has reported successfully
-            - get diffs: list of (worker_id, diff_from_this_worker) on cycle._diffs
-            - check if we have enough diffs? vs. max_worker
-            - if enough diffs => average every param (by turning tensors into python matrices => reduce th.add => torch.div by number of diffs)
-            - save as new model value => M_prime (save params new values)
-            - create new cycle & new checkpoint
-            at this point new workers can join because a cycle for a model exists
-    """
-    sy.hook(globals())
-
-    _model = processes[model_id]  # de-seriallize if needed
-    _model_params = _model.get_params()
-    _cycle = processes.get_cycle(model_id, _model.client_config.version)
-    diffs_to_average = range(len(_cycle.diffs))
-
-    if len(_cycle.diffs) > _model.server_config.max_worker:
-        # random select max
-        diffs_to_average = random.sample(
-            range(len(_cycle.diffs)), _model.server_config.max_worker
-        )
-
-    raw_diffs = [
-        [
-            _cycle.diffs[diff_from_worker][model_param].tolist()
-            for diff_from_worker in diffs_to_average
-        ]
-        for model_param in range(len(_model_params))
-    ]
-
-    sums = [reduce(th.add, [x for x in t_list]) for t_list in raw_diffs]
-
-    _updated_model_params = [th.div(param, len(diffs_to_average)) for param in sums]
-
-    model_params_state = State(
-        owner=None,
-        state_placeholders=[
-            PlaceHolder().instantiate(_updated_model_params[param])
-            for param in _updated_model_params
-        ],
-    )
-
-    # make fake local worker for serialization
-    local_worker = hook.local_worker
-
-    pb = protobuf.serde._bufferize(local_worker, model_params_state)
-    serialized_state = pb.SerializeToString()
-
-    # make new checkpoint and cycle
-    _new_checkpoint = processes._model_checkpoints.register(
-        id=str(uuid.uuid4()), values=serialized_state, model_id=model_id
-    )
-    _new_cycle = processes.create_cycle(model_id, _model.client_config.version)

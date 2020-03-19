@@ -1,10 +1,10 @@
+import datetime
 import json
 from flask_sqlalchemy import SQLAlchemy
 import uuid
+from .. import db
 
 import syft as sy
-
-db = SQLAlchemy()
 
 
 class Model(db.Model):
@@ -42,7 +42,7 @@ class ModelCheckPoint(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     values = db.Column(db.LargeBinary)
     alias = db.Column(db.String)
-    model_id = db.Column(db.String, db.ForeignKey("__model__.id"), unique=True)
+    model_id = db.Column(db.String, db.ForeignKey("__model__.id"))
 
     @property
     def object(self):
@@ -53,7 +53,7 @@ class ModelCheckPoint(db.Model):
         self.data = sy.serde.serialize(self.values)
 
     def __str__(self):
-        return f"<CheckPoint id: {self.id} , values: {self.data}>"
+        return f"<CheckPoint id: {self.id}, model_id: {self.model_id}>"
 
 
 class Plan(db.Model):
@@ -145,9 +145,10 @@ class Cycle(db.Model):
     version = db.Column(db.String())
     worker_cycles = db.relationship("WorkerCycle", backref="cycle")
     fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
+    is_completed = db.Column(db.Boolean, default=False)
 
     def __str__(self):
-        return f"< Cycle id : {self.id}, start: {self.start}, end: {self.end}>"
+        return f"< Cycle id : {self.id}, sequence: {self.sequence}, start: {self.start}, end: {self.end}, fl_process_id: {self.fl_process_id}, is_completed: {self.is_completed}>"
 
 
 class Worker(db.Model):
@@ -189,6 +190,10 @@ class WorkerCycle(db.Model):
     request_key = db.Column(db.String())
     cycle_id = db.Column(db.BigInteger, db.ForeignKey("__cycle__.id"))
     worker_id = db.Column(db.String, db.ForeignKey("__worker__.id"))
+    started_at = db.Column(db.DateTime(), default=datetime.datetime.utcnow())
+    is_completed = db.Column(db.Boolean(), default=False)
+    completed_at = db.Column(db.DateTime())
+    diff = db.Column(db.LargeBinary)
 
     def __str__(self):
         f"<WorkerCycle id: {self.id}, fl_process: {self.fl_process_id}, cycle: {self.cycle_id}, worker: {self.worker}, request_key: {self.request_key}>"

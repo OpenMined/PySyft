@@ -6,10 +6,14 @@ from flask_cors import CORS
 from flask_sockets import Sockets
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-
+from flask_executor import Executor
 
 # Default secret key used only for testing / development
 DEFAULT_SECRET_KEY = "justasecretkeythatishouldputhere"
+
+db = SQLAlchemy()
+executor = Executor()
+logging.getLogger().setLevel(logging.INFO)
 
 
 def set_database_config(app, test_config=None, verbose=False):
@@ -24,7 +28,6 @@ def set_database_config(app, test_config=None, verbose=False):
         Raises:
             RuntimeError : If DATABASE_URL or test_config didn't initialized, RuntimeError exception will be raised.
     """
-    global db
     db_url = os.environ.get("DATABASE_URL")
     migrate = Migrate(app, db)
     if test_config is None:
@@ -48,7 +51,6 @@ def set_database_config(app, test_config=None, verbose=False):
         )
     app.config["VERBOSE"] = verbose
     db.init_app(app)
-    return app
 
 
 def create_app(debug=False, n_replica=None, test_config=None):
@@ -65,21 +67,25 @@ def create_app(debug=False, n_replica=None, test_config=None):
         )
 
     app.config["N_REPLICA"] = n_replica
-
-    from .main import main as main_blueprint, ws
-    from .main import db
-
-    global db
     sockets = Sockets(app)
 
-    # Set SQLAlchemy configs
-    app = set_database_config(app, test_config=test_config)
-    s = app.app_context().push()
-    db.create_all()
-
     # Register app blueprints
+    from .main import main as main_blueprint, ws
+
     app.register_blueprint(main_blueprint)
     sockets.register_blueprint(ws, url_prefix=r"/")
 
+    # Set SQLAlchemy configs
+    set_database_config(app, test_config=test_config)
+    s = app.app_context().push()
+    db.create_all()
+    db.session.commit()
+
     CORS(app)
+
+    # Threads
+    executor.init_app(app)
+    app.config["EXECUTOR_PROPAGATE_EXCEPTIONS"] = True
+    app.config["EXECUTOR_TYPE"] = "thread"
+
     return app

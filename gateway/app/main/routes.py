@@ -347,7 +347,7 @@ def download_model():
         if not _accepted:
             raise InvalidRequestKeyError
 
-        _last_checkpoint = processes.get_model_checkpoint(id=model_id)
+        _last_checkpoint = processes.get_model_checkpoint(model_id=model_id)
 
         return send_file(
             io.BytesIO(_last_checkpoint.values), mimetype="application/octet-stream"

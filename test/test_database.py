@@ -7,11 +7,11 @@ from datetime import datetime
 
 from flask import Flask
 
-sys.path.append("./gateway/app/")
+sys.path.append(".")
 
 
 from flask_sqlalchemy import SQLAlchemy
-from main.storage import models
+from gateway.app.main.storage import models
 
 app = Flask(__name__)
 

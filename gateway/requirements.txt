@@ -3,6 +3,7 @@ Flask==1.0.2
 eventlet==0.24.1
 gunicorn==19.9.0
 Flask-Cors==3.0.7
+Flask-Executor==0.9.3
 Flask-SocketIO==3.3.2
 itsdangerous==1.1.0
 Flask-Sockets==0.2.1
@@ -15,4 +16,4 @@ flask_sqlalchemy
 flask_migrate
 flask_testing
 psycopg2-binary
--e git+https://github.com/OpenMined/PySyft@master#egg=syft
+git+https://github.com/OpenMined/PySyft@master#egg=syft

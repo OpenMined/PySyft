@@ -1,4 +1,5 @@
-from .models import db
+from .. import db
+from sqlalchemy import func
 
 
 class Warehouse:
@@ -26,6 +27,10 @@ class Warehouse:
         objects = self._schema.query.filter_by(**kwargs).all()
         return objects
 
+    def count(self, **kwargs):
+        query = db.session.query(func.count(self._schema.id)).filter_by(**kwargs)
+        return int(query.scalar())
+
     def first(self, **kwargs):
         """ Query and return the first occurence.
             Args:
@@ -36,7 +41,7 @@ class Warehouse:
         return self._schema.query.filter_by(**kwargs).first()
 
     def last(self, **kwargs):
-        """ Query and return the first occurence.
+        """ Query and return the last occurence.
             Args:
                 parameters: List of parameters used to filter.
             Return:
