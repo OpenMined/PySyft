@@ -142,7 +142,7 @@ class Plan(AbstractObject, ObjectStorage):
                 self.var_count += 1
                 placeholder.instantiate(tensor)
                 self.state.state_placeholders.append(placeholder)
-                self.placeholders[ObjectId(tensor.id)] = placeholder
+                self.placeholders[tensor.id] = placeholder
 
         self.include_state = include_state
         self.is_built = is_built
@@ -215,11 +215,11 @@ class Plan(AbstractObject, ObjectStorage):
             tensor: the tensor to replace with a placeholder
             node_type: Should be "input" or "output", used to tag like this: #<type>-*
         """
-        if ObjectId(tensor.id) not in self.placeholders.keys():
+        if tensor.id not in self.placeholders:
             placeholder = sy.PlaceHolder(
                 tags={f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
             )
-            self.placeholders[placeholder.id] = placeholder
+            self.placeholders[tensor.id] = placeholder
 
             if node_type == "input":
                 if tensor.id not in arg_ids:
@@ -285,7 +285,7 @@ class Plan(AbstractObject, ObjectStorage):
         elif isinstance(obj, dict):
             return {key: self.replace_ids_with_placeholders(value) for key, value in obj.items()}
         elif isinstance(obj, ObjectId):
-            return self.placeholders[obj]
+            return self.placeholders[obj.value]
         else:
             return obj
 
@@ -394,7 +394,7 @@ class Plan(AbstractObject, ObjectStorage):
             self.var_count += 1
             placeholder.instantiate(value)
             self.state.state_placeholders.append(placeholder)
-            self.placeholders[ObjectId(value.id)] = placeholder
+            self.placeholders[value.id] = placeholder
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
@@ -620,7 +620,7 @@ class Plan(AbstractObject, ObjectStorage):
                 else:
                     line += str(action.return_ids) + " = "
             if action.target is not None:
-                line += f"_{extract_tag(self.placeholders[action.target])}."
+                line += f"_{extract_tag(self.placeholders[action.target.value])}."
             line += action.name + "("
             line += ", ".join(
                 f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
