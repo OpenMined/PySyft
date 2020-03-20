@@ -1717,8 +1717,8 @@ def make_gradfn(**kwargs):
     alice, bob = kwargs["workers"]["alice"], kwargs["workers"]["bob"]
     t = torch.tensor([1, 2, 3])
 
-    x_share = t.share(alice, bob, requires_grad=True)
-    y_share = t.share(alice, bob, requires_grad=True)
+    x_share = t.share(alice, bob, crypto_provider=alice, requires_grad=True)
+    y_share = t.share(alice, bob, crypto_provider=alice, requires_grad=True)
     z_share = x_share + y_share  # AddBackward
 
     # This is bad. We should find something robust
