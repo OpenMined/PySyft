@@ -18,8 +18,10 @@ from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 def test_xor_implementation(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    r = decompose(torch.tensor([3])).send(alice, bob).child
-    x_bit_sh = decompose(torch.tensor([23])).share(alice, bob, crypto_provider=james).child
+    r = decompose(torch.LongTensor([3]), 2 ** 64).send(alice, bob).child
+    x_bit_sh = (
+        decompose(torch.LongTensor([23]), 2 ** 64).share(alice, bob, crypto_provider=james).child
+    )
     j0 = torch.zeros(x_bit_sh.shape).long().send(bob)
     j1 = torch.ones(x_bit_sh.shape).long().send(alice)
     j = MultiPointerTensor(children=[j0.child, j1.child])
@@ -31,11 +33,13 @@ def test_xor_implementation(workers):
     assert (w.virtual_get() == w_real).all()
 
     # For dtype int
-    # TODO: check dtype of result maybe decompose output dtype will cause problem
-    r = decompose(torch.tensor([3])).send(alice, bob).child
+    r = decompose(torch.IntTensor([3]), 2 ** 32).send(alice, bob).child
     x_bit_sh = (
-        decompose(torch.tensor([23])).share(alice, bob, crypto_provider=james, dtype="int").child
+        decompose(torch.IntTensor([23]), 2 ** 32)
+        .share(alice, bob, crypto_provider=james, dtype="int")
+        .child
     )
+    assert x_bit_sh.field == 2 ** 32 and x_bit_sh.dtype == "int"
     j0 = torch.zeros(x_bit_sh.shape).type(torch.int32).send(bob)
     j1 = torch.ones(x_bit_sh.shape).type(torch.int32).send(alice)
     j = MultiPointerTensor(children=[j0.child, j1.child])
@@ -52,70 +56,138 @@ def test_private_compare(workers):
     Test private compare which returns: β′ = β ⊕ (x > r).
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-
+    L = 2 ** 64
     x_bit_sh = (
-        decompose(torch.LongTensor([13]))
+        decompose(torch.LongTensor([13]), L)
         .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
         .child
     )
     r = torch.LongTensor([12]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert not beta_p
 
     beta = torch.LongTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert beta_p
 
     # Big values
     x_bit_sh = (
-        decompose(torch.LongTensor([2 ** 60]))
+        decompose(torch.LongTensor([2 ** 60]), L)
         .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
         .child
     )
     r = torch.LongTensor([2 ** 61]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert beta_p
 
     beta = torch.LongTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert not beta_p
 
     # Multidimensional tensors
     x_bit_sh = (
-        decompose(torch.LongTensor([[13, 44], [1, 28]]))
+        decompose(torch.LongTensor([[13, 44], [1, 28]]), L)
         .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
         .child
     )
     r = torch.LongTensor([[12, 44], [12, 33]]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert (beta_p == torch.tensor([[0, 1], [1, 1]])).all()
 
     beta = torch.LongTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
 
     # Negative values
     x_val = -105 % 2 ** 63
     r_val = -52 % 2 ** 63  # The protocol works only for values in Zq
     x_bit_sh = (
-        decompose(torch.LongTensor([x_val]))
+        decompose(torch.LongTensor([x_val]), L)
         .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
         .child
     )
     r = torch.LongTensor([r_val]).send(alice, bob).child
 
     beta = torch.LongTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert beta_p
 
     beta = torch.LongTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta)
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert not beta_p
+
+    # With dtype int
+    L = 2 ** 32
+
+    x_bit_sh = (
+        decompose(torch.IntTensor([13]), L)
+        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
+        .child
+    )
+    r = torch.IntTensor([12]).send(alice, bob).child
+
+    beta = torch.IntTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert not beta_p
+
+    beta = torch.IntTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert beta_p
+
+    # Big values
+    x_bit_sh = (
+        decompose(torch.IntTensor([2 ** 30]), L)
+        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
+        .child
+    )
+    r = torch.IntTensor([2 ** 31]).send(alice, bob).child
+
+    beta = torch.IntTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert beta_p
+
+    beta = torch.IntTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert not beta_p
+
+    # Multidimensional tensors
+    x_bit_sh = (
+        decompose(torch.IntTensor([[13, 44], [1, 28]]), L)
+        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
+        .child
+    )
+    r = torch.IntTensor([[12, 44], [12, 33]]).send(alice, bob).child
+
+    beta = torch.IntTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert (beta_p == torch.tensor([[0, 1], [1, 1]])).all()
+
+    beta = torch.IntTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
+
+    # Negative values
+    x_val = -105 % 2 ** 31
+    r_val = -52 % 2 ** 31  # The protocol works only for values in Zq
+    x_bit_sh = (
+        decompose(torch.IntTensor([x_val]), L)
+        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
+        .child
+    )
+    r = torch.IntTensor([r_val]).send(alice, bob).child
+
+    beta = torch.IntTensor([1]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
+    assert beta_p
+
+    beta = torch.IntTensor([0]).send(alice, bob).child
+    beta_p = private_compare(x_bit_sh, r, beta, L)
     assert not beta_p
 
 
@@ -125,13 +197,13 @@ def test_share_convert(workers):
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     L = 2 ** 64
-    x_bit_sh = (
+    a_sh = (
         torch.LongTensor([13, 3567, 2 ** 60])
         .share(alice, bob, crypto_provider=james, field=L)
         .child
     )
 
-    res = share_convert(x_bit_sh)
+    res = share_convert(a_sh)
     assert res.dtype == "custom"
     assert res.field == L - 1
     assert (res.get() == torch.LongTensor([13, 3567, 2 ** 60])).all()
