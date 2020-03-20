@@ -20,9 +20,7 @@ mnist_trainset = datasets.MNIST(
 
 python = Path(sys.executable).name
 
-FILE_PATH = (
-    Path(__file__).resolve().parents[4].joinpath("run_websocket_server.py")
-)
+FILE_PATH = Path(__file__).resolve().parents[4].joinpath("run_websocket_server.py")
 
 call_alice = [
     python,
