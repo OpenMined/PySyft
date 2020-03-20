@@ -2,10 +2,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-if os.name == "nt":
-    python = "python"
-else:
-    python = "python" + sys.version[0:3]
+python = Path(sys.executable).name
 
 FILE_PATH = (
     Path(__file__)
