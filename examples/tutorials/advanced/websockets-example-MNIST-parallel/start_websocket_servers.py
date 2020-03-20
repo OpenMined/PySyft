@@ -6,7 +6,6 @@ from pathlib import Path
 
 import signal
 import sys
-import os
 
 # Downloads MNIST dataset
 mnist_trainset = datasets.MNIST(
