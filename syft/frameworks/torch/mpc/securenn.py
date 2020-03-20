@@ -574,7 +574,7 @@ def maxpool_deriv(x_sh):
     k = t % n
     E_k = torch.zeros(n).long()
     E_k[k] = 1
-    E_sh = E_k.share(alice, bob, **no_wrap)
+    E_sh = E_k.share(alice, bob, **no_wrap, crypto_provider=crypto_provider)
 
     # 4)
     g = r % n
