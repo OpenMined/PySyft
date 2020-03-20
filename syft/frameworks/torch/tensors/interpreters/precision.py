@@ -930,7 +930,7 @@ class FixedPrecisionTensor(AbstractTensor):
     def share_(self, *args, **kwargs):
         """
         Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
-        contrary to the classic share version 
+        contrary to the classic share version
         """
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
@@ -975,9 +975,17 @@ class FixedPrecisionTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, dtype, base, precision_fractional, kappa, tags, description, chain = (
-            tensor_tuple
-        )
+        (
+            tensor_id,
+            field,
+            dtype,
+            base,
+            precision_fractional,
+            kappa,
+            tags,
+            description,
+            chain,
+        ) = tensor_tuple
 
         tensor = FixedPrecisionTensor(
             owner=worker,
