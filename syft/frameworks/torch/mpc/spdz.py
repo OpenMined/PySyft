@@ -18,6 +18,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
         y_sh (AdditiveSharingTensor): the right part of the operation
         crypto_provider (AbstractWorker): an AbstractWorker which is used to generate triples
         field (int): an integer denoting the size of the field
+        dtype (str): denotes the dtype of shares
 
     Return:
         an AdditiveSharingTensor
@@ -51,5 +52,6 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
 
     delta_b = cmd(delta, b)
     a_epsilon = cmd(a, epsilon)
-
-    return delta_epsilon * j + delta_b + a_epsilon + a_mul_b
+    res = delta_epsilon * j + delta_b + a_epsilon + a_mul_b
+    res = res.type(field_to_dtype)
+    return res
