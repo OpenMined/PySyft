@@ -7,11 +7,14 @@ if os.name == "nt":
 else:
     python = "python" + sys.version[0:3]
 
-call_alice = [python, "../../../../run_websocket_server.py", "--port", "8777", "--id", "alice"]
+FILE_PATH = os.path.abspath(__file__)
+FILE_PATH = "/".join(FILE_PATH.split("/")[:-5]) + "/run_websocket_server.py"
 
-call_bob = [python, "../../../../run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_alice = [python, FILE_PATH, "--port", "8777", "--id", "alice"]
 
-call_charlie = [python, "../../../../run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_bob = [python, FILE_PATH, "--port", "8778", "--id", "bob"]
+
+call_charlie = [python, FILE_PATH, "--port", "8779", "--id", "charlie"]
 
 
 print("Starting server for Alice")

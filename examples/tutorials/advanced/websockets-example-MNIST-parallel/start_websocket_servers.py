@@ -23,9 +23,12 @@ if os.name == "nt":
 else:
     python = "python" + sys.version[0:3]
 
+FILE_PATH = os.path.abspath(__file__)
+FILE_PATH = "/".join(FILE_PATH.split("/")[:-5]) + "/run_websocket_server.py"
+
 call_alice = [
     python,
-    "../../../../run_websocket_server.py",
+    FILE_PATH,
     "--port",
     "8777",
     "--id",
@@ -38,7 +41,7 @@ call_alice = [
 
 call_bob = [
     python,
-    "../../../../run_websocket_server.py",
+    FILE_PATH,
     "--port",
     "8778",
     "--id",
@@ -51,7 +54,7 @@ call_bob = [
 
 call_charlie = [
     python,
-    "../../../../run_websocket_server.py",
+    FILE_PATH,
     "--port",
     "8779",
     "--id",
@@ -64,7 +67,7 @@ call_charlie = [
 
 call_testing = [
     python,
-    "../../../../run_websocket_server.py",
+    FILE_PATH,
     "--port",
     "8780",
     "--id",
