@@ -292,13 +292,13 @@ class CRTPrecisionTensor(AbstractTensor):
 
         module.div = div
 
-    def share(self, *owners, field=None, crypto_provider=None):
+    def share(self, *owners, field=None, crypto_provider):
         """ Share the tensor between several workers.
         This gives an AdditiveSharingTensor wrapped around the original CRT tensor
         """
         assert field is None or field == self.field, "field is chosen when fixing precision"
         for mod, res in self.child.items():
-            ast_mod = res.share(*owners, field=mod, crypto_provider=None)
+            ast_mod = res.share(*owners, field=mod, crypto_provider=crypto_provider)
             self.child[mod] = ast_mod
 
         return self
