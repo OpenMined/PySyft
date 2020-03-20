@@ -860,7 +860,7 @@ class FixedPrecisionTensor(AbstractTensor):
                                 binomial.sample(input.shape).type(torch.FloatTensor)
                                 * (1.0 / (1.0 - p))
                             )
-                            .fix_prec()
+                            .fix_prec(**input.get_class_attributes())
                             .child
                         )
 
