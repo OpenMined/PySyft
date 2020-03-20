@@ -11,7 +11,7 @@ else:
 FILE_PATH = (
     Path(__file__)
     .resolve()
-    .parent.parent.parent.parent.parent.parent.joinpath("run_websocket_server.py")
+    .parents[6].joinpath("run_websocket_server.py")
 )
 
 call_alice = [python, FILE_PATH, "--port", "8777", "--id", "alice", "--notebook", "steal_data"]
