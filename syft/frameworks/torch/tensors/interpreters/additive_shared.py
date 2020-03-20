@@ -175,14 +175,22 @@ class AdditiveSharingTensor(AbstractTensor):
     def modulo(self, x, field):
         mask_pos = x > ((field - 1) // 2)
         mask_neg = x < -(field // 2)
+        if not isinstance(x, torch.Tensor) and field==2**32 -1 :
+            print("Shares IN: ", x.location._objects[x.id_at_location], " in field ", field)
         if mask_pos.any():
-            mask_pos = mask_pos.type(self.field_to_torch_dtype)
-            return self.modulo(x - mask_pos * field, field)
+            mask_pos = mask_pos.long()
+            if not isinstance(x, torch.Tensor) and field==2**32 -1 :
+                print("Shares POS overflow: ", x.location._objects[x.id_at_location], " in field ", field, " with mask ", mask_pos.location._objects[mask_pos.id_at_location])
+            return self.modulo(x - (mask_pos * field), field)
         elif mask_neg.any():
-            mask_neg = mask_neg.type(self.field_to_torch_dtype)
-            return self.modulo(x + mask_neg * field, field)
+            mask_neg = mask_neg.long()
+            if not isinstance(x, torch.Tensor) and field==2**32 -1 :
+                print("Shares NEG overflow: ", x.location._objects[x.id_at_location], " in field ", field, "with mask ", mask_neg.location._objects[mask_neg.id_at_location])
+            return self.modulo(x + (mask_neg * field), field)
         else:
-            return x
+            if not isinstance(x, torch.Tensor) and field==2**32 -1 :
+                print("Shares OUT: ", x.location._objects[x.id_at_location], " in field ", field)
+            return x.type(self.field_to_torch_dtype)
 
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
