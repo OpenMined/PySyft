@@ -20,7 +20,9 @@ def test_xor_implementation(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     r = decompose(torch.LongTensor([3]), 2 ** 64).send(alice, bob).child
     x_bit_sh = (
-        decompose(torch.LongTensor([23]), 2 ** 64).share(alice, bob, crypto_provider=james).child
+        decompose(torch.LongTensor([23]), 2 ** 64)
+        .share(alice, bob, crypto_provider=james, dtype="long")
+        .child
     )
     j0 = torch.zeros(x_bit_sh.shape).long().send(bob)
     j1 = torch.ones(x_bit_sh.shape).long().send(alice)
@@ -208,10 +210,27 @@ def test_share_convert(workers):
     assert res.field == L - 1
     assert (res.get() == torch.LongTensor([13, 3567, 2 ** 60])).all()
 
+    # With dtype int
+    L = 2 ** 32
+    a_sh = (
+        torch.IntTensor([13, 3567, 2 ** 20]).share(alice, bob, crypto_provider=james, field=L).child
+    )
+
+    res = share_convert(a_sh)
+    assert res.dtype == "custom"
+    assert res.field == L - 1
+    assert (res.get() == torch.IntTensor([13, 3567, 2 ** 20])).all()
+
 
 def test_relu_deriv(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    x = torch.tensor([10, 0, -3]).share(alice, bob, crypto_provider=james).child
+    x = torch.tensor([10, 0, -3]).share(alice, bob, crypto_provider=james, dtype="long").child
+    r = relu_deriv(x)
+
+    assert (r.get() == torch.tensor([1, 1, 0])).all()
+
+    # With dtype int
+    x = torch.tensor([10, 0, -3]).share(alice, bob, crypto_provider=james, dtype="int").child
     r = relu_deriv(x)
 
     assert (r.get() == torch.tensor([1, 1, 0])).all()
@@ -219,12 +238,31 @@ def test_relu_deriv(workers):
 
 def test_relu(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    x = torch.tensor([1, -3]).share(alice, bob, crypto_provider=james)
+    x = torch.tensor([1, -3]).share(alice, bob, crypto_provider=james, dtype="long")
     r = x.relu()
 
     assert (r.get() == torch.tensor([1, 0])).all()
 
-    x = torch.tensor([1.0, 3.1, -2.1]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = (
+        torch.tensor([1.0, 3.1, -2.1])
+        .fix_prec(dtype="int")
+        .share(alice, bob, crypto_provider=james)
+    )
+    r = x.relu()
+
+    assert (r.get().float_prec() == torch.tensor([1, 3.1, 0])).all()
+
+    # With dtype int
+    x = torch.tensor([1, -3]).share(alice, bob, crypto_provider=james, dtype="int")
+    r = x.relu()
+
+    assert (r.get() == torch.tensor([1, 0])).all()
+
+    x = (
+        torch.tensor([1.0, 3.1, -2.1])
+        .fix_prec(dtype="int")
+        .share(alice, bob, crypto_provider=james)
+    )
     r = x.relu()
 
     assert (r.get().float_prec() == torch.tensor([1, 3.1, 0])).all()
@@ -233,12 +271,34 @@ def test_relu(workers):
 def test_division(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    x0 = torch.tensor(10).share(alice, bob, crypto_provider=james).child
-    y0 = torch.tensor(2).share(alice, bob, crypto_provider=james).child
+    x0 = torch.tensor(10).share(alice, bob, crypto_provider=james, dtype="long").child
+    y0 = torch.tensor(2).share(alice, bob, crypto_provider=james, dtype="long").child
     res0 = division(x0, y0, bit_len_max=5)
 
-    x1 = torch.tensor([[25, 9], [10, 30]]).share(alice, bob, crypto_provider=james).child
-    y1 = torch.tensor([[5, 12], [2, 7]]).share(alice, bob, crypto_provider=james).child
+    x1 = (
+        torch.tensor([[25, 9], [10, 30]])
+        .share(alice, bob, crypto_provider=james, dtype="long")
+        .child
+    )
+    y1 = (
+        torch.tensor([[5, 12], [2, 7]]).share(alice, bob, crypto_provider=james, dtype="long").child
+    )
+    res1 = division(x1, y1, bit_len_max=5)
+
+    assert res0.get() == torch.tensor(5)
+    assert (res1.get() == torch.tensor([[5, 0], [5, 4]])).all()
+
+    # With dtype int
+    x0 = torch.tensor(10).share(alice, bob, crypto_provider=james, dtype="int").child
+    y0 = torch.tensor(2).share(alice, bob, crypto_provider=james, dtype="int").child
+    res0 = division(x0, y0, bit_len_max=5)
+
+    x1 = (
+        torch.tensor([[25, 9], [10, 30]])
+        .share(alice, bob, crypto_provider=james, dtype="int")
+        .child
+    )
+    y1 = torch.tensor([[5, 12], [2, 7]]).share(alice, bob, crypto_provider=james, dtype="int").child
     res1 = division(x1, y1, bit_len_max=5)
 
     assert res0.get() == torch.tensor(5)
@@ -247,7 +307,18 @@ def test_division(workers):
 
 def test_maxpool(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    x = torch.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james).child
+    x = (
+        torch.tensor([[10, 0], [15, 7]])
+        .share(alice, bob, crypto_provider=james, dtype="long")
+        .child
+    )
+    max, ind = maxpool(x)
+
+    assert max.get() == torch.tensor(15)
+    assert ind.get() == torch.tensor(2)
+
+    # With dtype int
+    x = torch.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james, dtype="int").child
     max, ind = maxpool(x)
 
     assert max.get() == torch.tensor(15)
@@ -256,7 +327,17 @@ def test_maxpool(workers):
 
 def test_maxpool_deriv(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    x = torch.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james).child
+    x = (
+        torch.tensor([[10, 0], [15, 7]])
+        .share(alice, bob, crypto_provider=james, dtype="long")
+        .child
+    )
+    max_d = maxpool_deriv(x)
+
+    assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
+
+    # With dtype int
+    x = torch.tensor([[10, 0], [15, 7]]).share(alice, bob, crypto_provider=james, dtype="int").child
     max_d = maxpool_deriv(x)
 
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
@@ -267,7 +348,7 @@ def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
     def _test_maxpool2d(x):
-        x_sh = x.long().share(alice, bob, crypto_provider=james).wrap()
+        x_sh = x.long().share(alice, bob, crypto_provider=james, dtype="long").wrap()
         y = maxpool2d(x_sh, kernel_size=kernel_size, stride=stride)
 
         torch_maxpool = torch.nn.MaxPool2d(kernel_size, stride=stride)

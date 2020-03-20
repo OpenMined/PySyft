@@ -240,7 +240,6 @@ def msb(a_sh):
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
     L = a_sh.field + 1  # field of a is L - 1
-    field_to_torch_dtype = torch.int64 if L > 2 ** 32 else torch.int32
     field_to_dtype = "long" if L > 2 ** 32 else "int"
     input_shape = a_sh.shape
     a_sh = a_sh.view(-1)
@@ -254,7 +253,7 @@ def msb(a_sh):
     u = _shares_of_zero(1, L, field_to_dtype, crypto_provider, alice, bob)
 
     # 1)
-    x = torch.tensor(a_sh.shape, dtype=field_to_torch_dtype).random_(L // 2 - 1)
+    x = torch.tensor(a_sh.shape).random_((a_sh.field - 1) // 2)
     x_bit = decompose(x, L)
     x_sh = x.share(
         bob, alice, field=L - 1, dtype="custom", crypto_provider=crypto_provider, **no_wrap
@@ -332,7 +331,7 @@ def share_convert(a_sh):
         .child
     )
     r_shares = r_sh.child
-    assert r_sh.field == a_sh.field
+
     alpha0 = (
         (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) > (L // 2 - 1)
     ).type(field_to_torch_dtype)
@@ -421,7 +420,7 @@ def relu_deriv(a_sh):
 
     # 2) Not applicable with algebraic shares
     y_sh = share_convert(y_sh)
-    # y_sh.field = L - 1
+    assert y_sh.field == L - 1
 
     # 3)
     alpha_sh = msb(y_sh)
