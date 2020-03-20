@@ -113,8 +113,8 @@ def select_share(alpha_sh, x_sh, y_sh):
     alice, bob = alpha_sh.locations
     crypto_provider = alpha_sh.crypto_provider
     L = alpha_sh.field
-
-    u_sh = _shares_of_zero(1, L, "long", crypto_provider, alice, bob)
+    field_to_dtype = "long" if L > 2 ** 32 else "int"
+    u_sh = _shares_of_zero(1, L, field_to_dtype, crypto_provider, alice, bob)
 
     # 1)
     w_sh = y_sh - x_sh
