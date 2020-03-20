@@ -25,7 +25,7 @@ else:
     python = "python" + sys.version[0:3]
 
 FILE_PATH = (
-    Path(__file__).resolve().parent.parent.parent.parent.parent.joinpath("run_websocket_server.py")
+    Path(__file__).resolve().parents[4].joinpath("run_websocket_server.py")
 )
 
 call_alice = [
