@@ -18,10 +18,7 @@ mnist_trainset = datasets.MNIST(
 )
 
 
-if os.name == "nt":
-    python = "python"
-else:
-    python = "python" + sys.version[0:3]
+python = Path(sys.executable).name
 
 FILE_PATH = (
     Path(__file__).resolve().parents[4].joinpath("run_websocket_server.py")
