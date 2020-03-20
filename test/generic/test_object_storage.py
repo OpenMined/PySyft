@@ -5,7 +5,7 @@ from syft.generic import object_storage
 
 def test_clear_objects():
     """
-    Asserts that objects in storage are cleared
+    Checks the clear_objects method
     """
     obj_storage = (
         object_storage.ObjectStorage()
@@ -28,7 +28,7 @@ def test_clear_objects():
 
 def test_clear_objects_return_None():
     """
-    Asserts that objects are cleared and returned as none
+    Checks the clear_objects method when no return is required
     """
     obj_storage = object_storage.ObjectStorage()
 
