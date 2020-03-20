@@ -8,8 +8,8 @@ if os.name == "nt":
 else:
     python = "python" + sys.version[0:3]
 
-FILE_PATH = Path(os.path.abspath(__file__)).parent.parent.parent.parent.parent.joinpath(
-    "run_websocket_server.py"
+FILE_PATH = (
+    Path(__file__).resolve().parent.parent.parent.parent.parent.joinpath("run_websocket_server.py")
 )
 
 call_alice = [python, FILE_PATH, "--port", "8777", "--id", "alice"]
