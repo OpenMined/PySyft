@@ -916,10 +916,11 @@ class TorchTensor(AbstractTensor):
                 default is False.
         """
         if crypto_provider == None:
-            raise ValueError("'crypto_provider' should not be None. Please provide a dedicated worker, which will act "
-                             "as a trusted third party and will provide the crypto primitives needed for Multi Party "
-                             "Computation."
-                            )
+            raise ValueError(
+                "'crypto_provider' should not be None. Please provide a dedicated worker, which will act "
+                "as a trusted third party and will provide the crypto primitives needed for Multi Party "
+                "Computation."
+            )
         elif crypto_provider.is_client_worker:
             raise ValueError("client worker cannot be a crypto_provider.")
 
