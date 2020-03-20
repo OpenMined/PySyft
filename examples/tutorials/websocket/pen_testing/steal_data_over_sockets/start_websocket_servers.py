@@ -1,14 +1,16 @@
 import subprocess
 import sys
 import os
+from pathlib import Path
 
 if os.name == "nt":
     python = "python"
 else:
     python = "python" + sys.version[0:3]
 
-FILE_PATH = os.path.abspath(__file__)
-FILE_PATH = "/".join(FILE_PATH.split("/")[:-6]) + "/run_websocket_server.py"
+FILE_PATH = Path(os.path.abspath(__file__)).parent.parent.parent.parent.parent.parent.joinpath(
+    "run_websocket_server.py"
+)
 
 call_alice = [python, FILE_PATH, "--port", "8777", "--id", "alice", "--notebook", "steal_data"]
 

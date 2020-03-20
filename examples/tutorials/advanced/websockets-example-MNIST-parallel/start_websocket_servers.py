@@ -2,6 +2,7 @@ import subprocess
 
 from torchvision import datasets
 from torchvision import transforms
+from pathlib import Path
 
 import signal
 import sys
@@ -23,8 +24,9 @@ if os.name == "nt":
 else:
     python = "python" + sys.version[0:3]
 
-FILE_PATH = os.path.abspath(__file__)
-FILE_PATH = "/".join(FILE_PATH.split("/")[:-5]) + "/run_websocket_server.py"
+FILE_PATH = Path(os.path.abspath(__file__)).parent.parent.parent.parent.parent.joinpath(
+    "run_websocket_server.py"
+)
 
 call_alice = [
     python,
