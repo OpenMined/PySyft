@@ -992,14 +992,30 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, *args, **kwargs):
+    def encrypt(self, encryption_method='mpc', **kwargs):
         """This method will encrypt each value in the tensor using Multi Party
-        Computation (default) or Paillier homomorphic encryption.
-        :param kwargs:
-        :return:
+        Computation (default) or Paillier homomorphic encryption
         """
-        x_shared = self.fix_prec().share(*args, **kwargs)
-        return x_shared
+        if encryption_method.lower() == 'mpc':
+            args_fix_prec = kwargs.pop('args_fix_prec')
+            workers = kwargs.pop('workers')
+            crypto_provider = kwargs.pop('crypto_provider')
+
+            if args_fix_prec:
+                x_shared = self.fix_prec(**args_fix_prec).share(*workers, crypto_provider=crypto_provider, **kwargs)
+            else:
+                x_shared = self.fix_prec().share(*workers, crypto_provider=crypto_provider, **kwargs)
+            return x_shared
+        elif encryption_method.lower() == 'paillier':
+            x = self.copy()
+            x_encrypted = PaillierTensor().on(x)
+            x_encrypted.child.encrypt_(kwargs['public_key'])
+            return x_encrypted
+        else:
+            raise NotImplementedError(
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def decrypt(self, private_key):
         """This method will decrypt each value in the tensor, returning a normal
