@@ -197,6 +197,8 @@ def test_share_convert(workers):
     """
     This is a light test as share_convert is not used for the moment
     """
+    # for i in range(100):
+    #    print(i)
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     L = 2 ** 64
     a_sh = (
@@ -343,7 +345,9 @@ def test_maxpool_deriv(workers):
     assert (max_d.get() == torch.tensor([[0, 0], [1, 0]])).all()
 
 
-@pytest.mark.parametrize("kernel_size, stride", [(1, 1)])
+@pytest.mark.parametrize(
+    "kernel_size, stride", [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (3, 2), (3, 3)]
+)
 def test_maxpool2d(workers, kernel_size, stride):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
