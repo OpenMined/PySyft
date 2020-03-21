@@ -992,19 +992,41 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, public_key):
-        """This method will encrypt each value in the tensor using Paillier
-        homomorphic encryption.
-
-        Args:
-            *public_key a public key created using
-                syft.frameworks.torch.he.paillier.keygen()
+    # def encrypt(self, public_key):
+    #     """This method will encrypt each value in the tensor using Paillier
+    #     homomorphic encryption.
+    #
+    #     Args:
+    #         *public_key a public key created using
+    #             syft.frameworks.torch.he.paillier.keygen()
+    #     """
+    #
+    #     x = self.copy()
+    #     x2 = PaillierTensor().on(x)
+    #     x2.child.encrypt_(public_key)
+    #     return x2
+    def encrypt(self, encryption_method='mpc', **kwargs):
+        """This method will encrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier homomorphic encryption.
+        :param encryption_method:
+        :param kwargs:
+        :return:
         """
-
-        x = self.copy()
-        x2 = PaillierTensor().on(x)
-        x2.child.encrypt_(public_key)
-        return x2
+        if encryption_method.lower() == 'mpc':
+            _fix_prec = kwargs.get('fix_prec')
+            _share = kwargs.get('share')
+            x_shared = self.fix_prec(_fix_prec).share(_share)
+            return x_shared
+        elif encryption_method.lower() == 'paillier':
+            x = self.copy()
+            x2 = PaillierTensor().on(x)
+            x2.child.encrypt_(kwargs['public_key'])
+            return x2
+        else:
+            raise NotImplementedError(
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def decrypt(self, private_key):
         """This method will decrypt each value in the tensor, returning a normal
