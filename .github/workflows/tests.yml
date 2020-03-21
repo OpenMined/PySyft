@@ -71,6 +71,7 @@ jobs:
         coverage report --ignore-errors --fail-under 100 -m --include="test/*"
     - name: Run codecov
       run: |
+        codecov -t 4ff13fd6-bd98-406a-beb1-6ce9ee5a07e1
         codecov
     - name: Build docs
       run: |
