@@ -159,9 +159,7 @@ def test_add(workers):
 
     # with fixed precisions
     t = torch.tensor([1.0, -2, 3])
-    x = torch.tensor([1.0, -2, 3]).fix_prec().share(
-        bob, alice, james, crypto_provider=james
-    )
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james, crypto_provider=james)
 
     y = (x + x).get().float_prec()
 
@@ -224,9 +222,7 @@ def test_sub(workers):
 
     # with fixed precision
     t = torch.tensor([1.0, -2, 3])
-    x = torch.tensor([1.0, -2, 3]).fix_prec().share(
-        bob, alice, crypto_provider=james
-    )
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, crypto_provider=james)
 
     y = (x - x).get().float_prec()
 
