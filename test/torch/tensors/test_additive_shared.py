@@ -214,7 +214,7 @@ def test_sub(workers):
 
     # negative numbers
     t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, crypto_workers=james)
+    x = torch.tensor([1, -2, 3]).share(bob, alice, crypto_provider=james)
 
     y = (x - x).get()
 
