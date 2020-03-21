@@ -993,8 +993,29 @@ class TorchTensor(AbstractTensor):
             return self.child.torch_type()
 
     def encrypt(self, encryption_method='mpc', **kwargs):
-        """This method will encrypt each value in the tensor using Multi Party
-        Computation (default) or Paillier homomorphic encryption
+        """
+        This method will encrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
+
+        Args:
+            encryption_method (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    workers (list): Parties involved in the sharing of the Tensor
+                    crypto_provider (syft.VirtualWorker): Worker responsible for the
+                        generation of the random numbers for encryption
+                    args_fix_prec (dict): To be parsed as a kwarg for the .fix_prec() method
+
+                With Respect to Paillier accepts:
+                    public_key (phe.paillier.PaillierPublicKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An encrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
         """
         if encryption_method.lower() == 'mpc':
             args_fix_prec = kwargs.pop('args_fix_prec')
@@ -1003,14 +1024,16 @@ class TorchTensor(AbstractTensor):
 
             if args_fix_prec:
                 x_shared = self.fix_prec(**args_fix_prec).share(*workers, crypto_provider=crypto_provider, **kwargs)
-            else:
+            else:  # If no args for .fix_prec()
                 x_shared = self.fix_prec().share(*workers, crypto_provider=crypto_provider, **kwargs)
             return x_shared
+
         elif encryption_method.lower() == 'paillier':
             x = self.copy()
-            x_encrypted = PaillierTensor().on(x)
-            x_encrypted.child.encrypt_(kwargs['public_key'])
+            x_encrypted = PaillierTensor().on(x)  # Instantiate the class
+            x_encrypted.child.encrypt_(kwargs['public_key'])  # Perform Homomorphic Encryption
             return x_encrypted
+
         else:
             raise NotImplementedError(
                 "Currently the .encrypt() method only supports Paillier Homomorphic "
