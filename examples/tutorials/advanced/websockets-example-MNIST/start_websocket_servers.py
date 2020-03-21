@@ -1,17 +1,16 @@
 import subprocess
 import sys
-import os
+from pathlib import Path
 
-if os.name == "nt":
-    python = "python"
-else:
-    python = "python" + sys.version[0:3]
+python = Path(sys.executable).name
 
-call_alice = [python, "run_websocket_server.py", "--port", "8777", "--id", "alice"]
+FILE_PATH = Path(__file__).resolve().parents[5].joinpath("run_websocket_server.py")
 
-call_bob = [python, "run_websocket_server.py", "--port", "8778", "--id", "bob"]
+call_alice = [python, FILE_PATH, "--port", "8777", "--id", "alice"]
 
-call_charlie = [python, "run_websocket_server.py", "--port", "8779", "--id", "charlie"]
+call_bob = [python, FILE_PATH, "--port", "8778", "--id", "bob"]
+
+call_charlie = [python, FILE_PATH, "--port", "8779", "--id", "charlie"]
 
 
 print("Starting server for Alice")

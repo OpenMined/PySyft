@@ -2,10 +2,10 @@ import subprocess
 
 from torchvision import datasets
 from torchvision import transforms
+from pathlib import Path
 
 import signal
 import sys
-
 
 # Downloads MNIST dataset
 mnist_trainset = datasets.MNIST(
@@ -17,42 +17,53 @@ mnist_trainset = datasets.MNIST(
     ),
 )
 
+
+python = Path(sys.executable).name
+
+FILE_PATH = Path(__file__).resolve().parents[4].joinpath("run_websocket_server.py")
+
 call_alice = [
-    "python",
-    "run_websocket_server.py",
+    python,
+    FILE_PATH,
     "--port",
     "8777",
     "--id",
     "alice",
     "--host",
     "0.0.0.0",
+    "--notebook",
+    "mnist-parallel",
 ]
 
 call_bob = [
-    "python",
-    "run_websocket_server.py",
+    python,
+    FILE_PATH,
     "--port",
     "8778",
     "--id",
     "bob",
     "--host",
     "0.0.0.0",
+    "--notebook",
+    "mnist-parallel",
 ]
 
 call_charlie = [
-    "python",
-    "run_websocket_server.py",
+    python,
+    FILE_PATH,
     "--port",
     "8779",
     "--id",
     "charlie",
     "--host",
     "0.0.0.0",
+    "--notebook",
+    "mnist-parallel",
 ]
 
 call_testing = [
-    "python",
-    "run_websocket_server.py",
+    python,
+    FILE_PATH,
     "--port",
     "8780",
     "--id",
@@ -60,6 +71,8 @@ call_testing = [
     "--testing",
     "--host",
     "0.0.0.0",
+    "--notebook",
+    "mnist-parallel",
 ]
 
 print("Starting server for Alice")

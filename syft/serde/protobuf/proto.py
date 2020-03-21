@@ -8,18 +8,21 @@ a dependency in setup.py.
 """
 import torch
 
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
-from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.message import ObjectMessage
-from syft.messaging.message import CommandMessage
+from syft.execution.communication import CommunicationAction
 from syft.execution.computation import ComputationAction
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
-
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.execution.placeholder import PlaceHolder
+from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.messaging.message import TensorCommandMessage
+from syft.messaging.message import ObjectMessage
 
 from google.protobuf.empty_pb2 import Empty
+from syft_proto.execution.v1.communication_action_pb2 import (
+    CommunicationAction as CommunicationActionPB,
+)
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
@@ -27,12 +30,10 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
 )
-from syft_proto.frameworks.torch.tensors.interpreters.v1.placeholder_pb2 import (
-    Placeholder as PlaceholderPB,
-)
+from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
-from syft_proto.messaging.v1.message_pb2 import CommandMessage as CommandMessagePB
+from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
@@ -56,8 +57,9 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     # Syft types
     AdditiveSharingTensor: AdditiveSharingTensorPB,
     ObjectMessage: ObjectMessagePB,
+    TensorCommandMessage: CommandMessagePB,
+    CommunicationAction: CommunicationActionPB,
     ComputationAction: ComputationActionPB,
-    CommandMessage: CommandMessagePB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,
     PointerTensor: PointerTensorPB,

@@ -76,7 +76,7 @@ def test_execute_worker_function(hook):
     bob = sy.VirtualWorker(hook, "bob")
     x = th.tensor([1, 2, 3]).send(bob)
 
-    message = bob.create_execute_worker_function_message(
+    message = bob.create_worker_command_message(
         command_name="mocked_function", command_owner="self"
     )
 
