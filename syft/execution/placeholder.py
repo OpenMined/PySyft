@@ -117,7 +117,7 @@ class PlaceHolder(AbstractTensor):
         """
 
         protobuf_placeholder = PlaceholderPB()
-        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id)
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id.value)
         protobuf_placeholder.tags.extend(tensor.tags)
 
         if tensor.description:
@@ -143,14 +143,7 @@ class PlaceHolder(AbstractTensor):
         if bool(protobuf_placeholder.description):
             description = protobuf_placeholder.description
 
-        if not hasattr(worker, "_tmp_placeholders"):
-            worker._tmp_placeholders = {}
-
-        if tensor_id not in worker._tmp_placeholders:
-            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            worker._tmp_placeholders[tensor_id] = tensor
-
-        return worker._tmp_placeholders[tensor_id]
+        return PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
 
 
 ### Register the tensor with hook_args.py ###

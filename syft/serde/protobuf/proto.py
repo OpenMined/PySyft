@@ -10,11 +10,12 @@ import torch
 
 from syft.execution.communication import CommunicationAction
 from syft.execution.computation import ComputationAction
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
 from syft.execution.state import State
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.execution.placeholder import PlaceHolder
+from syft.generic.object_id import ObjectId
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import ObjectMessage
@@ -56,6 +57,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.Size: SizePB,
     # Syft types
     AdditiveSharingTensor: AdditiveSharingTensorPB,
+    ObjectId: IdPB,  # TODO harmonize naming between syft and proto
     ObjectMessage: ObjectMessagePB,
     TensorCommandMessage: CommandMessagePB,
     CommunicationAction: CommunicationActionPB,

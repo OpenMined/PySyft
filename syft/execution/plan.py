@@ -356,6 +356,8 @@ class Plan(AbstractObject, ObjectStorage):
             )
 
             # We're cheating a bit here because we put placeholders instead of return_ids
+            if not isinstance(return_placeholders, (list, tuple)):
+                return_placeholders = (return_placeholders,)
             action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
             self.actions.append(action)
 
@@ -440,7 +442,8 @@ class Plan(AbstractObject, ObjectStorage):
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-
+                if not isinstance(response, (list, tuple)):
+                    response = (response,)
                 self.instantiate(return_placeholder, response)
 
             # This ensures that we return the output placeholder in the correct order
@@ -742,6 +745,9 @@ class Plan(AbstractObject, ObjectStorage):
         protobuf_plan.name = plan.name
         protobuf_plan.tags.extend(plan.tags)
 
+        print("before")
+        print(plan.placeholders)
+
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
 
@@ -767,7 +773,6 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        worker._tmp_placeholders = {}
         id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
         actions = [
@@ -779,7 +784,10 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
             for placeholder in protobuf_plan.placeholders
         ]
-        placeholders = dict([(placeholder.id, placeholder) for placeholder in placeholders])
+        placeholders = dict([(placeholder.id.value, placeholder) for placeholder in placeholders])
+
+        print("after")
+        print(placeholders)
 
         plan = sy.Plan(
             include_state=protobuf_plan.include_state,
@@ -789,7 +797,6 @@ class Plan(AbstractObject, ObjectStorage):
             id=id,
             owner=worker,
         )
-        del worker._tmp_placeholders
 
         plan.state = state
         state.plan = plan
@@ -799,6 +806,13 @@ class Plan(AbstractObject, ObjectStorage):
             plan.tags = set(protobuf_plan.tags)
         if protobuf_plan.description:
             plan.description = protobuf_plan.description
+
+        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # TODO this definitely isn't the right strategy. Maybe state shouldn't contain
+        # instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
+        plan.placeholders = {**plan.placeholders, **state_placeholders}
 
         return plan
 

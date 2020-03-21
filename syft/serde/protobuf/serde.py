@@ -7,6 +7,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.execution.placeholder import PlaceHolder
+from syft.generic.object_id import ObjectId
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
@@ -42,15 +43,16 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
 OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
-    ObjectMessage,
-    ComputationAction,
-    TensorCommandMessage,
     CommunicationAction,
+    ComputationAction,
+    ObjectMessage,
+    ObjectId,
     PlaceHolder,
     Plan,
     PointerTensor,
     Protocol,
     State,
+    TensorCommandMessage,
 ]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list

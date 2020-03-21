@@ -54,17 +54,18 @@ samples[
     syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
 ] = make_crtprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
-samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.generic.object_id.ObjectId] = make_objectid
+samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
+samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
-samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
-samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
 samples[syft.generic.string.String] = make_string
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
