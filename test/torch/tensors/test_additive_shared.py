@@ -6,7 +6,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters.additive_shared import (
+    AdditiveSharingTensor,
+)
 
 
 def test_wrap(workers):
@@ -297,8 +299,16 @@ def test_mul(workers):
     assert (y == (t * t)).all()
 
     # with fixed precision
-    x = torch.tensor([1, -2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
-    y = torch.tensor([-1, 2, -3, 4.0]).fix_prec().share(bob, alice, crypto_provider=james)
+    x = (
+        torch.tensor([1, -2, -3, 4.0])
+        .fix_prec()
+        .share(bob, alice, crypto_provider=james)
+    )
+    y = (
+        torch.tensor([-1, 2, -3, 4.0])
+        .fix_prec()
+        .share(bob, alice, crypto_provider=james)
+    )
     y = (x * y).get().float_prec()
 
     assert (y == torch.tensor([-1, -4, 9, 16.0])).all()
@@ -600,7 +610,11 @@ def test_torch_conv2d(workers):
     w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
     bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
 
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
+    res0 = (
+        torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1)
+        .get()
+        .float_precision()
+    )
     res1 = (
         torch.conv2d(
             im_shared,
@@ -846,8 +860,16 @@ def test_torch_dot(workers):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    x = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0]).fix_prec().share(alice, bob, crypto_provider=james)
-    y = torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0]).fix_prec().share(alice, bob, crypto_provider=james)
+    x = (
+        torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0])
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
+    y = (
+        torch.tensor([3.0, 3.0, 3.0, 3.0, 3.0])
+        .fix_prec()
+        .share(alice, bob, crypto_provider=james)
+    )
 
     assert torch.dot(x, y).get().float_prec() == 45
 
@@ -928,10 +950,16 @@ def test_cnn_model(workers):
             return x
 
     model = Net()
-    sh_model = copy.deepcopy(model).fix_precision().share(alice, bob, crypto_provider=james)
+    sh_model = (
+        copy.deepcopy(model).fix_precision().share(alice, bob, crypto_provider=james)
+    )
 
     data = torch.zeros((1, 1, 28, 28))
-    sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
+    sh_data = (
+        torch.zeros((1, 1, 28, 28))
+        .fix_precision()
+        .share(alice, bob, crypto_provider=james)
+    )
 
     assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
 
