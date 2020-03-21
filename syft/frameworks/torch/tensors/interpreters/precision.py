@@ -845,6 +845,35 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.linear = linear
 
+                def dropout(input, p=0.5, training=True, inplace=False):
+                    """
+                    The dropout class calls functional dropout. Hence overloading functional dropout
+                    so that even works for dropout layer class.
+                    Ref:  https://stackoverflow.com/questions/54109617/implementing-dropout-from-scratch
+                    """
+                    if training:
+                        binomial = torch.distributions.binomial.Binomial(probs=1 - p)
+
+                        # we must convert the normal tensor to fixed precision before multiplication
+                        noise = (
+                            (
+                                binomial.sample(input.shape).type(torch.FloatTensor)
+                                * (1.0 / (1.0 - p))
+                            )
+                            .fix_prec(**input.get_class_attributes())
+                            .child
+                        )
+
+                        if inplace:
+                            input = input * noise
+                            return input
+
+                        return input * noise
+
+                    return input
+
+                module.dropout = dropout
+
                 module.conv2d = conv2d
 
             module.functional = functional
