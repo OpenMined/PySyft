@@ -866,14 +866,6 @@ def test_handle_func_command(workers):
     _ = torch.abs(t).get()
 
 
-def test_init_with_no_crypto_provider(workers):
-    alice, bob = workers["alice"], workers["bob"]
-
-    x = torch.tensor([21, 17]).share(bob, alice, crypto_provider=workers["me"]).child
-
-    assert x.crypto_provider.id == syft.hook.local_worker.id
-
-
 def test_zero_refresh(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
