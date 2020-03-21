@@ -864,6 +864,10 @@ class FixedPrecisionTensor(AbstractTensor):
                             .child
                         )
 
+                        if inplace:
+                            input = input * noise
+                            return input
+
                         return input * noise
 
                     return input
