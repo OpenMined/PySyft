@@ -771,10 +771,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.unbind = unbind
 
-        def cat_and_stack(tensors_shares, cmd, **kwargs):
-
+        def cat_and_stack(tensors_shares):
             results = {}
-
             workers = tensors_shares[0].keys()
 
             for worker in workers:
@@ -782,24 +780,25 @@ class AdditiveSharingTensor(AbstractTensor):
                 for tensor_shares in tensors_shares:
                     tensor_share = tensor_shares[worker]
                     tensors_share.append(tensor_share)
-                result_share = (
-                    torch.cat(tensors_share, **kwargs)
-                    if cmd == "cat"
-                    else torch.stack(tensors_share, **kwargs)
-                )
-                results[worker] = result_share
+                results[worker] = tensors_share
 
             return results
 
         @overloaded.function
         def stack(tensors_shares, **kwargs):
-            return cat_and_stack(tensors_shares, "stack", **kwargs)
+            return {
+                worker: torch.stack(share, **kwargs)
+                for (worker, share) in cat_and_stack(tensors_shares).items()
+            }
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            return cat_and_stack(tensors_shares, "cat", **kwargs)
+            return {
+                worker: torch.cat(share, **kwargs)
+                for (worker, share) in cat_and_stack(tensors_shares).items()
+            }
 
         module.cat = cat
 
