@@ -992,7 +992,7 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, encryption_method='mpc', **kwargs):
+    def encrypt(self, encryption_method="mpc", **kwargs):
         """
         This method will encrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
@@ -1017,21 +1017,25 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if encryption_method.lower() == 'mpc':
-            args_fix_prec = kwargs.pop('args_fix_prec')
-            workers = kwargs.pop('workers')
-            crypto_provider = kwargs.pop('crypto_provider')
+        if encryption_method.lower() == "mpc":
+            args_fix_prec = kwargs.pop("args_fix_prec")
+            workers = kwargs.pop("workers")
+            crypto_provider = kwargs.pop("crypto_provider")
 
             if args_fix_prec:
-                x_shared = self.fix_prec(**args_fix_prec).share(*workers, crypto_provider=crypto_provider, **kwargs)
+                x_shared = self.fix_prec(**args_fix_prec).share(
+                    *workers, crypto_provider=crypto_provider, **kwargs
+                )
             else:  # If no args for .fix_prec()
-                x_shared = self.fix_prec().share(*workers, crypto_provider=crypto_provider, **kwargs)
+                x_shared = self.fix_prec().share(
+                    *workers, crypto_provider=crypto_provider, **kwargs
+                )
             return x_shared
 
-        elif encryption_method.lower() == 'paillier':
+        elif encryption_method.lower() == "paillier":
             x = self.copy()
             x_encrypted = PaillierTensor().on(x)  # Instantiate the class
-            x_encrypted.child.encrypt_(kwargs['public_key'])  # Perform Homomorphic Encryption
+            x_encrypted.child.encrypt_(kwargs["public_key"])  # Perform blacHomomorphic Encryption
             return x_encrypted
 
         else:
