@@ -300,14 +300,13 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             A list of placeholders found
         """
-        # TODO this can return several time the same placeholder
         results = []
+
         for placeholder in self.placeholders.values():
-            for search_tag in search_tags:
-                for tag in placeholder.tags:
-                    match = re.search(f".*{search_tag}.*", tag)
-                    if match is not None:
-                        results.append(placeholder)
+            for ph_tag in placeholder.tags:
+                if any([search_tag in ph_tag for search_tag in search_tags]):
+                    results.append(placeholder)
+                    break
 
         return results
 
