@@ -992,20 +992,20 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, encryption_method="mpc", **kwargs):
+    def encrypt(self, protocol="mpc", **kwargs):
         """
         This method will encrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            encryption_method (str): Currently supports 'mpc' for Multi Party
+            protocol (str): Currently supports 'mpc' for Multi Party
                 Computation and 'paillier' for Paillier Homomorphic Encryption
             **kwargs:
                 With Respect to MPC accepts:
                     workers (list): Parties involved in the sharing of the Tensor
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
                         generation of the random numbers for encryption
-                    args_fix_prec (dict): To be parsed as a kwarg for the .fix_prec() method
+                    Keyword Args: To be parsed as kwargs for the .fix_prec() method
 
                 With Respect to Paillier accepts:
                     public_key (phe.paillier.PaillierPublicKey): Can be obtained using
@@ -1017,25 +1017,27 @@ class TorchTensor(AbstractTensor):
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
-        if encryption_method.lower() == "mpc":
-            args_fix_prec = kwargs.pop("args_fix_prec")
+        if protocol.lower() == "mpc":
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
+            kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
 
-            if args_fix_prec:
-                x_shared = self.fix_prec(**args_fix_prec).share(
-                    *workers, crypto_provider=crypto_provider, **kwargs
+            if kwargs_fix_prec:
+                x_shared = self.fix_prec(**kwargs_fix_prec).share(
+                    *workers, crypto_provider=crypto_provider
                 )
-            else:  # If no args for .fix_prec()
-                x_shared = self.fix_prec().share(
-                    *workers, crypto_provider=crypto_provider, **kwargs
-                )
+            else:  # If no kwargs for .fix_prec()
+                x_shared = self.fix_prec().share(*workers, crypto_provider=crypto_provider)
+
             return x_shared
 
-        elif encryption_method.lower() == "paillier":
+        elif protocol.lower() == "paillier":
+            public_key = kwargs.get("public_key")
+
             x = self.copy()
             x_encrypted = PaillierTensor().on(x)  # Instantiate the class
-            x_encrypted.child.encrypt_(kwargs["public_key"])  # Perform blacHomomorphic Encryption
+            x_encrypted.child.encrypt_(public_key)  # Perform Homomorphic Encryption
+
             return x_encrypted
 
         else:
