@@ -19,6 +19,7 @@ def request_triple(
         crypto_provider: worker you would like to request the triple from
         cmd: An equation in einsum notation.
         field: An integer representing the field size.
+        dtype: represents the dtype of shares
         a_size: A tuple which is the size that a should be or
                 a torch.Size instance
         b_size: A tuple which is the size that b should be or

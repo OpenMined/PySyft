@@ -455,7 +455,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
 
 def _detail_field(typeCode, val):
-    if typeCode == 5 and val == "18446744073709551616":
+    if typeCode == 5 and val == str(2 ** 64):
         return int(val)
     else:
         return val
