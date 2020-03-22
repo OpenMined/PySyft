@@ -37,3 +37,40 @@ def FV_STD_PARMS_256_TC(poly_modulus_degree):
         32768:476,
     }
     return _dict.get(poly_modulus_degree,0)
+
+# Ternary secret; 128 bits quantum security
+def FV_STD_PARMS_256_TQ(poly_modulus_degree):
+    _dict = {
+        1024:25,
+        2048:51,
+        4096:101,
+        8192:202,
+        16384:411,
+        32768:827,
+    }
+    return _dict.get(poly_modulus_degree,0)
+
+# Ternary secret; 128 bits quantum security
+def FV_STD_PARMS_256_TQ(poly_modulus_degree):
+    _dict = {
+        1024:17,
+        2048:35,
+        4096:70,
+        8192:141,
+        16384:284,
+        32768:571,
+    }
+    return _dict.get(poly_modulus_degree,0)
+
+# Ternary secret; 128 bits quantum security
+def FV_STD_PARMS_256_TQ(poly_modulus_degree):
+    _dict = {
+        1024:13,
+        2048:27,
+        4096:54,
+        8192:109,
+        16384:220,
+        32768:443,
+    }
+    return _dict.get(poly_modulus_degree,0)
+
