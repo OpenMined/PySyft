@@ -57,3 +57,7 @@
 # NLP Team
 /syft/generic/string.py @OpenMined/nlp-team
 /syft/generic/pointers/string_pointer.py @OpenMined/nlp-team
+
+# Writing Team
+/examples/tutorials/translations/ @OpenMined/writing-team
+
