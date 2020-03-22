@@ -37,6 +37,7 @@
 # /docs/ @doctocat
 
 # Syft Core Team
+/* @OpenMined/syft-core-team
 /pip-dep/ @OpenMined/syft-core-team
 /syft/execution/ @OpenMined/syft-core-team
 /syft/generic/ @OpenMined/syft-core-team
