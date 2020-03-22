@@ -745,9 +745,6 @@ class Plan(AbstractObject, ObjectStorage):
         protobuf_plan.name = plan.name
         protobuf_plan.tags.extend(plan.tags)
 
-        print("before")
-        print(plan.placeholders)
-
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
 
@@ -785,9 +782,6 @@ class Plan(AbstractObject, ObjectStorage):
             for placeholder in protobuf_plan.placeholders
         ]
         placeholders = dict([(placeholder.id.value, placeholder) for placeholder in placeholders])
-
-        print("after")
-        print(placeholders)
 
         plan = sy.Plan(
             include_state=protobuf_plan.include_state,
