@@ -876,6 +876,28 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.conv2d = conv2d
 
+                def nll_loss(input, target):
+                    """The negative log likelihood loss.
+
+                    Overloads torch.nn.functional.nll_loss() to be able to use MPC for a loss function.
+
+                    """
+                    out = torch.diag(input[:, target])
+                    return -torch.mean(out)
+
+                module.nll_loss = nll_loss
+
+                def cross_entropy(input, target):
+                    """The negative log likelihood loss.
+
+                    Overloads torch.nn.functional.cross_entropy() to be able to use MPC for a loss function.
+
+                    """
+                    out = torch.diag(input[:, target])
+                    return -torch.mean(torch.log(out))
+
+                module.cross_entropy = cross_entropy
+
             module.functional = functional
 
         # Modules should be registered just like functions
