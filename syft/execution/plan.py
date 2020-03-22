@@ -70,7 +70,7 @@ def method2plan(*args, **kwargs):
     )
 
 
-class Plan(AbstractObject, ObjectStorage):
+class Plan(AbstractObject):
     """
     A Plan stores a sequence of torch actions, just like a function.
 
@@ -185,23 +185,6 @@ class Plan(AbstractObject, ObjectStorage):
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
         return self.state.tensors()
-
-    def send_msg(self, *args, **kwargs):
-        return self.owner.send_msg(*args, **kwargs)
-
-    def request_obj(self, *args, **kwargs):
-        return self.owner.request_obj(*args, **kwargs)
-
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
-        """Returns the deregistered object from registry.
-
-        Args:
-            obj_id: A string or integer id of an object to look up.
-        """
-
-        obj = self.get_obj(obj_id)
-        self.de_register_obj(obj)
-        return obj
 
     def add_placeholder(self, tensor, arg_ids, result_ids, node_type=None):
         """
