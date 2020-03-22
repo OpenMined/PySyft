@@ -69,14 +69,14 @@ exclusion_list_notebooks += excluded_translated_notebooks
 
 exclusion_list_folders = [
     "examples/tutorials/websocket",
-    "examples/tutorials/advanced/Monitor_Network_Traffic",
-    "examples/tutorials/advanced/websockets-example-MNIST-parallel",
+    "examples/tutorials/advanced/monitor_network_traffic",
+    "examples/tutorials/advanced/websockets_mnist_parallel",
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
     # This notebook is skipped because it fails in github actions and we do not know why for the moment
-    "examples/tutorials/advanced/Federated SMS Spam prediction",
+    "examples/tutorials/advanced/federated_sms_spam_prediction",
 ]
 
 
