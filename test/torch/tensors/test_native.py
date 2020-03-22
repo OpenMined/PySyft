@@ -219,6 +219,10 @@ def test_encrypt():
     assert torch.all(torch.eq(x_encrypted.get().float_prec(), x))
 
     x = torch.randint(10, (1, 5), dtype=torch.float32)
+    x_encrypted = x.encrypt(workers=[bob, alice], crypto_provider=james)
+    assert torch.all(torch.eq(x_encrypted.get().float_prec(), x))
+
+    x = torch.randint(10, (1, 5), dtype=torch.float32)
     public, private = syft.frameworks.torch.he.paillier.keygen()
     x_encrypted = x.encrypt(encryption_method="paillier", public_key=public)
     assert torch.all(torch.eq(x_encrypted.decrypt(private), x))
