@@ -21,12 +21,12 @@ def pytest_sessionstart(session):
     session.failed_tests = set()
 
 
-def pytest_runtest_makereport(item, call): # pragma: no cover
+def pytest_runtest_makereport(item, call):  # pragma: no cover
     if call.excinfo is not None and item.originalname:
         item.session.failed_tests.add(item.originalname)
 
 
-def pytest_runtest_setup(item): # pragma: no cover
+def pytest_runtest_setup(item):  # pragma: no cover
     if item.originalname in item.session.failed_tests:
         pytest.skip("previous test failed (%s)" % item.name)
 
