@@ -64,9 +64,8 @@ class State(object):
                 # for all the placeholders in this sub plan, we report a copy of them
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
-                    ex_id = placeholder.id
                     placeholder = placeholder.copy()
-                    placeholder.id = ex_id
+                    placeholder.id = placeholder.child.id
                     placeholder.tags = set()
                     placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
                     parent_plan.state.state_placeholders.append(placeholder)
