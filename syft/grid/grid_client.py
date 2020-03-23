@@ -56,7 +56,7 @@ class GridClient:
         serialized_plans = self._serialize_object(client_plans)
         serialized_protocols = self._serialize_object(client_protocols)
         serialized_avg_plan = binascii.hexlify(serialize(server_averaging_plan)).decode()
-        
+
         # "federated/host-training" request body
         message = {
             "type": "federated/host-training",
