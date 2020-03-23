@@ -625,6 +625,16 @@ class Plan(AbstractObject):
         return self.__str__()
 
     @staticmethod
+    def replace_non_instanciated_placeholders(plan: "Plan") -> "Plan":
+        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
+        plan.placeholders = {**plan.placeholders, **state_placeholders}
+
+        return plan
+
+    @staticmethod
     def simplify(worker: AbstractWorker, plan: "Plan") -> tuple:
         """
         This function takes the attributes of a Plan and saves them in a tuple
@@ -690,12 +700,7 @@ class Plan(AbstractObject):
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
-        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
-        # from state.state_placeholders
-        # TODO this definitely isn't the right strategy. Maybe state shouldn't contain
-        # instanciated placeholders but values directly?
-        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
-        plan.placeholders = {**plan.placeholders, **state_placeholders}
+        plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
 
@@ -782,12 +787,7 @@ class Plan(AbstractObject):
         if protobuf_plan.description:
             plan.description = protobuf_plan.description
 
-        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
-        # from state.state_placeholders
-        # TODO this definitely isn't the right strategy. Maybe state shouldn't contain
-        # instanciated placeholders but values directly?
-        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
-        plan.placeholders = {**plan.placeholders, **state_placeholders}
+        plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
 
