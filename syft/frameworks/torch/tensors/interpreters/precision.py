@@ -876,6 +876,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.conv2d = conv2d
 
+                @overloaded.function
                 def nll_loss(input, target):
                     """The negative log likelihood loss.
 
@@ -887,6 +888,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.nll_loss = nll_loss
 
+                @overloaded.function
                 def cross_entropy(input, target):
                     """The negative log likelihood loss.
 

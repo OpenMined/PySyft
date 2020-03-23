@@ -309,13 +309,27 @@ class AdditiveSharingTensor(AbstractTensor):
         return selected_shares
 
     @overloaded.overload_method
-    def _getitem_public(self, self_shares, indices):
+    def _getitem_additivesharing(self, self_shares, indices_shares):
         """
-        Support x[i] where x is an AdditiveSharingTensor and i a MultiPointerTensor
+        Support x[i] where x and i are AdditiveSharingTensors
 
         Args:
             self_shares (dict): the dict of shares of x
-            indices_shares (tuples of ints): integers indices
+            indices_shares (dict): the dict of shares of i
+
+        Returns:
+            an AdditiveSharingTensor
+        """
+        raise NotImplementedError()
+
+    @overloaded.overload_method
+    def _getitem_public(self, self_shares, indices):
+        """
+        Support x[i] where x is an AdditiveSharingTensor and i a tuple of ints
+
+        Args:
+            self_shares (dict): the dict of shares of x
+            indices (tuples of ints): integers indices
 
         Returns:
             an AdditiveSharingTensor
@@ -330,10 +344,11 @@ class AdditiveSharingTensor(AbstractTensor):
     def __getitem__(self, indices):
         if not isinstance(indices, (tuple, list)):
             indices = (indices,)
-        tensor_type = type(indices[-1])
 
-        if tensor_type == sy.MultiPointerTensor:
+        if isinstance(indices[-1], sy.MultiPointerTensor):
             return self._getitem_multipointer(indices)
+        elif isinstance(indices[-1], sy.AdditiveSharingTensor):
+            return self._getitem_additivesharing(indices)
         else:
             return self._getitem_public(indices)
 
