@@ -915,7 +915,7 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
-        if crypto_provider == None:
+        if crypto_provider is None:
             raise ValueError(
                 "'crypto_provider' should not be None. Please provide a dedicated worker, which will act "
                 "as a trusted third party and will provide the crypto primitives needed for Multi Party "
