@@ -930,6 +930,44 @@ class FixedPrecisionTensor(AbstractTensor):
 
                 module.dropout = dropout
 
+                def softmax(input, dim):
+                    """Softmax along a given dimension"""
+                    
+                    # convert to float
+                    inp = input.float()
+                    
+                    maximum_value = inp.max(dim, keepdim=True)[0]
+                    logits = inp - maximum_value
+                    
+                    numerator = logits.exp()
+                    inv_denominator = numerator.sum(dim, keepdim=True)
+                    
+                    # generate one
+                    one = 0.0 * inv_denominator + 1.0
+                    
+                    # calculate reciprocal
+                    inv_denominator = one / inv_denominator
+
+                    return numerator * inv_denominator
+
+                module.softmax = softmax
+
+                def log_softmax(input, dim):
+                    """log softmax along a given dimension"""
+
+                    inp = input.float()
+                   
+                    maximum_value = inp.max(dim, keepdim=True)[0]
+                    logits = inp - maximum_value
+                    
+                    normalize_term = logits.exp().sum(dim, keepdim=True)
+                    result = logits - normalize_term.log()
+                    
+                    return result
+
+                module.log_softmax = log_softmax
+
+
                 module.conv2d = conv2d
 
             module.functional = functional
