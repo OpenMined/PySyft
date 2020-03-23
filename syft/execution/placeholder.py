@@ -1,6 +1,6 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.object_id import ObjectId
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
@@ -21,10 +21,8 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        # TODO currently we only use ObjectId on placeholder but if we use them, we
-        # should use them everywhere
-        if not isinstance(self.id, ObjectId):
-            self.id = ObjectId(self.id)
+        if not isinstance(self.id, PlaceholderId):
+            self.id = PlaceholderId(self.id)
         self.child = None
 
     def instantiate(self, tensor):

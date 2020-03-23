@@ -35,7 +35,7 @@ samples[syft.execution.communication.CommunicationAction] = make_communication_a
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.state.State] = make_state
-samples[syft.generic.object_id.ObjectId] = make_objectid
+samples[syft.execution.placeholder_id.PlaceholderId] = make_objectid
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages

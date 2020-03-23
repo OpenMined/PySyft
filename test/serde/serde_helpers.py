@@ -645,20 +645,20 @@ def make_loggingtensor(**kwargs):
     ]
 
 
-# syft.generic.object_id.ObjectId
+# syft.execution.placeholder_id.PlaceholderId
 def make_objectid(**kwargs):
     p = syft.execution.placeholder.PlaceHolder()
     obj_id = p.id
 
     def compare(detailed, original):
-        assert type(detailed) == syft.generic.object_id.ObjectId
+        assert type(detailed) == syft.execution.placeholder_id.PlaceholderId
         assert detailed.value == original.value
         return True
 
     return [
         {
             "value": obj_id,
-            "simplified": (CODE[syft.generic.object_id.ObjectId], (obj_id.value,)),
+            "simplified": (CODE[syft.execution.placeholder_id.PlaceholderId], (obj_id.value,)),
             "cmp_detailed": compare,
         }
     ]

@@ -7,7 +7,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.execution.placeholder import PlaceHolder
-from syft.generic.object_id import ObjectId
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
@@ -46,7 +46,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     CommunicationAction,
     ComputationAction,
     ObjectMessage,
-    ObjectId,
+    PlaceholderId,
     PlaceHolder,
     Plan,
     PointerTensor,

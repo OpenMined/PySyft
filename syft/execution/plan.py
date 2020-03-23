@@ -11,7 +11,7 @@ from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
-from syft.generic.object_id import ObjectId
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
@@ -229,7 +229,7 @@ class Plan(AbstractObject):
 
             self.var_count += 1
 
-        return ObjectId(tensor.id)
+        return PlaceholderId(tensor.id)
 
     def replace_with_placeholder_ids(self, obj, arg_ids, result_ids, **kw):
         """
@@ -266,7 +266,7 @@ class Plan(AbstractObject):
             return type(obj)(r)
         elif isinstance(obj, dict):
             return {key: self.replace_ids_with_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, ObjectId):
+        elif isinstance(obj, PlaceholderId):
             return self.placeholders[obj.value]
         else:
             return obj
@@ -332,14 +332,14 @@ class Plan(AbstractObject):
             command_placeholders = self.replace_with_placeholder_ids(
                 command, arg_ids, result_ids, node_type="input"
             )
-            return_placeholders = self.replace_with_placeholder_ids(
+            return_placeholder_ids = self.replace_with_placeholder_ids(
                 response, arg_ids, result_ids, node_type="output"
             )
 
             # We're cheating a bit here because we put placeholders instead of return_ids
-            if not isinstance(return_placeholders, (list, tuple)):
-                return_placeholders = (return_placeholders,)
-            action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
+            if not isinstance(return_placeholder_ids, (list, tuple)):
+                return_placeholder_ids = (return_placeholder_ids,)
+            action = ComputationAction(*command_placeholders, return_ids=return_placeholder_ids)
             self.actions.append(action)
 
         sy.hook.trace.clear()

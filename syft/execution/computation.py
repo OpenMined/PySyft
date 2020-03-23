@@ -3,7 +3,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
-from syft.generic.object_id import ObjectId
+from syft.execution.placeholder_id import PlaceholderId
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
@@ -111,7 +111,7 @@ class ComputationAction(Action):
         protobuf_op = ComputationActionPB()
         protobuf_op.command = action.name
 
-        if isinstance(action.target, sy.generic.object_id.ObjectId):
+        if isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
             protobuf_target = protobuf_op.target_id
         elif isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
             protobuf_target = protobuf_op.target_pointer
@@ -139,11 +139,13 @@ class ComputationAction(Action):
                 return_ids = action.return_ids
 
             for return_id in return_ids:
-                if isinstance(return_id, ObjectId):
-                    # TODO hack to know when we have an ObjectId, we store it
-                    # return_placeholders and not in return_ids
-                    sy.serde.protobuf.proto.set_protobuf_id(
-                        protobuf_op.return_placeholders.add(), return_id.value
+                if isinstance(return_id, PlaceholderId):
+                    # NOTE to know when we have a PlaceholderId, we store it
+                    # in return_placeholder_ids and not in return_ids
+                    print(type(return_id))
+                    print(type(sy.serde.protobuf.serde._bufferize(worker, return_id)))
+                    protobuf_op.return_placeholder_ids.append(
+                        sy.serde.protobuf.serde._bufferize(worker, return_id)
                     )
                 else:
                     sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
@@ -187,13 +189,13 @@ class ComputationAction(Action):
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
         ]
 
-        return_placeholders = [
+        return_placeholder_ids = [
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_obj.return_placeholders
+            for placeholder in protobuf_obj.return_placeholder_ids
         ]
 
-        if return_placeholders:
-            action = ComputationAction(command, target, tuple(args), kwargs, return_placeholders)
+        if return_placeholder_ids:
+            action = ComputationAction(command, target, tuple(args), kwargs, return_placeholder_ids)
         else:
             action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
