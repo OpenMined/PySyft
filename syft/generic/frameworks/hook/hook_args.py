@@ -48,7 +48,7 @@ backward_func = {
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour
 ambiguous_methods = set()
-ambiguous_functions = set()
+ambiguous_functions = {"run"}
 
 
 ### Registration logic ###
@@ -654,10 +654,11 @@ def register_response(
     if not response_is_tuple:
         response = (response, 1)
 
-    attr_id = "{}".format(attr)
+    attr_id = f"{attr}"
 
     try:
         assert attr not in ambiguous_functions
+        assert attr not in ambiguous_methods
 
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]

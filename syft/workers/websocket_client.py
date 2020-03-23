@@ -67,6 +67,7 @@ class WebsocketClientWorker(BaseWorker):
             args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
 
         self.ws = websocket.create_connection(**args)
+        self._log_msgs_remote(self.log_msgs)
 
     def close(self):
         self.ws.shutdown()
@@ -106,9 +107,7 @@ class WebsocketClientWorker(BaseWorker):
         return response
 
     def _send_msg_and_deserialize(self, command_name: str, *args, **kwargs):
-        message = self.create_message_execute_command(
-            command_name=command_name, command_owner="self", *args, **kwargs
-        )
+        message = self.create_worker_command_message(command_name=command_name, *args, **kwargs)
 
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(message)
@@ -120,6 +119,12 @@ class WebsocketClientWorker(BaseWorker):
 
     def objects_count_remote(self):
         return self._send_msg_and_deserialize("objects_count")
+
+    def _get_msg_remote(self, index):
+        return self._send_msg_and_deserialize("_get_msg", index=index)
+
+    def _log_msgs_remote(self, value=True):
+        return self._send_msg_and_deserialize("_log_msgs", value=value)
 
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
@@ -143,11 +148,8 @@ class WebsocketClientWorker(BaseWorker):
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
         ) as websocket:
-            message = self.create_message_execute_command(
-                command_name="fit",
-                command_owner="self",
-                return_ids=return_ids,
-                dataset_key=dataset_key,
+            message = self.create_worker_command_message(
+                command_name="fit", return_ids=return_ids, dataset_key=dataset_key
             )
 
             # Send the message and return the deserialized response.
@@ -159,7 +161,7 @@ class WebsocketClientWorker(BaseWorker):
         self.connect()
 
         # Send an object request message to retrieve the result tensor of the fit() method
-        msg = ObjectRequestMessage((return_ids[0], None, ""))
+        msg = ObjectRequestMessage(return_ids[0], None, "")
         serialized_message = sy.serde.serialize(msg)
         response = self._send_msg(serialized_message)
 
@@ -182,7 +184,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self._send_msg_and_deserialize("fit", return_ids=return_ids, dataset_key=dataset_key)
 
-        msg = ObjectRequestMessage((return_ids[0], None, ""))
+        msg = ObjectRequestMessage(return_ids[0], None, "")
         # Send the message and return the deserialized response.
         serialized_message = sy.serde.serialize(msg)
         response = self._send_msg(serialized_message)
@@ -195,6 +197,7 @@ class WebsocketClientWorker(BaseWorker):
         nr_bins: int = -1,
         return_loss=True,
         return_raw_accuracy: bool = True,
+        device: str = "cpu",
     ):
         """Call the evaluate() method on the remote worker (WebsocketServerWorker instance).
 
@@ -204,6 +207,7 @@ class WebsocketClientWorker(BaseWorker):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -221,6 +225,7 @@ class WebsocketClientWorker(BaseWorker):
             nr_bins=nr_bins,
             return_loss=return_loss,
             return_raw_accuracy=return_raw_accuracy,
+            device=device,
         )
 
     def __str__(self):

@@ -22,7 +22,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1.1.2 
+    - uses: actions/cache@v1.1.2
       id: cache-reqs
       with:
         path: ~/.cache/pip
@@ -38,7 +38,7 @@ jobs:
         pip3 install -r pip-dep/requirements_notebooks.txt
         pip3 install scikit-learn
         python setup.py install
-    - name: Lint, format, and type-check
+    - name: Check for syntax errors and undefined names
       run: |
         pip3 install flake8
         #- pip3 install flake8-docstrings
@@ -46,18 +46,31 @@ jobs:
         pip3 install pep8-naming
         # stop the build if there are Python syntax errors or undefined names
         flake8 --config=.flake8 .
-        black --check --verbose .
+    - name: Auto-format
+      run: |
+        black .
+        git config user.name "GitHub Action"
+        git config user.email "actions@users.noreply.github.com"
+        git add *.py "**/*.py"
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-formatting"; git push)
+    - name: Check style
+      run: |
         # exit-zero treats all errors as warnings.
         # diverting from the standard 79 character line length in
         # accordance with this:
         # https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds
         flake8 . --count --exit-zero --statistics --select=E,F,W,C90
+    - name: Check type annotations
+      run: |
         # Run type checker in CI such that type errors can be identified and gradually addressed.
         # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
         mypy syft || echo "Type errors found, continuing build..."
     - name: Scan for security issues
       run: |
             bandit -r syft -ll
+    - name: Install codecov
+      run: |
+        pip3 install codecov
     - name: Run tests
       run: |
         coverage run -m pytest test --deselect=test/efficiency --deselect=test/notebooks
@@ -66,6 +79,9 @@ jobs:
         coverage report --ignore-errors --fail-under 95 -m
         # ensuring coverage of tests stays at 100 until entire coverage can be 100
         coverage report --ignore-errors --fail-under 100 -m --include="test/*"
+    - name: Run codecov
+      run: |
+        bash <(curl -s https://codecov.io/bash) -t a74f260d-4d79-4591-a38b-77f81447c9fb -X gcov
     - name: Build docs
       run: |
         # delete stale existing documentation if there's one
