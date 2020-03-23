@@ -35,6 +35,34 @@ class SyftCrypTensor(AbstractTensor):
         """Decrypts the tensor."""
         return self.tensor.get_plain_text(dst=dst)
 
+    def to(self, ptype, **kwargs):
+        """Converts self.tensor to the given ptype
+
+           Args: ptype: Ptype.arithmetic or Ptype.binary"""
+        self.tensor = self.tensor.to(ptype, **kwargs)
+        return self
+
+    def arithmetic(self):
+        """Converts self._tensor to arithmetic secret sharing"""
+        self.tensor = self.tensor.arithmetic()
+        return self
+
+    def binary(self):
+        """Converts self._tensor to binary secret sharing"""
+        self.tensor = self.tensor.binary()
+        return self
+
+    def reveal(self, dst=None):
+        """Decrypts the tensor without any downscaling."""
+        self.tensor = self.tensor.reveal(dst=dst)
+        return self
+
+    def __repr__(self):
+        self.tensor.__repr__()
+
+    def __setitem__(self, index, value):
+        self.tensor.__setitem__(index, value)
+
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(SyftCrypTensor)

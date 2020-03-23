@@ -84,8 +84,8 @@ def _send_party_info(worker, rank, msg, return_values):
 
 
 def toy_func():
-    alice_tensor = syft_crypt.load("crypten_data", 1, "alice")
-    bob_tensor = syft_crypt.load("crypten_data", 2, "bob")
+    alice_tensor = syft_crypt.load("crypten_data", 1)
+    bob_tensor = syft_crypt.load("crypten_data", 2)
 
     crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
     return crypt.get_plain_text().tolist()
