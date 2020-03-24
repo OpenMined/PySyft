@@ -1,5 +1,5 @@
 coverage:
-    range: 90..100
+    range: 95..100
     round: down
     precision: 2
 
