@@ -1022,13 +1022,9 @@ class TorchTensor(AbstractTensor):
             crypto_provider = kwargs.pop("crypto_provider")
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
 
-            if kwargs_fix_prec:
-                x_shared = self.fix_prec(**kwargs_fix_prec).share(
-                    *workers, crypto_provider=crypto_provider
-                )
-            else:  # If no kwargs for .fix_prec()
-                x_shared = self.fix_prec().share(*workers, crypto_provider=crypto_provider)
-
+            x_shared = self.fix_prec(**kwargs_fix_prec).share(
+                *workers, crypto_provider=crypto_provider
+            )
             return x_shared
 
         elif protocol.lower() == "paillier":
