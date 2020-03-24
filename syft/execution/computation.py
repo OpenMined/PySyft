@@ -111,14 +111,17 @@ class ComputationAction(Action):
         protobuf_op = ComputationActionPB()
         protobuf_op.command = action.name
 
+        protobuf_target = None
         if isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
             protobuf_target = protobuf_op.target_pointer
         elif isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
             protobuf_target = protobuf_op.target_placeholder_id
-        else:
+        elif isinstance(action.target, (int, str)):
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.target_id, action.target)
+        elif action.target is not None:
             protobuf_target = protobuf_op.target_tensor
 
-        if action.target is not None:
+        if protobuf_target is not None:
             protobuf_target.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
 
         if action.args:
