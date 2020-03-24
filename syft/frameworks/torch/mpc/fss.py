@@ -17,8 +17,9 @@ from syft.generic.frameworks.hook.trace import tracer
 from syft.workers.base import BaseWorker
 
 
-λ = 110  # 6  # 63  # security parameter
-n = 32  # 8  # 32  # bit precision
+λ = 6  # 6  # 110 or 63  # security parameter
+n = 8  # 8  # 32  # bit precision
+dtype = th.int32
 
 no_wrap = {"no_wrap": True}
 
@@ -139,12 +140,15 @@ def fss_op(x1, x2, type_op="eq"):
     return response
 
 
-def get_keys(worker, type_op, remove=True):
+def get_keys(worker, type_op, n_items=1, remove=True):
     """
     Return FSS keys primitives
 
     Args:
         worker: worker which is doing the computation and has the crypto primitives
+        type_op: eq, comp, or xor_add
+        n_items: how many primitives to retrieve. Comparison is pointwise so this in
+            convenient
         remove: if true, pop out the primitive. If false, only read it. Read mode is
             needed because we're working on virtual workers and they need to gather
             a some point and then re-access the keys.
@@ -211,14 +215,18 @@ class DPF:
         pass
 
     @staticmethod
-    def keygen():
-        beta = th.tensor([1], dtype=th.int32)
-        (alpha,) = th.randint(0, 2 ** n, (1,))
+    def keygen(n_values=1):
+        beta = th.tensor([1], dtype=dtype)
+        alpha = th.randint(0, 2 ** n, (n_values,))
 
         α = bit_decomposition(alpha)
-        s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 * (λ + 1))
-        s[0] = randbit(size=(2, λ))
-        t[0] = th.tensor([0, 1], dtype=th.uint8)
+        s, t, CW = (
+            Array(n + 1, 2, λ, n_values),
+            Array(n + 1, 2, n_values),
+            Array(n, 2 * (λ + 1), n_values),
+        )
+        s[0] = randbit(size=(2, λ, n_values))
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8).t()
         for i in range(0, n):
             g0 = G(s[i, 0])
             g1 = G(s[i, 1])
@@ -232,26 +240,35 @@ class DPF:
 
             for b in (0, 1):
                 τ = [g0, g1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λ + 1)
-                s[i + 1, b], t[i + 1, b] = split(τ[α[i]], [λ, 1])
+                τ = τ.reshape(2, λ + 1, n_values)
+                # filtered_τ = τ[𝛼[i]] OLD
+                α_i = α[i].unsqueeze(0).expand(λ + 1, n_values).unsqueeze(0).long()
+                filtered_τ = th.gather(τ, 0, α_i).squeeze(0)
+                s[i + 1, b], t[i + 1, b] = split(filtered_τ, [λ, 1])
 
-        CW_n = (-1) ** t[n, 1] * (beta.to(th.uint8) - Convert(s[n, 0]) + Convert(s[n, 1]))
+        CW_n = (-1) ** t[n, 1].to(dtype) * (beta - Convert(s[n, 0]) + Convert(s[n, 1]))
 
         return (alpha,) + s[0].unbind() + (CW, CW_n)
 
     @staticmethod
     def eval(b, x, *k_b):
+        original_shape = x.shape
+        x = x.reshape(-1)
+        n_values = x.shape[0]
         x = bit_decomposition(x)
-        s, t = Array(n + 1, λ), Array(n + 1, 1)
+        s, t = Array(n + 1, λ, n_values), Array(n + 1, 1, n_values)
         s[0] = k_b[0]
         # here k[1:] is (CW, CW_n)
         CW = k_b[1].unbind() + (k_b[2],)
         t[0] = b
         for i in range(0, n):
             τ = G(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λ + 1)
-            s[i + 1], t[i + 1] = split(τ[x[i]], [λ, 1])
-        return (-1) ** b * (Convert(s[n]) + t[n] * CW[n])
+            τ = τ.reshape(2, λ + 1, n_values)
+            x_i = x[i].unsqueeze(0).expand(λ + 1, n_values).unsqueeze(0).long()
+            filtered_τ = th.gather(τ, 0, x_i).squeeze(0)
+            s[i + 1], t[i + 1] = split(filtered_τ, [λ, 1])
+        flat_result = (-1) ** b * (Convert(s[n]) + t[n].squeeze() * CW[n])
+        return flat_result.reshape(original_shape)
 
 
 class DIF:
@@ -305,12 +322,17 @@ class DIF:
 
 # PRG
 def G(seed):
-    assert len(seed) == λ
-    enc_str = str(seed.tolist()).encode()
-    h = hashlib.sha3_256(enc_str)
-    r = h.digest()
-    binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + (2 * (λ + 1))]
-    return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
+    assert seed.shape[0] == λ
+    seed_t = seed.t().tolist()
+    gen_list = []
+    for seed_bit in seed_t:
+        enc_str = str(seed_bit).encode()
+        h = hashlib.sha3_256(enc_str)
+        r = h.digest()
+        binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + (2 * (λ + 1))]
+        gen_list.append(list(map(int, binary_str)))
+
+    return th.tensor(gen_list, dtype=th.uint8).t()
 
 
 def H(seed):
@@ -322,20 +344,23 @@ def H(seed):
     return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
 
 
-# bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).to(th.uint8)
 def Convert(bits):
-    bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).to(th.uint8)
-    return bits.dot(bit_pow_lambda)
+    bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).unsqueeze(-1).to(th.long)
+    return (bits.to(th.long) * bit_pow_lambda).sum(dim=0).to(dtype)
 
 
 def Array(*shape):
     return th.empty(shape, dtype=th.uint8)
 
 
-# bit_pow_n = th.flip(2 ** th.arange(n), (0,))
+bit_pow_n = th.flip(2 ** th.arange(n), (0,))
+
+
 def bit_decomposition(x):
-    bit_pow_n = th.flip(2 ** th.arange(n), (0,))
-    return ((x & bit_pow_n) > 0).to(th.int8)
+    x = x.unsqueeze(-1)
+    z = bit_pow_n & x
+    z = z.t()
+    return (z > 0).to(th.uint8)
 
 
 def randbit(size):
@@ -350,12 +375,12 @@ def split(x, idx):
     return th.split(x, idx)
 
 
-# one = th.tensor([1], dtype=th.uint8)
 def TruthTableDPF(s, α_i):
-    one = th.tensor([1], dtype=th.uint8)
-    Table = th.zeros((2, λ + 1), dtype=th.uint8)
-    Table[α_i] = concat(s, one)
-    return Table.flatten()
+    one = th.ones((1, s.shape[1])).to(th.uint8)
+    Table = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    for j, el in enumerate(α_i):
+        Table[el.item(), :, j] = concat(s, one)[:, j]
+    return Table.reshape(-1, Table.shape[2])
 
 
 def TruthTableDIF(s, α_i):
