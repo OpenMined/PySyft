@@ -22,6 +22,11 @@ from syft.frameworks import crypten as syft_crypt
 from crypten.communicator import DistributedCommunicator
 
 
+PACK_OTHER = -1
+PACK_TORCH_TENSOR = 0
+PACK_CRYPTEN_MODEL = 1
+
+
 def _check_func_def(func_src):
     # The body should contain one element
     tree = ast.parse(func_src)
@@ -82,7 +87,7 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
     exec_globals["crypten"] = crypten
     exec_globals["torch"] = torch
     exec_globals["syft"] = sy
-    exec_globals["ExampleNet"] = ExampleNet()
+    exec_globals["ExampleNet"] = ExampleNet
     exec_globals["_getiter_"] = default_guarded_getiter
     exec_globals["_getitem_"] = default_guarded_getitem
     exec_globals["_getattr_"] = getattr
@@ -102,10 +107,16 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
     func = exec_locals[func_name]
 
     crypten.init()
+    print(f"Starting func at {rank}")
     return_value = func(*func_args, **func_kwargs)
+    print(f"Exited func at {rank}")
     crypten.uninit()
 
+    print(f"Packing value in _launch with {rank}")
+    return_value = _pack_values(return_value)
+    print(f"Queuing in _launch with {rank}")
     queue.put(return_value)
+    print(f"Queued in _launch with {rank}")
 
 
 def _new_party(func_src, rank, world_size, master_addr, master_port, func_args, func_kwargs):
@@ -143,10 +154,11 @@ def run_party(func_src, rank, world_size, master_addr, master_port, func_args, f
     process.join()
     if was_initialized:
         crypten.init()
+    print(f"Returing from run_party with {rank}")
     return queue.get()
 
 
-def _send_party_info(worker, rank, msg, return_values):
+def _send_party_info(worker, rank, msg, return_values, model=None):
     """Send message to worker with necessary information to run a crypten party.
     Add response to return_values dictionary.
 
@@ -156,9 +168,76 @@ def _send_party_info(worker, rank, msg, return_values):
         msg (CryptenInit): message containing the rank, world_size, master_addr and master_port.
         return_values (dict): dictionnary holding return values of workers.
     """
-
+    print(f"Sending info to {rank}")
     response = worker.send_msg(msg, worker)
-    return_values[rank] = response.contents
+    print(f"Got response from {rank}")
+    return_values[rank] = _unpack_values(response.contents, model)
+    print(f"Unpacked from {rank}")
+
+
+def _pack_values(values):
+    """Pack return values to be passed into a queue then sent over the wire.
+    The main goal here is to be able to return torch tensors."""
+
+    packed_values = []
+    # single value
+    if not isinstance(values, tuple):
+        packed_values.append(_pack_value(values))
+    # multiple values
+    else:
+        for value in values:
+            packed_values.append(_pack_value(value))
+    return packed_values
+
+
+def _pack_value(value):
+    if isinstance(value, torch.Tensor):
+        return (PACK_TORCH_TENSOR, value.tolist())
+
+    elif isinstance(value, crypten.nn.Module):
+        if value.encrypted:
+            raise TypeError("Cannot pack an encrypted crypten model.")
+        params = []
+        for p in value.parameters():
+            params.append(p.tolist())
+
+        return (PACK_CRYPTEN_MODEL, params)
+
+    return (PACK_OTHER, value)
+
+
+def _unpack_values(values, model=None):
+    """Unpack return values that are fetched from the queue."""
+
+    unpacked_values = []
+    for value in values:
+        unpacked_values.append(_unpack_value(value, model))
+    # single value
+    if len(unpacked_values) == 1:
+        return unpacked_values[0]
+    # multiple values
+    else:
+        return tuple(unpacked_values)
+
+
+def _unpack_value(value, model=None):
+    value_type = value[0]
+    if value_type == PACK_OTHER:
+        return value[1]
+    elif value_type == PACK_TORCH_TENSOR:
+        return torch.tensor(value[1])
+    elif value_type == PACK_CRYPTEN_MODEL:
+        if model is None:
+            raise TypeError("model can't be None when value is a crypten model.")
+        params = value[1]
+        for p, p_val in zip(model.parameters(), params):
+            # Can't set value for leaf variable that requires grad
+            requires_grad = p.requires_grad
+            p.requires_grad = False
+            p.set_(torch.tensor(p_val))
+            p.requires_grad = requires_grad
+
+        return syft_crypt.crypten_to_syft_model(model)
 
 
 def toy_func():
@@ -167,6 +246,31 @@ def toy_func():
 
     crypt = crypten.cat([alice_tensor, bob_tensor], dim=0)
     return crypt.get_plain_text().tolist()
+
+
+def _get_model():
+    class ExampleNet(torch.nn.Module):
+        def __init__(self):
+            super(ExampleNet, self).__init__()
+            self.conv1 = torch.nn.Conv2d(1, 16, kernel_size=5, padding=0)
+            self.fc1 = torch.nn.Linear(16 * 12 * 12, 100)
+            self.fc2 = torch.nn.Linear(
+                100, 2
+            )  # For binary classification, final layer needs only 2 outputs
+
+        def forward(self, x):
+            out = self.conv1(x)
+            out = torch.nn.functional.relu(out)
+            out = torch.nn.functional.max_pool2d(out, 2)
+            out = out.view(out.size(0), -1)
+            out = self.fc1(out)
+            out = torch.nn.functional.relu(out)
+            out = self.fc2(out)
+            return out
+
+    dummy_input = torch.empty(1, 1, 28, 28)
+    model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
+    return model
 
 
 def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
@@ -198,6 +302,10 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             if was_initialized:
                 crypten.uninit()
             process.start()
+            
+            # TODO: can't do this before starting the local process ! Even outside the func (weird bug)
+            model = _get_model()
+            
             # Run TTP if required
             # TODO: run ttp in a specified worker
             if crypten.mpc.ttp_required():
@@ -218,14 +326,18 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
                 rank = i + 1
                 msg = CryptenInit((func_src, rank, world_size, master_addr, master_port))
                 thread = threading.Thread(
-                    target=_send_party_info, args=(workers[i], rank, msg, return_values)
+                    target=_send_party_info, args=(workers[i], rank, msg, return_values, model)
                 )
                 thread.start()
                 threads.append(thread)
 
             # Wait for local party and sender threads
-            process.join()
-            local_return = queue.get()
+            print("Waiting for local process")
+            # TODO: joining the process hangs even when the process's function ends !
+            # First guess is because we didn't get from the queue
+            # process.join()
+            print("Exited local process")
+            local_return = _unpack_values(queue.get(), model)
             # TODO: check if bad function definition (or other error)
             return_values[0] = local_return
             for thread in threads:
