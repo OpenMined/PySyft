@@ -5,7 +5,9 @@ from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as Placehol
 
 
 class PlaceholderId:
-    """ ObjectIds are used to uniquely identify PySyft objects.
+    """
+    PlaceholderIds are used to identify which Placeholder tensors should be used
+    as the inputs and outputs of Actions.
     """
 
     def __init__(self, value):
