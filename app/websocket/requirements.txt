@@ -1,4 +1,4 @@
-Flask==1.0.2
+Flask==1.1.1
 Flask-Cors==3.0.7
 Flask-Sockets==0.2.1
 gevent==1.4.0
@@ -8,7 +8,7 @@ itsdangerous==1.1.0
 Jinja2==2.10.1
 MarkupSafe==1.1.1
 Werkzeug==0.15.3
-requests
+requests==2.22.0
 requests_toolbelt
 flask_login
 redis
