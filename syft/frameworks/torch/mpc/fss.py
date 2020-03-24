@@ -11,7 +11,6 @@ import hashlib
 
 import torch as th
 import syft as sy
-from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.execution.plan import func2plan
 from syft.generic.frameworks.hook.trace import tracer
 from syft.workers.base import BaseWorker
@@ -140,63 +139,43 @@ def fss_op(x1, x2, type_op="eq"):
     return response
 
 
-def get_keys(worker, type_op, n_items=1, remove=True):
-    """
-    Return FSS keys primitives
-
-    Args:
-        worker: worker which is doing the computation and has the crypto primitives
-        type_op: eq, comp, or xor_add
-        n_items: how many primitives to retrieve. Comparison is pointwise so this in
-            convenient
-        remove: if true, pop out the primitive. If false, only read it. Read mode is
-            needed because we're working on virtual workers and they need to gather
-            a some point and then re-access the keys.
-    """
-    primitive_stack = {
-        "eq": worker.crypto_store.fss_eq,
-        "comp": worker.crypto_store.fss_comp,
-        "xor_add": worker.crypto_store.xor_add_couple,
-    }[type_op]
-
-    try:
-        if remove:
-            return primitive_stack.pop(0)
-        else:
-            return primitive_stack[0]
-    except IndexError:
-        raise EmptyCryptoPrimitiveStoreError(worker.crypto_store, f"fss_{type_op}")
-
-
 # share level
 def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
-    alpha, s_0, *CW = get_keys(x1.owner, type_op, remove=False)
+    alpha, s_0, *CW = x1.owner.crypto_store.get_keys(type_op, n_instances=x1.numel(), remove=False)
     return x + alpha
 
 
 # share level
 def eq_eval_plan(b, x_masked):
-    alpha, s_0, *CW = get_keys(x_masked.owner, type_op="eq", remove=True)
+    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+        type_op="eq", n_instances=x_masked.numel(), remove=True
+    )
     result_share = DPF.eval(b, x_masked, s_0, *CW)
     return result_share
 
 
 # share level
 def comp_eval_plan(b, x_masked):
-    alpha, s_0, *CW = get_keys(x_masked.owner, type_op="comp", remove=True)
+    alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
+        type_op="comp", n_instances=x_masked.numel(), remove=True
+    )
     result_share = DIF.eval(b, x_masked, s_0, *CW)
     return result_share
 
 
 def xor_add_convert_1(x):
-    xor_share, add_share = get_keys(x.owner, type_op="xor_add", remove=False)
+    xor_share, add_share = x.owner.crypto_provider.get_keys(
+        type_op="xor_add", n_instances=x.numel(), remove=False
+    )
     return x ^ xor_share
 
 
 def xor_add_convert_2(b, x):
-    xor_share, add_share = get_keys(x.owner, type_op="xor_add", remove=True)
+    xor_share, add_share = x.owner.crypto_provider.get_keys(
+        type_op="xor_add", n_instances=x.numel(), remove=True
+    )
     return add_share * (1 - 2 * x) + x * b
 
 

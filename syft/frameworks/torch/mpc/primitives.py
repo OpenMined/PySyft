@@ -3,6 +3,7 @@ from typing import List, Tuple, Union
 
 import torch as th
 import syft as sy
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.abstract import AbstractWorker
 
 
@@ -26,6 +27,42 @@ class PrimitiveStorage:
             "beaver": self.build_triples,
             "xor_add_couple": self.build_xor_add_couple,
         }
+
+    def get_keys(self, type_op, n_instances=1, remove=True):
+        """
+        Return FSS keys primitives
+
+        Args:
+            type_op: eq, comp, or xor_add
+            n_instances: how many primitives to retrieve. Comparison is pointwise so this in
+                convenient
+            remove: if true, pop out the primitive. If false, only read it. Read mode is
+                needed because we're working on virtual workers and they need to gather
+                a some point and then re-access the keys.
+        """
+        type_op = {"eq": "fss_eq", "comp": "fss_comp", "xor_add": "xor_add_couple"}[type_op]
+        primitive_stack = getattr(self, type_op)
+
+        available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+        if available_instances >= n_instances:
+            keys = []
+            for i, prim in enumerate(primitive_stack):
+                # We're selecting on the last dimension of the tensor
+                # [:] ~ [slice(None)]
+                # [:1] ~ [slice(1)]
+                # [1:] ~ [slice(1, None)]
+                # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
+                n_dim = len(prim.shape)
+                get_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances)]
+                remaining_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
+
+                keys.append(prim[get_slice])
+                if remove:
+                    primitive_stack[i] = prim[remaining_slice]
+
+            return keys
+        else:
+            raise EmptyCryptoPrimitiveStoreError(self, type_op, available_instances, n_instances)
 
     def provide_primitives(
         self,
@@ -53,15 +90,10 @@ class PrimitiveStorage:
         for crypto_type in crypto_types:
             builder = self._builders[crypto_type]
 
-            primitives = []
-            for i in range(n_instances):
-                primitive_instance: Tuple[Tuple] = builder(n_party=len(workers), **kwargs)
-                primitives.append(primitive_instance)
+            primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
 
-            for i, worker in enumerate(workers):
-                worker_types_primitives[worker][crypto_type] = [
-                    primitive[i] for primitive in primitives
-                ]
+            for worker_primitives, worker in zip(primitives, workers):
+                worker_types_primitives[worker][crypto_type] = worker_primitives
 
         for i, worker in enumerate(workers):
             worker_message = self._owner.create_worker_command_message(
@@ -80,7 +112,14 @@ class PrimitiveStorage:
             assert hasattr(self, crypto_type), f"Unknown crypto primitives {crypto_type}"
 
             current_primitives = getattr(self, crypto_type)
-            current_primitives.extend(primitives)
+            if len(current_primitives) == 0:
+                setattr(self, crypto_type, list(primitives))
+            else:
+                for i, primitive in enumerate(primitives):
+                    if len(current_primitives[i]) == 0:
+                        current_primitives[i] = primitive
+                    else:
+                        current_primitives[i] = th.cat((current_primitives[i], primitive))
 
     def build_fss_keys(self, type_op):
         """
@@ -95,13 +134,13 @@ class PrimitiveStorage:
 
         n = sy.frameworks.torch.mpc.fss.n
 
-        def build_separate_fss_keys(n_party):
+        def build_separate_fss_keys(n_party, n_instances=100):
             assert (
                 n_party == 2
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
-            alpha, s_00, s_01, *CW = fss_class.keygen()
+            alpha, s_00, s_01, *CW = fss_class.keygen(n_values=n_instances)
             # simulate sharing TODO clean this
-            (mask,) = th.randint(0, 2 ** n, (1,))
+            mask = th.randint(0, 2 ** n, alpha.shape)
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys
