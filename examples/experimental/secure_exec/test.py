@@ -17,10 +17,10 @@ hook = syft.TorchHook(torch)
 # Syft workers
 print("[%] Connecting to workers ...")
 LOCAL = syft.local_worker
-# ALICE = syft.VirtualWorker(hook=hook, id="alice")
-ALICE = WebsocketClientWorker(hook=hook, id="alice", host="127.0.0.1", port=8777)
-# BOB = syft.VirtualWorker(hook=hook, id="bob")
-BOB = WebsocketClientWorker(hook=hook, id="bob", host="127.0.0.1", port=8778)
+ALICE = syft.VirtualWorker(hook=hook, id="alice")
+# ALICE = WebsocketClientWorker(hook=hook, id="alice", host="127.0.0.1", port=8777)
+BOB = syft.VirtualWorker(hook=hook, id="bob")
+# BOB = WebsocketClientWorker(hook=hook, id="bob", host="127.0.0.1", port=8778)
 print("[+] Connected to workers")
 
 print("[%] Sending labels and training data ...")
@@ -68,7 +68,7 @@ def run_encrypted_training():
 
     # Initialize a plaintext model and convert to CrypTen model
     dummy_input = torch.empty(1, 1, 28, 28)
-    model = crypten.nn.from_pytorch(ExampleNet, dummy_input)  # noqa: F821
+    model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)  # noqa: F821
     model.encrypt()
 
     # Set train mode
@@ -116,11 +116,21 @@ def run_encrypted_training():
             if rank == 0:
                 pass
                 print(f"\tBatch {(batch + 1)} of {num_batches} Loss {batch_loss.item():.4f}")
+    
+    model.decrypt()
+    if rank == 0:
+        return printed, model  # noqa: F821
+    else:
+        return printed  # noqa: F821
 
-    # the execution environment keeps all printed strings in the printed variable
-    return printed  # noqa: F821
 
+cp = syft.VirtualWorker(hook=hook, id='cp')
 
 print("[%] Starting computation")
 result = run_encrypted_training()
+print(result)
 print(result[0])
+syft_model = result[0][1]
+syft_model.fix_prec()
+syft_model.share(ALICE, BOB, crypto_provider=cp)
+print(list(syft_model.parameters()))
