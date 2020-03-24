@@ -1,8 +1,6 @@
 import pytest
 import torch
-
-
-# import syft
+import syft
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="cuda not available")
@@ -60,3 +58,41 @@ def test_param_data():  # pragma: no cover
     param.data = data2
     assert (param.data == data2).all()
     assert param.is_cuda
+
+
+def test_send_frozen():
+    hook = syft.TorchHook(torch)
+    worker = syft.VirtualWorker(hook, id="worker")
+
+    d_in, h, d_out = 1000, 100, 10
+
+    model = torch.nn.Sequential(
+        torch.nn.Linear(d_in, h), torch.nn.ReLU(), torch.nn.Linear(h, d_out)
+    )
+
+    for param in model.parameters():
+        param.requires_grad = False
+
+    model.send(worker)
+
+
+def test_send_partially_frozen():
+    hook = syft.TorchHook(torch)
+    worker = syft.VirtualWorker(hook, id="worker")
+
+    d_in, h1, h2, d_out = 1000, 1000, 100, 10
+
+    model = torch.nn.Sequential(
+        torch.nn.Linear(d_in, h1),
+        torch.nn.ReLU(),
+        torch.nn.Linear(h1, h2),
+        torch.nn.ReLU(),
+        torch.nn.Linear(h2, d_out),
+    )
+
+    for layer_idx, param in enumerate(model.parameters()):
+        if layer_idx > 2:  # freezing the first two layers
+            pass
+        param.requires_grad = False
+
+    model.send(worker)

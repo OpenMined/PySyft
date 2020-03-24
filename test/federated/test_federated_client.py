@@ -11,7 +11,7 @@ from syft.frameworks.torch.fl import utils
 PRINT_IN_UNITTESTS = False
 
 # To make execution deterministic to some extent
-# for more information - refer https://pytorch.org/docs/stable/notes/randomness.html
+# For more information - refer https://pytorch.org/docs/stable/notes/randomness.html
 torch.manual_seed(0)
 torch.cuda.manual_seed_all(0)
 torch.backends.cudnn.benchmark = False
@@ -19,35 +19,43 @@ torch.backends.cudnn.deterministic = True
 
 
 def test_add_dataset():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    # Create a dataset
     dataset = "my_dataset"
-    fed_client.add_dataset(dataset, "string_dataset")
+    key = "string_dataset"
+    # Add new dataset
+    fed_client.add_dataset(dataset, key)
 
     assert "string_dataset" in fed_client.datasets
 
 
 def test_add_dataset_with_duplicate_key():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    # Create a dataset
     dataset = "my_dataset"
-    fed_client.add_dataset(dataset, "string_dataset")
+    key = "string_dataset"
+    # Add new dataset
+    fed_client.add_dataset(dataset, key)
 
     assert "string_dataset" in fed_client.datasets
-
+    # Raise an error if the key is already exists
     with pytest.raises(ValueError):
         fed_client.add_dataset(dataset, "string_dataset")
 
 
 def test_remove_dataset():
+    # Create a client to execute federated learning
     fed_client = FederatedClient()
-
+    # Create a dataset
     dataset = "my_dataset"
     key = "string_dataset"
+    # Add new dataset
     fed_client.add_dataset(dataset, key)
 
     assert key in fed_client.datasets
-
+    # Remove new dataset
     fed_client.remove_dataset(key)
 
     assert key not in fed_client.datasets
@@ -96,7 +104,7 @@ def train_model(
                 loss = fed_client.fit(dataset_key=fit_dataset_key, device=device)
         if PRINT_IN_UNITTESTS and curr_round % 2 == 0:  # pragma: no cover
             print("-" * 50)
-            print("Iteration %s: alice's loss: %s" % (curr_round, loss))
+            print(f"Iteration {curr_round}: alice's loss: {loss}")
 
 
 @pytest.mark.parametrize(
@@ -148,7 +156,7 @@ def test_fit(fit_dataset_key, epochs, device):
     pred = model(data_device)
     loss_before = loss_fn(target=target_device, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss before training: {}".format(loss_before))
+        print(f"Loss before training: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -173,11 +181,11 @@ def test_fit(fit_dataset_key, epochs, device):
     if dataset_key == fit_dataset_key:
         loss_after = evaluate_model(fed_client, model_id, loss_fn, data_device, target_device)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
-            print("Loss after training: {}".format(loss_after))
+            print(f"Loss after training: {loss_after}")
 
         if loss_after >= loss_before:  # pragma: no cover
             if PRINT_IN_UNITTESTS:
-                print("Loss not reduced, train more: {}".format(loss_after))
+                print(f"Loss not reduced, train more: {loss_after}")
 
             train_model(
                 fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=10
@@ -229,7 +237,7 @@ def test_evaluate():  # pragma: no cover
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss before training: {}".format(loss_before))
+        print(f"Loss before training: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -258,7 +266,7 @@ def test_evaluate():  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result before training: {}".format(result))
+        print(f"Evaluation result before training: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()
@@ -290,7 +298,7 @@ def test_evaluate():  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result: {}".format(result))
+        print(f"Evaluation result: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()

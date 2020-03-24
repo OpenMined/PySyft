@@ -345,7 +345,7 @@ class ObjectPointer(AbstractObject):
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
-            point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
+            point_to_attr = f"{self.point_to_attr}.{attr_name}"
         else:
             point_to_attr = attr_name
         return point_to_attr
