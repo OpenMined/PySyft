@@ -16,12 +16,12 @@ class FixedPrecisionTensor(AbstractTensor):
         owner=None,
         id=None,
         field: int = None,
+        dtype: str = "long",
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
         tags: set = None,
         description: str = None,
-        dtype: str = "long",
     ):
         """Initializes a Fixed Precision tensor, which encodes all decimal point
         values using an underlying integer value.
@@ -52,7 +52,7 @@ class FixedPrecisionTensor(AbstractTensor):
         else:
             # Since n mod 0 is not defined
             warnings.warn("Prefer to use dtype instead of field")
-            if type(field) == int and field > 0:
+            if isinstance(field, int) and field > 0:
                 if field <= 2 ** 32:
                     self.dtype = "int"
                     self.field = 2 ** 32
@@ -64,6 +64,7 @@ class FixedPrecisionTensor(AbstractTensor):
                 raise ValueError(
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
+        self.torch_dtype = torch.int64 if self.dtype == "long" else torch.int32
 
     def get_class_attributes(self):
         """
@@ -120,16 +121,14 @@ class FixedPrecisionTensor(AbstractTensor):
 
         field_element = upscaled
         field_element.owner = rational.owner
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        self.child = field_element.type(str_to_dtype[self.dtype])
+        self.child = field_element.type(self.torch_dtype)
         return self
 
     def float_precision(self):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        value = self.child.type(str_to_dtype[self.dtype])
-        gate = value.native_lt(0).type(str_to_dtype[self.dtype])
+        value = self.child.type(self.torch_dtype)
+        gate = value.native_lt(0).type(self.torch_dtype)
 
         neg_nums = value * gate
         pos_nums = value * (1 - gate)
@@ -147,8 +146,7 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            str_to_dtype = {"int": torch.int32, "long": torch.int64}
-            gate = self.child.native_lt(0).type(str_to_dtype[self.dtype])
+            gate = self.child.native_lt(0).type(self.torch_dtype)
             neg_nums = self.child / truncation
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
@@ -306,15 +304,14 @@ class FixedPrecisionTensor(AbstractTensor):
 
             # sgn_self is 1 when new_self is positive else it's 0
             # The comparison is different if new_self is a torch tensor or an AST
-            str_to_dtype = {"int": torch.int32, "long": torch.int64}
-            sgn_self = (new_self > 0).type(str_to_dtype[self.dtype])
+            sgn_self = (new_self > 0).type(self.torch_dtype)
             pos_self = new_self * sgn_self
             neg_self = new_self * (sgn_self - 1)
             new_self = neg_self + pos_self
 
             # sgn_other is 1 when new_other is positive else it's 0
             # The comparison is different if new_other is a torch tensor or an AST
-            sgn_other = (new_other > 0).type(str_to_dtype[other.dtype])
+            sgn_other = (new_other > 0).type(self.torch_dtype)
             pos_other = new_other * sgn_other
             neg_other = new_other * (sgn_other - 1)
             new_other = neg_other + pos_other
@@ -660,32 +657,27 @@ class FixedPrecisionTensor(AbstractTensor):
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        return result.type(str_to_dtype[self.dtype]) * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __ge__(self, _self, other):
         result = _self.__ge__(other)
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        return result.type(str_to_dtype[self.dtype]) * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __lt__(self, _self, other):
         result = _self.__lt__(other)
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        return result.type(str_to_dtype[self.dtype]) * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __le__(self, _self, other):
         result = _self.__le__(other)
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        return result.type(str_to_dtype[self.dtype]) * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def eq(self, _self, other):
         result = _self.eq(other)
-        str_to_dtype = {"int": torch.int32, "long": torch.int64}
-        return result.type(str_to_dtype[self.dtype]) * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     __eq__ = eq
 
