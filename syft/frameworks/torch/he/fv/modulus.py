@@ -1,3 +1,4 @@
+from syft.frameworks.torch.he.fv.util.get_primes import get_primes
 from syft.frameworks.torch.he.fv.fv_std_param import *
 from syft.frameworks.torch.he.fv.util.global_variable import *
 
@@ -65,3 +66,29 @@ class CoeffModulus:
             return DEFAULT_C0EFF_MODULUS_256[poly_modulus_degree]
 
         raise ValueError(f"{seq_level} is not a valid standard security level")
+
+    def Create(self, poly_modulus_degree, bit_sizes):
+        """Returns a custom coefficient modulus suitable for use with the specified
+        poly_modulus_degree. The return value will be a list consisting of
+        distinct prime numbers of bit-lengths as given in the bit_sizes parameter.
+
+        Args:
+            poly_modulus_degree: The value of the poly_modulus_degree encryption parameter
+            bit_sizes: (list) The bit-lengths of the primes to be generated
+        """
+
+        count_table = {}
+        prime_table = {}
+
+        for size in bit_sizes:
+            count_table[size] += 1
+
+        for table_elt in count_table:
+            prime_table[table_elt[0]] = get_primes(poly_modulus_degree, table_elt[0], table_elt[1])
+
+        result = []
+        for size in bit_sizes:
+            result.append(prime_table[size][-1])
+            prime_table[size].pop()
+
+        return result
