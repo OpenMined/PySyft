@@ -36,7 +36,7 @@ class GridClient:
 
     def _serialize_object(self, obj):
         serialized_object = {}
-        for k, v in obj.iteritems():
+        for k, v in obj.items():
             serialized_object[k] = binascii.hexlify(serialize(v)).decode()
         return serialized_object
 
