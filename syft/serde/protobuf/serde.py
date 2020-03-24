@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import inspect
+import re
 import syft
 from syft import dependency_check
 from syft.execution.computation import ComputationAction
@@ -391,10 +392,13 @@ def bufferize_args(worker: AbstractWorker, args: list) -> list:
 
 def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
     protobuf_arg = ArgPB()
+
+    attr_name = "arg_" + _camel2snake(type(arg).__name__)
+
     try:
-        setattr(protobuf_arg, "arg_" + type(arg).__name__.lower(), arg)
+        setattr(protobuf_arg, attr_name, arg)
     except:
-        getattr(protobuf_arg, "arg_" + type(arg).__name__.lower()).CopyFrom(_bufferize(worker, arg))
+        getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
     return protobuf_arg
 
 
@@ -412,3 +416,7 @@ def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
     except:
         arg = protobuf_arg_field
     return arg
+
+
+def _camel2snake(string: str):
+    return string[0].lower() + re.sub(r"(?!^)[A-Z]", lambda x: "_" + x.group(0).lower(), string[1:])
