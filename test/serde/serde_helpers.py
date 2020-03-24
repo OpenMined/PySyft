@@ -646,7 +646,7 @@ def make_loggingtensor(**kwargs):
 
 
 # syft.execution.placeholder_id.PlaceholderId
-def make_objectid(**kwargs):
+def make_placeholder_id(**kwargs):
     p = syft.execution.placeholder.PlaceHolder()
     obj_id = p.id
 
