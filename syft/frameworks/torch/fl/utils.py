@@ -70,12 +70,13 @@ def scale_model(model, scale):
 
 
 def federated_avg(models: Dict[Any, torch.nn.Module]) -> torch.nn.Module:
-    """Calculate the federated average of a dictionary of models.
+    """Calculate the federated average of a dictionary containing models.
        The models are extracted from the dictionary
        via the models.values() command.
 
     Args:
-        models (Dict[Any, torch.nn.Module]): a dof which the federated average is calculated.
+        models (Dict[Any, torch.nn.Module]): a dictionary of models
+        for which the federated average is calculated.
 
     Returns:
         torch.nn.Module: the module with averaged parameters.
