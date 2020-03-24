@@ -232,10 +232,8 @@ def _unpack_value(value, model=None):
         params = value[1]
         for p, p_val in zip(model.parameters(), params):
             # Can't set value for leaf variable that requires grad
-            requires_grad = p.requires_grad
-            p.requires_grad = False
-            p.set_(torch.tensor(p_val))
-            p.requires_grad = requires_grad
+            with torch.no_grad():
+                p.set_(torch.tensor(p_val))
 
         return syft_crypt.crypten_to_syft_model(model)
 
