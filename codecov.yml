@@ -1,3 +1,8 @@
+coverage:
+    range: 95..100
+    round: down
+    precision: 2
+
 comment:
     layout: "reach, diff, flags, files"
     behavior: default
