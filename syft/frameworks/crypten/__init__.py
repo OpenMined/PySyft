@@ -49,14 +49,19 @@ class _WrappedCryptenModel():
     """
 
     # TODO: forward any other function call to the underlying crypten model
+    # TODO: create a copy of the crypten_model?
 
     def __init__(self, crypten_model):
         if crypten_model.encrypted:
             raise TypeError("Crypten model must be unencrypted.")
         self._model = crypten_model
 
-    def share(self, *args, **kwargs):
+    def parameters(self):
         for p in self._model.parameters():
+            yield p
+
+    def share(self, *args, **kwargs):
+        for p in self.parameters():
             p.share_(*args, **kwargs)
         return self
 
@@ -67,27 +72,27 @@ class _WrappedCryptenModel():
         return self.forward(*args, **kwargs)
 
     def fix_prec(self, *args, **kwargs):
-        for p in self._model.parameters():
+        for p in self.parameters():
             p.fix_precision_(*args, **kwargs)
         return self
 
     def float_prec(self):
-        for p in self._model.parameters():
+        for p in self.parameters():
             p.float_prec()
         return self
 
     def send(self, *dest, **kwargs):
-        for p in self._model.parameters():
+        for p in self.parameters():
             p.send_(*dest, **kwargs)
         return self
 
     def move(self, dest):
-        for p in self._model.parameters():
+        for p in self.parameters():
             p.move(dest)
         return self
 
     def get(self):
-        for p in self._model.parameters():
+        for p in self.parameters():
             p.get_()
         return self
 
@@ -96,13 +101,13 @@ class _WrappedCryptenModel():
 
     @property
     def owner(self):
-        for p in self._model.parameters():
+        for p in self.parameters():
             return p.owner
 
     @property
     def location(self):
         try:
-            for p in self._model.parameters():
+            for p in self.parameters():
                 return p.location
         except AttributeError:
             raise AttributeError(
