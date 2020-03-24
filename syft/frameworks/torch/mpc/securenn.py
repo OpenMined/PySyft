@@ -70,7 +70,7 @@ def _random_common_value(max_value, *workers):
     pointer = (
         torch.tensor([1], dtype=field_to_dtype)
         .send(workers[0], **no_wrap)
-        .random_((max_value - 1) // 2)
+        .random_(1, (max_value - 1) // 2)
     )
     pointers = [pointer]
     for worker in workers[1:]:
@@ -333,7 +333,11 @@ def share_convert(a_sh):
     r_shares = r_sh.child
 
     alpha0 = (
-        (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) > (L // 2 - 1)
+        (
+            (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0]))
+            > ((L - 1) // 2)
+        )
+        + ((r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) < -(L // 2))
     ).type(field_to_torch_dtype)
     alpha1 = alpha0.copy().move(workers[1])
     alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
@@ -343,19 +347,33 @@ def share_convert(a_sh):
     # 2)
     a_tilde_sh = a_sh + r_sh
     a_shares = a_sh.child
-    beta0 = ((a_shares[workers[0].id] + r_shares[workers[0].id]) > L // 2 - 1).type(
-        field_to_torch_dtype
-    )
-    beta1 = ((a_shares[workers[1].id] + r_shares[workers[1].id]) > L // 2 - 1).type(
-        field_to_torch_dtype
-    )
+    beta0 = (
+        ((a_shares[workers[0].id] + r_shares[workers[0].id]) > ((L - 1) // 2))
+        + ((a_shares[workers[0].id] + r_shares[workers[0].id]) < -(L // 2))
+    ).type(field_to_torch_dtype)
+    beta1 = (
+        ((a_shares[workers[1].id] + r_shares[workers[1].id]) > ((L - 1) // 2))
+        + ((a_shares[workers[1].id] + r_shares[workers[1].id]) < -(L // 2))
+    ).type(field_to_torch_dtype)
     beta = sy.MultiPointerTensor(children=[beta0, beta1])
 
     # 4)
     a_tilde_shares = a_tilde_sh.child
     delta = (
-        (a_tilde_shares[workers[0].id].copy().get() + a_tilde_shares[workers[1].id].copy().get())
-        > (L // 2 - 1)
+        (
+            (
+                a_tilde_shares[workers[0].id].copy().get()
+                + a_tilde_shares[workers[1].id].copy().get()
+            )
+            > ((L - 1) // 2)
+        )
+        + (
+            (
+                a_tilde_shares[workers[0].id].copy().get()
+                + a_tilde_shares[workers[1].id].copy().get()
+            )
+            < -(L // 2)
+        )
     ).type(field_to_torch_dtype)
     x = a_tilde_sh.get()
 

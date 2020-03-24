@@ -67,7 +67,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import WorkerCommandMessage
-from syft.serde import compression
+from syft.serde import compression, msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
@@ -455,7 +455,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
 
 def _detail_field(typeCode, val):
-    if typeCode == 5 and val == str(2 ** 64):
+    if typeCode == msgpack.proto_type_info(str).code and val == str(2 ** 64):
         return int(val)
     else:
         return val

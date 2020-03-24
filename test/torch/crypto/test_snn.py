@@ -197,12 +197,10 @@ def test_share_convert(workers):
     """
     This is a light test as share_convert is not used for the moment
     """
-    # for i in range(100):
-    #    print(i)
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     L = 2 ** 64
     a_sh = (
-        torch.LongTensor([13, 3567, 2 ** 60])
+        torch.LongTensor([13, 3567, 2 ** 50])
         .share(alice, bob, crypto_provider=james, field=L)
         .child
     )
@@ -210,7 +208,7 @@ def test_share_convert(workers):
     res = share_convert(a_sh)
     assert res.dtype == "custom"
     assert res.field == L - 1
-    assert (res.get() == torch.LongTensor([13, 3567, 2 ** 60])).all()
+    assert (res.get() == torch.LongTensor([13, 3567, 2 ** 50])).all()
 
     # With dtype int
     L = 2 ** 32
