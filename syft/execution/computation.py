@@ -111,12 +111,10 @@ class ComputationAction(Action):
         protobuf_op = ComputationActionPB()
         protobuf_op.command = action.name
 
-        if isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
-            protobuf_target = protobuf_op.target_id
-        elif isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
+        if isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
             protobuf_target = protobuf_op.target_pointer
-        elif isinstance(action.target, sy.execution.placeholder.PlaceHolder):
-            protobuf_target = protobuf_op.target_placeholder
+        elif isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
+            protobuf_target = protobuf_op.target_placeholder_id
         else:
             protobuf_target = protobuf_op.target_tensor
 
@@ -142,8 +140,6 @@ class ComputationAction(Action):
                 if isinstance(return_id, PlaceholderId):
                     # NOTE to know when we have a PlaceholderId, we store it
                     # in return_placeholder_ids and not in return_ids
-                    print(type(return_id))
-                    print(type(sy.serde.protobuf.serde._bufferize(worker, return_id)))
                     protobuf_op.return_placeholder_ids.append(
                         sy.serde.protobuf.serde._bufferize(worker, return_id)
                     )
