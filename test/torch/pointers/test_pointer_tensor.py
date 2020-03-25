@@ -480,7 +480,7 @@ def test_share_get(workers):
         workers["bob"],
         workers["alice"],
         workers["james"],
-        workers["charlie"]
+        workers["charlie"],
     )
 
     tensor = torch.tensor([1, 2, 3])
