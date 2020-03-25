@@ -7,6 +7,7 @@ from typing import Union
 import torch
 
 import syft as sy
+from syft import dependency_check
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 
@@ -21,7 +22,8 @@ from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 
-import crypten
+if dependency_check.crypten_available:
+    import crypten
 
 
 class func2plan(object):

@@ -228,7 +228,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
 
     hash_wrap_args = hash(frozenset(wrap_args.items()))
     attr_id = f"{attr}@{wrap_type.__name__}.{response_is_tuple}.{hash_wrap_args}"
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     try:
         assert attr not in ambiguous_functions

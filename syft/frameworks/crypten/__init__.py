@@ -6,6 +6,7 @@ from syft.frameworks.crypten.context import run_party
 import crypten.communicator as comm
 import crypten
 
+
 def load(tag: str, src: int):
     if src == comm.get().get_rank():
         # Means the data is on one of our local workers
@@ -54,5 +55,6 @@ def load(tag: str, src: int):
             raise TypeError("Unrecognized load type on src")
 
     return result
+
 
 __all__ = ["run_party", "load", "get_plain_text"]

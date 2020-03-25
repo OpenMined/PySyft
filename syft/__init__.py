@@ -38,6 +38,7 @@ else:
 
 if dependency_check.crypten_available:
     from syft.frameworks.torch.tensors.crypten.syft_crypten import SyftCrypTensor
+
     __all__.extend(["SyftCrypTensor"])
 else:
     logger.info("CrypTen not available.")

@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook.trace import tracer
 import crypten
 import torch as th
 
+
 class AbstractTensor(AbstractObject):
     def __init__(
         self,
