@@ -115,7 +115,7 @@ def test_send_get(workers):
         workers["bob"],
         workers["alice"],
         workers["james"],
-        workers["charlie"]
+        workers["charlie"],
     )
     x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=charlie)
 
@@ -140,7 +140,7 @@ def test_add(workers):
         workers["bob"],
         workers["alice"],
         workers["james"],
-        workers["charlie"]
+        workers["charlie"],
     )
 
     # 2 workers
