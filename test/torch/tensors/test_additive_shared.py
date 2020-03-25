@@ -649,7 +649,7 @@ def test_fixed_precision_and_sharing_on_pointer(workers):
         workers["bob"],
         workers["alice"],
         workers["james"],
-        workers["charlie"]
+        workers["charlie"],
     )
 
     t = torch.tensor([1, 2, 3, 4.0])
@@ -668,7 +668,7 @@ def test_pointer_on_fixed_precision_and_sharing(workers):
         workers["bob"],
         workers["alice"],
         workers["james"],
-        workers["charlie"]
+        workers["charlie"],
     )
 
     t = torch.tensor([1, 2, 3, 4.0])
