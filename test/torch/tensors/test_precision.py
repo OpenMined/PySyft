@@ -633,14 +633,14 @@ def test_operate_with_integer_constants():
 
 def test_fixed_precision_and_sharing(workers):
 
-    bob, alice = (workers["bob"], workers["alice"])
+    bob, alice, secure_worker = (workers["bob"], workers["alice"], workers["secure_worker"])
 
-    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice, crypto_provider=bob)
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice, crypto_provider=secure_worker)
     out = x.get().float_prec()
 
     assert (out == torch.tensor([1, 2, 3, 4.0])).all()
 
-    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice, crypto_provider=bob)
+    x = torch.tensor([1, 2, 3, 4.0]).fix_prec().share(bob, alice, crypto_provider=secure_worker)
 
     y = x + x
 
@@ -649,12 +649,12 @@ def test_fixed_precision_and_sharing(workers):
 
 
 def test_get_preserves_attributes(workers):
-    bob, alice = (workers["bob"], workers["alice"])
+    bob, alice, secure_worker = (workers["bob"], workers["alice"], workers["secure_worker"])
 
     x = (
         torch.tensor([1, 2, 3, 4.0])
         .fix_prec(precision_fractional=1)
-        .share(bob, alice, crypto_provider=bob)
+        .share(bob, alice, crypto_provider=secure_worker)
     )
     out = x.get().float_prec()
 
