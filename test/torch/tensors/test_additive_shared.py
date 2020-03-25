@@ -923,7 +923,8 @@ def test_cnn_model(workers):
 
 
 def test_correct_tag_and_description_after_send(workers):
-    bob, alice, james, secure_worker = (workers["bob"], workers["alice"], workers["james"], workers["secure_worker"])
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    secure_worker = workers["secure_worker"]
 
     x = torch.tensor([1, 2, 3]).share(alice, bob, james, crypto_provider=secure_worker)
     x.tags = ["tag_additive_test1", "tag_additive_test2"]
