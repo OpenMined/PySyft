@@ -22,12 +22,24 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 To boot the entire PyGrid platform locally, we will use docker containers.
 To install docker the dependencies, just follow [docker documentation](https://docs.docker.com/install/).
 
-#### Start Grid platform locally
+### Start Grid platform locally
+
+#### Using Docker
+
+The latest PyGrid Gateway and Node images are available on the Docker Hub.
+- PyGrid Gateway - `openmined/grid-node`
+- PyGrid Node - `openmined/grid-node`
+
 It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.
 **PS:** Feel free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
 ```
 $ docker-compose up
 ```
+If you want to rebuild and run the images, you just need to add the `--build` param when running `docker-compose up`
+```
+$ docker-compose up --build
+```
+
 
 On MacOS, you have to work-around the lack of support for `network_mode: host` in Docker for Mac by adding following to your `/etc/hosts`
 ```
@@ -37,15 +49,22 @@ and running:
 ```
 $ docker-compose -f docker-compose-mac.yml up
 ```
-#### Kubernetes deployment.
+
+#### Starting manually
+Start the grid platform manually with 1 gateway and how many grid nodes you want.  
+
+- **PyGrid Gateway** - Check out the instructions under [`/gateway`](./gateway)
+
+- **PyGrid Node** - Check out the instructions under [`/app/websocket`](./app/websocket)
+
+### Kubernetes deployment.
 You can now deploy the grid-gateway and grid-node docker containers on kubernetes. This can be either to a local (minikube) cluster or a remote cluster (GKE, EKS, AKS etc). The steps to setup the cluster can be found in [./k8s/Readme.md](https://github.com/OpenMined/PyGrid/tree/dev/k8s)
 
-#### Build your own images
+### Build your own images
 ```
 $ docker build -t openmined/grid-node ./app/websocket/  # Build PyGrid node image
 $ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
 ```
-
 
 ## Try out the Tutorials
 A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials/grid).
@@ -55,7 +74,7 @@ These tutorials cover how to create a PyGrid node and what operations you can pe
 ## Start Contributing
 The guide for contributors can be found [here](https://github.com/OpenMined/PyGrid/tree/dev/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PyGrid in an easy way.
 
-Also join the rapidly growing community of 6500+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PyGrid/PySyft!
+Also join the rapidly growing community of 7300+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PyGrid/PySyft!
 
 We also have a Github Project page for a Federated Learning MVP [here](https://github.com/orgs/OpenMined/projects/13).  
 You can check the PyGrid's official development and community roadmap [here](https://github.com/OpenMined/Roadmap/tree/master/pygrid_team).
@@ -63,7 +82,6 @@ You can check the PyGrid's official development and community roadmap [here](htt
 ## High-level Architecture
 
 ![High-level Architecture](https://raw.githubusercontent.com/OpenMined/PyGrid/dev/art/PyGrid-Arch.png)
-
 
 
 ## Disclaimer
