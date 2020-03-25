@@ -111,8 +111,8 @@ def test_autograd_kwarg(workers):
 
 
 def test_send_get(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=james)
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie])
+    x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=charlie)
 
     alice_t_id = x_sh.child.child["alice"].id_at_location
     assert alice_t_id in alice._objects
@@ -131,11 +131,11 @@ def test_send_get(workers):
 
 
 def test_add(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie"])
 
     # 2 workers
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, crypto_provider=james)
+    x = torch.tensor([1, 2, 3]).share(bob, alice, crypto_provider=charlie)
 
     y = (x + x).get()
 
@@ -143,7 +143,7 @@ def test_add(workers):
     assert (y == (t + t)).all()
 
     t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, james, crypto_provider=james)
+    x = torch.tensor([1, 2, 3]).share(bob, alice, james, crypto_provider=charlie)
 
     y = (x + x).get()
 
@@ -151,7 +151,7 @@ def test_add(workers):
     assert (y == (t + t)).all()
 
     t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, crypto_provider=james)
+    x = torch.tensor([1, -2, 3]).share(bob, alice, james, crypto_provider=charlie)
 
     y = (x + x).get()
 
@@ -159,7 +159,7 @@ def test_add(workers):
 
     # with fixed precisions
     t = torch.tensor([1.0, -2, 3])
-    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james, crypto_provider=james)
+    x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james, crypto_provider=charlie)
 
     y = (x + x).get().float_prec()
 
@@ -167,7 +167,7 @@ def test_add(workers):
 
     # with FPT>torch.tensor
     t = torch.tensor([1.0, -2.0, 3.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=charlie)
     y = t.fix_prec()
 
     z = (x + y).get().float_prec()
@@ -180,7 +180,7 @@ def test_add(workers):
 
     # with constant integer
     t = torch.tensor([1.0, -2.0, 3.0])
-    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    x = t.fix_prec().share(alice, bob, crypto_provider=charlie)
     c = 4
 
     z = (x + c).get().float_prec()
@@ -191,7 +191,7 @@ def test_add(workers):
 
     # with constant float
     t = torch.tensor([1.0, -2.0, 3.0])
-    x = t.fix_prec().share(alice, bob, crypto_provider=james)
+    x = t.fix_prec().share(alice, bob, crypto_provider=charlie)
     c = 4.2
 
     z = (x + c).get().float_prec()
@@ -635,13 +635,12 @@ def test_fixed_precision_and_sharing(workers):
 
 
 def test_fixed_precision_and_sharing_on_pointer(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    secure_worker = workers["secure_worker"]
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie"])
 
     t = torch.tensor([1, 2, 3, 4.0])
     ptr = t.send(james)
 
-    x = ptr.fix_prec().share(bob, alice, crypto_provider=secure_worker)
+    x = ptr.fix_prec().share(bob, alice, crypto_provider=charlie)
 
     y = x + x
 
@@ -650,8 +649,7 @@ def test_fixed_precision_and_sharing_on_pointer(workers):
 
 
 def test_pointer_on_fixed_precision_and_sharing(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    secure_worker = workers["secure_worker"]
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie"])
 
     t = torch.tensor([1, 2, 3, 4.0])
 
@@ -924,9 +922,8 @@ def test_cnn_model(workers):
 
 def test_correct_tag_and_description_after_send(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
-    secure_worker = workers["secure_worker"]
 
-    x = torch.tensor([1, 2, 3]).share(alice, bob, james, crypto_provider=secure_worker)
+    x = torch.tensor([1, 2, 3]).share(alice, bob, crypto_provider=james)
     x.tags = ["tag_additive_test1", "tag_additive_test2"]
     x.description = "description_additive_test"
 
