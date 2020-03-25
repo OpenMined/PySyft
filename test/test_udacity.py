@@ -828,7 +828,7 @@ def test_section_3_securing_fl(hook):
 
     x = th.tensor([0.1, 0.2, 0.3])
 
-    x = x.fix_prec().share(bob, alice, secure_worker, crypto_provider=secure_worker)
+    x = x.fix_prec().share(bob, alice, crypto_provider=secure_worker)
 
     y = x + x
 
