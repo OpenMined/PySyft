@@ -92,3 +92,29 @@ class CoeffModulus:
             prime_table[size].pop()
 
         return result
+
+
+class PlainModulus:
+    """This class contains static methods for creating a plaintext modulus easily."""
+
+    def Batching(self, poly_modulus_degree, bit_size):
+        """Creates a prime number for use as plain_modulus encryption
+        parameter that supports batching with a given poly_modulus_degree.
+
+        Args:
+            poly_modulus_degree: The value of the poly_modulus_degree
+        encryption parameter
+            bit_size: The bit-length of the prime to be generated
+        """
+        return CoeffModulus.Create(poly_modulus_degree, bit_size[0])
+
+    def Batching(self, poly_modulus_degree, bit_sizes):
+        """Creates several prime number that can be used as plain_modulus encryption parameters,
+         each supporting batching with a given poly_modulus_degree
+
+        Args:
+            poly_modulus_degree: The value of the poly_modulus_degree
+        encryption parameter
+            bit_sizes: (list) The bit-lengths of the primes to be generated
+        """
+        return CoeffModulus.Create(poly_modulus_degree, bit_sizes)
