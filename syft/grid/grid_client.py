@@ -3,7 +3,8 @@ import json
 import binascii
 import websocket
 import websockets
-from syft.serde.serde import serialize, deserialize
+
+from syft.serde.protobuf import serialize
 
 TIMEOUT_INTERVAL = 60
 
