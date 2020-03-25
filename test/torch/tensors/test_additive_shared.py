@@ -651,10 +651,11 @@ def test_fixed_precision_and_sharing_on_pointer(workers):
 
 def test_pointer_on_fixed_precision_and_sharing(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    secure_worker = workers["secure_worker"]
 
     t = torch.tensor([1, 2, 3, 4.0])
 
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    x = t.fix_prec().share(bob, alice, crypto_provider=secure_worker)
     x = x.send(james)
 
     y = x + x
