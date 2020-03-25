@@ -618,15 +618,15 @@ def test_torch_conv2d(workers):
 
 def test_fixed_precision_and_sharing(workers):
 
-    bob, alice = (workers["bob"], workers["alice"])
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     t = torch.tensor([1, 2, 3, 4.0])
-    x = t.fix_prec().share(bob, alice, crypto_provider=bob)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
     out = x.get().float_prec()
 
     assert (out == t).all()
 
-    x = t.fix_prec().share(bob, alice, crypto_provider=bob)
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
 
     y = x + x
 
@@ -636,11 +636,12 @@ def test_fixed_precision_and_sharing(workers):
 
 def test_fixed_precision_and_sharing_on_pointer(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    secure_worker = workers["secure_worker"]
 
     t = torch.tensor([1, 2, 3, 4.0])
     ptr = t.send(james)
 
-    x = ptr.fix_prec().share(bob, alice, crypto_provider=bob)
+    x = ptr.fix_prec().share(bob, alice, crypto_provider=secure_worker)
 
     y = x + x
 
