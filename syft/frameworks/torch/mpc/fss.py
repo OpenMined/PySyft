@@ -257,12 +257,16 @@ class DIF:
         pass
 
     @staticmethod
-    def keygen():
-        (alpha,) = th.randint(0, 2 ** n, (1,))
+    def keygen(n_values=1):
+        alpha = th.randint(0, 2 ** n, (n_values,))
         α = bit_decomposition(alpha)
-        s, t, CW = Array(n + 1, 2, λ), Array(n + 1, 2), Array(n, 2 + 2 * (λ + 1))
-        s[0] = randbit(size=(2, λ))
-        t[0] = th.tensor([0, 1], dtype=th.uint8)
+        s, t, CW = (
+            Array(n + 1, 2, λ, n_values),
+            Array(n + 1, 2, n_values),
+            Array(n, 2 + 2 * (λ + 1), n_values),
+        )
+        s[0] = randbit(size=(2, λ, n_values))
+        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8).t()
         for i in range(0, n):
             h0 = H(s[i, 0])
             h1 = H(s[i, 1])
@@ -275,28 +279,37 @@ class DIF:
 
             for b in (0, 1):
                 τ = [h0, h1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λ + 2)
-                σ_leaf, s[i + 1, b], t[i + 1, b] = split(τ[α[i]], [1, λ, 1])
+                τ = τ.reshape(2, λ + 2, n_values)
+                # filtered_τ = τ[𝛼[i]] OLD
+                α_i = α[i].unsqueeze(0).expand(λ + 2, n_values).unsqueeze(0).long()
+                filtered_τ = th.gather(τ, 0, α_i).squeeze(0)
+                σ_leaf, s[i + 1, b], t[i + 1, b] = split(filtered_τ, [1, λ, 1])
 
         return (alpha,) + s[0].unbind() + (CW,)
 
     @staticmethod
     def eval(b, x, *k_b):
-        FnOutput = Array(n + 1, 1)
+        original_shape = x.shape
+        x = x.reshape(-1)
+        n_values = x.shape[0]
         x = bit_decomposition(x)
-        s, t = Array(n + 1, λ), Array(n + 1, 1)
+        FnOutput = Array(n + 1, n_values)
+        s, t = Array(n + 1, λ, n_values), Array(n + 1, 1, n_values)
         s[0] = k_b[0]
         CW = k_b[1].unbind()
         t[0] = b
         for i in range(0, n):
             τ = H(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λ + 2)
-            σ_leaf, s[i + 1], t[i + 1] = split(τ[x[i]], [1, λ, 1])
+            τ = τ.reshape(2, λ + 2, n_values)
+            x_i = x[i].unsqueeze(0).expand(λ + 2, n_values).unsqueeze(0).long()
+            filtered_τ = th.gather(τ, 0, x_i).squeeze(0)
+            σ_leaf, s[i + 1], t[i + 1] = split(filtered_τ, [1, λ, 1])
             FnOutput[i] = σ_leaf
 
         # Last tour, the other σ is also a leaf:
         FnOutput[n] = t[n]
-        return FnOutput.sum() % 2
+        flat_result = FnOutput.sum(axis=0) % 2
+        return flat_result.reshape(original_shape)
 
 
 # PRG
@@ -315,12 +328,17 @@ def G(seed):
 
 
 def H(seed):
-    assert len(seed) == λ
-    enc_str = str(seed.tolist()).encode()
-    h = hashlib.sha3_256(enc_str)
-    r = h.digest()
-    binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
-    return th.tensor(list(map(int, binary_str)), dtype=th.uint8)
+    assert seed.shape[0] == λ
+    seed_t = seed.t().tolist()
+    gen_list = []
+    for seed_bit in seed_t:
+        enc_str = str(seed_bit).encode()
+        h = hashlib.sha3_256(enc_str)
+        r = h.digest()
+        binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
+        gen_list.append(list(map(int, binary_str)))
+
+    return th.tensor(gen_list, dtype=th.uint8).t()
 
 
 def Convert(bits):
@@ -356,21 +374,26 @@ def split(x, idx):
 
 def TruthTableDPF(s, α_i):
     one = th.ones((1, s.shape[1])).to(th.uint8)
+    s_one = concat(s, one)
     Table = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
     for j, el in enumerate(α_i):
-        Table[el.item(), :, j] = concat(s, one)[:, j]
+        Table[el.item(), :, j] = s_one[:, j]
     return Table.reshape(-1, Table.shape[2])
 
 
 def TruthTableDIF(s, α_i):
-    leafTable = th.zeros((2, 1), dtype=th.uint8)
-    # if α_i is 0, then ending on the leaf branch means your bit is 1 to you're > α so you should get 0
-    # if α_i is 1, then ending on the leaf branch means your bit is 0 to you're < α so you should get 1
+    leafTable = th.zeros((2, 1, len(α_i)), dtype=th.uint8)
+    # TODO optimize: just put alpha on first line
     leaf_value = α_i
-    leafTable[1 - α_i] = leaf_value
+    for j, el in enumerate(α_i):
+        leafTable[(1 - el).item(), 0, j] = leaf_value[j]
 
-    nextTable = th.zeros((2, λ + 1), dtype=th.uint8)
-    one = th.tensor([1], dtype=th.uint8)
-    nextTable[α_i] = concat(s, one)
+    one = th.ones((1, s.shape[1])).to(th.uint8)
+    s_one = concat(s, one)
+    nextTable = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    for j, el in enumerate(α_i):
+        nextTable[el.item(), :, j] = s_one[:, j]
 
-    return concat(leafTable, nextTable, axis=1).flatten()
+    Table = concat(leafTable, nextTable, axis=1)
+    Table = Table.reshape(-1, Table.shape[2])
+    return Table

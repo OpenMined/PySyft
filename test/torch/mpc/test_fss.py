@@ -1,58 +1,64 @@
+import pytest
 import syft
 import torch as th
 
 from syft.frameworks.torch.mpc.fss import DPF, DIF, n
 
 
-def test_DPF():
+@pytest.mark.parametrize("op", ["eq", "le"])
+def test_fss_klass(op):
+    klass = {"eq": DPF, "le": DIF}[op]
+    th_op = {"eq": th.eq, "le": th.le}[op]
+    gather_op = {"eq": "__add__", "le": "__xor__"}[op]
+
     # single value
-    primitive = DPF.keygen(n_values=1)
+    primitive = klass.keygen(n_values=1)
     alpha, s_00, s_01, *CW = primitive
     mask = th.randint(0, 2 ** n, alpha.shape)
     k0, k1 = [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
     x = th.tensor([0])
     x_masked = x + k0[0] + k1[0]
-    y0 = DPF.eval(0, x_masked, *k0[1:])
-    y1 = DPF.eval(1, x_masked, *k1[1:])
+    y0 = klass.eval(0, x_masked, *k0[1:])
+    y1 = klass.eval(1, x_masked, *k1[1:])
 
-    assert ((y0 + y1) == (x == 0)).all()
+    assert (getattr(y0, gather_op)(y1) == th_op(x, 0)).all()
 
     # 1D tensor
-    primitive = DPF.keygen(n_values=3)
+    primitive = klass.keygen(n_values=3)
     alpha, s_00, s_01, *CW = primitive
     mask = th.randint(0, 2 ** n, alpha.shape)
     k0, k1 = [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
     x = th.tensor([0, 2, -2])
     x_masked = x + k0[0] + k1[0]
-    y0 = DPF.eval(0, x_masked, *k0[1:])
-    y1 = DPF.eval(1, x_masked, *k1[1:])
+    y0 = klass.eval(0, x_masked, *k0[1:])
+    y1 = klass.eval(1, x_masked, *k1[1:])
 
-    assert ((y0 + y1) == (x == 0)).all()
+    assert (getattr(y0, gather_op)(y1) == th_op(x, 0)).all()
 
     # 2D tensor
-    primitive = DPF.keygen(n_values=4)
+    primitive = klass.keygen(n_values=4)
     alpha, s_00, s_01, *CW = primitive
     mask = th.randint(0, 2 ** n, alpha.shape)
     k0, k1 = [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
     x = th.tensor([[0, 2], [-2, 0]])
     x_masked = x + k0[0].reshape(x.shape) + k1[0].reshape(x.shape)
-    y0 = DPF.eval(0, x_masked, *k0[1:])
-    y1 = DPF.eval(1, x_masked, *k1[1:])
+    y0 = klass.eval(0, x_masked, *k0[1:])
+    y1 = klass.eval(1, x_masked, *k1[1:])
 
-    assert ((y0 + y1) == (x == 0)).all()
+    assert (getattr(y0, gather_op)(y1) == th_op(x, 0)).all()
 
     # 3D tensor
-    primitive = DPF.keygen(n_values=8)
+    primitive = klass.keygen(n_values=8)
     alpha, s_00, s_01, *CW = primitive
     mask = th.randint(0, 2 ** n, alpha.shape)
     k0, k1 = [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
     x = th.tensor([[[0, 2], [-2, 0]], [[0, 2], [-2, 0]]])
     x_masked = x + k0[0].reshape(x.shape) + k1[0].reshape(x.shape)
-    y0 = DPF.eval(0, x_masked, *k0[1:])
-    y1 = DPF.eval(1, x_masked, *k1[1:])
+    y0 = klass.eval(0, x_masked, *k0[1:])
+    y1 = klass.eval(1, x_masked, *k1[1:])
 
-    assert ((y0 + y1) == (x == 0)).all()
+    assert (getattr(y0, gather_op)(y1) == th_op(x, 0)).all()
