@@ -3,7 +3,7 @@ from syft.frameworks.torch.he.fv.util.operations import exponentiate_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 
 
-def is_prime(value, num_rounds):
+def is_prime(value, num_rounds=40):
     # First check the simplest cases.
     if value < 2:
         return False
@@ -78,12 +78,13 @@ def get_primes(ntt_size, bit_size, count):
     value = 1 << bit_size
     value = value - factor + 1
 
-    lower_bound = 1 << bit_size - 1
-
+    lower_bound = 1 << (bit_size - 1)
     while count > 0 and value > lower_bound:
         if is_prime(value):
             destination.append(value)
             count -= 1
         value -= factor
+    if count > 0:
+        raise RuntimeError("failed to find enough qualifying primes")
 
-    raise RuntimeError("failed to find enough qualifying primes")
+    return destination
