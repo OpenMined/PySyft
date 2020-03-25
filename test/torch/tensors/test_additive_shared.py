@@ -111,7 +111,7 @@ def test_autograd_kwarg(workers):
 
 
 def test_send_get(workers):
-    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie])
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie"])
     x_sh = torch.tensor([[3, 4]]).share(alice, bob, crypto_provider=charlie)
 
     alice_t_id = x_sh.child.child["alice"].id_at_location
