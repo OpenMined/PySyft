@@ -44,7 +44,7 @@ class GridClient:
     def close(self):
         self.ws.shutdown()
 
-    def host_federated_learning(
+    def host_federated_training(
         self,
         model,
         client_plans,
