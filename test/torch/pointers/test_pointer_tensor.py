@@ -476,7 +476,7 @@ def test_share_get(workers):
     """
     Ensure .share() works as expected.
     """
-    bob, alice, secure_worker = workers["bob"], workers=["alice"], workers=["secure_worker"]
+    bob, alice, secure_worker = (workers["bob"], workers["alice"], workers["secure_worker"])
 
     tensor = torch.tensor([1, 2, 3])
     ptr = tensor.send(bob, alice)
