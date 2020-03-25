@@ -146,13 +146,13 @@ class PrimitiveStorage:
         return build_separate_fss_keys
 
     @staticmethod
-    def build_xor_add_couple(n_party, nbits=1):
+    def build_xor_add_couple(n_party, n_instances=100):
         assert (
             n_party == 2
         ), f"build_xor_add_couple is only implemented for 2 workers, {n_party} were provided."
-        r = th.randint(2, size=(nbits,))
-        mask1 = th.randint(2, size=(nbits,))
-        mask2 = th.randint(2, size=(nbits,))
+        r = th.randint(2, size=(n_instances,))
+        mask1 = th.randint(2, size=(n_instances,))
+        mask2 = th.randint(2, size=(n_instances,))
 
         return [(r ^ mask1, r - mask2), (mask1, mask2)]
 

@@ -686,9 +686,7 @@ def test_eq(workers, protocol):
     )
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=6
-        )
+        me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -720,7 +718,7 @@ def test_comp(workers, protocol):
 
     if protocol == "fss":
         me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
         )
 
     args = (alice, bob)
@@ -750,13 +748,25 @@ def test_comp(workers, protocol):
     assert (x > y).get().float_prec()
     assert not (x < y).get().float_prec()
 
-    x = torch.tensor([-2.1]).fix_prec().share(*args, **kwargs)
-    y = torch.tensor([-3.1]).fix_prec().share(*args, **kwargs)
+    t1 = torch.tensor([-2.1, 1.8])
+    t2 = torch.tensor([-3.1, 0.3])
+    x = t1.fix_prec().share(*args, **kwargs)
+    y = t2.fix_prec().share(*args, **kwargs)
 
-    assert (x >= y).get().float_prec()
-    assert not (x <= y).get().float_prec()
-    assert (x > y).get().float_prec()
-    assert not (x < y).get().float_prec()
+    assert ((x >= y).get().float_prec() == (t1 >= t2)).all()
+    assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
+    assert ((x > y).get().float_prec() == (t1 > t2)).all()
+    assert ((x < y).get().float_prec() == (t1 < t2)).all()
+
+    t1 = torch.tensor([[-2.1, 1.8], [-1.1, -0.7]])
+    t2 = torch.tensor([[-3.1, 0.3], [-1.1, 0.3]])
+    x = t1.fix_prec().share(*args, **kwargs)
+    y = t2.fix_prec().share(*args, **kwargs)
+
+    assert ((x >= y).get().float_prec() == (t1 >= t2)).all()
+    assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
+    assert ((x > y).get().float_prec() == (t1 > t2)).all()
+    assert ((x < y).get().float_prec() == (t1 < t2)).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])

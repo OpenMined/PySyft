@@ -16,8 +16,8 @@ from syft.generic.frameworks.hook.trace import tracer
 from syft.workers.base import BaseWorker
 
 
-λ = 6  # 6  # 110 or 63  # security parameter
-n = 8  # 8  # 32  # bit precision
+λ = 110  # 6  # 110 or 63  # security parameter
+n = 32  # 8  # 32  # bit precision
 dtype = th.int32
 
 no_wrap = {"no_wrap": True}
@@ -144,7 +144,7 @@ def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
     alpha, s_0, *CW = x1.owner.crypto_store.get_keys(type_op, n_instances=x1.numel(), remove=False)
-    return x + alpha
+    return x + alpha.reshape(x.shape)
 
 
 # share level
@@ -166,17 +166,17 @@ def comp_eval_plan(b, x_masked):
 
 
 def xor_add_convert_1(x):
-    xor_share, add_share = x.owner.crypto_provider.get_keys(
+    xor_share, add_share = x.owner.crypto_store.get_keys(
         type_op="xor_add", n_instances=x.numel(), remove=False
     )
-    return x ^ xor_share
+    return x ^ xor_share.reshape(x.shape)
 
 
 def xor_add_convert_2(b, x):
-    xor_share, add_share = x.owner.crypto_provider.get_keys(
+    xor_share, add_share = x.owner.crypto_store.get_keys(
         type_op="xor_add", n_instances=x.numel(), remove=True
     )
-    return add_share * (1 - 2 * x) + x * b
+    return add_share.reshape(x.shape) * (1 - 2 * x) + x * b
 
 
 def eq(x1, x2):
