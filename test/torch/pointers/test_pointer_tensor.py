@@ -7,7 +7,6 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
-hook = syft.TorchHook(torch)
 
 def test_init(workers):
     alice, me = workers["alice"], workers["me"]
@@ -477,13 +476,12 @@ def test_share_get(workers):
     """
     Ensure .share() works as expected.
     """
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    secure_worker = syft.VirtualWorker(hook, id="secure_worker")
+    bob, alice, james, charlie = (workers["bob"], workers["alice"], workers["james"], workers["charlie"])
 
     tensor = torch.tensor([1, 2, 3])
     ptr = tensor.send(bob)
 
-    ptr = ptr.share(alice, james, crypto_provider=secure_worker)
+    ptr = ptr.share(alice, james, crypto_provider=charlie)
     remote_tensor = bob._objects[ptr.id_at_location]
 
     assert isinstance(ptr.child, PointerTensor)
