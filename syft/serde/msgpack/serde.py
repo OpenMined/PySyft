@@ -46,6 +46,7 @@ from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -109,6 +110,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     LoggingTensor,
     MultiPointerTensor,
     PlaceHolder,
+    PlaceholderId,
     ObjectPointer,
     Plan,
     State,
