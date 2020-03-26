@@ -107,16 +107,11 @@ def _launch(func_src, rank, world_size, master_addr, master_port, queue, func_ar
     func = exec_locals[func_name]
 
     crypten.init()
-    print(f"Starting func at {rank}")
     return_value = func(*func_args, **func_kwargs)
-    print(f"Exited func at {rank}")
     crypten.uninit()
 
-    print(f"Packing value in _launch with {rank}")
     return_value = _pack_values(return_value)
-    print(f"Queuing in _launch with {rank}")
     queue.put(return_value)
-    print(f"Queued in _launch with {rank}")
 
 
 def _new_party(func_src, rank, world_size, master_addr, master_port, func_args, func_kwargs):
@@ -154,7 +149,7 @@ def run_party(func_src, rank, world_size, master_addr, master_port, func_args, f
     process.join()
     if was_initialized:
         crypten.init()
-    print(f"Returing from run_party with {rank}")
+
     return queue.get()
 
 
@@ -168,16 +163,20 @@ def _send_party_info(worker, rank, msg, return_values, model=None):
         msg (CryptenInit): message containing the rank, world_size, master_addr and master_port.
         return_values (dict): dictionnary holding return values of workers.
     """
-    print(f"Sending info to {rank}")
     response = worker.send_msg(msg, worker)
-    print(f"Got response from {rank}")
     return_values[rank] = _unpack_values(response.contents, model)
-    print(f"Unpacked from {rank}")
 
 
 def _pack_values(values):
     """Pack return values to be passed into a queue then sent over the wire.
-    The main goal here is to be able to return torch tensors."""
+    The main goal here is to be able to return torch tensors.
+
+    Args:
+        values: returned values from a function, can be a single object or a tuple.
+
+    Return:
+        A list of packed values.
+    """
 
     packed_values = []
     # single value
@@ -207,7 +206,15 @@ def _pack_value(value):
 
 
 def _unpack_values(values, model=None):
-    """Unpack return values that are fetched from the queue."""
+    """Unpack return values that are fetched from the queue.
+
+    Args:
+        values: list of packed values.
+        model: a crypten model to unpack parameters to.
+
+    Return:
+        A list of unpacked values.
+    """
 
     unpacked_values = []
     for value in values:
@@ -300,10 +307,10 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
             if was_initialized:
                 crypten.uninit()
             process.start()
-            
+
             # TODO: can't do this before starting the local process ! Even outside the func (weird bug)
             model = _get_model()
-            
+
             # Run TTP if required
             # TODO: run ttp in a specified worker
             if crypten.mpc.ttp_required():
@@ -330,11 +337,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15987):
                 threads.append(thread)
 
             # Wait for local party and sender threads
-            print("Waiting for local process")
-            # TODO: joining the process hangs even when the process's function ends !
-            # First guess is because we didn't get from the queue
             # process.join()
-            print("Exited local process")
             local_return = _unpack_values(queue.get(), model)
             # TODO: check if bad function definition (or other error)
             return_values[0] = local_return

@@ -116,7 +116,7 @@ def run_encrypted_training():
             if rank == 0:
                 pass
                 print(f"\tBatch {(batch + 1)} of {num_batches} Loss {batch_loss.item():.4f}")
-    
+
     model.decrypt()
     if rank == 0:
         return printed, model  # noqa: F821
@@ -124,7 +124,7 @@ def run_encrypted_training():
         return printed  # noqa: F821
 
 
-cp = syft.VirtualWorker(hook=hook, id='cp')
+cp = syft.VirtualWorker(hook=hook, id="cp")
 
 print("[%] Starting computation")
 result = run_encrypted_training()
