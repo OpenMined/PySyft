@@ -16,6 +16,7 @@ from syft.execution.state import State
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
@@ -26,6 +27,7 @@ from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as 
 
 if dependency_check.crypten_available:
     import crypten
+
 
 class func2plan(object):
     """Decorator which converts a function to a plan.
@@ -248,6 +250,8 @@ class Plan(AbstractObject):
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
+        elif not self.is_built:
+            return self.build(args)
         else:
             return self.role.execute(args)
 

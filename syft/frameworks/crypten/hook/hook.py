@@ -13,9 +13,9 @@ def get_hooked_crypten_func(func_api_name, func):
     @wraps(func)
     def overloaded_func(*args, **kwargs):
         try:
-            response = SyftCrypTensor(tensor=func(*args, **kwargs)).wrap()
+            response = func(*args, **kwargs)
         except RuntimeError:
-            response = SyftCrypTensor(tensor=th.zeros([])).wrap()
+            response = SyftCrypTensor(tensor=th.zeros([]))
 
         return response
 

@@ -889,11 +889,6 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def get_plain_text(self, *args, **kwargs):
-        """Required for CrypTen -- for SyftCrypTensor
-        In case we reach this the simply return a copy of the tensor"""
-        return self.copy()
-
     def _requires_large_precision(self, max_precision, base, precision_fractional):
         """Check if any of the elements in the tensor would require large precision.
         """

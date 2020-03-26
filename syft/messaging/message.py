@@ -741,10 +741,7 @@ class CryptenInit(Message):
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, ptr.crypten_context),
-        )
-
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.crypten_context),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitMessage":
