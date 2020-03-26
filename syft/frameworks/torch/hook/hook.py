@@ -490,9 +490,6 @@ class TorchHook(FrameworkHook):
         from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
         from crypten.mpc import MPCTensor
 
-        # Need to add this
-        MPCTensor.is_wrapper = False
-
         native_func = getattr(crypten, "load")
         setattr(crypten, "native_load", native_func)  # Currenty we do nothing with the native load
 
