@@ -744,7 +744,7 @@ class CryptenInit(Message):
         return (sy.serde.msgpack.serde._simplify(worker, ptr.crypten_context),)
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInit":
         """
         This function takes the simplified tuple version of this message and converts
         it into an CryptenInit. The simplify() method runs the inverse of this method.
