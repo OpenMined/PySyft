@@ -8,6 +8,7 @@ import types
 import weakref
 
 import syft
+from syft import dependency_check
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.hook.trace import Trace
@@ -35,6 +36,9 @@ from syft.execution.plan import Plan
 
 from syft.exceptions import route_method_exception
 
+if dependency_check.crypten_available:
+    import crypten
+    from syft.frameworks.torch.tensors.crypten.syft_crypten import SyftCrypTensor
 
 class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
@@ -162,6 +166,12 @@ class TorchHook(FrameworkHook):
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
 
+        # Add all hooked tensor methods to SyftCrypTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        if dependency_check.crypten_available:
+            self._hook_syft_tensor_methods(SyftCrypTensor)
+
         # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
@@ -210,6 +220,10 @@ class TorchHook(FrameworkHook):
 
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
+
+        # Hook the Crypten module
+        if dependency_check.crypten_available:
+            self._hook_crypten()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -469,6 +483,21 @@ class TorchHook(FrameworkHook):
                     continue
 
                 self._perform_function_overloading(module_name, torch_module, func)
+
+    def _hook_crypten(self):
+        from syft.frameworks.crypten import load as crypten_load
+        from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
+
+        native_func = getattr(crypten, "load")
+        setattr(crypten, "native_load", native_func)  # Currenty we do nothing with the native load
+
+        new_func = get_hooked_crypten_func("load", crypten_load)
+        setattr(crypten, "load", new_func)
+
+        crypten_specific_methods = ["get_plain_text"]
+        for method in crypten_specific_methods:
+            self.to_auto_overload[torch.Tensor].add(method)
+
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """

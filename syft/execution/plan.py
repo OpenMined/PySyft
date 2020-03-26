@@ -8,6 +8,7 @@ import io
 import torch
 
 import syft as sy
+from syft import dependency_check
 from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
@@ -23,6 +24,8 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
+if dependency_check.crypten_available:
+    import crypten
 
 class func2plan(object):
     """Decorator which converts a function to a plan.
