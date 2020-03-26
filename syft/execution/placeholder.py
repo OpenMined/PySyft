@@ -34,8 +34,6 @@ class PlaceHolder(AbstractTensor):
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
-        elif tensor.is_wrapper:
-            self.instantiate(tensor.child)
         else:
             self.child = tensor
         return self

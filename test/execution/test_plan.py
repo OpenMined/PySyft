@@ -7,6 +7,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
+
+from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.execution.plan import Plan
@@ -480,7 +482,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
     # Execute it locally
     x = th.tensor([-1.26])
     assert th.all(th.eq(fetched_plan(x), plan(x)))
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
+    assert str(fetched_plan.state.state_placeholders) == str(plan.state.state_placeholders)
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
@@ -526,7 +528,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     # Execute it locally
     assert th.all(th.eq(fetched_plan(x), expected))
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
+    assert str(fetched_plan.state.state_placeholders) == str(plan.state.state_placeholders)
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
@@ -639,7 +641,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
     # Compare with local plan
     assert th.all(decrypted - expected.detach() < 1e-2)
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
+    assert str(fetched_plan.state.state_placeholders) == str(plan.state.state_placeholders)
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
