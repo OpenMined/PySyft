@@ -83,6 +83,17 @@ class PointerPlan(ObjectPointer):
         Transform the call on the pointer in a request to evaluate the
         remote plan
         """
+        if len(self._locations) > 1 and isinstance(args[0], sy.MultiPointerTensor):
+            responses = {}
+            for location in self._locations:
+                child_args = [
+                    x.child[location.id] if isinstance(x, sy.MultiPointerTensor) else x
+                    for x in args
+                ]
+                responses[location.id] = self.__call__(*child_args, **kwargs)
+
+            return responses
+
         if len(self._locations) == 1:
             location = self.location
         else:
@@ -156,7 +167,11 @@ class PointerPlan(ObjectPointer):
             message=command, recipient=location, return_ids=response_ids
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
-        response.garbage_collect_data = False
+        if isinstance(response, (list, tuple)):
+            for r in response:
+                r.garbage_collect_data = False
+        else:
+            response.garbage_collect_data = False
         return response
 
     def get(self, deregister_ptr: bool = True):
@@ -174,17 +189,19 @@ class PointerPlan(ObjectPointer):
             sy.serde.msgpack.serde._simplify(worker, ptr.id),
             sy.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
+            sy.serde.msgpack.serde._simplify(worker, ptr.tags),
             ptr.garbage_collect_data,
         )
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PointerPlan":
         # TODO: fix comment for this and simplifier
-        obj_id, id_at_location, worker_id, garbage_collect_data = tensor_tuple
+        obj_id, id_at_location, worker_id, tags, garbage_collect_data = tensor_tuple
 
         obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
         id_at_location = sy.serde.msgpack.serde._detail(worker, id_at_location)
         worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
 
         # If the pointer received is pointing at the current worker, we load the tensor instead
         if worker_id == worker.id:
@@ -199,6 +216,7 @@ class PointerPlan(ObjectPointer):
                 location=location,
                 id_at_location=id_at_location,
                 owner=worker,
+                tags=tags,
                 garbage_collect_data=garbage_collect_data,
                 id=obj_id,
             )

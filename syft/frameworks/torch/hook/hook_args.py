@@ -59,6 +59,7 @@ ambiguous_methods = {
     "reshape",
     "sub_",
     "view",
+    "split",
 }
 
 ambiguous_functions = {
@@ -73,6 +74,7 @@ ambiguous_functions = {
     "torch.chunk",
     "chunk",
     "torch.functional.split",
+    "torch.split",
     "split",
     "backward",
 }

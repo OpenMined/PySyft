@@ -57,9 +57,10 @@ class FederatedClient(ObjectStorage):
 
         if optimizer_name in dir(th.optim):
             optimizer = getattr(th.optim, optimizer_name)
-            self.optimizer = optimizer(model.parameters(), **optimizer_args)
+            optimizer_args.setdefault("params", model.parameters())
+            self.optimizer = optimizer(**optimizer_args)
         else:
-            raise ValueError("Unknown optimizer: {}".format(optimizer_name))
+            raise ValueError(f"Unknown optimizer: {optimizer_name}")
         return self.optimizer
 
     def fit(self, dataset_key: str, device: str = "cpu", **kwargs):
@@ -75,7 +76,7 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
         model = self.get_obj(self.train_config._model_id).obj
         loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
@@ -144,6 +145,7 @@ class FederatedClient(ObjectStorage):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -156,7 +158,7 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
         eval_result = dict()
         model = self.get_obj(self.train_config._model_id).obj
@@ -198,3 +200,6 @@ class FederatedClient(ObjectStorage):
             eval_result["histogram_target"] = hist_target
 
         return eval_result
+
+    def _log_msgs(self, value):
+        self.log_msgs = value
