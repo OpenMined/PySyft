@@ -118,10 +118,6 @@ class Plan(AbstractObject):
 
         self.role = role or Role(state_tensors=state_tensors, owner=owner)
 
-        # Incremental value to tag all placeholders with different tags
-        # TODO rm that. Add directly to state and handle differently
-        self.var_count = 0
-
         self.include_state = include_state
         self.is_built = is_built
 
@@ -180,7 +176,7 @@ class Plan(AbstractObject):
             # TODO what to do with the state? What will state look like on protocols?
             # TODO should the forward happen here? What will it look like with protocols?
             if self.include_state:
-                results = self.forward(*args, self.state)
+                results = self.forward(*args, self.role.state)
             else:
                 results = self.forward(*args)
 
@@ -201,8 +197,9 @@ class Plan(AbstractObject):
 
     def copy(self):
         """Creates a copy of a plan."""
-        plan = Plan(
+        return Plan(
             name=self.name,
+            role=self.role.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
             id=sy.ID_PROVIDER.pop(),
@@ -211,10 +208,6 @@ class Plan(AbstractObject):
             description=self.description,
         )
 
-        plan.state.plan = plan
-
-        return plan
-
     def __setattr__(self, name, value):
         """Add new tensors or parameter attributes to the state and register them
         in the owner's registry
@@ -222,13 +215,7 @@ class Plan(AbstractObject):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(
-                tags={"#state", f"#{self.var_count + 1}"}, id=value.id, owner=self.owner
-            )
-            self.var_count += 1
-            placeholder.instantiate(value)
-            self.state.state_placeholders.append(placeholder)
-            self.placeholders[value.id] = placeholder
+            self.role.add_tensor_to_state(value)
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
@@ -247,7 +234,7 @@ class Plan(AbstractObject):
         """
         if self.forward is not None:
             if self.include_state:
-                args = (*args, self.state)
+                args = (*args, self.role.state)
             return self.forward(*args)
 
         else:
@@ -442,18 +429,14 @@ class Plan(AbstractObject):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
-        # TODO serde with role
         return (
             sy.serde.msgpack.serde._simplify(worker, plan.id),
-            # sy.serde.msgpack.serde._simplify(worker, plan.actions),
-            # sy.serde.msgpack.serde._simplify(worker, plan.state),
             sy.serde.msgpack.serde._simplify(worker, plan.role),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
-            # sy.serde.msgpack.serde._simplify(worker, plan.placeholders),
         )
 
     @staticmethod
@@ -465,39 +448,19 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        # TODO serde with role
-        (
-            id,
-            # actions,
-            # state,
-            role,
-            include_state,
-            is_built,
-            name,
-            tags,
-            description,
-            # placeholders,
-        ) = plan_tuple
+        (id, role, include_state, is_built, name, tags, description) = plan_tuple
 
         id = sy.serde.msgpack.serde._detail(worker, id)
         role = sy.serde.msgpack.serde._detail(worker, role)
-        # placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
-        # actions = sy.serde.msgpack.serde._detail(worker, actions)
-        # state = sy.serde.msgpack.serde._detail(worker, state)
 
         plan = sy.Plan(
             role=role, include_state=include_state, is_built=is_built, id=id, owner=worker
         )
 
-        # plan.state = state
-        # state.plan = plan
-
         # TODO why are these args handled differently?
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
-
-        # plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
 

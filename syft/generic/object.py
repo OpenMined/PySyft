@@ -36,7 +36,7 @@ class AbstractObject(ABC):
         """
         self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
-        self.tags = tags
+        self.tags = tags or []
         self.description = description
         self.child = child
 

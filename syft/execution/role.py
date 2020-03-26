@@ -1,8 +1,10 @@
-import re
 from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
+
+import copy
+import re
 
 # TODO torch shouldn't be used here
 import torch
@@ -46,22 +48,16 @@ class Role(AbstractObject, ObjectStorage):
         # All placeholders
         self.placeholders = placeholders or {}
         # Input placeholders, stored by id
-        self.input_placeholder_ids = input_placeholder_ids or ()  # TODO init with args
+        self.input_placeholder_ids = input_placeholder_ids or ()
         # Output placeholders
-        self.output_placeholder_ids = output_placeholder_ids or ()  # TODO init with args
+        self.output_placeholder_ids = output_placeholder_ids or ()
 
-        # # state_tensors are provided when plans are created using func2plan
-        # if state_tensors is not None:
-        #     # we want to make sure in that case that the state is empty
-        #     assert state is None
-        #     for tensor in state_tensors:
-        #         placeholder = sy.PlaceHolder(
-        #             tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
-        #         )
-        #         self.var_count += 1
-        #         placeholder.instantiate(tensor)
-        #         self.state.state_placeholders.append(placeholder)
-        #         self.placeholders[tensor.id] = placeholder
+        # state_tensors are provided when plans are created using func2plan
+        if state_tensors:
+            # we want to make sure in that case that the state is empty
+            assert state is None
+            for tensor in state_tensors:
+                self.add_tensor_to_state(tensor)
 
     def register_computation_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
@@ -127,7 +123,11 @@ class Role(AbstractObject, ObjectStorage):
         args = self.fecth_placeholders_from_ids(args)
         kwargs = self.fecth_placeholders_from_ids(kwargs)
         return_placeholder = self.fecth_placeholders_from_ids(return_placeholder)
-
+        print(_self)
+        print(args)
+        print(kwargs)
+        print(return_placeholder)
+        print("---")
         if _self is None:
             response = eval(cmd)(*args, **kwargs)  # nosec
         else:
@@ -156,6 +156,12 @@ class Role(AbstractObject, ObjectStorage):
         else:
             return None
 
+    def add_tensor_to_state(self, tensor):
+        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
+        placeholder.instantiate(tensor)
+        self.state.state_placeholders.append(placeholder)
+        self.placeholders[tensor.id] = placeholder
+
     def fecth_placeholders_from_ids(self, obj):
         """
         Replace in an object all ids with Placeholders
@@ -169,6 +175,43 @@ class Role(AbstractObject, ObjectStorage):
             return self.placeholders[obj.value]
         else:
             return obj
+
+    def copy(self):
+        # TODO not the cleanest method ever
+        # TODO action ids need to be changed too
+
+        placeholders = {}
+        copy_input_ids = [id_ for id_ in self.input_placeholder_ids]
+        copy_output_ids = [id_ for id_ in self.output_placeholder_ids]
+        copy_state_ids = [ph.id.value for ph in self.state.state_placeholders]
+        for ph in self.placeholders.values():
+            copy = ph.copy()
+            placeholders[copy.id.value] = copy
+            if ph.id.value in self.input_placeholder_ids:
+                # replace
+                copy_input_ids[copy_input_ids.index(ph.id.value)] = copy.id.value
+            if ph.id.value in self.output_placeholder_ids:
+                # replace
+                copy_output_ids[copy_output_ids.index(ph.id.value)] = copy.id.value
+            if ph.id.value in copy_state_ids:
+                # replace
+                copy_state_ids[copy_state_ids.index(ph.id.value)] = copy.id.value
+
+        state = self.state.copy()
+        for ph, new_id in zip(state.state_placeholders, copy_state_ids):
+            ph.id.value = new_id
+
+        return Role(
+            state=state,
+            actions=[a for a in self.actions],
+            placeholders=placeholders,
+            input_placeholder_ids=tuple(copy_input_ids),
+            output_placeholder_ids=tuple(copy_output_ids),
+            id=sy.ID_PROVIDER.pop(),
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+        )
 
     @staticmethod
     def instantiate(placeholder, response):
@@ -229,6 +272,13 @@ class Role(AbstractObject, ObjectStorage):
         actions = sy.serde.msgpack.serde._detail(worker, actions)
         state = sy.serde.msgpack.serde._detail(worker, state)
         placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
+
+        # TODO should state.state_placeholders be a dict as self.placeholders?
+        # Then, if placeholder not found in self.placeholders, fetch it from
+        # state.state_placeholders. This would prevent us from having the following lines.
+        # Or need to rethink states
+        for ph in state.state_placeholders:
+            placeholders[ph.id.value] = ph
 
         return Role(
             id=id_,

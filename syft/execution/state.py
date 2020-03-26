@@ -60,17 +60,16 @@ class State(object):
         if self.owner.init_plan:
             parent_plan = self.owner.init_plan
             # to see if we are in a sub plan, we use state objects equality
-            if parent_plan.state != self:
+            if parent_plan.role.state != self:
                 # for all the placeholders in this sub plan, we report a copy of them
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
                     placeholder.id = placeholder.child.id
                     placeholder.tags = set()
-                    placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
-                    parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.placeholders[placeholder.child.id] = placeholder
-                    parent_plan.var_count += 1
+                    placeholder.tag("#inner")
+                    parent_plan.role.state.state_placeholders.append(placeholder)
+                    parent_plan.role.placeholders[placeholder.child.id] = placeholder
 
         tensors = []
         for placeholder in self.state_placeholders:
