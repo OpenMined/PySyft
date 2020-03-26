@@ -317,7 +317,7 @@ def share_convert(a_sh):
     workers = a_sh.locations
     crypto_provider = a_sh.crypto_provider
     L = a_sh.field
-    field_to_torch_dtype = torch.int64 if L > 2 ** 32 else torch.int32
+    torch_dtype = torch.int64 if L > 2 ** 32 else torch.int32
     # Common randomness
     eta_pp = _random_common_bit(*workers)
     r = _random_common_value(L, *workers)
@@ -337,8 +337,7 @@ def share_convert(a_sh):
             (r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0]))
             > ((L - 1) // 2)
         )
-        + ((r_shares[workers[0].id] + r_shares[workers[1].id].copy().move(workers[0])) < -(L // 2))
-    ).type(field_to_torch_dtype)
+    ).type(torch_dtype)
     alpha1 = alpha0.copy().move(workers[1])
     alpha = sy.MultiPointerTensor(children=[alpha0, alpha1])
 
@@ -350,11 +349,12 @@ def share_convert(a_sh):
     beta0 = (
         ((a_shares[workers[0].id] + r_shares[workers[0].id]) > ((L - 1) // 2))
         + ((a_shares[workers[0].id] + r_shares[workers[0].id]) < -(L // 2))
-    ).type(field_to_torch_dtype)
+    ).type(torch_dtype)
     beta1 = (
         ((a_shares[workers[1].id] + r_shares[workers[1].id]) > ((L - 1) // 2))
         + ((a_shares[workers[1].id] + r_shares[workers[1].id]) < -(L // 2))
-    ).type(field_to_torch_dtype)
+    ).type(torch_dtype)
+
     beta = sy.MultiPointerTensor(children=[beta0, beta1])
 
     # 4)
@@ -374,7 +374,7 @@ def share_convert(a_sh):
             )
             < -(L // 2)
         )
-    ).type(field_to_torch_dtype)
+    ).type(torch_dtype)
     x = a_tilde_sh.get()
 
     # 5)
@@ -401,15 +401,11 @@ def share_convert(a_sh):
             torch.tensor([1]).send(workers[1], **no_wrap),
         ]
     )
-    assert eta_p_sh.field == L - 1
     eta_sh = eta_p_sh + (1 - j) * eta_pp - 2 * eta_pp * eta_p_sh
-    assert eta_sh.field == L - 1 and delta_sh.field == L - 1
     # 10)
     theta_sh = beta - (1 - j) * (alpha + 1) + delta_sh + eta_sh
-    assert theta_sh.field == L - 1
     # 11)
-    assert u_sh.field == L - 1 and a_sh.field == L
-    y_sh = -theta_sh + a_sh + u_sh
+    y_sh = (0 * theta_sh) + a_sh + u_sh
     return y_sh
 
 

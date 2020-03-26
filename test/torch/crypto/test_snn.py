@@ -200,7 +200,7 @@ def test_share_convert(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
     L = 2 ** 64
     a_sh = (
-        torch.LongTensor([13, 3567, 2 ** 50])
+        torch.LongTensor([-13, 3567, 2 ** 60])
         .share(alice, bob, crypto_provider=james, field=L)
         .child
     )
@@ -208,18 +208,20 @@ def test_share_convert(workers):
     res = share_convert(a_sh)
     assert res.dtype == "custom"
     assert res.field == L - 1
-    assert (res.get() == torch.LongTensor([13, 3567, 2 ** 50])).all()
+    assert (res.get() == torch.LongTensor([-13, 3567, 2 ** 60])).all()
 
     # With dtype int
     L = 2 ** 32
     a_sh = (
-        torch.IntTensor([13, 3567, 2 ** 20]).share(alice, bob, crypto_provider=james, field=L).child
+        torch.IntTensor([13, -3567, 2 ** 30])
+        .share(alice, bob, crypto_provider=james, field=L)
+        .child
     )
 
     res = share_convert(a_sh)
     assert res.dtype == "custom"
     assert res.field == L - 1
-    assert (res.get() == torch.IntTensor([13, 3567, 2 ** 20])).all()
+    assert (res.get() == torch.IntTensor([13, -3567, 2 ** 30])).all()
 
 
 def test_relu_deriv(workers):
