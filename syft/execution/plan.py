@@ -111,16 +111,15 @@ class Plan(AbstractObject):
         tags: List[str] = None,
         description: str = None,
     ):
-        owner = owner or sy.local_worker
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
-        self.owner = owner
 
         self.role = role or Role(state_tensors=state_tensors, owner=owner)
 
         # Incremental value to tag all placeholders with different tags
+        # TODO rm that. Add directly to state and handle differently
         self.var_count = 0
 
         self.include_state = include_state
@@ -254,13 +253,15 @@ class Plan(AbstractObject):
         else:
             return self.role.execute_computation(args)
 
-    def run(self, args: Tuple):
+    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the original function.
 
         Args:
             args: Arguments used to run plan.
+            result_ids: List of ids where the results will be stored.
         """
+        # TODO: can we reuse result_ids?
         # TODO sould we also build under the hood when using __call__?
         # We build the plan only if needed
         if not self.is_built:
@@ -446,6 +447,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.id),
             # sy.serde.msgpack.serde._simplify(worker, plan.actions),
             # sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.role),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
             sy.serde.msgpack.serde._simplify(worker, plan.is_built),
             sy.serde.msgpack.serde._simplify(worker, plan.name),
@@ -468,6 +470,7 @@ class Plan(AbstractObject):
             id,
             # actions,
             # state,
+            role,
             include_state,
             is_built,
             name,
@@ -477,15 +480,19 @@ class Plan(AbstractObject):
         ) = plan_tuple
 
         id = sy.serde.msgpack.serde._detail(worker, id)
+        role = sy.serde.msgpack.serde._detail(worker, role)
         # placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
         # actions = sy.serde.msgpack.serde._detail(worker, actions)
         # state = sy.serde.msgpack.serde._detail(worker, state)
 
-        plan = sy.Plan(include_state=include_state, is_built=is_built, id=id, owner=worker)
+        plan = sy.Plan(
+            role=role, include_state=include_state, is_built=is_built, id=id, owner=worker
+        )
 
         # plan.state = state
         # state.plan = plan
 
+        # TODO why are these args handled differently?
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)

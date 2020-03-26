@@ -1,6 +1,7 @@
 import re
 from typing import Dict
 from typing import List
+from typing import Tuple
 from typing import Union
 
 # TODO torch shouldn't be used here
@@ -27,6 +28,8 @@ class Role(AbstractObject, ObjectStorage):
         state: State = None,
         actions: List[ComputationAction] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
+        input_placeholder_ids: Tuple[int, str] = None,
+        output_placeholder_ids: Tuple[int, str] = None,
         state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
@@ -43,9 +46,9 @@ class Role(AbstractObject, ObjectStorage):
         # All placeholders
         self.placeholders = placeholders or {}
         # Input placeholders, stored by id
-        self.input_placeholder_ids = ()  # TODO init with args
+        self.input_placeholder_ids = input_placeholder_ids or ()  # TODO init with args
         # Output placeholders
-        self.output_placeholder_ids = ()  # TODO init with args
+        self.output_placeholder_ids = output_placeholder_ids or ()  # TODO init with args
 
         # # state_tensors are provided when plans are created using func2plan
         # if state_tensors is not None:
@@ -124,10 +127,7 @@ class Role(AbstractObject, ObjectStorage):
         args = self.fecth_placeholders_from_ids(args)
         kwargs = self.fecth_placeholders_from_ids(kwargs)
         return_placeholder = self.fecth_placeholders_from_ids(return_placeholder)
-        print("_self", _self)
-        print("cmd", cmd)
-        print("args", args)
-        print("kwargs", kwargs)
+
         if _self is None:
             response = eval(cmd)(*args, **kwargs)  # nosec
         else:
@@ -168,7 +168,6 @@ class Role(AbstractObject, ObjectStorage):
         elif isinstance(obj, PlaceholderId):
             return self.placeholders[obj.value]
         else:
-            print("->", obj)
             return obj
 
     @staticmethod
@@ -187,3 +186,56 @@ class Role(AbstractObject, ObjectStorage):
                 raise ValueError(
                     f"Response of type {type(response)} is not supported in plan actions"
                 )
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, role: "Role") -> tuple:
+        """
+        This function takes the attributes of a Role and saves them in a tuple
+        Args:
+            worker (AbstractWorker): the worker doing the serialization
+            role (Role): a Role object
+        Returns:
+            tuple: a tuple holding the attributes of the Role object
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(worker, role.id),
+            sy.serde.msgpack.serde._simplify(worker, role.actions),
+            sy.serde.msgpack.serde._simplify(worker, role.state),
+            sy.serde.msgpack.serde._simplify(worker, role.placeholders),
+            role.input_placeholder_ids,
+            role.output_placeholder_ids,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, role_tuple: "Role") -> tuple:
+        """
+        This function reconstructs a Role object given its attributes in the form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            role_tuple: a tuple holding the attributes of the Role
+        Returns:
+            role: a Role object
+        """
+        (
+            id_,
+            actions,
+            state,
+            placeholders,
+            input_placeholder_ids,
+            output_placeholder_ids,
+        ) = role_tuple
+
+        id_ = sy.serde.msgpack.serde._detail(worker, id_)
+        actions = sy.serde.msgpack.serde._detail(worker, actions)
+        state = sy.serde.msgpack.serde._detail(worker, state)
+        placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
+
+        return Role(
+            id=id_,
+            owner=worker,
+            actions=actions,
+            state=state,
+            placeholders=placeholders,
+            input_placeholder_ids=input_placeholder_ids,
+            output_placeholder_ids=output_placeholder_ids,
+        )
