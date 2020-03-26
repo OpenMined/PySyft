@@ -495,7 +495,7 @@ def test_torch_tanh_approx(method, prec_frac, tolerance, workers):
     assert (diff / (tolerance * norm)) < 1
 
 
-@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100),])
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100)])
 def test_torch_log_approx(prec_frac, tolerance, workers):
     """
     Test the approximate logarithm with different tolerance depending on
@@ -583,29 +583,6 @@ def test_torch_nn_functional_linear():
     expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
 
     assert (result == expected).all()
-
-
-def test_torch_nn_functional_dropout(workers):
-    # Only for precision tensor
-    a = torch.rand((20, 20))
-    x = a.fix_prec()
-
-    train_output = F.dropout(x, p=0.5, training=True, inplace=False)
-    assert (train_output.float_prec() == 0).sum() > 0
-
-    test_output = F.dropout(x, p=0.5, training=False, inplace=False)
-    # should return the same input
-    assert ((test_output == x).float_prec() == 1).all()
-
-    # For AST with precision
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    x = a.fix_prec().share(alice, bob, crypto_provider=james)
-
-    train_output = F.dropout(x, p=0.5, training=True, inplace=False)
-    assert (train_output.get().float_prec() == 0).sum() > 0
-
-    test_output = F.dropout(x, p=0.5, training=False, inplace=False)
-    assert ((test_output == x).get().float_prec() == 1).all()
 
 
 def test_operate_with_integer_constants():

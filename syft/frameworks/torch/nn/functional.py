@@ -1,10 +1,8 @@
 import torch as th
 
 
-# The nn classes calls functional methods.
-# Hence overloading functional methods allows
-# to add custom functionality which also works
-# with nn.layers.
+# The nn classes calls functional methods. Hence overloading functional methods allows
+# to add custom functionality which also works with nn.layers.
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
@@ -19,10 +17,10 @@ def dropout(input, p=0.5, training=True, inplace=False):
         binomial = th.distributions.binomial.Binomial(probs=1 - p)
 
         # we must convert the normal tensor to fixed precision before multiplication
-        noise = (
-            (binomial.sample(input.shape).type(th.FloatTensor) * (1.0 / (1.0 - p)))
-            .fix_prec(**input.get_class_attributes())
-            .child
+        # Note that: Weights of a model are alwasy Float values
+        # Hence input will always be of type (Wrapper) > FixedPrecisionTensor > ...
+        noise = (binomial.sample(input.shape).type(th.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
+            **input.get_class_attributes()
         )
 
         if inplace:
