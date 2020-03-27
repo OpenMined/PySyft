@@ -73,34 +73,29 @@ def test_CoeffModulus_create():
     assert cm[4] % 64 == 1
 
 
-def test_CoeffModulus_bfv_default():
+@pytest.mark.parametrize(
+    "poly_modulus_degree, SeqLevelType, result",
+    [
+        (1024, SeqLevelType.TC128, 1),
+        (1024, SeqLevelType.TC192, 1),
+        (1024, SeqLevelType.TC256, 1),
+        (2048, SeqLevelType.TC128, 1),
+        (2048, SeqLevelType.TC192, 1),
+        (2048, SeqLevelType.TC256, 1),
+        (4096, SeqLevelType.TC128, 3),
+        (4096, SeqLevelType.TC192, 3),
+        (4096, SeqLevelType.TC256, 1),
+        (8192, SeqLevelType.TC128, 5),
+        (8192, SeqLevelType.TC192, 4),
+        (8192, SeqLevelType.TC256, 3),
+        (16384, SeqLevelType.TC128, 9),
+        (16384, SeqLevelType.TC192, 6),
+        (16384, SeqLevelType.TC256, 5),
+        (32768, SeqLevelType.TC128, 16),
+        (32768, SeqLevelType.TC192, 11),
+        (32768, SeqLevelType.TC256, 9),
+    ],
+)
+def test_CoeffModulus_bfv_default(poly_modulus_degree, SeqLevelType, result):
     coeffModulus = CoeffModulus()
-    assert len(coeffModulus.bfv_default(1024, SeqLevelType.TC128)) == 1
-    assert len(coeffModulus.bfv_default(1024, SeqLevelType.TC192)) == 1
-    assert len(coeffModulus.bfv_default(1024, SeqLevelType.TC256)) == 1
-    assert len(coeffModulus.bfv_default(1024)) == 1
-
-    assert len(coeffModulus.bfv_default(2048, SeqLevelType.TC128)) == 1
-    assert len(coeffModulus.bfv_default(2048, SeqLevelType.TC192)) == 1
-    assert len(coeffModulus.bfv_default(2048, SeqLevelType.TC256)) == 1
-    assert len(coeffModulus.bfv_default(2048)) == 1
-
-    assert len(coeffModulus.bfv_default(4096, SeqLevelType.TC128)) == 3
-    assert len(coeffModulus.bfv_default(4096, SeqLevelType.TC192)) == 3
-    assert len(coeffModulus.bfv_default(4096, SeqLevelType.TC256)) == 1
-    assert len(coeffModulus.bfv_default(4096)) == 3
-
-    assert len(coeffModulus.bfv_default(8192, SeqLevelType.TC128)) == 5
-    assert len(coeffModulus.bfv_default(8192, SeqLevelType.TC192)) == 4
-    assert len(coeffModulus.bfv_default(8192, SeqLevelType.TC256)) == 3
-    assert len(coeffModulus.bfv_default(8192)) == 5
-
-    assert len(coeffModulus.bfv_default(16384, SeqLevelType.TC128)) == 9
-    assert len(coeffModulus.bfv_default(16384, SeqLevelType.TC192)) == 6
-    assert len(coeffModulus.bfv_default(16384, SeqLevelType.TC256)) == 5
-    assert len(coeffModulus.bfv_default(16384)) == 9
-
-    assert len(coeffModulus.bfv_default(32768, SeqLevelType.TC128)) == 16
-    assert len(coeffModulus.bfv_default(32768, SeqLevelType.TC192)) == 11
-    assert len(coeffModulus.bfv_default(32768, SeqLevelType.TC256)) == 9
-    assert len(coeffModulus.bfv_default(32768)) == 16
+    assert len(coeffModulus.bfv_default(poly_modulus_degree, SeqLevelType)) == result
