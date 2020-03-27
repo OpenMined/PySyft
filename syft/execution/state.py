@@ -6,6 +6,7 @@ from typing import Dict
 import torch
 
 import syft as sy
+from syft.execution.placeholder_id import PlaceholderId
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
@@ -64,7 +65,7 @@ class State(object):
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
-                    placeholder.id = placeholder.child.id
+                    placeholder.id = PlaceholderId(placeholder.child.id)
                     placeholder.tags = set()
                     placeholder.tag("#inner")
                     parent_plan.state.state_placeholders.append(placeholder)
