@@ -1042,16 +1042,29 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation"
             )
 
-    def decrypt(self, private_key):
+    def decrypt(self, protocol="mpc", **kwargs):
         """This method will decrypt each value in the tensor, returning a normal
         torch tensor.
 
         Args:
             *private_key a private key created using
                 syft.frameworks.torch.he.paillier.keygen()
-            """
+        """
 
-        return self.child.decrypt(private_key)
+        if protocol.lower() == "mpc":
+            x_encrypted = self.copy()
+            x_decrypted = x_encrypted.get().float_prec()
+            return x_decrypted
+
+        elif protocol.lower() == "paillier":
+            private_key = kwargs.get("private_key")
+            return self.child.decrypt(private_key)
+
+        else:
+            raise NotImplementedError(
+                "Currently the .decrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying

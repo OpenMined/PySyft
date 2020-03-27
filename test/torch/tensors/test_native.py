@@ -207,18 +207,21 @@ def test_complex_model(workers):
     pred = model_net(tensor_remote)
 
 
-def test_encrypt(workers):
+def test_encrypt_decrypt(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
 
     x = torch.randint(10, (1, 5), dtype=torch.float32)
     x_encrypted = x.encrypt(workers=[bob, alice], crypto_provider=james, base=10)
-    assert torch.all(torch.eq(x_encrypted.get().float_prec(), x))
+    x_decrypted = x_encrypted.decrypt()
+    assert torch.all(torch.eq(x_decrypted, x))
 
     x = torch.randint(10, (1, 5), dtype=torch.float32)
     x_encrypted = x.encrypt(workers=[bob, alice], crypto_provider=james)
-    assert torch.all(torch.eq(x_encrypted.get().float_prec(), x))
+    x_decrypted = x_encrypted.decrypt()
+    assert torch.all(torch.eq(x_decrypted, x))
 
     x = torch.randint(10, (1, 5), dtype=torch.float32)
     public, private = syft.frameworks.torch.he.paillier.keygen()
     x_encrypted = x.encrypt(protocol="paillier", public_key=public)
-    assert torch.all(torch.eq(x_encrypted.decrypt(private), x))
+    x_decrypted = x_encrypted.decrypt(protocol="paillier", private_key=private)
+    assert torch.all(torch.eq(x_decrypted, x))
