@@ -194,9 +194,14 @@ class Role(AbstractObject, ObjectStorage):
             old_ids_2_new_ids[state_ph.id.value] for state_ph in self.state.state_placeholders
         ]
 
-        state = self.state.copy()
-        for ph, new_id in zip(state.state_placeholders, new_state_ids):
-            ph.id.value = new_id
+        state_placeholders = []
+        for ph in self.state.state_placeholders:
+            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=self.owner).instantiate(
+                ph.child
+            )
+            state_placeholders.append(new_ph)
+
+        state = State(owner=self.owner, state_placeholders=state_placeholders)
 
         def replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):
@@ -205,17 +210,17 @@ class Role(AbstractObject, ObjectStorage):
             elif isinstance(obj, dict):
                 return {key: replace_placeholder_ids(value) for key, value in obj.items()}
             elif isinstance(obj, PlaceholderId):
-                obj.value = old_ids_2_new_ids[obj.value]
-                return obj
+                return PlaceholderId(old_ids_2_new_ids[obj.value])
             else:
                 return obj
 
         new_actions = []
         for action in self.actions:
-            action.target = replace_placeholder_ids(action.target)
-            action.args = replace_placeholder_ids(action.args)
-            action.kwargs = replace_placeholder_ids(action.kwargs)
-            new_actions.append(action)
+            target = replace_placeholder_ids(action.target)
+            args = replace_placeholder_ids(action.args)
+            kwargs = replace_placeholder_ids(action.kwargs)
+            return_ids = replace_placeholder_ids(action.return_ids)
+            new_actions.append(ComputationAction(action.name, target, args, kwargs, return_ids))
 
         return Role(
             state=state,

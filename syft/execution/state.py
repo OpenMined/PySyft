@@ -46,8 +46,7 @@ class State(object):
         return tensors
 
     def copy(self) -> "State":
-        state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
-        return state
+        return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
 
     def read(self):
         """
