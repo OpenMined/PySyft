@@ -1138,7 +1138,7 @@ def test_plan_input_usage(hook):
 
 
 def test_func_plan_can_be_translated_to_torchscript(hook, workers):
-    @sy.func2plan(args_shape=[(3,3)])
+    @sy.func2plan(args_shape=[(3, 3)])
     def plan_test_1(x):
         x = x * 2
         x = x.abs()

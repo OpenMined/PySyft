@@ -205,7 +205,9 @@ class Plan(AbstractObject):
         """
         if tensor.id not in self.placeholders:
             placeholder = sy.PlaceHolder(
-                tags={f"#{self.var_count + 1}", f"#shape-{list(tensor.shape)}"}, id=tensor.id, owner=self.owner
+                tags={f"#{self.var_count + 1}", f"#shape-{list(tensor.shape)}"},
+                id=tensor.id,
+                owner=self.owner,
             )
             self.placeholders[tensor.id] = placeholder
 
@@ -826,7 +828,9 @@ class Plan(AbstractObject):
 
         return result
 
-    def translate_with(self, plan_translator: "AbstractPlanTranslator"):
+    def translate_with(
+        self, plan_translator: "sy.execution.translation.abstract.AbstractPlanTranslator"
+    ):
         return plan_translator(self).translate()
 
 
