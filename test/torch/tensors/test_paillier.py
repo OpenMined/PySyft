@@ -13,7 +13,7 @@ def test_encrypt_and_decrypt():
     x_tensor = torch.Tensor([1, 2, 3])
     x = x_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    y = x.decrypt(pri)
+    y = x.decrypt(protocol="paillier", private_key=pri)
 
     assert (x_tensor == y).all()
 
@@ -28,7 +28,7 @@ def test_encrypted_encrypted_add():
     x_tensor = torch.Tensor([1, 2, 3])
     x = x_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    y = (x + x).decrypt(pri)
+    y = (x + x).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor + x_tensor) == y).all()
 
@@ -43,7 +43,7 @@ def test_encrypted_decrypted_add():
     x_tensor = torch.Tensor([1, 2, 3])
     x = x_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    y = (x + x_tensor).decrypt(pri)
+    y = (x + x_tensor).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor + x_tensor) == y).all()
 
@@ -58,7 +58,7 @@ def test_decrypted_encrypted_add():
     x_tensor = torch.Tensor([1, 2, 3])
     x = x_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    y = (x_tensor + x).decrypt(pri)
+    y = (x_tensor + x).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor + x_tensor) == y).all()
 
@@ -73,7 +73,7 @@ def test_encrypted_encrypted_sub():
     y_tensor = torch.Tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x - y).decrypt(pri)
+    z = (x - y).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor - y_tensor) == z).all()
 
@@ -88,7 +88,7 @@ def test_encrypted_decrypted_sub():
     y_tensor = torch.Tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x - y_tensor).decrypt(pri)
+    z = (x - y_tensor).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor - y_tensor) == z).all()
 
@@ -103,7 +103,7 @@ def test_decrypted_encrypted_sub():
     y_tensor = torch.Tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x_tensor - y).decrypt(pri)
+    z = (x_tensor - y).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor - y_tensor) == z).all()
 
@@ -118,7 +118,7 @@ def test_encrypted_decrypted_mul():
     y_tensor = torch.Tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x * y_tensor).decrypt(pri)
+    z = (x * y_tensor).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor * y_tensor) == z).all()
 
@@ -133,7 +133,7 @@ def test_decrypted_encrypted_mul():
     y_tensor = torch.Tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x_tensor * y).decrypt(pri)
+    z = (x_tensor * y).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor * y_tensor) == z).all()
 
@@ -148,7 +148,7 @@ def test_encrypted_decrypted_matmul():
     y_tensor = torch.tensor([2, 2, 2])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x.mm(y_tensor)).decrypt(pri)
+    z = (x.mm(y_tensor)).decrypt(protocol="paillier", private_key=pri)
 
     assert (z == 12).all()
 
@@ -163,6 +163,6 @@ def test_decrypted_encrypted_matmul():
     y_tensor = torch.Tensor([[2], [2], [2]])
     y = y_tensor.encrypt(protocol="paillier", public_key=pub)
 
-    z = (x_tensor.mm(y)).decrypt(pri)
+    z = (x_tensor.mm(y)).decrypt(protocol="paillier", private_key=pri)
 
     assert ((x_tensor.mm(y_tensor)) == z).all()
