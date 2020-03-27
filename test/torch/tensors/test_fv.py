@@ -1,7 +1,47 @@
 import pytest
 
+from syft.frameworks.torch.he.fv.util.numth import get_primes
+from syft.frameworks.torch.he.fv.util.numth import is_prime
 from syft.frameworks.torch.he.fv.modulus import CoeffModulus
+from syft.frameworks.torch.he.fv.encryption_params import EncryptionParams
 from syft.frameworks.torch.he.fv.modulus import SeqLevelType
+
+
+@pytest.mark.parametrize(
+    "num, status",
+    [
+        (0, False),
+        (2, True),
+        (3, True),
+        (4, False),
+        (5, True),
+        (221, False),
+        (65537, True),
+        (65536, False),
+        (59399, True),
+        (72307, True),
+        (36893488147419103, True),
+        (36893488147419107, False),
+        (72307 * 59399, False),
+    ],
+)
+def test_is_prime(num, status):
+    assert is_prime(num) == status
+
+
+@pytest.mark.parametrize(
+    "poly_modulus_degree, plain_modulus, coeff_bit_sizes",
+    [(128, 2, [30, 40, 50]), (1024, 64, [30, 60, 60]), (64, 64, [30])],
+)
+def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
+    params = EncryptionParams()
+    params.poly_modulus_degree = poly_modulus_degree
+    params.plain_modulus = plain_modulus
+    cm = CoeffModulus()
+    params.coeff_modulus = cm.create(poly_modulus_degree, coeff_bit_sizes)
+
+    for i in range(len(coeff_bit_sizes)):
+        assert is_prime(params.coeff_modulus[i])
 
 
 def test_CoeffModulus_create():

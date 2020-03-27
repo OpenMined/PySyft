@@ -11,16 +11,16 @@ class EncryptionParams:
     """
 
     def __init__(self):
-        self.poly_modulus_degree = 0
+        self.poly_modulus_degree = 2
         self.coeff_modulus = []
         self.plain_modulus = 0
 
     @property
     def poly_modulus_degree(self):
-        return self.poly_modulus_degree
+        return self.__poly_modulus_degree
 
     @poly_modulus_degree.setter
-    def poly_modulus_degree(self, poly_modulus_degree):
+    def poly_modulus_degree(self, value):
         """
             Sets the degree of the polynomial modulus parameter to the specified value.
             The polynomial modulus directly affects the number of coefficients in
@@ -29,19 +29,19 @@ class EncryptionParams:
             is better). In general the degree of the polynomial modulus should be
             a power of 2 (e.g.  1024, 2048, 4096, 8192, 16384, or 32768).
         """
-        if poly_modulus_degree > 0:
-            if poly_modulus_degree % 2 != 0:
+        if value > 0:
+            if value % 2 != 0:
                 warning("preffered value for poly_modulus_degree is power of 2")
-            self.poly_modulus_degree = poly_modulus_degree
+            self.__poly_modulus_degree = value
         else:
             raise ValueError("poly_modulus_degree must be a power of 2")
 
     @property
     def coeff_modulus(self):
-        return self.poly_modulus_degree
+        return self.__coeff_modulus
 
     @coeff_modulus.setter
-    def coeff_modulus(self, coeff_modulus):
+    def coeff_modulus(self, value):
         """
             Sets the coefficient modulus parameter. The coefficient modulus consists
             of a list of distinct prime numbers, and is represented as a list.
@@ -49,18 +49,18 @@ class EncryptionParams:
             the amount of computation that the scheme can perform (bigger is better),
             and the security level (bigger is worse).
         """
-        self.coeff_modulus = coeff_modulus
+        self.__coeff_modulus = value
 
     @property
     def plain_modulus(self):
-        return self.poly_modulus_degree
+        return self.__plain_modulus
 
     @plain_modulus.setter
-    def plain_modulus(self, plain_modulus):
+    def plain_modulus(self, value):
         """
             Sets the plaintext modulus parameter. The plaintext modulus
             determines the largest coefficient that plaintext polynomials can represent.
             It also affects the amount of computation that the scheme can perform
             (bigger is worse).
         """
-        self.plain_modulus = plain_modulus
+        self.__plain_modulus = value

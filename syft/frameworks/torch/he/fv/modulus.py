@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from syft.frameworks.torch.he.fv.util.get_primes import get_primes
+from syft.frameworks.torch.he.fv.util.numth import get_primes
 from syft.frameworks.torch.he.fv.fv_std_param import *
 from syft.frameworks.torch.he.fv.util.global_variable import *
 
@@ -24,7 +24,7 @@ class CoeffModulus:
 
         Args:
             poly_modulus_degree: The value of the poly_modulus_degree
-        encryption parameter
+            encryption parameter
             seq_level: (optional) The desired standard security level
 
         Returns:
@@ -114,7 +114,7 @@ class PlainModulus:
 
     def batching(self, poly_modulus_degree, bit_sizes):
         """Creates several prime number that can be used as plain_modulus encryption parameters,
-         each supporting batching with a given poly_modulus_degree
+        each supporting batching with a given poly_modulus_degree
 
         Args:
             poly_modulus_degree: The value of the poly_modulus_degree
