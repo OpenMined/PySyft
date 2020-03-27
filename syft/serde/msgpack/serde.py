@@ -68,7 +68,8 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import WorkerCommandMessage
-from syft.serde import compression, msgpack
+from syft.serde import compression
+from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
