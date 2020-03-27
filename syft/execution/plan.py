@@ -130,6 +130,10 @@ class Plan(AbstractObject):
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
     @property
+    def state(self):
+        return self.role.state
+
+    @property
     def _known_workers(self):
         return self.owner._known_workers
 
