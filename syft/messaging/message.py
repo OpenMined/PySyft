@@ -730,13 +730,13 @@ class CryptenInit(Message):
         return (self.crypten_context,)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "CryptenInitMessage") -> tuple:
+    def simplify(worker: AbstractWorker, ptr: "CryptenInit") -> tuple:
         """
-        This function takes the attributes of a CryptenInitMessage and saves them in a tuple
+        This function takes the attributes of a CryptenInit and saves them in a tuple
 
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            ptr (CryptenInitMessage): a Message
+            ptr (CryptenInit): a Message
 
         Returns:
             tuple: a tuple holding the unique attributes of the message
