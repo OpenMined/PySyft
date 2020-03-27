@@ -29,6 +29,8 @@ class PlaceHolder(AbstractTensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.
+
+        We remove Placeholders if is there are any.
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
