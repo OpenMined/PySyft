@@ -180,7 +180,7 @@ class Plan(AbstractObject):
             # TODO what to do with the state? What will state look like on protocols?
             # TODO should the forward happen here? What will it look like with protocols?
             if self.include_state:
-                results = self.forward(*args, self.role.state)
+                results = self.forward(*args, self.state)
             else:
                 results = self.forward(*args)
 
@@ -238,7 +238,7 @@ class Plan(AbstractObject):
         """
         if self.forward is not None:
             if self.include_state:
-                args = (*args, self.role.state)
+                args = (*args, self.state)
             return self.forward(*args)
 
         else:
