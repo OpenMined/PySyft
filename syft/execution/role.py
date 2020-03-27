@@ -123,11 +123,7 @@ class Role(AbstractObject, ObjectStorage):
         args = self.fecth_placeholders_from_ids(args)
         kwargs = self.fecth_placeholders_from_ids(kwargs)
         return_placeholder = self.fecth_placeholders_from_ids(return_placeholder)
-        print(_self)
-        print(args)
-        print(kwargs)
-        print(return_placeholder)
-        print("---")
+
         if _self is None:
             response = eval(cmd)(*args, **kwargs)  # nosec
         else:
@@ -160,6 +156,7 @@ class Role(AbstractObject, ObjectStorage):
         placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
+        # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
     def fecth_placeholders_from_ids(self, obj):
@@ -178,35 +175,54 @@ class Role(AbstractObject, ObjectStorage):
 
     def copy(self):
         # TODO not the cleanest method ever
-        # TODO action ids need to be changed too
-
         placeholders = {}
-        copy_input_ids = [id_ for id_ in self.input_placeholder_ids]
-        copy_output_ids = [id_ for id_ in self.output_placeholder_ids]
-        copy_state_ids = [ph.id.value for ph in self.state.state_placeholders]
+        old_ids_2_new_ids = {}
         for ph in self.placeholders.values():
             copy = ph.copy()
+            old_ids_2_new_ids[ph.id.value] = copy.id.value
             placeholders[copy.id.value] = copy
-            if ph.id.value in self.input_placeholder_ids:
-                # replace
-                copy_input_ids[copy_input_ids.index(ph.id.value)] = copy.id.value
-            if ph.id.value in self.output_placeholder_ids:
-                # replace
-                copy_output_ids[copy_output_ids.index(ph.id.value)] = copy.id.value
-            if ph.id.value in copy_state_ids:
-                # replace
-                copy_state_ids[copy_state_ids.index(ph.id.value)] = copy.id.value
+
+        new_input_placeholder_ids = tuple(
+            old_ids_2_new_ids[self.placeholders[input_id].id.value]
+            for input_id in self.input_placeholder_ids
+        )
+        new_output_placeholder_ids = tuple(
+            old_ids_2_new_ids[self.placeholders[output_id].id.value]
+            for output_id in self.output_placeholder_ids
+        )
+        new_state_ids = [
+            old_ids_2_new_ids[state_ph.id.value] for state_ph in self.state.state_placeholders
+        ]
 
         state = self.state.copy()
-        for ph, new_id in zip(state.state_placeholders, copy_state_ids):
+        for ph, new_id in zip(state.state_placeholders, new_state_ids):
             ph.id.value = new_id
+
+        def replace_placeholder_ids(obj):
+            if isinstance(obj, (tuple, list)):
+                r = [replace_placeholder_ids(o) for o in obj]
+                return type(obj)(r)
+            elif isinstance(obj, dict):
+                return {key: replace_placeholder_ids(value) for key, value in obj.items()}
+            elif isinstance(obj, PlaceholderId):
+                obj.value = old_ids_2_new_ids[obj.value]
+                return obj
+            else:
+                return obj
+
+        new_actions = []
+        for action in self.actions:
+            action.target = replace_placeholder_ids(action.target)
+            action.args = replace_placeholder_ids(action.args)
+            action.kwargs = replace_placeholder_ids(action.kwargs)
+            new_actions.append(action)
 
         return Role(
             state=state,
-            actions=[a for a in self.actions],
+            actions=new_actions,
             placeholders=placeholders,
-            input_placeholder_ids=tuple(copy_input_ids),
-            output_placeholder_ids=tuple(copy_output_ids),
+            input_placeholder_ids=new_input_placeholder_ids,
+            output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
