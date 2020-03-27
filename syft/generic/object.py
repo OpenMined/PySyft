@@ -1,6 +1,6 @@
 from abc import ABC
 import functools
-from typing import List
+from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
@@ -17,7 +17,7 @@ class AbstractObject(ABC):
         self,
         id: int = None,
         owner: "sy.workers.AbstractWorker" = None,
-        tags: List[str] = None,
+        tags: Set[str] = None,
         description: str = None,
         child=None,
     ):
@@ -36,7 +36,7 @@ class AbstractObject(ABC):
         """
         self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
-        self.tags = tags or []
+        self.tags = tags or set()
         self.description = description
         self.child = child
 
