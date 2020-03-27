@@ -1,6 +1,7 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.execution.placeholder_id import PlaceholderId
+from syft.execution.placeholder_tensor import PlaceholderTensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
@@ -21,7 +22,7 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.child = child
+        self.child = child or PlaceholderTensor()
 
         if not isinstance(self.id, PlaceholderId):
             self.id = PlaceholderId(self.id)
