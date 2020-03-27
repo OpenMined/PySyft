@@ -1100,7 +1100,7 @@ class AdditiveSharingTensor(AbstractTensor):
             protobuf_tensor.crypto_provider_id, tensor.crypto_provider.id
         )
 
-        protobuf_tensor.field_size = tensor.field
+        protobuf_tensor.field_int = tensor.field
 
         return protobuf_tensor
 
@@ -1123,7 +1123,7 @@ class AdditiveSharingTensor(AbstractTensor):
         crypto_provider_id = sy.serde.protobuf.proto.get_protobuf_id(
             protobuf_tensor.crypto_provider_id
         )
-        field = protobuf_tensor.field_size
+        field = protobuf_tensor.field_int
 
         tensor = AdditiveSharingTensor(
             owner=worker,

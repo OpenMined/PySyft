@@ -11,6 +11,7 @@ from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.execution.plan import Plan
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
 
@@ -1134,3 +1135,41 @@ def test_plan_input_usage(hook):
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
     assert (result == x12).all
+
+
+def test_func_plan_can_be_translated_to_torchscript(hook, workers):
+    @sy.func2plan(args_shape=[(3,3)])
+    def plan_test_1(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    inp = th.tensor([1, -1, 2])
+    res1 = plan_test_1(inp)
+    plan_ts = plan_test_1.translate_with(PlanTranslatorTorchscript)
+    res2 = plan_ts.torchscript(inp)
+    assert (res1 == res2).all()
+
+
+def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 1)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
+            return x
+
+    net = Net()
+    net.build(th.zeros(10, 2))
+
+    inp = th.randn(10, 2)
+    res1 = net(inp)
+
+    net_ts = net.translate_with(PlanTranslatorTorchscript)
+    res2 = net_ts.torchscript(inp)
+    assert (res1 == res2).all()

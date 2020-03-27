@@ -3,6 +3,8 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import json
+import io
 import torch
 
 import syft as sy
@@ -145,6 +147,7 @@ class Plan(AbstractObject):
 
         self.include_state = include_state
         self.is_built = is_built
+        self.torchscript = None
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -184,7 +187,10 @@ class Plan(AbstractObject):
         """
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
-        return self.state.tensors()
+        if self.state is not None:
+            return self.state.tensors()
+        else:
+            return []
 
     def add_placeholder(self, tensor, arg_ids, result_ids, node_type=None):
         """
@@ -199,7 +205,7 @@ class Plan(AbstractObject):
         """
         if tensor.id not in self.placeholders:
             placeholder = sy.PlaceHolder(
-                tags={f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
+                tags={f"#{self.var_count + 1}", f"#shape-{list(tensor.shape)}"}, id=tensor.id, owner=self.owner
             )
             self.placeholders[tensor.id] = placeholder
 
@@ -744,6 +750,9 @@ class Plan(AbstractObject):
         ]
         protobuf_plan.placeholders.extend(protobuf_placeholders)
 
+        if plan.torchscript:
+            protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
+
         return protobuf_plan
 
     @staticmethod
@@ -787,9 +796,38 @@ class Plan(AbstractObject):
         if protobuf_plan.description:
             plan.description = protobuf_plan.description
 
+        if protobuf_plan.torchscript:
+            module_bin = io.BytesIO(protobuf_plan.torchscript)
+            plan.torchscript = torch.jit.load(module_bin)
+
         plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
+
+    def get_args_shape(self):
+        """Returns input tensors shapes"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
+        result = []
+        for ph in input_placeholders:
+            shape_str = ""
+            for tag in ph.tags:
+                if "#shape-" in tag:
+                    shape_str = tag.split("-")[1]
+                    continue
+
+            if shape_str == "":
+                raise RuntimeError(f"Input placeholder #{ph.id} is missing shape information.")
+
+            shape = json.loads(shape_str)
+            result.append(shape)
+
+        return result
+
+    def translate_with(self, plan_translator: "AbstractPlanTranslator"):
+        return plan_translator(self).translate()
 
 
 def tag_sort(keyword):
