@@ -7,7 +7,7 @@ from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
+    def __init__(self, child=None, owner=None, id=None, tags: set = None, description: str = None):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -21,9 +21,10 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
+        self.child = child
+
         if not isinstance(self.id, PlaceholderId):
             self.id = PlaceholderId(self.id)
-        self.child = None
 
     def instantiate(self, tensor):
         """
@@ -59,8 +60,7 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags, owner=self.owner)
-        placeholder.child = self.child
+        placeholder = PlaceHolder(child=self.child, tags=self.tags, owner=self.owner)
         return placeholder
 
     @staticmethod
