@@ -1043,12 +1043,26 @@ class TorchTensor(AbstractTensor):
             )
 
     def decrypt(self, protocol="mpc", **kwargs):
-        """This method will decrypt each value in the tensor, returning a normal
-        torch tensor.
+        """
+        This method will decrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            *private_key a private key created using
-                syft.frameworks.torch.he.paillier.keygen()
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    None
+
+                With Respect to Paillier accepts:
+                    private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An decrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
         """
 
         if protocol.lower() == "mpc":
@@ -1057,6 +1071,7 @@ class TorchTensor(AbstractTensor):
             return x_decrypted
 
         elif protocol.lower() == "paillier":
+            # self.copy() not required as PaillierTensor's decrypt method is not inplace
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)
 
