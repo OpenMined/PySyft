@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
+from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.execution.plan import Plan
@@ -640,7 +641,13 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     # Compare with local plan
     assert th.all(decrypted - expected.detach() < 1e-2)
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
-    assert str(fetched_plan.state.tensors()) == str(plan.state.tensors())
+
+    assert all(
+        starmap(
+            lambda fetched_tensor, tensor: (fetched_tensor == tensor).get(),
+            zip(fetched_plan.state.tensors(), plan.state.tensors()),
+        )
+    )
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
