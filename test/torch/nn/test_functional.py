@@ -28,6 +28,7 @@ def test_torch_nn_functional_dropout(workers):
 
 
 def test_torch_nn_functional_conv2d(workers):
+    # Test with FixedPrecision tensors
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     im = torch.Tensor(
         [
