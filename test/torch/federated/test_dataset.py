@@ -55,8 +55,7 @@ def test_federated_dataset(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert len(fed_dataset) == 6
 
-    alice_remote_data = fed_dataset["alice"].get()
-    del fed_dataset.datasets["alice"]
+    alice_remote_data = fed_dataset.get_dataset("alice")
     assert (alice_remote_data.data == alice_base_dataset.data).all()
     assert alice_remote_data[2] == (5, 5)
     assert len(alice_remote_data) == 4

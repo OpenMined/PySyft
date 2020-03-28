@@ -255,6 +255,7 @@ class FederatedDataset:
         return list(self.datasets.keys())
 
     def get_dataset(self, worker):
+        self[worker].federated = False
         dataset = self[worker].get()
         del self.datasets[worker]
         return dataset
