@@ -19,6 +19,8 @@ from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.execution.v1.role_pb2 import Role as RolePB
+
 
 class Role(AbstractObject, ObjectStorage):
     """
@@ -310,3 +312,93 @@ class Role(AbstractObject, ObjectStorage):
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
         )
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, role: "Role") -> tuple:
+        """
+        This function takes the attributes of a Role and saves them in a Protobuf message
+        Args:
+            worker (AbstractWorker): the worker doing the serialization
+            role (Role): a Role object
+        Returns:
+            RolePB: a Protobuf message holding the unique attributes of the Role object
+        """
+        protobuf_role = RolePB()
+
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.id, role.id)
+
+        protobuf_actions = [
+            sy.serde.protobuf.serde._bufferize(worker, action) for action in role.actions
+        ]
+        protobuf_role.actions.extend(protobuf_actions)
+
+        protobuf_role.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, role.state))
+
+        protobuf_placeholders = [
+            sy.serde.protobuf.serde._bufferize(worker, placeholder)
+            for placeholder in role.placeholders.values()
+        ]
+        protobuf_role.placeholders.extend(protobuf_placeholders)
+
+        for id_ in role.input_placeholder_ids:
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.input_placeholder_ids.add(), id_)
+        for id_ in role.output_placeholder_ids:
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.output_placeholder_ids.add(), id_)
+
+        if role.description:
+            protobuf_role.description = role.description
+        if role.tags:
+            protobuf_role.tags = role.tags
+
+        return protobuf_role
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_role: RolePB) -> tuple:
+        """
+        This function reconstructs a Role object given its attributes in the form of a Protobuf message.
+        Args:
+            worker: the worker doing the deserialization
+            protobuf_role: a Protobuf message holding the attributes of the Role
+        Returns:
+            role: a Role object
+        """
+        id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_role.id)
+
+        actions = [
+            sy.serde.protobuf.serde._unbufferize(worker, action) for action in protobuf_role.actions
+        ]
+
+        state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_role.state)
+
+        placeholders = [
+            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+            for placeholder in protobuf_role.placeholders
+        ]
+        placeholders = {placeholder.id.value: placeholder for placeholder in placeholders}
+        # TODO should state.state_placeholders be a dict as self.placeholders?
+        # Then, if placeholder not found in self.placeholders, fetch it from
+        # state.state_placeholders. This would prevent us from having the following lines.
+        # Or need to rethink states
+        for ph in state.state_placeholders:
+            placeholders[ph.id.value] = ph
+
+        input_placeholder_ids = tuple(
+            sy.serde.protobuf.proto.get_protobuf_id(ph_id)
+            for ph_id in protobuf_role.input_placeholder_ids
+        )
+        output_placeholder_ids = tuple(
+            sy.serde.protobuf.proto.get_protobuf_id(ph_id)
+            for ph_id in protobuf_role.output_placeholder_ids
+        )
+
+        role = Role(
+            id=id_,
+            owner=worker,
+            actions=actions,
+            state=state,
+            placeholders=placeholders,
+            input_placeholder_ids=input_placeholder_ids,
+            output_placeholder_ids=output_placeholder_ids,
+        )
+
+        return role

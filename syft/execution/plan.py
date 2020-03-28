@@ -170,7 +170,7 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
-
+        # TODO why not removing the need for args when building the plan?
         self.owner.init_plan = self
 
         # Run once to build the plan
@@ -452,19 +452,24 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id, role, include_state, is_built, name, tags, description) = plan_tuple
+        (id_, role, include_state, is_built, name, tags, description) = plan_tuple
 
-        id = sy.serde.msgpack.serde._detail(worker, id)
+        id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
+        name = sy.serde.msgpack.serde._detail(worker, name)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
 
         plan = sy.Plan(
-            role=role, include_state=include_state, is_built=is_built, id=id, owner=worker
+            role=role,
+            include_state=include_state,
+            is_built=is_built,
+            id=id_,
+            owner=worker,
+            name=name,
+            tags=tags,
+            description=description,
         )
-
-        # TODO why are these args handled differently?
-        plan.name = sy.serde.msgpack.serde._detail(worker, name)
-        plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
-        plan.description = sy.serde.msgpack.serde._detail(worker, description)
 
         return plan
 
@@ -477,19 +482,12 @@ class Plan(AbstractObject):
             plan (Plan): a Plan object
         Returns:
             PlanPB: a Protobuf message holding the unique attributes of the Plan object
-
         """
-        # TODO serde with role
         protobuf_plan = PlanPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
 
-        protobuf_actions = [
-            sy.serde.protobuf.serde._bufferize(worker, action) for action in plan.actions
-        ]
-        protobuf_plan.actions.extend(protobuf_actions)
-
-        protobuf_plan.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.state))
+        protobuf_plan.role.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.role))
 
         protobuf_plan.include_state = plan.include_state
         protobuf_plan.is_built = plan.is_built
@@ -498,16 +496,6 @@ class Plan(AbstractObject):
 
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
-
-        if type(plan.placeholders) == type(dict()):
-            placeholders = plan.placeholders.values()
-        else:
-            placeholders = plan.placeholders
-
-        protobuf_placeholders = [
-            sy.serde.protobuf.serde._bufferize(worker, placeholder) for placeholder in placeholders
-        ]
-        protobuf_plan.placeholders.extend(protobuf_placeholders)
 
         return protobuf_plan
 
@@ -520,33 +508,23 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        # TODO serde with role
-        id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
+        id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
-        actions = [
-            sy.serde.protobuf.serde._unbufferize(worker, action) for action in protobuf_plan.actions
-        ]
-        state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.state)
+        role = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.role)
 
-        placeholders = [
-            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_plan.placeholders
-        ]
-        placeholders = dict([(placeholder.id.value, placeholder) for placeholder in placeholders])
+        name = protobuf_plan.name
+        tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
+        description = protobuf_plan.description if protobuf_plan.description else None
 
-        plan = sy.Plan(
+        plan = Plan(
+            role=role,
             include_state=protobuf_plan.include_state,
             is_built=protobuf_plan.is_built,
-            id=id,
+            id=id_,
             owner=worker,
+            name=name,
+            tags=tags,
+            description=description,
         )
-
-        plan.name = protobuf_plan.name
-        if protobuf_plan.tags:
-            plan.tags = set(protobuf_plan.tags)
-        if protobuf_plan.description:
-            plan.description = protobuf_plan.description
-
-        plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan

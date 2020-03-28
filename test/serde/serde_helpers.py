@@ -488,6 +488,17 @@ def compare_placeholders_dict(detailed, original):
     return True
 
 
+def compare_roles(detailed, original):
+    """Compare 2 Roles"""
+    assert detailed.id == original.id
+    compare_actions(detailed.actions, original.actions)
+    compare_placeholders_list(detailed.state.state_placeholders, original.state.state_placeholders)
+    compare_placeholders_dict(detailed.placeholders, original.placeholders)
+    assert detailed.input_placeholder_ids == original.input_placeholder_ids
+    assert detailed.output_placeholder_ids == original.output_placeholder_ids
+    return True
+
+
 # AdditiveSharingTensor
 def make_additivesharingtensor(**kwargs):
     workers = kwargs["workers"]
@@ -759,6 +770,7 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
+        compare_roles(detailed.role, original.role)
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
         assert detailed.name == original.name
@@ -820,13 +832,7 @@ def make_role(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.role.Role
-        compare_actions(detailed.actions, original.actions)
-        compare_placeholders_list(
-            detailed.state.state_placeholders, original.state.state_placeholders
-        )
-        compare_placeholders_dict(detailed.placeholders, original.placeholders)
-        detailed.input_placeholder_ids == original.input_placeholder_ids
-        detailed.output_placeholder_ids == original.output_placeholder_ids
+        compare_roles(detailed, original)
         return True
 
     return [
