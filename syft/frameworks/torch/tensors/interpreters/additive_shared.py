@@ -320,7 +320,11 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             an AdditiveSharingTensor
         """
-        raise NotImplementedError()
+        secure_worker = self.crypto_provider
+        secure_pointers = dict()
+        for worker, share in self_shares.items():
+            virtual_worker = share.location
+            secure_pointers[worker] = virtual_worker.send(share, secure_worker)
 
     @overloaded.overload_method
     def _getitem_public(self, self_shares, indices):
