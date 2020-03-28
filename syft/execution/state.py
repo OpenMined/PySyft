@@ -65,6 +65,7 @@ class State(object):
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
+                    placeholder.id = placeholder.child.id
                     placeholder.tags = set()
                     placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
                     parent_plan.state.state_placeholders.append(placeholder)

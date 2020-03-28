@@ -37,6 +37,7 @@
 # /docs/ @doctocat
 
 # Syft Core Team
+/* @OpenMined/syft-core-team
 /pip-dep/ @OpenMined/syft-core-team
 /syft/execution/ @OpenMined/syft-core-team
 /syft/generic/ @OpenMined/syft-core-team
@@ -57,3 +58,7 @@
 # NLP Team
 /syft/generic/string.py @OpenMined/nlp-team
 /syft/generic/pointers/string_pointer.py @OpenMined/nlp-team
+
+# Writing Team
+/examples/tutorials/translations/ @OpenMined/writing-team
+

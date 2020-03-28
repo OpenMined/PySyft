@@ -1,6 +1,7 @@
 import syft as sy
 import torch
-from typing import List
+from typing import Dict
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -68,11 +69,14 @@ def scale_model(model, scale):
     return model
 
 
-def federated_avg(models: List[torch.nn.Module]) -> torch.nn.Module:
-    """Calculate the federated average of a list of models.
+def federated_avg(models: Dict[Any, torch.nn.Module]) -> torch.nn.Module:
+    """Calculate the federated average of a dictionary containing models.
+       The models are extracted from the dictionary
+       via the models.values() command.
 
     Args:
-        models (List[torch.nn.Module]): the models of which the federated average is calculated.
+        models (Dict[Any, torch.nn.Module]): a dictionary of models
+        for which the federated average is calculated.
 
     Returns:
         torch.nn.Module: the module with averaged parameters.
