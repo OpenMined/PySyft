@@ -237,6 +237,7 @@ class FederatedDataset:
         for dataset in datasets:
             worker_id = dataset.data.location.id
             self.datasets[worker_id] = dataset
+            dataset.federated = True
 
         # Check that data and targets for a worker are consistent
         """for worker_id in self.workers:

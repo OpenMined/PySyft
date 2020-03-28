@@ -19,6 +19,7 @@ class PointerDataset(ObjectPointer):
     ):
         if owner is None:
             owner = sy.framework.hook.local_worker
+        self.federated = False  # flag whether it in a federated_dataset object
         super().__init__(
             location=location,
             id_at_location=id_at_location,
@@ -43,6 +44,12 @@ class PointerDataset(ObjectPointer):
 
     def wrap(self):
         return self
+
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+        if self.federated:
+            raise ValueError("use .get_dataset(worker) to get this dataset")
+        dataset = super().get(user, reason, deregister_ptr)
+        return dataset
 
     def __repr__(self):
         type_name = type(self).__name__
