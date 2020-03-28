@@ -1,13 +1,3 @@
-import logging
-import syft as sy
-from syft.workers import WebsocketServerWorker
-import torch
-import argparse
-from torchvision import datasets
-from torchvision import transforms
-import numpy as np
-from syft.frameworks.torch.federated import utils
-
 import subprocess
 import sys
 from pathlib import Path
