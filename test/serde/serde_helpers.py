@@ -458,9 +458,10 @@ def compare_actions(detailed, original):
     """Compare 2 Actions"""
     assert len(detailed) == len(original)
     for original_op, detailed_op in zip(original, detailed):
-        compare_placeholders_list(original_op.args, detailed_op.args)
-        # return_ids is not a list (why?)
-        compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
+        for original_arg, detailed_arg in zip(original_op.args, detailed_op.args):
+            assert original_arg == detailed_arg
+        for original_return, detailed_return in zip(original_op.return_ids, detailed_op.return_ids):
+            assert original_return == detailed_return
         assert original_op.name == detailed_op.name
         assert original_op.kwargs == detailed_op.kwargs
     return True
@@ -639,6 +640,25 @@ def make_loggingtensor(**kwargs):
                     ),  # (AbstractTensor) chain
                 ),
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# syft.execution.placeholder_id.PlaceholderId
+def make_placeholder_id(**kwargs):
+    p = syft.execution.placeholder.PlaceHolder()
+    obj_id = p.id
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.placeholder_id.PlaceholderId
+        assert detailed.value == original.value
+        return True
+
+    return [
+        {
+            "value": obj_id,
+            "simplified": (CODE[syft.execution.placeholder_id.PlaceholderId], (obj_id.value,)),
             "cmp_detailed": compare,
         }
     ]
@@ -1319,7 +1339,7 @@ def make_placeholder(**kwargs):
             "simplified": (
                 CODE[syft.execution.placeholder.PlaceHolder],
                 (
-                    ph.id,  # (int) id
+                    msgpack.serde._simplify(syft.hook.local_worker, ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
                 ),
