@@ -253,6 +253,11 @@ class FederatedDataset:
 
         return list(self.datasets.keys())
 
+    def get_dataset(self, worker):
+        dataset = self[worker].get()
+        del self.datasets[worker]
+        return dataset
+
     def __getitem__(self, worker_id):
         """
            Args:

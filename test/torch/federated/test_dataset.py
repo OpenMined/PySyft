@@ -118,3 +118,19 @@ def test_abstract_dataset():
 
     assert dataset.id == 1
     assert dataset.description == None
+
+
+def test_get_dataset(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    dataset = fed_dataset.get_dataset("alice")
+
+    assert len(fed_dataset) == 2
+    assert len(dataset) == 4
