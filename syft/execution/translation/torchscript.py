@@ -20,9 +20,13 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         torchscript_plan = jit.trace_module(TorchscriptPlan(plan), {"forward": args})
         plan.torchscript = torchscript_plan
 
-        # Remove actions and state, these should be captured in torchscript now
+        # Remove actions these should be captured in torchscript now
         plan.actions = []
-        plan.state = []
+
+        # Remove actual tensors from state, keep state for meta-data only
+        for ph in plan.state.state_placeholders:
+            ph.child = None
+
         return plan
 
 

@@ -587,45 +587,58 @@ class Plan(AbstractObject):
             out += " built"
 
         out += ">"
-
         out += "\n"
+        _self = self
 
         def extract_tag(p):
-            return [tag for tag in p.tags if "input" not in tag and "output" not in tag][0][1:]
+            return [tag for tag in p.tags if "#input" not in tag and "#output" not in tag and "#shape" not in tag][0][1:]
+
+        def stringify(obj, var_name=""):
+            if isinstance(obj, PlaceHolder):
+                if obj.id in input_names:
+                    line = input_names[obj.id]
+                elif obj.id in output_names:
+                    line = output_names[obj.id]
+                else:
+                    tag = extract_tag(obj)
+                    line = f"_{var_name}{tag}"
+            elif isinstance(obj, PlaceholderId):
+                line = stringify(_self.placeholders[obj.value])
+            elif isinstance(obj, (tuple, list)):
+                line = (
+                    ", ".join(
+                        stringify(o)
+                        for o in obj
+                    )
+                )
+            else:
+                line = str(obj)
+
+            return line
+
+        inputs = self.find_placeholders("input")
+        outputs = self.find_placeholders("output")
+        input_names = {ph.id: f"_arg{i+1}" for i, ph in enumerate(inputs)}
+        output_names = {ph.id: f"_out{i+1}" for i, ph in enumerate(outputs)}
 
         out += f"def {self.name}("
-        out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
+        out += ", ".join([input_names[ph.id] for ph in inputs])
         out += "):\n"
         for action in self.actions:
             line = "    "
             if action.return_ids is not None:
-                if isinstance(action.return_ids, PlaceHolder):
-                    tag = extract_tag(action.return_ids)
-                    line += f"_{tag} = "
-                elif isinstance(action.return_ids, tuple):
-                    line += (
-                        ", ".join(
-                            f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
-                            for o in action.return_ids
-                        )
-                        + " = "
-                    )
-                else:
-                    line += str(action.return_ids) + " = "
+                line += stringify(action.return_ids) + " = "
             if action.target is not None:
-                line += f"_{extract_tag(self.placeholders[action.target.value])}."
+                line += stringify(action.target) + "."
             line += action.name + "("
-            line += ", ".join(
-                f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
-                for arg in action.args
-            )
+            line += stringify(action.args)
             if action.kwargs:
                 line += ", " + ", ".join(f"{k}={w}" for k, w in action.kwargs.items())
             line += ")\n"
             out += line
 
         out += "    return "
-        out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
+        out += ", ".join([output_names[ph.id] for ph in outputs])
 
         return out
 
