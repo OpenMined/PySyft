@@ -1,11 +1,8 @@
 import torch as th
 from torch.nn import Module
 
-from syft.generic.frameworks.overload import overloaded
-
 
 # TODO Check how to handle classes
-@overloaded.method
 class AvgPool2d(Module):
     """
     This class is the beginning of an exact python port of the torch.nn.AvgPool2d
