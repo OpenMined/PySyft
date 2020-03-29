@@ -46,6 +46,7 @@ from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -67,7 +68,8 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import WorkerCommandMessage
-from syft.serde import compression, msgpack
+from syft.serde import compression
+from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
@@ -109,6 +111,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     LoggingTensor,
     MultiPointerTensor,
     PlaceHolder,
+    PlaceholderId,
     ObjectPointer,
     Plan,
     State,
