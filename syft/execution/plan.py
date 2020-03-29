@@ -170,15 +170,12 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
-        # TODO why not removing the need for args when building the plan?
         self.owner.init_plan = self
 
         # Run once to build the plan
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
             # using @func2plan and we need therefore to add the state manually
-            # TODO what to do with the state? What will state look like on protocols?
-            # TODO should the forward happen here? What will it look like with protocols?
             if self.include_state:
                 results = self.forward(*args, self.state)
             else:
@@ -241,6 +238,9 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
 
+        elif not self.is_built:
+            return self.build(args)
+
         else:
             return self.role.execute_computation(args)
 
@@ -253,11 +253,6 @@ class Plan(AbstractObject):
             result_ids: List of ids where the results will be stored.
         """
         # TODO: can we reuse result_ids?
-        # TODO sould we also build under the hood when using __call__?
-        # We build the plan only if needed
-        if not self.is_built:
-            return self.build(args)
-
         return self.__call__(*args)
 
     def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:

@@ -147,7 +147,7 @@ class Role(AbstractObject, ObjectStorage):
             if obj.id in self.placeholders:
                 return self.placeholders[obj.id].id
             placeholder = PlaceHolder(id=obj.id, owner=self.owner)
-            self.placeholders[placeholder.id.value] = placeholder  # TODO clean the .id.value
+            self.placeholders[obj.id] = placeholder
             return placeholder.id
         elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
             return obj
