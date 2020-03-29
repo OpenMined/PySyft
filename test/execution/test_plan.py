@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
+from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.execution.plan import Plan
@@ -494,7 +495,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(
-        id="test_fetch_stateful_plan_remote_{}".format(is_func2plan), hook=hook, port=8802
+        id=f"test_fetch_stateful_plan_remote_{is_func2plan}", hook=hook, port=8802
     )
 
     if is_func2plan:
@@ -640,6 +641,13 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     # Compare with local plan
     assert th.all(decrypted - expected.detach() < 1e-2)
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
+
+    assert all(
+        starmap(
+            lambda fetched_tensor, tensor: (fetched_tensor == tensor).get(),
+            zip(fetched_plan.state.tensors(), plan.state.tensors()),
+        )
+    )
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
@@ -1096,3 +1104,33 @@ def test_plan_can_be_jit_traced(hook, workers):
     y = torchscript_plan(t)
 
     assert (y == th.tensor([3.0, 5])).all()
+
+
+def test_plan_input_usage(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test_1(x, y):
+        return x
+
+    @sy.func2plan()
+    def plan_test_2(x, y):
+        return y
+
+    pointer_to_data_1 = device_1.search("input_data")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    plan_test_1.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_1.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x11).all()
+
+    plan_test_2.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_2.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x12).all

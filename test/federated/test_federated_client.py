@@ -104,7 +104,7 @@ def train_model(
                 loss = fed_client.fit(dataset_key=fit_dataset_key, device=device)
         if PRINT_IN_UNITTESTS and curr_round % 2 == 0:  # pragma: no cover
             print("-" * 50)
-            print("Iteration %s: alice's loss: %s" % (curr_round, loss))
+            print(f"Iteration {curr_round}: alice's loss: {loss}")
 
 
 @pytest.mark.parametrize(
@@ -156,7 +156,7 @@ def test_fit(fit_dataset_key, epochs, device):
     pred = model(data_device)
     loss_before = loss_fn(target=target_device, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss before training: {}".format(loss_before))
+        print(f"Loss before training: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -181,11 +181,11 @@ def test_fit(fit_dataset_key, epochs, device):
     if dataset_key == fit_dataset_key:
         loss_after = evaluate_model(fed_client, model_id, loss_fn, data_device, target_device)
         if PRINT_IN_UNITTESTS:  # pragma: no cover
-            print("Loss after training: {}".format(loss_after))
+            print(f"Loss after training: {loss_after}")
 
         if loss_after >= loss_before:  # pragma: no cover
             if PRINT_IN_UNITTESTS:
-                print("Loss not reduced, train more: {}".format(loss_after))
+                print(f"Loss not reduced, train more: {loss_after}")
 
             train_model(
                 fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=10
@@ -237,7 +237,7 @@ def test_evaluate():  # pragma: no cover
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss before training: {}".format(loss_before))
+        print(f"Loss before training: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -266,7 +266,7 @@ def test_evaluate():  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result before training: {}".format(result))
+        print(f"Evaluation result before training: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()
@@ -298,7 +298,7 @@ def test_evaluate():  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result: {}".format(result))
+        print(f"Evaluation result: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()

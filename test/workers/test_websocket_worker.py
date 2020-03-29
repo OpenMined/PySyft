@@ -307,7 +307,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss: {}".format(loss_before))
+        print(f"Loss: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -329,7 +329,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result before training: {}".format(result))
+        print(f"Evaluation result before training: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()

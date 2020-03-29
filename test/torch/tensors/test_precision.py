@@ -414,150 +414,110 @@ def test_torch_inverse_approx(workers):
             assert (diff / (tolerance * norm)) < 1
 
 
-def test_torch_exp_approx(workers):
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 20 / 100), (4, 5 / 100), (5, 4 / 100)])
+def test_torch_exp_approx(prec_frac, tolerance, workers):
     """
     Test the approximate exponential with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    fix_prec_tolerance = {3: 20 / 100, 4: 5 / 100, 5: 5 / 100}
+    cumsum = torch.zeros(5)
+    for i in range(10):
+        t = torch.tensor([0.0, 1, 2, 3, 4])
+        t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+            alice, bob, crypto_provider=james
+        )
+        r_sh = t_sh.exp()
+        r = r_sh.get().float_prec()
+        t = t.exp()
+        diff = (r - t).abs()
+        norm = (r + t) / 2
+        cumsum += diff / (tolerance * norm)
 
-    for prec_frac, tolerance in fix_prec_tolerance.items():
-        cumsum = torch.zeros(5)
-        for i in range(10):
-            t = torch.tensor([0.0, 1, 2, 3, 4])
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.exp()
-            r = r_sh.get().float_prec()
-            t = t.exp()
-            diff = (r - t).abs()
-            norm = (r + t) / 2
-            cumsum += diff / (tolerance * norm)
-
-        cumsum /= 10
-        assert (cumsum < 1).all()
+    cumsum /= 10
+    assert (cumsum < 1).all()
 
 
-def test_torch_sigmoid_approx(workers):
+@pytest.mark.parametrize(
+    "method, prec_frac, tolerance",
+    [
+        ("chebyshev", 3, 6 / 100),
+        ("chebyshev", 4, 1 / 1000),
+        ("exp", 3, 6 / 100),
+        ("exp", 4, 1 / 100),
+        ("maclaurin", 3, 7 / 100),
+        ("maclaurin", 4, 15 / 100),
+    ],
+)
+def test_torch_sigmoid_approx(method, prec_frac, tolerance, workers):
     """
     Test the approximate sigmoid with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    fix_prec_tolerance_by_method = {
-        "exp": {3: 6 / 100, 4: 1 / 100, 5: 1 / 100},
-        "maclaurin": {3: 7 / 100, 4: 15 / 100, 5: 15 / 100},
-    }
+    t = torch.tensor(range(-10, 10)) * 0.5
+    t_sh = t.fix_precision(precision_fractional=prec_frac).share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.sigmoid(method=method)
+    r = r_sh.get().float_prec()
+    t = t.sigmoid()
+    diff = (r - t).abs().max()
+    norm = (r + t).abs().max() / 2
 
-    for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
-        for prec_frac, tolerance in fix_prec_tolerance.items():
-            t = torch.tensor(range(-10, 10)) * 0.5
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.sigmoid(method=method)
-            r = r_sh.get().float_prec()
-            t = t.sigmoid()
-            diff = (r - t).abs().max()
-            norm = (r + t).abs().max() / 2
-
-            assert (diff / (tolerance * norm)) < 1
+    assert (diff / (tolerance * norm)) < 1
 
 
-def test_torch_tanh_approx(workers):
+@pytest.mark.parametrize(
+    "method, prec_frac, tolerance",
+    [
+        ("chebyshev", 3, 3 / 100),
+        ("chebyshev", 4, 2 / 100),
+        ("sigmoid", 3, 10 / 100),
+        ("sigmoid", 4, 5 / 100),
+    ],
+)
+def test_torch_tanh_approx(method, prec_frac, tolerance, workers):
     """
     Test the approximate tanh with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    fix_prec_tolerance_by_method = {
-        "chebyshev": {3: 3 / 100, 4: 3 / 100, 5: 3 / 100},
-        "sigmoid": {3: 10 / 100, 4: 15 / 100, 5: 15 / 100},
-    }
+    t = torch.tensor(range(-10, 10)) * 0.5
+    t_sh = t.fix_precision(precision_fractional=prec_frac).share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.tanh(method)
+    r = r_sh.get().float_prec()
+    t = t.tanh()
+    diff = (r - t).abs().max()
+    norm = (r + t).abs().max() / 2
 
-    for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
-        for prec_frac, tolerance in fix_prec_tolerance.items():
-            t = torch.tensor(range(-6, 6)) * 0.5
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.tanh(method)
-            r = r_sh.get().float_prec()
-            t = t.tanh()
-            print(method, prec_frac, tolerance)
-            print(r)
-            print(t)
-            diff = (r - t).abs().max()
-            norm = (r + t).abs().max() / 2
-
-            assert (diff / (tolerance * norm)) < 1
+    assert (diff / (tolerance * norm)) < 1
 
 
-def test_torch_log_approx(workers):
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100)])
+def test_torch_log_approx(prec_frac, tolerance, workers):
     """
     Test the approximate logarithm with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    fix_prec_tolerance = {3: 100 / 100, 4: 3 / 100, 5: 2 / 100}
 
-    for prec_frac, tolerance in fix_prec_tolerance.items():
-        cumsum = torch.zeros(9)
-        for i in range(10):
-            t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.log()
-            r = r_sh.get().float_prec()
-            t = t.log()
-            diff = (r - t).abs()
-            norm = (r + t) / 2
-            cumsum += diff / (tolerance * norm)
+    cumsum = torch.zeros(9)
+    for i in range(10):
+        t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
+        t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+            alice, bob, crypto_provider=james
+        )
+        r_sh = t_sh.log()
+        r = r_sh.get().float_prec()
+        t = t.log()
+        diff = (r - t).abs()
+        norm = (r + t) / 2
+        cumsum += diff / (tolerance * norm)
 
-        cumsum /= 10
-        assert (cumsum.abs() < 1).all()
-
-
-def test_torch_conv2d(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    im = torch.Tensor(
-        [
-            [
-                [[0.5, 1.0, 2.0], [3.5, 4.0, 5.0], [6.0, 7.5, 8.0]],
-                [[10.0, 11.0, 12.0], [13.0, 14.5, 15.0], [16.0, 17.5, 18.0]],
-            ]
-        ]
-    )
-    w = torch.Tensor(
-        [
-            [[[0.0, 3.0], [1.5, 1.0]], [[2.0, 2.0], [2.5, 2.0]]],
-            [[[-0.5, -1.0], [-2.0, -1.5]], [[0.0, 0.0], [0.0, 0.5]]],
-        ]
-    )
-    bias = torch.Tensor([-1.3, 15.0])
-
-    im_fp = im.fix_precision()
-    w_fp = w.fix_precision()
-    bias_fp = bias.fix_precision()
-
-    res0 = torch.conv2d(im_fp, w_fp, bias=bias_fp, stride=1).float_precision()
-    res1 = torch.conv2d(
-        im_fp, w_fp[:, 0:1].contiguous(), bias=bias_fp, stride=2, padding=3, dilation=2, groups=2
-    ).float_precision()
-
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
-    expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    )
-
-    assert (res0 == expected0).all()
-    assert (res1 == expected1).all()
+    cumsum /= 10
+    assert (cumsum.abs() < 1).all()
 
 
 def test_torch_nn_functional_linear():

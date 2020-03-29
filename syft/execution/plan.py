@@ -1,4 +1,3 @@
-import re
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -12,10 +11,11 @@ from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
@@ -70,7 +70,7 @@ def method2plan(*args, **kwargs):
     )
 
 
-class Plan(AbstractObject, ObjectStorage):
+class Plan(AbstractObject):
     """
     A Plan stores a sequence of torch actions, just like a function.
 
@@ -162,7 +162,7 @@ class Plan(AbstractObject, ObjectStorage):
         mapped_shapes = []
         for shape in args_shape:
             if list(filter(lambda x: x < -1, shape)):
-                raise ValueError("Invalid shape {}".format(shape))
+                raise ValueError(f"Invalid shape {shape}")
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [sy.framework.hook.create_zeros(shape) for shape in mapped_shapes]
@@ -186,24 +186,7 @@ class Plan(AbstractObject, ObjectStorage):
         """
         return self.state.tensors()
 
-    def send_msg(self, *args, **kwargs):
-        return self.owner.send_msg(*args, **kwargs)
-
-    def request_obj(self, *args, **kwargs):
-        return self.owner.request_obj(*args, **kwargs)
-
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
-        """Returns the deregistered object from registry.
-
-        Args:
-            obj_id: A string or integer id of an object to look up.
-        """
-
-        obj = self.get_obj(obj_id)
-        self.de_register_obj(obj)
-        return obj
-
-    def add_placeholder(self, tensor, node_type=None):
+    def add_placeholder(self, tensor, arg_ids, result_ids, node_type=None):
         """
         Create and register a new placeholder if not already existing (else return
         the existing one).
@@ -214,14 +197,14 @@ class Plan(AbstractObject, ObjectStorage):
             tensor: the tensor to replace with a placeholder
             node_type: Should be "input" or "output", used to tag like this: #<type>-*
         """
-        if tensor.id not in self.placeholders.keys():
+        if tensor.id not in self.placeholders:
             placeholder = sy.PlaceHolder(
                 tags={f"#{self.var_count + 1}"}, id=tensor.id, owner=self.owner
             )
             self.placeholders[tensor.id] = placeholder
 
             if node_type == "input":
-                if tensor.id not in self._tmp_args_ids:
+                if tensor.id not in arg_ids:
                     raise ValueError(
                         f"The following tensor was used but is not known in "
                         f"this plan: \n{tensor}\nPossible reasons for this can be:\n"
@@ -231,28 +214,37 @@ class Plan(AbstractObject, ObjectStorage):
                         f"torch.FloatTensor, torch.IntTensor, etc, which are not supported. "
                         f"Please use instead torch.tensor(..., dtype=torch.int32) for example."
                     )
-                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
+                placeholder.tags.add(f"#input-{arg_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+
             elif node_type == "output":
-                if tensor.id in self._tmp_result_ids:
-                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
+                if tensor.id in result_ids:
+                    placeholder.tags.add(f"#output-{result_ids.index(tensor.id)}")
+
+                if tensor.id in arg_ids:
+                    placeholder.tags.add(f"#input-{result_ids.index(tensor.id)}")
             else:
                 raise ValueError("node_type should be 'input' or 'output'.")
 
             self.var_count += 1
 
-        return self.placeholders[tensor.id]
+        return PlaceholderId(tensor.id)
 
-    def replace_with_placeholders(self, obj, **kw):
+    def replace_with_placeholder_ids(self, obj, arg_ids, result_ids, **kw):
         """
-        Replace in an object all FrameworkTensors with Placeholders
+        Replace in an object all FrameworkTensors with Placeholder ids
         """
         if isinstance(obj, (tuple, list)):
-            r = [self.replace_with_placeholders(o, **kw) for o in obj]
+            r = [self.replace_with_placeholder_ids(o, arg_ids, result_ids, **kw) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
+            return {
+                key: self.replace_with_placeholder_ids(value, arg_ids, result_ids, **kw)
+                for key, value in obj.items()
+            }
         elif isinstance(obj, FrameworkTensor):
-            return self.add_placeholder(obj, **kw)
+            return self.add_placeholder(obj, arg_ids, result_ids, **kw)
         elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
             return obj
         elif obj is None:
@@ -264,6 +256,20 @@ class Plan(AbstractObject, ObjectStorage):
                 raise ValueError(f"Type {type(obj)} not supported in plans args/kwargs")
             else:
                 return None
+
+    def replace_ids_with_placeholders(self, obj):
+        """
+        Replace in an object all ids with Placeholders
+        """
+        if isinstance(obj, (tuple, list)):
+            r = [self.replace_ids_with_placeholders(o) for o in obj]
+            return type(obj)(r)
+        elif isinstance(obj, dict):
+            return {key: self.replace_ids_with_placeholders(value) for key, value in obj.items()}
+        elif isinstance(obj, PlaceholderId):
+            return self.placeholders[obj.value]
+        else:
+            return obj
 
     def find_placeholders(self, *search_tags):
         """
@@ -277,12 +283,12 @@ class Plan(AbstractObject, ObjectStorage):
             A list of placeholders found
         """
         results = []
+
         for placeholder in self.placeholders.values():
-            for search_tag in search_tags:
-                for tag in placeholder.tags:
-                    match = re.search(f".*{search_tag}.*", tag)
-                    if match is not None:
-                        results.append(placeholder)
+            for ph_tag in placeholder.tags:
+                if any([search_tag in ph_tag for search_tag in search_tags]):
+                    results.append(placeholder)
+                    break
 
         return results
 
@@ -305,8 +311,6 @@ class Plan(AbstractObject, ObjectStorage):
 
         self.owner.init_plan = self
 
-        self._tmp_args_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
-
         with sy.hook.trace.enabled():
             # We usually have include_state==True for functions converted to plan
             # using @func2plan and we need therefore to add the state manually
@@ -316,22 +320,29 @@ class Plan(AbstractObject, ObjectStorage):
                 results = self.forward(*args)
 
         results = (results,) if not isinstance(results, tuple) else results
-        self._tmp_result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
+
+        arg_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
+        result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
+
+        for arg in args:
+            self.replace_with_placeholder_ids(arg, arg_ids, result_ids, node_type="input")
 
         for log in sy.hook.trace.logs:
             command, response = log
-            command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, node_type="input"),
-                self.replace_with_placeholders(response, node_type="output"),
+            command_placeholders = self.replace_with_placeholder_ids(
+                command, arg_ids, result_ids, node_type="input"
             )
+            return_placeholder_ids = self.replace_with_placeholder_ids(
+                response, arg_ids, result_ids, node_type="output"
+            )
+
             # We're cheating a bit here because we put placeholders instead of return_ids
-            action = ComputationAction(*command_placeholders, return_ids=return_placeholders)
+            if not isinstance(return_placeholder_ids, (list, tuple)):
+                return_placeholder_ids = (return_placeholder_ids,)
+            action = ComputationAction(*command_placeholders, return_ids=return_placeholder_ids)
             self.actions.append(action)
 
         sy.hook.trace.clear()
-        del self._tmp_result_ids
-        del self._tmp_args_ids
-
         self.is_built = True
         self.owner.init_plan = None
 
@@ -404,11 +415,16 @@ class Plan(AbstractObject, ObjectStorage):
                     action.kwargs,
                     action.return_ids,
                 )
+                _self = self.replace_ids_with_placeholders(_self)
+                args = self.replace_ids_with_placeholders(args)
+                kwargs = self.replace_ids_with_placeholders(kwargs)
+                return_placeholder = self.replace_ids_with_placeholders(return_placeholder)
                 if _self is None:
                     response = eval(cmd)(*args, **kwargs)  # nosec
                 else:
                     response = getattr(_self, cmd)(*args, **kwargs)
-
+                if not isinstance(response, (list, tuple)):
+                    response = (response,)
                 self.instantiate(return_placeholder, response)
 
             # This ensures that we return the output placeholder in the correct order
@@ -589,7 +605,7 @@ class Plan(AbstractObject, ObjectStorage):
                 else:
                     line += str(action.return_ids) + " = "
             if action.target is not None:
-                line += f"_{extract_tag(action.target)}."
+                line += f"_{extract_tag(self.placeholders[action.target.value])}."
             line += action.name + "("
             line += ", ".join(
                 f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
@@ -607,6 +623,16 @@ class Plan(AbstractObject, ObjectStorage):
 
     def __repr__(self):
         return self.__str__()
+
+    @staticmethod
+    def replace_non_instanciated_placeholders(plan: "Plan") -> "Plan":
+        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
+        plan.placeholders = {**plan.placeholders, **state_placeholders}
+
+        return plan
 
     @staticmethod
     def simplify(worker: AbstractWorker, plan: "Plan") -> tuple:
@@ -653,11 +679,10 @@ class Plan(AbstractObject, ObjectStorage):
             placeholders,
         ) = plan_tuple
 
-        worker._tmp_placeholders = {}
         id = sy.serde.msgpack.serde._detail(worker, id)
+        placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
         actions = sy.serde.msgpack.serde._detail(worker, actions)
         state = sy.serde.msgpack.serde._detail(worker, state)
-        placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
 
         plan = sy.Plan(
             include_state=include_state,
@@ -667,7 +692,6 @@ class Plan(AbstractObject, ObjectStorage):
             id=id,
             owner=worker,
         )
-        del worker._tmp_placeholders
 
         plan.state = state
         state.plan = plan
@@ -675,6 +699,8 @@ class Plan(AbstractObject, ObjectStorage):
         plan.name = sy.serde.msgpack.serde._detail(worker, name)
         plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
         plan.description = sy.serde.msgpack.serde._detail(worker, description)
+
+        plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
 
@@ -730,7 +756,6 @@ class Plan(AbstractObject, ObjectStorage):
             plan: a Plan object
         """
 
-        worker._tmp_placeholders = {}
         id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
         actions = [
@@ -742,7 +767,7 @@ class Plan(AbstractObject, ObjectStorage):
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
             for placeholder in protobuf_plan.placeholders
         ]
-        placeholders = dict([(placeholder.id, placeholder) for placeholder in placeholders])
+        placeholders = dict([(placeholder.id.value, placeholder) for placeholder in placeholders])
 
         plan = sy.Plan(
             include_state=protobuf_plan.include_state,
@@ -752,7 +777,6 @@ class Plan(AbstractObject, ObjectStorage):
             id=id,
             owner=worker,
         )
-        del worker._tmp_placeholders
 
         plan.state = state
         state.plan = plan
@@ -762,6 +786,8 @@ class Plan(AbstractObject, ObjectStorage):
             plan.tags = set(protobuf_plan.tags)
         if protobuf_plan.description:
             plan.description = protobuf_plan.description
+
+        plan = Plan.replace_non_instanciated_placeholders(plan)
 
         return plan
 
