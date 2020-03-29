@@ -75,10 +75,10 @@ class Role(AbstractObject, ObjectStorage):
             self.build_placeholders(result).value for result in results
         )
 
-    def register_computation_action(self, log):  # TODO find better argument naming
+    def register_computation_action(self, traced_action):
         """ Build placeholders and store action.
         """
-        command, response = log
+        command, response = traced_action
         command_placeholder_ids = self.build_placeholders(command)
         return_placeholder_ids = self.build_placeholders(response)
 
@@ -111,7 +111,7 @@ class Role(AbstractObject, ObjectStorage):
         )
         PlaceHolder.instantiate_placeholders(input_placeholders, args)
 
-    def execute_computation_action(self, action):  # TODO find better argument naming
+    def execute_computation_action(self, action):
         """ Build placeholders and store action.
         """
         cmd, _self, args, kwargs, return_placeholder = (
