@@ -707,6 +707,14 @@ class TorchTensor(AbstractTensor):
         else:
             return new_ptr
 
+    def move_(self, location: BaseWorker, requires_grad: bool = False):
+        """
+        Inplace version of move
+        """
+        new_ptr = self.move(location, requires_grad)
+        self.child = new_ptr
+        return self
+
     def remote_send(self, location):
         return self.child.remote_send(location).wrap()
 
