@@ -109,7 +109,7 @@ class Role(AbstractObject, ObjectStorage):
         input_placeholders = tuple(
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
         )
-        self.instantiate(input_placeholders, args)
+        PlaceHolder.instantiate_placeholders(input_placeholders, args)
 
     def execute_computation_action(self, action):  # TODO find better argument naming
         """ Build placeholders and store action.
@@ -132,7 +132,7 @@ class Role(AbstractObject, ObjectStorage):
             response = getattr(_self, cmd)(*args, **kwargs)
         if not isinstance(response, (list, tuple)):
             response = (response,)
-        self.instantiate(return_placeholder, response)
+        PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
     def build_placeholders(self, obj):
         """
@@ -235,23 +235,6 @@ class Role(AbstractObject, ObjectStorage):
             tags=self.tags,
             description=self.description,
         )
-
-    @staticmethod
-    def instantiate(placeholder, response):
-        """
-        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
-        """
-        # TODO should this be in placeholder.py instead?
-        if placeholder is not None:
-            if isinstance(placeholder, PlaceHolder):
-                placeholder.instantiate(response)
-            elif isinstance(placeholder, (list, tuple)):
-                for ph, rep in zip(placeholder, response):
-                    Role.instantiate(ph, rep)
-            else:
-                raise ValueError(
-                    f"Response of type {type(response)} is not supported in plan actions"
-                )
 
     @staticmethod
     def simplify(worker: AbstractWorker, role: "Role") -> tuple:

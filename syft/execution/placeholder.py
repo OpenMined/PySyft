@@ -80,6 +80,22 @@ class PlaceHolder(AbstractTensor):
         return [syft.framework.hook.create_zeros(shape) for shape in mapped_shapes]
 
     @staticmethod
+    def instantiate_placeholders(obj, response):
+        """
+        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
+        """
+        if obj is not None:
+            if isinstance(obj, PlaceHolder):
+                obj.instantiate(response)
+            elif isinstance(obj, (list, tuple)):
+                for ph, rep in zip(obj, response):
+                    PlaceHolder.instantiate_placeholders(ph, rep)
+            else:
+                raise ValueError(
+                    f"Response of type {type(response)} is not supported in Placeholder.instantiate."
+                )
+
+    @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PlaceHolder") -> tuple:
         """Takes the attributes of a PlaceHolder and saves them in a tuple.
 
