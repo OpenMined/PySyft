@@ -5,6 +5,7 @@ from syft.frameworks.torch.nn.functional import conv2d
 from syft.generic.frameworks.overload import overloaded
 
 
+# TODO Check how to handle classes
 @overloaded.method
 class Conv2d(nn.Module):
     """

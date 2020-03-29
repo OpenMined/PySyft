@@ -1,3 +1,4 @@
+# TODO Workaround to recursive import
 import numpy as np
 import torch
 from torch import nn

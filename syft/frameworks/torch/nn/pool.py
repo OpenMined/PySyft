@@ -4,6 +4,7 @@ from torch.nn import Module
 from syft.generic.frameworks.overload import overloaded
 
 
+# TODO Check how to handle classes
 @overloaded.method
 class AvgPool2d(Module):
     """

@@ -1,14 +1,6 @@
 import torch
 
-from syft.generic.frameworks.overload import overloaded
 
-
-@overloaded.method
-def dropout3d(module, input, p=0.5, training=True, inplace=False):
-    print("Hey!! I worked")
-
-
-@overloaded.method
 def linear(*args):
     """
     Un-hook the function to have its detailed behaviour
@@ -16,7 +8,6 @@ def linear(*args):
     return torch.nn.functional.native_linear(*args)
 
 
-@overloaded.method
 def dropout(input, p=0.5, training=True, inplace=False):
     """
     Args:
@@ -44,7 +35,6 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
-@overloaded.method
 def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
