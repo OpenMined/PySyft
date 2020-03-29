@@ -1,5 +1,39 @@
 import torch
-import syft.frameworks.torch.nn.functional as F
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+def test_torch_nn_functional_linear():
+    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=False).fix_prec()
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=True).fix_prec()
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
+
+    assert (result == expected).all()
+
+    tensor = nn.Parameter(torch.tensor([[1.0, -2], [3, 4]]), requires_grad=False).fix_prec()
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=True).fix_prec()
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[-3.0, -5], [11.0, 25.0]])
+
+    assert (result == expected).all()
+
+    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=False).fix_prec(
+        precision_fractional=2
+    )
+    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=True).fix_prec(
+        precision_fractional=2
+    )
+
+    result = F.linear(tensor, weight).float_prec()
+
+    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
+
+    assert (result == expected).all()
 
 
 def test_torch_nn_functional_dropout(workers):
@@ -30,7 +64,7 @@ def test_torch_nn_functional_dropout(workers):
 def test_torch_nn_functional_conv2d(workers):
     # Test with FixedPrecision tensors
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    im = torch.Tensor(
+    im = torch.tensor(
         [
             [
                 [[0.5, 1.0, 2.0], [3.5, 4.0, 5.0], [6.0, 7.5, 8.0]],
@@ -38,13 +72,13 @@ def test_torch_nn_functional_conv2d(workers):
             ]
         ]
     )
-    w = torch.Tensor(
+    w = torch.tensor(
         [
             [[[0.0, 3.0], [1.5, 1.0]], [[2.0, 2.0], [2.5, 2.0]]],
             [[[-0.5, -1.0], [-2.0, -1.5]], [[0.0, 0.0], [0.0, 0.5]]],
         ]
     )
-    bias = torch.Tensor([-1.3, 15.0])
+    bias = torch.tensor([-1.3, 15.0])
 
     im_fp = im.fix_prec()
     w_fp = w.fix_prec()

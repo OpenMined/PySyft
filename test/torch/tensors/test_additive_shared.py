@@ -569,53 +569,6 @@ def test_mm(workers):
     assert (z == (torch.mm(t, t))).all()
 
 
-def test_torch_conv2d(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    im = torch.Tensor(
-        [
-            [
-                [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
-                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]],
-            ]
-        ]
-    )
-    w = torch.Tensor(
-        [
-            [[[1.0, 1.0], [1.0, 1.0]], [[2.0, 2.0], [2.0, 2.0]]],
-            [[[-1.0, -2.0], [-3.0, -4.0]], [[0.0, 0.0], [0.0, 0.0]]],
-        ]
-    )
-    bias = torch.Tensor([0.0, 5.0])
-
-    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
-    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
-    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
-
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
-    res1 = (
-        torch.conv2d(
-            im_shared,
-            w_shared[:, 0:1].contiguous(),
-            bias=bias_shared,
-            stride=2,
-            padding=3,
-            dilation=2,
-            groups=2,
-        )
-        .get()
-        .float_precision()
-    )
-
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
-    expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    )
-
-    assert (res0 == expected0).all()
-    assert (res1 == expected1).all()
-
-
 def test_fixed_precision_and_sharing(workers):
 
     bob, alice = (workers["bob"], workers["alice"])

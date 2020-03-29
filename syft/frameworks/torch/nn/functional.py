@@ -21,9 +21,9 @@ def dropout(input, p=0.5, training=True, inplace=False):
 
         # we must convert the normal tensor to fixed precision before multiplication
         # Note that: Weights of a model are alwasy Float values
-        # Hence input will always be of type (Wrapper) > FixedPrecisionTensor > ...
+        # Hence input will always be of type FixedPrecisionTensor > ...
         noise = (binomial.sample(input.shape).type(torch.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
-            **input.get_class_attributes()
+            **input.get_class_attributes(), no_wrap=True
         )
 
         if inplace:
@@ -136,7 +136,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     # Add a bias if needed
     if bias is not None:
-        res += bias
+        res += bias.child
+        # TODO: Better solution to this workaround
 
     # ... And reshape it back to an image
     res = (
