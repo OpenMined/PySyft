@@ -2,8 +2,10 @@ import torch as th
 import torch.nn as nn
 
 from syft.frameworks.torch.nn.functional import conv2d
+from syft.generic.frameworks.overload import overloaded
 
 
+@overloaded.method
 class Conv2d(nn.Module):
     """
     This class tries to be an exact python port of the torch.nn.Conv2d

@@ -4,6 +4,11 @@ from syft.generic.frameworks.overload import overloaded
 
 
 @overloaded.method
+def dropout3d(module, input, p=0.5, training=True, inplace=False):
+    print("Hey!! I worked")
+
+
+@overloaded.method
 def linear(*args):
     """
     Un-hook the function to have its detailed behaviour

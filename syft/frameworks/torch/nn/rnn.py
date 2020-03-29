@@ -5,9 +5,11 @@ from torch.nn import init
 
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
+@overloaded.method
 class RNNCellBase(nn.Module):
     """
     Cell to be used as base for all RNN cells, including GRU and LSTM
@@ -53,6 +55,7 @@ class RNNCellBase(nn.Module):
         return h
 
 
+@overloaded.method
 class RNNCell(RNNCellBase):
     """
     Python implementation of RNNCell with tanh or relu non-linearity for MPC
@@ -78,6 +81,7 @@ class RNNCell(RNNCellBase):
         return h_
 
 
+@overloaded.method
 class GRUCell(RNNCellBase):
     """
     Python implementation of GRUCell for MPC
@@ -106,6 +110,7 @@ class GRUCell(RNNCellBase):
         return h_
 
 
+@overloaded.method
 class LSTMCell(RNNCellBase):
     """
     Python implementation of LSTMCell for MPC
@@ -148,6 +153,7 @@ class LSTMCell(RNNCellBase):
         return h_, c_
 
 
+@overloaded.method
 class RNNBase(nn.Module):
     """
     Module to be used as base for all RNN modules, including GRU and LSTM
@@ -338,6 +344,7 @@ class RNNBase(nn.Module):
         return h_next, c_next
 
 
+@overloaded.method
 class RNN(RNNBase):
     """
     Python implementation of RNN for MPC
@@ -369,6 +376,7 @@ class RNN(RNNBase):
         )
 
 
+@overloaded.method
 class GRU(RNNBase):
     """
     Python implementation of GRU for MPC
@@ -391,6 +399,7 @@ class GRU(RNNBase):
         )
 
 
+@overloaded.method
 class LSTM(RNNBase):
     """
     Python implementation of LSTM for MPC
