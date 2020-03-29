@@ -591,7 +591,11 @@ class Plan(AbstractObject):
         _self = self
 
         def extract_tag(p):
-            return [tag for tag in p.tags if "#input" not in tag and "#output" not in tag and "#shape" not in tag][0][1:]
+            return [
+                tag
+                for tag in p.tags
+                if "#input" not in tag and "#output" not in tag and "#shape" not in tag
+            ][0][1:]
 
         def stringify(obj, var_name=""):
             if isinstance(obj, PlaceHolder):
@@ -605,12 +609,7 @@ class Plan(AbstractObject):
             elif isinstance(obj, PlaceholderId):
                 line = stringify(_self.placeholders[obj.value])
             elif isinstance(obj, (tuple, list)):
-                line = (
-                    ", ".join(
-                        stringify(o)
-                        for o in obj
-                    )
-                )
+                line = ", ".join(stringify(o) for o in obj)
             else:
                 line = str(obj)
 
