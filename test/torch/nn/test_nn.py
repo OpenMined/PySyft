@@ -2,6 +2,7 @@ import torch as th
 import torch.nn as nn
 
 import syft.frameworks.torch.nn as nn2
+import syft.frameworks.torch.rnn as rnn
 
 
 def test_Conv2d():
@@ -91,7 +92,7 @@ def test_RNNCell():
     test_hidden = th.rand(batch_size, hidden_size)
 
     # RNNCell implemented in pysyft
-    rnn_syft = nn2.RNNCell(input_size, hidden_size, True, "tanh")
+    rnn_syft = rnn.RNNCell(input_size, hidden_size, True, "tanh")
 
     # RNNCell implemented in original pytorch
     rnn_torch = th.nn.RNNCell(input_size, hidden_size, True, "tanh")
@@ -129,7 +130,7 @@ def test_GRUCell():
     test_hidden = th.rand(batch_size, hidden_size)
 
     # GRUCell implemented in pysyft
-    rnn_syft = nn2.GRUCell(input_size, hidden_size, True)
+    rnn_syft = rnn.GRUCell(input_size, hidden_size, True)
 
     # GRUCell implemented in original pytorch
     rnn_torch = th.nn.GRUCell(input_size, hidden_size, True)
@@ -168,7 +169,7 @@ def test_LSTMCell():
     test_cell_state = th.rand(batch_size, hidden_size)
 
     # LSTMCell implemented in pysyft
-    rnn_syft = nn2.LSTMCell(input_size, hidden_size, True)
+    rnn_syft = rnn.LSTMCell(input_size, hidden_size, True)
 
     # LSTMCell implemented in original pytorch
     rnn_torch = th.nn.LSTMCell(input_size, hidden_size, True)
@@ -210,7 +211,7 @@ def test_RNN():
     test_hidden_state = th.rand(num_layers, batch_size, hidden_size)
 
     # RNN implemented in pysyft
-    rnn_syft = nn2.RNN(input_size, hidden_size, num_layers)
+    rnn_syft = rnn.RNN(input_size, hidden_size, num_layers)
 
     # RNN implemented in original pytorch
     rnn_torch = th.nn.RNN(input_size, hidden_size, num_layers)
@@ -252,7 +253,7 @@ def test_GRU():
     test_hidden_state = th.rand(num_layers, batch_size, hidden_size)
 
     # GRU implemented in pysyft
-    rnn_syft = nn2.GRU(input_size, hidden_size, num_layers)
+    rnn_syft = rnn.GRU(input_size, hidden_size, num_layers)
 
     # GRU implemented in original pytorch
     rnn_torch = th.nn.GRU(input_size, hidden_size, num_layers)
@@ -295,7 +296,7 @@ def test_LSTM():
     test_cell_state = th.rand(num_layers, batch_size, hidden_size)
 
     # LSTM implemented in pysyft
-    rnn_syft = nn2.LSTM(input_size, hidden_size, num_layers)
+    rnn_syft = rnn.LSTM(input_size, hidden_size, num_layers)
 
     # LSTM implemented in original pytorch
     rnn_torch = th.nn.LSTM(input_size, hidden_size, num_layers)
