@@ -513,7 +513,7 @@ def test_torch_tanh_approx(method, prec_frac, tolerance, workers):
     assert (diff / (tolerance * norm)) < 1
 
 
-@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100),])
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100)])
 def test_torch_log_approx(prec_frac, tolerance, workers):
     """
     Test the approximate logarithm with different tolerance depending on

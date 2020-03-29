@@ -142,6 +142,7 @@ def test_private_compare(workers):
     beta_p = private_compare(x_bit_sh, r, beta, L)
     assert beta_p
 
+
 def test_share_convert(workers):
     """
     This is a light test as share_convert is not used for the moment

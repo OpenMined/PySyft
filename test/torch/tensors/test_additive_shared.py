@@ -224,9 +224,7 @@ def test_add(workers):
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     y = x + x
-    assert (
-        (y.get().float_prec() == torch.tensor([2.0, -4.0, 6.0])).all()
-    )
+    assert (y.get().float_prec() == torch.tensor([2.0, -4.0, 6.0])).all()
 
 
 def test_sub(workers):
@@ -298,9 +296,7 @@ def test_sub(workers):
     x = t.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     y = u.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     z = y - x
-    assert (
-        (z.get().float_prec() == torch.tensor([3.0, 5.0, -1.0])).all()
-    )
+    assert (z.get().float_prec() == torch.tensor([3.0, 5.0, -1.0])).all()
 
 
 def test_mul(workers):
@@ -359,9 +355,7 @@ def test_mul(workers):
         .share(bob, alice, crypto_provider=james)
     )
     z = x * y
-    assert (
-        (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
-    )
+    assert (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
 
 
 def test_public_mul(workers):
