@@ -136,7 +136,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     # Add a bias if needed
     if bias is not None:
-        res += bias.child
+        res += bias if isinstance(bias, torch.nn.parameter.Parameter) else bias.child
         # TODO: Better solution to this workaround
 
     # ... And reshape it back to an image
