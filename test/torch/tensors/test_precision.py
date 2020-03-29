@@ -29,15 +29,6 @@ def test_encode_decode(workers, parameter):
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
-    # With int dtype
-    x = torch.tensor([0.1, 0.2, 0.3])
-    if parameter:
-        x = nn.Parameter(x)
-    x = x.fix_prec(dtype="int")
-    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2 ** 32
-    x = x.float_prec()
-    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-
 
 def test_fix_prec_registration(hook):
     with hook.local_worker.registration_enabled():
@@ -55,17 +46,6 @@ def test_inplace_encode_decode(workers):
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-
-    # With int dtype
-    x = torch.tensor([0.1, 0.2, 0.3])
-    x.fix_prec_(dtype="int")
-    assert (x.child.child == torch.IntTensor([100, 200, 300])).all() and x.child.field == 2 ** 32
-    x.float_prec_()
-
-    assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-
-    x = torch.tensor([3.0]).fix_precision()
-    assert x.float_prec_().is_wrapper is False
 
 
 def test_fix_prec_inplace_registration(hook):
@@ -166,12 +146,6 @@ def test_torch_add(workers):
     y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
 
     z = x + y
-    assert (
-        z.child.dtype == "int"
-        and z.child.field == 2 ** 32
-        and isinstance(z.child.child, torch.IntTensor)
-    )
-    assert (z.child.child == torch.IntTensor([1100, 2200, 3300])).all()
     assert (z.float_prec() == torch.tensor([1.1, 2.2, 3.3])).all()
 
 
@@ -248,12 +222,6 @@ def test_torch_sub(workers):
     y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
 
     z = x - y
-    assert (
-        z.child.dtype == "int"
-        and z.child.field == 2 ** 32
-        and isinstance(z.child.child, torch.IntTensor)
-    )
-    assert (z.child.child == torch.IntTensor([900, 1800, 2700])).all()
     assert (z.float_prec() == torch.tensor([0.9, 1.8, 2.7])).all()
 
 
@@ -335,8 +303,6 @@ def test_torch_mul(workers):
     y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
 
     z = x * y
-    assert z.child.dtype == "int" and isinstance(z.child.child, torch.IntTensor)
-    assert (z.child.child == torch.IntTensor([100, 400, 900])).all()
     assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
 
 
@@ -372,8 +338,6 @@ def test_torch_div(workers):
     y = torch.tensor([[3.0, -6.2], [-3.3, 4.7]]).fix_prec(dtype="int")
 
     z = torch.div(x, y)
-    assert z.child.dtype == "int" and isinstance(z.child.child, torch.IntTensor)
-    assert (z.child.child == torch.IntTensor([[-3000, -4100], [1000, 0]])).all()
     assert (z.float_prec() == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
 
 

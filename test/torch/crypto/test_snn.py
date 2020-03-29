@@ -107,7 +107,7 @@ def test_private_compare(workers):
     assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
 
     # Negative values
-    x_val = -105 % 2 ** 63
+    x_val = -105
     r_val = -52 % 2 ** 63  # The protocol works only for values in Zq
     x_bit_sh = (
         decompose(torch.LongTensor([x_val]), L)
@@ -141,57 +141,6 @@ def test_private_compare(workers):
     beta = torch.IntTensor([0]).send(alice, bob).child
     beta_p = private_compare(x_bit_sh, r, beta, L)
     assert beta_p
-
-    # Big values
-    x_bit_sh = (
-        decompose(torch.IntTensor([2 ** 30]), L)
-        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
-        .child
-    )
-    r = torch.IntTensor([2 ** 31]).send(alice, bob).child
-
-    beta = torch.IntTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert beta_p
-
-    beta = torch.IntTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert not beta_p
-
-    # Multidimensional tensors
-    x_bit_sh = (
-        decompose(torch.IntTensor([[13, 44], [1, 28]]), L)
-        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
-        .child
-    )
-    r = torch.IntTensor([[12, 44], [12, 33]]).send(alice, bob).child
-
-    beta = torch.IntTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert (beta_p == torch.tensor([[0, 1], [1, 1]])).all()
-
-    beta = torch.IntTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert (beta_p == torch.tensor([[1, 0], [0, 0]])).all()
-
-    # Negative values
-    x_val = -105 % 2 ** 31
-    r_val = -52 % 2 ** 31  # The protocol works only for values in Zq
-    x_bit_sh = (
-        decompose(torch.IntTensor([x_val]), L)
-        .share(alice, bob, crypto_provider=james, field=67, dtype="custom")
-        .child
-    )
-    r = torch.IntTensor([r_val]).send(alice, bob).child
-
-    beta = torch.IntTensor([1]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert beta_p
-
-    beta = torch.IntTensor([0]).send(alice, bob).child
-    beta_p = private_compare(x_bit_sh, r, beta, L)
-    assert not beta_p
-
 
 def test_share_convert(workers):
     """
@@ -259,15 +208,6 @@ def test_relu(workers):
     r = x.relu()
 
     assert (r.get() == torch.tensor([1, 0])).all()
-
-    x = (
-        torch.tensor([1.0, 3.1, -2.1])
-        .fix_prec(dtype="int")
-        .share(alice, bob, crypto_provider=james)
-    )
-    r = x.relu()
-
-    assert (r.get().float_prec() == torch.tensor([1, 3.1, 0])).all()
 
 
 def test_division(workers):

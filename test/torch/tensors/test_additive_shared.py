@@ -177,30 +177,6 @@ def test_add(workers):
 
     assert (y == (t + t)).all()
 
-    # 2 workers and custom dtype
-    t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, dtype="custom", field=2 ** 64 - 1)
-
-    y = (x + x).get()
-
-    # 3 workers and custom dtype
-    assert (y == (t + t)).all()
-
-    t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, james, dtype="custom", field=67)
-
-    y = (x + x).get()
-
-    # negative numbers and custom dtype
-    assert (y == (t + t)).all()
-
-    t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, dtype="custom", field=2 ** 64 - 1)
-
-    y = (x + x).get()
-
-    assert (y == (t + t)).all()
-
     # with fixed precisions
     t = torch.tensor([1.0, -2, 3])
     x = torch.tensor([1.0, -2, 3]).fix_prec().share(bob, alice, james)
@@ -249,15 +225,7 @@ def test_add(workers):
     x = t.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     y = x + x
     assert (
-        y.child.child.dtype == "int"
-        and y.child.child.field == 2 ** 32
-        and isinstance(
-            y.child.child.child["alice"].location._objects[
-                y.child.child.child["alice"].id_at_location
-            ],
-            torch.IntTensor,
-        )
-        and (y.get().float_prec() == torch.tensor([2.0, -4.0, 6.0])).all()
+        (y.get().float_prec() == torch.tensor([2.0, -4.0, 6.0])).all()
     )
 
 
@@ -275,22 +243,6 @@ def test_sub(workers):
     # negative numbers
     t = torch.tensor([1, -2, 3])
     x = torch.tensor([1, -2, 3]).share(bob, alice, james)
-
-    y = (x - x).get()
-
-    assert (y == (t - t)).all()
-
-    # 3 workers and custom dtype
-    t = torch.tensor([1, 2, 3])
-    x = torch.tensor([1, 2, 3]).share(bob, alice, james, field=67, dtype="custom")
-
-    y = (x - x).get()
-
-    assert (y == (t - t)).all()
-
-    # negative numbers and custom dtype
-    t = torch.tensor([1, -2, 3])
-    x = torch.tensor([1, -2, 3]).share(bob, alice, james, field=2 ** 64 - 1, dtype="custom")
 
     y = (x - x).get()
 
@@ -347,15 +299,7 @@ def test_sub(workers):
     y = u.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     z = y - x
     assert (
-        z.child.child.dtype == "int"
-        and z.child.child.field == 2 ** 32
-        and isinstance(
-            z.child.child.child["alice"].location._objects[
-                z.child.child.child["alice"].id_at_location
-            ],
-            torch.IntTensor,
-        )
-        and (z.get().float_prec() == torch.tensor([3.0, 5.0, -1.0])).all()
+        (z.get().float_prec() == torch.tensor([3.0, 5.0, -1.0])).all()
     )
 
 
@@ -377,28 +321,6 @@ def test_mul(workers):
     # 3 workers
     t = torch.tensor([1, 2, 3, 4])
     x = t.share(bob, alice, charlie, crypto_provider=james)
-    y = x * x
-    assert (y.get() == (t * t)).all()
-
-    # 2 workers and custom dtype
-    t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, crypto_provider=james, field=67, dtype="custom")
-    y = x * x
-    assert (y.get() == (t * t)).all()
-
-    t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, crypto_provider=james, field=2 ** 64 - 1, dtype="custom")
-    y = x * x
-    assert (y.get() == (t * t)).all()
-
-    # 3 workers and custom dtype
-    t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, charlie, crypto_provider=james, field=67, dtype="custom")
-    y = x * x
-    assert (y.get() == (t * t)).all()
-
-    t = torch.tensor([1, 2, 3, 4])
-    x = t.share(bob, alice, charlie, crypto_provider=james, field=2 ** 64 - 1, dtype="custom")
     y = x * x
     assert (y.get() == (t * t)).all()
 
@@ -438,15 +360,7 @@ def test_mul(workers):
     )
     z = x * y
     assert (
-        z.child.child.dtype == "int"
-        and z.child.child.field == 2 ** 32
-        and isinstance(
-            z.child.child.child["alice"].location._objects[
-                z.child.child.child["alice"].id_at_location
-            ],
-            torch.IntTensor,
-        )
-        and (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
+        (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
     )
 
 
@@ -507,16 +421,6 @@ def test_public_mul(workers):
     x = t_x.fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
     y = t_y.fix_prec(dtype="int")
     z = x * y
-    assert (
-        z.child.child.dtype == "int"
-        and z.child.child.field == 2 ** 32
-        and isinstance(
-            z.child.child.child["alice"].location._objects[
-                z.child.child.child["alice"].id_at_location
-            ],
-            torch.IntTensor,
-        )
-    )
     z = z.get().float_prec()
     assert (z == t_x * t_y).all()
 
@@ -548,13 +452,6 @@ def test_div(workers):
 
     y = (x1 / x2).get().float_prec()
     assert (y == torch.tensor([[5.0, 1.8], [2.0, 6.0]])).all()
-
-    # With dtype int
-    t = torch.tensor([[9.0, 12.0], [3.3, 0.0]])
-    x = t.fix_prec(dtype="int").share(bob, alice, crypto_provider=james)
-    y = (x / 3).get().float_prec()
-
-    assert (y == torch.tensor([[3.0, 4.0], [1.1, 0.0]])).all()
 
 
 def test_pow(workers):
@@ -1140,17 +1037,6 @@ def test_dtype(workers):
             torch.IntTensor,
         )
         and (x.get() == torch.IntTensor([1, 2, 3])).all()
-    )
-
-    x = torch.tensor([4, 5, 6]).share(alice, bob, james, dtype="custom", field=2 ** 64 - 1)
-    assert (
-        x.child.dtype == "custom"
-        and x.child.field == ((2 ** 64) - 1)
-        and isinstance(
-            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
-            torch.LongTensor,
-        )
-        and (x.get() == torch.LongTensor([4, 5, 6])).all()
     )
 
     # With fix_prec
