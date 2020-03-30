@@ -133,3 +133,18 @@ def test_get_dataset(workers):
 
     assert len(fed_dataset) == 2
     assert len(dataset) == 4
+
+
+def test_illegal_get(workers):
+    """test getting error message when calling .get() on a dataset that's a part of fedratedDataset object"""
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    with pytest.raises(ValueError):
+        fed_dataset["alice"].get()
