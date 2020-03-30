@@ -136,13 +136,14 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     # Add a bias if needed
     if bias is not None:
-        if isinstance(bias, torch.nn.parameter.Parameter):
+        if isinstance(bias, torch.nn.parameter.Parameter):  # Calling nn.Conv2d. Bias is a Parameter
             res += bias
-        elif isinstance(bias, torch.Tensor):
+        elif isinstance(
+            bias, torch.Tensor
+        ):  # Calling F.conv2d. Bias of form (Wrapper) > FPT > Tensor
             res += bias.child
         else:
-            res += bias
-        # TODO: Better solution to this workaround
+            res += bias  # Calling on a shared model with nn.Conv2d. Bias of form FPT > AST > Tensor
 
     # ... And reshape it back to an image
     res = (

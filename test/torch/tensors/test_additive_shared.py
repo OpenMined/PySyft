@@ -848,39 +848,6 @@ def test_zero_refresh(workers):
     assert ((x_r / 2).get().float_prec() == t / 2).all()
 
 
-def test_cnn_model(workers):
-    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(1, 20, 5, 1)
-            self.conv2 = nn.Conv2d(20, 50, 5, 1)
-            self.fc1 = nn.Linear(4 * 4 * 50, 500)
-            self.fc2 = nn.Linear(500, 10)
-
-        def forward(self, x):
-            # TODO: uncomment maxpool2d operations
-            # once it is supported with smpc.
-            x = F.relu(self.conv1(x))
-            # x = F.max_pool2d(x, 2, 2)
-            x = F.relu(self.conv2(x))
-            # x = F.max_pool2d(x, 2, 2)
-            x = x.view(-1, 4 * 4 * 50)
-            x = F.relu(self.fc1(x))
-            x = self.fc2(x)
-            return x
-
-    model = Net()
-    sh_model = copy.deepcopy(model).fix_precision().share(alice, bob, crypto_provider=james)
-
-    data = torch.zeros((1, 1, 28, 28))
-    sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
-
-    assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
-
-
 def test_correct_tag_and_description_after_send(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
 

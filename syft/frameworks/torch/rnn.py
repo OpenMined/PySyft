@@ -1,4 +1,10 @@
-# TODO Workaround to recursive import
+# TODO Workaround to cyclic import
+# HELP NEEDED HERE
+# This file is normally inside the nn/ directory. In the precision.py file
+# when we import nn, the nn/__init__.py gets called. Currently all other classes
+# (ie Conv2d, AvgPool2d, etc) behave well when imported in the nn/__init__.py
+# But due to the RNN Classes requiring the import of FixedPrecisionTensor (line 14)
+# and precision.py requiring the import of nn module, there is a problem.
 import numpy as np
 import torch
 from torch import nn
