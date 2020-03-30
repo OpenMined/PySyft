@@ -579,6 +579,11 @@ class TorchHook(FrameworkHook):
            It is important to note that all the operations are actually in-place.
         """
 
+        def get_nn_buffer(nn_self):
+            """get all the non parameterized buffer in the module"""
+            for name, buf in nn_self.named_buffers():
+                yield name, buf
+
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
             for p in model.parameters():
