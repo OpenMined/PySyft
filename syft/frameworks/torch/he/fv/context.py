@@ -15,3 +15,7 @@ class Context:
     @property
     def param(self):
         return self.__param
+
+    @param.setter
+    def param(self, encryption_param):
+        self.__param = encryption_param

@@ -1,4 +1,8 @@
+from collections import defaultdict
+
 from syft.frameworks.torch.he.fv.util.operations import get_significant_bit_count
+from syft.frameworks.torch.he.fv.modulus import PlainModulus
+from syft.frameworks.torch.he.fv.plaintext import PlainText
 
 
 class IntegerEncoder:
@@ -19,18 +23,18 @@ class IntegerEncoder:
     would be stored as a polynomial coefficient plain_modulus-1."""
 
     def __init__(self, context):
-        self.param = context.param()
-        self.plain_modulus = self.param.plain_modulus()
+        self.param = context.param
+        self.plain_modulus = self.param.plain_modulus
 
         if self.plain_modulus <= 1:
             raise ValueError("plain_modulus must be at least 2")
 
         if self.plain_modulus == 2:
             # In this case we don't allow any negative numbers
-            self.coeff_neg_threshold_ = 2
+            self.coeff_neg_threshold = 2
         else:
             # Normal negative threshold case
-            self.coeff_neg_threshold_ = (self.plain_modulus + 1) >> 1
+            self.coeff_neg_threshold = (self.plain_modulus + 1) >> 1
 
         self.neg_one = self.plain_modulus - 1
 
@@ -39,27 +43,28 @@ class IntegerEncoder:
         Args:
             value: The signed integer to encode"""
 
-        plaintext = []
         coeff_index = 0
         if value < 0:
             # negative value.
-            pos_value = -1 * value
-            encode_coeff_count = get_significant_bit_count(pos_value)
-            while pos_value != 0:
-                if (pos_value & 1) != 0:
+            value = -1 * value
+            encode_coeff_count = get_significant_bit_count(value)
+            plaintext = [0] * encode_coeff_count
+            while value != 0:
+                if (value & 1) != 0:
                     plaintext[coeff_index] = self.neg_one
-                pos_value >>= 1
+                value >>= 1
                 coeff_index += 1
         else:
             # positive value.
             encode_coeff_count = get_significant_bit_count(value)
+            plaintext = [0] * encode_coeff_count
             while value != 0:
                 if (value & 1) != 0:
                     plaintext[coeff_index] = 1
                 value >>= 1
                 coeff_index += 1
 
-        return plaintext
+        return PlainText(encode_coeff_count, plaintext)
 
     def decode(self, plain):
         """Decodes a plaintext polynomial and returns the result.
@@ -67,4 +72,41 @@ class IntegerEncoder:
 
         Args:
             plain: The plaintext to be decoded"""
-        pass
+
+        result = 0
+        bit_index = plain.significant_coeff_count()
+        while bit_index > 0:
+            bit_index -= 1
+            coeff = plain.data[bit_index]
+
+            # Left shift result.
+            next_result = result << 1
+            if (next_result < 0) != (result < 0):
+                # Check for overflow.
+                raise OverflowError("output out of range")
+
+            if coeff >= self.plain_modulus:
+                # Coefficient is bigger than plaintext modulus
+                raise ValueError("plain does not represent a valid plaintext polynomial")
+
+            coeff_is_negative = coeff >= self.coeff_neg_threshold
+            pos_value = coeff
+
+            if coeff_is_negative:
+                pos_value = self.plain_modulus - pos_value
+
+            coeff_value = pos_value
+            if coeff_is_negative:
+                coeff_value = -coeff_value
+
+            next_result_was_negative = next_result < 0
+            next_result += coeff_value
+            next_result_is_negative = next_result < 0
+            if (
+                next_result_was_negative == coeff_is_negative
+                and next_result_was_negative != next_result_is_negative
+            ):
+                # Accumulation and coefficient had same signs, but accumulator changed signs after addition, so must be overflow.
+                raise OverflowError("output out of range")
+            result = next_result
+        return result

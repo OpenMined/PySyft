@@ -31,6 +31,14 @@ def exponentiate_mod(operand, exponent, modulus):
     return intermediate
 
 
+def get_significant_count(values, count):
+    i = count - 1
+    while count and not values[i]:
+        i -= 1
+        count -= 1
+    return count
+
+
 def get_significant_bit_count(value):
 
     if value == 0:
