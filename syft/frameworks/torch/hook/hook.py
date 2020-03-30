@@ -588,10 +588,8 @@ class TorchHook(FrameworkHook):
             self.element_iter_dict[name] = func
 
         def tensor_iterator(nn_self):
-            iterators = [
-            "parameters",
-            "buffers"
-            ]
+            """adding relavant iterators for the tensor elements"""
+            iterators = ["parameters", "buffers"]
             return [getattr(nn_self, iter) for iter in iterators]
 
         def module_is_missing_grad(model):
@@ -613,10 +611,9 @@ class TorchHook(FrameworkHook):
         def module_send_(nn_self, *dest, force_send=False, **kwargs):
             """Overloads torch.nn instances so that they could be sent to other workers"""
 
-
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
-            
+
             # for p in nn_self.parameters():
             #     p.send_(*dest, **kwargs)
 
