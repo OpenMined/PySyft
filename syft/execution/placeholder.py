@@ -1,5 +1,6 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
@@ -20,6 +21,8 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
+        if not isinstance(self.id, PlaceholderId):
+            self.id = PlaceholderId(self.id)
         self.child = None
 
     def instantiate(self, tensor):
@@ -27,12 +30,10 @@ class PlaceHolder(AbstractTensor):
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.
 
-        We remove wrappers or Placeholders if is there are any.
+        We remove Placeholders if is there are any.
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
-        elif tensor.is_wrapper:
-            self.instantiate(tensor.child)
         else:
             self.child = tensor
         return self
@@ -97,14 +98,7 @@ class PlaceHolder(AbstractTensor):
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
 
-        if not hasattr(worker, "_tmp_placeholders"):
-            worker._tmp_placeholders = {}
-
-        if tensor_id not in worker._tmp_placeholders:
-            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            worker._tmp_placeholders[tensor_id] = tensor
-
-        return worker._tmp_placeholders[tensor_id]
+        return PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, tensor: "PlaceHolder") -> PlaceholderPB:
@@ -119,7 +113,7 @@ class PlaceHolder(AbstractTensor):
         """
 
         protobuf_placeholder = PlaceholderPB()
-        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id)
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id.value)
         protobuf_placeholder.tags.extend(tensor.tags)
 
         if tensor.description:
@@ -145,14 +139,7 @@ class PlaceHolder(AbstractTensor):
         if bool(protobuf_placeholder.description):
             description = protobuf_placeholder.description
 
-        if not hasattr(worker, "_tmp_placeholders"):
-            worker._tmp_placeholders = {}
-
-        if tensor_id not in worker._tmp_placeholders:
-            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            worker._tmp_placeholders[tensor_id] = tensor
-
-        return worker._tmp_placeholders[tensor_id]
+        return PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
 
 
 ### Register the tensor with hook_args.py ###
