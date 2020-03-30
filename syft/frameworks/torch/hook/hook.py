@@ -589,7 +589,10 @@ class TorchHook(FrameworkHook):
 
         def tensor_iterator(nn_self):
             """adding relavant iterators for the tensor elements"""
-            iterators = ["parameters", "buffers"]
+            iterators = [
+                "parameters",
+                "buffers",
+            ]  # all the element iterators from nn module should be listed here,
             return [getattr(nn_self, iter) for iter in iterators]
 
         def module_is_missing_grad(model):
