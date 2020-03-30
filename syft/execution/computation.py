@@ -3,6 +3,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
@@ -110,15 +111,18 @@ class ComputationAction(Action):
         protobuf_op = ComputationActionPB()
         protobuf_op.command = action.name
 
-        if type(action.target) == sy.generic.pointers.pointer_tensor.PointerTensor:
-            protobuf_owner = protobuf_op.target_pointer
-        elif type(action.target) == sy.execution.placeholder.PlaceHolder:
-            protobuf_owner = protobuf_op.target_placeholder
-        else:
-            protobuf_owner = protobuf_op.target_tensor
+        protobuf_target = None
+        if isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
+            protobuf_target = protobuf_op.target_pointer
+        elif isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
+            protobuf_target = protobuf_op.target_placeholder_id
+        elif isinstance(action.target, (int, str)):
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.target_id, action.target)
+        elif action.target is not None:
+            protobuf_target = protobuf_op.target_tensor
 
-        if action.target is not None:
-            protobuf_owner.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
+        if protobuf_target is not None:
+            protobuf_target.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
 
         if action.args:
             protobuf_op.args.extend(sy.serde.protobuf.serde.bufferize_args(worker, action.args))
@@ -130,15 +134,17 @@ class ComputationAction(Action):
                 )
 
         if action.return_ids is not None:
-            if type(action.return_ids) == PlaceHolder:
-                return_ids = list((action.return_ids,))
+            if not isinstance(action.return_ids, (list, tuple)):
+                return_ids = (action.return_ids,)
             else:
                 return_ids = action.return_ids
 
             for return_id in return_ids:
-                if type(return_id) == PlaceHolder:
-                    protobuf_op.return_placeholders.extend(
-                        [sy.serde.protobuf.serde._bufferize(worker, return_id)]
+                if isinstance(return_id, PlaceholderId):
+                    # NOTE to know when we have a PlaceholderId, we store it
+                    # in return_placeholder_ids and not in return_ids
+                    protobuf_op.return_placeholder_ids.append(
+                        sy.serde.protobuf.serde._bufferize(worker, return_id)
                     )
                 else:
                     sy.serde.protobuf.proto.set_protobuf_id(protobuf_op.return_ids.add(), return_id)
@@ -182,20 +188,13 @@ class ComputationAction(Action):
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
         ]
 
-        return_placeholders = [
+        return_placeholder_ids = [
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_obj.return_placeholders
+            for placeholder in protobuf_obj.return_placeholder_ids
         ]
 
-        if return_placeholders:
-            if len(return_placeholders) == 1:
-                action = ComputationAction(
-                    command, target, tuple(args), kwargs, return_placeholders[0]
-                )
-            else:
-                action = ComputationAction(
-                    command, target, tuple(args), kwargs, return_placeholders
-                )
+        if return_placeholder_ids:
+            action = ComputationAction(command, target, tuple(args), kwargs, return_placeholder_ids)
         else:
             action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
 
