@@ -88,7 +88,7 @@ class TorchHook(FrameworkHook):
     """
 
     def __init__(
-        self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
+            self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
     ):
         """Initializes the hook.
 
@@ -223,7 +223,7 @@ class TorchHook(FrameworkHook):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
         assert (
-            wrapper_type is None or wrapper_type == torch.Tensor
+                wrapper_type is None or wrapper_type == torch.Tensor
         ), "TorchHook only uses torch.Tensor wrappers"
 
         return torch.Tensor()
@@ -420,7 +420,7 @@ class TorchHook(FrameworkHook):
             # If grad is not a pure torch tensor you need to store the chain in a
             # specific place otherwise it will get deleted
             if new_grad is not None and (
-                not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
+                    not isinstance(new_grad, torch.Tensor) or hasattr(new_grad, "child")
             ):
                 self.child.grad = new_grad  # .wrap()
             else:
@@ -578,6 +578,10 @@ class TorchHook(FrameworkHook):
            loss functions.
            It is important to note that all the operations are actually in-place.
         """
+
+        def get_nn_buffer(nn_self):
+            for name, buf in nn_self.named_buffers():
+                yield name, buf
 
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
