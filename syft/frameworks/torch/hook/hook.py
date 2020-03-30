@@ -580,6 +580,7 @@ class TorchHook(FrameworkHook):
         """
 
         def get_nn_buffer(nn_self):
+            """get all the non parameterized buffer in the module"""
             for name, buf in nn_self.named_buffers():
                 yield name, buf
 
