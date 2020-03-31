@@ -34,9 +34,9 @@ if __name__ == "__main__":
         type=str,
         default="normal",
         help="""can run websocket server for websockets examples of mnist/mnist-parallel or
-    pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
-    for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
-    and 'steal_data' for pen_tesing stealing data over sockets""",
+        pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
+        for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
+        and 'steal_data' for pen_tesing stealing data over sockets""",
     )
     parser.add_argument("--pytest_testing", action="store_true", help="""Used for pytest testing""")
     args = parser.parse_args()
