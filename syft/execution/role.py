@@ -137,9 +137,10 @@ class Role(AbstractObject):
             response = eval(cmd)(*args, **kwargs)  # nosec
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
-        if not isinstance(response, (list, tuple)):
+
+        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
             response = (response,)
-        PlaceHolder.instantiate_placeholders(return_placeholder, response)
+            PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
     def build_placeholders(self, obj):
         """
@@ -156,10 +157,8 @@ class Role(AbstractObject):
             placeholder = PlaceHolder(id=obj.id, owner=self.owner)
             self.placeholders[obj.id] = placeholder
             return placeholder.id
-        elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
-            return obj
         else:
-            return None
+            return obj
 
     def fetch_placeholders_from_ids(self, obj):
         """
