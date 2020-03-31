@@ -22,7 +22,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject, ObjectStorage):
+class Role(AbstractObject):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
