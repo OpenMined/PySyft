@@ -59,7 +59,7 @@ class Role(AbstractObject):
             # we want to make sure in that case that the state is empty
             assert state is None
             for tensor in state_tensors:
-                self.add_tensor_to_state(tensor)
+                self.register_state_tensor(tensor)
 
     def register_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
@@ -86,6 +86,13 @@ class Role(AbstractObject):
             return_placeholder_ids = (return_placeholder_ids,)
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
+
+    def register_state_tensor(self, tensor):
+        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
+        placeholder.instantiate(tensor)
+        self.state.state_placeholders.append(placeholder)
+        # TODO isn't it weird that state placeholders are both in state and plan?
+        self.placeholders[tensor.id] = placeholder
 
     def execute(self, args):
         """ Make the role execute all its actions using args as inputs.
@@ -153,13 +160,6 @@ class Role(AbstractObject):
             return obj
         else:
             return None
-
-    def add_tensor_to_state(self, tensor):
-        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
-        placeholder.instantiate(tensor)
-        self.state.state_placeholders.append(placeholder)
-        # TODO isn't it weird that state placeholders are both in state and plan?
-        self.placeholders[tensor.id] = placeholder
 
     def fetch_placeholders_from_ids(self, obj):
         """

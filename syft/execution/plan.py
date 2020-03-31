@@ -216,7 +216,7 @@ class Plan(AbstractObject):
         object.__setattr__(self, name, value)
 
         if isinstance(value, FrameworkTensor):
-            self.role.add_tensor_to_state(value)
+            self.role.register_state_tensor(value)
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
                 self.__setattr__(f"{name}_{tensor_name}", tensor)
