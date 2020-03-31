@@ -1,13 +1,15 @@
 """
     All Gateway routes (REST API).
 """
-
+import base64
 from flask import render_template, Response, request, current_app, send_file
 from math import floor
+from typing import Union, Callable
 import numpy as np
 from scipy.stats import poisson
 from . import main
 import json
+import jwt
 import random
 import os
 import requests
@@ -370,17 +372,109 @@ def download_model():
 
 @main.route("/federated/authenticate", methods=["POST"])
 def auth():
-    """returns worker_id !!!currently!!! does not have auth logic"""
+    """uses JWT (HSA/RSA) to authenticate"""
     response_body = {}
     status_code = 200
+    data = json.loads(request.data)
+    _auth_token = data["auth_token"]
+    model_name = data.get("model_name", None)
+
+    """stub DB vars"""
+    JWT_VERIFY_API = 1  # maybe processes._processes.last()["server_config"].get("JWT_VERIFY_API", None)
+    RSA = False
+    # maybe processes._processes.last(name=model_name)["server_config"].get("JWT_with_RSA", True)
+    if RSA:
+        pub_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDAswWWr/kU9Z5kj7KIQEs54B9x1MaEhEp4WDZPJ+PGONfg2tD4BKuGtDl345f4zgx7EPZL7EZRApLq6HxcznVbLleIbyqKkzvR88zHLBaxQ9GBRx+0kH8VqZspmMI/6fDBVm/SDtG1GOAYPwX1zK3DZZFMkkA2v8oGZ3U791jd9gy7S5CxewJrFMcFMStj9x8x3tW07OAdC7/HZpa5zKE2rWN01tytxbsl9/coMNBAfWIWEflhZgRz2+Onp2uDaXez7RNTe4m0+tQlx2FD0Pb7rFvlKwsgziKBReO8wwCQXWqcAPLsIXCOfUZXlBNpvPvp9I4HPEffaHyR1FC2eRoj4hzUibEu0+OQNj7QM5P9KsMV9k4wxURFxsd78rlFF8cnbKwIMf5nB8/FbqL/IyJOggxtntHr1Gum44QnG794GtSQHZNlWKKak2z/u2O++flxfZ9dBBAYWjJYM5kIT+X9NVYbWWryBqupHYipwP8f3vovKWVacOMMm3S0z76O5IDiIp5Gjnsifbnz57FWQok0HrSv8l3QMRPCxi3SjIFyI2ZusFC/4VLy9zZXQe07qI6l7s91UN6W8VW1YUFQ7nLGffkpAd/bLZSOueYQrf5tslQjZf3Jon5C/MkTJ7PGyOUmoAYya2kyKi4izMg/ODRIloVbWjU6tEPWyhzK8VMsXw== root@388da63cf68e"
+        # @TODO: remove when hooked up to DB
+        # maybe processes._processes.last(name=model_name)["server_config"].get("pub_key", None)
+    else:
+        SECRET = "very long a$$ very secret key phrase"  #  TODO:@PRTFW remove after hookup to DB  # maybe processes._processes.last(name=model_name)["server_config"].get("JWT_SECRET", "very long a$$ very secret key phrase")
+
+    """end stub DB vars"""
+
+    HIGH_SECURITY_RISK_NO_AUTH_FLOW = False if JWT_VERIFY_API is not None else True
+
     try:
-        auth_token = request.args.get("auth_token", None)
-        resp = fl_events_auth({"auth_token": auth_token}, None)
-        resp = json.loads(resp)["data"]
+        if not HIGH_SECURITY_RISK_NO_AUTH_FLOW:
+            if _auth_token is None:
+
+                status_code = 400
+                return Response(
+                    json.dumps(
+                        {
+                            "error": "Authentication is required, please pass an 'auth_token'."
+                        }
+                    ),
+                    status=status_code,
+                    mimetype="application/json",
+                )
+            else:
+                base64Header, base64Payload, signature = _auth_token.split(".")
+                header_str = base64.b64decode(base64Header)
+                header = json.loads(header_str)
+                _algorithm = header["alg"]
+
+                if not RSA:
+                    payload_str = base64.b64decode(base64Payload)
+                    payload = json.loads(payload_str)
+                    expected_token = jwt.encode(
+                        payload, SECRET, algorithm=_algorithm
+                    ).decode("utf-8")
+
+                    if expected_token != _auth_token:
+                        status_code = 400
+                        return Response(
+                            json.dumps(
+                                {"error": "The 'auth_token' you sent is invalid."}
+                            ),
+                            status=status_code,
+                            mimetype="application/json",
+                        )
+                else:
+                    # we should check if RSA is true there is a pubkey string included during call to `host_federated_training`
+                    # here we assume it exists / no redundant check
+                    try:
+                        jwt.decode(_auth_token, pub_key, _algorithm)
+
+                    except Exception as e:
+                        if e.__class__.__name__ == "InvalidSignatureError":
+                            status_code = 400
+                            return Response(
+                                json.dumps(
+                                    {
+                                        "error": "The 'auth_token' you sent is invalid. "
+                                        + str(e)
+                                    }
+                                ),
+                                status=status_code,
+                                mimetype="application/json",
+                            )
+        external_api_verify_data = {"auth_token": f"{_auth_token}"}
+        verification_result = requests.get(
+            "http://google.com"
+        )  # test with get and google for now. using .post should result in failure
+        # TODO:@MADDIE replace after we have a api to test with `verification_result = requests.post(JWT_VERIFY_API, data = json.dumps(external_api_verify_data))`
+        if verification_result.status_code == 200:
+            resp = fl_events_auth({"auth_token": _auth_token}, None)
+            response_body = json.loads(resp)["data"]
+        else:
+            status_code = 400
+            return Response(
+                json.dumps(
+                    {
+                        "error": "The 'auth_token' you sent did not pass 3rd party verificaiton. "
+                    }
+                ),
+                status=status_code,
+                mimetype="application/json",
+            )
     except Exception as e:
         status_code = 401
-        resp = {"error_auth_failed": e}
-    return Response(json.dumps(resp), status=status_code, mimetype="application/json")
+        response_body = {"error_auth_failed": str(e)}
+
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 @main.route("/federated/report", methods=["POST"])

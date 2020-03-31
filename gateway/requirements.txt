@@ -1,4 +1,5 @@
 Click==7.0
+cryptography
 Flask==1.1.1
 eventlet==0.24.1
 gunicorn==19.9.0
