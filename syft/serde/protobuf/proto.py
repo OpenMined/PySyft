@@ -14,6 +14,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
+from syft.execution.role import Role
 from syft.execution.state import State
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -27,6 +28,7 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
+from syft_proto.execution.v1.role_pb2 import Role as RolePB
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
@@ -66,6 +68,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     Plan: PlanPB,
     PointerTensor: PointerTensorPB,
     Protocol: ProtocolPB,
+    Role: RolePB,
     State: StatePB,
 }
 
