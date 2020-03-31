@@ -579,7 +579,7 @@ class TorchHook(FrameworkHook):
            It is important to note that all the operations are actually in-place.
         """
 
-        def get_nn_buffer(nn_self):
+        def named_buffer(nn_self):
             """get all the non parameterized buffer in the module"""
             for name, buf in nn_self.named_buffers():
                 yield name, buf
@@ -605,6 +605,10 @@ class TorchHook(FrameworkHook):
 
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
+
+            for name, buf in named_buffer(nn_self):
+                name.send_(*dest, **kwargs)
+                buf.send_(*dest, **kwargs)
 
             for p in nn_self.parameters():
                 p.send_(*dest, **kwargs)
