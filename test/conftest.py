@@ -17,6 +17,20 @@ from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 
 
+def pytest_sessionstart(session):
+    session.failed_tests = set()
+
+
+def pytest_runtest_makereport(item, call):  # pragma: no cover
+    if call.excinfo is not None and item.originalname:
+        item.session.failed_tests.add(item.originalname)
+
+
+def pytest_runtest_setup(item):  # pragma: no cover
+    if item.originalname in item.session.failed_tests:
+        pytest.skip("previous test failed (%s)" % item.name)
+
+
 def _start_proc(participant, dataset: str = None, **kwargs):  # pragma: no cover
     """Helper function for spinning up a websocket participant."""
 
@@ -63,7 +77,7 @@ def start_remote_worker():  # pragma: no cover
     """Helper function for starting a websocket worker."""
 
     def _start_remote_worker(
-        id, hook, dataset: str = None, host="localhost", port=8768, max_tries=5, sleep_time=0.01
+        id, hook, dataset: str = None, host="0.0.0.0", port=8768, max_tries=5, sleep_time=0.01
     ):
         kwargs = {"id": id, "host": host, "port": port, "hook": hook}
         server = _start_proc(WebsocketServerWorker, dataset=dataset, **kwargs)
@@ -129,6 +143,7 @@ def workers(hook):
     syft.local_worker.clear_objects()
     hook_args.hook_method_args_functions = {}
     hook_args.hook_method_response_functions = {}
+    hook_args.register_response_functions = {}
     hook_args.get_tensor_type_functions = {}
 
     # Define 4 virtual workers

@@ -68,7 +68,7 @@ class RNNCell(RNNCellBase):
         elif nonlinearity == "relu":
             self.nonlinearity = torch.relu
         else:
-            raise ValueError("Unknown nonlinearity: {}".format(nonlinearity))
+            raise ValueError(f"Unknown nonlinearity: {nonlinearity}")
 
     def forward(self, x, h=None):
 

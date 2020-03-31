@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -55,8 +56,46 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    origin = None
+    id_at_origin = None
+
     def has_child(self):
         return hasattr(self, "child")
+
+    def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
+        """
+        This hook is triggered when a tensor which was received from a sender has
+        a gradient update. It will send back to this sender and his original tensor
+        this gradient value to be set remotely. Also, because this is triggered during
+        backward(), the backward command is also forwarded back.
+
+        Args:
+            origin (str): id of the worker where this tensor comes from
+            id_at_origin (int): what was its original id
+        """
+
+        def trigger_origin_backward(grad):
+            """
+            The function setting back the gradient and calling backward
+
+            Args:
+                grad: the gradient tensor being set
+            """
+
+            location = self.owner.get_worker(origin)
+
+            # set gradient at the origin
+            message = TensorCommandMessage.computation("set_grad", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
+
+            # call backward()
+            message = TensorCommandMessage.computation("backward", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
+
+        return trigger_origin_backward
+
+    def set_grad(self, grad):
+        self.grad = grad
 
     @property
     def tags(self):
@@ -361,26 +400,30 @@ class TorchTensor(AbstractTensor):
         self,
         *location,
         inplace: bool = False,
-        user=None,
-        local_autograd=False,
-        preinitialize_grad=False,
-        no_wrap=False,
-        garbage_collect_data=True,
+        user: object = None,
+        local_autograd: bool = False,
+        requires_grad: bool = False,
+        preinitialize_grad: bool = False,
+        no_wrap: bool = False,
+        garbage_collect_data: bool = True,
     ):
         """Gets the pointer to a new remote object.
 
-        One of the most commonly used methods in PySyft, this method serializes
-        the object upon which it is called (self), sends the object to a remote
-        worker, creates a pointer to that worker, and then returns that pointer
-        from this function.
+        One of the most commonly used methods in PySyft, this method serializes the object upon
+        which it is called (self), sends the object to a remote worker, creates a pointer to
+        that worker, and then returns that pointer from this function.
 
         Args:
-            location: The BaseWorker object which you want to send this object
-                to. Note that this is never actually the BaseWorker but instead
-                a class which instantiates the BaseWorker abstraction.
+            location: The BaseWorker object which you want to send this object to. Note that
+                this is never actually the BaseWorker but instead a class which instantiates the
+                BaseWorker abstraction.
             inplace: if true, return the same object instance, else a new wrapper
+            user (object,optional): User credentials to be verified.
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
+            requires_grad: Default to False. If true, whenever the remote value of this tensor
+                will have its gradient updated (for example when calling .backward()), a call
+                will be made to set back the local gradient value.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
             no_wrap: If True, wrap() is called on the created pointer
             garbage_collect_data: argument passed down to create_pointer()
@@ -415,6 +458,7 @@ class TorchTensor(AbstractTensor):
                 self,
                 location,
                 local_autograd=local_autograd,
+                requires_grad=requires_grad,
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
             )
@@ -613,13 +657,15 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        return the result of PrivateTensor's allow method.
 
             Args:
-                user (object,optional): User crendentials to be verified.
+                user (object,optional): User credentials to be verified.
 
             Returns:
-                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
+                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns
+                false.
         """
         # If it is a wrapper
         if self.is_wrapper:
@@ -638,15 +684,28 @@ class TorchTensor(AbstractTensor):
                 current_tensor = current_tensor.child
         return True
 
-    def move(self, location):
-        self.child = self.child.move(location)
+    def move(self, location: BaseWorker, requires_grad: bool = False):
+        """
+        Move acts on a pointer to A to move the remote value to B (=location).
+
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
+
+        Args:
+            location: the worker where the remote value should be moved
+            requires_grad: see send() for details
+
+        Returns:
+            A pointer to the worker location
+        """
+        self.child = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the syft.local_worker
         self.child.owner.register_obj(self)
         return self
 
-    def remote_send(self, location, change_location=False):
-        self.child.remote_send(location, change_location)
+    def remote_send(self, location):
+        self.child.remote_send(location)
         return self
 
     def attr(self, attr_name):
@@ -919,12 +978,6 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
-
-    def keep(self, obj):
-        """ Call .keep() on self's child if the child is a Promise (otherwise an error is raised).
-        .keep() is used to fulfill a promise with a value.
-        """
-        return self.child.keep(obj)
 
     def value(self):
         """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).

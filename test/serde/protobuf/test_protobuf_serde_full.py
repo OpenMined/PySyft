@@ -29,7 +29,9 @@ samples[torch.Size] = make_torch_size
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
-samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.execution.protocol.Protocol] = make_protocol
@@ -37,14 +39,14 @@ samples[syft.execution.state.State] = make_state
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.OperationMessage] = make_operation
+samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in protobuf.serde.bufferizers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
@@ -70,7 +72,7 @@ def test_serde_roundtrip_protobuf(cls, workers):
 
         if sample.get("cmp_detailed", None):
             # Custom detailed objects comparison function.
-            assert sample.get("cmp_detailed")(roundtrip_obj, obj) is True
+            assert sample.get("cmp_detailed")(roundtrip_obj, obj)
         else:
             assert type(roundtrip_obj) == type(obj)
             assert roundtrip_obj == obj

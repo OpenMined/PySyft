@@ -279,9 +279,7 @@ def msb(a_sh):
     beta_prime = private_compare(x_bit_sh, r, beta=beta)
 
     # 5)
-    beta_prime_sh = beta_prime.share(
-        *workers, field=L, crypto_provider=crypto_provider, **no_wrap
-    )
+    beta_prime_sh = beta_prime.share(*workers, field=L, crypto_provider=crypto_provider, **no_wrap)
 
     # 7)
     j = sy.MultiPointerTensor(

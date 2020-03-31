@@ -1,13 +1,16 @@
 import math
 import logging
-
+from syft.generic.object import AbstractObject
+from syft.workers.base import BaseWorker
+from syft.generic.pointers.pointer_dataset import PointerDataset
 import torch
 from torch.utils.data import Dataset
+import syft
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset:
+class BaseDataset(AbstractObject):
     """
     This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
@@ -22,8 +25,10 @@ class BaseDataset:
 
     """
 
-    def __init__(self, data, targets, transform=None):
-
+    def __init__(self, data, targets, transform=None, owner=None, **kwargs):
+        if owner is None:
+            owner = syft.framework.hook.local_worker
+        super().__init__(owner=owner, **kwargs)
         self.data = data
         self.targets = targets
         self.transform_ = transform
@@ -68,21 +73,9 @@ class BaseDataset:
 
             raise TypeError("Transforms can be applied only on torch tensors")
 
-    def send(self, worker):
-        """
-        Args:
-
-            worker[worker class]: worker to which the data must be sent
-
-        Returns:
-
-            self: Return the object instance with data sent to corresponding worker
-
-        """
-
-        self.data.send_(worker)
-        self.targets.send_(worker)
-        return self
+    def send(self, location: BaseWorker):
+        ptr = self.owner.send(self, workers=location)
+        return ptr
 
     def get(self):
         """
@@ -92,6 +85,12 @@ class BaseDataset:
         self.data.get_()
         self.targets.get_()
         return self
+
+    def get_data(self):
+        return self.data
+
+    def get_targets(self):
+        return self.targets
 
     def fix_prec(self, *args, **kwargs):
         """
@@ -121,12 +120,80 @@ class BaseDataset:
         self.targets.share_(*args, **kwargs)
         return self
 
+    def create_pointer(
+        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+    ):
+        """creats a pointer to the self dataset"""
+        if owner is None:
+            owner = self.owner
+
+        if location is None:
+            location = self.owner
+
+        owner = self.owner.get_worker(owner)
+        location = self.owner.get_worker(location)
+
+        return PointerDataset(
+            owner=owner,
+            location=location,
+            id_at_location=id_at_location or self.id,
+            garbage_collect_data=garbage_collect_data,
+            tags=self.tags,
+            description=self.description,
+        )
+
+    def __repr__(self):
+
+        fmt_str = "BaseDataset\n"
+        fmt_str += f"\tData: {self.data}\n"
+        fmt_str += f"\ttargets: {self.targets}"
+
+        if self.tags is not None and len(self.tags):
+            fmt_str += "\n\tTags: "
+            for tag in self.tags:
+                fmt_str += str(tag) + " "
+
+        if self.description is not None:
+            fmt_str += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
+
+        return fmt_str
+
     @property
     def location(self):
         """
             Get location of the data
         """
         return self.data.location
+
+    @staticmethod
+    def simplify(worker, dataset: "BaseDataset") -> tuple:
+        chain = None
+        if hasattr(dataset, "child"):
+            chain = syft.serde.msgpack.serde._simplify(worker, dataset.child)
+        return (
+            syft.serde.msgpack.serde._simplify(worker, dataset.data),
+            syft.serde.msgpack.serde._simplify(worker, dataset.targets),
+            dataset.id,
+            syft.serde.msgpack.serde._simplify(worker, dataset.tags),
+            syft.serde.msgpack.serde._simplify(worker, dataset.description),
+            chain,
+        )
+
+    @staticmethod
+    def detail(worker, dataset_tuple: tuple) -> "BaseDataset":
+        data, targets, id, tags, description, chain = dataset_tuple
+        dataset = BaseDataset(
+            syft.serde.msgpack.serde._detail(worker, data),
+            syft.serde.msgpack.serde._detail(worker, targets),
+            owner=worker,
+            id=id,
+            tags=syft.serde.msgpack.serde._detail(worker, tags),
+            description=syft.serde.msgpack.serde._detail(worker, description),
+        )
+        if chain is not None:
+            chain = syft.serde.msgpack.serde._detail(worker, chain)
+            dataset.child = chain
+        return dataset
 
 
 def dataset_federate(dataset, workers):
@@ -135,7 +202,7 @@ def dataset_federate(dataset, workers):
     into a sy.FederatedDataset. The dataset given is split in len(workers)
     part and sent to each workers
     """
-    logger.info("Scanning and sending data to {}...".format(", ".join([w.id for w in workers])))
+    logger.info(f"Scanning and sending data to {', '.join([w.id for w in workers])}...")
 
     # take ceil to have exactly len(workers) sets after splitting
     data_size = math.ceil(len(dataset) / len(workers))
@@ -172,11 +239,11 @@ class FederatedDataset:
             self.datasets[worker_id] = dataset
 
         # Check that data and targets for a worker are consistent
-        for worker_id in self.workers:
+        """for worker_id in self.workers:
             dataset = self.datasets[worker_id]
-            assert len(dataset.data) == len(
-                dataset.targets
-            ), "On each worker, the input and target must have the same number of rows."
+            assert (
+                dataset.data.shape == dataset.targets.shape
+            ), "On each worker, the input and target must have the same number of rows.""" ""
 
     @property
     def workers(self):
@@ -203,6 +270,6 @@ class FederatedDataset:
     def __repr__(self):
 
         fmt_str = "FederatedDataset\n"
-        fmt_str += "    Distributed accross: {}\n".format(", ".join(str(x) for x in self.workers))
-        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
+        fmt_str += f"    Distributed accross: {', '.join(str(x) for x in self.workers)}\n"
+        fmt_str += f"    Number of datapoints: {self.__len__()}\n"
         return fmt_str

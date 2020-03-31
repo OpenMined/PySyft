@@ -2,6 +2,7 @@ from typing import List
 from typing import Union
 
 import syft
+from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -10,6 +11,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -154,7 +156,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def clone(self):
         """
         Clone should keep ids unchanged, contrary to copy.
-        We make the choice that a clone operation is local, and can't affect
+        We make the choice that a clone action is local, and can't affect
         the remote tensors, so garbage_collect_data is always False, both
         for the tensor cloned and the clone.
         """
@@ -178,10 +180,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     @staticmethod
     def create_pointer(
         tensor,
-        location: AbstractWorker = None,
+        location: Union[AbstractWorker, str] = None,
         id_at_location: (str or int) = None,
         register: bool = False,
-        owner: AbstractWorker = None,
+        owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
@@ -259,28 +261,51 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location):
-        ptr = self.owner.send(self, location)
-        ptr.remote_get()
-        # don't want it to accidentally delete the remote object
-        # when this pointer is deleted
-        ptr.garbage_collect_data = False
+    def move(self, destination: AbstractWorker, requires_grad: bool = False):
+        """
+        Will move the remove value from self.location A to destination B
+
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
+
+        Args:
+            destination: the new location of the remote data
+            requires_grad: see send() for details
+
+        Returns:
+            A pointer to location
+        """
+        # move to local target is equivalent to doing .get()
+        if self.owner.id == destination.id:
+            return self.get()
+
+        ptr = self.remote_send(destination, requires_grad=requires_grad)
+
+        # We make the pointer point at the remote value. As the id doesn't change,
+        # we don't update ptr.id_at_location. See issue #3217 about this.
+        # Note that you have now 2 pointers on different locations pointing to the
+        # same tensor.
+        ptr.location = destination
+
         return ptr
 
-    def remote_send(self, destination, change_location=False):
+    def remote_send(
+        self, destination: AbstractWorker, requires_grad: bool = False,
+    ):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-        If change_location is set to True, the original pointer will point to the moved object.
-        Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
-        will have 2 references pointing to it.
+
+        Args:
+            destination: where the remote value should be sent
+            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
+                a message to update the gradient of the value on A.
         """
-        args = (destination,)
-        kwargs = {"inplace": True}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
-        if change_location:
-            self.location = destination
+        kwargs = {"inplace": False, "requires_grad": requires_grad}
+        message = TensorCommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
@@ -383,21 +408,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         # Send the command
         command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def keep(self, *args, **kwargs):
-        """
-        Send a command to remote worker to keep a promise
-
-        Returns:
-            A pointer to a Tensor
-        """
-
-        # Send the command
-        command = ("keep", self, args, kwargs)
 
         response = self.owner.send_command(self.location, command)
 

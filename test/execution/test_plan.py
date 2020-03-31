@@ -141,8 +141,93 @@ def test_plan_execute_locally_ambiguous_input(workers):
     t1, t2, t3 = th.tensor([1]), th.tensor([2]), th.tensor([3])
     expected = serde_plan(t1, t2, t3)
     actual = serde_plan_detailed(t1, t2, t3)
-    print(actual)
-    print(expected)
+    assert actual == expected
+
+
+def test_plan_torch_function_no_args(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.tensor([-1])
+        z = x + y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected == th.tensor([0.0])
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.arange(3)
+        z = y + x
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert (actual == expected).all()
+    assert (actual == th.tensor([1, 2, 3])).all()
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        th.manual_seed(14)
+        y = th.randint(2, size=(1,), dtype=th.uint8)
+        y = y + 10
+        return y
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected and actual >= 10
+
+
+def test_plan_with_comp(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(2,), (2,)])
+    def serde_plan(x, y):
+        z = x > y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t1 = th.tensor([2.0, 0.0])
+    t2 = th.tensor([1.0, 1.0])
+    expected = serde_plan_detailed(t1, t2)
+    actual = serde_plan_detailed(t1, t2)
+    assert (actual == expected).all()
+
+
+def test_plan_fixed_len_loop(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        for i in range(10):
+            x = x + 1
+        return x
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
     assert actual == expected
 
 
@@ -286,7 +371,7 @@ def test_plan_built_on_class(hook):
     net.build(th.tensor([1, 2.0]))
 
     net_ptr = net.send(device_1)
-    pointer_to_data = device_1.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_1)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()
@@ -295,7 +380,7 @@ def test_plan_built_on_class(hook):
 
     net_ptr = net.send(device_2)
 
-    pointer_to_data = device_2.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_2)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()
@@ -409,7 +494,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(
-        id="test_fetch_stateful_plan_remote_{}".format(is_func2plan), hook=hook, port=8802
+        id=f"test_fetch_stateful_plan_remote_{is_func2plan}", hook=hook, port=8802
     )
 
     if is_func2plan:
@@ -1011,3 +1096,33 @@ def test_plan_can_be_jit_traced(hook, workers):
     y = torchscript_plan(t)
 
     assert (y == th.tensor([3.0, 5])).all()
+
+
+def test_plan_input_usage(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test_1(x, y):
+        return x
+
+    @sy.func2plan()
+    def plan_test_2(x, y):
+        return y
+
+    pointer_to_data_1 = device_1.search("input_data")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    plan_test_1.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_1.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x11).all()
+
+    plan_test_2.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_2.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x12).all

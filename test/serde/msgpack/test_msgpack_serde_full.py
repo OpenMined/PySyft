@@ -34,6 +34,7 @@ samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 
 # PyTorch
 samples[torch.device] = make_torch_device
+samples[torch.dtype] = make_torch_dtype
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
 samples[torch.jit.ScriptFunction] = make_torch_scriptfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
@@ -56,6 +57,8 @@ samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_l
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.state.State] = make_state
+samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
@@ -67,10 +70,10 @@ samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
-samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
+samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 
-samples[syft.messaging.message.Message] = make_message
-samples[syft.messaging.message.OperationMessage] = make_operation
+samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
@@ -78,6 +81,7 @@ samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
 samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
+samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 
@@ -92,13 +96,19 @@ def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip(cls, workers):
+def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
-    _samples = samples[cls](workers=workers)
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9000,
+        id="roundtrip",
+    )
     for sample in _samples:
         _simplify = (
             msgpack.serde._simplify
@@ -126,9 +136,15 @@ def test_serde_roundtrip(cls, workers):
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_simplify(cls, workers):
+def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
-    _samples = samples[cls](workers=workers)
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9001,
+        id="simplify",
+    )
     for sample in _samples:
         obj, expected_simplified_obj = sample.get("value"), sample.get("simplified")
         _simplify = (

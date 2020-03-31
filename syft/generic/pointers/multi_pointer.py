@@ -75,6 +75,9 @@ class MultiPointerTensor(AbstractTensor):
 
             if pointer_grad is None:
                 results[worker] = None
+            elif pointer_grad.is_wrapper:
+                results[worker] = pointer_grad.child
+                all_none = False
             else:
                 results[worker] = pointer_grad
                 all_none = False

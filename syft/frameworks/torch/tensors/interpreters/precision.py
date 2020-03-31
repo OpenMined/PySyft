@@ -413,7 +413,7 @@ class FixedPrecisionTensor(AbstractTensor):
             ), "In matmul, all args should have the same precision_fractional"
 
         if isinstance(self.child, AdditiveSharingTensor) and isinstance(other.child, torch.Tensor):
-            # If we try to matmul a FPT>(wrap)>AST with a FPT>torch.tensor,
+            # If we try to matmul a FPT>AST with a FPT>torch.tensor,
             # we want to perform AST @ torch.tensor
             new_self = self.child
             new_args = (other,)
@@ -422,7 +422,7 @@ class FixedPrecisionTensor(AbstractTensor):
         elif isinstance(other.child, AdditiveSharingTensor) and isinstance(
             self.child, torch.Tensor
         ):
-            # If we try to matmul a FPT>torch.tensor with a FPT>(wrap)>AST,
+            # If we try to matmul a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
             new_args = (self,)
@@ -448,6 +448,10 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __matmul__ = matmul
     mm = matmul
+
+    def reciprocal(self):
+        ones = self * 0 + 1
+        return ones / self
 
     # Approximations:
     def inverse(self, iterations=8):
@@ -482,44 +486,92 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return (1 + self / 2 ** iterations) ** (2 ** iterations)
 
-    def sigmoid(self, method="exp"):
+    def sign(self):
+        return (self > 0) + (self < 0) * (-1)
+
+    @staticmethod
+    def _sigmoid_exp(tensor):
         """
-        Approximates the sigmoid function
+        Implementation taken from FacebookResearch - CrypTen project
+
+        Compute the sigmoid using the exp approximation
+        sigmoid(x) = 1 / (1 + exp(-x))
+
+        For stability:
+            sigmoid(x) = (sigmoid(|x|) - 0.5) * sign(x) + 0.5
+
+        Ref: https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/#numerically_stable_sigmoid_function
 
         Args:
-            self: the fixed precision tensor
-            method (str): (default = "exp")
-                "exp": Use the exponential approximation and the sigmoid definition
-                    sigmoid(x) = 1 / (1 + exp(-x))
-                "maclaurin": Use the Maclaurin / Taylor approximation, with polynomial
-                    interpolation of degree 5 over [-8,8]
-                    NOTE: This method is faster but not as precise as "exp"
-                    Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+            tensor (tensor): values where sigmoid should be approximated
         """
 
-        if method == "exp":
-            # Inverse can only be used on matrices
-            if len(self.shape) == 1:
-                one = self * 0 + 1
-                result = one / (1 + (self * -1).exp())
-            else:
-                result = (1 + (self * -1).exp()).inverse()
+        sign = tensor.sign()
 
-        elif method == "maclaurin":
-            weights = (
-                torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
-                .fix_precision(**self.get_class_attributes())
-                .child
-            )
-            degrees = [0, 1, 3, 5]
+        # Make sure the elements are all positive
+        x = tensor * sign
+        ones = tensor * 0 + 1
+        half = ones.div(2)
+        result = (ones + (-ones * x).exp()).reciprocal()
+        return (result - half) * sign + half
 
-            # initiate with term of degree 0 to avoid errors with tensor ** 0
-            one = self * 0 + 1
-            result = one * weights[0]
-            for i, d in enumerate(degrees[1:]):
-                result += (self ** d) * weights[i + 1]
+    @staticmethod
+    def _sigmoid_maclaurin(tensor):
+        """
+        Approximates the sigmoid function using Maclaurin, with polynomial
+        interpolation of degree 5 over [-8,8]
+        NOTE: This method is faster but not as precise as "exp"
+        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+
+        Args:
+            tensor (tensor): values where sigmoid should be approximated
+        """
+
+        weights = (
+            torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
+            .fix_precision(**tensor.get_class_attributes())
+            .child
+        )
+        degrees = [0, 1, 3, 5]
+
+        # initiate with term of degree 0 to avoid errors with tensor ** 0
+        one = tensor * 0 + 1
+        result = one * weights[0]
+        for i, d in enumerate(degrees[1:]):
+            result += (tensor ** d) * weights[i + 1]
 
         return result
+
+    @staticmethod
+    def _sigmoid_chebyshev(tensor, maxval: int = 6, terms: int = 32):
+        """
+        Implementation taken from FacebookResearch - CrypTen project
+        Computes the sigmoid function as
+                 sigmoid(x) = (tanh(x /2) + 1) / 2
+
+        Tanh is approximated using chebyshev polynomials
+        Args:
+             maxval (int): interval width used for tanh chebyshev polynomials
+             terms (int): highest degree of Chebyshev polynomials for tanh.
+                          Must be even and at least 6.
+        """
+        tanh_approx = tensor._tanh_chebyshev(tensor.div(2), maxval, terms)
+
+        return tanh_approx.div(2) + 0.5
+
+    def sigmoid(tensor, method="exp"):
+        """
+        Approximates the sigmoid function using a given method
+
+        Args:
+            tensor: the fixed precision tensor
+            method (str): (default = "chebyshev")
+                Possible values: "exp", "maclaurin", "chebyshev"
+        """
+
+        sigmoid_f = getattr(tensor, f"_sigmoid_{method}")
+
+        return sigmoid_f(tensor)
 
     def log(self, iterations=2, exp_iterations=8):
         """Approximates the natural logarithm using 8th order modified Householder iterations.
@@ -550,6 +602,62 @@ class FixedPrecisionTensor(AbstractTensor):
             y -= h[0] * (1 + h[0] / 2 + h[1] / 3 + h[2] / 4 + h[3] / 5 + h[4] / 6)
 
         return y
+
+    @staticmethod
+    def _tanh_chebyshev(tensor, maxval: int = 6, terms: int = 32):
+        """
+        Implementation taken from FacebookResearch - CrypTen project
+        Computes tanh via Chebyshev approximation with truncation.
+          tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
+          where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
+        The approximation is truncated to +/-1 outside [-maxval, maxval].
+        Args:
+            tensor (tensor): values where the tanh needs to be approximated
+            maxval (int): interval width used for computing chebyshev polynomials
+            terms (int): highest degree of Chebyshev polynomials.
+                         Must be even and at least 6.
+        More details can be found in the paper:
+           Guo, Chuan and Hannun, Awni and Knott, Brian and van der Maaten,
+           Laurens and Tygert, Mark and Zhu, Ruiyu,
+           "Secure multiparty computations in floating-point arithmetic", Jan-2020
+           Link: http://tygert.com/realcrypt.pdf
+
+        """
+
+        coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
+        coeffs = coeffs.fix_precision(**tensor.get_class_attributes()) % tensor.field
+        coeffs = coeffs.unsqueeze(1)
+
+        value = torch.tensor(maxval).fix_precision(**tensor.get_class_attributes()) % tensor.field
+        tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(value.child), terms)
+        tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
+
+        out = tanh_polys_flipped.matmul(coeffs.child)
+
+        # truncate outside [-maxval, maxval]
+        gate_up = tensor > value
+        gate_down = -tensor > value
+        res = gate_up - gate_down
+        out = out.squeeze(1) * (1 - gate_up - gate_down)
+        out = res + out
+
+        return out
+
+    @staticmethod
+    def _tanh_sigmoid(tensor):
+        """
+        Compute the tanh using the sigmoid approximation
+
+        Args:
+            tensor (tensor): values where tanh should be approximated
+        """
+
+        return 2 * torch.sigmoid(2 * tensor) - 1
+
+    def tanh(tensor, method="chebyshev"):
+        tanh_f = getattr(tensor, f"_tanh_{method}")
+
+        return tanh_f(tensor)
 
     # Binary ops
     @overloaded.method
@@ -635,30 +743,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.log = log
 
-        def tanh(tensor, maxval=6, terms=32):
-            """
-            Overloads torch.tanh to be able to use MPC
-
-            Implementation taken from FacebookResearch - CrypTen project
-            Computes tanh via Chebyshev approximation with truncation.
-            .. math::
-            tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
-            where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
-            The approximation is truncated to +/-1 outside [-maxval, maxval].
-            Args:
-                maxval (int): interval width used for computing chebyshev polynomials
-                terms (int): highest degree of Chebyshev polynomials.
-                             Must be even and at least 6.
-            """
-            coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
-            tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(maxval), terms)
-            tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
-
-            out = tanh_polys_flipped.matmul(coeffs)
-            # truncate outside [-maxval, maxval]
-            out = torch.where(tensor > maxval, 1.0, out)
-            out = torch.where(tensor < -maxval, -1.0, out)
-            return out
+        def tanh(tensor):
+            return tensor.tanh()
 
         module.tanh = tanh
 
@@ -814,6 +900,37 @@ class FixedPrecisionTensor(AbstractTensor):
                     return torch.nn.functional.native_linear(*args)
 
                 module.linear = linear
+
+                def dropout(input, p=0.5, training=True, inplace=False):
+                    """
+                    The dropout class calls functional dropout. Hence overloading functional dropout
+                    so that even works for dropout layer class.
+                    Ref:  https://stackoverflow.com/questions/54109617/implementing-dropout-from-scratch
+                    """
+                    if training:
+                        binomial = torch.distributions.binomial.Binomial(probs=1 - p)
+
+                        # we must convert the normal tensor to fixed precision before multiplication
+                        noise = (
+                            (
+                                binomial.sample(input.shape).type(torch.FloatTensor)
+                                * (1.0 / (1.0 - p))
+                            )
+                            .fix_prec(**input.get_class_attributes())
+                            .child
+                        )
+
+                        if inplace:
+                            input = input * noise
+                            return input
+
+                        return input * noise
+
+                    return input
+
+                module.dropout = dropout
+
+                module.conv2d = conv2d
 
             module.functional = functional
 
