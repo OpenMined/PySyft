@@ -992,30 +992,94 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, public_key):
-        """This method will encrypt each value in the tensor using Paillier
-        homomorphic encryption.
+    def encrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will encrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            *public_key a public key created using
-                syft.frameworks.torch.he.paillier.keygen()
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    workers (list): Parties involved in the sharing of the Tensor
+                    crypto_provider (syft.VirtualWorker): Worker responsible for the
+                        generation of the random numbers for encryption
+                    Keyword Args: To be parsed as kwargs for the .fix_prec() method
+
+                With Respect to Paillier accepts:
+                    public_key (phe.paillier.PaillierPublicKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An encrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
+        """
+        if protocol.lower() == "mpc":
+            workers = kwargs.pop("workers")
+            crypto_provider = kwargs.pop("crypto_provider")
+            kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
+
+            x_shared = self.fix_prec(**kwargs_fix_prec).share(
+                *workers, crypto_provider=crypto_provider
+            )
+            return x_shared
+
+        elif protocol.lower() == "paillier":
+            public_key = kwargs.get("public_key")
+
+            x = self.copy()
+            x_encrypted = PaillierTensor().on(x)  # Instantiate the class
+            x_encrypted.child.encrypt_(public_key)  # Perform Homomorphic Encryption
+
+            return x_encrypted
+
+        else:
+            raise NotImplementedError(
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
+
+    def decrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will decrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
+
+        Args:
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    None
+
+                With Respect to Paillier accepts:
+                    private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An decrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
         """
 
-        x = self.copy()
-        x2 = PaillierTensor().on(x)
-        x2.child.encrypt_(public_key)
-        return x2
+        if protocol.lower() == "mpc":
+            x_encrypted = self.copy()
+            x_decrypted = x_encrypted.get().float_prec()
+            return x_decrypted
 
-    def decrypt(self, private_key):
-        """This method will decrypt each value in the tensor, returning a normal
-        torch tensor.
+        elif protocol.lower() == "paillier":
+            # self.copy() not required as PaillierTensor's decrypt method is not inplace
+            private_key = kwargs.get("private_key")
+            return self.child.decrypt(private_key)
 
-        Args:
-            *private_key a private key created using
-                syft.frameworks.torch.he.paillier.keygen()
-            """
-
-        return self.child.decrypt(private_key)
+        else:
+            raise NotImplementedError(
+                "Currently the .decrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying
