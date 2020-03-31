@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import syft.frameworks.torch.rnn as rnn
+import syft.frameworks.torch.nn as nn2
 
 
 def test_conv2d(workers):
@@ -15,32 +16,39 @@ def test_conv2d(workers):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
 
     # Disable mkldnn to avoid rounding errors due to difference in implementation
-    # mkldnn_enabled_init = torch._C._get_mkldnn_enabled()
-    # torch._C._set_mkldnn_enabled(False)
+    mkldnn_enabled_init = torch._C._get_mkldnn_enabled()
+    torch._C._set_mkldnn_enabled(False)
 
+    # Direct Import from Syft
+    model = nn2.Conv2d(1, 2, 3, bias=True)
     model_1 = nn.Conv2d(1, 2, 3, bias=True)
-    model_2 = model_1.copy().fix_prec()
-
+    model.weight = model_1.weight.fix_prec()
+    model.bias = model_1.bias.fix_prec()
     data = torch.rand(10, 1, 28, 28)  # eg. mnist data
 
+    out = model(data.fix_prec()).float_prec()
     out_1 = model_1(data)
-    out_2 = model_2(data.fix_prec()).float_prec()
 
-    # Reset mkldnn to the original state
-    # torch._C._set_mkldnn_enabled(mkldnn_enabled_init)
+    assert torch.allclose(out, out_1, atol=1e-2)
+
+    # Fixed Precision Tensor
+    model_2 = model_1.copy().fix_prec()
+    out_2 = model_2(data.fix_prec()).float_prec()
 
     # Note: absolute tolerance can be reduced by increasing precision_fractional of fix_prec()
     assert torch.allclose(out_1, out_2, atol=1e-2)
 
-    # Test with Shared model and data
+    # Additive Shared Tensor
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     shared_data = data.fix_prec().share(bob, alice, crypto_provider=james)
 
     mode_3 = model_2.share(bob, alice, crypto_provider=james)
-
     out_3 = mode_3(shared_data).get().float_prec()
 
     assert torch.allclose(out_1, out_3, atol=1e-2)
+
+    # Reset mkldnn to the original state
+    torch._C._set_mkldnn_enabled(mkldnn_enabled_init)
 
 
 def test_pool2d():
@@ -61,15 +69,18 @@ def test_pool2d():
         padding_mode="zeros",
     )
 
+    pool = nn2.AvgPool2d(2)
     pool_1 = nn.AvgPool2d(2)
     pool_2 = pool_1.copy().fix_prec()
 
     data = torch.rand(10, 1, 8, 8)
 
     model_out = model(data)
+    out = pool(model_out)
     out_1 = pool_1(model_out)
     out_2 = pool_2(model_out)
 
+    assert torch.eq(out, out_1).all()
     assert torch.eq(out_1, out_2).all()
 
 
