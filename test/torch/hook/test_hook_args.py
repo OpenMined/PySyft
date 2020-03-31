@@ -16,6 +16,15 @@ def test_build_rule_numpy():
     assert result == [1, 1, [0, 0, 0]]
 
 
+def test_list_as_index(workers):
+    tensor = torch.tensor([10, 20, 30, -2, 3]).send(workers["bob"])
+    target = torch.tensor([10, 20, 30, 3])
+
+    slice = tensor[[0, 1, 2, 4]].get()
+
+    assert torch.equal(target, slice)
+
+
 def test_backward_multiple_use(workers):
     """
     Test using backward() in different contexts (FL or Encrypted) within
