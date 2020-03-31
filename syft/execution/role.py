@@ -192,9 +192,6 @@ class Role(AbstractObject):
             old_ids_2_new_ids[self.placeholders[output_id].id.value]
             for output_id in self.output_placeholder_ids
         )
-        new_state_ids = [
-            old_ids_2_new_ids[state_ph.id.value] for state_ph in self.state.state_placeholders
-        ]
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
