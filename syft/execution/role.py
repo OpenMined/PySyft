@@ -10,6 +10,7 @@ import re
 import torch
 
 import syft as sy
+from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
@@ -30,7 +31,7 @@ class Role(AbstractObject):
     def __init__(
         self,
         state: State = None,
-        actions: List[ComputationAction] = None,
+        actions: List[Action] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
