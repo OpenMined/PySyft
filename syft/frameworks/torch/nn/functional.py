@@ -1,7 +1,11 @@
-import torch as th
+import torch
 
-# The nn classes calls functional methods. Hence overloading functional methods allows
-# to add custom functionality which also works with nn.layers.
+
+def linear(*args):
+    """
+    Un-hook the function to have its detailed behaviour
+    """
+    return torch.nn.functional.native_linear(*args)
 
 
 def dropout(input, p=0.5, training=True, inplace=False):
@@ -13,13 +17,13 @@ def dropout(input, p=0.5, training=True, inplace=False):
     """
 
     if training:
-        binomial = th.distributions.binomial.Binomial(probs=1 - p)
+        binomial = torch.distributions.binomial.Binomial(probs=1 - p)
 
         # we must convert the normal tensor to fixed precision before multiplication
         # Note that: Weights of a model are alwasy Float values
-        # Hence input will always be of type (Wrapper) > FixedPrecisionTensor > ...
-        noise = (binomial.sample(input.shape).type(th.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
-            **input.get_class_attributes()
+        # Hence input will always be of type FixedPrecisionTensor > ...
+        noise = (binomial.sample(input.shape).type(torch.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
+            **input.get_class_attributes(), no_wrap=True
         )
 
         if inplace:
@@ -52,9 +56,9 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     assert len(weight.shape) == 4
 
     # Change to tuple if not one
-    stride = th.nn.modules.utils._pair(stride)
-    padding = th.nn.modules.utils._pair(padding)
-    dilation = th.nn.modules.utils._pair(dilation)
+    stride = torch.nn.modules.utils._pair(stride)
+    padding = torch.nn.modules.utils._pair(padding)
+    dilation = torch.nn.modules.utils._pair(dilation)
 
     # Extract a few useful values
     batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
@@ -79,7 +83,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     # Apply padding to the input
     if padding != (0, 0):
         padding_mode = "constant"
-        input = th.nn.functional.pad(
+        input = torch.nn.functional.pad(
             input, (padding[1], padding[1], padding[0], padding[0]), padding_mode
         )
         # Update shape after padding
@@ -109,7 +113,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
             offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
             tmp = [ind + offset for ind in pattern_ind]
             im_reshaped.append(im_flat[:, tmp])
-    im_reshaped = th.stack(im_reshaped).permute(1, 0, 2)
+    im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
 
     # The convolution kernels are also reshaped for the matrix multiplication
     # We will get a matrix [[weights for out channel 0],
@@ -121,18 +125,24 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     # Now that everything is set up, we can compute the result
     if groups > 1:
         res = []
-        chunks_im = th.chunk(im_reshaped, groups, dim=2)
-        chunks_weights = th.chunk(weight_reshaped, groups, dim=0)
+        chunks_im = torch.chunk(im_reshaped, groups, dim=2)
+        chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
         for g in range(groups):
             tmp = chunks_im[g].matmul(chunks_weights[g])
             res.append(tmp)
-        res = th.cat(res, dim=2)
+        res = torch.cat(res, dim=2)
     else:
         res = im_reshaped.matmul(weight_reshaped)
 
     # Add a bias if needed
     if bias is not None:
-        res += bias
+        if bias.is_wrapper:
+            if res.is_wrapper:
+                res += bias
+            else:
+                res += bias.child
+        else:
+            res += bias
 
     # ... And reshape it back to an image
     res = (
