@@ -61,13 +61,13 @@ class Role(AbstractObject, ObjectStorage):
             for tensor in state_tensors:
                 self.add_tensor_to_state(tensor)
 
-    def register_computation_inputs(self, args):
+    def register_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
         self.input_placeholder_ids = tuple(self.build_placeholders(arg).value for arg in args)
 
-    def register_computation_outputs(self, results):
+    def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
@@ -75,7 +75,7 @@ class Role(AbstractObject, ObjectStorage):
             self.build_placeholders(result).value for result in results
         )
 
-    def register_computation_action(self, traced_action):
+    def register_action(self, traced_action):
         """ Build placeholders and store action.
         """
         command, response = traced_action
@@ -87,12 +87,12 @@ class Role(AbstractObject, ObjectStorage):
         action = ComputationAction(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def execute_computation(self, args):
-        """ Make the role execute all its actions using args as computation inputs.
+    def execute(self, args):
+        """ Make the role execute all its actions using args as inputs.
         """
-        self.instantiate_computation_inputs(args)
+        self.instantiate_inputs(args)
         for action in self.actions:
-            self.execute_computation_action(action)
+            self.execute_action(action)
 
         output_placeholders = tuple(
             self.placeholders[output_id] for output_id in self.output_placeholder_ids
@@ -103,7 +103,7 @@ class Role(AbstractObject, ObjectStorage):
             return result[0]
         return result
 
-    def instantiate_computation_inputs(self, args):
+    def instantiate_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
         """
         input_placeholders = tuple(
@@ -111,7 +111,7 @@ class Role(AbstractObject, ObjectStorage):
         )
         PlaceHolder.instantiate_placeholders(input_placeholders, args)
 
-    def execute_computation_action(self, action):
+    def execute_action(self, action):
         """ Build placeholders and store action.
         """
         cmd, _self, args, kwargs, return_placeholder = (

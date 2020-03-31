@@ -182,13 +182,13 @@ class Plan(AbstractObject):
                 results = self.forward(*args)
 
         # Register inputs in role
-        self.role.register_computation_inputs(args)
+        self.role.register_inputs(args)
 
         # Register outputs in role
-        self.role.register_computation_outputs(results)
+        self.role.register_outputs(results)
 
         for log in sy.hook.trace.logs:
-            self.role.register_computation_action(log)
+            self.role.register_action(log)
 
         sy.hook.trace.clear()
         self.is_built = True
@@ -242,7 +242,7 @@ class Plan(AbstractObject):
             return self.build(args)
 
         else:
-            return self.role.execute_computation(args)
+            return self.role.execute(args)
 
     def run(self, args: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
