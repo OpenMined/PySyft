@@ -1,10 +1,12 @@
 import pytest
 
-from syft.frameworks.torch.he.fv.util.numth import get_primes
 from syft.frameworks.torch.he.fv.util.numth import is_prime
 from syft.frameworks.torch.he.fv.modulus import CoeffModulus
 from syft.frameworks.torch.he.fv.encryption_params import EncryptionParams
 from syft.frameworks.torch.he.fv.modulus import SeqLevelType
+from syft.frameworks.torch.he.fv.context import Context
+from syft.frameworks.torch.he.fv.util.operations import get_significant_count
+from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 
 
 @pytest.mark.parametrize(
@@ -99,3 +101,42 @@ def test_CoeffModulus_create():
 def test_CoeffModulus_bfv_default(poly_modulus_degree, SeqLevelType, result):
     coeffModulus = CoeffModulus()
     assert len(coeffModulus.bfv_default(poly_modulus_degree, SeqLevelType)) == result
+
+
+@pytest.mark.parametrize(
+    "ptr, result",
+    [
+        ([0, 0], 0),
+        ([1, 0], 1),
+        ([2, 0], 1),
+        ([0xFFFFFFFFFFFFFFFF, 0], 1),
+        ([0, 1], 2),
+        ([0xFFFFFFFFFFFFFFFF, 1], 2),
+        ([0xFFFFFFFFFFFFFFFF, 0x8000000000000000], 2),
+        ([0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF], 2),
+    ],
+)
+def test_get_significant_count(ptr, result):
+    assert result == get_significant_count(ptr, 2)
+
+
+@pytest.mark.parametrize(
+    "plain_modulus, value",
+    [
+        (0xFFFFFFFFFFFFFFF, 1),
+        (0xFFFFFFFFFFFFFFF, 2),
+        (0xFFFFFFFFFFFFFFF, 3),
+        (0xFFFFFFFFFFFFFFF, 64),
+        (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF),
+        (0xFFFFFFFFFFFFFFF, 0x80F02),
+        (1024, 64),
+    ],
+)
+def test_integer_encoder(plain_modulus, value):
+    enc_param = EncryptionParams()
+    enc_param.plain_modulus = plain_modulus
+    ctx = Context(enc_param)
+    encoder = IntegerEncoder(ctx)
+
+    poly = encoder.encode(value)
+    assert value == encoder.decode(poly)

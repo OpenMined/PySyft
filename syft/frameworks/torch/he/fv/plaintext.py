@@ -10,9 +10,28 @@ class PlainText:
         self.coeff_count = coeff_count
         self.data = data
 
+    def resize(self, coeff_count):
+        """Resizes the plaintext to have a given coefficient count. The plaintext
+        is automatically reallocated if the new coefficient count does not fit in
+        the current capacity.
+
+        Args:
+            coeff_count: The number of coefficients in the plaintext polynomial
+        """
+        self.data = [0] * coeff_count
+
+    def set_zero(self):
+        """Sets the plaintext polynomial to zero."""
+        self.data = [0] * self.coeff_count
+
     def significant_coeff_count(self):
+        """Returns the significant coefficient count of the current plaintext polynomial."""
         return get_significant_count(self.data, self.coeff_count)
 
     @property
     def data(self):
-        return self.data
+        return self.__data
+
+    @data.setter
+    def data(self, data):
+        self.__data = data

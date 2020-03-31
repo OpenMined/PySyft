@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-from syft.frameworks.torch.he.fv.util.operations import get_significant_bit_count
 from syft.frameworks.torch.he.fv.modulus import PlainModulus
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 
@@ -47,7 +46,7 @@ class IntegerEncoder:
         if value < 0:
             # negative value.
             value = -1 * value
-            encode_coeff_count = get_significant_bit_count(value)
+            encode_coeff_count = value.bit_length()
             plaintext = [0] * encode_coeff_count
             while value != 0:
                 if (value & 1) != 0:
@@ -56,7 +55,7 @@ class IntegerEncoder:
                 coeff_index += 1
         else:
             # positive value.
-            encode_coeff_count = get_significant_bit_count(value)
+            encode_coeff_count = value.bit_length()
             plaintext = [0] * encode_coeff_count
             while value != 0:
                 if (value & 1) != 0:
