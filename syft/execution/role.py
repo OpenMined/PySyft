@@ -4,7 +4,6 @@ from typing import Tuple
 from typing import Union
 
 import copy
-import re
 
 # TODO torch shouldn't be used here
 import torch
