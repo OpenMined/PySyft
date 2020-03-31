@@ -48,6 +48,7 @@ Başlamak için, doğru kurulumlar yaptığınıza emin olmalısınız.Bunun iç
 
 Herhangi bir komut çalışmaz ise(veya testlerbaşarısız olursa)- kurulum yardımı için ilk olarak README dosyasını kontrol ediniz ve sonra Gitgub' ta görev yönetimi (issues) açın veya slack grubumuzda #beginner kanalımızda paylaşın! slack.openmined.org
 #Yukarıdaki kurulum talimatlarının işe yarayıp yaramadığını görmek için aşağıdaki kodları çalıştırın
+'''
 import sys
 
 import torch
@@ -59,3 +60,4 @@ import syft as sy
 hook = sy.TorchHook(torch)
 
 torch.tensor([1,2,3,4,5])
+'''
