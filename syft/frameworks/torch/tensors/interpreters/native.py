@@ -812,14 +812,12 @@ class TorchTensor(AbstractTensor):
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
 
-        # we create a copy of pointer which prevents inplace fix precision
         if self.is_wrapper:
-            self_copy = self.copy()
-            self_copy.child = self.child.fix_prec(*args, **kwargs)
+            child = self.child.fix_prec(*args, **kwargs)
             if no_wrap:
-                return self_copy.child
+                return child
             else:
-                return self_copy
+                return child.wrap()
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
