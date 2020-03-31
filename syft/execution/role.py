@@ -11,7 +11,6 @@ import torch
 
 import syft as sy
 from syft.execution.action import Action
-from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
@@ -76,7 +75,7 @@ class Role(AbstractObject):
             self.build_placeholders(result).value for result in results
         )
 
-    def register_action(self, traced_action):
+    def register_action(self, traced_action, action_type):
         """ Build placeholders and store action.
         """
         command, response = traced_action
@@ -85,7 +84,7 @@ class Role(AbstractObject):
 
         if not isinstance(return_placeholder_ids, (list, tuple)):
             return_placeholder_ids = (return_placeholder_ids,)
-        action = ComputationAction(*command_placeholder_ids, return_ids=return_placeholder_ids)
+        action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
     def execute(self, args):

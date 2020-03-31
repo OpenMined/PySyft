@@ -188,7 +188,7 @@ class Plan(AbstractObject):
         self.role.register_outputs(results)
 
         for log in sy.hook.trace.logs:
-            self.role.register_action(log)
+            self.role.register_action(log, ComputationAction)
 
         sy.hook.trace.clear()
         self.is_built = True
