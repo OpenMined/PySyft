@@ -216,11 +216,12 @@ class Role(AbstractObject):
 
         new_actions = []
         for action in self.actions:
+            action_type = type(action)
             target = replace_placeholder_ids(action.target)
             args = replace_placeholder_ids(action.args)
             kwargs = replace_placeholder_ids(action.kwargs)
             return_ids = replace_placeholder_ids(action.return_ids)
-            new_actions.append(ComputationAction(action.name, target, args, kwargs, return_ids))
+            new_actions.append(action_type(action.name, target, args, kwargs, return_ids))
 
         return Role(
             state=state,
