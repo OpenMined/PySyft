@@ -156,7 +156,10 @@ def private_compare(x_bit_sh, r, beta):
     perm = torch.randperm(x_bit_sh.shape[-1]).send(*workers, **no_wrap)
 
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)]).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
 
     # 1)
@@ -194,7 +197,11 @@ def private_compare(x_bit_sh, r, beta):
     r_mask = r_mask.unsqueeze(-1)
 
     # Mask combination to execute the if / else statements of 4), 7), 10)
-    c = (1 - beta) * c_beta0 + (beta * (1 - r_mask)) * c_beta1 + (beta * r_mask) * c_else
+    c = (
+        (1 - beta) * c_beta0
+        + (beta * (1 - r_mask)) * c_beta1
+        + (beta * r_mask) * c_else
+    )
 
     # 14)
     # Hide c values
@@ -251,15 +258,21 @@ def msb(a_sh):
     x_bit = decompose(x)
     x_sh = x.share(*workers, field=L - 1, crypto_provider=crypto_provider, **no_wrap)
     x_bit_0 = x_bit[..., 0]
-    x_bit_sh_0 = x_bit_0.share(*workers, field=L, crypto_provider=crypto_provider, **no_wrap)
-    x_bit_sh = x_bit.share(*workers, field=p, crypto_provider=crypto_provider, **no_wrap)
+    x_bit_sh_0 = x_bit_0.share(
+        *workers, field=L, crypto_provider=crypto_provider, **no_wrap
+    )
+    x_bit_sh = x_bit.share(
+        *workers, field=p, crypto_provider=crypto_provider, **no_wrap
+    )
 
     # 2)
     y_sh = a_sh * 2
     r_sh = y_sh + x_sh
 
     # 3)
-    r = r_sh.reconstruct() % (L - 1)  # convert an additive sharing in multi pointer Tensor
+    r = r_sh.reconstruct() % (
+        L - 1
+    )  # convert an additive sharing in multi pointer Tensor
     r_0 = decompose(r)[..., 0]
 
     # 4)
@@ -272,7 +285,10 @@ def msb(a_sh):
 
     # 7)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)]).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     gamma = beta_prime_sh + (j * beta) - (2 * beta * beta_prime_sh)
 
@@ -366,17 +382,26 @@ def share_convert(a_sh):
 
     # 5)
     x_bit = decompose(x)
-    x_bit_sh = x_bit.share(*workers, field=p, crypto_provider=crypto_provider, **no_wrap)
-    delta_sh = delta.share(*workers, field=L - 1, crypto_provider=crypto_provider, **no_wrap)
+    x_bit_sh = x_bit.share(
+        *workers, field=p, crypto_provider=crypto_provider, **no_wrap
+    )
+    delta_sh = delta.share(
+        *workers, field=L - 1, crypto_provider=crypto_provider, **no_wrap
+    )
 
     # 6)
     eta_p = private_compare(x_bit_sh, r - 1, eta_pp)
     # 7)
-    eta_p_sh = eta_p.share(*workers, field=L - 1, crypto_provider=crypto_provider, **no_wrap)
+    eta_p_sh = eta_p.share(
+        *workers, field=L - 1, crypto_provider=crypto_provider, **no_wrap
+    )
 
     # 9)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i != 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i != 0)]).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     eta_sh = eta_p_sh + (1 - j) * eta_pp - 2 * eta_pp * eta_p_sh
 
@@ -421,7 +446,10 @@ def relu_deriv(a_sh):
 
     # 4)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)]).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     gamma_sh = j - alpha_sh + u
     assert gamma_sh.field == L
@@ -584,7 +612,10 @@ def maxpool_deriv(x_sh):
 
     # 2)
     j = sy.MultiPointerTensor(
-        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
+        children=[
+            torch.tensor([int(i == 0)]).send(w, **no_wrap)
+            for i, w in enumerate(workers)
+        ]
     )
     k_sh = ind_max_sh + j * r
 
@@ -626,10 +657,12 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
 
     # Calculate output shapes
     nb_rows_out = int(
-        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0] + 1
+        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0]
+        + 1
     )
     nb_cols_out = int(
-        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1] + 1
+        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1]
+        + 1
     )
 
     # Apply padding to the input
@@ -648,7 +681,12 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
             for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
-                        a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
+                        a_sh[
+                            batch,
+                            channel,
+                            r_in : r_in + kernel[0],
+                            c_in : c_in + kernel[1],
+                        ].child
                     )
                     res.append(m.wrap())
 
