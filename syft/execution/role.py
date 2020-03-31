@@ -121,10 +121,10 @@ class Role(AbstractObject, ObjectStorage):
             action.kwargs,
             action.return_ids,
         )
-        _self = self.fecth_placeholders_from_ids(_self)
-        args = self.fecth_placeholders_from_ids(args)
-        kwargs = self.fecth_placeholders_from_ids(kwargs)
-        return_placeholder = self.fecth_placeholders_from_ids(return_placeholder)
+        _self = self.fetch_placeholders_from_ids(_self)
+        args = self.fetch_placeholders_from_ids(args)
+        kwargs = self.fetch_placeholders_from_ids(kwargs)
+        return_placeholder = self.fetch_placeholders_from_ids(return_placeholder)
 
         if _self is None:
             response = eval(cmd)(*args, **kwargs)  # nosec
@@ -161,15 +161,15 @@ class Role(AbstractObject, ObjectStorage):
         # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
-    def fecth_placeholders_from_ids(self, obj):
+    def fetch_placeholders_from_ids(self, obj):
         """
         Replace in an object all ids with Placeholders
         """
         if isinstance(obj, (tuple, list)):
-            r = [self.fecth_placeholders_from_ids(o) for o in obj]
+            r = [self.fetch_placeholders_from_ids(o) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self.fecth_placeholders_from_ids(value) for key, value in obj.items()}
+            return {key: self.fetch_placeholders_from_ids(value) for key, value in obj.items()}
         elif isinstance(obj, PlaceholderId):
             return self.placeholders[obj.value]
         else:
