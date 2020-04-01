@@ -2,20 +2,20 @@ version: '3'
 services:
     gateway:
         image: openmined/grid-gateway:latest
-        build: ./gateway/
         environment:
                 - PORT=5000
                 - SECRET_KEY=ineedtoputasecrethere
                 - DATABASE_URL=sqlite:///databasegateway.db
         ports:
-            - 5000:5000        
+        - 5000:5000
     redis:
         image: redis:latest
+        expose:
+        - 6379
         ports:
-            - 6379:6379
+        - 6379:6379
     bob:
         image: openmined/grid-node:latest
-        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=Bob
@@ -26,7 +26,7 @@ services:
                 - "gateway"
                 - "redis"
         ports:
-            - 3000:3000
+        - 3000:3000
     alice:
         image: openmined/grid-node:latest
         environment:
@@ -39,10 +39,9 @@ services:
                 - "gateway"
                 - "redis"
         ports:
-            - 3001:3001
+        - 3001:3001
     bill:
         image: openmined/grid-node:latest
-        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=Bill
@@ -53,10 +52,9 @@ services:
                 - "gateway"
                 - "redis"
         ports:
-            - 3002:3002
+        - 3002:3002
     james:
         image: openmined/grid-node:latest
-        build: ./app/websocket/
         environment:
                 - GRID_NETWORK_URL=http://gateway:5000
                 - ID=James
@@ -67,4 +65,4 @@ services:
                 - "gateway"
                 - "redis"
         ports:
-            - 3003:3003
+        - 3003:3003

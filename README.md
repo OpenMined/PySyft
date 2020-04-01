@@ -30,6 +30,18 @@ The latest PyGrid Gateway and Node images are available on the Docker Hub.
 - PyGrid Gateway - `openmined/grid-node`
 - PyGrid Node - `openmined/grid-node`
 
+###### Setting the Domain Names
+
+Before start the grid platform locally using docker, we need to setup the domain names used by the bridge network. In order to access these nodes from outside of containers context, you need to work-around by adding the following domain names on your `/etc/hosts`
+```
+127.0.0.1 gateway
+127.0.0.1 bob
+127.0.0.1 alice
+127.0.0.1 bill
+127.0.0.1 james
+```
+
+
 It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.
 **PS:** Feel free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
 ```
@@ -40,15 +52,6 @@ If you want to rebuild and run the images, you just need to add the `--build` pa
 $ docker-compose up --build
 ```
 
-
-On MacOS, you have to work-around the lack of support for `network_mode: host` in Docker for Mac by adding following to your `/etc/hosts`
-```
-127.0.0.1 host.docker.internal
-```
-and running:
-```
-$ docker-compose -f docker-compose-mac.yml up
-```
 
 #### Starting manually
 Start the grid platform manually with 1 gateway and how many grid nodes you want.  
