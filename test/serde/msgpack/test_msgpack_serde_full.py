@@ -66,6 +66,7 @@ samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
+samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
