@@ -56,7 +56,7 @@ make venv
 > PySyft supports Python >= 3.6 and PyTorch 1.4
 
 ```bash
-pip install syft[udacity]
+pip install 'syft[udacity]'
 ```
 
 This will auto-install the PyTorch and TF Encrypted
