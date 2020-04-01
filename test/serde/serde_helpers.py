@@ -1406,6 +1406,7 @@ def make_computation_action(**kwargs):
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
+                    False,  # return value
                 ),
             ),
             "cmp_detailed": compare,
@@ -1416,7 +1417,8 @@ def make_computation_action(**kwargs):
                 CODE[syft.execution.computation.ComputationAction],
                 (
                     msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
-                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
+                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids,
+                    False,  # return value
                 ),
             ),
             "cmp_detailed": compare,
@@ -1705,7 +1707,7 @@ def make_workercommandmessage(**kwargs):
     )
 
     remote_proxy._log_msgs_remote(value=True)
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 0
 
     objects_count_msg = remote_proxy._get_msg_remote(
@@ -1726,7 +1728,7 @@ def make_workercommandmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.WorkerCommandMessage],
                 (
-                    (CODE[str], (b"objects_count",)),  # (str) command
+                    (CODE[str], (b"tensors_count",)),  # (str) command
                     (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),
                 ),
             ),
