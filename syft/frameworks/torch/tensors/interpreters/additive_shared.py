@@ -1149,11 +1149,13 @@ class AdditiveSharingTensor(AbstractTensor):
         sy.serde.protobuf.proto.set_protobuf_id(
             protobuf_tensor.crypto_provider_id, tensor.crypto_provider.id
         )
+
         if tensor.field >= 2 ** 64:
             protobuf_tensor.field_str = str(tensor.field)
         else:
             protobuf_tensor.field_int = tensor.field
         protobuf_tensor.dtype = tensor.dtype
+
         return protobuf_tensor
 
     @staticmethod
