@@ -10,6 +10,7 @@ import torch
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.utils import memorize
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
@@ -368,10 +369,9 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def _get_response(cmd, args, kwargs):
-        """
-            Return the evaluation of the cmd string parameter
-        """
+    @staticmethod
+    @memorize
+    def _get_method(cmd):
         module = syft.local_worker.hook
         segments = cmd.split(".")
         submodules = segments[:-1]
@@ -381,6 +381,15 @@ class TorchTensor(AbstractTensor):
             module = getattr(module, sm)
 
         command_method = getattr(module, f"native_{command}")
+
+        return command_method
+
+    @staticmethod
+    def _get_response(cmd, args, kwargs):
+        """
+            Return the evaluation of the cmd string parameter
+        """
+        command_method = TorchTensor._get_method(cmd)
         if isinstance(args, tuple):
             response = command_method(*args, **kwargs)
         else:
