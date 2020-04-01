@@ -10,6 +10,7 @@ import syft as sy
 from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
@@ -1098,7 +1099,7 @@ def test_plan_can_be_jit_traced(hook, workers):
 
     assert (x == th.tensor([3.0, 5])).all()
 
-    args = Plan._create_placeholders(args_shape)
+    args = PlaceHolder.create_placeholders(args_shape)
     torchscript_plan = th.jit.trace(foo, args)
 
     y = torchscript_plan(t)

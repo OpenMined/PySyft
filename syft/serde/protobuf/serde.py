@@ -14,6 +14,7 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
+from syft.execution.role import Role
 from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
@@ -52,6 +53,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     Plan,
     PointerTensor,
     Protocol,
+    Role,
     State,
     TensorCommandMessage,
 ]
