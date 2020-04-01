@@ -160,7 +160,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected == th.tensor([0.0])
 
@@ -174,7 +174,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert (actual == expected).all()
     assert (actual == th.tensor([1, 2, 3])).all()
@@ -190,7 +190,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected and actual >= 10
 
