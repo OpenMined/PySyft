@@ -91,3 +91,46 @@ class PointerDataset(ObjectPointer):
         command = ("__getitem__", self.id_at_location, [index], {})
         data_elem, target_elem = self.owner.send_command(message=command, recipient=self.location)
         return data_elem.wrap(), target_elem.wrap()
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, ptr: "PointerDataset") -> tuple:
+
+        return (
+            sy.serde.msgpack.serde._simplify(worker, ptr.id),
+            sy.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
+            sy.serde.msgpack.serde._simplify(worker, ptr.location.id),
+            sy.serde.msgpack.serde._simplify(worker, ptr.tags),
+            sy.serde.msgpack.serde._simplify(worker, ptr.description),
+            ptr.garbage_collect_data,
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, ptr_tuble: tuple) -> "PointerDataset":
+        obj_id, id_at_location, worker_id, tags, description, garbage_collect_data = ptr_tuble
+
+        obj_id = sy.serde.msgpack.serde._detail(worker, obj_id)
+        id_at_location = sy.serde.msgpack.serde._detail(worker, id_at_location)
+        worker_id = sy.serde.msgpack.serde._detail(worker, worker_id)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
+
+        # If the pointer received is pointing at the current worker, we load the dataset instead
+        if worker_id == worker.id:
+            dataset = worker.get_obj(id_at_location)
+
+            return dataset
+        # Else we keep the same Pointer
+        else:
+            location = sy.hook.local_worker.get_worker(worker_id)
+
+            ptr = PointerDataset(
+                location=location,
+                id_at_location=id_at_location,
+                owner=worker,
+                tags=tags,
+                description=description,
+                garbage_collect_data=garbage_collect_data,
+                id=obj_id,
+            )
+
+            return ptr
