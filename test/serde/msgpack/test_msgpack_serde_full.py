@@ -51,9 +51,6 @@ samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
-samples[
-    syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
-] = make_crtprecisiontensor
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.role.Role] = make_role
