@@ -46,6 +46,22 @@ def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
         assert is_prime(params.coeff_modulus[i])
 
 
+@pytest.mark.parametrize(
+    "poly_modulus_degree, plain_modulus, coeff_bit_sizes",
+    [(1, 2, [30, 40, 50]), (-64, 64, [30, 60, 60])],
+)
+def test_EncryptionParams_exceptions(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
+    with pytest.raises(ValueError):
+        params = EncryptionParams()
+        params.poly_modulus_degree = poly_modulus_degree
+        params.plain_modulus = plain_modulus
+        cm = CoeffModulus()
+        params.coeff_modulus = cm.create(poly_modulus_degree, coeff_bit_sizes)
+
+        for i in range(len(coeff_bit_sizes)):
+            assert is_prime(params.coeff_modulus[i])
+
+
 def test_CoeffModulus_create():
     coeffModulus = CoeffModulus()
     assert len(coeffModulus.create(2, [])) == 0
@@ -125,7 +141,7 @@ def test_get_significant_count(ptr, result):
     [
         (0xFFFFFFFFFFFFFFF, 1),
         (0xFFFFFFFFFFFFFFF, 2),
-        (0xFFFFFFFFFFFFFFF, 3),
+        (0xFFFFFFFFFFFFFFF, -3),
         (0xFFFFFFFFFFFFFFF, 64),
         (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF),
         (0xFFFFFFFFFFFFFFF, 0x80F02),

@@ -11,9 +11,7 @@ class PlainText:
         self.data = data
 
     def resize(self, coeff_count):
-        """Resizes the plaintext to have a given coefficient count. The plaintext
-        is automatically reallocated if the new coefficient count does not fit in
-        the current capacity.
+        """Resizes the plaintext to have a given coefficient count.
 
         Args:
             coeff_count: The number of coefficients in the plaintext polynomial

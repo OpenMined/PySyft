@@ -1,15 +1,16 @@
 from collections import defaultdict
+from enum import Enum
 
 from syft.frameworks.torch.he.fv.util.numth import get_primes
-from syft.frameworks.torch.he.fv.fv_std_param import FV_STD_PARMS_128_TC
-from syft.frameworks.torch.he.fv.fv_std_param import FV_STD_PARMS_192_TC
-from syft.frameworks.torch.he.fv.fv_std_param import FV_STD_PARMS_256_TC
+from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_128_TC
+from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_192_TC
+from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_256_TC
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_128
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_192
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_256
 
 
-class SeqLevelType:
+class SeqLevelType(Enum):
     """ Represents a standard security level according to the HomomorphicEncryption.org
     security standard. The value sec_level_type(none) signals that no standard
     security level should be imposed."""

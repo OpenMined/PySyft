@@ -11,9 +11,9 @@ class EncryptionParams:
     """
 
     def __init__(self):
-        self.poly_modulus_degree = 2
-        self.coeff_modulus = []
-        self.plain_modulus = 0
+        self._poly_modulus_degree = 2
+        self._coeff_modulus = []
+        self._plain_modulus = 0
 
     @property
     def poly_modulus_degree(self):
@@ -29,12 +29,13 @@ class EncryptionParams:
             is better). In general the degree of the polynomial modulus should be
             a power of 2 (e.g.  1024, 2048, 4096, 8192, 16384, or 32768).
         """
-        if value > 0:
-            if value % 2 != 0:
-                warning("preffered value for poly_modulus_degree is power of 2")
-            self.__poly_modulus_degree = value
+        if value >= 2:
+            if (value & (value - 1) == 0) and value != 0:
+                self.__poly_modulus_degree = value
+            else:
+                raise ValueError("poly_modulus_degree must be a power of two 2")
         else:
-            raise ValueError("poly_modulus_degree must be a power of 2")
+            raise ValueError("poly_modulus_degree must be at least 2")
 
     @property
     def coeff_modulus(self):
