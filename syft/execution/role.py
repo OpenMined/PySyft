@@ -4,13 +4,12 @@ from typing import Tuple
 from typing import Union
 
 import copy
-import re
 
 # TODO torch shouldn't be used here
 import torch
 
 import syft as sy
-from syft.execution.computation import ComputationAction
+from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
@@ -22,7 +21,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject, ObjectStorage):
+class Role(AbstractObject):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
@@ -30,7 +29,7 @@ class Role(AbstractObject, ObjectStorage):
     def __init__(
         self,
         state: State = None,
-        actions: List[ComputationAction] = None,
+        actions: List[Action] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
@@ -59,40 +58,47 @@ class Role(AbstractObject, ObjectStorage):
             # we want to make sure in that case that the state is empty
             assert state is None
             for tensor in state_tensors:
-                self.add_tensor_to_state(tensor)
+                self.register_state_tensor(tensor)
 
-    def register_computation_inputs(self, args):
+    def register_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(self.build_placeholders(arg).value for arg in args)
+        self.input_placeholder_ids = tuple(self._build_placeholders(arg).value for arg in args)
 
-    def register_computation_outputs(self, results):
+    def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
         self.output_placeholder_ids = tuple(
-            self.build_placeholders(result).value for result in results
+            self._build_placeholders(result).value for result in results
         )
 
-    def register_computation_action(self, traced_action):
+    def register_action(self, traced_action, action_type):
         """ Build placeholders and store action.
         """
         command, response = traced_action
-        command_placeholder_ids = self.build_placeholders(command)
-        return_placeholder_ids = self.build_placeholders(response)
+        command_placeholder_ids = self._build_placeholders(command)
+        return_placeholder_ids = self._build_placeholders(response)
 
         if not isinstance(return_placeholder_ids, (list, tuple)):
             return_placeholder_ids = (return_placeholder_ids,)
-        action = ComputationAction(*command_placeholder_ids, return_ids=return_placeholder_ids)
+        action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def execute_computation(self, args):
-        """ Make the role execute all its actions using args as computation inputs.
+    def register_state_tensor(self, tensor):
+        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
+        placeholder.instantiate(tensor)
+        self.state.state_placeholders.append(placeholder)
+        # TODO isn't it weird that state placeholders are both in state and plan?
+        self.placeholders[tensor.id] = placeholder
+
+    def execute(self, args):
+        """ Make the role execute all its actions using args as inputs.
         """
-        self.instantiate_computation_inputs(args)
+        self._instantiate_inputs(args)
         for action in self.actions:
-            self.execute_computation_action(action)
+            self._execute_action(action)
 
         output_placeholders = tuple(
             self.placeholders[output_id] for output_id in self.output_placeholder_ids
@@ -103,7 +109,7 @@ class Role(AbstractObject, ObjectStorage):
             return result[0]
         return result
 
-    def instantiate_computation_inputs(self, args):
+    def _instantiate_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
         """
         input_placeholders = tuple(
@@ -111,7 +117,7 @@ class Role(AbstractObject, ObjectStorage):
         )
         PlaceHolder.instantiate_placeholders(input_placeholders, args)
 
-    def execute_computation_action(self, action):
+    def _execute_action(self, action):
         """ Build placeholders and store action.
         """
         cmd, _self, args, kwargs, return_placeholder = (
@@ -121,55 +127,47 @@ class Role(AbstractObject, ObjectStorage):
             action.kwargs,
             action.return_ids,
         )
-        _self = self.fetch_placeholders_from_ids(_self)
-        args = self.fetch_placeholders_from_ids(args)
-        kwargs = self.fetch_placeholders_from_ids(kwargs)
-        return_placeholder = self.fetch_placeholders_from_ids(return_placeholder)
+        _self = self._fetch_placeholders_from_ids(_self)
+        args = self._fetch_placeholders_from_ids(args)
+        kwargs = self._fetch_placeholders_from_ids(kwargs)
+        return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
 
         if _self is None:
             response = eval(cmd)(*args, **kwargs)  # nosec
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
-        if not isinstance(response, (list, tuple)):
-            response = (response,)
-        PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
-    def build_placeholders(self, obj):
+        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
+            response = (response,)
+            PlaceHolder.instantiate_placeholders(return_placeholder, response)
+
+    def _build_placeholders(self, obj):
         """
         Replace in an object all FrameworkTensors with Placeholder ids
         """
         if isinstance(obj, (tuple, list)):
-            r = [self.build_placeholders(o) for o in obj]
+            r = [self._build_placeholders(o) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self.build_placeholders(value) for key, value in obj.items()}
+            return {key: self._build_placeholders(value) for key, value in obj.items()}
         elif isinstance(obj, FrameworkTensor):
             if obj.id in self.placeholders:
                 return self.placeholders[obj.id].id
             placeholder = PlaceHolder(id=obj.id, owner=self.owner)
             self.placeholders[obj.id] = placeholder
             return placeholder.id
-        elif isinstance(obj, (int, float, str, bool, torch.dtype, torch.Size)):
-            return obj
         else:
-            return None
+            return obj
 
-    def add_tensor_to_state(self, tensor):
-        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
-        placeholder.instantiate(tensor)
-        self.state.state_placeholders.append(placeholder)
-        # TODO isn't it weird that state placeholders are both in state and plan?
-        self.placeholders[tensor.id] = placeholder
-
-    def fetch_placeholders_from_ids(self, obj):
+    def _fetch_placeholders_from_ids(self, obj):
         """
         Replace in an object all ids with Placeholders
         """
         if isinstance(obj, (tuple, list)):
-            r = [self.fetch_placeholders_from_ids(o) for o in obj]
+            r = [self._fetch_placeholders_from_ids(o) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self.fetch_placeholders_from_ids(value) for key, value in obj.items()}
+            return {key: self._fetch_placeholders_from_ids(value) for key, value in obj.items()}
         elif isinstance(obj, PlaceholderId):
             return self.placeholders[obj.value]
         else:
@@ -192,9 +190,6 @@ class Role(AbstractObject, ObjectStorage):
             old_ids_2_new_ids[self.placeholders[output_id].id.value]
             for output_id in self.output_placeholder_ids
         )
-        new_state_ids = [
-            old_ids_2_new_ids[state_ph.id.value] for state_ph in self.state.state_placeholders
-        ]
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
@@ -205,12 +200,12 @@ class Role(AbstractObject, ObjectStorage):
 
         state = State(owner=self.owner, state_placeholders=state_placeholders)
 
-        def replace_placeholder_ids(obj):
+        def _replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):
-                r = [replace_placeholder_ids(o) for o in obj]
+                r = [_replace_placeholder_ids(o) for o in obj]
                 return type(obj)(r)
             elif isinstance(obj, dict):
-                return {key: replace_placeholder_ids(value) for key, value in obj.items()}
+                return {key: _replace_placeholder_ids(value) for key, value in obj.items()}
             elif isinstance(obj, PlaceholderId):
                 return PlaceholderId(old_ids_2_new_ids[obj.value])
             else:
@@ -218,11 +213,12 @@ class Role(AbstractObject, ObjectStorage):
 
         new_actions = []
         for action in self.actions:
-            target = replace_placeholder_ids(action.target)
-            args = replace_placeholder_ids(action.args)
-            kwargs = replace_placeholder_ids(action.kwargs)
-            return_ids = replace_placeholder_ids(action.return_ids)
-            new_actions.append(ComputationAction(action.name, target, args, kwargs, return_ids))
+            action_type = type(action)
+            target = _replace_placeholder_ids(action.target)
+            args = _replace_placeholder_ids(action.args)
+            kwargs = _replace_placeholder_ids(action.kwargs)
+            return_ids = _replace_placeholder_ids(action.return_ids)
+            new_actions.append(action_type(action.name, target, args, kwargs, return_ids))
 
         return Role(
             state=state,
