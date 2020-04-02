@@ -33,7 +33,7 @@ class Conv2d(nn.Module):
         """For information on the constructor arguments, please see PyTorch's
         documentation in torch.nn.Conv2d"""
 
-        super().__init__()
+        super(Conv2d, self).__init__()
 
         # temp_init to get weights and bias
         temp_init = th.nn.Conv2d(
