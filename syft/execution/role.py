@@ -5,8 +5,7 @@ from typing import Union
 
 import copy
 
-# TODO torch shouldn't be used here
-import torch
+from syft.generic.frameworks.types import framework_packages
 
 import syft as sy
 from syft.execution.action import Action
@@ -133,7 +132,18 @@ class Role(AbstractObject):
         return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
 
         if _self is None:
-            response = eval(cmd)(*args, **kwargs)  # nosec
+            cmd_path = cmd.split(".")
+
+            package_name = cmd_path[0]
+            subpackage_names = cmd_path[1:-1]
+            method_name = cmd_path[-1]
+
+            package = framework_packages[package_name]
+            for subpackage_name in subpackage_names:
+                package = getattr(package, subpackage_name)
+            method = getattr(package, method_name)
+
+            response = method(*args, **kwargs)
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
 
