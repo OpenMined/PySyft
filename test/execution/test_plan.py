@@ -783,10 +783,6 @@ def test_plan_input_serialization(hook):
     def plan_serialized_input_1(x, y, z, t):
         return x
 
-    @sy.func2plan()
-    def plan_serialized_input_2(x, y, z, t):
-        return y
-
     plan_serialized_input_1.build(
         (th.tensor([1.0, -2.0]), th.tensor([1, 2])),
         {
