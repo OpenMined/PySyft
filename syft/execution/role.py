@@ -5,7 +5,7 @@ from typing import Union
 
 import copy
 
-from syft.generic.frameworks.types import framework_packages
+from syft.generic.frameworks import framework_packages
 
 import syft as sy
 from syft.execution.action import Action
