@@ -813,11 +813,11 @@ class TorchTensor(AbstractTensor):
             kwargs["owner"] = self.owner
 
         if self.is_wrapper:
-            self.child = self.child.fix_prec(*args, **kwargs)
+            child = self.child.fix_prec(*args, **kwargs)
             if no_wrap:
-                return self.child
+                return child
             else:
-                return self
+                return child.wrap()
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)

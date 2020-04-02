@@ -10,6 +10,7 @@ import syft as sy
 from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.serde.serde import deserialize
@@ -160,7 +161,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected == th.tensor([0.0])
 
@@ -174,7 +175,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert (actual == expected).all()
     assert (actual == th.tensor([1, 2, 3])).all()
@@ -190,7 +191,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected and actual >= 10
 
@@ -1099,7 +1100,7 @@ def test_plan_can_be_jit_traced(hook, workers):
 
     assert (x == th.tensor([3.0, 5])).all()
 
-    args = Plan._create_placeholders(args_shape)
+    args = PlaceHolder.create_placeholders(args_shape)
     torchscript_plan = th.jit.trace(foo, args)
 
     y = torchscript_plan(t)
