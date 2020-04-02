@@ -22,6 +22,7 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
+from warnings import warn
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 
@@ -117,6 +118,7 @@ class Plan(AbstractObject):
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
+        serialized_input: list = None,
         description: str = None,
     ):
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
@@ -131,6 +133,7 @@ class Plan(AbstractObject):
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.serialized_input = serialized_input
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -171,8 +174,37 @@ class Plan(AbstractObject):
         else:
             return []
 
+    @staticmethod
+    def serialize_input(input_arg):
+        if not isinstance(input_arg, (list, tuple, dict)):
+            if isinstance(input_arg, FrameworkTensor):
+                return "#input-FrameworkTensor"
+            else:
+                return f"#input-{type(input_arg).__name__}"
+
+        if isinstance(input_arg, (list, tuple)):
+            result = []
+            for arg in input_arg:
+                result.append(Plan.serialize_input(arg))
+
+            if isinstance(input_arg, tuple):
+                return tuple(result)
+            else:
+                return result
+
+        if isinstance(input_arg, dict):
+            serialized_dict = {}
+            for k, v in input_arg.items():
+                serialized_dict[k] = Plan.serialize_input(v)
+            return serialized_dict
+
+        return None
+
     def build(self, *args):
-        """Builds the plan.
+        """
+        Outdated!!
+
+        Builds the plan.
 
         First, run the function to be converted in a plan in a context which
         activates the tracing and record the actions in trace.logs
@@ -221,6 +253,7 @@ class Plan(AbstractObject):
 
         # Register inputs in role
         self.role.register_inputs(args)
+        self.serialized_input = Plan.serialize_input(args)
 
         # Register outputs in role
         self.role.register_outputs(results)
@@ -252,6 +285,7 @@ class Plan(AbstractObject):
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
+            serialized_input=self.serialized_input,
             description=self.description,
         )
 
@@ -294,8 +328,96 @@ class Plan(AbstractObject):
 
             return copied_layer
 
-    def __call__(self, *args):
+    def input_check(self, args: list) -> None:
         """
+            Method for input validation by comparing the serialized build input (self.serialized_input) with the
+            current call input, following the following steps:
+                1. Input length validation - checking that build and call inputs match on length.
+                2. Verify the following nested structures: list, tuple, dict recursively. Lengths must match when
+                comparing two nested lists, tuples or dicts. If they differ, an error will be raised.
+                3. If we hit an object for which we don't support nesting, we compare types between call input and
+                build input. If they differ, a warning will be raised.
+                4. Dicts on the same nesting level on build and call input must have the same keys. If they differ, an
+                error will be raised.
+        """
+
+        def extract_type(element: str) -> str:
+            return element.split("-")[1]
+
+        def raise_typecheck_warn(
+            plan: Plan, build_arg_type: str, call_arg_type: str, nested_structure_path: str
+        ) -> None:
+            warn(
+                f"Plan {plan.name} {nested_structure_path} has type {build_arg_type}, while being built with type {call_arg_type}.",
+                RuntimeWarning,
+            )
+
+        def raise_missmatch_err(
+            plan: Plan, build_arg_length: int, call_arg_length: int, nested_structure_path: str
+        ) -> None:
+            raise TypeError(
+                f"Plan {plan.name} {nested_structure_path} has length {call_arg_length}, while being build with length {build_arg_length}.",
+                RuntimeWarning,
+            )
+
+        def raise_wrong_no_arguments_err(plan: Plan, build_length: int, call_length: int) -> None:
+            raise TypeError(
+                f"Plan {plan.name} requires {build_length} arguments, received {call_length}."
+            )
+
+        def raise_key_missing_err(plan: Plan, key: any, nested_structure_path: str) -> None:
+            raise KeyError(
+                f"Plan {plan.name} {nested_structure_path} does not provide the key {key}, while being build with that key."
+            )
+
+        def check_type_nested_structure(
+            plan: Plan, build_arg: any, call_arg: any, suffix: str
+        ) -> None:
+            if isinstance(call_arg, str) and isinstance(build_arg, str):
+                build_type = extract_type(build_arg)
+                call_type = extract_type(call_arg)
+                if not (build_type == call_type):
+                    raise_typecheck_warn(plan, build_type, call_type, suffix)
+
+            if type(build_arg).__name__ != type(call_arg).__name__:
+                raise_typecheck_warn(plan, build_arg, call_arg, suffix)
+                return
+
+            if isinstance(build_arg, (list, tuple)):
+                if len(build_arg) != len(call_arg):
+                    raise_missmatch_err(plan, len(build_arg), len(call_arg), suffix)
+
+                for idx in range(min(len(build_arg), len(call_arg))):
+                    check_type_nested_structure(
+                        plan, build_arg[idx], call_arg[idx], f"element {idx} of " + suffix
+                    )
+
+            if isinstance(build_arg, dict):
+                if len(build_arg) != len(call_arg):
+                    raise_missmatch_err(plan, len(build_arg), len(call_arg), suffix)
+
+                for key in build_arg.keys():
+                    if key in call_arg:
+                        check_type_nested_structure(
+                            plan, build_arg[key], call_arg[key], f"key {key} of " + suffix
+                        )
+                    else:
+                        raise_key_missing_err(plan, key, suffix)
+
+        serialized_call = Plan.serialize_input(args)
+        serialized_build = self.serialized_input
+
+        if len(serialized_call) != len(serialized_build):
+            raise_wrong_no_arguments_err(self, len(serialized_build), len(serialized_call))
+
+        for idx in range(len(serialized_call)):
+            check_type_nested_structure(
+                self, serialized_call[idx], serialized_build[idx], f"element {idx} of input"
+            )
+
+    def __call__(self, *args, **kwargs):
+        """
+        Outdated!!
         Calls a plan execution with some arguments.
 
         When possible, run the original function to improve efficiency. When
@@ -311,6 +433,7 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
+            self.input_check(args)
             return self.role.execute(args)
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
@@ -524,6 +647,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
+            sy.serde.msgpack.serde._simplify(worker, plan.serialized_input),
         )
 
     @staticmethod
@@ -535,7 +659,7 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, is_built, name, tags, description, torchscript) = plan_tuple
+        (id_, role, include_state, is_built, name, tags, description, torchscript, serialized_input) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -543,6 +667,7 @@ class Plan(AbstractObject):
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
+        serialized_input = sy.serde.msgpack.serde._detail(worker, serialized_input)
 
         plan = sy.Plan(
             role=role,
@@ -553,6 +678,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            serialized_input=serialized_input,
         )
 
         plan.torchscript = torchscript

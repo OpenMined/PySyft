@@ -14,7 +14,6 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
-from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
@@ -69,17 +68,33 @@ class Role(AbstractObject):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(
-            self._store_placeholders(arg).value for arg in args_ if isinstance(arg, PlaceHolder)
-        )
+        def register_nested_inputs(obj) -> None:
+            if isinstance(obj, (list, tuple)):
+                _ = [register_nested_inputs(elem) for elem in obj]
+            elif isinstance(obj, dict):
+                _ = [register_nested_inputs(v) for _, v in sorted(obj.items())]
+            elif isinstance(obj, FrameworkTensor):
+                self.input_placeholder_ids.append(self._build_placeholders(obj).value)
+
+        self.input_placeholder_ids = []
+        register_nested_inputs(args_)
+        self.input_placeholder_ids = tuple(self.input_placeholder_ids)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
+        def register_nested_outputs(obj) -> None:
+            if isinstance(obj, (list, tuple)):
+                _ = [register_nested_outputs(elem) for elem in obj]
+            elif isinstance(obj, dict):
+                _ = [register_nested_outputs(v) for _, v in sorted(obj.items())]
+            elif isinstance(obj, FrameworkTensor):
+                self.output_placeholder_ids.append(self._build_placeholders(obj).value)
+
         results = (results,) if not isinstance(results, tuple) else results
-        self.output_placeholder_ids = tuple(
-            self._store_placeholders(result).value for result in results
-        )
+        self.output_placeholder_ids = []
+        register_nested_outputs(results)
+        self.output_placeholder_ids = tuple(self.output_placeholder_ids)
 
     def register_action(self, traced_action, action_type):
         """ Build placeholders and store action.
@@ -122,10 +137,29 @@ class Role(AbstractObject):
     def _instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
-        input_placeholders = tuple(
+        def instantiate_nested_input(input_placeholders, obj):
+            """
+                Function to instantiate all the placeholders in order, even if in nested structures.
+                Args:
+                    input_placeholders: the input placeholders generated at build time.
+                    args: the arguments received on __call__
+            """
+
+            if isinstance(obj, FrameworkTensor):
+                placeholder = input_placeholders.pop(0)
+                placeholder.instantiate(obj)
+            elif isinstance(obj, (list, tuple, set)):
+                for elem in obj:
+                    instantiate_nested_input(input_placeholders, elem)
+            elif isinstance(obj, dict):
+                _ = [instantiate_nested_input(input_placeholders, v) for _, v in sorted(obj.items())]
+
+        input_placeholders = [
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
-        )
-        PlaceHolder.instantiate_placeholders(input_placeholders, args_)
+        ]
+
+        instantiate_nested_input(input_placeholders, args_)
+
 
     def _execute_action(self, action):
         """ Build placeholders and store action.
@@ -179,8 +213,6 @@ class Role(AbstractObject):
             if obj.id.value not in self.placeholders:
                 self.placeholders[obj.id.value] = obj
             return obj.id
-        else:
-            return obj
 
     def _fetch_placeholders_from_ids(self, obj):
         """
