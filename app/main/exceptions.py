@@ -70,3 +70,9 @@ class InvalidRequestKeyError(PyGridError):
     def __init__(self):
         message = "Invalid request key!"
         super().__init__(message)
+
+
+class MaxCycleLimitExceededError(PyGridError):
+    def __init__(self):
+        message = "There are no cycles remaining"
+        super().__init__(message)

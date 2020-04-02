@@ -3,7 +3,7 @@ import json
 from binascii import unhexlify
 from .socket_handler import SocketHandler
 from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
-from ..exceptions import CycleNotFoundError
+from ..exceptions import CycleNotFoundError, MaxCycleLimitExceededError
 from ..processes import processes
 from ..auth import workers
 from ..tasks.cycle import complete_cycle, run_task_once
@@ -127,6 +127,9 @@ def cycle_request(message: dict, socket) -> str:
     except CycleNotFoundError:
         # Nothing to do
         response[CYCLE.STATUS] = CYCLE.REJECTED
+    except MaxCycleLimitExceededError as e:
+        response[CYCLE.STATUS] = CYCLE.REJECTED
+        response[MSG_FIELD.MODEL] = e.name
     except Exception as e:
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()

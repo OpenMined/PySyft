@@ -24,6 +24,8 @@ from .auth import workers
 from .events.fl_events import cycle_request, report
 from .exceptions import InvalidRequestKeyError, PyGridError
 from .codes import MSG_FIELD, CYCLE, RESPONSE_MSG
+from requests_toolbelt import MultipartEncoder
+
 
 # All grid nodes registered at grid network will be stored here
 grid_nodes = {}
@@ -367,6 +369,43 @@ def download_model():
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
+
+
+@main.route("/federated/speed-test", methods=["GET", "POST"])
+def connection_speed_test():
+    """ Connection speed test. """
+    response_body = {}
+    status_code = None
+
+    try:
+        _worker_id = request.args.get("worker_id", None)
+        _random = request.args.get("random", None)
+
+        if not _worker_id or not _random:
+            raise PyGridError
+
+        # If GET method
+        if request.method == "GET":
+            # Download data sample (1MB)
+            data_sample = b"x" * 67108864  # 64 Megabyte
+            response = {"sample": data_sample}
+            form = MultipartEncoder(response)
+            return Response(form.to_string(), mimetype=form.content_type)
+        elif request.method == "POST":  # Otherwise, it's POST method
+            if request.file:
+                status_code = 200  # Success
+            else:
+                raise PyGridError
+    except PyGridError as e:
+        status_code = 400  # Bad Request
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+    except Exception as e:
+        status_code = 500  # Internal Server Error
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+
+    return Response(
+        json.dumps(response_body), status_code=status_code, mimetype="application/json"
     )
 
 
