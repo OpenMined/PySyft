@@ -11,7 +11,7 @@ sys.path.append(".")
 
 
 from flask_sqlalchemy import SQLAlchemy
-from gateway.app.main.storage import models
+from app.main.storage import models
 
 app = Flask(__name__)
 

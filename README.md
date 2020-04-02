@@ -7,6 +7,7 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 
 ## Overview
 - [Overview](#overview)
+- [Architecture](#architecture)
 - [Getting started](#getting-started)
     - [Build Grid Platform Locally](#start-grid-platform-locally)
     - [Build images](#build-images)
@@ -17,6 +18,12 @@ PyGrid is a peer-to-peer network of data owners and data scientists who can coll
 - [Disclaimer](#disclaimer)
 - [License](#license)
 
+## Architecture
+PyGrid platform is composed by three different components.
+
+**PyGrid App** - A Flask based application used to manage/monitor/control and route grid Nodes/Workers remotely.  
+**Grid Nodes** - Server based apps used to store and manage data access in a secure and private way.  
+**Grid Workers** - Client based apps that uses different Syft based libraries to perform federated learning (ex: syft.js, KotlinSyft, SwiftSyft).
 
 ## Getting started
 To boot the entire PyGrid platform locally, we will use docker containers.
@@ -24,15 +31,15 @@ To install docker the dependencies, just follow [docker documentation](https://d
 
 ### Start Grid platform locally
 
-#### Using Docker
+#### 1 - Using Docker
 
 The latest PyGrid Gateway and Node images are available on the Docker Hub.
-- PyGrid Gateway - `openmined/grid-node`
-- PyGrid Node - `openmined/grid-node`
+- PyGrid - `openmined/grid-gateway`
+- Grid Node - `openmined/grid-node`
 
-###### Setting the Domain Names
+##### 1.1 - Setting the Domain Names
 
-Before start the grid platform locally using docker, we need to setup the domain names used by the bridge network. In order to access these nodes from outside of containers context, you need to work-around by adding the following domain names on your `/etc/hosts`
+Before start the grid platform locally using docker, we need to set up the domain names used by the bridge network. In order to use these nodes from outside of containers context, you should add the following domain names on your `/etc/hosts`
 ```
 127.0.0.1 gateway
 127.0.0.1 bob
@@ -41,33 +48,62 @@ Before start the grid platform locally using docker, we need to setup the domain
 127.0.0.1 james
 ```
 
-
-It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.
-**PS:** Feel free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
+#### 1.2 - Run Docker Images
+To setup and start the PyGrid platform you just need start the docker-compose process.
 ```
 $ docker-compose up
 ```
-If you want to rebuild and run the images, you just need to add the `--build` param when running `docker-compose up`
-```
-$ docker-compose up --build
-```
 
+It will download the latest openmined's docker images and start a grid platform with 1 gateway and 4 grid nodes.  
+**PS:** Feel free to increase/decrease the number of initial PyGrid nodes ***(you can do this by changing the docker-compose.yml file)***.
 
-#### Starting manually
-Start the grid platform manually with 1 gateway and how many grid nodes you want.  
-
-- **PyGrid Gateway** - Check out the instructions under [`/gateway`](./gateway)
-
-- **PyGrid Node** - Check out the instructions under [`/app/websocket`](./app/websocket)
-
-### Kubernetes deployment.
-You can now deploy the grid-gateway and grid-node docker containers on kubernetes. This can be either to a local (minikube) cluster or a remote cluster (GKE, EKS, AKS etc). The steps to setup the cluster can be found in [./k8s/Readme.md](https://github.com/OpenMined/PyGrid/tree/dev/k8s)
-
-### Build your own images
+### 1.3 - Build your own images (Optional)
 ```
 $ docker build -t openmined/grid-node ./app/websocket/  # Build PyGrid node image
 $ docker build -t openmined/grid-gateway ./gateway/  # Build gateway image
 ```
+
+
+#### 2 - Starting manually
+To start the PyGrid app manually, run:
+
+```
+python grid.py 
+```
+You can pass the arguments or use environment variables to set the gateway configs.  
+
+**Arguments**
+```
+  -h, --help                shows the help message and exit
+  -p [PORT], --port [PORT]  port to run server on (default: 5000)
+  --host [HOST]             the grid gateway host
+  --num_replicas            the number of replicas to provide fault tolerance to model hosting
+  --start_local_db          if this flag is used a SQLAlchemy DB URI is generated to use a local db
+```
+
+**Environment Variables**
+- `GRID_GATEWAY_PORT` -  Port to run server on.
+- `GRID_GATEWAY_HOST` - The grid gateway host
+- `NUM_REPLICAS` - Number of replicas to provide fault tolerance to model hosting
+- `DATABASE_URL` - The gateway database URL
+- `SECRET_KEY` - The secret key
+
+#### For development purposes
+You can also start the PyGrid app by running the `dev_server.sh` script.
+```
+$ ./dev_server.sh
+```
+This script uses the `dev_server.conf.py` as configuration file, including some gunicorn preferences and environment variables. The file is pre-populated with the default environment variables. You can set them by editing the following property:
+```python
+raw_env = [
+    'PORT=5000',
+    'SECRET_KEY=ineedtoputasecrethere',
+    'DATABASE_URL=sqlite:///databasegateway.db',
+]
+```
+
+### Kubernetes deployment.
+You can now deploy the PyGrid app and Grid Node docker containers on kubernetes. This can be either to a local (minikube) cluster or a remote cluster (GKE, EKS, AKS etc). The steps to setup the cluster can be found in [./k8s/Readme.md](https://github.com/OpenMined/PyGrid/tree/dev/k8s)
 
 ## Try out the Tutorials
 A comprehensive list of tutorials can be found [here](https://github.com/OpenMined/PySyft/tree/master/examples/tutorials/grid).
