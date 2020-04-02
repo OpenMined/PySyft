@@ -299,6 +299,18 @@ class Plan(AbstractObject):
 
         return pointer
 
+    def get_args_shape(self):
+        """Returns input tensors shapes"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    def translate_with(
+        self, plan_translator: "sy.execution.translation.abstract.AbstractPlanTranslator"
+    ):
+        return plan_translator(self).translate()
+
     def get_(self):
         self.state.get_()
         return self

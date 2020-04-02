@@ -59,6 +59,12 @@ class Role(AbstractObject):
             for tensor in state_tensors:
                 self.register_state_tensor(tensor)
 
+    def input_placeholders(self):
+        return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
+
+    def output_placeholders(self):
+        return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
+
     def register_inputs(self, args):
         """ Takes input arguments for this role and generate placeholders.
         """
@@ -166,7 +172,7 @@ class Role(AbstractObject):
         elif isinstance(obj, FrameworkTensor):
             if obj.id in self.placeholders:
                 return self.placeholders[obj.id].id
-            placeholder = PlaceHolder(id=obj.id, owner=self.owner)
+            placeholder = PlaceHolder(id=obj.id, owner=self.owner, shape=obj.shape)
             self.placeholders[obj.id] = placeholder
             return placeholder.id
         else:

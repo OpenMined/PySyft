@@ -7,7 +7,7 @@ from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
+    def __init__(self, owner=None, id=None, tags: set = None, description: str = None, shape=None):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -23,6 +23,8 @@ class PlaceHolder(AbstractTensor):
 
         if not isinstance(self.id, PlaceholderId):
             self.id = PlaceholderId(self.id)
+
+        self.expected_shape = shape
         self.child = None
 
     def instantiate(self, tensor):
