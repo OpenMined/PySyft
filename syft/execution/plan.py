@@ -357,7 +357,6 @@ class Plan(AbstractObject):
         ) -> None:
             raise TypeError(
                 f"Plan {plan.name} {nested_structure_path} has length {call_arg_length}, while being build with length {build_arg_length}.",
-                RuntimeWarning,
             )
 
         def raise_wrong_no_arguments_err(plan: Plan, build_length: int, call_length: int) -> None:
