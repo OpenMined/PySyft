@@ -237,10 +237,6 @@ class Plan(AbstractObject):
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
-
-        elif not self.is_built:
-            return self.build(args)
-
         else:
             return self.role.execute(args)
 
