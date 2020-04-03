@@ -83,6 +83,7 @@ class Role(AbstractObject):
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
+
         def register_nested_outputs(obj) -> None:
             if isinstance(obj, (list, tuple)):
                 _ = [register_nested_outputs(elem) for elem in obj]
@@ -137,6 +138,7 @@ class Role(AbstractObject):
     def _instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
+
         def instantiate_nested_input(input_placeholders, obj):
             """
                 Function to instantiate all the placeholders in order, even if in nested structures.
@@ -152,14 +154,15 @@ class Role(AbstractObject):
                 for elem in obj:
                     instantiate_nested_input(input_placeholders, elem)
             elif isinstance(obj, dict):
-                _ = [instantiate_nested_input(input_placeholders, v) for _, v in sorted(obj.items())]
+                _ = [
+                    instantiate_nested_input(input_placeholders, v) for _, v in sorted(obj.items())
+                ]
 
         input_placeholders = [
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
         ]
 
         instantiate_nested_input(input_placeholders, args_)
-
 
     def _execute_action(self, action):
         """ Build placeholders and store action.
