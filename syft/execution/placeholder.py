@@ -27,6 +27,59 @@ class PlaceHolder(AbstractTensor):
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
 
+    # TODO do we remove the tracing implementation if we trace plans here?
+
+    # def __getattribute__(self, name):
+    #     """ This method is called each time we want to access an attribute or call a method
+    #     of self.
+    #     We implement our tracing logic here.
+    #     """
+    #     attribute = object.__getattribute__(self, name)
+    #     if callable(attribute):
+    #         # Trace
+    #         print("tracing", attribute.__name__)
+    #     return attribute
+
+    def __add__(self, other):
+        print("tracing add")
+        # command = ('__add__', self.id, other.id, {})
+        ph = PlaceHolder()
+        res = self.child + other.child
+        return ph.instantiate(res)
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """ Receive an instruction for a function to be applied on a Placeholder,
+        Replace in the args with their child attribute, forward the command
+        instruction to the handle_function_command of the type of the child attributes,
+        get the response and wrap it in a Placeholder.
+        We use this method to perform the tracing.
+
+        Args:
+            command: instruction of a function command: (command name,
+                <no self>, arguments[, kwargs])
+
+        Returns:
+            the response of the function command
+        """
+        print("tracing", command)
+        cmd, _, args, kwargs = command
+
+        # Replace all FixedPrecisionTensor with their child attribute
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+
+        # build the new command
+        new_command = (cmd, None, new_args, new_kwargs)
+
+        # Send it to the appropriate class and get the response
+        response = new_type.handle_func_command(new_command)
+
+        # Put back FixedPrecisionTensor on the tensors found in the response
+        result = PlaceHolder()
+        response = result.instantiate(response)
+
+        return response
+
     def instantiate(self, tensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
