@@ -26,26 +26,7 @@ class PlaceHolder(AbstractTensor):
 
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
-
-    # TODO do we remove the tracing implementation if we trace plans here?
-
-    # def __getattribute__(self, name):
-    #     """ This method is called each time we want to access an attribute or call a method
-    #     of self.
-    #     We implement our tracing logic here.
-    #     """
-    #     attribute = object.__getattribute__(self, name)
-    #     if callable(attribute):
-    #         # Trace
-    #         print("tracing", attribute.__name__)
-    #     return attribute
-
-    def __add__(self, other):
-        print("tracing add")
-        # command = ('__add__', self.id, other.id, {})
-        ph = PlaceHolder()
-        res = self.child + other.child
-        return ph.instantiate(res)
+        self.role = role
 
     @classmethod
     def handle_func_command(cls, command):

@@ -301,15 +301,24 @@ class Role(AbstractObject):
         for ph in state.state_placeholders:
             placeholders[ph.id.value] = ph
 
-        return Role(
+        role = Role(
             id=id_,
             owner=worker,
             actions=actions,
             state=state,
-            placeholders=placeholders,
+            # placeholders=placeholders,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
         )
+        for ph in placeholders.values():
+            ph.role = role
+        for ph in state.state_placeholders:
+            ph.role = role
+
+        role.placeholders = placeholders
+        role.state = state
+
+        return role
 
     @staticmethod
     def bufferize(worker: AbstractWorker, role: "Role") -> tuple:
