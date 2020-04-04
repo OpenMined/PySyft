@@ -53,25 +53,27 @@ samples[
 samples[
     syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
 ] = make_crtprecisiontensor
-samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
-samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
-samples[syft.execution.plan.Plan] = make_plan
-samples[syft.execution.state.State] = make_state
 samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.role.Role] = make_role
+samples[syft.execution.state.State] = make_state
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.federated.train_config.TrainConfig] = make_trainconfig
+samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
+samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
+samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
+samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
+samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
+samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
-samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
-samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
 samples[syft.generic.string.String] = make_string
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
-samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
-samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
-samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
-samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 
 samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage

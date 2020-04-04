@@ -458,9 +458,10 @@ def compare_actions(detailed, original):
     """Compare 2 Actions"""
     assert len(detailed) == len(original)
     for original_op, detailed_op in zip(original, detailed):
-        compare_placeholders_list(original_op.args, detailed_op.args)
-        # return_ids is not a list (why?)
-        compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
+        for original_arg, detailed_arg in zip(original_op.args, detailed_op.args):
+            assert original_arg == detailed_arg
+        for original_return, detailed_return in zip(original_op.return_ids, detailed_op.return_ids):
+            assert original_return == detailed_return
         assert original_op.name == detailed_op.name
         assert original_op.kwargs == detailed_op.kwargs
     return True
@@ -484,6 +485,17 @@ def compare_placeholders_dict(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+    return True
+
+
+def compare_roles(detailed, original):
+    """Compare 2 Roles"""
+    assert detailed.id == original.id
+    compare_actions(detailed.actions, original.actions)
+    compare_placeholders_list(detailed.state.state_placeholders, original.state.state_placeholders)
+    compare_placeholders_dict(detailed.placeholders, original.placeholders)
+    assert detailed.input_placeholder_ids == original.input_placeholder_ids
+    assert detailed.output_placeholder_ids == original.output_placeholder_ids
     return True
 
 
@@ -644,6 +656,25 @@ def make_loggingtensor(**kwargs):
     ]
 
 
+# syft.execution.placeholder_id.PlaceholderId
+def make_placeholder_id(**kwargs):
+    p = syft.execution.placeholder.PlaceHolder()
+    obj_id = p.id
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.placeholder_id.PlaceholderId
+        assert detailed.value == original.value
+        return True
+
+    return [
+        {
+            "value": obj_id,
+            "simplified": (CODE[syft.execution.placeholder_id.PlaceholderId], (obj_id.value,)),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.generic.pointers.multi_pointer.MultiPointerTensor
 def make_multipointertensor(**kwargs):
     workers = kwargs["workers"]
@@ -739,16 +770,9 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
-        compare_placeholders_dict(detailed.placeholders, original.placeholders)
-        compare_actions(detailed.actions, original.actions)
-        # State
-        compare_placeholders_list(
-            detailed.state.state_placeholders, original.state.state_placeholders
-        )
-
+        compare_roles(detailed.role, original.role)
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
-        compare_placeholders_dict(detailed.placeholders, original.placeholders)
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -766,17 +790,12 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.actions),
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
-                    plan.include_state,  # (bool) include_state
-                    plan.is_built,  # (bool) is_built
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.tags),  # (set of str) tags
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, plan.description
-                    ),  # (str) description
-                    # (PlaceHolder) placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.placeholders),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.role),
+                    plan.include_state,
+                    plan.is_built,
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.name),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.description),
                 ),
             ),
             "cmp_detailed": compare,
@@ -787,21 +806,51 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.actions),
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
-                    model_plan.include_state,  # (bool) include_state
-                    model_plan.is_built,  # (bool) is_built
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),  # (str) name
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),  # (list) tags
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, model_plan.description
-                    ),  # (str) description
-                    # (PlaceHolder) placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.placeholders),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.role),
+                    model_plan.include_state,
+                    model_plan.is_built,
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
                 ),
             ),
             "cmp_detailed": compare,
         },
+    ]
+
+
+# Role
+def make_role(**kwargs):
+    @syft.func2plan(args_shape=[(1,)], state=(torch.tensor([1.0]),))
+    def plan_abs(x, state):
+        (bias,) = state.read()
+        x = x.abs()
+        return x + bias
+
+    plan_abs.build(torch.tensor([3.0]))
+    role = plan_abs.role
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.role.Role
+        compare_roles(detailed, original)
+        return True
+
+    return [
+        {
+            "value": role,
+            "simplified": (
+                CODE[syft.execution.role.Role],
+                (
+                    role.id,
+                    msgpack.serde._simplify(syft.hook.local_worker, role.actions),
+                    msgpack.serde._simplify(syft.hook.local_worker, role.state),
+                    msgpack.serde._simplify(syft.hook.local_worker, role.placeholders),
+                    role.input_placeholder_ids,
+                    role.output_placeholder_ids,
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
     ]
 
 
@@ -973,7 +1022,7 @@ def make_pointerplan(**kwargs):
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
-                    None,  # (set or None) tags
+                    (CODE[set], ()),  # (set or None) tags
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1319,7 +1368,7 @@ def make_placeholder(**kwargs):
             "simplified": (
                 CODE[syft.execution.placeholder.PlaceHolder],
                 (
-                    ph.id,  # (int) id
+                    msgpack.serde._simplify(syft.hook.local_worker, ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
                 ),
