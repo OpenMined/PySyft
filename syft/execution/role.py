@@ -69,22 +69,22 @@ class Role(AbstractObject):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(self._build_placeholders(arg).value for arg in args_)
+        self.input_placeholder_ids = tuple(self._store_placeholders(arg).value for arg in args)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
         self.output_placeholder_ids = tuple(
-            self._build_placeholders(result).value for result in results
+            self._store_placeholders(result).value for result in results
         )
 
     def register_action(self, traced_action, action_type):
         """ Build placeholders and store action.
         """
         command, response = traced_action
-        command_placeholder_ids = self._build_placeholders(command)
-        return_placeholder_ids = self._build_placeholders(response)
+        command_placeholder_ids = self._store_placeholders(command)
+        return_placeholder_ids = self._store_placeholders(response)
 
         if not isinstance(return_placeholder_ids, (list, tuple)):
             return_placeholder_ids = (return_placeholder_ids,)
@@ -160,21 +160,19 @@ class Role(AbstractObject):
         method = getattr(package, method_name)
         return method
 
-    def _build_placeholders(self, obj):
+    def _store_placeholders(self, obj):
         """
         Replace in an object all FrameworkTensors with Placeholder ids
         """
         if isinstance(obj, (tuple, list)):
-            r = [self._build_placeholders(o) for o in obj]
+            r = [self._store_placeholders(o) for o in obj]
             return type(obj)(r)
         elif isinstance(obj, dict):
-            return {key: self._build_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, FrameworkTensor):
-            if obj.id in self.placeholders:
-                return self.placeholders[obj.id].id
-            placeholder = PlaceHolder(id=obj.id, owner=self.owner, shape=obj.shape)
-            self.placeholders[obj.id] = placeholder
-            return placeholder.id
+            return {key: self._store_placeholders(value) for key, value in obj.items()}
+        elif isinstance(obj, PlaceHolder):
+            if obj.id.value not in self.placeholders:
+                self.placeholders[obj.id.value] = obj
+            return obj.id
         else:
             return obj
 

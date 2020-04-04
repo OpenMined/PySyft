@@ -240,7 +240,8 @@ class FrameworkHook(ABC):
             def new_method(self, *args, **kwargs):
                 response = base_method(self, *args, **kwargs)
                 command = (name, self, args, kwargs), response
-                self.role.register_action(command, syft.execution.computation.ComputationAction)
+                if self.role and self.tracing:
+                    self.role.register_action(command, syft.execution.computation.ComputationAction)
                 return response
 
             return new_method

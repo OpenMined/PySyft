@@ -186,14 +186,20 @@ class Plan(AbstractObject):
         """
         self.owner.init_plan = self
 
+        # Enable tracing
+        for ph in self.role.placeholders.values():
+            ph.tracing = True
+
         # Run once to build the plan
-        with sy.hook.trace.enabled():
-            # We usually have include_state==True for functions converted to plan
-            # using @func2plan and we need therefore to add the state manually
-            if self.include_state:
-                results = self.forward(*args, self.state)
-            else:
-                results = self.forward(*args)
+        args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
+        if self.include_state:
+            results = self.forward(*args, self.state)
+        else:
+            results = self.forward(*args)
+
+        # Disable tracing
+        for ph in self.role.placeholders.values():
+            ph.tracing = False
 
         # Register inputs in role
         self.role.register_inputs(args)
@@ -201,10 +207,6 @@ class Plan(AbstractObject):
         # Register outputs in role
         self.role.register_outputs(results)
 
-        for log in sy.hook.trace.logs:
-            self.role.register_action(log, ComputationAction)
-
-        sy.hook.trace.clear()
         self.is_built = True
         self.owner.init_plan = None
 
