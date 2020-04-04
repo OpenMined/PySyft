@@ -37,3 +37,11 @@ def get_significant_count(values, count):
         i -= 1
         count -= 1
     return count
+
+
+def reverse_bit(value):
+    result = 0
+    while value:
+        result = (result << 1) + (value & 1)
+        value >>= 1
+    return result
