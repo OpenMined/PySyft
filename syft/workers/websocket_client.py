@@ -129,7 +129,7 @@ class WebsocketClientWorker(BaseWorker):
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
-    async def async_fit(self, dataset_key: str, return_ids: List[int] = None):
+    async def async_fit(self, dataset_key: str, device: str = "cpu", return_ids: List[int] = None):
         """Asynchronous call to fit function on the remote location.
 
         Args:
@@ -149,7 +149,7 @@ class WebsocketClientWorker(BaseWorker):
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
         ) as websocket:
             message = self.create_worker_command_message(
-                command_name="fit", return_ids=return_ids, dataset_key=dataset_key
+                command_name="fit", return_ids=return_ids, dataset_key=dataset_key, device=device
             )
 
             # Send the message and return the deserialized response.
