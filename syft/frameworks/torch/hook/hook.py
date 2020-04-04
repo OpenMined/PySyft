@@ -7,7 +7,6 @@ from torch import nn
 import types
 import weakref
 
-
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
