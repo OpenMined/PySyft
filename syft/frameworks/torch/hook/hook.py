@@ -7,6 +7,7 @@ from torch import nn
 import types
 import weakref
 
+
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
@@ -578,11 +579,6 @@ class TorchHook(FrameworkHook):
            loss functions.
            It is important to note that all the operations are actually in-place.
         """
-
-        def named_buffer(nn_self):
-            """get all the non parameterized buffer in the module"""
-            for name, buf in nn_self.named_buffers():
-                yield name, buf
 
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
