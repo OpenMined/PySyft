@@ -9,8 +9,6 @@ import crypten
 
 def load(tag: str, src: int):
     if src == comm.get().get_rank():
-        # Means the data is on one of our local workers
-
         worker = syft.local_worker.get_worker_from_rank(src)
         results = worker.search(tag)
 
