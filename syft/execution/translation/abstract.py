@@ -5,4 +5,7 @@ class AbstractPlanTranslator:
         self.plan = plan
 
     def translate(self):
-        return self.plan.copy()
+        pass
+
+    def remove(self):
+        pass

@@ -12,6 +12,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
+from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -306,10 +307,18 @@ class Plan(AbstractObject):
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
 
-    def translate_with(
-        self, plan_translator: "sy.execution.translation.abstract.AbstractPlanTranslator"
-    ):
+    def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
+
+    def remove_translation(self, plan_translator: Union[str, AbstractPlanTranslator] = "default"):
+        if plan_translator == "default":
+            # Remove actions
+            self.role.actions = []
+            return self
+        else:
+            plan_translator(self).remove()
+
+        return self
 
     def get_(self):
         self.state.get_()
@@ -450,6 +459,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
         )
 
     @staticmethod
@@ -461,13 +471,14 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, is_built, name, tags, description) = plan_tuple
+        (id_, role, include_state, is_built, name, tags, description, torchscript) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
         name = sy.serde.msgpack.serde._detail(worker, name)
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
+        torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
 
         plan = sy.Plan(
             role=role,
@@ -479,6 +490,8 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        plan.torchscript = torchscript
 
         return plan
 
@@ -538,5 +551,9 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        if protobuf_plan.torchscript:
+            torchscript = io.BytesIO(protobuf_plan.torchscript)
+            plan.torchscript = torch.jit.load(torchscript)
 
         return plan

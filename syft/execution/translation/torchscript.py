@@ -1,6 +1,5 @@
-import torch
 from torch import jit
-from syft.execution import Plan
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.translation.abstract import AbstractPlanTranslator
 
 
@@ -11,34 +10,27 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         super().__init__(plan)
 
     def translate(self):
-        plan = self.plan.copy()
+        plan = self.plan
+
         args_shape = plan.get_args_shape()
-        args = Plan._create_placeholders(args_shape)
+        args = PlaceHolder.create_placeholders(args_shape)
 
-        # Remove reference to original function
+        # Temporarily remove reference to original function
+        tmp_forward = plan.forward
         plan.forward = None
-        torchscript_plan = jit.trace_module(TorchscriptPlan(plan), {"forward": args})
+
+        # To avoid storing Plan state tensors in torchscript, they will be send as parameters
+        plan_params = plan.parameters()
+        if len(plan_params) > 0:
+            args = (*args, plan.parameters())
+        torchscript_plan = jit.trace(plan, args)
         plan.torchscript = torchscript_plan
-
-        # Remove actions these should be captured in torchscript now
-        plan.actions = []
-
-        # Remove actual tensors from state, keep state for meta-data only
-        for ph in plan.state.state_placeholders:
-            ph.child = None
+        plan.forward = tmp_forward
 
         return plan
 
+    def remove(self):
+        plan = self.plan
+        plan.torchscript = None
 
-class TorchscriptPlan(torch.nn.Module):
-    """nn.Module wrapper for Plan that registers state tensors of Plan into torchscript"""
-
-    def __init__(self, plan: "Plan"):
-        super(TorchscriptPlan, self).__init__()
-        # Add state tensors as nn.Parameter on nn.Module to make it available in torchscript
-        for idx, param in enumerate(plan.parameters()):
-            setattr(self, "param%d" % idx, param)
-        self.plan = plan
-
-    def forward(self, *args):
-        return self.plan(*args)
+        return plan

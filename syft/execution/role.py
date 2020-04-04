@@ -122,6 +122,20 @@ class Role(AbstractObject):
         )
         PlaceHolder.instantiate_placeholders(input_placeholders, args)
 
+        # Last extra argument is a state?
+        if (
+            self.state is not None
+            and len(self.state.state_placeholders) > 0
+            and len(args) - len(input_placeholders) == 1
+            and isinstance(args[-1], (list, tuple))
+            and len(args[-1]) == len(self.state.state_placeholders)
+        ):
+            state_placeholders = tuple(
+                self.placeholders[ph.id.value] for ph in self.state.state_placeholders
+            )
+            PlaceHolder.instantiate_placeholders(self.state.state_placeholders, args[-1])
+            PlaceHolder.instantiate_placeholders(state_placeholders, args[-1])
+
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """

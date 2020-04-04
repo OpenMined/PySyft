@@ -1140,16 +1140,29 @@ def test_plan_input_usage(hook):
 
 def test_func_plan_can_be_translated_to_torchscript(hook, workers):
     @sy.func2plan(args_shape=[(3, 3)])
-    def plan_test_1(x):
+    def plan(x):
         x = x * 2
         x = x.abs()
         return x
 
+    orig_plan = plan.copy()
+
     inp = th.tensor([1, -1, 2])
-    res1 = plan_test_1(inp)
-    plan_ts = plan_test_1.translate_with(PlanTranslatorTorchscript)
-    res2 = plan_ts.torchscript(inp)
+    res1 = plan(inp)
+    plan.add_translation(PlanTranslatorTorchscript)
+    res2 = plan.torchscript(inp)
     assert (res1 == res2).all()
+
+    # check that translation can be done after serde
+    serde_plan = deserialize(serialize(orig_plan))
+    serde_plan.add_translation(PlanTranslatorTorchscript)
+    res3 = serde_plan.torchscript(inp)
+    assert (res1 == res3).all()
+
+    # check that translation is not lost after serde
+    serde_plan_full = deserialize(serialize(plan))
+    res4 = serde_plan_full.torchscript(inp)
+    assert (res1 == res4).all()
 
 
 def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
@@ -1165,12 +1178,49 @@ def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
             x = self.fc2(x)
             return x
 
-    net = Net()
-    net.build(th.zeros(10, 2))
+    plan = Net()
+    plan.build(th.zeros(10, 2))
+    orig_plan = plan.copy()
 
     inp = th.randn(10, 2)
-    res1 = net(inp)
 
-    net_ts = net.translate_with(PlanTranslatorTorchscript)
-    res2 = net_ts.torchscript(inp)
+    res1 = plan(inp)
+    plan.add_translation(PlanTranslatorTorchscript)
+    res2 = plan.torchscript(inp, plan.parameters())
     assert (res1 == res2).all()
+
+    # check that translation can be done after serde
+    serde_plan = deserialize(serialize(orig_plan))
+    serde_plan.add_translation(PlanTranslatorTorchscript)
+    res3 = serde_plan.torchscript(inp, serde_plan.parameters())
+    assert (res1 == res3).all()
+
+    # check that translation is not lost after serde
+    serde_plan_full = deserialize(serialize(plan))
+    res4 = serde_plan_full.torchscript(inp, serde_plan_full.parameters())
+    assert (res1 == res4).all()
+
+
+def test_plan_translation_remove(hook, workers):
+    @sy.func2plan(args_shape=[(3, 3)])
+    def plan(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    plan.add_translation(PlanTranslatorTorchscript)
+    full_plan = plan.copy()
+    assert plan.torchscript is not None
+    assert len(plan.role.actions) > 0
+
+    plan.remove_translation()
+    assert plan.torchscript is not None
+    assert len(plan.role.actions) == 0
+
+    plan.remove_translation(PlanTranslatorTorchscript)
+    assert plan.torchscript is None
+    assert len(plan.role.actions) == 0
+
+    full_plan.remove_translation(PlanTranslatorTorchscript)
+    assert full_plan.torchscript is None
+    assert len(full_plan.role.actions) > 0
