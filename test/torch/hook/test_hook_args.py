@@ -21,8 +21,10 @@ def test_list_as_index(workers):
     target = torch.tensor([10, 20, 30, 3])
 
     slice = tensor[[0, 1, 2, 4]].get()
+    slice2 = tensor[2].get()
 
     assert torch.equal(target, slice)
+    assert torch.equal(torch.tensor(30), slice2)
 
 
 def test_backward_multiple_use(workers):
