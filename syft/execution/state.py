@@ -71,13 +71,7 @@ class State(object):
                     parent_plan.state.state_placeholders.append(placeholder)
                     parent_plan.role.placeholders[placeholder.child.id] = placeholder
 
-        tensors = []
-        for placeholder in self.state_placeholders:
-            # State elements from sub plan should not be reported when read() is used
-            if "#inner" not in placeholder.tags:
-                tensor = placeholder.child
-                tensors.append(tensor)
-        return tensors
+        return [ph for ph in self.state_placeholders if "#inner" not in ph.tags]
 
     @staticmethod
     def create_grad_if_missing(tensor):
