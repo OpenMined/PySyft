@@ -1,5 +1,6 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
+import syft.execution.computation as computation
 from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
@@ -59,7 +60,6 @@ class PlaceHolder(AbstractTensor):
         Returns:
             the response of the function command
         """
-        print("tracing", command)
         cmd, _, args, kwargs = command
 
         # Replace all FixedPrecisionTensor with their child attribute
@@ -72,8 +72,11 @@ class PlaceHolder(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
-        result = PlaceHolder()
+        result = PlaceHolder(role=args[0].role, tracing=args[0].tracing, owner=args[0].owner)
         response = result.instantiate(response)
+
+        if args[0].tracing:
+            args[0].role.register_action((command, response), computation.ComputationAction)
 
         return response
 
