@@ -236,20 +236,20 @@ class FrameworkHook(ABC):
         comparators to the hooking
         """
 
-        def create_fn(base_method, name):
-            def new_method(self, *args, **kwargs):
+        def create_tracing_method(base_method, name):
+            def tracing_method(self, *args, **kwargs):
                 response = base_method(self, *args, **kwargs)
                 command = (name, self, args, kwargs), response
                 if self.role and self.tracing:
                     self.role.register_action(command, syft.execution.computation.ComputationAction)
                 return response
 
-            return new_method
+            return tracing_method
 
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
             if attr not in dir(syft_type) or attr in self.boolean_comparators:
-                new_method = create_fn(self._get_hooked_syft_method(attr), attr)
+                new_method = create_tracing_method(self._get_hooked_syft_method(attr), attr)
                 setattr(syft_type, attr, new_method)
 
     def _hook_private_tensor_methods(self, tensor_type: type, syft_type: type):
