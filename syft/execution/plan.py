@@ -13,6 +13,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.translation.abstract import AbstractPlanTranslator
+from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -310,14 +311,8 @@ class Plan(AbstractObject):
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
 
-    def remove_translation(self, plan_translator: Union[str, AbstractPlanTranslator] = "default"):
-        if plan_translator == "default":
-            # Remove actions
-            self.role.actions = []
-            return self
-        else:
-            plan_translator(self).remove()
-
+    def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
+        plan_translator(self).remove()
         return self
 
     def get_(self):
