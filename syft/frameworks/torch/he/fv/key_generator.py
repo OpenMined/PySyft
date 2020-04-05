@@ -1,3 +1,5 @@
+import torch as th
+
 from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.rlwe import sample_poly_ternary
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_zero_symmetric
@@ -26,12 +28,13 @@ class KeyGenerator:
         self._sk_generated = False
         self._pk_generated = False
 
+    def keygen(self):
         # Generate the secret and public key
-        self.generate_sk()
-        self.generate_pk()
+        sk = self.generate_sk()
+        pk = self.generate_pk()
+        return [sk, pk]
 
     def generate_sk(self, is_initialized=False):
-        # Extract encryption parameters.
         param = self._context.param
 
         if not is_initialized:

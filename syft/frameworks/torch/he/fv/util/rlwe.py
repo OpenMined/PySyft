@@ -15,7 +15,7 @@ def sample_poly_ternary(parms):
     coeff_count = parms.poly_modulus_degree
     coeff_mod_count = len(coeff_modulus)
 
-    result = th.zeros(coeff_count * coeff_mod_count)
+    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
     for i in range(coeff_count):
         rand_index = random.randint(-1, 1)
         if rand_index == 1:
@@ -35,11 +35,10 @@ def sample_poly_normal(param):
     coeff_mod_count = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
 
-    result = th.zeros(coeff_count * coeff_mod_count)
+    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
     for i in range(coeff_count):
-        noise = Normal(th.tensor([0]), th.tensor([NOISE_STANDARD_DEVIATION]))
-        noise = noise.sample()
-        assert type(noise) is int
+        noise = Normal(th.tensor([0.0]), th.tensor(NOISE_STANDARD_DEVIATION))
+        noise = int(noise.sample().item())
         if noise > 0:
             for j in range(coeff_mod_count):
                 result[i + j * coeff_count] = noise
@@ -59,7 +58,7 @@ def sample_poly_uniform(param):
     coeff_count = param.poly_modulus_degree
 
     max_random = 0x7FFFFFFFFFFFFFFF
-    result = th.zeros(coeff_count * coeff_mod_count)
+    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
 
     for j in range(coeff_mod_count):
         modulus = coeff_modulus[j]
@@ -93,4 +92,4 @@ def encrypt_zero_symmetric(context, secret_key):
         for i in range(coeff_count):
             c0[i + j * coeff_count] = c0[i + j * coeff_count] % coeff_modulus[j]
 
-    return th.tensor([c0, c1])
+    return [c0, c1]
