@@ -187,8 +187,7 @@ class Plan(AbstractObject):
         self.owner.init_plan = self
 
         # Enable tracing
-        for ph in self.role.placeholders.values():
-            ph.tracing = True
+        self.toggle_tracing(True)
 
         # Run once to build the plan
         args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
@@ -198,8 +197,7 @@ class Plan(AbstractObject):
             results = self.forward(*args)
 
         # Disable tracing
-        for ph in self.role.placeholders.values():
-            ph.tracing = False
+        self.toggle_tracing(False)
 
         # Register inputs in role
         self.role.register_inputs(args)
@@ -219,6 +217,10 @@ class Plan(AbstractObject):
                 warnings.warn(f"Failed to translate Plan with {translator}")
 
         return results
+
+    def toggle_tracing(self, value=None):
+        for ph in self.role.placeholders.values():
+            ph.tracing = value if value is not None else not ph.tracing
 
     def copy(self):
         """Creates a copy of a plan."""
