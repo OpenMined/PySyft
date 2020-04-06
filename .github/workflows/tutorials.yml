@@ -45,4 +45,4 @@ jobs:
         python setup.py install
     - name: Run the tutorials
       run: |
-        pytest test/notebooks/test_notebooks.py -m "not translation"
+        pytest --randomly-dont-reorganize test/notebooks/test_notebooks.py -m "not translation"
