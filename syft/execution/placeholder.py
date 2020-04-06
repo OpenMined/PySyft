@@ -71,12 +71,19 @@ class PlaceHolder(AbstractTensor):
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
 
-        # Put back FixedPrecisionTensor on the tensors found in the response
-        result = PlaceHolder(role=args[0].role, tracing=args[0].tracing, owner=args[0].owner)
+        # Find first placeholder in args
+        ph_arg = None
+        for arg in args:
+            # TODO throw an error or handle the case where no placeholder provided in args
+            if isinstance(arg, PlaceHolder):
+                ph_arg = arg
+
+        # Turn back response to a PlaceHolder
+        result = PlaceHolder(role=ph_arg.role, tracing=ph_arg.tracing, owner=ph_arg.owner)
         response = result.instantiate(response)
 
-        if args[0].tracing:
-            args[0].role.register_action((command, response), computation.ComputationAction)
+        if ph_arg.tracing:
+            ph_arg.role.register_action((command, response), computation.ComputationAction)
 
         return response
 
