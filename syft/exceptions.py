@@ -356,7 +356,7 @@ class UndefinedProtocolTypePropertyError(Exception):
     pass
 
 
-def route_method_exception(exception, self, args, kwargs):
+def route_method_exception(exception, self, args, kwargs_):
     try:
         if self.is_wrapper:
             if isinstance(self.child, sy.PointerTensor):

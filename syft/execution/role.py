@@ -119,7 +119,7 @@ class Role(AbstractObject):
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """
-        cmd, _self, args, kwargs, return_placeholder = (
+        cmd, _self, args, kwargs_, return_placeholder = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method
             action.args,
@@ -128,14 +128,14 @@ class Role(AbstractObject):
         )
         _self = self._fetch_placeholders_from_ids(_self)
         args = self._fetch_placeholders_from_ids(args)
-        kwargs = self._fetch_placeholders_from_ids(kwargs)
+        kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
         return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
 
         if _self is None:
             method = self._fetch_package_method(cmd)
-            response = method(*args, **kwargs)
+            response = method(*args, **kwargs_)
         else:
-            response = getattr(_self, cmd)(*args, **kwargs)
+            response = getattr(_self, cmd)(*args, **kwargs_)
 
         if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
             response = (response,)
@@ -229,9 +229,9 @@ class Role(AbstractObject):
             action_type = type(action)
             target = _replace_placeholder_ids(action.target)
             args = _replace_placeholder_ids(action.args)
-            kwargs = _replace_placeholder_ids(action.kwargs)
+            kwargs_ = _replace_placeholder_ids(action.kwargs)
             return_ids = _replace_placeholder_ids(action.return_ids)
-            new_actions.append(action_type(action.name, target, args, kwargs, return_ids))
+            new_actions.append(action_type(action.name, target, args, kwargs_, return_ids))
 
         return Role(
             state=state,

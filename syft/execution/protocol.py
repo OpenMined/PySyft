@@ -153,7 +153,7 @@ class Protocol(AbstractObject):
         return response
 
     def request_remote_run(
-        self, location: AbstractWorker, args, kwargs
+        self, location: AbstractWorker, args, kwargs_
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Requests protocol execution.
@@ -163,7 +163,7 @@ class Protocol(AbstractObject):
         Args:
             location: to which worker the request should be sent
             args: Arguments used as input data for the protocol.
-            kwargs: Named arguments used as input data for the protocol.
+            kwargs_: Named arguments used as input data for the protocol.
 
         Returns:
             PointerTensor or list of PointerTensors: response from request to
@@ -172,8 +172,8 @@ class Protocol(AbstractObject):
         plan_name = f"plan{self.id}"
         args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
 
-        # return_ids = kwargs.get("return_ids", {})
-        command = ("run", self.id, args, kwargs)
+        # return_ids = kwargs_.get("return_ids", {})
+        command = ("run", self.id, args, kwargs_)
 
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids

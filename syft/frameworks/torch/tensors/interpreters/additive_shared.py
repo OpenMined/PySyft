@@ -963,12 +963,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
@@ -977,12 +977,12 @@ class AdditiveSharingTensor(AbstractTensor):
         except AttributeError:
             pass
         if not isinstance(cmd, str):
-            return cmd(*args, **kwargs)
+            return cmd(*args, **kwargs_)
 
         tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
 
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs_)
 
         results = {}
         for worker, share in new_args[0].items():

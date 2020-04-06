@@ -143,23 +143,23 @@ class AbstractObject(ABC):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)

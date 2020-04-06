@@ -90,7 +90,7 @@ def default_register_tensor(*tensorcls):
 ### Main hook args implementation ###
 
 
-def unwrap_args_from_method(attr, method_self, args, kwargs):
+def unwrap_args_from_method(attr, method_self, args, kwargs_):
     """Method arguments are sometimes simple types (such as strings or ints) but sometimes
     they are custom Syft tensors such as wrappers (i.e. FrameworkTensor), LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -107,7 +107,7 @@ def unwrap_args_from_method(attr, method_self, args, kwargs):
         attr (str): the name of the method being called
         method_self: the tensor on which the method is being called
         args (list): the arguments being passed to the method
-        kwargs (dict): the keyword arguments being passed to the function
+        kwargs_ (dict): the keyword arguments being passed to the function
             (these are not hooked ie replace with their .child attr)
     """
     # Specify an id to distinguish methods from different classes
@@ -128,16 +128,16 @@ def unwrap_args_from_method(attr, method_self, args, kwargs):
         # Run it
         new_self, new_args = args_hook_function((method_self, args))
 
-    return new_self, new_args, kwargs
+    return new_self, new_args, kwargs_
 
 
-def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
+def unwrap_args_from_function(attr, args, kwargs_, return_args_type=False):
     """See unwrap_args_from_method for details
 
     Args:
         attr (str): the name of the function being called
         args (list): the arguments being passed to the function
-        kwargs (dict): the keyword arguments being passed to the function
+        kwargs_ (dict): the keyword arguments being passed to the function
             (these are not hooked ie replace with their .child attr)
         return_args_type (bool): return the type of the tensors in the
         original arguments
@@ -153,6 +153,7 @@ def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
         get_tensor_type_function = get_tensor_type_functions[attr]
+
         # Try running it
         new_args = hook_args(args)
 
@@ -169,9 +170,9 @@ def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
     new_type = get_tensor_type_function(new_args)
     if return_args_type:
         args_type = get_tensor_type_function(args)
-        return new_args, kwargs, new_type, args_type
+        return new_args, kwargs_, new_type, args_type
     else:
-        return new_args, kwargs, new_type
+        return new_args, kwargs_, new_type
 
 
 def build_unwrap_args_from_function(args, return_tuple=False):
