@@ -22,7 +22,7 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         # To avoid storing Plan state tensors in torchscript, they will be send as parameters
         plan_params = plan.parameters()
         if len(plan_params) > 0:
-            args = (*args, plan.parameters())
+            args = (*args, plan_params)
         torchscript_plan = jit.trace(plan, args)
         plan.torchscript = torchscript_plan
         plan.forward = tmp_forward

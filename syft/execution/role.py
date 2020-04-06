@@ -124,8 +124,7 @@ class Role(AbstractObject):
 
         # Last extra argument is a state?
         if (
-            self.state is not None
-            and len(self.state.state_placeholders) > 0
+            len(self.state.state_placeholders) > 0
             and len(args) - len(input_placeholders) == 1
             and isinstance(args[-1], (list, tuple))
             and len(args[-1]) == len(self.state.state_placeholders)
