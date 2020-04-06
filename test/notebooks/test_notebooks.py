@@ -119,7 +119,7 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         notebook,
         "/dev/null",
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+        timeout=4q00,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
