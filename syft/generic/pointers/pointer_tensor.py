@@ -279,9 +279,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
-        ptr = self.remote_send(destination, requires_grad=requires_grad)
-
-        return ptr
+        kwargs = {"inplace": False, "requires_grad": requires_grad}
+        message = TensorCommandMessage.communication(
+            self.id_at_location, self.location.id, [destination.id], kwargs
+        )
+        return self.owner.send_msg(message=message, location=self.location)
 
     def remote_send(
         self, destination: AbstractWorker, requires_grad: bool = False,
@@ -299,7 +301,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = TensorCommandMessage.communication(
             self.id_at_location, self.location.id, [destination.id], kwargs
         )
-        return self.owner.send_msg(message=message, location=self.location)
+        ptr = self.owner.send_msg(message=message, location=self.location)
+        ptr.garbage_collect_data = False
+        return self
 
     def remote_get(self):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)

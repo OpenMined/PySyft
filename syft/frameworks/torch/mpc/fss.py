@@ -143,14 +143,16 @@ def fss_op(x1, x2, type_op="eq"):
 def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
-    alpha, s_0, *CW = x1.owner.crypto_store.get_keys(type_op, n_instances=x1.numel(), remove=False)
+    alpha, s_0, *CW = x1.owner.crypto_store.get_keys(
+        f"fss_{type_op}", n_instances=x1.numel(), remove=False
+    )
     return x + alpha.reshape(x.shape)
 
 
 # share level
 def eq_eval_plan(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="eq", n_instances=x_masked.numel(), remove=True
+        type_op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
     result_share = DPF.eval(b, x_masked, s_0, *CW)
     return result_share
@@ -159,7 +161,7 @@ def eq_eval_plan(b, x_masked):
 # share level
 def comp_eval_plan(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="comp", n_instances=x_masked.numel(), remove=True
+        type_op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
     result_share = DIF.eval(b, x_masked, s_0, *CW)
     return result_share
@@ -167,14 +169,14 @@ def comp_eval_plan(b, x_masked):
 
 def xor_add_convert_1(x):
     xor_share, add_share = x.owner.crypto_store.get_keys(
-        type_op="xor_add", n_instances=x.numel(), remove=False
+        type_op="xor_add_couple", n_instances=x.numel(), remove=False
     )
     return x ^ xor_share.reshape(x.shape)
 
 
 def xor_add_convert_2(b, x):
     xor_share, add_share = x.owner.crypto_store.get_keys(
-        type_op="xor_add", n_instances=x.numel(), remove=True
+        type_op="xor_add_couple", n_instances=x.numel(), remove=True
     )
     return add_share.reshape(x.shape) * (1 - 2 * x) + x * b
 

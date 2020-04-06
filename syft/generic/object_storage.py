@@ -24,7 +24,7 @@ class ObjectStorage:
 
     @property
     def _tensors(self):
-        return dict(filter(lambda obj: isinstance(obj[1], FrameworkTensor), self._objects.items()))
+        return {id_: obj for id_, obj in self._objects.items() if isinstance(obj, FrameworkTensor)}
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
