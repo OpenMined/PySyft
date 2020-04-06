@@ -121,7 +121,7 @@ def test_remote_send(hook, workers):
     ptr_ptr_x = x.send(bob).remote_send(alice)
 
     assert ptr_ptr_x.owner == me
-    assert ptr_ptr_x.location == alice
+    assert ptr_ptr_x.location == bob
     assert x.id in alice._objects
 
 
