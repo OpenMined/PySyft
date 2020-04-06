@@ -1,7 +1,5 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
-import syft.execution.computation as computation
-from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
@@ -31,9 +29,8 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        if not isinstance(self.id, PlaceholderId):
-            self.id = PlaceholderId(self.id)
-
+        if not isinstance(self.id, syft.execution.placeholder_id.PlaceholderId):
+            self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
         self.role = role
@@ -83,7 +80,9 @@ class PlaceHolder(AbstractTensor):
         response = result.instantiate(response)
 
         if ph_arg.tracing:
-            ph_arg.role.register_action((command, response), computation.ComputationAction)
+            ph_arg.role.register_action(
+                (command, response), syft.execution.computation.ComputationAction
+            )
 
         return response
 
