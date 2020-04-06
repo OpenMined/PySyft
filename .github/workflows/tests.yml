@@ -21,7 +21,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.7]
 
     steps:
     - uses: actions/checkout@v2
@@ -43,6 +43,7 @@ jobs:
         pip3 install -r pip-dep/requirements_dev.txt
         pip3 install -r pip-dep/requirements_udacity.txt
         pip3 install -r pip-dep/requirements_notebooks.txt
+        pip3 install torch==1.5.0.dev20200220+cpu torchvision==0.6.0.dev20200220+cpu -f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
         python setup.py install
     - name: Lint, format, and type-check
       run: |
