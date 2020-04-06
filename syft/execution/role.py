@@ -59,11 +59,11 @@ class Role(AbstractObject):
             for tensor in state_tensors:
                 self.register_state_tensor(tensor)
 
-    def register_inputs(self, args):
+    def register_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(self._build_placeholders(arg).value for arg in args)
+        self.input_placeholder_ids = tuple(self._build_placeholders(arg).value for arg in args_)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
@@ -92,10 +92,10 @@ class Role(AbstractObject):
         # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
-    def execute(self, args):
-        """ Make the role execute all its actions using args as inputs.
+    def execute(self, args_):
+        """ Make the role execute all its actions using args_ as inputs.
         """
-        self._instantiate_inputs(args)
+        self._instantiate_inputs(args_)
         for action in self.actions:
             self._execute_action(action)
 
@@ -108,18 +108,18 @@ class Role(AbstractObject):
             return result[0]
         return result
 
-    def _instantiate_inputs(self, args):
+    def _instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
         input_placeholders = tuple(
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
         )
-        PlaceHolder.instantiate_placeholders(input_placeholders, args)
+        PlaceHolder.instantiate_placeholders(input_placeholders, args_)
 
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """
-        cmd, _self, args, kwargs_, return_placeholder = (
+        cmd, _self, args_, kwargs_, return_placeholder = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method
             action.args,
@@ -127,15 +127,15 @@ class Role(AbstractObject):
             action.return_ids,
         )
         _self = self._fetch_placeholders_from_ids(_self)
-        args = self._fetch_placeholders_from_ids(args)
+        args_ = self._fetch_placeholders_from_ids(args_)
         kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
         return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
 
         if _self is None:
             method = self._fetch_package_method(cmd)
-            response = method(*args, **kwargs_)
+            response = method(*args_, **kwargs_)
         else:
-            response = getattr(_self, cmd)(*args, **kwargs_)
+            response = getattr(_self, cmd)(*args_, **kwargs_)
 
         if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
             response = (response,)
@@ -228,10 +228,10 @@ class Role(AbstractObject):
         for action in self.actions:
             action_type = type(action)
             target = _replace_placeholder_ids(action.target)
-            args = _replace_placeholder_ids(action.args)
+            args_ = _replace_placeholder_ids(action.args)
             kwargs_ = _replace_placeholder_ids(action.kwargs)
             return_ids = _replace_placeholder_ids(action.return_ids)
-            new_actions.append(action_type(action.name, target, args, kwargs_, return_ids))
+            new_actions.append(action_type(action.name, target, args_, kwargs_, return_ids))
 
         return Role(
             state=state,

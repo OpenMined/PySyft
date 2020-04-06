@@ -215,12 +215,12 @@ class ObjectPointer(AbstractObject):
     @classmethod
     def find_a_pointer(cls, command):
         """
-        Find and return the first pointer in the args object, using a trick
+        Find and return the first pointer in the args_ object, using a trick
         with the raising error RemoteObjectFoundError
         """
         try:
-            cmd, _, args, kwargs_ = command
-            _ = hook_args.unwrap_args_from_function(cmd, args, kwargs_)
+            cmd, _, args_, kwargs_ = command
+            _ = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer

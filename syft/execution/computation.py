@@ -178,7 +178,7 @@ class ComputationAction(Action):
             )
         else:
             target = None
-        args = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
+        args_ = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
 
         kwargs_ = {}
         for key in protobuf_obj.kwargs:
@@ -195,9 +195,9 @@ class ComputationAction(Action):
 
         if return_placeholder_ids:
             action = ComputationAction(
-                command, target, tuple(args), kwargs_, return_placeholder_ids
+                command, target, tuple(args_), kwargs_, return_placeholder_ids
             )
         else:
-            action = ComputationAction(command, target, tuple(args), kwargs_, tuple(return_ids))
+            action = ComputationAction(command, target, tuple(args_), kwargs_, tuple(return_ids))
 
         return action

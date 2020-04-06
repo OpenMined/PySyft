@@ -149,21 +149,21 @@ class MultiPointerTensor(AbstractTensor):
         return results
 
     @staticmethod
-    def dispatch(args, worker):
+    def dispatch(args_, worker):
         """
         utility function for handle_func_command which help to select
         shares (seen as elements of dict) in an argument set. It could
         perhaps be put elsewhere
 
         Args:
-            args: arguments to give to a functions
+            args_: arguments to give to a functions
             worker: owner of the shares to select
 
         Return:
-            args where the MultiPointerTensor are replaced by
+            args_ where the MultiPointerTensor are replaced by
             the appropriate share
         """
-        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args_)
 
     @classmethod
     def handle_func_command(cls, command):
@@ -183,20 +183,20 @@ class MultiPointerTensor(AbstractTensor):
             the response of the function command
         """
 
-        cmd, _, args, kwargs_ = command
+        cmd, _, args_, kwargs_ = command
 
-        tensor = args[0]
+        tensor = args_[0]
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs_)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         results = {}
         for worker, share in new_args[0].items():

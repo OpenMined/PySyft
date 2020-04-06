@@ -475,7 +475,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         op_name = action.name
         _self = action.target
-        args = action.args
+        args_ = action.args
         kwargs_ = action.kwargs
         return_ids = action.return_ids
 
@@ -490,15 +490,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
-                getattr(_self, op_name)(*args, **kwargs_)
+                getattr(_self, op_name)(*args_, **kwargs_)
                 return
             else:
                 try:
-                    response = getattr(_self, op_name)(*args, **kwargs_)
+                    response = getattr(_self, op_name)(*args_, **kwargs_)
                 except TypeError:
                     # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
                     new_args = [
-                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
+                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args_
                     ]
                     response = getattr(_self, op_name)(*new_args, **kwargs_)
         # Handle functions
@@ -514,7 +514,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             for path in paths:
                 command = getattr(command, path)
 
-            response = command(*args, **kwargs_)
+            response = command(*args_, **kwargs_)
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
@@ -562,9 +562,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A pointer to the result.
         """
         command_name = message.command_name
-        args, kwargs_, return_ids = message.message
+        args_, kwargs_, return_ids = message.message
 
-        response = getattr(self, command_name)(*args, **kwargs_)
+        response = getattr(self, command_name)(*args_, **kwargs_)
         #  TODO [midokura-silvia]: send the tensor directly
         #  TODO this code is currently necessary for the async_fit method in websocket_client.py
         if isinstance(response, FrameworkTensor):
@@ -582,14 +582,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             msg: A PlanCommandMessage specifying the command and args.
         """
         command_name = msg.command_name
-        args = msg.args
+        args_ = msg.args
 
         try:
             command = self._plan_command_router[command_name]
         except KeyError:
             raise PlanCommandUnknownError(command_name)
 
-        return command(*args)
+        return command(*args_)
 
     def send_command(
         self, recipient: "BaseWorker", message: tuple, return_ids: str = None

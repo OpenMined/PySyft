@@ -50,9 +50,9 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                plan.build(*args)
+                plan.build(*args_)
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
@@ -240,16 +240,16 @@ class Plan(AbstractObject):
         else:
             return self.role.execute(args)
 
-    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
+    def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the original function.
 
         Args:
-            args: Arguments used to run plan.
+            args_: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
         # TODO: can we reuse result_ids?
-        return self.__call__(*args)
+        return self.__call__(*args_)
 
     def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:
         """Send plan to locations.

@@ -356,25 +356,25 @@ class UndefinedProtocolTypePropertyError(Exception):
     pass
 
 
-def route_method_exception(exception, self, args, kwargs_):
+def route_method_exception(exception, self, args_, kwargs_):
     try:
         if self.is_wrapper:
             if isinstance(self.child, sy.PointerTensor):
-                if len(args) > 0:
-                    if not args[0].is_wrapper:
-                        return TensorsNotCollocatedException(self, args[0])
-                    elif isinstance(args[0].child, sy.PointerTensor):
-                        if self.location != args[0].child.location:
-                            return TensorsNotCollocatedException(self, args[0])
+                if len(args_) > 0:
+                    if not args_[0].is_wrapper:
+                        return TensorsNotCollocatedException(self, args_[0])
+                    elif isinstance(args_[0].child, sy.PointerTensor):
+                        if self.location != args_[0].child.location:
+                            return TensorsNotCollocatedException(self, args_[0])
 
         # if self is a normal tensor
         elif isinstance(self, FrameworkTensor):
-            if len(args) > 0:
-                if args[0].is_wrapper:
-                    if isinstance(args[0].child, sy.PointerTensor):
-                        return TensorsNotCollocatedException(self, args[0])
-                elif isinstance(args[0], sy.PointerTensor):
-                    return TensorsNotCollocatedException(self, args[0])
+            if len(args_) > 0:
+                if args_[0].is_wrapper:
+                    if isinstance(args_[0].child, sy.PointerTensor):
+                        return TensorsNotCollocatedException(self, args_[0])
+                elif isinstance(args_[0], sy.PointerTensor):
+                    return TensorsNotCollocatedException(self, args_[0])
     except:
         ""
     return exception

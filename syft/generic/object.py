@@ -135,7 +135,7 @@ class AbstractObject(ABC):
     def handle_func_command(cls, command):
         """
         Receive an instruction for a function to be applied on a Syft Tensor,
-        Replace in the args all the LogTensors with
+        Replace in the args_ all the LogTensors with
         their child attribute, forward the command instruction to the
         handle_function_command of the type of the child attributes, get the
         response and replace a Syft Tensor on top of all tensors found in
@@ -148,18 +148,18 @@ class AbstractObject(ABC):
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs_ = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs_)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)

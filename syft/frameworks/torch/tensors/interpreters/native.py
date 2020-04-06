@@ -319,14 +319,14 @@ class TorchTensor(AbstractTensor):
         <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args, kwargs_ = command
+        cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
-                cmd, args, kwargs_, return_args_type=True
+                cmd, args_, kwargs_, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -352,7 +352,7 @@ class TorchTensor(AbstractTensor):
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
-                return command(*args, **kwargs_)
+                return command(*args_, **kwargs_)
             except AttributeError:
                 pass
 
@@ -360,15 +360,15 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             try:
-                response = cls._get_response(cmd, args, kwargs_)
+                response = cls._get_response(cmd, args_, kwargs_)
             except AttributeError:
                 # Change the library path to avoid errors on layers like AvgPooling
                 cmd = cls._fix_torch_library(cmd)
-                response = cls._get_response(cmd, args, kwargs_)
+                response = cls._get_response(cmd, args_, kwargs_)
 
         return response
 
-    def _get_response(cmd, args, kwargs_):
+    def _get_response(cmd, args_, kwargs_):
         """
             Return the evaluation of the cmd string parameter
         """
@@ -381,10 +381,10 @@ class TorchTensor(AbstractTensor):
             module = getattr(module, sm)
 
         command_method = getattr(module, f"native_{command}")
-        if isinstance(args, tuple):
-            response = command_method(*args, **kwargs_)
+        if isinstance(args_, tuple):
+            response = command_method(*args_, **kwargs_)
         else:
-            response = command_method(args, **kwargs_)
+            response = command_method(args_, **kwargs_)
 
         return response
 
