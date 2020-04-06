@@ -515,6 +515,24 @@ class FixedPrecisionTensor(AbstractTensor):
         half = ones.div(2)
         result = (ones + (-ones * x).exp()).reciprocal()
         return (result - half) * sign + half
+    
+    @staticmethod
+    def batch_norm(is_training, X, gamma, beta, moving_mean, moving_var, eps, momentum):
+        if not is_training:
+            X_hat = (X - moving_mean) / torch.sqrt(moving_var + eps)
+        else:
+            assert len(X.shape) in (2, 4)
+            if len(X.shape) == 2:
+                mean = X.mean(dim=0)
+                var = ((X - mean) ** 2).mean(dim=0)
+            else:
+                mean = X.mean(dim=0, keepdim=True).mean(dim=2, keepdim=True).mean(dim=3, keepdim=True)
+                var = ((X - mean) ** 2).mean(dim=0, keepdim=True).mean(dim=2, keepdim=True).mean(dim=3, keepdim=True)
+            X_hat = (X - mean) / torch.sqrt(var + eps)
+            moving_mean = momentum * moving_mean + (1.0 - momentum) * mean
+            moving_var = momentum * moving_var + (1.0 - momentum) *  var
+        Y = gamma * X_hat + beta
+        return Y, moving_mean, moving_var
 
     @staticmethod
     def _sigmoid_maclaurin(tensor):
