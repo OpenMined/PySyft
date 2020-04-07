@@ -6,7 +6,7 @@
 
 All our development is done using Git and Github. If you're not too familiar with Git and Github, start by reviewing this guide. <https://guides.github.com/activities/hello-world/>  
 
-If you have not contributed to a github project before, check out this guide. <https://github.com/firstcontributions/first-contributions>
+If you have not contributed to a Github project before, check out this guide. <https://github.com/firstcontributions/first-contributions>
 
 ### Slack
 
