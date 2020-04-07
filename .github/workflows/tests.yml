@@ -63,7 +63,7 @@ jobs:
         pip3 install codecov
     - name: Run tests
       run: |
-        coverage run -m pytest test --deselect=test/efficiency --deselect=test/notebooks
+        coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
     - name: Check test coverage
       run: |
         coverage report --ignore-errors --fail-under 95 -m
