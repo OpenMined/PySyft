@@ -157,8 +157,11 @@ class Role(AbstractObject):
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
 
-        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor) or \
-            isinstance(response, AbstractTensor):
+        if (
+            isinstance(response, PlaceHolder)
+            or isinstance(response, FrameworkTensor)
+            or isinstance(response, AbstractTensor)
+        ):
             response = (response,)
             PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
