@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -1036,10 +1037,21 @@ class TorchTensor(AbstractTensor):
 
             return x_encrypted
 
+        elif protocol.lower() == "ckks":
+            context = kwargs.get("context")
+            scale = kwargs.get("scale")
+
+            x = self.copy()
+            x_encrypted = CKKSTensor().on(x)
+            x_encrypted.child.encrypt_(context, scale)
+
+            return x_encrypted
+
         else:
             raise NotImplementedError(
                 "Currently the .encrypt() method only supports Paillier Homomorphic "
-                "Encryption and Secure Multi-Party Computation"
+                "Encryption, CKKS Homomorphic Encryption and Secure Multi-Party "
+                "Computation"
             )
 
     def decrypt(self, protocol="mpc", **kwargs):
@@ -1075,10 +1087,16 @@ class TorchTensor(AbstractTensor):
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)
 
+        elif protocol.lower() == "ckks":
+            # self.copy() not required as CKKS's decrypt method is not inplace
+            secret_key = kwargs.get("secret_key")
+            return self.child.decrypt(secret_key)
+
         else:
             raise NotImplementedError(
                 "Currently the .decrypt() method only supports Paillier Homomorphic "
-                "Encryption and Secure Multi-Party Computation"
+                "Encryption, CKKS Homomorphic Encryption and Secure Multi-Party "
+                "Computation"
             )
 
     def numpy_tensor(self):

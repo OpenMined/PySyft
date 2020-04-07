@@ -3,6 +3,7 @@ import torch
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.generic.frameworks.hook.hook_args import (
     get_child,
@@ -22,6 +23,7 @@ type_rule = {
     AutogradTensor: one,
     LoggingTensor: one,
     PaillierTensor: one,
+    CKKSTensor: one,
 }
 
 forward_func = {
@@ -34,6 +36,7 @@ forward_func = {
     AutogradTensor: get_child,
     LoggingTensor: get_child,
     PaillierTensor: get_child,
+    CKKSTensor: get_child,
 }
 
 backward_func = {
@@ -43,6 +46,7 @@ backward_func = {
     AutogradTensor: lambda i, **kwargs: AutogradTensor(data=i).on(i, wrap=False),
     LoggingTensor: lambda i, **kwargs: LoggingTensor().on(i, wrap=False),
     PaillierTensor: lambda i, **kwargs: PaillierTensor().on(i, wrap=False),
+    CKKSTensor: lambda i, **kwargs: CKKSTensor().on(i, wrap=False),
 }
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
