@@ -1,3 +1,3 @@
-from .controller import FLController
+from .process_manager import ProcessManager
 
-processes = FLController()
+process_manager = ProcessManager()

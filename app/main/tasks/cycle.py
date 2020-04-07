@@ -22,10 +22,10 @@ def run_task_once(name, func, *args):
         )
 
 
-def complete_cycle(processes, cycle_id):
+def complete_cycle(cycle_manager, cycle_id):
     logging.info("running complete_cycle")
     try:
-        processes.complete_cycle(cycle_id)
+        cycle_manager.complete_cycle(cycle_id)
         return True
     except Exception as e:
         logging.error(

@@ -1,12 +1,16 @@
+# Events module import
+from .socket_handler import SocketHandler
+
+# PyGrid imports
+from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
+from ..exceptions import CycleNotFoundError, MaxCycleLimitExceededError
+from ..controller import processes
+from ..workers import worker_manager
+
+# Generic imports
 import uuid
 import json
 from binascii import unhexlify
-from .socket_handler import SocketHandler
-from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
-from ..exceptions import CycleNotFoundError, MaxCycleLimitExceededError
-from ..processes import processes
-from ..auth import workers
-from ..tasks.cycle import complete_cycle, run_task_once
 import traceback
 import base64
 
@@ -79,7 +83,7 @@ def authenticate(message: dict, socket) -> str:
         handler.new_connection(worker_id, socket)
 
         # Create worker instance
-        workers.create(worker_id)
+        worker_manager.create(worker_id)
 
         response[CYCLE.STATUS] = RESPONSE_MSG.SUCCESS
         response[MSG_FIELD.WORKER_ID] = worker_id
@@ -112,15 +116,15 @@ def cycle_request(message: dict, socket) -> str:
         upload = float(data.get(CYCLE.UPLOAD, None))
 
         # Retrieve the worker
-        worker = workers.get(id=worker_id)
+        worker = worker_manager.get(id=worker_id)
 
         worker.ping = ping
         worker.avg_download = download
         worker.avg_upload = upload
-        workers.update(worker)  # Update database worker attributes
+        worker_manager.update(worker)  # Update database worker attributes
 
         # The last time this worker was assigned for this model/version.
-        last_participation = processes.last_participation(worker_id, name, version)
+        last_participation = processes.last_cycle(worker_id, name, version)
 
         # Assign
         response = processes.assign(name, version, worker, last_participation)
@@ -131,6 +135,7 @@ def cycle_request(message: dict, socket) -> str:
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[MSG_FIELD.MODEL] = e.name
     except Exception as e:
+        print("Exception: ", str(e))
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
@@ -158,11 +163,9 @@ def report(message: dict, socket) -> str:
         # diff = unhexlify()
         diff = base64.b64decode(data.get(CYCLE.DIFF, None).encode())
 
-        cycle_id = processes.add_worker_diff(worker_id, request_key, diff)
-
-        # Run cycle end task async to we don't block report request
+        # Submit model diff and run cycle and task async to avoid block report request
         # (for prod we probably should be replace this with Redis queue + separate worker)
-        run_task_once("complete_cycle", complete_cycle, processes, cycle_id)
+        processes.submit_diff(worker_id, request_key, diff)
 
         response[CYCLE.STATUS] = RESPONSE_MSG.SUCCESS
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.

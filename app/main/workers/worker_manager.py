@@ -1,14 +1,14 @@
+# workers module imports
 from .worker import Worker
+
+# PyGrid imports
 from ..storage.warehouse import Warehouse
-from ..storage import models
 from ..exceptions import WorkerNotFoundError
 
 
-class WorkerController:
-    """ This class implements controller design pattern over the workers."""
-
+class WorkerManager:
     def __init__(self):
-        self._workers = Warehouse(models.Worker)
+        self._workers = Warehouse(Worker)
 
     def create(self, worker_id: str):
         """ Register a new worker
@@ -23,7 +23,7 @@ class WorkerController:
     def delete(self, **kwargs):
         """ Remove a registered worker.
             Args:
-                worker_id: Id used identify the desired worker. 
+                worker_id: Id used identify the desired worker.
         """
         self._workers.delete(**kwargs)
 
@@ -44,3 +44,20 @@ class WorkerController:
     def update(self, worker):
         """ Update Workers Attributes. """
         return self._workers.update()
+
+    def is_eligible(self, worker_id: str, server_config: dict):
+        """ Check if Worker is eligible to join in an new cycle by using its bandwith statistics.
+            Args:
+                worker_id : Worker's ID.
+                server_confing : FL Process Server Config.
+            Returns:
+                result: Boolean flag.
+        """
+        _worker = self._workers.first(id=worker_id)
+
+        # Check bandwith
+        _comp_bandwith = (
+            _worker.avg_upload > server_config["minimum_upload_speed"]
+        ) and (_worker.avg_download > server_config["minimum_download_speed"])
+
+        return _comp_bandwith

@@ -50,7 +50,7 @@ def init_gateway():
 
         db_path = "sqlite:///" + BASEDIR + "/databaseGateway.db"
         app = create_app(
-            debug=False, n_replica=1, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
+            debug=True, n_replica=1, test_config={"SQLALCHEMY_DATABASE_URI": db_path}
         )
 
         server = pywsgi.WSGIServer(

@@ -1,15 +1,16 @@
 """
 This file exists to provide a route to websocket events.
 """
-from .. import ws
-
+# Event module imports
 from .control_events import *
 from .fl_events import *
-
 from .socket_handler import SocketHandler
 
+# PyGrid imports
 from ..codes import *
+from .. import ws
 
+# Generic imports
 import json
 
 # Websocket events routes
