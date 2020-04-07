@@ -20,12 +20,6 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
-from syft import dependency_check
-
-if dependency_check.crypten_available:
-    # TODO Crypten shouldn't be used here
-    import crypten
-
 
 class Role(AbstractObject):
     """
@@ -163,7 +157,8 @@ class Role(AbstractObject):
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
 
-        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
+        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor) or \
+            isinstance(response, AbstractTensor):
             response = (response,)
             PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
@@ -189,7 +184,7 @@ class Role(AbstractObject):
             return type(obj)(r)
         elif isinstance(obj, dict):
             return {key: self._build_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, FrameworkTensor):
+        elif isinstance(obj, FrameworkTensor) or isinstance(obj, AbstractTensor):
             if obj.id in self.placeholders:
                 return self.placeholders[obj.id].id
             placeholder = PlaceHolder(id=obj.id, owner=self.owner, shape=obj.shape)

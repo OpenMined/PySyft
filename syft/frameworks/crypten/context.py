@@ -83,7 +83,7 @@ def _send_party_info(worker, rank, msg, return_values):
     return_values[rank] = response.object
 
 
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15449):
+def run_multiworkers(workers: list, master_addr: str, master_port: int = 15458):
     """Defines decorator to run function across multiple workers.
 
     Args:

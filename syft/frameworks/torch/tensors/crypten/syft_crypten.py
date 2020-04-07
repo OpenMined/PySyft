@@ -4,6 +4,7 @@ from crypten.mpc import MPCTensor
 
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 
 from functools import wraps
 from syft.generic.frameworks.hook.trace import tracer
@@ -35,18 +36,15 @@ class SyftCrypTensor(AbstractTensor):
 
     @tracer(method_name="add")
     def add(self, other):
-        return SyftCrypTensor(self.tensor)
+        return SyftCrypTensor(tensor=self.tensor)
 
     __add__ = add
     __radd__ = add
 
     @tracer(method_name="get_plain_text")
     def get_plain_text(self, dst=None):
-        return SyftCrypTensor(self.tensor)
+        return SyftCrypTensor(tensor=self.tensor)
 
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(SyftCrypTensor)
-
-### This is needed to build the wrap around MPCTensor
-# hook_args.default_register_tensor(MPCTensor)
