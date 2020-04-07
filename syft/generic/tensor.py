@@ -118,9 +118,6 @@ class AbstractTensor(AbstractObject):
         except IndexError:
             return 0
 
-    def size(self, idx=None):
-        return self.shape if idx is None else self.shape[idx]
-
     @property
     def grad(self):
         child_grad = self.child.grad
