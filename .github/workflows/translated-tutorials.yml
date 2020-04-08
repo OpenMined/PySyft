@@ -6,6 +6,7 @@ on:
     - master
     paths:
     - "examples/tutorials/translations/**"
+
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
