@@ -304,10 +304,14 @@ class ObjectPointer(AbstractObject):
         big_str = False
 
         if self.tags is not None and len(self.tags):
-
+            big_str = True
+            out += "\n\tTags: "
+            for tag in self.tags:
+                out += str(tag) + " "
 
         if big_str and hasattr(self, "shape"):
-
+            out += "\n\tShape: " + str(self.shape)
+            
         if self.description is not None:
             big_str = True
             out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
