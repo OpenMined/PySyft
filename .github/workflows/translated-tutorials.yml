@@ -13,7 +13,7 @@ on:
     - "examples/tutorials/translations/**"
 
 jobs:
-  build:
+  translation-tests:
 
     runs-on: ubuntu-latest
     strategy:

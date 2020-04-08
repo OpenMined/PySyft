@@ -15,10 +15,11 @@ on:
     paths:
     - '**.py'
     - '**.ipynb'
+    - 'pip-dep/**'
     - "!examples/tutorials/translations/**"
 
 jobs:
-  build:
+  tutorial-tests:
 
     runs-on: ubuntu-latest
     strategy:
