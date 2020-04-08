@@ -113,7 +113,6 @@ __all__.extend(
         "AutogradTensor",
         "FixedPrecisionTensor",
         "LargePrecisionTensor",
-        "SyftCrypTensor",
         "PointerTensor",
         "MultiPointerTensor",
         "PrivateGridNetwork",
