@@ -4,11 +4,18 @@ on:
   push:
     branches:
     - master
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
+
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
 
 jobs:
-  build:
+  python-tests:
 
     runs-on: ubuntu-latest
     strategy:
@@ -22,7 +29,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-    - uses: actions/cache@v1.1.2 
+    - uses: actions/cache@v1.1.2
       id: cache-reqs
       with:
         path: ~/.cache/pip
