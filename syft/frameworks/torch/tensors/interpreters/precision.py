@@ -1,6 +1,7 @@
 import torch
 
 import syft
+from syft.frameworks.torch.nn import nn
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -449,6 +450,10 @@ class FixedPrecisionTensor(AbstractTensor):
     __matmul__ = matmul
     mm = matmul
 
+    def reciprocal(self):
+        ones = self * 0 + 1
+        return ones / self
+
     # Approximations:
     def inverse(self, iterations=8):
         """
@@ -482,44 +487,92 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         return (1 + self / 2 ** iterations) ** (2 ** iterations)
 
-    def sigmoid(self, method="exp"):
+    def sign(self):
+        return (self > 0) + (self < 0) * (-1)
+
+    @staticmethod
+    def _sigmoid_exp(tensor):
         """
-        Approximates the sigmoid function
+        Implementation taken from FacebookResearch - CrypTen project
+
+        Compute the sigmoid using the exp approximation
+        sigmoid(x) = 1 / (1 + exp(-x))
+
+        For stability:
+            sigmoid(x) = (sigmoid(|x|) - 0.5) * sign(x) + 0.5
+
+        Ref: https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/#numerically_stable_sigmoid_function
 
         Args:
-            self: the fixed precision tensor
-            method (str): (default = "exp")
-                "exp": Use the exponential approximation and the sigmoid definition
-                    sigmoid(x) = 1 / (1 + exp(-x))
-                "maclaurin": Use the Maclaurin / Taylor approximation, with polynomial
-                    interpolation of degree 5 over [-8,8]
-                    NOTE: This method is faster but not as precise as "exp"
-                    Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+            tensor (tensor): values where sigmoid should be approximated
         """
 
-        if method == "exp":
-            # Inverse can only be used on matrices
-            if len(self.shape) == 1:
-                one = self * 0 + 1
-                result = one / (1 + (self * -1).exp())
-            else:
-                result = (1 + (self * -1).exp()).inverse()
+        sign = tensor.sign()
 
-        elif method == "maclaurin":
-            weights = (
-                torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
-                .fix_precision(**self.get_class_attributes())
-                .child
-            )
-            degrees = [0, 1, 3, 5]
+        # Make sure the elements are all positive
+        x = tensor * sign
+        ones = tensor * 0 + 1
+        half = ones.div(2)
+        result = (ones + (-ones * x).exp()).reciprocal()
+        return (result - half) * sign + half
 
-            # initiate with term of degree 0 to avoid errors with tensor ** 0
-            one = self * 0 + 1
-            result = one * weights[0]
-            for i, d in enumerate(degrees[1:]):
-                result += (self ** d) * weights[i + 1]
+    @staticmethod
+    def _sigmoid_maclaurin(tensor):
+        """
+        Approximates the sigmoid function using Maclaurin, with polynomial
+        interpolation of degree 5 over [-8,8]
+        NOTE: This method is faster but not as precise as "exp"
+        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+
+        Args:
+            tensor (tensor): values where sigmoid should be approximated
+        """
+
+        weights = (
+            torch.tensor([0.5, 1.91204779e-01, -4.58667307e-03, 4.20690803e-05])
+            .fix_precision(**tensor.get_class_attributes())
+            .child
+        )
+        degrees = [0, 1, 3, 5]
+
+        # initiate with term of degree 0 to avoid errors with tensor ** 0
+        one = tensor * 0 + 1
+        result = one * weights[0]
+        for i, d in enumerate(degrees[1:]):
+            result += (tensor ** d) * weights[i + 1]
 
         return result
+
+    @staticmethod
+    def _sigmoid_chebyshev(tensor, maxval: int = 6, terms: int = 32):
+        """
+        Implementation taken from FacebookResearch - CrypTen project
+        Computes the sigmoid function as
+                 sigmoid(x) = (tanh(x /2) + 1) / 2
+
+        Tanh is approximated using chebyshev polynomials
+        Args:
+             maxval (int): interval width used for tanh chebyshev polynomials
+             terms (int): highest degree of Chebyshev polynomials for tanh.
+                          Must be even and at least 6.
+        """
+        tanh_approx = tensor._tanh_chebyshev(tensor.div(2), maxval, terms)
+
+        return tanh_approx.div(2) + 0.5
+
+    def sigmoid(tensor, method="exp"):
+        """
+        Approximates the sigmoid function using a given method
+
+        Args:
+            tensor: the fixed precision tensor
+            method (str): (default = "chebyshev")
+                Possible values: "exp", "maclaurin", "chebyshev"
+        """
+
+        sigmoid_f = getattr(tensor, f"_sigmoid_{method}")
+
+        return sigmoid_f(tensor)
 
     def log(self, iterations=2, exp_iterations=8):
         """Approximates the natural logarithm using 8th order modified Householder iterations.
@@ -560,6 +613,7 @@ class FixedPrecisionTensor(AbstractTensor):
           where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
         The approximation is truncated to +/-1 outside [-maxval, maxval].
         Args:
+            tensor (tensor): values where the tanh needs to be approximated
             maxval (int): interval width used for computing chebyshev polynomials
             terms (int): highest degree of Chebyshev polynomials.
                          Must be even and at least 6.
@@ -593,9 +647,12 @@ class FixedPrecisionTensor(AbstractTensor):
     @staticmethod
     def _tanh_sigmoid(tensor):
         """
-        Compute the tanh using the sigmoid
+        Compute the tanh using the sigmoid approximation
 
+        Args:
+            tensor (tensor): values where tanh should be approximated
         """
+
         return 2 * torch.sigmoid(2 * tensor) - 1
 
     def tanh(tensor, method="chebyshev"):
@@ -697,160 +754,9 @@ class FixedPrecisionTensor(AbstractTensor):
 
         module.dot = dot
 
-        def conv2d(
-            input,
-            weight,
-            bias=None,
-            stride=1,
-            padding=0,
-            dilation=1,
-            groups=1,
-            padding_mode="zeros",
-        ):
-            """
-            Overloads torch.conv2d to be able to use MPC on convolutional networks.
-            The idea is to build new tensors from input and weight to compute a
-            matrix multiplication equivalent to the convolution.
-
-            Args:
-                input: input image
-                weight: convolution kernels
-                bias: optional additive bias
-                stride: stride of the convolution kernels
-                padding:
-                dilation: spacing between kernel elements
-                groups:
-                padding_mode: type of padding, should be either 'zeros' or 'circular' but 'reflect' and 'replicate' accepted
-            Returns:
-                the result of the convolution as an AdditiveSharingTensor
-            """
-            # Currently, kwargs are not unwrapped by hook_args
-            # So this needs to be done manually
-            if bias.is_wrapper:
-                bias = bias.child
-
-            assert len(input.shape) == 4
-            assert len(weight.shape) == 4
-
-            # Change to tuple if not one
-            stride = torch.nn.modules.utils._pair(stride)
-            padding = torch.nn.modules.utils._pair(padding)
-            dilation = torch.nn.modules.utils._pair(dilation)
-
-            # Extract a few useful values
-            batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
-            nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = weight.shape
-
-            if bias is not None:
-                assert len(bias) == nb_channels_out
-
-            # Check if inputs are coherent
-            assert nb_channels_in == nb_channels_kernel * groups
-            assert nb_channels_in % groups == 0
-            assert nb_channels_out % groups == 0
-
-            # Compute output shape
-            nb_rows_out = int(
-                ((nb_rows_in + 2 * padding[0] - dilation[0] * (nb_rows_kernel - 1) - 1) / stride[0])
-                + 1
-            )
-            nb_cols_out = int(
-                ((nb_cols_in + 2 * padding[1] - dilation[1] * (nb_cols_kernel - 1) - 1) / stride[1])
-                + 1
-            )
-
-            # Apply padding to the input
-            if padding != (0, 0):
-                padding_mode = "constant" if padding_mode == "zeros" else padding_mode
-                input = torch.nn.functional.pad(
-                    input, (padding[1], padding[1], padding[0], padding[0]), padding_mode
-                )
-                # Update shape after padding
-                nb_rows_in += 2 * padding[0]
-                nb_cols_in += 2 * padding[1]
-
-            # We want to get relative positions of values in the input tensor that are used by one filter convolution.
-            # It basically is the position of the values used for the top left convolution.
-            pattern_ind = []
-            for ch in range(nb_channels_in):
-                for r in range(nb_rows_kernel):
-                    for c in range(nb_cols_kernel):
-                        pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
-                        pattern_ind.append(pixel + ch * nb_rows_in * nb_cols_in)
-
-            # The image tensor is reshaped for the matrix multiplication:
-            # on each row of the new tensor will be the input values used for each filter convolution
-            # We will get a matrix [[in values to compute out value 0],
-            #                       [in values to compute out value 1],
-            #                       ...
-            #                       [in values to compute out value nb_rows_out*nb_cols_out]]
-            im_flat = input.view(batch_size, -1)
-            im_reshaped = []
-            for cur_row_out in range(nb_rows_out):
-                for cur_col_out in range(nb_cols_out):
-                    # For each new output value, we just need to shift the receptive field
-                    offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
-                    tmp = [ind + offset for ind in pattern_ind]
-                    im_reshaped.append(im_flat[:, tmp])
-            im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
-
-            # The convolution kernels are also reshaped for the matrix multiplication
-            # We will get a matrix [[weights for out channel 0],
-            #                       [weights for out channel 1],
-            #                       ...
-            #                       [weights for out channel nb_channels_out]].TRANSPOSE()
-            weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
-
-            # Now that everything is set up, we can compute the result
-            if groups > 1:
-                res = []
-                chunks_im = torch.chunk(im_reshaped, groups, dim=2)
-                chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
-                for g in range(groups):
-                    tmp = chunks_im[g].matmul(chunks_weights[g])
-                    res.append(tmp)
-                res = torch.cat(res, dim=2)
-            else:
-                res = im_reshaped.matmul(weight_reshaped)
-
-            # Add a bias if needed
-            if bias is not None:
-                res += bias
-
-            # ... And reshape it back to an image
-            res = (
-                res.permute(0, 2, 1)
-                .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
-                .contiguous()
-            )
-            return res
-
-        module.conv2d = conv2d
-
         # You can also overload functions in submodules!
-        @overloaded.module
-        def nn(module):
-            """
-            The syntax is the same, so @overloaded.module handles recursion
-            Note that we don't need to add the @staticmethod decorator
-            """
-
-            @overloaded.module
-            def functional(module):
-                def linear(*args):
-                    """
-                    Un-hook the function to have its detailed behaviour
-                    """
-                    return torch.nn.functional.native_linear(*args)
-
-                module.linear = linear
-
-                module.conv2d = conv2d
-
-            module.functional = functional
-
         # Modules should be registered just like functions
-        module.nn = nn
+        module.nn = nn  # Handles all the overloading properly
 
     @classmethod
     def handle_func_command(cls, command):

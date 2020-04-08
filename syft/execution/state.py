@@ -6,6 +6,7 @@ from typing import Dict
 import torch
 
 import syft as sy
+from syft.execution.placeholder_id import PlaceholderId
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
@@ -28,7 +29,7 @@ class State(object):
         out = "<"
         out += "State:"
         for state_placeholder in self.state_placeholders:
-            out += " {}".format(state_placeholder)
+            out += f" {state_placeholder}"
         out += ">"
         return out
 
@@ -46,8 +47,7 @@ class State(object):
         return tensors
 
     def copy(self) -> "State":
-        state = State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
-        return state
+        return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
 
     def read(self):
         """
@@ -65,11 +65,11 @@ class State(object):
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
+                    placeholder.id = PlaceholderId(placeholder.child.id)
                     placeholder.tags = set()
-                    placeholder.tag("#inner", "#state", f"#{parent_plan.var_count + 1}")
+                    placeholder.tag("#inner")
                     parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.placeholders[placeholder.child.id] = placeholder
-                    parent_plan.var_count += 1
+                    parent_plan.role.placeholders[placeholder.child.id] = placeholder
 
         tensors = []
         for placeholder in self.state_placeholders:
