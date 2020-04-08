@@ -311,7 +311,7 @@ class ObjectPointer(AbstractObject):
 
         if big_str and hasattr(self, "shape"):
             out += "\n\tShape: " + str(self.shape)
-            
+        
         if self.description is not None:
             big_str = True
             out += "\n\tDescription: " + str(self.description).split("\n")[0] + "..."
