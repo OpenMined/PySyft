@@ -128,7 +128,7 @@ class PrimitiveStorage:
                     if len(current_primitives[i]) == 0:
                         current_primitives[i] = primitive
                     else:
-                        current_primitives[i] = th.cat((current_primitives[i], primitive))
+                        current_primitives[i] = th.cat((current_primitives[i], primitive), dim=len(primitive.shape)-1)
 
     def build_fss_keys(self, type_op):
         """
