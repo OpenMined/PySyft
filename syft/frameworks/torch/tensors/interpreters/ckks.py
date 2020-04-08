@@ -2,9 +2,9 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.tenseal import ckks_vector
 import syft as sy
 import torch as th
+import tenseal as ts
 
 
 class CKKSTensor(AbstractTensor):
@@ -49,7 +49,7 @@ class CKKSTensor(AbstractTensor):
         # can only encrypts vectors
         self._shape = self.child.shape
         vector = self.child.flatten().tolist()
-        self.child = ckks_vector(context, scale, vector)
+        self.child = ts.ckks_vector(context, scale, vector)
 
     def decrypt(self, secret_key=None):
         """This method will decrypt the tensor, returning a normal
@@ -67,3 +67,80 @@ class CKKSTensor(AbstractTensor):
         # restor original shape
         x = th.tensor(x_decrypted)
         return x.reshape(self._shape)
+
+    def __add__(self, y):
+        if isinstance(y, th.Tensor):
+            self._check_shape(y)
+            y = y.flatten().tolist()
+
+        elif isinstance(y, CKKSTensor):
+            y = y.child
+
+        else:
+            raise NotImplementedError("Can only add torch.Tensor or CKKSTensor")
+
+        new_child = self.child + y
+        output = CKKSTensor()
+        output.child = new_child
+        output._shape = self._shape
+        return output
+
+    def __sub__(self, y):
+        if isinstance(y, th.Tensor):
+            self._check_shape(y)
+            y = y.flatten().tolist()
+
+        elif isinstance(y, CKKSTensor):
+            y = y.child
+
+        else:
+            raise NotImplementedError("Can only sub torch.Tensor or CKKSTensor")
+
+        new_child = self.child - y
+        output = CKKSTensor()
+        output.child = new_child
+        output._shape = self._shape
+        return output
+
+    def __mul__(self, y):
+        if isinstance(y, th.Tensor):
+            self._check_shape(y)
+            y = y.flatten().tolist()
+
+        elif isinstance(y, CKKSTensor):
+            y = y.child
+
+        else:
+            raise NotImplementedError("Can only mul torch.Tensor or CKKSTensor")
+
+        new_child = self.child * y
+        output = CKKSTensor()
+        output.child = new_child
+        output._shape = self._shape
+        return output
+
+    def _check_shape(self, y: th.Tensor):
+        if self._shape != y.shape:
+            raise AttributeError(
+                "Expected tensor of shape {}".format(th.tensor(self._shape).tolist())
+            )
+
+    @staticmethod
+    @overloaded.module
+    def torch(module):
+        def add(x, y):
+            return x + y
+
+        module.add = add
+
+        def sub(x, y):
+            return x + y
+
+        module.sub = sub
+
+        def mul(x, y):
+            return x + y
+
+        module.mul = mul
+
+    # TODO: add serialization
