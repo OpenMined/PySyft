@@ -53,17 +53,18 @@ class AdditiveSharingTensor(AbstractTensor):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.child = shares
+        self.dtype = dtype
         if dtype == "custom":
-            self.dtype = dtype
             if field is None:
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
+            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
         elif dtype == "long":
-            self.dtype = dtype
             self.field = 2 ** 64
+            self.torch_dtype = torch.int64
         elif dtype == "int":
-            self.dtype = dtype
             self.field = 2 ** 32
+            self.torch_dtype = torch.int32
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
@@ -73,14 +74,17 @@ class AdditiveSharingTensor(AbstractTensor):
                 if field <= 2 ** 32:
                     self.dtype = "int"
                     self.field = 2 ** 32
+                    self.torch_dtype = torch.int32
                 else:
                     self.dtype = "long"
                     self.field = 2 ** 64
+                    self.torch_dtype = torch.int64
             else:
                 warnings.warn("Default args selected")
                 # Default args
                 self.dtype = "long"
                 self.field = 2 ** securenn.Q_BITS
+                self.torch_dtype = torch.int64
 
         if shares is not None:
             self.child = {}
@@ -101,7 +105,6 @@ class AdditiveSharingTensor(AbstractTensor):
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
-        self.torch_dtype = torch.int32 if self.field <= 2 ** 32 else torch.int64
 
     def __repr__(self):
         return self.__str__()
@@ -175,7 +178,7 @@ class AdditiveSharingTensor(AbstractTensor):
         pass
 
     @staticmethod
-    def modulo(x, field):
+    def modulo(x, field: int):
         torch_dtype = torch.int64 if field > 2 ** 32 else torch.int32
         mask_pos = x > ((field - 1) // 2)
         mask_neg = x < -(field // 2)
@@ -771,7 +774,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.unbind = unbind
 
-        def cat_and_stack(tensors_shares):
+        def share_combine(tensors_shares):
             results = {}
             workers = tensors_shares[0].keys()
 
@@ -788,7 +791,7 @@ class AdditiveSharingTensor(AbstractTensor):
         def stack(tensors_shares, **kwargs):
             return {
                 worker: torch.stack(share, **kwargs)
-                for (worker, share) in cat_and_stack(tensors_shares).items()
+                for (worker, share) in share_combine(tensors_shares).items()
             }
 
         module.stack = stack
@@ -797,7 +800,7 @@ class AdditiveSharingTensor(AbstractTensor):
         def cat(tensors_shares, **kwargs):
             return {
                 worker: torch.cat(share, **kwargs)
-                for (worker, share) in cat_and_stack(tensors_shares).items()
+                for (worker, share) in share_combine(tensors_shares).items()
             }
 
         module.cat = cat

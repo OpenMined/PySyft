@@ -151,6 +151,10 @@ OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 # in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
 
+# cached value
+field = 2 ** 64
+strField = str(2 ** 64)
+
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     """To force a full simplify generally if the usual _simplify is not suitable.
@@ -379,8 +383,12 @@ def deserialize(binary: bin, worker: AbstractWorker = None) -> object:
 
 
 def _simplify_field(obj):
+    """
+    This function converts large numeric values which
+    will cause overflow into str before serialisation
+    """
     current_type = type(obj)
-    if current_type == int and obj >= 2 ** 64:
+    if current_type == int and obj >= field:
         obj = str(obj)
         current_type = str
     return current_type, obj
@@ -460,7 +468,12 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
 
 def _detail_field(typeCode, val):
-    if typeCode == msgpack.proto_type_info(str).code and val == str(2 ** 64):
+    """
+    This functions converts the field value 2**64 which was
+    serialised as str to avoid msgpack overflow back to int
+    after deserialisation.
+    """
+    if typeCode == msgpack.proto_type_info(str).code and val == strField:
         return int(val)
     else:
         return val
