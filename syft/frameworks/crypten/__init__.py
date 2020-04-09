@@ -19,7 +19,7 @@ def load(tag: str, src: int, **kwargs):
         result = crypten.native_load(f=None, preloaded=result, src=src, **kwargs)
 
     else:
-        result = crypten.native_load(src=src, **kwargs)
+        result = crypten.native_load(f=None, src=src, **kwargs)
 
     return result
 
