@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import List, Tuple, Union
 
+import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
@@ -62,8 +63,8 @@ class PrimitiveStorage:
                 # [1:] ~ [slice(1, None)]
                 # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
                 n_dim = len(prim.shape)
-                get_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances)]
-                remaining_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
+                get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
+                remaining_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances, None)])
 
                 keys.append(prim[get_slice])
                 if remove:
@@ -128,7 +129,16 @@ class PrimitiveStorage:
                     if len(current_primitives[i]) == 0:
                         current_primitives[i] = primitive
                     else:
-                        current_primitives[i] = th.cat((current_primitives[i], primitive), dim=len(primitive.shape)-1)
+                        if crypto_type == "xor_add_couple":
+                            current_primitives[i] = th.cat(
+                                (current_primitives[i], primitive), dim=len(primitive.shape) - 1
+                            )
+                        elif crypto_type in ("fss_eq", "fss_comp"):
+                            current_primitives[i] = np.concatenate(
+                                (current_primitives[i], primitive), axis=len(primitive.shape) - 1
+                            )
+                        else:
+                            raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
 
     def build_fss_keys(self, type_op):
         """
@@ -149,7 +159,7 @@ class PrimitiveStorage:
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
             alpha, s_00, s_01, *CW = fss_class.keygen(n_values=n_instances)
             # simulate sharing TODO clean this
-            mask = th.randint(0, 2 ** n, alpha.shape)
+            mask = np.random.randint(0, 2 ** n, alpha.shape, dtype=alpha.dtype)
             return [((alpha - mask) % 2 ** n, s_00, *CW), (mask, s_01, *CW)]
 
         return build_separate_fss_keys

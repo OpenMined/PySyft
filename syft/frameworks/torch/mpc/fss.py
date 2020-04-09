@@ -8,6 +8,8 @@ Useful papers are:
 Note that the protocols are quite different in aspect from those papers
 """
 import hashlib
+import math
+import numpy as np
 
 import torch as th
 import syft as sy
@@ -18,7 +20,8 @@ from syft.workers.base import BaseWorker
 
 λ = 110  # 6  # 110 or 63  # security parameter
 n = 32  # 8  # 32  # bit precision
-dtype = th.int32
+λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
+assert λs == 2
 
 no_wrap = {"no_wrap": True}
 
@@ -143,10 +146,12 @@ def fss_op(x1, x2, type_op="eq"):
 def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
+    # you actually get a share of alpha
     alpha, s_0, *CW = x1.owner.crypto_store.get_keys(
         f"fss_{type_op}", n_instances=x1.numel(), remove=False
     )
-    return x + alpha.reshape(x.shape)
+    r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
+    return r
 
 
 # share level
@@ -154,8 +159,8 @@ def eq_eval_plan(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         type_op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DPF.eval(b, x_masked, s_0, *CW)
-    return result_share
+    result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+    return th.tensor(result_share)
 
 
 # share level
@@ -163,8 +168,8 @@ def comp_eval_plan(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         type_op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
-    result_share = DIF.eval(b, x_masked, s_0, *CW)
-    return result_share
+    result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+    return th.tensor(result_share)
 
 
 def xor_add_convert_1(x):
@@ -197,205 +202,259 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        beta = th.tensor([1], dtype=dtype)
-        alpha = th.randint(0, 2 ** n, (n_values,))
-
+        alpha = np.random.randint(
+            0, 2 ** n, size=(n_values,), dtype=np.uint64
+        )  # this is IID in int32
+        beta = np.array([1])
         α = bit_decomposition(alpha)
         s, t, CW = (
-            Array(n + 1, 2, λ, n_values),
+            Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, n_values),
-            Array(n, 2 * (λ + 1), n_values),
+            Array(n, 2 * (λs + 1), n_values),
         )
-        s[0] = randbit(size=(2, λ, n_values))
-        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8).t()
+        s[0] = randbit(shape=(2, λ, n_values))
+        t[0] = np.array([[0, 1]] * n_values).T
         for i in range(0, n):
             g0 = G(s[i, 0])
             g1 = G(s[i, 1])
             # Re-use useless randomness
-            sL_0, _, sR_0, _ = split(g0, [λ, 1, λ, 1])
-            sL_1, _, sR_1, _ = split(g1, [λ, 1, λ, 1])
+            sL_0, _, sR_0, _ = split(g0, (λs, 1, λs, 1))
+            sL_1, _, sR_1, _ = split(g1, (λs, 1, λs, 1))
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
 
-            cw_i = TruthTableDPF(s_rand, α[i])
+            cw_i = SwitchTableDPF(s_rand, α[i])
             CW[i] = cw_i ^ g0 ^ g1
 
             for b in (0, 1):
                 τ = [g0, g1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λ + 1, n_values)
-                # filtered_τ = τ[𝛼[i]] OLD
-                α_i = α[i].unsqueeze(0).expand(λ + 1, n_values).unsqueeze(0).long()
-                filtered_τ = th.gather(τ, 0, α_i).squeeze(0)
-                s[i + 1, b], t[i + 1, b] = split(filtered_τ, [λ, 1])
+                τ = τ.reshape(2, λs + 1, n_values)
+                filtered_τ = multi_dim_filter(τ, α[i])
+                s[i + 1, b], t[i + 1, b] = split(filtered_τ, (λs, 1))
 
-        CW_n = (-1) ** t[n, 1].to(dtype) * (beta - Convert(s[n, 0]) + Convert(s[n, 1]))
-
-        return (alpha,) + s[0].unbind() + (CW, CW_n)
+        CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
+        CW_n = CW_n.astype(np.int64)
+        return (alpha, s[0][0], s[0][1], *CW, CW_n)
 
     @staticmethod
     def eval(b, x, *k_b):
+        x = x.astype(np.uint64)
         original_shape = x.shape
         x = x.reshape(-1)
         n_values = x.shape[0]
         x = bit_decomposition(x)
-        s, t = Array(n + 1, λ, n_values), Array(n + 1, 1, n_values)
-        s[0] = k_b[0]
-        # here k[1:] is (CW, CW_n)
-        CW = k_b[1].unbind() + (k_b[2],)
+        s, t = Array(n + 1, λs, n_values), Array(n + 1, 1, n_values)
+        s[0], *CW = k_b
         t[0] = b
         for i in range(0, n):
             τ = G(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λ + 1, n_values)
-            x_i = x[i].unsqueeze(0).expand(λ + 1, n_values).unsqueeze(0).long()
-            filtered_τ = th.gather(τ, 0, x_i).squeeze(0)
-            s[i + 1], t[i + 1] = split(filtered_τ, [λ, 1])
-        flat_result = (-1) ** b * (Convert(s[n]) + t[n].squeeze() * CW[n])
-        return flat_result.reshape(original_shape)
+            τ = τ.reshape(2, λs + 1, n_values)
+            filtered_τ = multi_dim_filter(τ, x[i])
+            s[i + 1], t[i + 1] = split(filtered_τ, (λs, 1))
+
+        flat_result = (-1) ** b * (t[n].squeeze() * CW[n] + convert(s[n]))
+        return flat_result.astype(np.int64).reshape(original_shape)
 
 
 class DIF:
-    "Distributed Interval Function - used for comparison <="
+    """Distributed Point Function - used for equality"""
 
     def __init__(self):
         pass
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = th.randint(0, 2 ** n, (n_values,))
+        alpha = np.random.randint(
+            0, 2 ** n, size=(n_values,), dtype=np.uint64
+        )  # this is IID in int32
         α = bit_decomposition(alpha)
         s, t, CW = (
-            Array(n + 1, 2, λ, n_values),
+            Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, n_values),
-            Array(n, 2 + 2 * (λ + 1), n_values),
+            Array(n, 2 + 2 * (λs + 1), n_values),
         )
-        s[0] = randbit(size=(2, λ, n_values))
-        t[0] = th.tensor([[0, 1]] * n_values, dtype=th.uint8).t()
+        s[0] = randbit(shape=(2, λ, n_values))
+        t[0] = np.array([[0, 1]] * n_values).T
         for i in range(0, n):
             h0 = H(s[i, 0])
             h1 = H(s[i, 1])
             # Re-use useless randomness
-            _, _, sL_0, _, sR_0, _ = split(h0, [1, 1, λ, 1, λ, 1])
-            _, _, sL_1, _, sR_1, _ = split(h1, [1, 1, λ, 1, λ, 1])
+            _, _, sL_0, _, sR_0, _ = split(h0, (1, λs, 1, 1, λs, 1))
+            _, _, sL_1, _, sR_1, _ = split(h1, (1, λs, 1, 1, λs, 1))
             s_rand = (sL_0 ^ sL_1) * α[i] + (sR_0 ^ sR_1) * (1 - α[i])
-            cw_i = TruthTableDIF(s_rand, α[i])
+            cw_i = SwitchTableDIF(s_rand, α[i])
             CW[i] = cw_i ^ h0 ^ h1
 
             for b in (0, 1):
                 τ = [h0, h1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λ + 2, n_values)
+                τ = τ.reshape(2, λs + 2, n_values)
                 # filtered_τ = τ[𝛼[i]] OLD
-                α_i = α[i].unsqueeze(0).expand(λ + 2, n_values).unsqueeze(0).long()
-                filtered_τ = th.gather(τ, 0, α_i).squeeze(0)
-                σ_leaf, s[i + 1, b], t[i + 1, b] = split(filtered_τ, [1, λ, 1])
+                filtered_τ = multi_dim_filter(τ, α[i])
+                σ_leaf, s[i + 1, b], t[i + 1, b] = split(filtered_τ, (1, λs, 1))
 
-        return (alpha,) + s[0].unbind() + (CW,)
+        return (alpha, s[0][0], s[0][1], *CW)
 
     @staticmethod
     def eval(b, x, *k_b):
+        x = x.astype(np.uint64)
         original_shape = x.shape
         x = x.reshape(-1)
         n_values = x.shape[0]
         x = bit_decomposition(x)
         FnOutput = Array(n + 1, n_values)
-        s, t = Array(n + 1, λ, n_values), Array(n + 1, 1, n_values)
-        s[0] = k_b[0]
-        CW = k_b[1].unbind()
+        s, t = Array(n + 1, λs, n_values), Array(n + 1, 1, n_values)
+        s[0], *CW = k_b
         t[0] = b
         for i in range(0, n):
             τ = H(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λ + 2, n_values)
-            x_i = x[i].unsqueeze(0).expand(λ + 2, n_values).unsqueeze(0).long()
-            filtered_τ = th.gather(τ, 0, x_i).squeeze(0)
-            σ_leaf, s[i + 1], t[i + 1] = split(filtered_τ, [1, λ, 1])
+            τ = τ.reshape(2, λs + 2, n_values)
+            filtered_τ = multi_dim_filter(τ, x[i])
+            σ_leaf, s[i + 1], t[i + 1] = split(filtered_τ, (1, λs, 1))
             FnOutput[i] = σ_leaf
 
         # Last tour, the other σ is also a leaf:
         FnOutput[n] = t[n]
+        # print(FnOutput)
         flat_result = FnOutput.sum(axis=0) % 2
-        return flat_result.reshape(original_shape)
-
-
-# PRG
-def G(seed):
-    assert seed.shape[0] == λ
-    seed_t = seed.t().tolist()
-    gen_list = []
-    for seed_bit in seed_t:
-        enc_str = str(seed_bit).encode()
-        h = hashlib.sha3_256(enc_str)
-        r = h.digest()
-        binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + (2 * (λ + 1))]
-        gen_list.append(list(map(int, binary_str)))
-
-    return th.tensor(gen_list, dtype=th.uint8).t()
-
-
-def H(seed):
-    assert seed.shape[0] == λ
-    seed_t = seed.t().tolist()
-    gen_list = []
-    for seed_bit in seed_t:
-        enc_str = str(seed_bit).encode()
-        h = hashlib.sha3_256(enc_str)
-        r = h.digest()
-        binary_str = bin(int.from_bytes(r, byteorder="big"))[2 : 2 + 2 + (2 * (λ + 1))]
-        gen_list.append(list(map(int, binary_str)))
-
-    return th.tensor(gen_list, dtype=th.uint8).t()
-
-
-def Convert(bits):
-    bit_pow_lambda = th.flip(2 ** th.arange(λ), (0,)).unsqueeze(-1).to(th.long)
-    return (bits.to(th.long) * bit_pow_lambda).sum(dim=0).to(dtype)
+        return flat_result.astype(np.int64).reshape(original_shape)
 
 
 def Array(*shape):
-    return th.empty(shape, dtype=th.uint8)
+    return np.empty(shape, dtype=np.uint64)
 
 
-bit_pow_n = th.flip(2 ** th.arange(n), (0,))
+def bit_decomposition(x, nbits=n):
+    return np.flip((x.reshape(-1, 1) >> np.arange(nbits, dtype=np.uint64)) % 2, axis=1).T
 
 
-def bit_decomposition(x):
-    x = x.unsqueeze(-1)
-    z = bit_pow_n & x
-    z = z.t()
-    return (z > 0).to(th.uint8)
-
-
-def randbit(size):
-    return th.randint(2, size=size)
+def randbit(shape):
+    byte_dim = shape[-2]
+    shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
+    randvalues = np.random.randint(0, 2 ** 64, size=shape_with_bytes, dtype=np.uint64)
+    randvalues[0] = randvalues[0] % 2 ** (byte_dim % 64)
+    return randvalues
 
 
 def concat(*args, **kwargs):
-    return th.cat(args, **kwargs)
+    return np.concatenate(args, **kwargs)
 
 
-def split(x, idx):
-    return th.split(x, idx)
+def consume(buffer, nbits):
+    new_buffer = buffer >> nbits
+    extracted = buffer - (new_buffer << nbits)
+    return new_buffer, extracted
 
 
-def TruthTableDPF(s, α_i):
-    one = th.ones((1, s.shape[1])).to(th.uint8)
+def G(seed):
+    """ λ -> 2(λ + 1)"""
+    assert seed.shape[0] == λs
+    seed_t = seed.T.tolist()
+
+    buffers = []
+    for seed_bit in seed_t:
+        enc_str = str(seed_bit).encode()
+        h = hashlib.sha3_256(enc_str)
+        r = h.digest()
+        buffer = int.from_bytes(r, byteorder="big")
+        buffers.append(buffer)
+
+    buffers = np.array(buffers)
+    parts = []
+    for nbits in [1, λ, 1, λ]:  # reverse order here
+        buffer, bigint = consume(buffers, nbits)
+        while nbits > 0:
+            extracted_bits = min(nbits, 64)
+            bigint, int64 = consume(bigint, extracted_bits)
+            parts.append(int64)
+            nbits -= extracted_bits
+
+    valuebits = np.stack(parts[::-1], axis=1)
+
+    r = np.array(valuebits, dtype=np.uint64).T
+    return r
+
+
+def H(seed):
+    """ λ -> 2 + 2(λ + 1)"""
+    assert seed.shape[0] == λs
+    seed_t = seed.T.tolist()
+    valuebits = []
+    for seed_bit in seed_t:
+        enc_str = str(seed_bit).encode()
+        h = hashlib.sha3_256(enc_str)
+        r = h.digest()
+        buffer = int.from_bytes(r, byteorder="big") % 2 ** (2 + 2 * (λ + 1))
+        parts = []
+        for nbits in [1, λ, 1, 1, λ, 1]:  # reverse order here
+            buffer, bigint = consume(buffer, nbits)
+            while nbits > 0:
+                extracted_bits = min(nbits, 64)
+                bigint, int64 = consume(bigint, extracted_bits)
+                parts.append(int64)
+                nbits -= extracted_bits
+        valuebits.append(parts[::-1])
+
+    return np.array(valuebits, dtype=np.uint64).T
+
+
+split_helpers = {
+    (2, 1): lambda x: (x[:2], x[2]),
+    (2, 1, 2, 1): lambda x: (x[:2], x[2], x[3:5], x[5]),
+    (1, 2, 1): lambda x: (x[0], x[1:3], x[3]),
+    (1, 2, 1, 1, 2, 1): lambda x: (x[0], x[1:3], x[3], x[4], x[5:7], x[7]),
+}
+
+
+def split(list_, idx):
+    return split_helpers[idx](list_)
+
+
+def SwitchTableDPF(s, α_i):
+    # assert s.shape[1] == len(α_i)
+    one = np.ones((1, s.shape[1]), dtype=np.uint64)
     s_one = concat(s, one)
-    Table = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    Table = np.zeros((2, s.shape[0] + 1, α_i.shape[-1]), dtype=np.uint64)
     for j, el in enumerate(α_i):
-        Table[el.item(), :, j] = s_one[:, j]
+        Table[el, :, j] = s_one[:, j]
     return Table.reshape(-1, Table.shape[2])
 
 
-def TruthTableDIF(s, α_i):
-    leafTable = th.zeros((2, 1, len(α_i)), dtype=th.uint8)
-    # TODO optimize: just put alpha on first line
-    leaf_value = α_i
-    for j, el in enumerate(α_i):
-        leafTable[(1 - el).item(), 0, j] = leaf_value[j]
+def SwitchTableDIF(s, α_i):
+    leafTable = np.zeros((2, 1, len(α_i)), dtype=np.uint64)
+    neg_α_i = (1 - α_i).astype(np.uint64)
+    # if α_i is 0, then ending on the leaf branch means your bit is 1 to you're > α so you should get 0
+    # if α_i is 1, then ending on the leaf branch means your bit is 0 to you're < α so you should get 1
+    # so we're doing leafTable[1-α_i] = α_i
+    for j, neg_el in enumerate(neg_α_i):
+        leafTable[neg_el, 0, j] = α_i[j]
 
-    one = th.ones((1, s.shape[1])).to(th.uint8)
+    # assert s.shape[1] == len(α_i)
+    one = np.ones((1, s.shape[1]), dtype=np.uint64)
     s_one = concat(s, one)
-    nextTable = th.zeros((2, λ + 1, len(α_i)), dtype=th.uint8)
+    nextTable = np.zeros((2, λs + 1, α_i.shape[-1]), dtype=np.uint64)
     for j, el in enumerate(α_i):
-        nextTable[el.item(), :, j] = s_one[:, j]
+        nextTable[el, :, j] = s_one[:, j]
 
     Table = concat(leafTable, nextTable, axis=1)
-    Table = Table.reshape(-1, Table.shape[2])
-    return Table
+    return Table.reshape(-1, Table.shape[2])
+
+
+ones_dict = {}
+
+
+def multi_dim_filter(τ, idx):
+    if τ.shape[1:] not in ones_dict:
+        ones_dict[τ.shape[1:]] = np.ones(τ.shape[1:], dtype=np.uint64)
+    ones = ones_dict[τ.shape[1:]]
+    pad = idx * ones
+    pad = pad.reshape(1, *pad.shape)
+    filtered = concat(1 - pad, pad, axis=0) * τ
+    filtered_τ = filtered.sum(axis=0)
+    return filtered_τ
+
+
+def convert(x):
+    """
+    convert a multi dim big tensor to a "random" single tensor
+    """
+    r = x[-1] % 2 ** 50
+    return r
