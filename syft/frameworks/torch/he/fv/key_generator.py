@@ -30,9 +30,9 @@ class KeyGenerator:
 
     def keygen(self):
         # Generate the secret and public key
-        sk = self.generate_sk()
-        pk = self.generate_pk()
-        return [sk, pk]
+        self.generate_sk()
+        self.generate_pk()
+        return [self._secret_key, self._public_key]
 
     def generate_sk(self, is_initialized=False):
         param = self._context.param

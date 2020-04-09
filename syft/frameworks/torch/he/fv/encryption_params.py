@@ -17,7 +17,7 @@ class EncryptionParams:
 
     @property
     def poly_modulus_degree(self):
-        return self.__poly_modulus_degree
+        return self._poly_modulus_degree
 
     @poly_modulus_degree.setter
     def poly_modulus_degree(self, value):
@@ -31,7 +31,7 @@ class EncryptionParams:
         """
         if value >= 2:
             if (value & (value - 1) == 0) and value != 0:
-                self.__poly_modulus_degree = value
+                self._poly_modulus_degree = value
             else:
                 raise ValueError("poly_modulus_degree must be a power of two 2")
         else:
@@ -39,7 +39,7 @@ class EncryptionParams:
 
     @property
     def coeff_modulus(self):
-        return self.__coeff_modulus
+        return self._coeff_modulus
 
     @coeff_modulus.setter
     def coeff_modulus(self, value):
@@ -50,11 +50,11 @@ class EncryptionParams:
             the amount of computation that the scheme can perform (bigger is better),
             and the security level (bigger is worse).
         """
-        self.__coeff_modulus = value
+        self._coeff_modulus = value
 
     @property
     def plain_modulus(self):
-        return self.__plain_modulus
+        return self._plain_modulus
 
     @plain_modulus.setter
     def plain_modulus(self, value):
@@ -64,4 +64,4 @@ class EncryptionParams:
             It also affects the amount of computation that the scheme can perform
             (bigger is worse).
         """
-        self.__plain_modulus = value
+        self._plain_modulus = value
