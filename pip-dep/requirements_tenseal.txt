@@ -1,1 +1,0 @@
-git+https://github.com/OpenMined/TenSEAL.git#egg=tenseal

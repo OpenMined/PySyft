@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
@@ -21,10 +22,6 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.exceptions import SendNotPermittedError
-
-# TenSEAL dependencies
-if syft.dependency_check.tenseal_available:
-    from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 
 
 def _get_maximum_precision():

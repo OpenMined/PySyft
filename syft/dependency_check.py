@@ -21,7 +21,3 @@ tfe_available = tfe_spec is not None
 
 torch_spec = util.find_spec("torch")
 torch_available = torch_spec is not None
-
-tenseal_spec = util.find_spec("tenseal")
-tenseal_cpp_spec = util.find_spec("_tenseal_cpp")
-tenseal_available = tenseal_spec is not None and tenseal_cpp_spec is not None

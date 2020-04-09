@@ -9,6 +9,7 @@ requests~=2.22.0
 scipy~=1.4.1
 syft-proto~=0.2.9.a1
 tblib~=1.6.0
+git+https://github.com/OpenMined/TenSEAL.git#egg=tenseal
 torchvision~=0.5.0
 torch~=1.4.0
 tornado==4.5.3
