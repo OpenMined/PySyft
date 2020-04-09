@@ -13,7 +13,6 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
@@ -157,11 +156,7 @@ class Role(AbstractObject):
         else:
             response = getattr(_self, cmd)(*args, **kwargs)
 
-        if (
-            isinstance(response, PlaceHolder)
-            or isinstance(response, FrameworkTensor)
-            or isinstance(response, AbstractTensor)
-        ):
+        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
             response = (response,)
             PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
@@ -187,7 +182,7 @@ class Role(AbstractObject):
             return type(obj)(r)
         elif isinstance(obj, dict):
             return {key: self._build_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, FrameworkTensor) or isinstance(obj, AbstractTensor):
+        elif isinstance(obj, FrameworkTensor):
             if obj.id in self.placeholders:
                 return self.placeholders[obj.id].id
             placeholder = PlaceHolder(id=obj.id, owner=self.owner, shape=obj.shape)

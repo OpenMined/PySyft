@@ -181,7 +181,7 @@ class TorchTensor(AbstractTensor):
         ):
             self.child.grad = new_grad  # .wrap()
         else:
-            if self.native_grad is not None:
+            if hasattr(self, "native_grad"):
                 with torch.no_grad():
                     self.native_grad = new_grad
             elif new_grad is not None:

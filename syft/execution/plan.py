@@ -16,7 +16,6 @@ from syft.execution.state import State
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
@@ -225,7 +224,7 @@ class Plan(AbstractObject):
         """
         object.__setattr__(self, name, value)
 
-        if isinstance(value, FrameworkTensor) or isinstance(value, AbstractTensor):
+        if isinstance(value, FrameworkTensor):
             self.role.register_state_tensor(value)
         elif isinstance(value, FrameworkLayerModule):
             for tensor_name, tensor in value.named_tensors():
@@ -247,8 +246,6 @@ class Plan(AbstractObject):
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
-        elif not self.is_built:
-            return self.build(args)
         else:
             return self.role.execute(args)
 

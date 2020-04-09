@@ -38,7 +38,6 @@ from syft.exceptions import route_method_exception
 
 if dependency_check.crypten_available:
     import crypten
-    from syft.frameworks.torch.tensors.crypten.syft_crypten import SyftCrypTensor
 
 
 class TorchHook(FrameworkHook):
@@ -142,6 +141,9 @@ class TorchHook(FrameworkHook):
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
+        if dependency_check.crypten_available:
+            self._hook_native_tensor(crypten.mpc.MPCTensor, TorchTensor)
+
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
 
@@ -166,12 +168,6 @@ class TorchHook(FrameworkHook):
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(FixedPrecisionTensor)
-
-        # Add all hooked tensor methods to SyftCrypTensor tensor but change behaviour
-        # to just forward the cmd to the next child (behaviour can be changed in the
-        # SyftTensor class file)
-        if dependency_check.crypten_available:
-            self._hook_syft_tensor_methods(SyftCrypTensor)
 
         # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
