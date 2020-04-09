@@ -13,11 +13,13 @@ from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
+from syft.frameworks.tenseal import DEFAULT_CKKS_SCALE
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
+
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
@@ -1038,8 +1040,10 @@ class TorchTensor(AbstractTensor):
             return x_encrypted
 
         elif protocol.lower() == "ckks":
-            context = kwargs.get("context")
+            context = kwargs.get("public_key")
             scale = kwargs.get("scale")
+            if scale is None:
+                scale = DEFAULT_CKKS_SCALE
 
             x = self.copy()
             x_encrypted = CKKSTensor().on(x)

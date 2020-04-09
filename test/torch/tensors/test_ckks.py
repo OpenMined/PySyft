@@ -4,13 +4,6 @@ import torch as th
 import syft.frameworks.tenseal as ts
 
 
-@pytest.fixture(scope="module")
-def context():
-    return ts.context(
-        ts.SCHEME_TYPE.CKKS, poly_modulus_degree=8192, coeff_mod_bit_sizes=[60, 40, 40, 60]
-    )
-
-
 @pytest.mark.parametrize(
     "t",
     [
@@ -22,9 +15,10 @@ def context():
         th.tensor([[[9, 6], [1, 6]], [[1, 1], [1, 3]]]),
     ],
 )
-def test_enc_dec(context, t):
+def test_enc_dec(t):
+    context, secret_key = ts.generate_ckks_keys()
     t_encrypted = t.encrypt("ckks", context=context, scale=2 ** 40)
-    t_decrypted = t_encrypted.decrypt("ckks")
+    t_decrypted = t_encrypted.decrypt("ckks", secret_key=secret_key)
 
     assert t_decrypted.shape == t.shape
     # ckks might introduce some error
@@ -46,13 +40,14 @@ def test_enc_dec(context, t):
         ),
     ],
 )
-def test_add_encrypted(context, t1, t2):
+def test_add_encrypted(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted + t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 + t2) - t_decrypted)
@@ -73,12 +68,13 @@ def test_add_encrypted(context, t1, t2):
         ),
     ],
 )
-def test_add_plain(context, t1, t2):
+def test_add_plain(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted + t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 + t2) - t_decrypted)
@@ -99,13 +95,14 @@ def test_add_plain(context, t1, t2):
         ),
     ],
 )
-def test_sub_encrypted(context, t1, t2):
+def test_sub_encrypted(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted - t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 - t2) - t_decrypted)
@@ -126,12 +123,13 @@ def test_sub_encrypted(context, t1, t2):
         ),
     ],
 )
-def test_sub_plain(context, t1, t2):
+def test_sub_plain(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted - t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 - t2) - t_decrypted)
@@ -152,13 +150,14 @@ def test_sub_plain(context, t1, t2):
         ),
     ],
 )
-def test_mul_encrypted(context, t1, t2):
+def test_mul_encrypted(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted * t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 * t2) - t_decrypted)
@@ -179,12 +178,13 @@ def test_mul_encrypted(context, t1, t2):
         ),
     ],
 )
-def test_mul_plain(context, t1, t2):
+def test_mul_plain(t1, t2):
+    context, secret_key = ts.generate_ckks_keys()
     t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
     t_add = t1_encrypted * t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
-    t_decrypted = t_add.decrypt("ckks")
+    t_decrypted = t_add.decrypt("ckks", secret_key=secret_key)
 
     # ckks might introduce some error
     diff = th.abs((t1 * t2) - t_decrypted)
