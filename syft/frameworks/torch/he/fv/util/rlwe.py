@@ -73,6 +73,35 @@ def sample_poly_uniform(param):
     return result
 
 
+def encrypt_zero_asymmetric(context, public_key):
+    param = context.param
+    coeff_modulus = param.coeff_modulus
+    coeff_mod_count = len(coeff_modulus)
+    coeff_count = param.poly_modulus_degree
+    encrypted_size = len(public_key)
+
+    # Generate u <-- R_3
+    u = sample_poly_ternary(param)
+
+    # c[j] = u * public_key[j]
+    result = []
+    for i in encrypted_size:
+        result[i] = u * public_key[i]
+
+    for k in encrypted_size:
+        for j in coeff_mod_count:
+            for i in coeff_count:
+                result[k][i + j * coeff_count] = result[k][i + j * coeff_count] % coeff_modulus[j]
+
+    # Generate e_j <-- chi
+    # c[j] = public_key[j] * u + e[j]
+    for j in range(encrypted_size):
+        e = sample_poly_normal(param)
+        result[j] = result[j] + e
+
+    return result  # result = public_key[j] * u + e[j]
+
+
 def encrypt_zero_symmetric(context, secret_key):
     param = context.param
     coeff_modulus = param.coeff_modulus

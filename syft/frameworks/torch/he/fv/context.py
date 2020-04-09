@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Context:
     """Stores a set of attributes (qualifiers) of a set of encryption parameters.
     These parameters are mainly used internally in various parts of the library,
@@ -10,12 +13,32 @@ class Context:
     """
 
     def __init__(self, encryption_param):
-        self.param = encryption_param
+        self._param = encryption_param
+        self._total_coeff_modulus = np.prod(self._param.coeff_modulus)
+        self._plain_moduls = encryption_param.plain_modulus
+        self._coeff_div_plain_modulus = int(self._total_coeff_modulus / self._plain_moduls)
+        self._coeff_mod_plain_modulus = self._total_coeff_modulus % self._plain_moduls
 
     @property
     def param(self):
-        return self.__param
+        return self._param
 
     @param.setter
-    def param(self, encryption_param):
-        self.__param = encryption_param
+    def param(self, value):
+        self._param = value
+
+    @property
+    def coeff_div_plain_modulus(self):
+        return self._coeff_div_plain_modulus
+
+    @coeff_div_plain_modulus.setter
+    def coeff_div_plain_modulus(self, value):
+        self._coeff_div_plain_modulus = value
+
+    @property
+    def coeff_mod_plain_modulus(self):
+        return self._coeff_mod_plain_modulus
+
+    @coeff_div_plain_modulus.setter
+    def coeff_div_plain_modulus(self, value):
+        self._coeff_mod_plain_modulus = value

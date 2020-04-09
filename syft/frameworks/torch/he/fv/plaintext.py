@@ -30,3 +30,11 @@ class PlainText:
     @data.setter
     def data(self, data):
         self._data = data
+
+    @property
+    def coeff_count(self):
+        return self._coeff_count
+
+    @coeff_count.setter
+    def coeff_count(self, coeff_count):
+        self._coeff_count = coeff_count

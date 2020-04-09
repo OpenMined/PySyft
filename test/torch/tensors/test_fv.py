@@ -7,6 +7,7 @@ from syft.frameworks.torch.he.fv.modulus import SeqLevelType
 from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
+from syft.frameworks.torch.he.fv.key_generator import KeyGenerator
 
 
 @pytest.mark.parametrize(
@@ -156,3 +157,20 @@ def test_integer_encoder(plain_modulus, value):
 
     poly = encoder.encode(value)
     assert value == encoder.decode(poly)
+
+
+def test_key_generation():
+    params = EncryptionParams()
+    params.poly_modulus_degree = 1024
+    params.plain_modulus = 64
+    cm = CoeffModulus()
+    params.coeff_modulus = cm.create(4096, [30, 50, 60])
+    print("coeff_modulus: ", params.coeff_modulus)
+    ctx = Context(params)
+    keygenerator = KeyGenerator(ctx)
+    sk, pk = keygenerator.keygen()
+    print("sk: ", sk)
+    print("sk length", sk.size())
+    print("pk: ", pk)
+    print("pk length c0", pk[0].size(), " c1 : ", pk[1].size())
+    # TODO tests for key generations will be added after encrypter and decrypter
