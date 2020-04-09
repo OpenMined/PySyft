@@ -7,6 +7,7 @@ from torch.nn import init
 # https://stackoverflow.com/a/22210807/8878627,
 # https://stackoverflow.com/questions/22187279/python-circular-importing/22210807#comment33716806_22187343
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+import syft.frameworks.torch.tensors.interpreters.precision as precision
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
@@ -42,8 +43,6 @@ class RNNCellBase(nn.Module):
         This method initializes a hidden state when no hidden state is provided
         in the forward method. It creates a hidden state with zero values.
         """
-        import syft.frameworks.torch.tensors.interpreters.precision as precision
-
         h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
@@ -294,8 +293,6 @@ class RNNBase(nn.Module):
         in the forward method. It creates a hidden state with zero values for each
         layer of the network.
         """
-        import syft.frameworks.torch.tensors.interpreters.precision as precision
-
         h = torch.zeros(
             self.num_layers * self.num_directions,
             input.shape[1],
