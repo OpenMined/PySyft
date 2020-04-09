@@ -2,7 +2,7 @@ coverage:
     range: 95..100
     round: up
     precision: 2
-    notify:
+    status:
         threshold: 1%  # Allow 1% of changes in coverage
 
 
