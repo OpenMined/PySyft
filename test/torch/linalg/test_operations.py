@@ -4,6 +4,7 @@ import syft as sy
 from syft.frameworks.torch.linalg import inv_sym
 from syft.frameworks.torch.linalg import qr
 from syft.frameworks.torch.linalg.operations import _norm_mpc
+from syft.frameworks.torch.linalg.operations import masked_inv
 from syft.frameworks.torch.linalg.lr import DASH
 
 
@@ -181,3 +182,23 @@ def test_remote_random_number_generation(hook, workers):
     assert len(s) == 5
     assert len(t) == 6
     assert len(v) == 7
+
+
+@pytest.mark.parametrize("prec_frac", [3, 4, 5, 6])
+def test_masked_inv(prec_frac, hook, workers):
+
+    bob = workers["bob"]
+    alice = workers["alice"]
+    crypto_prov = workers["james"]
+
+    N = 4
+
+    t = torch.randn(N, N)
+    t_inv = t.inverse()
+
+    t = t.fix_precision(precision_fractional=prec_frac).share(
+        alice, bob, crypto_provider=crypto_prov
+    )
+    t_masked_inv = masked_inv(t).copy().get().float_precision()
+
+    assert (abs(t_masked_inv - t_inv) < 0.1).all()
