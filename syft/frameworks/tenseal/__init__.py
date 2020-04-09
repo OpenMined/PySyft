@@ -7,8 +7,9 @@ DEFAULT_CKKS_COEFF_MOD = [60, 40, 40, 60]
 DEFAULT_CKKS_SCALE = 2 ** 40
 
 
-def generate_ckks_keys(poly_modulus_degree=DEFAULT_CKKS_N,
-                        coeff_mod_bit_sizes=DEFAULT_CKKS_COEFF_MOD):
+def generate_ckks_keys(
+    poly_modulus_degree=DEFAULT_CKKS_N, coeff_mod_bit_sizes=DEFAULT_CKKS_COEFF_MOD
+):
     """Returns a public context (containing public keys and attributes)
     and the secret key.
     """

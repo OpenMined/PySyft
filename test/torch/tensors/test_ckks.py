@@ -17,7 +17,7 @@ import syft.frameworks.tenseal as ts
 )
 def test_enc_dec(t):
     context, secret_key = ts.generate_ckks_keys()
-    t_encrypted = t.encrypt("ckks", context=context, scale=2 ** 40)
+    t_encrypted = t.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_decrypted = t_encrypted.decrypt("ckks", secret_key=secret_key)
 
     assert t_decrypted.shape == t.shape
@@ -42,8 +42,8 @@ def test_enc_dec(t):
 )
 def test_add_encrypted(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
-    t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
+    t2_encrypted = t2.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted + t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
@@ -70,7 +70,7 @@ def test_add_encrypted(t1, t2):
 )
 def test_add_plain(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted + t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
@@ -97,8 +97,8 @@ def test_add_plain(t1, t2):
 )
 def test_sub_encrypted(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
-    t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
+    t2_encrypted = t2.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted - t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
@@ -125,7 +125,7 @@ def test_sub_encrypted(t1, t2):
 )
 def test_sub_plain(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted - t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
@@ -152,8 +152,8 @@ def test_sub_plain(t1, t2):
 )
 def test_mul_encrypted(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
-    t2_encrypted = t2.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
+    t2_encrypted = t2.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted * t2_encrypted
 
     assert isinstance(t_add.child, sy.CKKSTensor)
@@ -180,7 +180,7 @@ def test_mul_encrypted(t1, t2):
 )
 def test_mul_plain(t1, t2):
     context, secret_key = ts.generate_ckks_keys()
-    t1_encrypted = t1.encrypt("ckks", context=context, scale=2 ** 40)
+    t1_encrypted = t1.encrypt("ckks", public_key=context, scale=2 ** 40)
     t_add = t1_encrypted * t2
 
     assert isinstance(t_add.child, sy.CKKSTensor)
