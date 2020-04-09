@@ -401,17 +401,23 @@ def test_raising_error_when_item_func_called(workers):
 def test_fix_prec_on_pointer_tensor(workers):
     """
     Ensure .fix_precision() works as expected.
+    Also check that fix_precision() is not inplace.
     """
     bob = workers["bob"]
 
     tensor = torch.tensor([1, 2, 3, 4.0])
     ptr = tensor.send(bob)
 
-    ptr = ptr.fix_precision()
+    ptr_fp = ptr.fix_precision()
+
     remote_tensor = bob._objects[ptr.id_at_location]
+    remote_fp_tensor = bob._objects[ptr_fp.id_at_location]
+
+    # check that fix_precision is not inplace
+    assert (remote_tensor == tensor).all()
 
     assert isinstance(ptr.child, PointerTensor)
-    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
+    assert isinstance(remote_fp_tensor.child, FixedPrecisionTensor)
 
 
 def test_fix_prec_on_pointer_of_pointer(workers):
