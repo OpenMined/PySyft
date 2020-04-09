@@ -1,7 +1,6 @@
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 
@@ -518,35 +517,6 @@ def test_torch_log_approx(prec_frac, tolerance, workers):
 
     cumsum /= 10
     assert (cumsum.abs() < 1).all()
-
-
-def test_torch_nn_functional_linear():
-    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
-
-    assert (result == expected).all()
-
-    tensor = nn.Parameter(torch.tensor([[1.0, -2], [3, 4]])).fix_prec()
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[-3.0, -5], [11.0, 25.0]])
-
-    assert (result == expected).all()
-
-    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
-
-    assert (result == expected).all()
 
 
 def test_operate_with_integer_constants():

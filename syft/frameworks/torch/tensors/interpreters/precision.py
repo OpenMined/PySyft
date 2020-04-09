@@ -1,6 +1,7 @@
 import torch
 
 import syft
+from syft.frameworks.torch.nn import nn
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -754,27 +755,8 @@ class FixedPrecisionTensor(AbstractTensor):
         module.dot = dot
 
         # You can also overload functions in submodules!
-        @overloaded.module
-        def nn(module):
-            """
-            The syntax is the same, so @overloaded.module handles recursion
-            Note that we don't need to add the @staticmethod decorator
-            """
-
-            @overloaded.module
-            def functional(module):
-                def linear(*args):
-                    """
-                    Un-hook the function to have its detailed behaviour
-                    """
-                    return torch.nn.functional.native_linear(*args)
-
-                module.linear = linear
-
-            module.functional = functional
-
         # Modules should be registered just like functions
-        module.nn = nn
+        module.nn = nn  # Handles all the overloading properly
 
     @classmethod
     def handle_func_command(cls, command):

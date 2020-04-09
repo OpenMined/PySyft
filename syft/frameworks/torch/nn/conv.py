@@ -1,6 +1,6 @@
 import torch as th
 import torch.nn as nn
-import syft as sy
+
 from syft.frameworks.torch.nn.functional import conv2d
 
 
