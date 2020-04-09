@@ -23,7 +23,6 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -158,10 +157,6 @@ class TorchHook(FrameworkHook):
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(PaillierTensor)
 
-        # Add all hooked tensor methods to CKKSTensor tensor but change behaviour to just forward
-        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
-        self._hook_syft_tensor_methods(CKKSTensor)
-
         # Add all hooked tensor methods to FixedPrecisionTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
@@ -215,6 +210,13 @@ class TorchHook(FrameworkHook):
 
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
+
+        # TenSEAL dependencies
+        if syft.dependency_check.tenseal_available:
+            from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
+            # Add all hooked tensor methods to CKKSTensor tensor but change behaviour to just forward
+            # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
+            self._hook_syft_tensor_methods(CKKSTensor)
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times

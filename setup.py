@@ -28,6 +28,7 @@ def get_requirements(req_file):
 REQ_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pip-dep")
 core_reqs, core_dependency_links = get_requirements(os.path.join(REQ_DIR, "requirements.txt"))
 udacity_extras = read(os.path.join(REQ_DIR, "requirements_udacity.txt")).split("\n")
+tenseal_extras = read(os.path.join(REQ_DIR, "requirements_tenseal.txt")).split("\n")
 tensorflow_extras = read(os.path.join(REQ_DIR, "requirements_tensorflow.txt")).split("\n")
 notebook_extras = read(os.path.join(REQ_DIR, "requirements_notebooks.txt")).split("\n")
 dev_extras = read(os.path.join(REQ_DIR, "requirements_dev.txt")).split("\n")
@@ -54,6 +55,7 @@ setup(
         "notebooks": notebook_extras,
         "dev": dev_extras,
         "sandbox": sandbox_extras,
+        "tenseal": tenseal_extras,
         "tensorflow": tensorflow_extras,
     },
     dependency_links=core_dependency_links,

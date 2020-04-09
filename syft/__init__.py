@@ -35,6 +35,11 @@ else:
     logger.info("TF Encrypted Keras not available.")
     __all__ = []
 
+# TenSEAL dependencies
+# homomorphic encryption tensors
+if dependency_check.tenseal_available:
+    from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
+
 # Pytorch dependencies
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook
@@ -70,7 +75,6 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.ckks import CKKSTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
