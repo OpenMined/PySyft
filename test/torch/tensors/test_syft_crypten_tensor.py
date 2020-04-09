@@ -62,3 +62,17 @@ def test_arithmetic():
     arithmetic_tensor = SyftCrypTensor(tensor=tensor)
     binary_tensor = arithmetic_tensor.arithmetic()
     assert isinstance(binary_tensor.tensor._tensor, ArithmeticSharedTensor)
+
+
+def test_get_plain_text():
+    x = torch.tensor([0.1, 0.2, 0.3])
+    arithmetic = MPCTensor(x, ptype=Ptype.arithmetic)
+    binary = MPCTensor(x, ptype=Ptype.binary)
+    arithmetic_syft_crypten = SyftCrypTensor(tensor=arithmetic)
+    binary_syft_crypten = SyftCrypTensor(tensor=binary)
+    assert isinstance(arithmetic.get_plain_text(), type(x))
+    assert isinstance(binary.get_plain_text(), type(x))
+    assert isinstance(arithmetic_syft_crypten.get_plain_text(), type(x))
+    assert isinstance(binary_syft_crypten.get_plain_text(), type(x))
+    assert torch.eq(binary.get_plain_text(), binary_syft_crypten.get_plain_text()).all()
+    assert torch.eq(arithmetic.get_plain_text(), arithmetic_syft_crypten.get_plain_text()).all()
