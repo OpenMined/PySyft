@@ -3,6 +3,8 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import json
+import io
 import torch
 
 import syft as sy
@@ -10,6 +12,8 @@ from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
+from syft.execution.translation.abstract import AbstractPlanTranslator
+from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -120,6 +124,7 @@ class Plan(AbstractObject):
 
         self.include_state = include_state
         self.is_built = is_built
+        self.torchscript = None
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -152,7 +157,10 @@ class Plan(AbstractObject):
         """
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
-        return self.state.tensors()
+        if self.state is not None:
+            return self.state.tensors()
+        else:
+            return []
 
     def build(self, *args):
         """Builds the plan.
@@ -293,6 +301,20 @@ class Plan(AbstractObject):
 
         return pointer
 
+    def get_args_shape(self):
+        """Returns input tensors shapes"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    def add_translation(self, plan_translator: "AbstractPlanTranslator"):
+        return plan_translator(self).translate()
+
+    def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
+        plan_translator(self).remove()
+        return self
+
     def get_(self):
         self.state.get_()
         return self
@@ -361,8 +383,8 @@ class Plan(AbstractObject):
             out += " built"
 
         out += ">"
-
         out += "\n"
+        _self = self
 
         # out += f"def {self.name}("
         # out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
@@ -432,6 +454,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
         )
 
     @staticmethod
@@ -443,13 +466,14 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, is_built, name, tags, description) = plan_tuple
+        (id_, role, include_state, is_built, name, tags, description, torchscript) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
         name = sy.serde.msgpack.serde._detail(worker, name)
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
+        torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
 
         plan = sy.Plan(
             role=role,
@@ -461,6 +485,8 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        plan.torchscript = torchscript
 
         return plan
 
@@ -487,6 +513,9 @@ class Plan(AbstractObject):
 
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
+
+        if plan.torchscript:
+            protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
         return protobuf_plan
 
@@ -517,5 +546,9 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        if protobuf_plan.torchscript:
+            torchscript = io.BytesIO(protobuf_plan.torchscript)
+            plan.torchscript = torch.jit.load(torchscript)
 
         return plan
