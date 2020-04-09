@@ -76,3 +76,19 @@ def test_get_plain_text():
     assert isinstance(binary_syft_crypten.get_plain_text(), type(x))
     assert torch.eq(binary.get_plain_text(), binary_syft_crypten.get_plain_text()).all()
     assert torch.eq(arithmetic.get_plain_text(), arithmetic_syft_crypten.get_plain_text()).all()
+
+
+def test_shallow_copy():
+    x = torch.tensor([0.1, 0.2, 0.3])
+    arithmetic = MPCTensor(x, ptype=Ptype.arithmetic)
+    arithmetic_syft_crypten = SyftCrypTensor(tensor=arithmetic)
+    arithmetic_shallow_copy = arithmetic_syft_crypten.shallow_copy()
+    assert id(arithmetic_shallow_copy._tensor) == id(arithmetic_syft_crypten.tensor._tensor)
+
+
+def test_clone():
+    x = torch.tensor([0.1, 0.2, 0.3])
+    arithmetic = MPCTensor(x, ptype=Ptype.arithmetic)
+    arithmetic_syft_crypten = SyftCrypTensor(tensor=arithmetic)
+    arithmetic_clone = arithmetic_syft_crypten.clone()
+    assert id(arithmetic_clone._tensor) != id(arithmetic_syft_crypten.tensor._tensor)
