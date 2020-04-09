@@ -234,7 +234,7 @@ def masked_inv(t):
     crypto_prov = t.child.child.crypto_provider
     prec_frac = t.child.precision_fractional
     field = t.child.child.field
-    Q = int(field ** (1 / 2) / 10 ** (prec_frac / 2))
+    Q = int(field ** (1 / 2) / 10 ** 5)
 
     # Random matrix used for masking
     M = torch.zeros_like(t).random_(0, Q)
