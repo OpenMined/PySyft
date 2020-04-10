@@ -347,53 +347,61 @@ def consume(buffer, nbits):
 def G(seed):
     """ λ -> 2(λ + 1)"""
     assert seed.shape[0] == λs
-    seed_t = seed.T.tolist()
+    seed_t = seed.T
+    seed_t_bytes = seed_t.tobytes()
 
-    buffers = []
-    for seed_bit in seed_t:
-        enc_str = str(seed_bit).encode()
-        h = hashlib.sha3_256(enc_str)
-        r = h.digest()
-        buffer = int.from_bytes(r, byteorder="big")
-        buffers.append(buffer)
+    buffers = [
+        hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest()
+        for i in range(seed_t.shape[0])
+    ]
 
-    buffers = np.array(buffers)
-    parts = []
-    for nbits in [1, λ, 1, λ]:  # reverse order here
-        buffer, bigint = consume(buffers, nbits)
-        while nbits > 0:
-            extracted_bits = min(nbits, 64)
-            bigint, int64 = consume(bigint, extracted_bits)
-            parts.append(int64)
-            nbits -= extracted_bits
+    buffer = b"".join(buffers)
 
-    valuebits = np.stack(parts[::-1], axis=1)
+    buffer = np.frombuffer(buffer, dtype=np.uint64).reshape(-1, 4)
 
-    r = np.array(valuebits, dtype=np.uint64).T
-    return r
+    # [λ, 1, λ, 1]
+    # [λ - 64, 64, 1, λ - 64, 64, 1]
+    buffer0, part0 = consume(buffer[:, 0], λ - 64)
+    part1 = buffer[:, 1]
+    part2 = buffer0 % 2
+    buffer2, part3 = consume(buffer[:, 2], λ - 64)
+    part4 = buffer[:, 3]
+    part5 = buffer2 % 2
+
+    valuebits = np.stack([part0, part1, part2, part3, part4, part5], axis=1)
+    return valuebits.T
 
 
 def H(seed):
     """ λ -> 2 + 2(λ + 1)"""
     assert seed.shape[0] == λs
-    seed_t = seed.T.tolist()
-    valuebits = []
-    for seed_bit in seed_t:
-        enc_str = str(seed_bit).encode()
-        h = hashlib.sha3_256(enc_str)
-        r = h.digest()
-        buffer = int.from_bytes(r, byteorder="big") % 2 ** (2 + 2 * (λ + 1))
-        parts = []
-        for nbits in [1, λ, 1, 1, λ, 1]:  # reverse order here
-            buffer, bigint = consume(buffer, nbits)
-            while nbits > 0:
-                extracted_bits = min(nbits, 64)
-                bigint, int64 = consume(bigint, extracted_bits)
-                parts.append(int64)
-                nbits -= extracted_bits
-        valuebits.append(parts[::-1])
+    seed_t = seed.T
+    seed_t_bytes = seed_t.tobytes()
 
-    return np.array(valuebits, dtype=np.uint64).T
+    buffers = [
+        hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest()
+        for i in range(seed_t.shape[0])
+    ]
+
+    buffer = b"".join(buffers)
+
+    buffer = np.frombuffer(buffer, dtype=np.uint64).reshape(-1, 4)
+
+    # [1, λ, 1, 1, λ, 1]
+    # [1, λ - 64, 64, 1, 1, λ - 64, 64, 1]
+    buffer0, part1 = consume(buffer[:, 0], λ - 64)
+    part2 = buffer[:, 1]
+    doublebit = buffer0 % 4
+    part0 = doublebit // 2
+    part3 = doublebit % 2
+    buffer2, part4 = consume(buffer[:, 2], λ - 64)
+    part5 = buffer[:, 3]
+    doublebit = buffer2 % 4
+    part6 = doublebit // 2
+    part7 = doublebit % 2
+
+    valuebits = np.stack([part0, part1, part2, part3, part4, part5, part6, part7], axis=1)
+    return valuebits.T
 
 
 split_helpers = {
@@ -408,31 +416,42 @@ def split(list_, idx):
     return split_helpers[idx](list_)
 
 
-def SwitchTableDPF(s, α_i):
-    # assert s.shape[1] == len(α_i)
+ones_dict2 = {}
+
+
+def SwitchTableDPF(s, α_i, reshape=True):
     one = np.ones((1, s.shape[1]), dtype=np.uint64)
     s_one = concat(s, one)
-    Table = np.zeros((2, s.shape[0] + 1, α_i.shape[-1]), dtype=np.uint64)
-    for j, el in enumerate(α_i):
-        Table[el, :, j] = s_one[:, j]
-    return Table.reshape(-1, Table.shape[2])
+
+    if s_one.shape not in ones_dict2:
+        ones_dict2[s_one.shape] = np.ones((1, *s_one.shape), dtype=np.uint64)
+    ones = ones_dict2[s_one.shape]
+    pad = (α_i * ones).astype(np.uint64)
+    pad = concat(1 - pad, pad, axis=0)
+    Table = pad * s_one
+
+    if reshape:
+        return Table.reshape(-1, Table.shape[2])
+    else:
+        return Table
+
+
+ones_dict3 = {}
 
 
 def SwitchTableDIF(s, α_i):
-    leafTable = np.zeros((2, 1, len(α_i)), dtype=np.uint64)
-    neg_α_i = (1 - α_i).astype(np.uint64)
     # if α_i is 0, then ending on the leaf branch means your bit is 1 to you're > α so you should get 0
     # if α_i is 1, then ending on the leaf branch means your bit is 0 to you're < α so you should get 1
     # so we're doing leafTable[1-α_i] = α_i
-    for j, neg_el in enumerate(neg_α_i):
-        leafTable[neg_el, 0, j] = α_i[j]
+    # example [1 1 0]
+    # returns
+    # [[[1 1 0]]
+    #
+    #  [[0 0 0]]]
+    zeros = np.zeros((1, 1, len(α_i)), dtype=np.uint64)
+    leafTable = concat(α_i.reshape(1, 1, -1), zeros, axis=0)
 
-    # assert s.shape[1] == len(α_i)
-    one = np.ones((1, s.shape[1]), dtype=np.uint64)
-    s_one = concat(s, one)
-    nextTable = np.zeros((2, λs + 1, α_i.shape[-1]), dtype=np.uint64)
-    for j, el in enumerate(α_i):
-        nextTable[el, :, j] = s_one[:, j]
+    nextTable = SwitchTableDPF(s, α_i, reshape=False)
 
     Table = concat(leafTable, nextTable, axis=1)
     return Table.reshape(-1, Table.shape[2])
