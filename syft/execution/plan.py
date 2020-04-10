@@ -176,12 +176,6 @@ class Plan(AbstractObject):
 
     @staticmethod
     def serialize_input(input_arg):
-        if not isinstance(input_arg, (list, tuple, dict)):
-            if isinstance(input_arg, FrameworkTensor):
-                return "#input-FrameworkTensor"
-            else:
-                return f"#input-{type(input_arg).__name__}"
-
         if isinstance(input_arg, (list, tuple)):
             result = []
             for arg in input_arg:
@@ -198,7 +192,7 @@ class Plan(AbstractObject):
                 serialized_dict[k] = Plan.serialize_input(v)
             return serialized_dict
 
-        return None
+        return type(input_arg)
 
     def build(self, *args):
         """
@@ -372,11 +366,12 @@ class Plan(AbstractObject):
         def check_type_nested_structure(
             plan: Plan, build_arg: any, call_arg: any, suffix: str
         ) -> None:
-            if isinstance(call_arg, str) and isinstance(build_arg, str):
-                build_type = extract_type(build_arg)
-                call_type = extract_type(call_arg)
-                if not (build_type == call_type):
-                    raise_typecheck_warn(plan, build_type, call_type, suffix)
+            iterable_supported_list = (list, tuple, dict)
+
+            if not isinstance(call_arg, iterable_supported_list):
+                if not (build_arg == call_arg):
+                    raise_typecheck_warn(plan, build_arg.__name__, call_arg.__name__, suffix)
+                return
 
             if type(build_arg).__name__ != type(call_arg).__name__:
                 raise_typecheck_warn(plan, build_arg, call_arg, suffix)

@@ -798,23 +798,21 @@ def test_plan_input_serialization(hook):
     )
 
     reference_serialized_input_1 = (
-        ("#input-FrameworkTensor", "#input-FrameworkTensor"),
+        (type(th.tensor([1.0, -2.0])), type(th.tensor([1, 2]))),
         {
-            "k1": ["#input-int", ("#input-bool", "#input-bool")],
+            "k1": [type(5), (type(True), type(False))],
             "k2": {
-                "kk1": ["#input-FrameworkTensor", "#input-FrameworkTensor"],
-                "kk2": ["#input-bool", ("#input-FrameworkTensor",)],
+                "kk1": [type(th.tensor([5, 7])), type(th.tensor([5, 7]))],
+                "kk2": [type(True), (type(th.tensor([9, 10])),)],
             },
-            "k3": "#input-FrameworkTensor",
+            "k3": type(th.tensor([8])),
         },
-        "#input-FrameworkTensor",
-        (
-            "#input-int",
-            ("#input-int", ("#input-int", ("#input-int", ["#input-int", "#input-int"]))),
-        ),
+        type(th.tensor([11, 12])),
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)]))))
     )
 
     serialized_input_1 = plan_serialized_input_1.serialized_input
+
     assert reference_serialized_input_1 == serialized_input_1
 
 
