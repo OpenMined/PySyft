@@ -63,7 +63,7 @@ class IntegerEncoder:
                 value >>= 1
                 coeff_index += 1
 
-        return PlainText(encode_coeff_count, plaintext)
+        return PlainText(plaintext)
 
     def decode(self, plain):
         """Decodes a plaintext polynomial and returns the result.

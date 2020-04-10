@@ -7,9 +7,9 @@ class PlainText:
     with coefficients modulo the plaintext modulus. The degree of the plaintext
     polynomial must be one less than the degree of the polynomial modulus."""
 
-    def __init__(self, coeff_count, data):
-        self._coeff_count = coeff_count
+    def __init__(self, data):
         self._data = data
+        self._coeff_count = len(data)
 
     def resize(self, coeff_count):
         self.data = th.zeros(coeff_count, dtype=th.int64)

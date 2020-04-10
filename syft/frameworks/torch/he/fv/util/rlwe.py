@@ -3,6 +3,7 @@ from secrets import SystemRandom
 from secrets import randbits
 from torch.distributions import Normal
 
+from syft.frameworks.torch.he.fv.plaintext import PlainText
 from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVIATION
 
 
@@ -80,19 +81,19 @@ def encrypt_zero_asymmetric(context, public_key):
     coeff_modulus = param.coeff_modulus
     coeff_mod_count = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
+    public_key = public_key.data
     encrypted_size = len(public_key)
-
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
 
     # c[j] = u * public_key[j]
-    result = []
-    for i in encrypted_size:
+    result = [0] * encrypted_size
+    for i in range(encrypted_size):
         result[i] = u * public_key[i]
 
-    for k in encrypted_size:
-        for j in coeff_mod_count:
-            for i in coeff_count:
+    for k in range(encrypted_size):
+        for j in range(coeff_mod_count):
+            for i in range(coeff_count):
                 result[k][i + j * coeff_count] = result[k][i + j * coeff_count] % coeff_modulus[j]
 
     # Generate e_j <-- chi
@@ -101,7 +102,7 @@ def encrypt_zero_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         result[j] = result[j] + e
 
-    return result  # result = public_key[j] * u + e[j]
+    return PlainText(result)  # result = public_key[j] * u + e[j]
 
 
 def encrypt_zero_symmetric(context, secret_key):
@@ -117,7 +118,7 @@ def encrypt_zero_symmetric(context, secret_key):
     e = sample_poly_normal(param)
 
     # calculate -(a*s + e) (mod q) and store in c0
-    c0 = -c1 * secret_key + e
+    c0 = -c1 * secret_key.data + e
 
     for j in range(coeff_mod_count):
         for i in range(coeff_count):

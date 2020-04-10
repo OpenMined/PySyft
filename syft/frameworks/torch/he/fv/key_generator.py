@@ -3,6 +3,8 @@ import torch as th
 from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.rlwe import sample_poly_ternary
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_zero_symmetric
+from syft.frameworks.torch.he.fv.plaintext import PlainText
+from syft.frameworks.torch.he.fv.ciphertext import CipherText
 
 
 class KeyGenerator:
@@ -39,6 +41,7 @@ class KeyGenerator:
 
         if not is_initialized:
             self._secret_key = sample_poly_ternary(param)
+            self._secret_key = PlainText(self._secret_key)
         self._sk_generated = True
 
     def generate_pk(self):
@@ -46,3 +49,4 @@ class KeyGenerator:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 
         self._public_key = encrypt_zero_symmetric(self._context, self._secret_key)
+        self._public_key = CipherText(self._public_key)

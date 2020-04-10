@@ -21,14 +21,14 @@ class Encrypter:
         self._coeff_count = context.param.poly_modulus_degree
         self._key = key
 
-    def encrypt_internal(self, plain, is_asymmetric):
-        result = []
+    def encrypt_internal(self, message, is_asymmetric):
+        result = PlainText([])
         if is_asymmetric:
             result = encrypt_zero_asymmetric(self._context, self._key)
         else:
             result = encrypt_zero_symmetric(self._context, self._key)
 
-        return multiply_add_plain_with_scaling_variant(result, self._context)
+        return multiply_add_plain_with_scaling_variant(result, message, self._context)
 
     def encrypt(self, message):
         if isinstance(self._key, PlainText):

@@ -14,10 +14,10 @@ class Context:
 
     def __init__(self, encryption_param):
         self._param = encryption_param
-        self._total_coeff_modulus = np.prod(self._param.coeff_modulus)
-        self._plain_moduls = encryption_param.plain_modulus
-        self._coeff_div_plain_modulus = int(self._total_coeff_modulus / self._plain_moduls)
-        self._coeff_mod_plain_modulus = self._total_coeff_modulus % self._plain_moduls
+        self._coeff_modulus = self._param.coeff_modulus
+        self._plain_modulus = encryption_param.plain_modulus
+        self._coeff_div_plain_modulus = [x / self._plain_modulus for x in self._coeff_modulus]
+        self._coeff_mod_plain_modulus = [x % self._plain_modulus for x in self._coeff_modulus]
 
     @property
     def param(self):

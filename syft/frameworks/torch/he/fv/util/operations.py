@@ -47,27 +47,24 @@ def reverse_bit(value):
     return result
 
 
-def multiply_add_plain_with_scaling_variant(plain, context):
+def multiply_add_plain_with_scaling_variant(pue, message, context):
+    # here pue = pk * u * e
     param = context.param
     coeff_modulus = param.coeff_modulus
     coeff_mod_count = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
-    t = param.plain_modulus
-    plain_coeff_count = plain.coeff_count
+    plain_coeff_count = message.coeff_count
     coeff_div_plain_modulus = context.coeff_div_plain_modulus
-    q_mod_t = context.coeff_mod_plain_modulus
-    plaintext = plain.data
+    plaintext = message.data
 
-    result = []
+    pue_0 = pue.data[0].data
+
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
-        prod = plaintext[i] * q_mod_t
-        prod /= t
-        prod = round(prod)
         for j in range(coeff_mod_count):
             temp = coeff_div_plain_modulus[j] * plaintext[i]
-            result[i + j * coeff_count] = (
-                result[i + j * coeff_count] + temp % coeff_modulus[j]
+            pue_0[j * coeff_count] = (
+                pue_0[j * coeff_count] + (temp % coeff_modulus[j])
             ) % coeff_modulus[j]
-    return result
+    return pue  # p0 * u * e1 + delta * m
