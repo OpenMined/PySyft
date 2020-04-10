@@ -3,11 +3,9 @@ import torch
 from torch import nn
 from torch.nn import init
 
-# Circular import fixed by
-# https://stackoverflow.com/a/22210807/8878627,
-# https://stackoverflow.com/questions/22187279/python-circular-importing/22210807#comment33716806_22187343
+
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters import precision as precision
+from syft.frameworks.torch.tensors.interpreters import precision
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
