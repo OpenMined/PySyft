@@ -1,5 +1,6 @@
 import torch as th
-from Crypto.Random import random
+from secrets import SystemRandom
+from secrets import randbits
 from torch.distributions import Normal
 
 from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVIATION
@@ -17,7 +18,8 @@ def sample_poly_ternary(parms):
 
     result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
     for i in range(coeff_count):
-        rand_index = random.randint(-1, 1)
+        r = SystemRandom()
+        rand_index = round(r.uniform(-1, 1))
         if rand_index == 1:
             for j in range(coeff_mod_count):
                 result[i + j * coeff_count] = 1
@@ -66,7 +68,7 @@ def sample_poly_uniform(param):
         for i in range(coeff_count):
             # This ensures uniform distribution.
             while True:
-                rand = random.getrandbits(32) << 31 | random.getrandbits(32) >> 1
+                rand = randbits(32) << 31 | randbits(32) >> 1
                 if rand < max_multiple:
                     break
             result[i + j * coeff_count] = rand % modulus
