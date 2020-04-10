@@ -846,6 +846,7 @@ def test_plan_input_usage(hook):
 
     assert (result == x12).all
 
+
 def test_plan_wrong_number_of_parameters(hook):
     x11 = th.tensor([-1, 2.0]).tag("input_data")
     x12 = th.tensor([1, -2.0]).tag("input_data2")

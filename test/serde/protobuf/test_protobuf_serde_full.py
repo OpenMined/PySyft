@@ -9,6 +9,7 @@ import io
 import syft
 from syft.serde import protobuf
 from test.serde.serde_helpers import *
+from syft.execution import Plan
 
 # Dictionary containing test samples functions
 samples = OrderedDict()
@@ -58,6 +59,7 @@ def test_serde_roundtrip_protobuf(cls, workers, hook):
     original_framework = serde_worker.framework
     workers["serde_worker"] = serde_worker
     _samples = samples[cls](workers=workers)
+
     for sample in _samples:
         _to_protobuf = (
             protobuf.serde._bufferize
