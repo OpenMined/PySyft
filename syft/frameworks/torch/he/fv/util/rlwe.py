@@ -19,7 +19,7 @@ def sample_poly_ternary(parms):
     result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
     for i in range(coeff_count):
         r = SystemRandom()
-        rand_index = round(r.uniform(-1, 1))
+        rand_index = round(r.choice([-1, 0, 1]))
         if rand_index == 1:
             for j in range(coeff_mod_count):
                 result[i + j * coeff_count] = 1
