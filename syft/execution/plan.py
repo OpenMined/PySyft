@@ -335,9 +335,6 @@ class Plan(AbstractObject):
                 error will be raised.
         """
 
-        def extract_type(element: str) -> str:
-            return element.split("-")[1]
-
         def raise_typecheck_warn(
             plan: Plan, build_arg_type: str, call_arg_type: str, nested_structure_path: str
         ) -> None:
@@ -373,8 +370,8 @@ class Plan(AbstractObject):
                     raise_typecheck_warn(plan, build_arg.__name__, call_arg.__name__, suffix)
                 return
 
-            if type(build_arg).__name__ != type(call_arg).__name__:
-                raise_typecheck_warn(plan, build_arg, call_arg, suffix)
+            if type(build_arg) != type(call_arg):
+                raise_typecheck_warn(plan, build_arg.__name__, call_arg.__name__, suffix)
                 return
 
             if isinstance(build_arg, (list, tuple)):
@@ -653,7 +650,17 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, is_built, name, tags, description, torchscript, serialized_input) = plan_tuple
+        (
+            id_,
+            role,
+            include_state,
+            is_built,
+            name,
+            tags,
+            description,
+            torchscript,
+            serialized_input,
+        ) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)

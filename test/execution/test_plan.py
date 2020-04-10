@@ -808,7 +808,7 @@ def test_plan_input_serialization(hook):
             "k3": type(th.tensor([8])),
         },
         type(th.tensor([11, 12])),
-        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)]))))
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
     )
 
     serialized_input_1 = plan_serialized_input_1.serialized_input

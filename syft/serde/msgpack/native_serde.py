@@ -10,7 +10,7 @@ from typing import Tuple
 
 
 import numpy
-
+import pickle
 from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
 
@@ -364,6 +364,14 @@ def _detail_ndarray(
     return res
 
 
+def _simplify_type(worker: AbstractWorker, my_type: type) -> bytes:
+    return pickle.dumps(my_type)
+
+
+def _detail_type(worker: AbstractWorker, type_represantation: bytes) -> type:
+    return pickle.loads(type_represantation)
+
+
 def _simplify_numpy_number(
     worker: AbstractWorker, numpy_nb: Union[numpy.int32, numpy.int64, numpy.float32, numpy.float64]
 ) -> Tuple[bin, Tuple]:
@@ -425,6 +433,7 @@ MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         range: (_simplify_range, _detail_range),
         set: (_simplify_collection, _detail_collection_set),
         slice: (_simplify_slice, _detail_slice),
+        type: (_simplify_type, _detail_type),
         str: (_simplify_str, _detail_str),
         tuple: (_simplify_collection, _detail_collection_tuple),
         type(Ellipsis): (_simplify_ellipsis, _detail_ellipsis),
