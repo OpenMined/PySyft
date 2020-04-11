@@ -7,10 +7,9 @@ from typing import Collection
 from typing import Dict
 from typing import Union
 from typing import Tuple
-
+import pydoc
 
 import numpy
-import pickle
 from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
 
@@ -365,11 +364,17 @@ def _detail_ndarray(
 
 
 def _simplify_type(worker: AbstractWorker, my_type: type) -> bytes:
-    return pickle.dumps(my_type)
+    module_path = my_type.__module__
+    full_path_type = module_path + "." + my_type.__name__
+    return full_path_type.encode("utf-8")
 
 
 def _detail_type(worker: AbstractWorker, type_represantation: bytes) -> type:
-    return pickle.loads(type_represantation)
+    string_representation = type_represantation.decode("utf-8")
+    result = pydoc.locate(string_representation)
+    if result is None:
+        return object
+    return result
 
 
 def _simplify_numpy_number(
