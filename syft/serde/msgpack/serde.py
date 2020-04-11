@@ -48,6 +48,7 @@ from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisio
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
+from syft.execution.role import Role
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -74,6 +75,7 @@ from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
+from syft.generic.pointers.pointer_dataset import PointerDataset
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
@@ -113,6 +115,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     MultiPointerTensor,
     PlaceHolder,
     PlaceholderId,
+    Role,
     ObjectPointer,
     Plan,
     State,
@@ -138,6 +141,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     GradFunc,
     String,
     BaseDataset,
+    PointerDataset,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
