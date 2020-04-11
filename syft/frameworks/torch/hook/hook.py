@@ -617,9 +617,6 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            # for p in nn_self.parameters():
-            #     p.send_(*dest, **kwargs)
-
             for element_iter in tensor_iterator(nn_self):
                 for p in element_iter():
                     p.send_(*dest, **kwargs)
