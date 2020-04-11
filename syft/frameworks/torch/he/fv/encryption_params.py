@@ -10,10 +10,10 @@ class EncryptionParams:
     the validity of the parameters, and performs necessary pre-computations.
     """
 
-    def __init__(self):
-        self._poly_modulus_degree = 2
-        self._coeff_modulus = []
-        self._plain_modulus = 0
+    def __init__(self, poly_modulus_degree=2, coeff_modulus=[], plain_modulus=0):
+        self._poly_modulus_degree = poly_modulus_degree
+        self._coeff_modulus = coeff_modulus
+        self._plain_modulus = plain_modulus
 
     @property
     def poly_modulus_degree(self):
