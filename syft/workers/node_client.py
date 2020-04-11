@@ -1,7 +1,12 @@
 import json
 
 from typing import Union
+from typing import List
 from urllib.parse import urlparse
+
+import websockets
+import syft as sy
+from syft.messaging.message import ObjectRequestMessage
 
 # Syft imports
 from syft.serde import serialize
@@ -10,6 +15,8 @@ from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.grid.authentication.credential import AbstractCredential
+
+TIMEOUT_INTERVAL = 60
 
 
 class NodeClient(WebsocketClientWorker, FederatedClient):
@@ -267,6 +274,46 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.DELETE_MODEL, "model_id": model_id}
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response)
+
+    async def async_fit(self, dataset_key: str, device: str = "cpu", return_ids: List[int] = None):
+        """Asynchronous call to fit function on the remote location.
+
+        Args:
+            dataset_key: Identifier of the dataset which shall be used for the training.
+            return_ids: List of return ids.
+
+        Returns:
+            See return value of the FederatedClient.fit() method.
+        """
+        if return_ids is None:
+            return_ids = [sy.ID_PROVIDER.pop()]
+
+        # Close the existing websocket connection in order to open a asynchronous connection
+        # This code is not tested with secure connections (wss protocol).
+        self.close()
+        async with websockets.connect(
+            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+        ) as websocket:
+            message = self.create_worker_command_message(
+                command_name="fit", return_ids=return_ids, dataset_key=dataset_key, device=device
+            )
+
+            # Send the message and return the deserialized response.
+            serialized_message = sy.serde.serialize(message)
+
+            await websocket.send(serialized_message)
+            await websocket.recv()  # returned value will be None, so don't care
+
+        # Reopen the standard connection
+        self.connect()
+
+        # Send an object request message to retrieve the result tensor of the fit() method
+        msg = ObjectRequestMessage(return_ids[0], None, "")
+        serialized_message = sy.serde.serialize(msg)
+        response = self._send_msg(serialized_message)
+
+        # Return the deserialized response.
+        return sy.serde.deserialize(response)
 
     def __str__(self) -> str:
         return "Federated Worker < id: " + self.id + " >"
