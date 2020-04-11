@@ -24,4 +24,4 @@ def load(tag: str, src: int, **kwargs):
     return result
 
 
-__all__ = ["run_party", "load", "get_plain_text"]
+__all__ = ["run_party", "load"]

@@ -1,5 +1,3 @@
-import torch
-
 from crypten.mpc import MPCTensor
 
 from syft.generic.frameworks.hook import hook_args
