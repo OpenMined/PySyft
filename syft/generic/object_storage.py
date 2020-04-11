@@ -8,6 +8,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.exceptions import ObjectNotFoundError
 import re
 
+
 class ObjectStorage:
     """A storage of objects identifiable by their id.
 
