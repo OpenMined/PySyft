@@ -1031,6 +1031,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         if isinstance(query, (str, int)):
             query = [query]
+
         # Empty query returns all the tagged and registered values
         elif len(query) == 0:
             result_ids = set()

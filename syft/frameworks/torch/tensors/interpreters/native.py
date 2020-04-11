@@ -100,11 +100,20 @@ class TorchTensor(AbstractTensor):
     @property
     def tags(self):
         if self.has_child():
-            return self.child.tags
+            result = self.child.tags
         else:
             if not hasattr(self, "_tags"):
                 self._tags = None
-            return self._tags
+            result = self._tags
+
+
+        if result is None:
+            result = set(["*"])
+        else:
+            result += set(["*"])
+
+        return result
+
 
     @tags.setter
     def tags(self, new_tags):
@@ -395,6 +404,9 @@ class TorchTensor(AbstractTensor):
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
+
+    def upload(self, *args, **kwargs):
+        return self.send(*args, garbage_collect_data=False, **kwargs)
 
     def send(
         self,

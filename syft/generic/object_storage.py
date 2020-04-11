@@ -6,7 +6,7 @@ from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 
 from syft.exceptions import ObjectNotFoundError
-
+import re
 
 class ObjectStorage:
     """A storage of objects identifiable by their id.
@@ -139,7 +139,7 @@ class ObjectStorage:
         """Local search by id"""
         return self._objects.get(id)
 
-    def find_by_tag(self, tag):
+    def find_by_tag(self, tag_regex):
         """Local search by tag
 
         Args:
@@ -148,11 +148,14 @@ class ObjectStorage:
         Return:
             A list of results, possibly empty
         """
-        if tag in self._tag_to_object_ids:
+        # if tag in self._tag_to_object_ids:
+        for tag in self._tag_to_object_ids.keys():
             results = []
-            for obj_id in self._tag_to_object_ids[tag]:
-                obj = self.find_by_id(obj_id)
-                if obj is not None:
-                    results.append(obj)
+            if re.search(tag_regex, tag) is not None:
+                for obj_id in self._tag_to_object_ids[tag]:
+                    obj = self.find_by_id(obj_id)
+                    if obj is not None:
+                        results.append(obj)
             return results
+
         return []
