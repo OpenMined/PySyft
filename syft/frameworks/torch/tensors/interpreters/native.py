@@ -100,20 +100,11 @@ class TorchTensor(AbstractTensor):
     @property
     def tags(self):
         if self.has_child():
-            result = self.child.tags
+            return self.child.tags
         else:
             if not hasattr(self, "_tags"):
                 self._tags = None
-            result = self._tags
-
-
-        if result is None:
-            result = set(["*"])
-        else:
-            result += set(["*"])
-
-        return result
-
+            return self._tags
 
     @tags.setter
     def tags(self, new_tags):

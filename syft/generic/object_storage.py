@@ -148,14 +148,17 @@ class ObjectStorage:
         Return:
             A list of results, possibly empty
         """
+
+        print(tag_regex)
+
+        results = []
+
         # if tag in self._tag_to_object_ids:
         for tag in self._tag_to_object_ids.keys():
-            results = []
             if re.search(tag_regex, tag) is not None:
                 for obj_id in self._tag_to_object_ids[tag]:
                     obj = self.find_by_id(obj_id)
                     if obj is not None:
                         results.append(obj)
-            return results
 
-        return []
+        return results
