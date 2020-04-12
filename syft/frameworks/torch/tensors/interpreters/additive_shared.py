@@ -263,10 +263,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
         multi = sy.MultiPointerTensor(children=pointers)
         # pointer.get()
+
+        duplicate_ids = list()
+        for ptr in pointers[1:]:
+            for ptr_ in workers[0]._objects.values():
+                if isinstance(ptr_, sy.PointerTensor) and ptr.id_at_location == ptr_.id_at_location:
+                    duplicate_ids.append(ptr_.id)
+        for id in duplicate_ids:
+            workers[0].rm_obj(id)
         workers[0].rm_obj(pointer_copy_id)
         pointer_copy.locations[0].rm_obj(
             pointer_copy.child[pointer_copy.locations[0].id].id_at_location
         )
+        del ptr
+        del ptr_
+        pointer_copy_.garbage_collect_data = False
         return multi
 
     def zero(self, shape=None):
