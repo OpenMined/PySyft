@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 # Syft imports
 from syft.serde import serialize
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
@@ -212,7 +212,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
         # If the model is a Plan we send the model
         # and host the plan version created after
-        # the send operation
+        # the send action
         if isinstance(model, Plan):
             # We need to use the same id in the model
             # as in the POST request.

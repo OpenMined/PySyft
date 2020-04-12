@@ -73,7 +73,7 @@ class TFEWorker:
     def connect_to_model(self, input_shape, output_shape, cluster, sess=None):
         """
         Connect to a TF Encrypted model being served by the given cluster.
-        
+
         This must be done before querying the model.
         """
 
@@ -96,7 +96,7 @@ class TFEWorker:
     def query_model(self, data):
         """
         Encrypt data and sent it as input to the model being served.
-        
+
         This will block until a result is ready, and requires that
         a connection to the model has already been established via
         `connect_to_model()`.
@@ -108,7 +108,7 @@ class TFEWorker:
         """
         Asynchronous version of `query_model` that will not block until a
         result is ready. Call `query_model_join` to retrive result.
-        
+
         This requires that a connection to the model has already been
         established via `connect_to_model()`.
         """
@@ -154,7 +154,7 @@ class TFECluster:
 
     def _build_cluster(self, workers):
         if len(workers) != 3:
-            raise ValueError("Expected three workers but {} were given".format(len(workers)))
+            raise ValueError(f"Expected three workers but {len(workers)} were given")
 
         player_to_worker_mapping = OrderedDict()
         player_to_worker_mapping["server0"] = workers[0]

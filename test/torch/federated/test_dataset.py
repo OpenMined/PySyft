@@ -15,16 +15,10 @@ def test_base_dataset(workers):
     assert len(dataset) == 4
     assert dataset[2] == (3, 3)
 
-    dataset.send(bob)
+    dataset = dataset.send(bob)
     assert dataset.data.location.id == "bob"
     assert dataset.targets.location.id == "bob"
     assert dataset.location.id == "bob"
-
-    dataset.get()
-    with pytest.raises(AttributeError):
-        assert dataset.data.location.id == 0
-    with pytest.raises(AttributeError):
-        assert dataset.targets.location.id == 0
 
 
 def test_base_dataset_transform():
@@ -61,11 +55,11 @@ def test_federated_dataset(workers):
     assert fed_dataset.workers == ["bob", "alice"]
     assert len(fed_dataset) == 6
 
-    fed_dataset["alice"].get()
-    assert (fed_dataset["alice"].data == alice_base_dataset.data).all()
-    assert fed_dataset["alice"][2] == (5, 5)
-    assert len(fed_dataset["alice"]) == 4
-    assert len(fed_dataset) == 6
+    alice_remote_data = fed_dataset.get_dataset("alice")
+    assert (alice_remote_data.data == alice_base_dataset.data).all()
+    assert alice_remote_data[2] == (5, 5)
+    assert len(alice_remote_data) == 4
+    assert len(fed_dataset) == 2
 
     assert isinstance(fed_dataset.__str__(), str)
 
@@ -114,3 +108,43 @@ def test_federated_dataset_search(workers):
         counter += 1
 
     assert counter == len(train_loader), f"{counter} == {len(fed_dataset)}"
+
+
+def test_abstract_dataset():
+    inputs = th.tensor([1, 2, 3, 4.0])
+    targets = th.tensor([1, 2, 3, 4.0])
+    dataset = BaseDataset(inputs, targets, id=1)
+
+    assert dataset.id == 1
+    assert dataset.description == None
+
+
+def test_get_dataset(workers):
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    dataset = fed_dataset.get_dataset("alice")
+
+    assert len(fed_dataset) == 2
+    assert len(dataset) == 4
+
+
+def test_illegal_get(workers):
+    """test getting error message when calling .get() on a dataset that's a part of fedratedDataset object"""
+    bob = workers["bob"]
+    alice = workers["alice"]
+
+    alice_base_dataset = BaseDataset(th.tensor([3, 4, 5, 6]), th.tensor([3, 4, 5, 6]))
+    datasets = [
+        BaseDataset(th.tensor([1, 2]), th.tensor([1, 2])).send(bob),
+        alice_base_dataset.send(alice),
+    ]
+    fed_dataset = sy.FederatedDataset(datasets)
+    with pytest.raises(ValueError):
+        fed_dataset["alice"].get()
