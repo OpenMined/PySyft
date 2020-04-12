@@ -859,3 +859,14 @@ def test_correct_tag_and_description_after_send(workers):
 
     assert me.request_search("tag_additive_test1", location=alice)
     assert me.request_search("tag_additive_test2", location=alice)
+
+
+def test_garbage_collect_reconstruct(workers):
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    a = torch.ones(1, 5)
+    a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
+    a_recon = a_sh.child.child.reconstruct()
+
+    assert len(alice._objects) == 2
+    assert len(bob._objects) == 2
+    assert len(james._objects) == 0
