@@ -744,6 +744,44 @@ def make_basedataset(**kwargs):
     ]
 
 
+# syft.generic.pointers.pointer_dataset.PointerDataset
+def make_pointerdataset(**kwargs):
+    alice, me = kwargs["workers"]["alice"], kwargs["workers"]["me"]
+    data = torch.tensor([1, 2, 3, 4])
+    targets = torch.tensor([5, 6, 7, 8])
+    dataset = syft.BaseDataset(data, targets).tag("#test")
+    dataset.send(alice)
+    ptr = me.request_search(["#test"], location=alice)[0]
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.generic.pointers.pointer_dataset.PointerDataset
+        assert detailed.id == original.id
+        assert detailed.id_at_location == original.id_at_location
+        assert detailed.location == original.location
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        assert detailed.garbage_collect_data == original.garbage_collect_data
+        return True
+
+    return [
+        {
+            "value": ptr,
+            "simplified": (
+                CODE[syft.generic.pointers.pointer_dataset.PointerDataset],
+                (
+                    ptr.id,  # (int) id
+                    ptr.id_at_location,  # (int) id_at_location
+                    (CODE[str], (b"alice",)),  # (str) worker_id
+                    (CODE[set], ((CODE[str], (b"#test",)),)),  # (set or None) tags
+                    None,  # description
+                    False,  # (bool) garbage_collect_data
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
     # Function to plan
