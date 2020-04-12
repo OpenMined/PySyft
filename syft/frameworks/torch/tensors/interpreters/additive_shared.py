@@ -256,10 +256,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         pointers = [pointer]
         pointer_copies = list()
+        shares = list()
         for worker in workers[1:]:
             pointer_copy_ = pointer.copy()
             pointer_copies.append(pointer_copy_.id_at_location)
             pointers.append(pointer_copy_.move(worker))
+            shares.append(self.child[worker.id])
 
         multi = sy.MultiPointerTensor(children=pointers)
         # pointer.get()
