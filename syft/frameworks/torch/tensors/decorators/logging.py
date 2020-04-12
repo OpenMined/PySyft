@@ -8,7 +8,7 @@ import syft as sy
 
 class LoggingTensor(AbstractTensor):
     def __init__(self, owner=None, id=None, tags=None, description=None):
-        """Initializes a LoggingTensor, whose behaviour is to log all operations
+        """Initializes a LoggingTensor, whose behaviour is to log all actions
         applied on it.
 
         Args:
@@ -127,7 +127,7 @@ class LoggingTensor(AbstractTensor):
         function with arguments containing syft tensors of the class doing
         the overloading
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
         print("Default log", cmd)
 
     @staticmethod

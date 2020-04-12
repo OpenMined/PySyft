@@ -119,9 +119,6 @@ def test_list_objects_remote(hook, start_remote_worker):
 
     res = remote_proxy.list_objects_remote()
 
-    x = torch.tensor([1, 2, 3]).send(remote_proxy)
-
-    res = remote_proxy.list_objects_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 1
 
@@ -310,7 +307,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     pred = model(data)
     loss_before = loss_fn(target=target, pred=pred)
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Loss: {}".format(loss_before))
+        print(f"Loss: {loss_before}")
 
     # Create and send train config
     train_config = sy.TrainConfig(
@@ -332,7 +329,7 @@ def test_evaluate(hook, start_proc):  # pragma: no cover
     hist_target = result["histogram_target"]
 
     if PRINT_IN_UNITTESTS:  # pragma: no cover
-        print("Evaluation result before training: {}".format(result))
+        print(f"Evaluation result before training: {result}")
 
     assert len_dataset == 30
     assert (hist_target == [10, 10, 10]).all()

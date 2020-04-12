@@ -4,11 +4,18 @@ on:
   push:
     branches:
     - master
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
+
   pull_request:
     types: [opened, synchronize, reopened]
+    paths:
+    - '**.py'
+    - 'pip-dep/**'
 
 jobs:
-  build:
+  python-tests:
 
     runs-on: ubuntu-latest
     strategy:
@@ -17,11 +24,16 @@ jobs:
         python-version: [3.6, 3.7]
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - uses: actions/cache@v1.1.2
+      id: cache-reqs
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -31,7 +43,6 @@ jobs:
         pip3 install -r pip-dep/requirements_dev.txt
         pip3 install -r pip-dep/requirements_udacity.txt
         pip3 install -r pip-dep/requirements_notebooks.txt
-        pip3 install scikit-learn
         python setup.py install
     - name: Lint, format, and type-check
       run: |
@@ -53,14 +64,20 @@ jobs:
     - name: Scan for security issues
       run: |
             bandit -r syft -ll
+    - name: Install codecov
+      run: |
+        pip3 install codecov
     - name: Run tests
       run: |
-        coverage run -m pytest test --deselect=test/efficiency -m "not translation"
+        coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
     - name: Check test coverage
       run: |
         coverage report --ignore-errors --fail-under 95 -m
         # ensuring coverage of tests stays at 100 until entire coverage can be 100
         coverage report --ignore-errors --fail-under 100 -m --include="test/*"
+    - name: Run codecov
+      run: |
+        bash <(curl -s https://codecov.io/bash) -t a74f260d-4d79-4591-a38b-77f81447c9fb -X gcov
     - name: Build docs
       run: |
         # delete stale existing documentation if there's one

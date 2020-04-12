@@ -569,53 +569,6 @@ def test_mm(workers):
     assert (z == (torch.mm(t, t))).all()
 
 
-def test_torch_conv2d(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    im = torch.Tensor(
-        [
-            [
-                [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0], [6.0, 7.0, 8.0]],
-                [[10.0, 11.0, 12.0], [13.0, 14.0, 15.0], [16.0, 17.0, 18.0]],
-            ]
-        ]
-    )
-    w = torch.Tensor(
-        [
-            [[[1.0, 1.0], [1.0, 1.0]], [[2.0, 2.0], [2.0, 2.0]]],
-            [[[-1.0, -2.0], [-3.0, -4.0]], [[0.0, 0.0], [0.0, 0.0]]],
-        ]
-    )
-    bias = torch.Tensor([0.0, 5.0])
-
-    im_shared = im.fix_precision().share(bob, alice, crypto_provider=james)
-    w_shared = w.fix_precision().share(bob, alice, crypto_provider=james)
-    bias_shared = bias.fix_precision().share(bob, alice, crypto_provider=james)
-
-    res0 = torch.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
-    res1 = (
-        torch.conv2d(
-            im_shared,
-            w_shared[:, 0:1].contiguous(),
-            bias=bias_shared,
-            stride=2,
-            padding=3,
-            dilation=2,
-            groups=2,
-        )
-        .get()
-        .float_precision()
-    )
-
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
-    expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    )
-
-    assert (res0 == expected0).all()
-    assert (res1 == expected1).all()
-
-
 def test_fixed_precision_and_sharing(workers):
 
     bob, alice = (workers["bob"], workers["alice"])
@@ -895,41 +848,8 @@ def test_zero_refresh(workers):
     assert ((x_r / 2).get().float_prec() == t / 2).all()
 
 
-def test_cnn_model(workers):
-    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-
-    class Net(nn.Module):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.conv1 = nn.Conv2d(1, 20, 5, 1)
-            self.conv2 = nn.Conv2d(20, 50, 5, 1)
-            self.fc1 = nn.Linear(4 * 4 * 50, 500)
-            self.fc2 = nn.Linear(500, 10)
-
-        def forward(self, x):
-            # TODO: uncomment maxpool2d operations
-            # once it is supported with smpc.
-            x = F.relu(self.conv1(x))
-            # x = F.max_pool2d(x, 2, 2)
-            x = F.relu(self.conv2(x))
-            # x = F.max_pool2d(x, 2, 2)
-            x = x.view(-1, 4 * 4 * 50)
-            x = F.relu(self.fc1(x))
-            x = self.fc2(x)
-            return x
-
-    model = Net()
-    sh_model = copy.deepcopy(model).fix_precision().share(alice, bob, crypto_provider=james)
-
-    data = torch.zeros((1, 1, 28, 28))
-    sh_data = torch.zeros((1, 1, 28, 28)).fix_precision().share(alice, bob, crypto_provider=james)
-
-    assert torch.allclose(sh_model(sh_data).get().float_prec(), model(data), atol=1e-2)
-
-
 def test_correct_tag_and_description_after_send(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
 
     x = torch.tensor([1, 2, 3]).share(alice, bob, james)
     x.tags = ["tag_additive_test1", "tag_additive_test2"]
@@ -937,6 +857,5 @@ def test_correct_tag_and_description_after_send(workers):
 
     pointer_x = x.send(alice)
 
-    assert alice.search("tag_additive_test1")
-    assert alice.search("tag_additive_test2")
-    assert alice.search("description_additive_test")
+    assert me.request_search("tag_additive_test1", location=alice)
+    assert me.request_search("tag_additive_test2", location=alice)
