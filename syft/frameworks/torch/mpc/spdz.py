@@ -30,13 +30,13 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     # Get triples
     a, b, a_mul_b = request_triple(crypto_provider, cmd, field, x_sh.shape, y_sh.shape, locations)
 
-    delta = x_sh - a
+    delta = x_sh - a  # Not gced coz the pointer to other loc doesnt exist
     epsilon = y_sh - b
     # Reconstruct and send to all workers
-    delta = delta.reconstruct()
-    epsilon = epsilon.reconstruct()
+    delta_recon = delta.reconstruct()
+    epsilon_recon = epsilon.reconstruct()
 
-    delta_epsilon = cmd(delta, epsilon)
+    delta_epsilon = cmd(delta_recon, epsilon_recon)
 
     # Trick to keep only one child in the MultiPointerTensor (like in SNN)
     j1 = torch.ones(delta_epsilon.shape).long().send(locations[0], **no_wrap)
@@ -46,7 +46,22 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     else:
         j = sy.MultiPointerTensor(children=[j1] + list(j0.child.values()))
 
-    delta_b = cmd(delta, b)
-    a_epsilon = cmd(a, epsilon)
+    delta_b = cmd(delta_recon, b)
+    a_epsilon = cmd(a, epsilon_recon)
+
+    # delta.get()
+    # epsilon.get()
+    # for loc in locations:
+    #     loc.de_register_obj(delta)
+    #     loc.de_register_obj(epsilon)
+    # try:
+    #     # delta.locations[0].de_register_obj(delta)
+    #     # delta.locations[0].rm_obj(delta.child[delta.locations[0].id])
+    #     del delta.child[delta.locations[0].id]
+    #     # epsilon.locations[0].de_register_obj(epsilon)
+    #     # epsilon.locations[0].rm_obj(epsilon.child[epsilon.locations[0].id])
+    #     del epsilon.child[epsilon.locations[0].id]
+    # except Exception as e:
+    #     print(e)
 
     return delta_epsilon * j + delta_b + a_epsilon + a_mul_b

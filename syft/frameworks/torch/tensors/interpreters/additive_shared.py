@@ -246,15 +246,26 @@ class AdditiveSharingTensor(AbstractTensor):
             A MultiPointerTensor where all workers hold the reconstructed value
         """
         workers = self.locations
+        # 7, 7
+        pointer_copy = self.copy()  # 8, 8
+        pointer = pointer_copy.wrap().send(workers[0], **no_wrap)  # 9, 8
+        pointer = pointer.remote_get()  # 9, 7
 
-        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
-        pointer = ptr_to_sh.remote_get()
+        # for loc in workers[1:]:
+        #     loc.de_register_obj()
 
         pointers = [pointer]
+        pointer_copies = list()
         for worker in workers[1:]:
-            pointers.append(pointer.copy().move(worker))
+            pointer_copy = pointer.copy()
+            pointers.append(pointer_copy.move(worker))
+            pointer_copies.append(pointer_copy)
 
-        return sy.MultiPointerTensor(children=pointers)
+        multi = sy.MultiPointerTensor(children=pointers)
+        # pointer.get()
+        # for ptr in pointer_copies:
+        #     ptr.get()
+        return multi
 
     def zero(self, shape=None):
         """
