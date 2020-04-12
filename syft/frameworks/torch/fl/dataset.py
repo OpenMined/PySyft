@@ -237,6 +237,7 @@ class FederatedDataset:
         for dataset in datasets:
             worker_id = dataset.data.location.id
             self.datasets[worker_id] = dataset
+            dataset.federated = True
 
         # Check that data and targets for a worker are consistent
         """for worker_id in self.workers:
@@ -252,6 +253,12 @@ class FederatedDataset:
         """
 
         return list(self.datasets.keys())
+
+    def get_dataset(self, worker):
+        self[worker].federated = False
+        dataset = self[worker].get()
+        del self.datasets[worker]
+        return dataset
 
     def __getitem__(self, worker_id):
         """

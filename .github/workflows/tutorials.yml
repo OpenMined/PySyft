@@ -4,16 +4,22 @@ on:
   push:
     branches:
     - master
-    paths-ignore:
-    - "examples/tutorials/translations/**"
+    paths:
+    - '**.py'
+    - '**.ipynb'
+    - 'pip-dep/**'
+    - "!examples/tutorials/translations/**"
 
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-    - "examples/tutorials/translations/**"
+    paths:
+    - '**.py'
+    - '**.ipynb'
+    - 'pip-dep/**'
+    - "!examples/tutorials/translations/**"
 
 jobs:
-  build:
+  tutorial-tests:
 
     runs-on: ubuntu-latest
     strategy:
