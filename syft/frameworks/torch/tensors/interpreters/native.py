@@ -315,17 +315,17 @@ class TorchTensor(AbstractTensor):
             global router.
 
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
-                cmd, args, kwargs, return_args_type=True
+                cmd, args_, kwargs_, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -351,7 +351,7 @@ class TorchTensor(AbstractTensor):
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
-                return command(*args, **kwargs)
+                return command(*args_, **kwargs_)
             except AttributeError:
                 pass
 
@@ -359,15 +359,15 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             try:
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
             except AttributeError:
                 # Change the library path to avoid errors on layers like AvgPooling
                 cmd = cls._fix_torch_library(cmd)
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
 
         return response
 
-    def _get_response(cmd, args, kwargs):
+    def _get_response(cmd, args_, kwargs_):
         """
             Return the evaluation of the cmd string parameter
         """
@@ -380,10 +380,10 @@ class TorchTensor(AbstractTensor):
             module = getattr(module, sm)
 
         command_method = getattr(module, f"native_{command}")
-        if isinstance(args, tuple):
-            response = command_method(*args, **kwargs)
+        if isinstance(args_, tuple):
+            response = command_method(*args_, **kwargs_)
         else:
-            response = command_method(args, **kwargs)
+            response = command_method(args_, **kwargs_)
 
         return response
 
@@ -870,11 +870,11 @@ class TorchTensor(AbstractTensor):
         if self.has_child():
             chain = self.child
 
-            kwargs = (
+            kwargs_ = (
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs_
             )
         else:
             if self.type() == "torch.FloatTensor":

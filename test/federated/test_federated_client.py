@@ -188,7 +188,11 @@ def test_fit(fit_dataset_key, epochs, device):
                 print(f"Loss not reduced, train more: {loss_after}")
 
             train_model(
-                fed_client, fit_dataset_key, available_dataset_key=dataset_key, nr_rounds=10
+                fed_client,
+                fit_dataset_key,
+                available_dataset_key=dataset_key,
+                nr_rounds=10,
+                device=device,
             )
             loss_after = evaluate_model(fed_client, model_id, loss_fn, data, target)
 

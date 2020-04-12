@@ -986,21 +986,21 @@ class AdditiveSharingTensor(AbstractTensor):
     ## STANDARD
 
     @staticmethod
-    def select_worker(args, worker):
+    def select_worker(args_, worker):
         """
         utility function for handle_func_command which help to select
         shares (seen as elements of dict) in an argument set. It could
         perhaps be put elsewhere
 
         Args:
-            args: arguments to give to a functions
+            args_: arguments to give to a functions
             worker: owner of the shares to select
 
         Return:
-            args where the AdditiveSharedTensors are replaced by
+            args_ where the AdditiveSharedTensors are replaced by
             the appropriate share
         """
-        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args_)
 
     @classmethod
     def handle_func_command(cls, command):
@@ -1014,12 +1014,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
@@ -1028,12 +1028,12 @@ class AdditiveSharingTensor(AbstractTensor):
         except AttributeError:
             pass
         if not isinstance(cmd, str):
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
 
-        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
+        tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         results = {}
         for worker, share in new_args[0].items():

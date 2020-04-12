@@ -385,9 +385,9 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         raise Exception(f"No unbufferizer found for {current_type}")
 
 
-def bufferize_args(worker: AbstractWorker, args: list) -> list:
+def bufferize_args(worker: AbstractWorker, args_: list) -> list:
     protobuf_args = []
-    for arg in args:
+    for arg in args_:
         protobuf_args.append(bufferize_arg(worker, arg))
     return protobuf_args
 
@@ -405,10 +405,10 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-    args = []
+    args_ = []
     for protobuf_arg in protobuf_args:
-        args.append(unbufferize_arg(worker, protobuf_arg))
-    return args
+        args_.append(unbufferize_arg(worker, protobuf_arg))
+    return args_
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:

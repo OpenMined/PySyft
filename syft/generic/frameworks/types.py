@@ -2,6 +2,8 @@ from typing import Union
 
 from syft import dependency_check
 
+framework_packages = {}
+
 framework_tensors = []
 framework_shapes = []
 framework_layer_modules = []
@@ -11,6 +13,8 @@ if dependency_check.tensorflow_available:
     from tensorflow.python.framework.ops import EagerTensor
     from tensorflow.python.ops.resource_variable_ops import ResourceVariable
 
+    framework_packages["tensorflow"] = tf
+
     framework_tensors.append(EagerTensor)
     framework_tensors.append(ResourceVariable)
     framework_shapes.append(tf.TensorShape)
@@ -19,6 +23,8 @@ if dependency_check.tensorflow_available:
 
 if dependency_check.torch_available:
     import torch
+
+    framework_packages["torch"] = torch
 
     framework_tensors.append(torch.Tensor)
     framework_tensors.append(torch.nn.Parameter)

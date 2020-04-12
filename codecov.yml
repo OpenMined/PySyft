@@ -1,7 +1,10 @@
 coverage:
     range: 95..100
-    round: down
+    round: up
     precision: 2
+    status:
+        threshold: 1%  # Allow 1% of changes in coverage
+
 
 comment:
     layout: "reach, diff, flags, files"

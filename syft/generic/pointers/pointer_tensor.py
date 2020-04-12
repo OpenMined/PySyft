@@ -299,9 +299,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             requires_grad: if true updating the grad of the remote tensor on destination B will trigger
                 a message to update the gradient of the value on A.
         """
-        kwargs = {"inplace": False, "requires_grad": requires_grad}
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs
+            self.id_at_location, self.location.id, [destination.id], kwargs_
         )
         self.owner.send_msg(message=message, location=self.location)
         return self

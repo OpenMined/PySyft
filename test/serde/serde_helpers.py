@@ -474,6 +474,7 @@ def compare_placeholders_list(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
     return True
 
 
@@ -485,6 +486,7 @@ def compare_placeholders_dict(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
     return True
 
 
@@ -709,6 +711,44 @@ def make_basedataset(**kwargs):
     ]
 
 
+# syft.generic.pointers.pointer_dataset.PointerDataset
+def make_pointerdataset(**kwargs):
+    alice, me = kwargs["workers"]["alice"], kwargs["workers"]["me"]
+    data = torch.tensor([1, 2, 3, 4])
+    targets = torch.tensor([5, 6, 7, 8])
+    dataset = syft.BaseDataset(data, targets).tag("#test")
+    dataset.send(alice)
+    ptr = me.request_search(["#test"], location=alice)[0]
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.generic.pointers.pointer_dataset.PointerDataset
+        assert detailed.id == original.id
+        assert detailed.id_at_location == original.id_at_location
+        assert detailed.location == original.location
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        assert detailed.garbage_collect_data == original.garbage_collect_data
+        return True
+
+    return [
+        {
+            "value": ptr,
+            "simplified": (
+                CODE[syft.generic.pointers.pointer_dataset.PointerDataset],
+                (
+                    ptr.id,  # (int) id
+                    ptr.id_at_location,  # (int) id_at_location
+                    (CODE[str], (b"alice",)),  # (str) worker_id
+                    (CODE[set], ((CODE[str], (b"#test",)),)),  # (set or None) tags
+                    None,  # description
+                    False,  # (bool) garbage_collect_data
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
     # Function to plan
@@ -763,6 +803,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.description),
+                    None,  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -779,6 +820,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
+                    None,  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -1318,7 +1360,7 @@ def make_privatetensor(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
-    ph = syft.execution.placeholder.PlaceHolder()
+    ph = syft.execution.placeholder.PlaceHolder(shape=torch.randn(3, 4).shape)
     ph.tag("tag1")
     ph.describe("just a placeholder")
 
@@ -1327,6 +1369,7 @@ def make_placeholder(**kwargs):
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
+        assert detailed.expected_shape == original.expected_shape
         return True
 
     return [
@@ -1338,6 +1381,7 @@ def make_placeholder(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
+                    (CODE[tuple], (3, 4)),  # (tuple of int) expected_shape
                 ),
             ),
             "cmp_detailed": compare,

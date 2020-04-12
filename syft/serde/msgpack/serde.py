@@ -75,6 +75,7 @@ from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
+from syft.generic.pointers.pointer_dataset import PointerDataset
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
@@ -139,6 +140,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     GradFunc,
     String,
     BaseDataset,
+    PointerDataset,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
