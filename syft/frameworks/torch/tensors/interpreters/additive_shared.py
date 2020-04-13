@@ -819,7 +819,7 @@ class AdditiveSharingTensor(AbstractTensor):
         def nn(module):
             @overloaded.module
             def functional(module):
-                def relu(tensor_shares):
+                def relu(tensor_shares, inplace=False):
                     return tensor_shares.relu()
 
                 module.relu = relu
@@ -836,12 +836,21 @@ class AdditiveSharingTensor(AbstractTensor):
 
             module.functional = functional
 
+            @overloaded.function
+            def maxpool2d(tensor_shares, *args, **kwargs):
+                return tensor_shares.maxpool2d()
+
+            module.MaxPool2d = maxpool2d
+
         module.nn = nn
 
     ## SECTION SNN
 
-    def relu(self):
+    def relu(self, inplace=False):
         return securenn.relu(self)
+
+    def maxpool2d(self):
+        return securenn.maxpool2d(self)
 
     def positive(self):
         # self >= 0
