@@ -7,6 +7,7 @@ from ..storage.warehouse import Warehouse
 from ..exceptions import CycleNotFoundError
 from ..tasks.cycle import complete_cycle, run_task_once
 from ..models import model_manager
+from ..processes import process_manager
 
 # Generic imports
 from datetime import datetime, timedelta
@@ -177,12 +178,9 @@ class CycleManager:
             logging.info("cycle is already completed!")
             return
 
-        _server_config = self._configs.first(
-            is_server_config=True, fl_process_id=cycle.fl_process_id
-        )
-        server_config = _server_config.config
+        server_config, _ = process_manager.get_configs(id=cycle.fl_process_id)
         logging.info("server_config: %s" % json.dumps(server_config, indent=2))
-        completed_cycles_num = self._worker_cycle.count(
+        completed_cycles_num = self._worker_cycles.count(
             cycle_id=cycle_id, is_completed=True
         )
         logging.info("# of diffs: %d" % completed_cycles_num)
@@ -228,11 +226,11 @@ class CycleManager:
         logging.info("start diffs averaging!")
         logging.info("cycle: %s" % str(cycle))
         logging.info("fl id: %d" % cycle.fl_process_id)
-        _model = self.get_model(fl_process_id=cycle.fl_process_id)
+        _model = model_manager.get(fl_process_id=cycle.fl_process_id)
         logging.info("model: %s" % str(_model))
         model_id = _model.id
         logging.info("model id: %d" % model_id)
-        _checkpoint = self.get_model_checkpoint(model_id=model_id)
+        _checkpoint = model_manager.load(model_id=model_id)
         logging.info("current checkpoint: %s" % str(_checkpoint))
         model_params = model_manager.unserialize_model_params(_checkpoint.values)
         logging.info("model params shapes: %s" % str([p.shape for p in model_params]))
@@ -245,7 +243,7 @@ class CycleManager:
         #    avg = avg_plan(avg, N, diff_N)
         # and the plan is:
         # avg_next = (avg_current*(N-1) + diff_N) / N
-        reports_to_average = self._worker_cycle.query(
+        reports_to_average = self._worker_cycles.query(
             cycle_id=cycle.id, is_completed=True
         )
         diffs = [
@@ -280,7 +278,7 @@ class CycleManager:
 
         # make new checkpoint
         serialized_params = model_manager.serialize_model_params(_updated_model_params)
-        _new_checkpoint = self.create_checkpoint(model_id, serialized_params)
+        _new_checkpoint = model_manager.save(model_id, serialized_params)
         logging.info("new checkpoint: %s" % str(_new_checkpoint))
 
         # mark current cycle completed
@@ -294,7 +292,7 @@ class CycleManager:
         max_cycles = server_config.get("num_cycles")
         if completed_cycles_num < max_cycles:
             # make new cycle
-            _new_cycle = self.create_cycle(cycle.fl_process_id, cycle.version)
+            _new_cycle = self.create(cycle.fl_process_id, cycle.version)
             logging.info("new cycle: %s" % str(_new_cycle))
         else:
             logging.info("FL is done!")

@@ -4,7 +4,7 @@ from ..cycles import cycle_manager
 from ..models import model_manager
 from ..workers import worker_manager
 from ..codes import MSG_FIELD, CYCLE
-
+from ..exceptions import ProtocolNotFoundError
 
 # Generic imports
 import hashlib
@@ -129,7 +129,11 @@ class FLController:
             )
 
             # Create a protocol dictionary
-            _protocols = process_manager.get_protocols(fl_process_id=_fl_process.id)
+            try:
+                _protocols = process_manager.get_protocols(fl_process_id=_fl_process.id)
+            except ProtocolNotFoundError:
+                # Protocols are optional
+                _protocols = {}
 
             # Get model ID
             _model = model_manager.get(fl_process_id=_fl_process.id)

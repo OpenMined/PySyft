@@ -66,7 +66,7 @@ class ModelManager:
         return _model
 
     @staticmethod
-    def serialize_model_params(self, params):
+    def serialize_model_params(params):
         """Serializes list of tensors into State/protobuf"""
         model_params_state = State(
             owner=None,
@@ -82,7 +82,7 @@ class ModelManager:
         return serialized_state
 
     @staticmethod
-    def unserialize_model_params(self, bin: bin):
+    def unserialize_model_params(bin: bin):
         """Unserializes model or checkpoint or diff stored in db to list of tensors"""
         state = StatePB()
         state.ParseFromString(bin)

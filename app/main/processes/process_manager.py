@@ -46,14 +46,14 @@ class ProcessManager:
         # Create a new process
         fl_process = self._processes.register(name=name, version=version)
 
-        # Register client plans
-        plans.register(fl_process, client_plans, avg_plan=False)
-
         # Register client protocols
         protocols.register(fl_process, client_protocols)
 
         # Register Server avg plan
         plans.register(fl_process, server_avg_plan, avg_plan=True)
+
+        # Register client plans
+        plans.register(fl_process, client_plans, avg_plan=False)
 
         # Register the client setup configs
         self._configs.register(config=client_config, server_flprocess_config=fl_process)

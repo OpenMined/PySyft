@@ -42,6 +42,18 @@ class PlanNotFoundError(PyGridError):
         super().__init__(message)
 
 
+class PlanInvalidError(PyGridError):
+    def __init__(self):
+        message = "Plan is not valid"
+        super().__init__(message)
+
+
+class PlanTranslationError(PyGridError):
+    def __init__(self):
+        message = "Failed to translate a Plan"
+        super().__init__(message)
+
+
 class ModelNotFoundError(PyGridError):
     def __init__(self):
         message = "Model ID not found!"

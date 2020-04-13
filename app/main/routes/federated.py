@@ -219,13 +219,11 @@ def download_plan():
         status_code = 200  # Success
 
         if receive_operations_as == "torchscript":
-            # TODO leave only torchscript plan
-            pass
+            response_body = _plan.value_ts
         else:
-            # TODO leave only list of ops plan
-            pass
+            response_body = _plan.value
 
-        return send_file(io.BytesIO(_plan.value), mimetype="application/octet-stream")
+        return send_file(io.BytesIO(response_body), mimetype="application/octet-stream")
 
     except InvalidRequestKeyError as e:
         status_code = 401  # Unauthorized

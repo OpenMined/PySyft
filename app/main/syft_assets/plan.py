@@ -6,8 +6,8 @@ class Plan(db.Model):
         Columns:
             id (Integer, Primary Key): Plan ID.
             name (String): Plan name.
-            value (String): String  (List of operations)
-            value_ts (String): String (TorchScript)
+            value (Binary): String  (List of operations)
+            value_ts (Binary): String (TorchScript)
             is_avg_plan (Boolean) : Boolean flag to indicate if it is the avg plan
             fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
@@ -23,5 +23,5 @@ class Plan(db.Model):
 
     def __str__(self):
         return (
-            f"<Plan id: {self.id}, values: {self.value}, torchscript: {self.value_ts}>"
+            f"<Plan id: {self.id}, value: {self.value}, torchscript: {self.value_ts}>"
         )
