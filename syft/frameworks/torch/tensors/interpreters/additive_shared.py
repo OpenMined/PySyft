@@ -825,6 +825,13 @@ class AdditiveSharingTensor(AbstractTensor):
                 module.relu = relu
 
                 @overloaded.function
+                def maxpool2d(tensor_shares, *args, **kwargs):
+                    a_sh = AdditiveSharingTensor(shares=tensor_shares)
+                    return maxpool2d(a_sh)
+
+                module.max_pool2d = maxpool2d
+
+                @overloaded.function
                 def pad(input_shares, pad, mode="constant", value=0):
                     padded_shares = {}
                     for location, shares in input_shares.items():
@@ -835,12 +842,6 @@ class AdditiveSharingTensor(AbstractTensor):
                 module.pad = pad
 
             module.functional = functional
-
-            @overloaded.function
-            def maxpool2d(tensor_shares, *args, **kwargs):
-                return tensor_shares.maxpool2d()
-
-            module.MaxPool2d = maxpool2d
 
         module.nn = nn
 
