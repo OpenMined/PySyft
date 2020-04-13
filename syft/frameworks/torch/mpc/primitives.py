@@ -14,14 +14,16 @@ class PrimitiveStorage:
     """
 
     def __init__(self, owner):
-        # The different kinds of primitives available
-        # Note: each primitive stack is a fixed length list corresponding to all the
-        # components for the primitive. For example, the beaver triple primitive would
-        # have 3 components. Each component is a very multi-dimensional tensor whose
-        # last dimension is the same and corresponds to the number of instances available
-        # for this primitive. That's why get_keys uses a quite complicated dimension
-        # selector. This structure helps generating efficiently primitives using
-        # tensorized key generation algorithms.
+        """
+        Their are below different kinds of primitives available.
+        Each primitive stack is a fixed length list corresponding to all the
+        components for the primitive. For example, the beaver triple primitive would
+        have 3 components. Each component is a high dimensional tensor whose
+        last dimension is the same and corresponds to the number of instances available
+        for this primitive. That's why get_keys uses a quite complicated dimension
+        selector. This structure helps generating efficiently primitives using
+        tensorized key generation algorithms.
+        """
         self.fss_eq: list = []
         self.fss_comp: list = []
         self.beaver: list = []
@@ -37,12 +39,13 @@ class PrimitiveStorage:
 
     def get_keys(self, type_op, n_instances=1, remove=True):
         """
-        Return FSS keys primitives #TODO
+        Return FSS keys primitives
 
         Args:
             type_op: fss_eq, fss_comp, or xor_add_couple
-            n_instances: how many primitives to retrieve. Comparison is pointwise so this in
-                convenient
+            n_instances: how many primitives to retrieve. Comparison is pointwise so this is
+                convenient: for any matrice of size nxm I can unstack n*m elements for the
+                comparison
             remove: if true, pop out the primitive. If false, only read it. Read mode is
                 needed because we're working on virtual workers and they need to gather
                 a some point and then re-access the keys.
@@ -57,17 +60,10 @@ class PrimitiveStorage:
             for i, prim in enumerate(primitive_stack):
                 # We're selecting on the last dimension of the tensor because it's simpler for
                 # generating those primitives in crypto protocols
-                # [:] ~ [slice(None)]
-                # [:1] ~ [slice(1)]
-                # [1:] ~ [slice(1, None)]
-                # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
-                n_dim = len(prim.shape)
-                get_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances)]
-                remaining_slice = [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-
-                keys.append(prim[get_slice])
+                # th.narrow(dim, index_start, length)
+                keys.append(th.narrow(prim, -1, 0, n_instances))
                 if remove:
-                    primitive_stack[i] = prim[remaining_slice]
+                    primitive_stack[i] = th.narrow(prim, -1, n_instances)
 
             return keys
         else:
@@ -128,7 +124,9 @@ class PrimitiveStorage:
                     if len(current_primitives[i]) == 0:
                         current_primitives[i] = primitive
                     else:
-                        current_primitives[i] = th.cat((current_primitives[i], primitive), dim=len(primitive.shape)-1)
+                        current_primitives[i] = th.cat(
+                            (current_primitives[i], primitive), dim=len(primitive.shape) - 1
+                        )
 
     def build_fss_keys(self, type_op):
         """
