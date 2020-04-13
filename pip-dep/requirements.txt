@@ -14,3 +14,4 @@ torch~=1.4.0
 tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
+git+https://github.com/gmuraru/CrypTen.git@2aa0c2f14b472a8df6a85be1cfc4630479a10b2f#egg=crypten

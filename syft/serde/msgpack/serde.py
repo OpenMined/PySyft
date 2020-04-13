@@ -69,6 +69,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import WorkerCommandMessage
+from syft.messaging.message import CryptenInit
 from syft.serde import compression
 from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
@@ -137,6 +138,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     SearchMessage,
     PlanCommandMessage,
     WorkerCommandMessage,
+    CryptenInit,
     GradFunc,
     String,
     BaseDataset,
