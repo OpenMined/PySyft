@@ -112,7 +112,7 @@ __all__.extend(
         "PrivateGridNetwork",
         "PublicGridNetwork",
         "create_sandbox",
-        "hook",
+        "make_hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",
