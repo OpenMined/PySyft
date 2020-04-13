@@ -3,13 +3,18 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import json
+import io
 import torch
+import warnings
 
 import syft as sy
 from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
+from syft.execution.translation.abstract import AbstractPlanTranslator
+from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -50,9 +55,9 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                plan.build(*args)
+                plan.build(*args_)
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
@@ -97,6 +102,8 @@ class Plan(AbstractObject):
         description: plan description
     """
 
+    _build_translators = []
+
     def __init__(
         self,
         name: str = None,
@@ -120,6 +127,7 @@ class Plan(AbstractObject):
 
         self.include_state = include_state
         self.is_built = is_built
+        self.torchscript = None
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -128,6 +136,9 @@ class Plan(AbstractObject):
             self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
+
+        # List of available translations
+        self.translations = []
 
     @property
     def state(self):
@@ -152,7 +163,10 @@ class Plan(AbstractObject):
         """
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
-        return self.state.tensors()
+        if self.state is not None:
+            return self.state.tensors()
+        else:
+            return []
 
     def build(self, *args):
         """Builds the plan.
@@ -194,11 +208,19 @@ class Plan(AbstractObject):
         self.is_built = True
         self.owner.init_plan = None
 
+        # Build registered translations
+        for translator in Plan._build_translators:
+            try:
+                self.add_translation(translator)
+                self.translations.append(translator)
+            except:
+                warnings.warn(f"Failed to translate Plan with {translator}")
+
         return results
 
     def copy(self):
         """Creates a copy of a plan."""
-        return Plan(
+        plan_copy = Plan(
             name=self.name,
             role=self.role.copy(),
             include_state=self.include_state,
@@ -208,6 +230,10 @@ class Plan(AbstractObject):
             tags=self.tags,
             description=self.description,
         )
+
+        plan_copy.torchscript = self.torchscript
+
+        return plan_copy
 
     def __setattr__(self, name, value):
         """Add new tensors or parameter attributes to the state and register them
@@ -240,16 +266,16 @@ class Plan(AbstractObject):
         else:
             return self.role.execute(args)
 
-    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
+    def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the original function.
 
         Args:
-            args: Arguments used to run plan.
+            args_: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
         # TODO: can we reuse result_ids?
-        return self.__call__(*args)
+        return self.__call__(*args_)
 
     def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -292,6 +318,24 @@ class Plan(AbstractObject):
             pointer = sy.PointerPlan(location=locations, id_at_location=ids_at_location)
 
         return pointer
+
+    def get_args_shape(self):
+        """Returns input tensors shapes"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    @staticmethod
+    def register_build_translator(translator: "AbstractPlanTranslator"):
+        Plan._build_translators.append(translator)
+
+    def add_translation(self, plan_translator: "AbstractPlanTranslator"):
+        return plan_translator(self).translate()
+
+    def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
+        plan_translator(self).remove()
+        return self
 
     def get_(self):
         self.state.get_()
@@ -361,8 +405,8 @@ class Plan(AbstractObject):
             out += " built"
 
         out += ">"
-
         out += "\n"
+        _self = self
 
         # out += f"def {self.name}("
         # out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
@@ -432,6 +476,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
+            sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
         )
 
     @staticmethod
@@ -443,13 +488,14 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, is_built, name, tags, description) = plan_tuple
+        (id_, role, include_state, is_built, name, tags, description, torchscript) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
         name = sy.serde.msgpack.serde._detail(worker, name)
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
+        torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
 
         plan = sy.Plan(
             role=role,
@@ -461,6 +507,8 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        plan.torchscript = torchscript
 
         return plan
 
@@ -487,6 +535,9 @@ class Plan(AbstractObject):
 
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
+
+        if plan.torchscript:
+            protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
         return protobuf_plan
 
@@ -517,5 +568,9 @@ class Plan(AbstractObject):
             tags=tags,
             description=description,
         )
+
+        if protobuf_plan.torchscript:
+            torchscript = io.BytesIO(protobuf_plan.torchscript)
+            plan.torchscript = torch.jit.load(torchscript)
 
         return plan

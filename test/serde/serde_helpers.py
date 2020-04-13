@@ -474,6 +474,7 @@ def compare_placeholders_list(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
     return True
 
 
@@ -485,6 +486,7 @@ def compare_placeholders_dict(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
     return True
 
 
@@ -834,6 +836,9 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.description),
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -850,6 +855,9 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
+                    msgpack.serde._simplify(
+                        syft.hook.local_worker, model_plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -1389,7 +1397,7 @@ def make_privatetensor(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
-    ph = syft.execution.placeholder.PlaceHolder()
+    ph = syft.execution.placeholder.PlaceHolder(shape=torch.randn(3, 4).shape)
     ph.tag("tag1")
     ph.describe("just a placeholder")
 
@@ -1398,6 +1406,7 @@ def make_placeholder(**kwargs):
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
+        assert detailed.expected_shape == original.expected_shape
         return True
 
     return [
@@ -1409,6 +1418,7 @@ def make_placeholder(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
+                    (CODE[tuple], (3, 4)),  # (tuple of int) expected_shape
                 ),
             ),
             "cmp_detailed": compare,

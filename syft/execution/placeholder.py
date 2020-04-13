@@ -7,7 +7,7 @@ from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
+    def __init__(self, owner=None, id=None, tags: set = None, description: str = None, shape=None):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -23,6 +23,8 @@ class PlaceHolder(AbstractTensor):
 
         if not isinstance(self.id, PlaceholderId):
             self.id = PlaceholderId(self.id)
+
+        self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
 
     def instantiate(self, tensor):
@@ -59,7 +61,7 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags, owner=self.owner)
+        placeholder = PlaceHolder(tags=self.tags, owner=self.owner, shape=self.expected_shape)
         placeholder.child = self.child
         return placeholder
 
@@ -96,21 +98,22 @@ class PlaceHolder(AbstractTensor):
                 )
 
     @staticmethod
-    def simplify(worker: AbstractWorker, tensor: "PlaceHolder") -> tuple:
+    def simplify(worker: AbstractWorker, placeholder: "PlaceHolder") -> tuple:
         """Takes the attributes of a PlaceHolder and saves them in a tuple.
 
         Args:
             worker: the worker doing the serialization
-            tensor: a PlaceHolder.
+            placeholder: a PlaceHolder.
 
         Returns:
             tuple: a tuple holding the unique attributes of the PlaceHolder.
         """
 
         return (
-            syft.serde.msgpack.serde._simplify(worker, tensor.id),
-            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
-            syft.serde.msgpack.serde._simplify(worker, tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.id),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.tags),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.description),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.expected_shape),
         )
 
     @staticmethod
@@ -124,32 +127,38 @@ class PlaceHolder(AbstractTensor):
                 PlaceHolder: a PlaceHolder
             """
 
-        tensor_id, tags, description = tensor_tuple
+        tensor_id, tags, description, shape = tensor_tuple
 
         tensor_id = syft.serde.msgpack.serde._detail(worker, tensor_id)
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
+        shape = syft.serde.msgpack.serde._detail(worker, shape)
 
-        return PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
+        return PlaceHolder(
+            owner=worker, id=tensor_id, tags=tags, description=description, shape=shape
+        )
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, tensor: "PlaceHolder") -> PlaceholderPB:
+    def bufferize(worker: AbstractWorker, placeholder: "PlaceHolder") -> PlaceholderPB:
         """Takes the attributes of a PlaceHolder and saves them in a Protobuf message.
 
         Args:
             worker: the worker doing the serialization
-            tensor: a PlaceHolder.
+            placeholder: a PlaceHolder.
 
         Returns:
             PlaceholderPB: a Protobuf message holding the unique attributes of the PlaceHolder.
         """
 
         protobuf_placeholder = PlaceholderPB()
-        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id.value)
-        protobuf_placeholder.tags.extend(tensor.tags)
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, placeholder.id.value)
+        protobuf_placeholder.tags.extend(placeholder.tags)
 
-        if tensor.description:
-            protobuf_placeholder.description = tensor.description
+        if placeholder.description:
+            protobuf_placeholder.description = placeholder.description
+
+        if placeholder.expected_shape:
+            protobuf_placeholder.expected_shape.dims.extend(placeholder.expected_shape)
 
         return protobuf_placeholder
 
@@ -171,7 +180,11 @@ class PlaceHolder(AbstractTensor):
         if bool(protobuf_placeholder.description):
             description = protobuf_placeholder.description
 
-        return PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
+        expected_shape = tuple(protobuf_placeholder.expected_shape.dims) or None
+
+        return PlaceHolder(
+            owner=worker, id=tensor_id, tags=tags, description=description, shape=expected_shape
+        )
 
 
 ### Register the tensor with hook_args.py ###
