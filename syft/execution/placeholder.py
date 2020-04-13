@@ -27,6 +27,17 @@ class PlaceHolder(AbstractTensor):
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
 
+    def __getattribute__(self, name):
+        try:
+            # Try to find the attribute in the current object
+            # we need some attributes like: instantiate, id, tags
+            response = object.__getattribute__(self, name)
+        except AttributeError:
+            child = object.__getattribute__(self, "child")
+            response = getattr(child, name)
+
+        return response
+
     def instantiate(self, tensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also

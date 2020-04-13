@@ -8,6 +8,7 @@ import types
 import weakref
 
 import syft
+from syft import dependency_check
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
 from syft.generic.frameworks.hook.trace import Trace
@@ -34,6 +35,9 @@ from syft.workers.virtual import VirtualWorker
 from syft.execution.plan import Plan
 
 from syft.exceptions import route_method_exception
+
+if dependency_check.crypten_available:
+    import crypten
 
 
 class TorchHook(FrameworkHook):
@@ -137,6 +141,9 @@ class TorchHook(FrameworkHook):
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
+        if dependency_check.crypten_available:
+            self._hook_native_tensor(crypten.mpc.MPCTensor, TorchTensor)
+
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
 
@@ -210,6 +217,10 @@ class TorchHook(FrameworkHook):
 
         # Hook torch.optim (containing optim.SGD, Adam, etc)
         self._hook_optim()
+
+        # Hook the Crypten module
+        if dependency_check.crypten_available:
+            self._hook_crypten()
 
         # Add the local_worker to syft so that it can be found if the hook is
         # called several times
@@ -469,6 +480,17 @@ class TorchHook(FrameworkHook):
                     continue
 
                 self._perform_function_overloading(module_name, torch_module, func)
+
+    def _hook_crypten(self):
+        from syft.frameworks.crypten import load as crypten_load
+        from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
+        from crypten.mpc import MPCTensor
+
+        native_func = getattr(crypten, "load")
+        setattr(crypten, "native_load", native_func)  # Currenty we do nothing with the native load
+
+        new_func = get_hooked_crypten_func("load", crypten_load)
+        setattr(crypten, "load", new_func)
 
     def _get_hooked_additive_shared_method(hook_self, attr):
         """

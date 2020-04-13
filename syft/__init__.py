@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
+__all__ = []
 if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
     from syft.workers.tfe import TFECluster
     from syft.workers.tfe import TFEWorker
 
-    __all__ = ["KerasHook", "TFECluster", "TFEWorker"]
+    __all__.extend(["KerasHook", "TFECluster", "TFEWorker"])
 else:
     logger.info("TF Encrypted Keras not available.")
-    __all__ = []
 
 # Pytorch dependencies
 # Import Hook
@@ -44,7 +44,7 @@ from syft.grid.private_grid import PrivateGridNetwork
 from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
-from syft.sandbox import create_sandbox, hook
+from syft.sandbox import create_sandbox, make_hook
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -118,7 +118,7 @@ __all__.extend(
         "PrivateGridNetwork",
         "PublicGridNetwork",
         "create_sandbox",
-        "hook",
+        "make_hook",
         "combine_pointers",
         "FederatedDataset",
         "FederatedDataLoader",

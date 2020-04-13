@@ -676,3 +676,57 @@ class WorkerCommandMessage(Message):
             sy.serde.msgpack.serde._detail(worker, command_name),
             sy.serde.msgpack.serde._detail(worker, message),
         )
+
+
+class CryptenInit(Message):
+    """Initialize a Crypten party using this message.
+
+    Crypten uses processes as parties, those processes need to be initialized with information
+    so they can communicate and exchange tensors and shares while doing computation. This message
+    allows the exchange of information such as the ip and port of the master party to connect to,
+    as well as the rank of the party to run and the number of parties involved."""
+
+    def __init__(self, crypten_context):
+        self.crypten_context = crypten_context
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.crypten_context})"
+
+    @property
+    def contents(self):
+        """Returns a tuple with the contents of the operation (backwards compatability)."""
+        return (self.crypten_context,)
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, ptr: "CryptenInit") -> tuple:
+        """
+        This function takes the attributes of a CryptenInit and saves them in a tuple
+
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            ptr (CryptenInit): a Message
+
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        """
+        return (sy.serde.msgpack.serde._simplify(worker, ptr.crypten_context),)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInit":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an CryptenInit. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+
+        Returns:
+            CryptenInit message.
+
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return CryptenInit(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))

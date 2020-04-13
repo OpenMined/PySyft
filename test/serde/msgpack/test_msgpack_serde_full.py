@@ -85,6 +85,7 @@ samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdelet
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
+samples[syft.messaging.message.CryptenInit] = make_crypteninit
 
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 
