@@ -317,17 +317,17 @@ class TorchTensor(AbstractTensor):
             global router.
 
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
-                cmd, args, kwargs, return_args_type=True
+                cmd, args_, kwargs_, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -353,7 +353,7 @@ class TorchTensor(AbstractTensor):
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
-                return command(*args, **kwargs)
+                return command(*args_, **kwargs_)
             except AttributeError:
                 pass
 
@@ -361,11 +361,11 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             try:
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
             except AttributeError:
                 # Change the library path to avoid errors on layers like AvgPooling
                 cmd = cls._fix_torch_library(cmd)
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
 
         return response
 
@@ -385,15 +385,15 @@ class TorchTensor(AbstractTensor):
         return command_method
 
     @staticmethod
-    def _get_response(cmd, args, kwargs):
+    def _get_response(cmd, args_, kwargs_):
         """
             Return the evaluation of the cmd string parameter
         """
         command_method = TorchTensor._get_method(cmd)
-        if isinstance(args, tuple):
-            response = command_method(*args, **kwargs)
+        if isinstance(args_, tuple):
+            response = command_method(*args_, **kwargs_)
         else:
-            response = command_method(args, **kwargs)
+            response = command_method(args_, **kwargs_)
 
         return response
 
@@ -832,11 +832,11 @@ class TorchTensor(AbstractTensor):
             kwargs["owner"] = self.owner
 
         if self.is_wrapper:
-            self.child = self.child.fix_prec(*args, **kwargs)
+            child = self.child.fix_prec(*args, **kwargs)
             if no_wrap:
-                return self.child
+                return child
             else:
-                return self
+                return child.wrap()
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
@@ -939,11 +939,11 @@ class TorchTensor(AbstractTensor):
         if self.has_child():
             chain = self.child
 
-            kwargs = (
+            kwargs_ = (
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, protocol=protocol, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, protocol=protocol, crypto_provider=crypto_provider, **kwargs_
             )
         else:
             if self.type() == "torch.FloatTensor":
@@ -1016,30 +1016,94 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, public_key):
-        """This method will encrypt each value in the tensor using Paillier
-        homomorphic encryption.
+    def encrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will encrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            *public_key a public key created using
-                syft.frameworks.torch.he.paillier.keygen()
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    workers (list): Parties involved in the sharing of the Tensor
+                    crypto_provider (syft.VirtualWorker): Worker responsible for the
+                        generation of the random numbers for encryption
+                    Keyword Args: To be parsed as kwargs for the .fix_prec() method
+
+                With Respect to Paillier accepts:
+                    public_key (phe.paillier.PaillierPublicKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An encrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
+        """
+        if protocol.lower() == "mpc":
+            workers = kwargs.pop("workers")
+            crypto_provider = kwargs.pop("crypto_provider")
+            kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
+
+            x_shared = self.fix_prec(**kwargs_fix_prec).share(
+                *workers, crypto_provider=crypto_provider
+            )
+            return x_shared
+
+        elif protocol.lower() == "paillier":
+            public_key = kwargs.get("public_key")
+
+            x = self.copy()
+            x_encrypted = PaillierTensor().on(x)  # Instantiate the class
+            x_encrypted.child.encrypt_(public_key)  # Perform Homomorphic Encryption
+
+            return x_encrypted
+
+        else:
+            raise NotImplementedError(
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
+
+    def decrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will decrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
+
+        Args:
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    None
+
+                With Respect to Paillier accepts:
+                    private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An decrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
         """
 
-        x = self.copy()
-        x2 = PaillierTensor().on(x)
-        x2.child.encrypt_(public_key)
-        return x2
+        if protocol.lower() == "mpc":
+            x_encrypted = self.copy()
+            x_decrypted = x_encrypted.get().float_prec()
+            return x_decrypted
 
-    def decrypt(self, private_key):
-        """This method will decrypt each value in the tensor, returning a normal
-        torch tensor.
+        elif protocol.lower() == "paillier":
+            # self.copy() not required as PaillierTensor's decrypt method is not inplace
+            private_key = kwargs.get("private_key")
+            return self.child.decrypt(private_key)
 
-        Args:
-            *private_key a private key created using
-                syft.frameworks.torch.he.paillier.keygen()
-            """
-
-        return self.child.decrypt(private_key)
+        else:
+            raise NotImplementedError(
+                "Currently the .decrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying

@@ -1,0 +1,12 @@
+coverage:
+    range: 95..100
+    round: up
+    precision: 2
+    status:
+        threshold: 1%  # Allow 1% of changes in coverage
+
+
+comment:
+    layout: "reach, diff, flags, files"
+    behavior: default
+    require_changes: false  # if true: only post the comment if coverage changes

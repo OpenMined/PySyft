@@ -458,9 +458,10 @@ def compare_actions(detailed, original):
     """Compare 2 Actions"""
     assert len(detailed) == len(original)
     for original_op, detailed_op in zip(original, detailed):
-        compare_placeholders_list(original_op.args, detailed_op.args)
-        # return_ids is not a list (why?)
-        compare_placeholders_list([original_op.return_ids], [detailed_op.return_ids])
+        for original_arg, detailed_arg in zip(original_op.args, detailed_op.args):
+            assert original_arg == detailed_arg
+        for original_return, detailed_return in zip(original_op.return_ids, detailed_op.return_ids):
+            assert original_return == detailed_return
         assert original_op.name == detailed_op.name
         assert original_op.kwargs == detailed_op.kwargs
     return True
@@ -473,6 +474,7 @@ def compare_placeholders_list(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
     return True
 
 
@@ -484,6 +486,18 @@ def compare_placeholders_dict(detailed, original):
         assert detailed_ph.id == original_ph.id
         assert detailed_ph.tags == original_ph.tags
         assert detailed_ph.description == original_ph.description
+        assert detailed_ph.expected_shape == original_ph.expected_shape
+    return True
+
+
+def compare_roles(detailed, original):
+    """Compare 2 Roles"""
+    assert detailed.id == original.id
+    compare_actions(detailed.actions, original.actions)
+    compare_placeholders_list(detailed.state.state_placeholders, original.state.state_placeholders)
+    compare_placeholders_dict(detailed.placeholders, original.placeholders)
+    assert detailed.input_placeholder_ids == original.input_placeholder_ids
+    assert detailed.output_placeholder_ids == original.output_placeholder_ids
     return True
 
 
@@ -644,6 +658,25 @@ def make_loggingtensor(**kwargs):
     ]
 
 
+# syft.execution.placeholder_id.PlaceholderId
+def make_placeholder_id(**kwargs):
+    p = syft.execution.placeholder.PlaceHolder()
+    obj_id = p.id
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.placeholder_id.PlaceholderId
+        assert detailed.value == original.value
+        return True
+
+    return [
+        {
+            "value": obj_id,
+            "simplified": (CODE[syft.execution.placeholder_id.PlaceholderId], (obj_id.value,)),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.generic.pointers.multi_pointer.MultiPointerTensor
 def make_multipointertensor(**kwargs):
     workers = kwargs["workers"]
@@ -711,6 +744,44 @@ def make_basedataset(**kwargs):
     ]
 
 
+# syft.generic.pointers.pointer_dataset.PointerDataset
+def make_pointerdataset(**kwargs):
+    alice, me = kwargs["workers"]["alice"], kwargs["workers"]["me"]
+    data = torch.tensor([1, 2, 3, 4])
+    targets = torch.tensor([5, 6, 7, 8])
+    dataset = syft.BaseDataset(data, targets).tag("#test")
+    dataset.send(alice)
+    ptr = me.request_search(["#test"], location=alice)[0]
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.generic.pointers.pointer_dataset.PointerDataset
+        assert detailed.id == original.id
+        assert detailed.id_at_location == original.id_at_location
+        assert detailed.location == original.location
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        assert detailed.garbage_collect_data == original.garbage_collect_data
+        return True
+
+    return [
+        {
+            "value": ptr,
+            "simplified": (
+                CODE[syft.generic.pointers.pointer_dataset.PointerDataset],
+                (
+                    ptr.id,  # (int) id
+                    ptr.id_at_location,  # (int) id_at_location
+                    (CODE[str], (b"alice",)),  # (str) worker_id
+                    (CODE[set], ((CODE[str], (b"#test",)),)),  # (set or None) tags
+                    None,  # description
+                    False,  # (bool) garbage_collect_data
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
     # Function to plan
@@ -739,16 +810,9 @@ def make_plan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
-        compare_placeholders_dict(detailed.placeholders, original.placeholders)
-        compare_actions(detailed.actions, original.actions)
-        # State
-        compare_placeholders_list(
-            detailed.state.state_placeholders, original.state.state_placeholders
-        )
-
+        compare_roles(detailed.role, original.role)
         assert detailed.include_state == original.include_state
         assert detailed.is_built == original.is_built
-        compare_placeholders_dict(detailed.placeholders, original.placeholders)
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -766,17 +830,15 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.actions),
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.state),  # (State)
-                    plan.include_state,  # (bool) include_state
-                    plan.is_built,  # (bool) is_built
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.name),  # (str) name
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.tags),  # (set of str) tags
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.role),
+                    plan.include_state,
+                    plan.is_built,
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.name),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.description),
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, plan.description
-                    ),  # (str) description
-                    # (PlaceHolder) placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.placeholders),
+                        syft.hook.local_worker, plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -787,21 +849,54 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.actions),
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.state),  # (State)
-                    model_plan.include_state,  # (bool) include_state
-                    model_plan.is_built,  # (bool) is_built
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),  # (str) name
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),  # (list) tags
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.role),
+                    model_plan.include_state,
+                    model_plan.is_built,
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
+                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, model_plan.description
-                    ),  # (str) description
-                    # (PlaceHolder) placeholders
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.placeholders),
+                        syft.hook.local_worker, model_plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
         },
+    ]
+
+
+# Role
+def make_role(**kwargs):
+    @syft.func2plan(args_shape=[(1,)], state=(torch.tensor([1.0]),))
+    def plan_abs(x, state):
+        (bias,) = state.read()
+        x = x.abs()
+        return x + bias
+
+    plan_abs.build(torch.tensor([3.0]))
+    role = plan_abs.role
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.role.Role
+        compare_roles(detailed, original)
+        return True
+
+    return [
+        {
+            "value": role,
+            "simplified": (
+                CODE[syft.execution.role.Role],
+                (
+                    role.id,
+                    msgpack.serde._simplify(syft.hook.local_worker, role.actions),
+                    msgpack.serde._simplify(syft.hook.local_worker, role.state),
+                    msgpack.serde._simplify(syft.hook.local_worker, role.placeholders),
+                    role.input_placeholder_ids,
+                    role.output_placeholder_ids,
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
     ]
 
 
@@ -973,7 +1068,7 @@ def make_pointerplan(**kwargs):
                     ptr.id,  # (int) id
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
-                    None,  # (set or None) tags
+                    (CODE[set], ()),  # (set or None) tags
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1302,7 +1397,7 @@ def make_privatetensor(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
-    ph = syft.execution.placeholder.PlaceHolder()
+    ph = syft.execution.placeholder.PlaceHolder(shape=torch.randn(3, 4).shape)
     ph.tag("tag1")
     ph.describe("just a placeholder")
 
@@ -1311,6 +1406,7 @@ def make_placeholder(**kwargs):
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
+        assert detailed.expected_shape == original.expected_shape
         return True
 
     return [
@@ -1319,9 +1415,10 @@ def make_placeholder(**kwargs):
             "simplified": (
                 CODE[syft.execution.placeholder.PlaceHolder],
                 (
-                    ph.id,  # (int) id
+                    msgpack.serde._simplify(syft.hook.local_worker, ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
+                    (CODE[tuple], (3, 4)),  # (tuple of int) expected_shape
                 ),
             ),
             "cmp_detailed": compare,
