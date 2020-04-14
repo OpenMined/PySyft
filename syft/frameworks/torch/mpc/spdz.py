@@ -49,19 +49,4 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     delta_b = cmd(delta_recon, b)
     a_epsilon = cmd(a, epsilon_recon)
 
-    # delta.get()
-    # epsilon.get()
-    # for loc in locations:
-    #     loc.de_register_obj(delta)
-    #     loc.de_register_obj(epsilon)
-    # try:
-    #     # delta.locations[0].de_register_obj(delta)
-    #     # delta.locations[0].rm_obj(delta.child[delta.locations[0].id])
-    #     del delta.child[delta.locations[0].id]
-    #     # epsilon.locations[0].de_register_obj(epsilon)
-    #     # epsilon.locations[0].rm_obj(epsilon.child[epsilon.locations[0].id])
-    #     del epsilon.child[epsilon.locations[0].id]
-    # except Exception as e:
-    #     print(e)
-
     return delta_epsilon * j + delta_b + a_epsilon + a_mul_b
