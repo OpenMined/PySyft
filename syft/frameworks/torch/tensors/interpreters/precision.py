@@ -305,25 +305,45 @@ class FixedPrecisionTensor(AbstractTensor):
             # The problems could be 1) bad truncation for multiplication
             # 2) overflow when scaling self in division
 
+            # sgn_self is 1 when new_self is positive else it's 0
+            # The comparison is different if new_self is a torch tensor or an AST
+            sgn_self = (new_self > 0).type(self.torch_dtype)
+            pos_self = new_self * sgn_self
+            neg_self = new_self * (sgn_self - 1)
+            new_self = neg_self + pos_self
+
+            # sgn_other is 1 when new_other is positive else it's 0
+            # The comparison is different if new_other is a torch tensor or an AST
+            sgn_other = (new_other > 0).type(self.torch_dtype)
+            pos_other = new_other * sgn_other
+            neg_other = new_other * (sgn_other - 1)
+            new_other = neg_other + pos_other
+
             # If both have the same sign, sgn is 1 else it's 0
             # To be able to write sgn = 1 - (sgn_self - sgn_other) ** 2,
             # we would need to overload the __add__ for operators int and AST.
+            sgn = -((sgn_self - sgn_other) ** 2) + 1
+            changed_sign = True
 
             if cmd == "div":
                 new_self *= self.base ** self.precision_fractional
-
         # Send it to the appropriate class and get the response
         response = getattr(new_self, cmd)(new_other)
-
         # Put back SyftTensor on the tensors found in the response
         response = hook_args.hook_response(
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
-
         if not isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             if cmd == "mul":
                 # If operation is mul, we need to truncate
                 response = response.truncate(self.precision_fractional, check_sign=False)
+
+            if changed_sign:
+                # Give back its sign to response
+                pos_res = response * sgn
+                neg_res = response * (sgn - 1)
+                response = neg_res + pos_res
+
         return response
 
     def mul(self, other):
