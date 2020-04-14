@@ -63,7 +63,8 @@ class PrimitiveStorage:
                 # th.narrow(dim, index_start, length)
                 keys.append(th.narrow(prim, -1, 0, n_instances))
                 if remove:
-                    primitive_stack[i] = th.narrow(prim, -1, n_instances)
+                    length = prim.shape[-1] - n_instances
+                    primitive_stack[i] = th.narrow(prim, -1, n_instances, length)
 
             return keys
         else:
