@@ -3,6 +3,7 @@ import torch
 import warnings
 
 import syft as sy
+from syft.generic.utils import memorize
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.generic.tensor import AbstractTensor
@@ -83,7 +84,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 warnings.warn("Default args selected")
                 # Default args
                 self.dtype = "long"
-                self.field = 2 ** securenn.Q_BITS
+                self.field = 2 ** 64
                 self.torch_dtype = torch.int64
 
         if shares is not None:
@@ -178,10 +179,25 @@ class AdditiveSharingTensor(AbstractTensor):
         pass
 
     @staticmethod
+    @memorize
+    def field_max(field: int):
+        return (field - 1) // 2
+
+    @staticmethod
+    @memorize
+    def field_min(field: int):
+        return -(field // 2)
+
+    @staticmethod
+    @memorize
+    def get_torch_dtype(field: int):
+        return torch.int64 if field > 2 ** 32 else torch.int32
+
+    @staticmethod
     def modulo(x, field: int):
-        torch_dtype = torch.int64 if field > 2 ** 32 else torch.int32
-        mask_pos = x > ((field - 1) // 2)
-        mask_neg = x < -(field // 2)
+        torch_dtype = AdditiveSharingTensor.get_torch_dtype(field)
+        mask_pos = x > AdditiveSharingTensor.field_max(field)
+        mask_neg = x < AdditiveSharingTensor.field_min(field)
         if mask_pos.any():
             mask_pos = mask_pos.long()
             return AdditiveSharingTensor.modulo(x - (mask_pos * field), field)
@@ -261,7 +277,9 @@ class AdditiveSharingTensor(AbstractTensor):
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(-(field // 2), (field - 1) // 2)
+            share.random_(
+                AdditiveSharingTensor.field_min(field), AdditiveSharingTensor.field_max(field)
+            )
         shares = []
         for i in range(n_workers):
             if i == 0:

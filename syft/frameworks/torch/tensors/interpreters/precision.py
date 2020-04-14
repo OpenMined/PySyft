@@ -44,12 +44,13 @@ class FixedPrecisionTensor(AbstractTensor):
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
+        self.dtype = dtype
         if dtype == "long":
-            self.dtype = "long"
             self.field = 2 ** 64
+            self.torch_dtype = torch.int64
         elif dtype == "int":
-            self.dtype = "int"
             self.field = 2 ** 32
+            self.torch_dtype = torch.int32
         else:
             # Since n mod 0 is not defined
             warnings.warn("Prefer to use dtype instead of field")
@@ -57,15 +58,16 @@ class FixedPrecisionTensor(AbstractTensor):
                 if field <= 2 ** 32:
                     self.dtype = "int"
                     self.field = 2 ** 32
+                    self.torch_dtype = torch.int32
                 else:
                     self.dtype = "long"
                     self.field = 2 ** 64
+                    self.torch_dtype = torch.int64
             else:
                 # Invalid args dtype and field
                 raise ValueError(
                     "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
                 )
-        self.torch_dtype = torch.int64 if self.dtype == "long" else torch.int32
 
     def get_class_attributes(self):
         """
