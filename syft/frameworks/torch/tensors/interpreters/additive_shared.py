@@ -248,7 +248,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         workers = self.locations
 
-        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
+        ptr_to_sh = self.copy().wrap().send(workers[0], **no_wrap)
         pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
