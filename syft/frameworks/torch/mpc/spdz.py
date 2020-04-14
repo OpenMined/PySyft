@@ -33,10 +33,10 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     delta = x_sh - a
     epsilon = y_sh - b
     # Reconstruct and send to all workers
-    delta_recon = delta.reconstruct()
-    epsilon_recon = epsilon.reconstruct()
+    delta = delta.reconstruct()
+    epsilon = epsilon.reconstruct()
 
-    delta_epsilon = cmd(delta_recon, epsilon_recon)
+    delta_epsilon = cmd(delta, epsilon)
 
     # Trick to keep only one child in the MultiPointerTensor (like in SNN)
     j1 = torch.ones(delta_epsilon.shape).long().send(locations[0], **no_wrap)
@@ -46,7 +46,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     else:
         j = sy.MultiPointerTensor(children=[j1] + list(j0.child.values()))
 
-    delta_b = cmd(delta_recon, b)
-    a_epsilon = cmd(a, epsilon_recon)
+    delta_b = cmd(delta, b)
+    a_epsilon = cmd(a, epsilon)
 
     return delta_epsilon * j + delta_b + a_epsilon + a_mul_b
