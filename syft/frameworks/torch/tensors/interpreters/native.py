@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
+from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -55,8 +56,46 @@ class TorchTensor(AbstractTensor):
     checking AbstractTensor.
     """
 
+    origin = None
+    id_at_origin = None
+
     def has_child(self):
         return hasattr(self, "child")
+
+    def trigger_origin_backward_hook(self, origin: str, id_at_origin: int):
+        """
+        This hook is triggered when a tensor which was received from a sender has
+        a gradient update. It will send back to this sender and his original tensor
+        this gradient value to be set remotely. Also, because this is triggered during
+        backward(), the backward command is also forwarded back.
+
+        Args:
+            origin (str): id of the worker where this tensor comes from
+            id_at_origin (int): what was its original id
+        """
+
+        def trigger_origin_backward(grad):
+            """
+            The function setting back the gradient and calling backward
+
+            Args:
+                grad: the gradient tensor being set
+            """
+
+            location = self.owner.get_worker(origin)
+
+            # set gradient at the origin
+            message = TensorCommandMessage.computation("set_grad", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
+
+            # call backward()
+            message = TensorCommandMessage.computation("backward", id_at_origin, (grad,), {}, None)
+            self.owner.send_msg(message=message, location=location)
+
+        return trigger_origin_backward
+
+    def set_grad(self, grad):
+        self.grad = grad
 
     @property
     def tags(self):
@@ -277,17 +316,17 @@ class TorchTensor(AbstractTensor):
             global router.
 
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
 
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
-                cmd, args, kwargs, return_args_type=True
+                cmd, args_, kwargs_, return_args_type=True
             )
             # This handles case 3: it redirects the command to the appropriate class depending
             # of the syft type of the arguments and returns
@@ -313,7 +352,7 @@ class TorchTensor(AbstractTensor):
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
-                return command(*args, **kwargs)
+                return command(*args_, **kwargs_)
             except AttributeError:
                 pass
 
@@ -321,15 +360,15 @@ class TorchTensor(AbstractTensor):
             # Note the the cmd should already be checked upon reception by the worker
             # in the execute_command function
             try:
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
             except AttributeError:
                 # Change the library path to avoid errors on layers like AvgPooling
                 cmd = cls._fix_torch_library(cmd)
-                response = cls._get_response(cmd, args, kwargs)
+                response = cls._get_response(cmd, args_, kwargs_)
 
         return response
 
-    def _get_response(cmd, args, kwargs):
+    def _get_response(cmd, args_, kwargs_):
         """
             Return the evaluation of the cmd string parameter
         """
@@ -342,10 +381,10 @@ class TorchTensor(AbstractTensor):
             module = getattr(module, sm)
 
         command_method = getattr(module, f"native_{command}")
-        if isinstance(args, tuple):
-            response = command_method(*args, **kwargs)
+        if isinstance(args_, tuple):
+            response = command_method(*args_, **kwargs_)
         else:
-            response = command_method(args, **kwargs)
+            response = command_method(args_, **kwargs_)
 
         return response
 
@@ -361,26 +400,30 @@ class TorchTensor(AbstractTensor):
         self,
         *location,
         inplace: bool = False,
-        user=None,
-        local_autograd=False,
-        preinitialize_grad=False,
-        no_wrap=False,
-        garbage_collect_data=True,
+        user: object = None,
+        local_autograd: bool = False,
+        requires_grad: bool = False,
+        preinitialize_grad: bool = False,
+        no_wrap: bool = False,
+        garbage_collect_data: bool = True,
     ):
         """Gets the pointer to a new remote object.
 
-        One of the most commonly used methods in PySyft, this method serializes
-        the object upon which it is called (self), sends the object to a remote
-        worker, creates a pointer to that worker, and then returns that pointer
-        from this function.
+        One of the most commonly used methods in PySyft, this method serializes the object upon
+        which it is called (self), sends the object to a remote worker, creates a pointer to
+        that worker, and then returns that pointer from this function.
 
         Args:
-            location: The BaseWorker object which you want to send this object
-                to. Note that this is never actually the BaseWorker but instead
-                a class which instantiates the BaseWorker abstraction.
+            location: The BaseWorker object which you want to send this object to. Note that
+                this is never actually the BaseWorker but instead a class which instantiates the
+                BaseWorker abstraction.
             inplace: if true, return the same object instance, else a new wrapper
+            user (object,optional): User credentials to be verified.
             local_autograd: Use autograd system on the local machine instead of PyTorch's
                 autograd on the workers.
+            requires_grad: Default to False. If true, whenever the remote value of this tensor
+                will have its gradient updated (for example when calling .backward()), a call
+                will be made to set back the local gradient value.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
             no_wrap: If True, wrap() is called on the created pointer
             garbage_collect_data: argument passed down to create_pointer()
@@ -415,6 +458,7 @@ class TorchTensor(AbstractTensor):
                 self,
                 location,
                 local_autograd=local_autograd,
+                requires_grad=requires_grad,
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
             )
@@ -613,13 +657,15 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will return the result of PrivateTensor's allow method.
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        return the result of PrivateTensor's allow method.
 
             Args:
-                user (object,optional): User crendentials to be verified.
+                user (object,optional): User credentials to be verified.
 
             Returns:
-                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns false.
+                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns
+                false.
         """
         # If it is a wrapper
         if self.is_wrapper:
@@ -638,15 +684,28 @@ class TorchTensor(AbstractTensor):
                 current_tensor = current_tensor.child
         return True
 
-    def move(self, location):
-        self.child = self.child.move(location)
+    def move(self, location: BaseWorker, requires_grad: bool = False):
+        """
+        Move acts on a pointer to A to move the remote value to B (=location).
+
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
+
+        Args:
+            location: the worker where the remote value should be moved
+            requires_grad: see send() for details
+
+        Returns:
+            A pointer to the worker location
+        """
+        self.child = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the syft.local_worker
         self.child.owner.register_obj(self)
         return self
 
-    def remote_send(self, location, change_location=False):
-        self.child.remote_send(location, change_location)
+    def remote_send(self, location):
+        self.child.remote_send(location)
         return self
 
     def attr(self, attr_name):
@@ -754,11 +813,11 @@ class TorchTensor(AbstractTensor):
             kwargs["owner"] = self.owner
 
         if self.is_wrapper:
-            self.child = self.child.fix_prec(*args, **kwargs)
+            child = self.child.fix_prec(*args, **kwargs)
             if no_wrap:
-                return self.child
+                return child
             else:
-                return self
+                return child.wrap()
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
@@ -859,11 +918,11 @@ class TorchTensor(AbstractTensor):
         if self.has_child():
             chain = self.child
 
-            kwargs = (
+            kwargs_ = (
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, crypto_provider=crypto_provider, **kwargs
+                *owners, field=field, crypto_provider=crypto_provider, **kwargs_
             )
         else:
             if self.type() == "torch.FloatTensor":
@@ -920,12 +979,6 @@ class TorchTensor(AbstractTensor):
 
         return syft.combine_pointers(*ps)
 
-    def keep(self, obj):
-        """ Call .keep() on self's child if the child is a Promise (otherwise an error is raised).
-        .keep() is used to fulfill a promise with a value.
-        """
-        return self.child.keep(obj)
-
     def value(self):
         """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
         .value() is used to retrieve the oldest unused value the promise was kept with.
@@ -939,30 +992,94 @@ class TorchTensor(AbstractTensor):
         else:
             return self.child.torch_type()
 
-    def encrypt(self, public_key):
-        """This method will encrypt each value in the tensor using Paillier
-        homomorphic encryption.
+    def encrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will encrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            *public_key a public key created using
-                syft.frameworks.torch.he.paillier.keygen()
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    workers (list): Parties involved in the sharing of the Tensor
+                    crypto_provider (syft.VirtualWorker): Worker responsible for the
+                        generation of the random numbers for encryption
+                    Keyword Args: To be parsed as kwargs for the .fix_prec() method
+
+                With Respect to Paillier accepts:
+                    public_key (phe.paillier.PaillierPublicKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An encrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
+        """
+        if protocol.lower() == "mpc":
+            workers = kwargs.pop("workers")
+            crypto_provider = kwargs.pop("crypto_provider")
+            kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
+
+            x_shared = self.fix_prec(**kwargs_fix_prec).share(
+                *workers, crypto_provider=crypto_provider
+            )
+            return x_shared
+
+        elif protocol.lower() == "paillier":
+            public_key = kwargs.get("public_key")
+
+            x = self.copy()
+            x_encrypted = PaillierTensor().on(x)  # Instantiate the class
+            x_encrypted.child.encrypt_(public_key)  # Perform Homomorphic Encryption
+
+            return x_encrypted
+
+        else:
+            raise NotImplementedError(
+                "Currently the .encrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
+
+    def decrypt(self, protocol="mpc", **kwargs):
+        """
+        This method will decrypt each value in the tensor using Multi Party
+        Computation (default) or Paillier Homomorphic Encryption
+
+        Args:
+            protocol (str): Currently supports 'mpc' for Multi Party
+                Computation and 'paillier' for Paillier Homomorphic Encryption
+            **kwargs:
+                With Respect to MPC accepts:
+                    None
+
+                With Respect to Paillier accepts:
+                    private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
+                        ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+        Returns:
+            An decrypted version of the Tensor following the protocol specified
+
+        Raises:
+            NotImplementedError: If protocols other than the ones mentioned above are queried
+
         """
 
-        x = self.copy()
-        x2 = PaillierTensor().on(x)
-        x2.child.encrypt_(public_key)
-        return x2
+        if protocol.lower() == "mpc":
+            x_encrypted = self.copy()
+            x_decrypted = x_encrypted.get().float_prec()
+            return x_decrypted
 
-    def decrypt(self, private_key):
-        """This method will decrypt each value in the tensor, returning a normal
-        torch tensor.
+        elif protocol.lower() == "paillier":
+            # self.copy() not required as PaillierTensor's decrypt method is not inplace
+            private_key = kwargs.get("private_key")
+            return self.child.decrypt(private_key)
 
-        Args:
-            *private_key a private key created using
-                syft.frameworks.torch.he.paillier.keygen()
-            """
-
-        return self.child.decrypt(private_key)
+        else:
+            raise NotImplementedError(
+                "Currently the .decrypt() method only supports Paillier Homomorphic "
+                "Encryption and Secure Multi-Party Computation"
+            )
 
     def numpy_tensor(self):
         """This method will cast the current tensor to one with numpy as the underlying

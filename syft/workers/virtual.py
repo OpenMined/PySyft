@@ -15,5 +15,5 @@ class VirtualWorker(BaseWorker, FederatedClient):
         return location._recv_msg(message)
 
     def _recv_msg(self, message: bin) -> bin:
-        """receieve message"""
+        """receive message"""
         return self.recv_msg(message)

@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Set
 
 import syft as sy
 from syft.exceptions import WorkerNotFoundException
@@ -108,7 +108,7 @@ class Protocol(AbstractObject):
         """
         Run the protocol by executing the plans sequentially
 
-        The input args provided are sent to the first plan location. This first plan is
+        The input args_ provided are sent to the first plan location. This first plan is
         run and its output is moved to the second plan location, and so on. The final
         result is returned after all plans have run, and it is composed of pointers to
         the last plan location.
@@ -153,7 +153,7 @@ class Protocol(AbstractObject):
         return response
 
     def request_remote_run(
-        self, location: AbstractWorker, args, kwargs
+        self, location: AbstractWorker, args_, kwargs_
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Requests protocol execution.
@@ -162,18 +162,18 @@ class Protocol(AbstractObject):
 
         Args:
             location: to which worker the request should be sent
-            args: Arguments used as input data for the protocol.
-            kwargs: Named arguments used as input data for the protocol.
+            args_: Arguments used as input data for the protocol.
+            kwargs_: Named arguments used as input data for the protocol.
 
         Returns:
             PointerTensor or list of PointerTensors: response from request to
                 execute protocol
         """
         plan_name = f"plan{self.id}"
-        args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
+        args_, _, _ = hook_args.unwrap_args_from_function(plan_name, args_, {})
 
-        # return_ids = kwargs.get("return_ids", {})
-        command = ("run", self.id, args, kwargs)
+        # return_ids = kwargs_.get("return_ids", {})
+        command = ("run", self.id, args_, kwargs_)
 
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids
@@ -182,7 +182,7 @@ class Protocol(AbstractObject):
         return response
 
     @staticmethod
-    def find_args_location(args) -> BaseWorker:
+    def find_args_location(args_) -> BaseWorker:
         """
         Return location if args contain pointers else the local worker
 
@@ -190,7 +190,7 @@ class Protocol(AbstractObject):
             BaseWorker: The location of a pointer if in args, else local
                 worker
         """
-        for arg in args:
+        for arg in args_:
             if isinstance(arg, FrameworkTensor):
                 if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
                     return arg.location
@@ -382,13 +382,16 @@ class Protocol(AbstractObject):
             worker, id, tags, description, workers_resolved, plans_assignments
         )
 
-    def create_pointer(self, owner: AbstractWorker, garbage_collect_data: bool) -> PointerProtocol:
+    def create_pointer(
+        self, owner: AbstractWorker, garbage_collect_data: bool, tags: Set = None
+    ) -> PointerProtocol:
         """
         Create a pointer to the protocol
 
         Args:
             owner: the owner of the pointer
             garbage_collect_data: bool
+            tags: the tags inherited from the Protocol
 
         Returns:
             PointerProtocol: pointer to the protocol
@@ -398,6 +401,7 @@ class Protocol(AbstractObject):
             id_at_location=self.id,
             owner=owner,
             garbage_collect_data=garbage_collect_data,
+            tags=tags,
         )
 
     def __repr__(self):

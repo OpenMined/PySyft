@@ -51,7 +51,19 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.child = shares
+        if shares is not None:
+            self.child = {}
+            for location, share in shares.items():
+                if isinstance(share, sy.PointerTensor):
+                    self.child[location] = share
+                elif share.is_wrapper and isinstance(share.child, sy.PointerTensor):
+                    self.child[location] = share.child
+                else:
+                    raise ValueError(
+                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                    )
+        else:
+            self.child = None
 
         self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
         self.n_bits = (
@@ -68,10 +80,11 @@ class AdditiveSharingTensor(AbstractTensor):
     def __str__(self):
         type_name = type(self).__name__
         out = f"[" f"{type_name}]"
-        for v in self.child.values():
-            out += "\n\t-> " + str(v)
+        if self.child is not None:
+            for v in self.child.values():
+                out += "\n\t-> " + str(v)
         if self.crypto_provider is not None:
-            out += "\n\t*crypto provider: {}*".format(self.crypto_provider.id)
+            out += f"\n\t*crypto provider: {self.crypto_provider.id}*"
         return out
 
     def __bool__(self):
@@ -243,12 +256,14 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return sy.MultiPointerTensor(children=pointers)
 
-    def zero(self):
+    def zero(self, shape=None):
         """
         Build an additive shared tensor of value zero with the same
         properties as self
         """
-        shape = self.shape if self.shape else [1]
+
+        if shape == None or len(shape) == 0:
+            shape = self.shape if self.shape else [1]
         zero = (
             torch.zeros(*shape)
             .long()
@@ -482,11 +497,17 @@ class AdditiveSharingTensor(AbstractTensor):
                 other_is_zero = True
 
             if other_is_zero:
-                zero_shares = self.zero().child
-                return {
-                    worker: ((cmd(share, other) + zero_shares[worker]) % self.field)
-                    for worker, share in shares.items()
-                }
+                res = {}
+                first_it = True
+
+                for worker, share in shares.items():
+                    cmd_res = cmd(share, other)
+                    if first_it:
+                        first_it = False
+                        zero_shares = self.zero(cmd_res.shape).child
+
+                    res[worker] = (cmd(share, other) + zero_shares[worker]) % self.field
+                return res
             else:
                 return {
                     worker: (cmd(share, other) % self.field) for worker, share in shares.items()
@@ -914,21 +935,21 @@ class AdditiveSharingTensor(AbstractTensor):
     ## STANDARD
 
     @staticmethod
-    def select_worker(args, worker):
+    def select_worker(args_, worker):
         """
         utility function for handle_func_command which help to select
         shares (seen as elements of dict) in an argument set. It could
         perhaps be put elsewhere
 
         Args:
-            args: arguments to give to a functions
+            args_: arguments to give to a functions
             worker: owner of the shares to select
 
         Return:
-            args where the AdditiveSharedTensors are replaced by
+            args_ where the AdditiveSharedTensors are replaced by
             the appropriate share
         """
-        return map(lambda x: x[worker] if isinstance(x, dict) else x, args)
+        return map(lambda x: x[worker] if isinstance(x, dict) else x, args_)
 
     @classmethod
     def handle_func_command(cls, command):
@@ -942,12 +963,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
@@ -956,12 +977,12 @@ class AdditiveSharingTensor(AbstractTensor):
         except AttributeError:
             pass
         if not isinstance(cmd, str):
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
 
-        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
+        tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         results = {}
         for worker, share in new_args[0].items():
@@ -1079,7 +1100,10 @@ class AdditiveSharingTensor(AbstractTensor):
             protobuf_tensor.crypto_provider_id, tensor.crypto_provider.id
         )
 
-        protobuf_tensor.field_size = tensor.field
+        if tensor.field >= 2 ** 64:
+            protobuf_tensor.field_str = str(tensor.field)
+        else:
+            protobuf_tensor.field_int = tensor.field
 
         return protobuf_tensor
 
@@ -1102,7 +1126,7 @@ class AdditiveSharingTensor(AbstractTensor):
         crypto_provider_id = sy.serde.protobuf.proto.get_protobuf_id(
             protobuf_tensor.crypto_provider_id
         )
-        field = protobuf_tensor.field_size
+        field = int(getattr(protobuf_tensor, protobuf_tensor.WhichOneof("field_size")))
 
         tensor = AdditiveSharingTensor(
             owner=worker,

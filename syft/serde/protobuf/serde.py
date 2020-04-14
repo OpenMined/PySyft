@@ -1,22 +1,27 @@
 from collections import OrderedDict
 
 import inspect
+import re
 import syft
 from syft import dependency_check
+from syft.execution.computation import ComputationAction
+from syft.execution.communication import CommunicationAction
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
-from syft.messaging.message import OperationMessage
+from syft.messaging.message import TensorCommandMessage
 from syft.execution.plan import Plan
 from syft.execution.protocol import Protocol
+from syft.execution.role import Role
 from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
-
+from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
@@ -40,13 +45,17 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
 OBJ_PROTOBUF_TRANSLATORS = [
     AdditiveSharingTensor,
+    CommunicationAction,
+    ComputationAction,
     ObjectMessage,
-    OperationMessage,
+    PlaceholderId,
     PlaceHolder,
     Plan,
     PointerTensor,
     Protocol,
+    Role,
     State,
+    TensorCommandMessage,
 ]
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
@@ -237,8 +246,8 @@ def serialize(
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
-    elif obj_type == OperationMessage:
-        msg_wrapper.contents_operation_msg.CopyFrom(protobuf_obj)
+    elif obj_type == TensorCommandMessage:
+        msg_wrapper.contents_action_msg.CopyFrom(protobuf_obj)
 
     # 2) Serialize
     # serialize into a binary
@@ -374,3 +383,42 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return unbufferizers[current_type](worker, obj, **kwargs)
     else:
         raise Exception(f"No unbufferizer found for {current_type}")
+
+
+def bufferize_args(worker: AbstractWorker, args_: list) -> list:
+    protobuf_args = []
+    for arg in args_:
+        protobuf_args.append(bufferize_arg(worker, arg))
+    return protobuf_args
+
+
+def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
+    protobuf_arg = ArgPB()
+
+    attr_name = "arg_" + _camel2snake(type(arg).__name__)
+
+    try:
+        setattr(protobuf_arg, attr_name, arg)
+    except:
+        getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+    return protobuf_arg
+
+
+def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
+    args_ = []
+    for protobuf_arg in protobuf_args:
+        args_.append(unbufferize_arg(worker, protobuf_arg))
+    return args_
+
+
+def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
+    protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+    try:
+        arg = _unbufferize(worker, protobuf_arg_field)
+    except:
+        arg = protobuf_arg_field
+    return arg
+
+
+def _camel2snake(string: str):
+    return string[0].lower() + re.sub(r"(?!^)[A-Z]", lambda x: "_" + x.group(0).lower(), string[1:])

@@ -13,6 +13,7 @@ import torch
 
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
@@ -127,7 +128,7 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
 
     if tensor.grad is not None:
         if hasattr(tensor, "child"):
-            if isinstance(tensor.child, PointerTensor):
+            if isinstance(tensor.child, (PointerTensor, MultiPointerTensor)):
                 grad_chain = None
             else:
                 grad_chain = _simplify_torch_tensor(worker, tensor.grad)
@@ -147,6 +148,9 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
     # and here... leaving a reerence here so i can find it later
     # TODO fix pointer bug
 
+    origin = tensor.origin
+    id_at_origin = tensor.id_at_origin
+
     return (
         tensor.id,
         tensor_bin,
@@ -155,6 +159,8 @@ def _simplify_torch_tensor(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         serde._simplify(worker, tensor.tags),
         serde._simplify(worker, tensor.description),
         serde._simplify(worker, worker.serializer),
+        serde._simplify(worker, origin),
+        serde._simplify(worker, id_at_origin),
     )
 
 
@@ -173,7 +179,17 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
         torch.Tensor: a torch tensor that was serialized
     """
 
-    tensor_id, tensor_bin, chain, grad_chain, tags, description, serializer = tensor_tuple
+    (
+        tensor_id,
+        tensor_bin,
+        chain,
+        grad_chain,
+        tags,
+        description,
+        serializer,
+        origin,
+        id_at_origin,
+    ) = tensor_tuple
 
     tensor = _deserialize_tensor(worker, serde._detail(worker, serializer), tensor_bin)
 
@@ -193,6 +209,8 @@ def _detail_torch_tensor(worker: AbstractWorker, tensor_tuple: tuple) -> torch.T
 
     tensor.tags = serde._detail(worker, tags)
     tensor.description = serde._detail(worker, description)
+    tensor.origin = serde._detail(worker, origin)
+    tensor.id_at_origin = serde._detail(worker, id_at_origin)
 
     return tensor
 
@@ -255,6 +273,15 @@ def _detail_torch_parameter(worker: AbstractWorker, param_tuple: tuple) -> torch
     param.grad = grad
     param.is_wrapper = isinstance(tensor, AbstractTensor) or tensor.is_wrapper
 
+    # Note: should be
+    #  param.origin = tensor.origin
+    #  param.id_at_origin = tensor.id_at_origin
+    # but the wrapper is lost at serialisation because of the way we hook parameter.data
+    # TODO: fix serialisation of parameters (check in particular .child & .data) See #3214
+    # Below is just a fix:
+    param.origin = tensor.origin if hasattr(tensor, "origin") else None
+    param.id_at_origin = tensor.id_at_origin if hasattr(tensor, "id_at_origin") else None
+
     return param
 
 
@@ -297,6 +324,16 @@ def _detail_torch_mem_format(worker: AbstractWorker, mem_format: int) -> torch.m
     return TORCH_ID_MFORMAT[mem_format]
 
 
+def _simplify_torch_dtype(worker: AbstractWorker, dtype: torch.dtype) -> Tuple[int]:
+    return TORCH_DTYPE_STR[dtype]
+
+
+def _detail_torch_dtype(worker: AbstractWorker, dtype: str) -> torch.dtype:
+    if not isinstance(dtype, str):
+        dtype = str(dtype, "utf-8")
+    return TORCH_STR_DTYPE[dtype]
+
+
 # Maps a type to a tuple containing its simplifier and detailer function
 # IMPORTANT: serialization constants for these objects need to be defined
 # in `proto.json` file of https://github.com/OpenMined/proto
@@ -310,5 +347,6 @@ MAP_TORCH_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
         torch.Tensor: (_simplify_torch_tensor, _detail_torch_tensor),
         torch.Size: (_simplify_torch_size, _detail_torch_size),
         torch.memory_format: (_simplify_torch_mem_format, _detail_torch_mem_format),
+        torch.dtype: (_simplify_torch_dtype, _detail_torch_dtype),
     }
 )

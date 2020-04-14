@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List
 from typing import Union
 
@@ -17,6 +18,8 @@ class ObjectStorage:
     def __init__(self):
         # This is the collection of objects being stored.
         self._objects = {}
+        # This is an index to retrieve objects from their tags in an efficient way
+        self._tag_to_object_ids = defaultdict(set)
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -79,8 +82,15 @@ class ObjectStorage:
             obj: A torch or syft tensor with an id.
         """
         self._objects[obj.id] = obj
+        # Add entry in the tag index
+        if obj.tags:
+            for tag in obj.tags:
+                if tag not in self._tag_to_object_ids:
+                    self._tag_to_object_ids[tag] = {obj.id}
+                else:
+                    self._tag_to_object_ids[tag].add(obj.id)
 
-    def rm_obj(self, remote_key: Union[str, int]):
+    def rm_obj(self, remote_key: Union[str, int], force=False):
         """Removes an object.
 
         Remove the object from the permanent object registry if it exists.
@@ -88,25 +98,23 @@ class ObjectStorage:
         Args:
             remote_key: A string or integer representing id of the object to be
                 removed.
-        """
-        if remote_key in self._objects:
-            del self._objects[remote_key]
-
-    def force_rm_obj(self, remote_key: Union[str, int]):
-        """Forces object removal.
-
-        Besides removing the object from the permanent object registry if it exists.
-        Explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
-
-        Args:
-            remote_key: A string or integer representing id of the object to be
-                removed.
+            force: if true, explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
         """
         if remote_key in self._objects:
             obj = self._objects[remote_key]
-            if hasattr(obj, "child") and hasattr(obj.child, "garbage_collect_data"):
+            # update tag index
+            if obj.tags:
+                for tag in obj.tags:
+                    if tag not in self._tag_to_object_ids:
+                        self._tag_to_object_ids[tag].remove(obj.id)
+
+            if force and hasattr(obj, "child") and hasattr(obj.child, "garbage_collect_data"):
                 obj.child.garbage_collect_data = True
+
             del self._objects[remote_key]
+
+    def force_rm_obj(self, remote_key: Union[str, int]):
+        self.rm_obj(remote_key, force=True)
 
     def clear_objects(self, return_self: bool = True):
         """Removes all objects from the object storage.
@@ -126,3 +134,25 @@ class ObjectStorage:
     def current_objects(self):
         """Returns a copy of the objects in the object storage."""
         return self._objects.copy()
+
+    def find_by_id(self, id):
+        """Local search by id"""
+        return self._objects.get(id)
+
+    def find_by_tag(self, tag):
+        """Local search by tag
+
+        Args:
+            tag (str): exact tag searched
+
+        Return:
+            A list of results, possibly empty
+        """
+        if tag in self._tag_to_object_ids:
+            results = []
+            for obj_id in self._tag_to_object_ids[tag]:
+                obj = self.find_by_id(obj_id)
+                if obj is not None:
+                    results.append(obj)
+            return results
+        return []

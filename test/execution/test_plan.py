@@ -7,9 +7,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
+from itertools import starmap
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
 
@@ -141,8 +144,93 @@ def test_plan_execute_locally_ambiguous_input(workers):
     t1, t2, t3 = th.tensor([1]), th.tensor([2]), th.tensor([3])
     expected = serde_plan(t1, t2, t3)
     actual = serde_plan_detailed(t1, t2, t3)
-    print(actual)
-    print(expected)
+    assert actual == expected
+
+
+def test_plan_torch_function_no_args(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.tensor([-1])
+        z = x + y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected == th.tensor([0.0])
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        y = th.arange(3)
+        z = y + x
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan(t)
+    actual = serde_plan_detailed(t)
+    assert (actual == expected).all()
+    assert (actual == th.tensor([1, 2, 3])).all()
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        th.manual_seed(14)
+        y = th.randint(2, size=(1,), dtype=th.uint8)
+        y = y + 10
+        return y
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan(t)
+    actual = serde_plan_detailed(t)
+    assert actual == expected and actual >= 10
+
+
+def test_plan_with_comp(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(2,), (2,)])
+    def serde_plan(x, y):
+        z = x > y
+        return z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t1 = th.tensor([2.0, 0.0])
+    t2 = th.tensor([1.0, 1.0])
+    expected = serde_plan_detailed(t1, t2)
+    actual = serde_plan_detailed(t1, t2)
+    assert (actual == expected).all()
+
+
+def test_plan_fixed_len_loop(workers):
+    bob, alice = workers["bob"], workers["alice"]
+    from syft.serde.msgpack import serde
+
+    @sy.func2plan(args_shape=[(1,)])
+    def serde_plan(x):
+        for i in range(10):
+            x = x + 1
+        return x
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1.0])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
     assert actual == expected
 
 
@@ -286,7 +374,7 @@ def test_plan_built_on_class(hook):
     net.build(th.tensor([1, 2.0]))
 
     net_ptr = net.send(device_1)
-    pointer_to_data = device_1.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_1)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()
@@ -295,7 +383,7 @@ def test_plan_built_on_class(hook):
 
     net_ptr = net.send(device_2)
 
-    pointer_to_data = device_2.search("input_data")[0]
+    pointer_to_data = hook.local_worker.request_search("input_data", location=device_2)[0]
     pointer_to_result = net_ptr(pointer_to_data)
 
     result = pointer_to_result.get()
@@ -409,7 +497,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
 def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
     server, remote_proxy = start_remote_worker(
-        id="test_fetch_stateful_plan_remote_{}".format(is_func2plan), hook=hook, port=8802
+        id=f"test_fetch_stateful_plan_remote_{is_func2plan}", hook=hook, port=8802
     )
 
     if is_func2plan:
@@ -555,6 +643,13 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
     # Compare with local plan
     assert th.all(decrypted - expected.detach() < 1e-2)
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
+
+    assert all(
+        starmap(
+            lambda fetched_tensor, tensor: (fetched_tensor == tensor).get(),
+            zip(fetched_plan.state.tensors(), plan.state.tensors()),
+        )
+    )
 
     # Make sure fetched_plan is using the readable_plan
     assert fetched_plan.forward is None
@@ -1005,9 +1100,155 @@ def test_plan_can_be_jit_traced(hook, workers):
 
     assert (x == th.tensor([3.0, 5])).all()
 
-    args = Plan._create_placeholders(args_shape)
+    args = PlaceHolder.create_placeholders(args_shape)
     torchscript_plan = th.jit.trace(foo, args)
 
     y = torchscript_plan(t)
 
     assert (y == th.tensor([3.0, 5])).all()
+
+
+def test_plan_input_usage(hook):
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test_1(x, y):
+        return x
+
+    @sy.func2plan()
+    def plan_test_2(x, y):
+        return y
+
+    pointer_to_data_1 = device_1.search("input_data")[0]
+    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    plan_test_1.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_1.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x11).all()
+
+    plan_test_2.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
+    pointer_plan = plan_test_2.send(device_1)
+    pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
+    result = pointer_to_result.get()
+    assert (result == x12).all
+
+
+def test_func_plan_can_be_translated_to_torchscript(hook, workers):
+    # Disable build time auto translation
+    Plan._build_translators = []
+
+    @sy.func2plan(args_shape=[(3, 3)])
+    def plan(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    orig_plan = plan.copy()
+
+    inp = th.tensor([1, -1, 2])
+    res1 = plan(inp)
+    plan.add_translation(PlanTranslatorTorchscript)
+    res2 = plan.torchscript(inp)
+    assert (res1 == res2).all()
+
+    # check that translation can be done after serde
+    serde_plan = deserialize(serialize(orig_plan))
+    serde_plan.add_translation(PlanTranslatorTorchscript)
+    res3 = serde_plan.torchscript(inp)
+    assert (res1 == res3).all()
+
+    # check that translation is not lost after serde
+    serde_plan_full = deserialize(serialize(plan))
+    res4 = serde_plan_full.torchscript(inp)
+    assert (res1 == res4).all()
+
+
+def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
+    # Disable build time auto translation
+    Plan._build_translators = []
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 1)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
+            return x
+
+    plan = Net()
+    plan.build(th.zeros(10, 2))
+    orig_plan = plan.copy()
+
+    inp = th.randn(10, 2)
+
+    res1 = plan(inp)
+    plan.add_translation(PlanTranslatorTorchscript)
+    res2 = plan.torchscript(inp, plan.parameters())
+    assert (res1 == res2).all()
+
+    # check that translation can be done after serde
+    serde_plan = deserialize(serialize(orig_plan))
+    serde_plan.add_translation(PlanTranslatorTorchscript)
+    res3 = serde_plan.torchscript(inp, serde_plan.parameters())
+    assert (res1 == res3).all()
+
+    # check that translation is not lost after serde
+    serde_plan_full = deserialize(serialize(plan))
+    res4 = serde_plan_full.torchscript(inp, serde_plan_full.parameters())
+    assert (res1 == res4).all()
+
+
+def test_plan_translation_remove(hook, workers):
+    # Disable build time auto translation
+    Plan._build_translators = []
+
+    @sy.func2plan(args_shape=[(3, 3)])
+    def plan(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    plan.add_translation(PlanTranslatorTorchscript)
+
+    full_plan = plan.copy()
+    assert full_plan.torchscript is not None
+
+    assert plan.torchscript is not None
+    assert len(plan.role.actions) > 0
+
+    plan.remove_translation()
+    assert plan.torchscript is not None
+    assert len(plan.role.actions) == 0
+
+    plan.remove_translation(PlanTranslatorTorchscript)
+    assert plan.torchscript is None
+    assert len(plan.role.actions) == 0
+
+    full_plan.remove_translation(PlanTranslatorTorchscript)
+    assert full_plan.torchscript is None
+    assert len(full_plan.role.actions) > 0
+
+
+def test_plan_translated_on_build(hook, workers):
+    # Enable torchscript translator
+    Plan.register_build_translator(PlanTranslatorTorchscript)
+
+    @sy.func2plan(args_shape=[(3, 3)])
+    def plan(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    inp = th.tensor([1, -1, 2])
+    res1 = plan(inp)
+    res2 = plan.torchscript(inp)
+    assert (res1 == res2).all()
