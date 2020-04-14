@@ -812,9 +812,7 @@ class TorchHook(FrameworkHook):
                     param_norm = p.grad.data.norm(norm_type)
                     # Remote PySyft tensor
                     if param_is_pointer_tensor(p):
-                        total_norm = (
-                            total_norm + param_norm ** norm_type
-                        )  # TODO: @Syzygianinfern0 iadd buggy
+                        total_norm += param_norm ** norm_type
                     # Local PySyft tensor
                     else:
                         total_norm += param_norm.item() ** norm_type
