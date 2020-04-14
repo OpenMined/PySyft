@@ -6,6 +6,7 @@ from typing import Union
 import json
 import io
 import torch
+import warnings
 
 import syft as sy
 from syft.execution.computation import ComputationAction
@@ -54,9 +55,9 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                plan.build(*args)
+                plan.build(*args_)
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
@@ -101,6 +102,8 @@ class Plan(AbstractObject):
         description: plan description
     """
 
+    _build_translators = []
+
     def __init__(
         self,
         name: str = None,
@@ -133,6 +136,9 @@ class Plan(AbstractObject):
             self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
+
+        # List of available translations
+        self.translations = []
 
     @property
     def state(self):
@@ -202,11 +208,19 @@ class Plan(AbstractObject):
         self.is_built = True
         self.owner.init_plan = None
 
+        # Build registered translations
+        for translator in Plan._build_translators:
+            try:
+                self.add_translation(translator)
+                self.translations.append(translator)
+            except:
+                warnings.warn(f"Failed to translate Plan with {translator}")
+
         return results
 
     def copy(self):
         """Creates a copy of a plan."""
-        return Plan(
+        plan_copy = Plan(
             name=self.name,
             role=self.role.copy(),
             include_state=self.include_state,
@@ -216,6 +230,10 @@ class Plan(AbstractObject):
             tags=self.tags,
             description=self.description,
         )
+
+        plan_copy.torchscript = self.torchscript
+
+        return plan_copy
 
     def __setattr__(self, name, value):
         """Add new tensors or parameter attributes to the state and register them
@@ -248,16 +266,16 @@ class Plan(AbstractObject):
         else:
             return self.role.execute(args)
 
-    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
+    def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the original function.
 
         Args:
-            args: Arguments used to run plan.
+            args_: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
         # TODO: can we reuse result_ids?
-        return self.__call__(*args)
+        return self.__call__(*args_)
 
     def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:
         """Send plan to locations.
@@ -307,6 +325,10 @@ class Plan(AbstractObject):
             raise RuntimeError("A plan needs to be built before input shapes can be known.")
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    @staticmethod
+    def register_build_translator(translator: "AbstractPlanTranslator"):
+        Plan._build_translators.append(translator)
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
