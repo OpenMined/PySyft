@@ -30,7 +30,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     # Get triples
     a, b, a_mul_b = request_triple(crypto_provider, cmd, field, x_sh.shape, y_sh.shape, locations)
 
-    delta = x_sh - a  # Not gced coz the pointer to other loc doesnt exist
+    delta = x_sh - a
     epsilon = y_sh - b
     # Reconstruct and send to all workers
     delta_recon = delta.reconstruct()

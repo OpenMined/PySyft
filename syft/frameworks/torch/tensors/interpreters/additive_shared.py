@@ -247,44 +247,15 @@ class AdditiveSharingTensor(AbstractTensor):
             A MultiPointerTensor where all workers hold the reconstructed value
         """
         workers = self.locations
-        # 7, 7
-        pointer_copy = self.copy()  # 8, 8
-        pointer = pointer_copy.wrap().send(workers[0], **no_wrap)  # 9, 8
-        pointer = pointer.remote_get()  # 9, 7
 
-        # for loc in workers[1:]:
-        #     loc.de_register_obj()
+        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
+        pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
-        pointer_copies = list()
-        shares = list()
         for worker in workers[1:]:
-            pointer_copy_ = pointer.copy()
-            pointer_copies.append(pointer_copy_.id_at_location)
-            pointers.append(pointer_copy_.move(worker))
-            shares.append(self.child[worker.id])
+            pointers.append(pointer.copy().move(worker))
 
-        multi = sy.MultiPointerTensor(children=pointers)
-        # pointer.get()
-
-        # duplicate_ids = list()
-        # for ptr in pointers[1:]:
-        #     for ptr_ in workers[0]._objects.values():
-        #         if isinstance(ptr_, sy.PointerTensor) and ptr.id_at_location == ptr_.id_at_location:
-        #             duplicate_ids.append(ptr_.id)
-        # for id in duplicate_ids:
-        #     workers[0].rm_obj(id)
-
-        for id in pointer_copies:
-            workers[0].rm_obj(id)
-
-        pointer_copy.locations[0].rm_obj(
-            pointer_copy.child[pointer_copy.locations[0].id].id_at_location
-        )
-        # del ptr
-        # del ptr_
-        self.refresh()
-        return multi
+        return sy.MultiPointerTensor(children=pointers)
 
     def zero(self, shape=None):
         """

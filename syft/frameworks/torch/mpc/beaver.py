@@ -39,5 +39,5 @@ def request_triple(
     b_shared = shares[a.numel() : -c.numel()].reshape(b_size)
     c_shared = shares[-c.numel() :].reshape(c.shape)
 
-    shares.get()  # TODO: Workaround to be cleansed
+    # shares.get()  # TODO: Workaround is cleansed
     return a_shared, b_shared, c_shared
