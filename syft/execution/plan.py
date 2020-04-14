@@ -6,7 +6,6 @@ from typing import Union
 import json
 import io
 import torch
-import warnings
 
 import syft as sy
 from syft.execution.computation import ComputationAction
@@ -102,8 +101,6 @@ class Plan(AbstractObject):
         description: plan description
     """
 
-    _build_translators = []
-
     def __init__(
         self,
         name: str = None,
@@ -136,9 +133,6 @@ class Plan(AbstractObject):
             self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
-
-        # List of available translations
-        self.translations = []
 
     @property
     def state(self):
@@ -208,19 +202,11 @@ class Plan(AbstractObject):
         self.is_built = True
         self.owner.init_plan = None
 
-        # Build registered translations
-        for translator in Plan._build_translators:
-            try:
-                self.add_translation(translator)
-                self.translations.append(translator)
-            except:
-                warnings.warn(f"Failed to translate Plan with {translator}")
-
         return results
 
     def copy(self):
         """Creates a copy of a plan."""
-        plan_copy = Plan(
+        return Plan(
             name=self.name,
             role=self.role.copy(),
             include_state=self.include_state,
@@ -230,10 +216,6 @@ class Plan(AbstractObject):
             tags=self.tags,
             description=self.description,
         )
-
-        plan_copy.torchscript = self.torchscript
-
-        return plan_copy
 
     def __setattr__(self, name, value):
         """Add new tensors or parameter attributes to the state and register them
@@ -325,10 +307,6 @@ class Plan(AbstractObject):
             raise RuntimeError("A plan needs to be built before input shapes can be known.")
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
-
-    @staticmethod
-    def register_build_translator(translator: "AbstractPlanTranslator"):
-        Plan._build_translators.append(translator)
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()

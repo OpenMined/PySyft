@@ -1139,9 +1139,6 @@ def test_plan_input_usage(hook):
 
 
 def test_func_plan_can_be_translated_to_torchscript(hook, workers):
-    # Disable build time auto translation
-    Plan._build_translators = []
-
     @sy.func2plan(args_shape=[(3, 3)])
     def plan(x):
         x = x * 2
@@ -1169,9 +1166,6 @@ def test_func_plan_can_be_translated_to_torchscript(hook, workers):
 
 
 def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
-    # Disable build time auto translation
-    Plan._build_translators = []
-
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()
@@ -1208,9 +1202,6 @@ def test_cls_plan_can_be_translated_to_torchscript(hook, workers):
 
 
 def test_plan_translation_remove(hook, workers):
-    # Disable build time auto translation
-    Plan._build_translators = []
-
     @sy.func2plan(args_shape=[(3, 3)])
     def plan(x):
         x = x * 2
@@ -1218,10 +1209,7 @@ def test_plan_translation_remove(hook, workers):
         return x
 
     plan.add_translation(PlanTranslatorTorchscript)
-
     full_plan = plan.copy()
-    assert full_plan.torchscript is not None
-
     assert plan.torchscript is not None
     assert len(plan.role.actions) > 0
 
@@ -1236,19 +1224,3 @@ def test_plan_translation_remove(hook, workers):
     full_plan.remove_translation(PlanTranslatorTorchscript)
     assert full_plan.torchscript is None
     assert len(full_plan.role.actions) > 0
-
-
-def test_plan_translated_on_build(hook, workers):
-    # Enable torchscript translator
-    Plan.register_build_translator(PlanTranslatorTorchscript)
-
-    @sy.func2plan(args_shape=[(3, 3)])
-    def plan(x):
-        x = x * 2
-        x = x.abs()
-        return x
-
-    inp = th.tensor([1, -1, 2])
-    res1 = plan(inp)
-    res2 = plan.torchscript(inp)
-    assert (res1 == res2).all()
