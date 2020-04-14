@@ -179,18 +179,18 @@ class ObjectPointer(AbstractObject):
             A wrapper tensor of class `type`, or whatever is specified as
             default by the current syft.framework.Tensor.
         """
-        wrapper = syft.framework.hook.create_wrapper(type, **kwargs)
-        wrapper.child = self
-        wrapper.is_wrapper = True
-        wrapper.child.parent = weakref.ref(wrapper)
+        # wrapper = syft.framework.hook.create_wrapper(type, **kwargs)
+        # wrapper.child = self
+        # wrapper.is_wrapper = True
+        # wrapper.child.parent = weakref.ref(wrapper)
 
-        if self.id is None:
-            self.id = syft.ID_PROVIDER.pop()
+        # if self.id is None:
+        #     self.id = syft.ID_PROVIDER.pop()
 
-        if self.owner is not None and register:
-            self.owner.register_obj(wrapper, obj_id=self.id)
+        # if self.owner is not None and register:
+        #     self.owner.register_obj(wrapper, obj_id=self.id)
 
-        return wrapper
+        return self
 
     @classmethod
     def handle_func_command(cls, command):
