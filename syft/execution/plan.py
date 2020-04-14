@@ -365,20 +365,20 @@ class Plan(AbstractObject):
         ) -> None:
             iterable_supported_list = (list, tuple, dict)
 
-            if not isinstance(call_arg, iterable_supported_list):
-                if not (build_arg == call_arg):
-                    raise_typecheck_warn(plan, build_arg.__name__, call_arg.__name__, suffix)
+            if type(call_arg) not in iterable_supported_list:
+                if not isinstance(call_arg, build_arg):
+                    raise_typecheck_warn(plan, build_arg.__name__, type(call_arg).__name__, suffix)
                 return
 
             if type(build_arg) != type(call_arg):
-                raise_typecheck_warn(plan, build_arg.__name__, call_arg.__name__, suffix)
+                raise_typecheck_warn(plan, build_arg.__name__, type(call_arg).__name__, suffix)
                 return
 
             if isinstance(build_arg, (list, tuple)):
                 if len(build_arg) != len(call_arg):
                     raise_missmatch_err(plan, len(build_arg), len(call_arg), suffix)
 
-                for idx in range(min(len(build_arg), len(call_arg))):
+                for idx in range(len(build_arg)):
                     check_type_nested_structure(
                         plan, build_arg[idx], call_arg[idx], f"element {idx} of " + suffix
                     )
@@ -395,15 +395,12 @@ class Plan(AbstractObject):
                     else:
                         raise_key_missing_err(plan, key, suffix)
 
-        serialized_call = Plan.serialize_input(args)
-        serialized_build = self.serialized_input
+        if len(args) != len(self.serialized_input):
+            raise_wrong_no_arguments_err(self, len(self.serialized_input), len(args))
 
-        if len(serialized_call) != len(serialized_build):
-            raise_wrong_no_arguments_err(self, len(serialized_build), len(serialized_call))
-
-        for idx in range(len(serialized_call)):
+        for idx in range(len(args)):
             check_type_nested_structure(
-                self, serialized_call[idx], serialized_build[idx], f"element {idx} of input"
+                self, self.serialized_input[idx], args[idx], f"element {idx} of input"
             )
 
     def __call__(self, *args, **kwargs):
@@ -713,6 +710,8 @@ class Plan(AbstractObject):
         if plan.torchscript:
             protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
+        if plan.serialized_input:
+            protobuf_plan.serialized_input = plan.serialized_input
         return protobuf_plan
 
     @staticmethod
@@ -731,6 +730,7 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
+        serialized_input = protobuf_plan.serialied_input if protobuf_plan.serialied_input else None
 
         plan = Plan(
             role=role,
@@ -741,6 +741,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            serialized_input=serialized_input,
         )
 
         if protobuf_plan.torchscript:

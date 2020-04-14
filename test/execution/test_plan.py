@@ -1055,5 +1055,5 @@ def test_plan_key_error(hook):
 
     assert (
         str(e.value)
-        == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1_wrong, while being build with that key.'"
+        == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, while being build with that key.'"
     )

@@ -89,6 +89,13 @@ samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = ma
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 
+<<<<<<< HEAD
+=======
+# Dynamically added to msgpack.serde.simplifiers by some other test
+samples[syft.workers.virtual.VirtualWorker] = make_baseworker
+samples[type] = make_type
+
+>>>>>>> adb1b9e9... * Simplified type check logic.
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""

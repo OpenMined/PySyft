@@ -809,6 +809,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.serialized_input),
                 ),
             ),
             "cmp_detailed": compare,
@@ -830,6 +831,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.serialized_input),
                 ),
             ),
             "cmp_detailed": compare,
@@ -867,6 +869,23 @@ def make_role(**kwargs):
                     role.output_placeholder_ids,
                 ),
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_type(**kwargs):
+    serialiez_type = syft.CRTPrecisionTensor
+
+    def compare(detailed, original):
+        assert type(detailed) == type(syft.CRTPrecisionTensor)
+        assert detailed == original
+        return True
+
+    return [
+        {
+            "value": serialiez_type,
+            "simplified": (msgpack.serde._simplify(syft.hook.local_worker, serialiez_type)),
             "cmp_detailed": compare,
         }
     ]
