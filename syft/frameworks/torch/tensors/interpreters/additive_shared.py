@@ -155,6 +155,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share.get())
             else:
                 shares.append(share)
+                self.owner.de_register_obj(share)
 
         res_field = sum(shares) % self.field
 
@@ -273,8 +274,10 @@ class AdditiveSharingTensor(AbstractTensor):
         #             duplicate_ids.append(ptr_.id)
         # for id in duplicate_ids:
         #     workers[0].rm_obj(id)
+
         for id in pointer_copies:
             workers[0].rm_obj(id)
+
         pointer_copy.locations[0].rm_obj(
             pointer_copy.child[pointer_copy.locations[0].id].id_at_location
         )
@@ -1060,6 +1063,7 @@ class AdditiveSharingTensor(AbstractTensor):
             chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
+        garbage_collect = tensor.get_garbage_collect_data()
         tensor.set_garbage_collect_data(False)
 
         return (
@@ -1067,6 +1071,7 @@ class AdditiveSharingTensor(AbstractTensor):
             tensor.field,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
+            garbage_collect,
         )
 
     @staticmethod
@@ -1082,7 +1087,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, crypto_provider, chain = tensor_tuple
+        tensor_id, field, crypto_provider, chain, garbage_collect = tensor_tuple
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
@@ -1095,6 +1100,8 @@ class AdditiveSharingTensor(AbstractTensor):
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
+
+        tensor.set_garbage_collect_data(garbage_collect)
 
         return tensor
 
