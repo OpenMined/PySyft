@@ -18,7 +18,7 @@ class CommunicationAction(Action):
     def __init__(
         self,
         obj_id: Union[str, int],
-        name: str, # maybe factor into enum later?
+        name: str,  # @TODO: maybe refactor into enum later?
         source: Union[str, int],
         destinations: List[Union[str, int]],
         kwargs_: dict,
@@ -30,10 +30,12 @@ class CommunicationAction(Action):
         super().__init__()
 
         self.obj_id = obj_id
-        if name in ['move', 'remote_send', 'remote_get', 'get', 'share', 'share_']:
+        if name in ["move", "remote_send", "remote_get", "get", "share", "share_"]:
             self.name = name
         else:
-            raise ValueError('name of CommunicationAction is not in the list of supported actions')
+            raise ValueError(
+                f"name ${name} for CommunicationAction is not in the list of supported actions"
+            )
         self.source = source
         self.destinations = destinations
         self.kwargs = kwargs_
@@ -120,7 +122,6 @@ class CommunicationAction(Action):
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.name, communication.name)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
-
 
         for destination in communication.destinations:
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.destinations.add(), destination)
