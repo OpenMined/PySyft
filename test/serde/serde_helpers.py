@@ -532,6 +532,7 @@ def make_additivesharingtensor(**kwargs):
                     msgpack.serde._simplify(
                         syft.hook.local_worker, ast.child
                     ),  # (dict of AbstractTensor) simplified chain
+                    ast.get_garbage_collect_data(),
                 ),
             ),
             "cmp_detailed": compare,
