@@ -9,6 +9,7 @@ Note that the protocols are quite different in aspect from those papers
 """
 import hashlib
 import math
+from numba import jit
 import numpy as np
 
 import torch as th
@@ -344,16 +345,18 @@ def consume(buffer, nbits):
     return new_buffer, extracted
 
 
+@jit(nopython=True)
+def huge_loop(seed_t_bytes, n_iter):
+    return [hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest() for i in range(n_iter)]
+
+
 def G(seed):
     """ λ -> 2(λ + 1)"""
     assert seed.shape[0] == λs
     seed_t = seed.T
     seed_t_bytes = seed_t.tobytes()
 
-    buffers = [
-        hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest()
-        for i in range(seed_t.shape[0])
-    ]
+    buffers = huge_loop(seed_t_bytes, seed_t.shape[0])
 
     buffer = b"".join(buffers)
 
@@ -378,10 +381,7 @@ def H(seed):
     seed_t = seed.T
     seed_t_bytes = seed_t.tobytes()
 
-    buffers = [
-        hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest()
-        for i in range(seed_t.shape[0])
-    ]
+    buffers = huge_loop(seed_t_bytes, seed_t.shape[0])
 
     buffer = b"".join(buffers)
 
