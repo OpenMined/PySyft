@@ -5,6 +5,7 @@ import syft as sy
 from syft.workers.abstract import AbstractWorker
 
 from syft.execution.action import Action
+from syft.generic.pointers import pointer_tensor
 
 from syft_proto.execution.v1.communication_action_pb2 import (
     CommunicationAction as CommunicationActionPB,
@@ -17,6 +18,7 @@ class CommunicationAction(Action):
     def __init__(
         self,
         obj_id: Union[str, int],
+        name: str, # maybe factor into enum later?
         source: Union[str, int],
         destinations: List[Union[str, int]],
         kwargs_: dict,
@@ -28,6 +30,10 @@ class CommunicationAction(Action):
         super().__init__()
 
         self.obj_id = obj_id
+        if name in ['move', 'remote_send', 'remote_get', 'get', 'share', 'share_']:
+            self.name = name
+        else:
+            raise ValueError('name of CommunicationAction is not in the list of supported actions')
         self.source = source
         self.destinations = destinations
         self.kwargs = kwargs_
@@ -36,11 +42,12 @@ class CommunicationAction(Action):
     def contents(self):
         """Return a tuple with the contents of the operation (backwards compatability)."""
 
-        return (self.obj_id, self.source, self.destinations, self.kwargs)
+        return (self.obj_id, self.name, self.source, self.destinations, self.kwargs)
 
     def __eq__(self, other):
         return (
             self.obj_id == other.obj_id
+            and self.name == other.name
             and self.source == other.source
             and self.destinations == other.destinations
             and self.kwargs == other.kwargs
@@ -60,6 +67,7 @@ class CommunicationAction(Action):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, communication.obj_id),
+            sy.serde.msgpack.serde._simplify(worker, communication.name),
             sy.serde.msgpack.serde._simplify(worker, communication.source),
             sy.serde.msgpack.serde._simplify(worker, communication.destinations),
             sy.serde.msgpack.serde._simplify(worker, communication.kwargs),
@@ -81,15 +89,16 @@ class CommunicationAction(Action):
             communication = detail(sy.local_worker, communication_tuple)
         """
 
-        (obj_id, source, destinations, kwargs_) = communication_tuple
+        (obj_id, name, source, destinations, kwargs_) = communication_tuple
 
         detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
+        detailed_name = sy.serde.msgpack.serde._detail(worker, name)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
         detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
 
         return CommunicationAction(
-            detailed_obj, detailed_source, detailed_destinations, detailed_kwargs
+            detailed_obj, detailed_name, detailed_source, detailed_destinations, detailed_kwargs
         )
 
     @staticmethod
@@ -109,7 +118,9 @@ class CommunicationAction(Action):
         protobuf_obj = CommunicationActionPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.name, communication.name)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
+
 
         for destination in communication.destinations:
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.destinations.add(), destination)
@@ -142,6 +153,7 @@ class CommunicationAction(Action):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj_id)
+        name = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.name)
         source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
         destinations = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
@@ -152,4 +164,4 @@ class CommunicationAction(Action):
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj_id, source, destinations, kwargs_)
+        return CommunicationAction(obj_id, name, source, destinations, kwargs_)
