@@ -1,8 +1,10 @@
 import pytest
-import syft as sy
-from syft.frameworks.crypten.context import run_multiworkers
-import torch as th
 import crypten
+
+import torch as th
+import syft as sy
+
+from syft.frameworks.crypten.context import run_multiworkers
 
 
 def test_context(workers):
@@ -14,6 +16,9 @@ def test_context(workers):
 
     alice_tensor_ptr = th.tensor([42, 53, 3, 2]).tag("crypten_data").send(alice)
     bob_tensor_ptr = th.tensor([101, 32, 29, 2]).tag("crypten_data").send(bob)
+
+    alice.add_crypten_support()
+    bob.add_crypten_support()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
