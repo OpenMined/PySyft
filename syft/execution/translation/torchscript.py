@@ -25,9 +25,8 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         def wrap_stateful_plan(*args):
             role = plan.role
             state = args[-1]
-            if (
-                0 < len(role.state.state_placeholders) == len(state)
-                and isinstance(state, (list, tuple))
+            if 0 < len(role.state.state_placeholders) == len(state) and isinstance(
+                state, (list, tuple)
             ):
                 state_placeholders = tuple(
                     role.placeholders[ph.id.value] for ph in role.state.state_placeholders
