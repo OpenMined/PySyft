@@ -837,9 +837,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, plan.description),
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, plan.torchscript
-                    ),  # Torchscript
+                    None,  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -856,9 +854,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
                     msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, model_plan.torchscript
-                    ),  # Torchscript
+                    None,  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
