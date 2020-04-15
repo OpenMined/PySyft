@@ -33,6 +33,12 @@ def test_context(workers):
     return_values = plan_func()
 
     expected_value = th.tensor([143, 85, 32, 4])
+
+    alice.remove_crypten_support()
+    bob.remove_crypten_support()
+
+    # A toy function is ran at each party, and they should all decrypt
+    # a tensor with value [143, 85]
     for rank in range(n_workers):
         assert th.all(
             return_values[rank] == expected_value
