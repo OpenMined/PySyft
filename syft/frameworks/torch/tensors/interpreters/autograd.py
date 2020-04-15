@@ -237,22 +237,22 @@ class AutogradTensor(AbstractTensor):
         response and replace a AutogradTensor on top of all tensors found in
         the response.
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
 
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)

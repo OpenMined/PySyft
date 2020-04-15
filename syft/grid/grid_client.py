@@ -4,7 +4,8 @@ import binascii
 import websocket
 import websockets
 
-from syft.serde.protobuf import serialize
+import syft as sy
+from syft.serde import protobuf
 
 TIMEOUT_INTERVAL = 60
 
@@ -15,15 +16,16 @@ class GridClient:
         self.address = address
         self.secure = secure
         self.ws = None
+        self.serialize_worker = sy.VirtualWorker(hook=None)
 
     @property
     def url(self):
         return f"wss://{self.address}" if self.secure else f"ws://{self.address}"
 
     def connect(self):
-        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+        args_ = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
 
-        self.ws = websocket.create_connection(**args)
+        self.ws = websocket.create_connection(**args_)
 
     def _send_msg(self, message: dict) -> dict:
         """ Prepare/send a JSON message to a PyGrid server and receive the response.
@@ -35,10 +37,15 @@ class GridClient:
         self.ws.send(json.dumps(message))
         return json.loads(self.ws.recv())
 
+    def _serialize(self, obj):
+        """Serializes object to protobuf"""
+        pb = protobuf.serde._bufferize(self.serialize_worker, obj)
+        return pb.SerializeToString()
+
     def _serialize_object(self, obj):
         serialized_object = {}
         for k, v in obj.items():
-            serialized_object[k] = binascii.hexlify(serialize(v)).decode()
+            serialized_object[k] = binascii.hexlify(self._serialize(v)).decode()
         return serialized_object
 
     def close(self):
@@ -53,10 +60,10 @@ class GridClient:
         server_averaging_plan,
         server_config,
     ):
-        serialized_model = binascii.hexlify(serialize(model)).decode()
+        serialized_model = binascii.hexlify(self._serialize(model)).decode()
         serialized_plans = self._serialize_object(client_plans)
         serialized_protocols = self._serialize_object(client_protocols)
-        serialized_avg_plan = binascii.hexlify(serialize(server_averaging_plan)).decode()
+        serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
 
         # "federated/host-training" request body
         message = {

@@ -61,12 +61,12 @@ class WebsocketClientWorker(BaseWorker):
         return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
 
     def connect(self):
-        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+        args_ = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
 
         if self.secure:
-            args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+            args_["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
 
-        self.ws = websocket.create_connection(**args)
+        self.ws = websocket.create_connection(**args_)
         self._log_msgs_remote(self.log_msgs)
 
     def close(self):
