@@ -225,15 +225,3 @@ def test_encrypt_decrypt(workers):
     x_encrypted = x.encrypt(protocol="paillier", public_key=public)
     x_decrypted = x_encrypted.decrypt(protocol="paillier", private_key=private)
     assert torch.all(torch.eq(x_decrypted, x))
-
-
-def test_iadd(workers):
-    alice = workers["alice"]
-    a = torch.ones(1, 5)
-    b = torch.ones(1, 5)
-    a_pt = a.send(alice)
-    b_pt = b.send(alice)
-
-    b_pt += a_pt
-
-    assert len(alice._objects) == 2

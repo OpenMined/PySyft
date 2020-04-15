@@ -554,3 +554,15 @@ def test_setting_back_grad_to_origin_after_move(workers):
         z.backward()
 
         assert (x.grad == th.tensor([4.0, 4.0, 4.0, 4.0, 4.0])).all()
+
+
+def test_iadd(workers):
+    alice = workers["alice"]
+    a = torch.ones(1, 5)
+    b = torch.ones(1, 5)
+    a_pt = a.send(alice)
+    b_pt = b.send(alice)
+
+    b_pt += a_pt
+
+    assert len(alice._objects) == 2
