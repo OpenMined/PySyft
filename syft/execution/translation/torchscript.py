@@ -1,4 +1,5 @@
 from torch import jit
+from syft.execution.plan import Plan
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.translation.abstract import AbstractPlanTranslator
 
@@ -34,3 +35,7 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         plan.torchscript = None
 
         return plan
+
+
+# Register translators that should apply at Plan build time
+Plan.register_build_translator(PlanTranslatorTorchscript)
