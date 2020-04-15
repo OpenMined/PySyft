@@ -711,7 +711,9 @@ class Plan(AbstractObject):
             protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
         if plan.serialized_input:
-            protobuf_plan.serialized_input = plan.serialized_input
+            for elem in plan.serialized_input:
+                protobuf_plan.serialized_input.append(sy.serde.serialize(elem, worker))
+
         return protobuf_plan
 
     @staticmethod
@@ -730,7 +732,10 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
-        serialized_input = protobuf_plan.serialied_input if protobuf_plan.serialied_input else None
+        serialized_input = []
+
+        for elem in protobuf_plan.serialized_input:
+            serialized_input.append(sy.serde.deserialize(elem, worker))
 
         plan = Plan(
             role=role,
