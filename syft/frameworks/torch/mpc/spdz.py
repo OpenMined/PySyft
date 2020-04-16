@@ -27,6 +27,7 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     assert isinstance(y_sh, sy.AdditiveSharingTensor)
 
     locations = x_sh.locations
+    torch_dtype = x_sh.torch_dtype
 
     # Get triples
     a, b, a_mul_b = request_triple(
@@ -42,9 +43,8 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     delta_epsilon = cmd(delta, epsilon)
 
     # Trick to keep only one child in the MultiPointerTensor (like in SNN)
-    field_to_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-    j1 = torch.ones(delta_epsilon.shape).type(field_to_dtype).send(locations[0], **no_wrap)
-    j0 = torch.zeros(delta_epsilon.shape).type(field_to_dtype).send(*locations[1:], **no_wrap)
+    j1 = torch.ones(delta_epsilon.shape).type(torch_dtype).send(locations[0], **no_wrap)
+    j0 = torch.zeros(delta_epsilon.shape).type(torch_dtype).send(*locations[1:], **no_wrap)
     if len(locations) == 2:
         j = sy.MultiPointerTensor(children=[j1, j0])
     else:
@@ -53,5 +53,5 @@ def spdz_mul(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: 
     delta_b = cmd(delta, b)
     a_epsilon = cmd(a, epsilon)
     res = delta_epsilon * j + delta_b + a_epsilon + a_mul_b
-    res = res.type(field_to_dtype)
+    res = res.type(torch_dtype)
     return res
