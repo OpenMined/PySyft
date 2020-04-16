@@ -5,10 +5,11 @@ something here that isn't for `None`, think twice and either
 use an existing sub-class of Message or add a new one.
 """
 
+import syft
 from collections import OrderedDict
 from google.protobuf.empty_pb2 import Empty
 from syft.workers.abstract import AbstractWorker
-
+from syft_proto.execution.v1.type_wrapper_pb2 import type as typePB
 
 def _bufferize_none(worker: AbstractWorker, obj: "type(None)") -> "Empty":
     """
@@ -35,6 +36,28 @@ def _unbufferize_none(worker: AbstractWorker, obj: "Empty") -> "type(None)":
     """
     return None
 
+def _bufferize_type(worker: AbstractWorker, obj) -> typePB:
+    proto_type = typePB()
+
+    if isinstance(obj, type):
+        serialized_type = syft.serde.msgpack.serde._simplify(worker, obj)
+        proto_type.id = serialized_type[0]
+        proto_type.type = serialized_type[1]
+
+    return proto_type
+
+def _unbufferize_type(worker: AbstractWorker, obj: typePB):
+    if obj.type:
+        original_type = syft.serde.msgpack.serde._detail(worker, (obj.id, obj.type))
+        return original_type
+
+    return object
 
 # Maps a type to its bufferizer and unbufferizer functions
-MAP_NATIVE_PROTOBUF_TRANSLATORS = OrderedDict({type(None): (_bufferize_none, _unbufferize_none)})
+MAP_NATIVE_PROTOBUF_TRANSLATORS = OrderedDict(
+    {
+        type(None): (_bufferize_none, _unbufferize_none),
+        type: (_bufferize_type, _unbufferize_type)
+
+    }
+)

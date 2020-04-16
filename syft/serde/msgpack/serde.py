@@ -76,7 +76,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
 from syft.generic.pointers.pointer_dataset import PointerDataset
-
+from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
@@ -117,6 +117,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     Role,
     ObjectPointer,
     Plan,
+    NestedTypeWrapper,
     State,
     ComputationAction,
     CommunicationAction,

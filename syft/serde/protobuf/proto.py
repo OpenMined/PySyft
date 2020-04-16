@@ -13,6 +13,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.plan import Plan
+from syft.execution.plan import NestedTypeWrapper
 from syft.execution.protocol import Protocol
 from syft.execution.role import Role
 from syft.execution.state import State
@@ -27,6 +28,8 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
+from syft_proto.execution.v1.type_wrapper_pb2 import type as typePB
+from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 from syft_proto.execution.v1.state_pb2 import State as StatePB
@@ -46,9 +49,9 @@ from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptMo
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
-
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
+    type: typePB,
     # Torch types
     torch.Tensor: TorchTensorPB,
     torch.device: DevicePB,
@@ -66,6 +69,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ComputationAction: ComputationActionPB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,
+    NestedTypeWrapper: NestedTypeWrapperPB,
     PointerTensor: PointerTensorPB,
     Protocol: ProtocolPB,
     Role: RolePB,
