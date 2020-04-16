@@ -3,10 +3,10 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import json
 import io
 import torch
 import warnings
+from contextlib import contextmanager
 
 import syft as sy
 from syft.execution.computation import ComputationAction
@@ -15,6 +15,7 @@ from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
+from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -72,6 +73,24 @@ def method2plan(*args, **kwargs):
     raise SyntaxError(
         "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
     )
+
+
+class FrameworkWrapper:
+    def __init__(self, package):
+        self.package = package
+
+    def __getattr__(self, attr_name):
+        print("in wrapper")
+        return getattr(self.package, attr_name)
+
+
+@contextmanager
+def trace(package):
+    try:
+        wrapped = FrameworkWrapper(package)
+        yield wrapped
+    except:
+        raise
 
 
 class Plan(AbstractObject):
@@ -191,10 +210,15 @@ class Plan(AbstractObject):
 
         # Run once to build the plan
         args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
-        if self.include_state:
-            results = self.forward(*args, self.state)
-        else:
-            results = self.forward(*args)
+        packages = list(framework_packages.values())
+        import torch
+
+        print(packages)
+        with trace(torch) as torch:
+            if self.include_state:
+                results = self.forward(*args, self.state)
+            else:
+                results = self.forward(*args)
 
         # Disable tracing
         self.toggle_tracing(False)
