@@ -824,10 +824,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.relu = relu
 
-                def maxpool2d(tensor, *args, **kwargs):
-                    return maxpool2d(tensor)
+                def maxpool(tensor, *args, **kwargs):
+                    return securenn.maxpool2d(tensor)
 
-                module.max_pool2d = maxpool2d
+                module.max_pool2d = maxpool
 
                 @overloaded.function
                 def pad(input_shares, pad, mode="constant", value=0):
@@ -848,8 +848,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def relu(self, inplace=False):
         return securenn.relu(self)
 
-    def maxpool2d(self):
-        return securenn.maxpool2d(self)
+    def maxpool2d(self, tensor):
+        return securenn.maxpool2d(self, tensor)
 
     def positive(self):
         # self >= 0
