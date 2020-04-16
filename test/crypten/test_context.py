@@ -5,6 +5,28 @@ import torch as th
 import syft as sy
 
 from syft.frameworks.crypten.context import run_multiworkers
+from syft.frameworks.crypten.worker_support import methods_to_add
+
+
+def test_add_crypten_support(workers):
+    alice = workers["alice"]
+
+    for method in methods_to_add:
+        assert not hasattr(
+            alice, method.__name__
+        ), f"Worker should not have method {method.__name__}"
+
+    alice.add_crypten_support()
+
+    for method in methods_to_add:
+        assert hasattr(alice, method.__name__), f"Worker should have method {method.__name__}"
+
+    alice.remove_crypten_support()
+
+    for method in methods_to_add:
+        assert not hasattr(
+            alice, method.__name__
+        ), f"Worker should not have method {method.__name__}"
 
 
 def test_context(workers):
