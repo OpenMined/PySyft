@@ -13,14 +13,12 @@ from syft.generic.utils import memorize
 # p is introduced in the SecureNN paper https://eprint.iacr.org/2018/442.pdf
 # it is a small field for efficient additive sharing
 p = 67
+no_wrap = {"no_wrap": True}
 
-# Q field
+# Cached values
 @memorize
 def Q_BITS(field):
     return 64 if field > 2 ** 32 else 32
-
-
-no_wrap = {"no_wrap": True}
 
 
 @memorize
