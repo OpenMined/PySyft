@@ -825,7 +825,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 module.relu = relu
 
                 def maxpool(tensor, *args, **kwargs):
-                    return securenn.maxpool2d(tensor)
+                    return securenn.maxpool2d(tensor.wrap())
 
                 module.max_pool2d = maxpool
 
