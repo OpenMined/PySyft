@@ -824,10 +824,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
                 module.relu = relu
 
-                @overloaded.function
-                def maxpool2d(tensor_shares, *args, **kwargs):
-                    a_sh = AdditiveSharingTensor(shares=tensor_shares)
-                    return maxpool2d(a_sh)
+                def maxpool2d(tensor, *args, **kwargs):
+                    return maxpool2d(tensor)
 
                 module.max_pool2d = maxpool2d
 
