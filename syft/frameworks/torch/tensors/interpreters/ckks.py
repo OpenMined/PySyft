@@ -34,7 +34,7 @@ class CKKSTensor(AbstractTensor):
         """
 
         output = CKKSTensor().on(self.child)
-        output.child.encrypt_(context)
+        output.child.encrypt_(context, scale)
         return output
 
     def encrypt_(self, context, scale):

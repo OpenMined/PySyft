@@ -1041,9 +1041,7 @@ class TorchTensor(AbstractTensor):
 
         elif protocol.lower() == "ckks":
             context = kwargs.get("public_key")
-            scale = kwargs.get("scale")
-            if scale is None:
-                scale = DEFAULT_CKKS_SCALE
+            scale = kwargs.get("scale", DEFAULT_CKKS_SCALE)
 
             x = self.copy()
             x_encrypted = CKKSTensor().on(x)
