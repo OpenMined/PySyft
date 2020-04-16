@@ -2,6 +2,7 @@ version: '3'
 services:
     gateway:
         image: openmined/grid-gateway:latest
+        build: .
         environment:
                 - PORT=5000
                 - SECRET_KEY=ineedtoputasecrethere
