@@ -103,6 +103,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.n_bits = self.calculateBits(self.field)
         # assert 2 ** self.n_bits == self.field
+
+        # min value for shares in field
+        self._min_value = None
+        # max value for shares in field
+        self._max_value = None
+
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
@@ -141,11 +147,15 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @property
     def min_value(self):
-        return -(self.field // 2)
+        if self._min_value is None:
+            self._min_value = -(self.field // 2)
+        return self._min_value
 
     @property
     def max_value(self):
-        return (self.field - 1) // 2
+        if self._max_value is None:
+            self._max_value = (self.field - 1) // 2
+        return self._max_value
 
     def dim(self):
         for share in self.child.values():
