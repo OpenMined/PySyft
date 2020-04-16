@@ -15,6 +15,7 @@ from syft.generic.utils import memorize
 p = 67
 
 # Q field
+@memorize
 def Q_BITS(field):
     return 64 if field > 2 ** 32 else 32
 
@@ -40,6 +41,11 @@ def get_max_val_field(field: int):
 @memorize
 def get_min_val_field(field: int):
     return -(field // 2)
+
+
+@memorize
+def get_r_mask(field: int):
+    return (field // 2) - 1
 
 
 @memorize
@@ -222,7 +228,7 @@ def private_compare(x_bit_sh, r, beta, L):
     c_else = (l1_mask * c_ie1) + ((1 - l1_mask) * c_igt1)
 
     # Mask for the case r == 2^l −1
-    r_mask = (r == ((L // 2) - 1)).long()
+    r_mask = (r == get_r_mask(L)).long()
     r_mask = r_mask.unsqueeze(-1)
 
     # Mask combination to execute the if / else statements of 4), 7), 10)
