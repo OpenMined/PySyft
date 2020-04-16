@@ -289,9 +289,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def remote_send(
-        self, destination: AbstractWorker, requires_grad: bool = False,
-    ):
+    def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
@@ -301,9 +299,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             requires_grad: if true updating the grad of the remote tensor on destination B will trigger
                 a message to update the gradient of the value on A.
         """
-        kwargs = {"inplace": False, "requires_grad": requires_grad}
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs
+            self.id_at_location, self.location.id, [destination.id], kwargs_
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
