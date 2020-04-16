@@ -170,7 +170,7 @@ def test_key_generation():
     keygenerator = KeyGenerator(ctx)
     sk, pk = keygenerator.keygen()
     print("sk: ", sk)
-    print("sk length", sk.size())
+    print("sk length", sk.size)
     print("pk: ", pk)
-    print("pk length c0", pk[0].size(), " c1 : ", pk[1].size())
+    print("pk length c0", len(pk.data[0]), " c1 : ", len(pk.data[1]))
     # TODO tests for key generations will be added after encrypter and decrypter

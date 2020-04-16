@@ -16,8 +16,8 @@ class Context:
         self._param = encryption_param
         self._coeff_modulus = self._param.coeff_modulus
         self._plain_modulus = encryption_param.plain_modulus
-        self._coeff_div_plain_modulus = [x / self._plain_modulus for x in self._coeff_modulus]
-        self._coeff_mod_plain_modulus = [x % self._plain_modulus for x in self._coeff_modulus]
+        self._coeff_div_plain_modulus = [int(x / self._plain_modulus) for x in self._coeff_modulus]
+        self._plain_div_coeff_modulus = [self._plain_modulus / x for x in self._coeff_modulus]
 
     @property
     def param(self):
@@ -28,6 +28,10 @@ class Context:
         self._param = value
 
     @property
+    def plain_modulus(self):
+        return self._plain_modulus
+
+    @property
     def coeff_div_plain_modulus(self):
         return self._coeff_div_plain_modulus
 
@@ -36,9 +40,9 @@ class Context:
         self._coeff_div_plain_modulus = value
 
     @property
-    def coeff_mod_plain_modulus(self):
-        return self._coeff_mod_plain_modulus
+    def plain_div_coeff_modulus(self):
+        return self._plain_div_coeff_modulus
 
-    @coeff_div_plain_modulus.setter
-    def coeff_div_plain_modulus(self, value):
-        self._coeff_mod_plain_modulus = value
+    @plain_div_coeff_modulus.setter
+    def plain_div_coeff_modulus(self, value):
+        self._plain_div_coeff_modulus = value

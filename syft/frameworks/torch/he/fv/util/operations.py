@@ -1,3 +1,6 @@
+from syft.frameworks.torch.he.fv.ciphertext import CipherText
+
+
 def multiply_mod(operand1, operand2, modulus):
     return (operand1 * operand2) % modulus
 
@@ -54,17 +57,17 @@ def multiply_add_plain_with_scaling_variant(pue, message, context):
     coeff_mod_count = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
-    coeff_div_plain_modulus = context.coeff_div_plain_modulus
+    delta = context.coeff_div_plain_modulus
     plaintext = message.data
-
-    pue_0 = pue.data[0].data
+    pue_0, pue_1 = pue.data
+    print("pue_0", type(pue_0))
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
         for j in range(coeff_mod_count):
-            temp = coeff_div_plain_modulus[j] * plaintext[i]
+            temp = delta[j] * plaintext[i]
             pue_0[j * coeff_count] = (
                 pue_0[j * coeff_count] + (temp % coeff_modulus[j])
             ) % coeff_modulus[j]
-    return pue  # p0 * u * e1 + delta * m
+    return CipherText([pue_0, pue_1])  # p0 * u * e1 + delta * m

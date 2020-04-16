@@ -1,6 +1,6 @@
 import torch as th
 
-from syft.frameworks.torch.he.fv.plaintext import PlainText
+from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
 from syft.frameworks.torch.he.fv.public_key import PublicKey
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_zero_symmetric
@@ -23,7 +23,7 @@ class Encrypter:
         self._key = key
 
     def encrypt_internal(self, message, is_asymmetric):
-        result = PlainText([])
+        result = CipherText([])
         if is_asymmetric:
             result = encrypt_zero_asymmetric(self._context, self._key)
         else:
