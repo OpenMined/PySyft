@@ -26,6 +26,37 @@ from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
+class FrameworkWrapper:
+    def __init__(self, package, role):
+        self.package = package
+        self.role = role
+
+    def __getattr__(self, attr_name):
+        def trace_wrapper(*args, **kwargs):
+            command = (attr_name, None, args, kwargs)
+
+            result = getattr(self.package, attr_name)(*args, **kwargs)
+            ph = PlaceHolder(role=self.role, tracing=True, owner=self.role.owner)
+            response = ph.instantiate(result)
+
+            self.role.register_action(
+                (command, response), sy.execution.computation.ComputationAction
+            )
+
+            return response
+
+        return trace_wrapper
+
+
+@contextmanager
+def trace(package, role):
+    try:
+        wrapped = FrameworkWrapper(package, role)
+        yield wrapped
+    except:
+        raise
+
+
 class func2plan(object):
     """Decorator which converts a function to a plan.
 
@@ -73,24 +104,6 @@ def method2plan(*args, **kwargs):
     raise SyntaxError(
         "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
     )
-
-
-class FrameworkWrapper:
-    def __init__(self, package):
-        self.package = package
-
-    def __getattr__(self, attr_name):
-        print("in wrapper")
-        return getattr(self.package, attr_name)
-
-
-@contextmanager
-def trace(package):
-    try:
-        wrapped = FrameworkWrapper(package)
-        yield wrapped
-    except:
-        raise
 
 
 class Plan(AbstractObject):
@@ -210,15 +223,12 @@ class Plan(AbstractObject):
 
         # Run once to build the plan
         args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
-        packages = list(framework_packages.values())
-        import torch
 
-        print(packages)
-        with trace(torch) as torch:
+        with trace(framework_packages["torch"], self.role) as wrapped_torch:
             if self.include_state:
-                results = self.forward(*args, self.state)
+                results = self.forward(*args, self.state, torch=wrapped_torch)
             else:
-                results = self.forward(*args)
+                results = self.forward(*args, torch=wrapped_torch)
 
         # Disable tracing
         self.toggle_tracing(False)
