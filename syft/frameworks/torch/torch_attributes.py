@@ -123,7 +123,7 @@ class TorchAttributes(FrameworkAttributes):
             self.guard[f"syft.{key}"] = self.guard[key]
 
         # Concatenate torch functions
-        self.allowed_commands = self._torch_functions
+        self.allowed_commands = self.allowed_commands.union(self._torch_functions)
 
         # The equivalent concatenation of native torch function names and native torch method names
         self.native_commands = {

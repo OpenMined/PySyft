@@ -184,8 +184,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
-        # declare the plans used for crypto computations
-        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
+
+        self.syft = sy
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod

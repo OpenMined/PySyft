@@ -26,51 +26,32 @@ assert λs == 2
 
 no_wrap = {"no_wrap": True}
 
-
-def initialize_crypto_plans(worker):
-    """
-    This is called manually for the moment, to build the plan used to perform
-    Function Secret Sharing on a specific worker.
-    """
-    eq_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, "eq"),
-        owner=worker,
-        tags=["#fss_eq_plan_1"],
-        is_built=True,
-    )
-    worker.register_obj(eq_plan_1)
-    eq_plan_2 = sy.Plan(
-        forward_func=eq_eval_plan, owner=worker, tags=["#fss_eq_plan_2"], is_built=True
-    )
-    worker.register_obj(eq_plan_2)
-
-    comp_plan_1 = sy.Plan(
-        forward_func=lambda x, y: mask_builder(x, y, "comp"),
-        owner=worker,
-        tags=["#fss_comp_plan_1"],
-        is_built=True,
-    )
-    worker.register_obj(comp_plan_1)
-    comp_plan_2 = sy.Plan(
-        forward_func=comp_eval_plan, owner=worker, tags=["#fss_comp_plan_2"], is_built=True
-    )
-    worker.register_obj(comp_plan_2)
-
-    xor_add_plan = sy.Plan(
-        forward_func=xor_add_convert_1, owner=worker, tags=["#xor_add_1"], is_built=True
-    )
-    worker.register_obj(xor_add_plan)
-    xor_add_plan = sy.Plan(
-        forward_func=xor_add_convert_2, owner=worker, tags=["#xor_add_2"], is_built=True
-    )
-    worker.register_obj(xor_add_plan)
+NAMESPACE = "syft.frameworks.torch.mpc.fss"
+authorized = set(
+    f"{NAMESPACE}.{name}"
+    for name in ["mask_builder", "evaluate", "xor_add_convert_1", "xor_add_convert_2"]
+)
 
 
-def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
-    response_ids = [sy.ID_PROVIDER.pop()]
-    args = [args, response_ids]
+def full_name(f):
+    return f"{NAMESPACE}.{f.__name__}"
 
-    command = ("run", plan_tag, args, kwargs)
+
+def remote_exec(
+    command_name,
+    location,
+    args=tuple(),
+    kwargs=dict(),
+    worker=None,
+    return_value=False,
+    return_arity=1,
+):
+    if worker is None:
+        worker = sy.local_worker
+
+    response_ids = [sy.ID_PROVIDER.pop() for _ in range(return_arity)]
+
+    command = (command_name, None, args, kwargs)
 
     response = worker.send_command(
         message=command, recipient=location, return_ids=response_ids, return_value=return_value
@@ -99,28 +80,25 @@ def fss_op(x1, x2, type_op="eq"):
 
     shares = []
     for location in locations:
-        args = (x1.child[location.id], x2.child[location.id])
-        share = request_run_plan(
-            me, f"#fss_{type_op}_plan_1", location, return_value=True, args=args
-        )
+        args = (x1.child[location.id], x2.child[location.id], type_op)
+        share = remote_exec(full_name(mask_builder), location, args=args, return_value=True)
         shares.append(share)
 
     mask_value = sum(shares) % 2 ** n
 
     shares = []
     for i, location in enumerate(locations):
-        args = (th.IntTensor([i]), mask_value)
-        share = request_run_plan(
-            me, f"#fss_{type_op}_plan_2", location, return_value=False, args=args
-        )
+        args = (th.IntTensor([i]), mask_value, type_op)
+        share = remote_exec(full_name(evaluate), location, args=args, return_value=False)
         shares.append(share)
 
     if type_op == "comp":
         prev_shares = shares
         shares = []
         for prev_share, location in zip(prev_shares, locations):
-            share = request_run_plan(
-                me, f"#xor_add_1", location, return_value=True, args=(prev_share,)
+            args = (prev_share,)
+            share = remote_exec(
+                full_name(xor_add_convert_1), location, args=args, return_value=True
             )
             shares.append(share)
 
@@ -128,12 +106,9 @@ def fss_op(x1, x2, type_op="eq"):
 
         shares = {}
         for i, prev_share, location in zip(range(len(locations)), prev_shares, locations):
-            share = request_run_plan(
-                me,
-                f"#xor_add_2",
-                location,
-                return_value=False,
-                args=(th.IntTensor([i]), masked_value),
+            args = (th.IntTensor([i]), masked_value)
+            share = remote_exec(
+                full_name(xor_add_convert_2), location, args=args, return_value=False
             )
             shares[location.id] = share
     else:
@@ -155,8 +130,17 @@ def mask_builder(x1, x2, type_op):
     return r
 
 
+def evaluate(b, x_masked, type_op):
+    if type_op == "eq":
+        return eq_evaluate(b, x_masked)
+    elif type_op == "comp":
+        return comp_evaluate(b, x_masked)
+    else:
+        raise ValueError
+
+
 # share level
-def eq_eval_plan(b, x_masked):
+def eq_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         type_op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
@@ -165,7 +149,7 @@ def eq_eval_plan(b, x_masked):
 
 
 # share level
-def comp_eval_plan(b, x_masked):
+def comp_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         type_op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
@@ -345,7 +329,6 @@ def consume(buffer, nbits):
     return new_buffer, extracted
 
 
-@jit(nopython=True)
 def huge_loop(seed_t_bytes, n_iter):
     return [hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest() for i in range(n_iter)]
 

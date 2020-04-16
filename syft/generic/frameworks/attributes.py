@@ -6,9 +6,12 @@ from typing import Callable
 from typing import Any
 
 from syft.generic.frameworks.hook.hook import FrameworkHook
+from syft.frameworks.torch.mpc.fss import authorized
 
 
 class FrameworkAttributes(ABC):
+    allowed_commands = authorized
+
     @abstractmethod
     def __init__(self, framework: ModuleType, hook: FrameworkHook):
         pass
