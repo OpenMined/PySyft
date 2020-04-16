@@ -875,10 +875,10 @@ def make_role(**kwargs):
 
 
 def make_type(**kwargs):
-    serialiez_type = syft.CRTPrecisionTensor
+    serialiez_type = type("test")
 
     def compare(detailed, original):
-        assert type(detailed) == type(syft.CRTPrecisionTensor)
+        assert type(detailed) == type(original)
         assert detailed == original
         return True
 
@@ -890,7 +890,36 @@ def make_type(**kwargs):
         }
     ]
 
+def make_nested_type_wrapper(**kwargs):
+    reference_serialized_input_1 = (
+        (type(torch.tensor([1.0, -2.0])), type(torch.tensor([1, 2]))),
+        {
+            "k1": [type(5), (type(True), type(False))],
+            "k2": {
+                "kk1": [type(torch.tensor([5, 7])), type(torch.tensor([5, 7]))],
+                "kk2": [type(True), (type(torch.tensor([9, 10])),)],
+            },
+            "k3": type(torch.tensor([8])),
+        },
+        type(torch.tensor([11, 12])),
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
+    )
 
+    wrapper = syft.execution.plan.NestedTypeWrapper()
+    wrapper.serialized_nested_type = reference_serialized_input_1
+
+    def compare(detailed, original):
+        assert detailed.serialized_nested_type == original.serialized_nested_type
+        return True
+
+    return [
+        {
+            "value": wrapper,
+            "simplified": syft.serde.msgpack.serde._simplify(syft.hook.local_worker, wrapper),
+            "cmp_detailed": compare
+        }
+
+    ]
 # State
 def make_state(**kwargs):
     me = kwargs["workers"]["me"]

@@ -23,8 +23,7 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
             role = translation_plan.role
             state = args[-1]
             if 0 < len(role.state.state_placeholders) == len(state) and isinstance(
-                state, (list, tuple)
-            ):
+                state, (list, tuple)):
                 state_placeholders = tuple(
                     role.placeholders[ph.id.value] for ph in role.state.state_placeholders
                 )
@@ -38,6 +37,7 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
             torchscript_plan = jit.trace(wrap_stateful_plan, (*args, plan_params))
         else:
             torchscript_plan = jit.trace(translation_plan, args)
+
 
         self.plan.torchscript = torchscript_plan
         return self.plan

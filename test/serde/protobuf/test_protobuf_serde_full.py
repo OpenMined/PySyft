@@ -43,7 +43,8 @@ samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_command_message
-
+samples[type] = make_type
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
