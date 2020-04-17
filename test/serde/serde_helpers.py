@@ -359,7 +359,9 @@ def make_torch_parameter(**kwargs):
                 CODE[torch.nn.Parameter],
                 (
                     param.id,  # (int) id
-                    msgpack.serde._simplify(syft.hook.local_worker, param.data),  # (Tensor) data
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], param.data
+                    ),  # (Tensor) data
                     param.requires_grad,  # (bool) requires_grad
                     None,
                 ),
@@ -530,7 +532,7 @@ def make_additivesharingtensor(**kwargs):
                     ast.field,  # (int) field
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, ast.child
+                        kwargs["workers"]["serde_worker"], ast.child
                     ),  # (dict of AbstractTensor) simplified chain
                     ast.get_garbage_collect_data(),
                 ),
@@ -553,7 +555,7 @@ def make_fixedprecisiontensor(**kwargs):
     fpt.describe("desc")
     # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
     # This changes tensors' internal state in chain and is required to pass the test
-    msgpack.serde._simplify(syft.hook.local_worker, fpt)
+    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], fpt)
 
     def compare(detailed, original):
         assert (
@@ -583,7 +585,7 @@ def make_fixedprecisiontensor(**kwargs):
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"desc",)),  # (str) description
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, fpt.child
+                        kwargs["workers"]["serde_worker"], fpt.child
                     ),  # (AbstractTensor) chain
                 ),
             ),
@@ -600,7 +602,7 @@ def make_crtprecisiontensor(**kwargs):
     cpt = t.fix_prec(storage="crt").share(alice, bob, crypto_provider=james).child
     # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
     # This changes tensors' internal state in chain and is required to pass the test
-    msgpack.serde._simplify(syft.hook.local_worker, cpt)
+    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cpt)
 
     def compare(detailed, original):
         assert (
@@ -622,7 +624,7 @@ def make_crtprecisiontensor(**kwargs):
                     cpt.base,  # (int) base
                     cpt.precision_fractional,  # (int) precision_fractional
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, cpt.child
+                        kwargs["workers"]["serde_worker"], cpt.child
                     ),  # (dict of AbstractTensor) simplified chain
                 ),
             ),
@@ -650,7 +652,7 @@ def make_loggingtensor(**kwargs):
                 (
                     lt.id,  # (int or str) id
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, lt.child
+                        kwargs["workers"]["serde_worker"], lt.child
                     ),  # (AbstractTensor) chain
                 ),
             ),
@@ -698,7 +700,7 @@ def make_multipointertensor(**kwargs):
                 CODE[syft.generic.pointers.multi_pointer.MultiPointerTensor],
                 (
                     mpt.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, mpt.child),  # (dict)
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], mpt.child),  # (dict)
                 ),
             ),
             "cmp_detailed": compare,
@@ -728,16 +730,16 @@ def make_basedataset(**kwargs):
             "simplified": (
                 CODE[syft.frameworks.torch.fl.dataset.BaseDataset],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, dataset.data),
-                    msgpack.serde._simplify(syft.hook.local_worker, dataset.targets),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], dataset.data),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], dataset.targets),
                     dataset.id,
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, dataset.tags
+                        kwargs["workers"]["serde_worker"], dataset.tags
                     ),  # (set of str) tags
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, dataset.description
+                        kwargs["workers"]["serde_worker"], dataset.description
                     ),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, dataset.child),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], dataset.child),
                 ),
             ),
             "cmp_detailed": compare,
@@ -804,7 +806,7 @@ def make_plan(**kwargs):
             x = self.fc2(x)
             return torch.nn.functional.log_softmax(x, dim=0)
 
-    with syft.hook.local_worker.registration_enabled():
+    with kwargs["workers"]["serde_worker"].registration_enabled():
         model_plan = Net()
         model_plan.build(torch.tensor([1.0, 2.0, 3.0]))
 
@@ -817,7 +819,7 @@ def make_plan(**kwargs):
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
-        with syft.hook.local_worker.registration_enabled():
+        with kwargs["workers"]["serde_worker"].registration_enabled():
             t = torch.tensor([1.1, -2, 3])
             res1 = detailed(t)
             res2 = original(t)
@@ -831,13 +833,15 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.role),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.role),
                     plan.include_state,
                     plan.is_built,
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.name),
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.tags),
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.description),
-                    None,  # Torchscript
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.tags),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.description),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -848,13 +852,17 @@ def make_plan(**kwargs):
                 CODE[syft.execution.plan.Plan],
                 (
                     model_plan.id,  # (int or str) id
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.role),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.role),
                     model_plan.include_state,
                     model_plan.is_built,
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.name),
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.tags),
-                    msgpack.serde._simplify(syft.hook.local_worker, model_plan.description),
-                    None,  # Torchscript
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.tags),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.description
+                    ),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.torchscript
+                    ),  # Torchscript
                 ),
             ),
             "cmp_detailed": compare,
@@ -885,9 +893,9 @@ def make_role(**kwargs):
                 CODE[syft.execution.role.Role],
                 (
                     role.id,
-                    msgpack.serde._simplify(syft.hook.local_worker, role.actions),
-                    msgpack.serde._simplify(syft.hook.local_worker, role.state),
-                    msgpack.serde._simplify(syft.hook.local_worker, role.placeholders),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], role.actions),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], role.state),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], role.placeholders),
                     role.input_placeholder_ids,
                     role.output_placeholder_ids,
                 ),
@@ -923,15 +931,15 @@ def make_state(**kwargs):
                     (
                         CODE[list],
                         (  # (list) state_placeholders
-                            msgpack.serde._simplify(syft.hook.local_worker, p1),
-                            msgpack.serde._simplify(syft.hook.local_worker, p2),
+                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], p1),
+                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], p2),
                         ),
                     ),
                     (
                         CODE[list],
                         (  # (list) tensors
-                            msgpack.serde._simplify(syft.hook.local_worker, t1),
-                            msgpack.serde._simplify(syft.hook.local_worker, t2),
+                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], t1),
+                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], t2),
                         ),
                     ),
                 ),
@@ -943,7 +951,7 @@ def make_state(**kwargs):
 
 # Protocol
 def make_protocol(**kwargs):
-    me = kwargs["workers"]["me"]
+    worker = kwargs["workers"]["serde_worker"]
 
     @syft.func2plan([torch.Size((1, 3))])
     def plan(x):
@@ -951,10 +959,13 @@ def make_protocol(**kwargs):
         x = torch.abs(x)
         return x
 
-    with me.registration_enabled():
-        me.register_obj(plan)
+    with worker.registration_enabled():
+        worker.register_obj(plan)
 
-    protocol = syft.execution.protocol.Protocol([("me", plan), ("me", plan)])
+    plan.owner = worker
+    protocol = syft.execution.protocol.Protocol(
+        [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
+    )
     protocol.tag("aaa")
     protocol.describe("desc")
 
@@ -981,8 +992,8 @@ def make_protocol(**kwargs):
                         CODE[list],  # (list) plans reference
                         (
                             # (tuple) reference: worker_id (int/str), plan_id (int/str)
-                            (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
-                            (CODE[tuple], ((CODE[str], (b"me",)), plan.id)),
+                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
+                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
                         ),
                     ),
                     False,  # (bool) workers_resolved
@@ -1134,7 +1145,7 @@ def make_objectwrapper(**kwargs):
                 CODE[syft.generic.pointers.object_wrapper.ObjectWrapper],
                 (
                     123,  # (int) id
-                    msgpack.serde._simplify(syft.hook.local_worker, obj),  # (Any) obj
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj),  # (Any) obj
                 ),
             ),
             "cmp_detailed": compare,
@@ -1277,10 +1288,11 @@ def make_trainconfig(**kwargs):
 
 # syft.workers.base.BaseWorker
 def make_baseworker(**kwargs):
-    bob = kwargs["workers"]["bob"]
+    worker = kwargs["workers"]["serde_worker"]
+
     t = torch.rand(3, 3)
-    with bob.registration_enabled():
-        bob.register_obj(t)
+    with worker.registration_enabled():
+        worker.register_obj(t)
 
     def compare(detailed, original):
         assert isinstance(detailed, syft.workers.base.BaseWorker)
@@ -1289,25 +1301,23 @@ def make_baseworker(**kwargs):
 
     return [
         {
-            "value": bob,
+            "value": worker,
             "simplified": (
                 CODE[syft.workers.base.BaseWorker],
-                ((CODE[str], (b"bob",)),),  # id (str)
+                ((CODE[str], (b"serde-worker-BaseWorker",)),),  # id (str)
             ),
             "cmp_detailed": compare,
         },
         # Forced simplification
         {
             "forced": True,
-            "value": bob,
+            "value": worker,
             "simplified": (
                 FORCED_CODE[syft.workers.base.BaseWorker],
                 (
-                    (CODE[str], (b"bob",)),  # id (str)
-                    msgpack.serde._simplify(
-                        syft.hook.local_worker, bob._objects
-                    ),  # (dict) _objects
-                    True,  # (bool) auto_add
+                    (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
+                    msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
+                    worker.auto_add,  # (bool) auto_add
                 ),
             ),
             "cmp_detailed": compare,
@@ -1319,7 +1329,13 @@ def make_baseworker(**kwargs):
 def make_autogradtensor(**kwargs):
 
     t = torch.tensor([1, 2, 3])
-    agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor().on(t).child
+    agt = (
+        syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor(
+            owner=kwargs["workers"]["serde_worker"]
+        )
+        .on(t)
+        .child
+    )
     agt.tag("aaa")
     agt.describe("desc")
 
@@ -1343,7 +1359,7 @@ def make_autogradtensor(**kwargs):
                 (
                     agt.id,  # (int)
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, agt.child
+                        kwargs["workers"]["serde_worker"], agt.child
                     ),  # (AbstractTensor) chain
                     True,  # (bool) requires_grad
                     False,  # (bool) preinitialize_grad
@@ -1384,7 +1400,9 @@ def make_privatetensor(**kwargs):
                     (CODE[tuple], ((CODE[str], (b"test",)),)),  # (tuple of ?) allowed_users
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"private",)),  # (str) description
-                    msgpack.serde._simplify(syft.hook.local_worker, t),  # (AbstractTensor) chain
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], t
+                    ),  # (AbstractTensor) chain
                 ),
             ),
             "cmp_detailed": compare,
@@ -1412,7 +1430,7 @@ def make_placeholder(**kwargs):
             "simplified": (
                 CODE[syft.execution.placeholder.PlaceHolder],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, ph.id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description
                     (CODE[tuple], (3, 4)),  # (tuple of int) expected_shape
@@ -1451,10 +1469,10 @@ def make_communication_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.communication.CommunicationAction],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, com.obj_id),
-                    msgpack.serde._simplify(syft.hook.local_worker, com.source),
-                    msgpack.serde._simplify(syft.hook.local_worker, com.destinations),
-                    msgpack.serde._simplify(syft.hook.local_worker, com.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1498,7 +1516,9 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, message1),  # (Any) message
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], message1
+                    ),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
@@ -1509,7 +1529,9 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, message2),  # (Any) message
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], message2
+                    ),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
@@ -1562,7 +1584,9 @@ def make_command_message(**kwargs):
             "value": cmd1,
             "simplified": (
                 CODE[syft.messaging.message.TensorCommandMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, cmd1.action),),  # (Any) message
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd1.action),
+                ),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
@@ -1570,7 +1594,9 @@ def make_command_message(**kwargs):
             "value": cmd2,
             "simplified": (
                 CODE[syft.messaging.message.TensorCommandMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, cmd2.action),),  # (Any) message
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd2.action),
+                ),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
@@ -1578,7 +1604,7 @@ def make_command_message(**kwargs):
             "value": cmd3,
             "simplified": (
                 CODE[syft.messaging.message.TensorCommandMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, cmd3.action),),
+                (msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd3.action),),
             ),
             "cmp_detailed": compare,
         },
@@ -1606,7 +1632,7 @@ def make_objectmessage(**kwargs):
                 CODE[syft.messaging.message.ObjectMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, obj.object
+                        kwargs["workers"]["serde_worker"], obj.object
                     ),  # (Any) simplified object
                 ),
             ),
@@ -1637,9 +1663,9 @@ def make_objectrequestmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.ObjectRequestMessage],
                 (
-                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.object_id),
-                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.user),
-                    msgpack.serde._simplify(syft.hook.local_worker, obj_req.reason),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.object_id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.user),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.reason),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1668,7 +1694,7 @@ def make_isnonemessage(**kwargs):
             "value": nm,
             "simplified": (
                 CODE[syft.messaging.message.IsNoneMessage],
-                (msgpack.serde._simplify(syft.hook.local_worker, nm.object_id),),
+                (msgpack.serde._simplify(kwargs["workers"]["serde_worker"], nm.object_id),),
             ),
             "cmp_detailed": compare,
         }
@@ -1699,7 +1725,7 @@ def make_getshapemessage(**kwargs):
                 CODE[syft.messaging.message.GetShapeMessage],
                 (
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, shape_message.tensor_id
+                        kwargs["workers"]["serde_worker"], shape_message.tensor_id
                     ),  # (Any) simplified tensor
                 ),
             ),
@@ -1852,7 +1878,7 @@ def make_getnotpermittederror(**kwargs):
                 (
                     (CODE[str], (b"GetNotPermittedError",)),  # (str) __name__
                     msgpack.serde._simplify(
-                        syft.hook.local_worker,
+                        kwargs["workers"]["serde_worker"],
                         "Traceback (most recent call last):\n"
                         + "".join(traceback.format_tb(err.__traceback__)),
                     ),  # (str) traceback
@@ -1888,12 +1914,12 @@ def make_responsesignatureerror(**kwargs):
                 (
                     (CODE[str], (b"ResponseSignatureError",)),  # (str) __name__
                     msgpack.serde._simplify(
-                        syft.hook.local_worker,
+                        kwargs["workers"]["serde_worker"],
                         "Traceback (most recent call last):\n"
                         + "".join(traceback.format_tb(err.__traceback__)),
                     ),  # (str) traceback
                     msgpack.serde._simplify(
-                        syft.hook.local_worker, err.get_attributes()
+                        kwargs["workers"]["serde_worker"], err.get_attributes()
                     ),  # (dict) attributes
                 ),
             ),
@@ -1939,8 +1965,8 @@ def make_gradfn(**kwargs):
                     CODE[list],
                     (
                         (CODE[str], (b"AddBackward",)),
-                        msgpack.serde._simplify(syft.hook.local_worker, x_share.child),
-                        msgpack.serde._simplify(syft.hook.local_worker, y_share.child),
+                        msgpack.serde._simplify(kwargs["workers"]["serde_worker"], x_share.child),
+                        msgpack.serde._simplify(kwargs["workers"]["serde_worker"], y_share.child),
                     ),
                 ),
             ),

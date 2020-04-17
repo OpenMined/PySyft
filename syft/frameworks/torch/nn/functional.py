@@ -136,11 +136,10 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     # Add a bias if needed
     if bias is not None:
-        if bias.is_wrapper:
-            if res.is_wrapper:
-                res += bias
-            else:
-                res += bias.child
+        if bias.is_wrapper and res.is_wrapper:
+            res += bias
+        elif bias.is_wrapper:
+            res += bias.child
         else:
             res += bias
 

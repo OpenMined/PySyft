@@ -91,9 +91,6 @@ samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = ma
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 
-# Dynamically added to msgpack.serde.simplifiers by some other test
-samples[syft.workers.virtual.VirtualWorker] = make_baseworker
-
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
@@ -105,6 +102,8 @@ def test_serde_coverage():
 @pytest.mark.parametrize("cls", samples)
 def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
+    workers["serde_worker"] = serde_worker
     _samples = samples[cls](
         workers=workers,
         hook=hook,
@@ -118,7 +117,6 @@ def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
             if not sample.get("forced", False)
             else msgpack.serde._force_full_simplify
         )
-        serde_worker = syft.hook.local_worker
         serde_worker.framework = sample.get("framework", torch)
         obj = sample.get("value")
         simplified_obj = _simplify(serde_worker, obj)
@@ -141,6 +139,8 @@ def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
 @pytest.mark.parametrize("cls", samples)
 def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
+    workers["serde_worker"] = serde_worker
     _samples = samples[cls](
         workers=workers,
         hook=hook,
@@ -155,9 +155,8 @@ def test_serde_simplify(cls, workers, hook, start_remote_worker):
             if not sample.get("forced", False)
             else msgpack.serde._force_full_simplify
         )
-        serde_worker = syft.hook.local_worker
         serde_worker.framework = sample.get("framework", torch)
-        simplified_obj = _simplify(syft.hook.local_worker, obj)
+        simplified_obj = _simplify(serde_worker, obj)
 
         if sample.get("cmp_simplified", None):
             # Custom simplified objects comparison function.
