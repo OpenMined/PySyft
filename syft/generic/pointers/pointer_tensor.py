@@ -552,7 +552,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             if description:  # Description != None
                 # Decode binary description
-                description = description.decode("utf-8")
+                description = description
 
             ptr = PointerTensor(
                 location=location,
