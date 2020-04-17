@@ -6,13 +6,14 @@ on:
     - master
     paths:
     - "examples/tutorials/translations/**"
+
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
     - "examples/tutorials/translations/**"
 
 jobs:
-  build:
+  translation-tests:
 
     runs-on: ubuntu-latest
     strategy:
@@ -42,7 +43,6 @@ jobs:
         pip3 install -r pip-dep/requirements_dev.txt
         pip3 install -r pip-dep/requirements_udacity.txt
         pip3 install -r pip-dep/requirements_notebooks.txt
-        pip3 install scikit-learn
         python setup.py install
     - name: Test with pytest
       run: |

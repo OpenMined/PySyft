@@ -127,7 +127,7 @@ class LoggingTensor(AbstractTensor):
         function with arguments containing syft tensors of the class doing
         the overloading
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
         print("Default log", cmd)
 
     @staticmethod
