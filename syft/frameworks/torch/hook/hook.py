@@ -578,6 +578,22 @@ class TorchHook(FrameworkHook):
            loss functions.
            It is important to note that all the operations are actually in-place.
         """
+        self.element_iter_dict = {}
+
+        def register_element_iterator(name, func):
+            """register an internal element buffer iterator
+            """
+            if name in self.element_iter_dict.keys():
+                return
+            self.element_iter_dict[name] = func
+
+        def tensor_iterator(nn_self):
+            """adding relavant iterators for the tensor elements"""
+            iterators = [
+                "parameters",
+                "buffers",
+            ]  # all the element iterators from nn module should be listed here,
+            return [getattr(nn_self, iter) for iter in iterators]
 
         def module_is_missing_grad(model):
             """Checks if all the parameters in the model have been assigned a gradient"""
@@ -601,8 +617,9 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.send_(*dest, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.send_(*dest, **kwargs)
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.send(*dest, force=force_send)
