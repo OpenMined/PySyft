@@ -31,6 +31,7 @@ class PlaceHolder(AbstractTensor):
 
         if not isinstance(self.id, syft.execution.placeholder_id.PlaceholderId):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
+
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
         self.role = role
