@@ -1181,11 +1181,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if workers is not None:
             if not isinstance(workers, list):
                 workers = [workers]
-            workers.append(self)
         else:
-            # self is referenced in self.__known_workers
-            # NOTE: for some reason self._known_workers may contain a Plan
-            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
+            workers = [w for w in self._known_workers.values() if isinstance(w, AbstractWorker)]
+
+        # self is not referenced in self._known_workers when auto_add=False
+        if self not in workers:
+            workers.append(self)
 
         frameworks = set()
         for worker in workers:
