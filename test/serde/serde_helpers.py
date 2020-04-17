@@ -359,7 +359,9 @@ def make_torch_parameter(**kwargs):
                 CODE[torch.nn.Parameter],
                 (
                     param.id,  # (int) id
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], param.data),  # (Tensor) data
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], param.data
+                    ),  # (Tensor) data
                     param.requires_grad,  # (bool) requires_grad
                     None,
                 ),
@@ -854,7 +856,9 @@ def make_plan(**kwargs):
                     model_plan.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.tags),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.description),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.description
+                    ),
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
@@ -959,8 +963,7 @@ def make_protocol(**kwargs):
 
     plan.owner = worker
     protocol = syft.execution.protocol.Protocol(
-        [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)],
-        owner=worker
+        [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
     )
     protocol.tag("aaa")
     protocol.describe("desc")
@@ -1312,9 +1315,7 @@ def make_baseworker(**kwargs):
                 FORCED_CODE[syft.workers.base.BaseWorker],
                 (
                     (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
-                    msgpack.serde._simplify(
-                        worker, worker._objects
-                    ),  # (dict) _objects
+                    msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
                     worker.auto_add,  # (bool) auto_add
                 ),
             ),
@@ -1327,7 +1328,13 @@ def make_baseworker(**kwargs):
 def make_autogradtensor(**kwargs):
 
     t = torch.tensor([1, 2, 3])
-    agt = syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor(owner=kwargs["workers"]["serde_worker"]).on(t).child
+    agt = (
+        syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor(
+            owner=kwargs["workers"]["serde_worker"]
+        )
+        .on(t)
+        .child
+    )
     agt.tag("aaa")
     agt.describe("desc")
 
@@ -1392,7 +1399,9 @@ def make_privatetensor(**kwargs):
                     (CODE[tuple], ((CODE[str], (b"test",)),)),  # (tuple of ?) allowed_users
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"private",)),  # (str) description
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], t),  # (AbstractTensor) chain
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], t
+                    ),  # (AbstractTensor) chain
                 ),
             ),
             "cmp_detailed": compare,
@@ -1506,7 +1515,9 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], message1),  # (Any) message
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], message1
+                    ),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
@@ -1517,7 +1528,9 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], message2),  # (Any) message
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], message2
+                    ),  # (Any) message
                     (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
                 ),
             ),
@@ -1570,7 +1583,9 @@ def make_command_message(**kwargs):
             "value": cmd1,
             "simplified": (
                 CODE[syft.messaging.message.TensorCommandMessage],
-                (msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd1.action),),  # (Any) message
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd1.action),
+                ),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
@@ -1578,7 +1593,9 @@ def make_command_message(**kwargs):
             "value": cmd2,
             "simplified": (
                 CODE[syft.messaging.message.TensorCommandMessage],
-                (msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd2.action),),  # (Any) message
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cmd2.action),
+                ),  # (Any) message
             ),
             "cmp_detailed": compare,
         },
