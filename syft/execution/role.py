@@ -69,7 +69,9 @@ class Role(AbstractObject):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(self._store_placeholders(arg).value for arg in args)
+        self.input_placeholder_ids = tuple(
+            self._store_placeholders(arg).value for arg in args_ if isinstance(arg, PlaceHolder)
+        )
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.

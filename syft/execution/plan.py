@@ -3,6 +3,7 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import inspect
 import io
 import torch
 import warnings
@@ -224,11 +225,18 @@ class Plan(AbstractObject):
         # Run once to build the plan
         args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
 
+        # Add state to args if needed
+        if self.include_state:
+            args += (self.state,)
+
         with trace(framework_packages["torch"], self.role) as wrapped_torch:
-            if self.include_state:
-                results = self.forward(*args, self.state, torch=wrapped_torch)
-            else:
-                results = self.forward(*args, torch=wrapped_torch)
+            # Look for framework kwargs
+            framework_kwargs = {}
+            forward_args = inspect.getargspec(self.forward).args
+            if "torch" in forward_args:
+                framework_kwargs["torch"] = wrapped_torch
+
+            results = self.forward(*args, **framework_kwargs)
 
         # Disable tracing
         self.toggle_tracing(False)
