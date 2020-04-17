@@ -3,9 +3,9 @@ import torch
 from torch import nn
 from torch.nn import init
 
-import syft
-from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import precision
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
@@ -44,7 +44,7 @@ class RNNCellBase(nn.Module):
         h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
@@ -68,7 +68,7 @@ class RNNCell(RNNCellBase):
         elif nonlinearity == "relu":
             self.nonlinearity = torch.relu
         else:
-            raise ValueError("Unknown nonlinearity: {}".format(nonlinearity))
+            raise ValueError(f"Unknown nonlinearity: {nonlinearity}")
 
     def forward(self, x, h=None):
 
@@ -300,7 +300,7 @@ class RNNBase(nn.Module):
         )
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
