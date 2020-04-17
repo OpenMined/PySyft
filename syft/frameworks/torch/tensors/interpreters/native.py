@@ -957,6 +957,10 @@ class TorchTensor(AbstractTensor):
                     workers (list): Parties involved in the sharing of the Tensor
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
                         generation of the random numbers for encryption
+                    requires_grad (bool): If true, whenever the remote value of this tensor
+                        will have its gradient updated (for example when calling .backward()), a call
+                        will be made to set back the local gradient value.
+                    no_wrap (bool): If True, wrap() is called on the created pointer
                     Keyword Args: To be parsed as kwargs for the .fix_prec() method
 
                 With Respect to Paillier accepts:
@@ -972,10 +976,15 @@ class TorchTensor(AbstractTensor):
         if protocol.lower() == "mpc":
             workers = kwargs.pop("workers")
             crypto_provider = kwargs.pop("crypto_provider")
+            requires_grad = kwargs.pop("requires_grad", False)
+            no_wrap = kwargs.pop("no_wrap", False)
             kwargs_fix_prec = kwargs  # Rest of kwargs for fix_prec method
 
             x_shared = self.fix_prec(**kwargs_fix_prec).share(
-                *workers, crypto_provider=crypto_provider
+                *workers,
+                crypto_provider=crypto_provider,
+                requires_grad=requires_grad,
+                no_wrap=no_wrap,
             )
             return x_shared
 
