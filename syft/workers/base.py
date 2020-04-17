@@ -1178,15 +1178,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 'torch': serialization will only work between workers that support PyTorch
                 (more to come: 'tensorflow', 'numpy', etc)
         """
-        if workers is not None:
-            if not isinstance(workers, list):
-                workers = [workers]
-        else:
+        if workers is None:
             workers = [w for w in self._known_workers.values() if isinstance(w, AbstractWorker)]
 
-        # self is not referenced in self._known_workers when auto_add=False
-        if self not in workers:
-            workers.append(self)
+        if not isinstance(workers, list):
+            workers = [workers]
+
+        workers.append(self)
 
         frameworks = set()
         for worker in workers:
