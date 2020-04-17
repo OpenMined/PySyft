@@ -70,7 +70,7 @@ exclusion_list_notebooks += excluded_translated_notebooks
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/monitor_network_traffic",
-    "examples/tutorials/advanced/privacy_attacks"
+    "examples/tutorials/advanced/privacy_attacks",
     "examples/tutorials/advanced/websockets_mnist_parallel",
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
