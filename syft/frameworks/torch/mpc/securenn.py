@@ -629,7 +629,7 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
             for r_in in range(0, nb_rows_in - (kernel[0] - 1), stride[0]):
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
-                        a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]].child
+                        a_sh[batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1]]
                     )
                     res.append(m.wrap())
 
