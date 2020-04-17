@@ -548,7 +548,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             if tags:  # Tag != None
                 # Decode binary tags
-                tags = tuple(map(lambda x: x.decode("utf-8"), tags))
+                tags = tuple(map(lambda x: x, tags))
 
             if description:  # Description != None
                 # Decode binary description
