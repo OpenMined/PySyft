@@ -426,10 +426,7 @@ class FixedPrecisionTensor(AbstractTensor):
             # If we try to matmul a FPT>torch.tensor with a FPT>AST,
             # we swap operators so that we do the same operation as above
             new_self = other.child
-            if self.child.is_wrapper:
-                new_args = self.child.child.fix_prec()
-            else:
-                new_args = (self,)
+            new_args = (self,)
             new_kwargs = kwargs
         else:
             # Replace all syft tensor with their child attribute
