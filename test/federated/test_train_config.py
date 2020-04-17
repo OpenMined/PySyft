@@ -9,6 +9,7 @@ import syft as sy
 
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
+from syft.workers.node_client import NodeClient
 from syft.frameworks.torch.fl import utils
 
 PRINT_IN_UNITTESTS = False
@@ -274,7 +275,7 @@ def test_send_model_and_loss_fn(workers):
 
 
 @pytest.mark.asyncio
-async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: no cover
+async def test_train_config_with_jit_trace_async_wc(hook, start_proc):  # pragma: no cover
     kwargs = {"id": "async_fit", "host": "localhost", "port": 8777, "hook": hook}
     # data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
     # target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
@@ -292,6 +293,84 @@ async def test_train_config_with_jit_trace_async(hook, start_proc):  # pragma: n
     # time.sleep(0.1)
 
     remote_proxy = WebsocketClientWorker(**kwargs)
+
+    @hook.torch.jit.script
+    def loss_fn(pred, target):
+        return ((target.view(pred.shape).float() - pred.float()) ** 2).mean()
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 2)
+            self.fc3 = nn.Linear(2, 1)
+
+        def forward(self, x):
+            x = F.relu(self.fc1(x))
+            x = F.relu(self.fc2(x))
+            x = self.fc3(x)
+            return x
+
+    model_untraced = Net()
+
+    model = torch.jit.trace(model_untraced, mock_data)
+
+    pred = model(data)
+    loss_before = loss_fn(target=target, pred=pred)
+
+    # Create and send train config
+    train_config = sy.TrainConfig(
+        model=model, loss_fn=loss_fn, batch_size=2, optimizer="SGD", optimizer_args={"lr": 0.1}
+    )
+    train_config.send(remote_proxy)
+
+    for epoch in range(5):
+        loss = await remote_proxy.async_fit(dataset_key=dataset_key)
+        if PRINT_IN_UNITTESTS:  # pragma: no cover
+            print("-" * 50)
+            print(f"Iteration {epoch}: alice's loss: {loss}")
+
+    new_model = train_config.model_ptr.get()
+
+    assert not (model.fc1._parameters["weight"] == new_model.obj.fc1._parameters["weight"]).all()
+    assert not (model.fc2._parameters["weight"] == new_model.obj.fc2._parameters["weight"]).all()
+    assert not (model.fc3._parameters["weight"] == new_model.obj.fc3._parameters["weight"]).all()
+    assert not (model.fc1._parameters["bias"] == new_model.obj.fc1._parameters["bias"]).all()
+    assert not (model.fc2._parameters["bias"] == new_model.obj.fc2._parameters["bias"]).all()
+    assert not (model.fc3._parameters["bias"] == new_model.obj.fc3._parameters["bias"]).all()
+
+    new_model.obj.eval()
+    pred = new_model.obj(data)
+    loss_after = loss_fn(target=target, pred=pred)
+    if PRINT_IN_UNITTESTS:  # pragma: no cover
+        print(f"Loss before training: {loss_before}")
+        print(f"Loss after training: {loss_after}")
+
+    remote_proxy.close()
+    # server.terminate()
+
+    assert loss_after < loss_before
+
+
+@pytest.mark.asyncio
+async def test_train_config_with_jit_trace_async_nc(hook, start_proc):  # pragma: no cover
+    kwargs = {"id": "async_fit", "address": "ws://localhost:8777", "hook": hook}
+    # data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
+    # target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
+    # dataset_key = "xor"
+    data, target = utils.create_gaussian_mixture_toy_data(100)
+    dataset_key = "gaussian_mixture"
+
+    mock_data = torch.zeros(1, 2)
+
+    # TODO check reason for error (RuntimeError: This event loop is already running) when starting websocket server from pytest-asyncio environment
+    # dataset = sy.BaseDataset(data, target)
+
+    # server, remote_proxy = start_remote_worker(id="async_fit", port=8777, hook=hook, dataset=(dataset, dataset_key))
+
+    # time.sleep(0.1)
+
+    remote_proxy = NodeClient(**kwargs)
 
     @hook.torch.jit.script
     def loss_fn(pred, target):
