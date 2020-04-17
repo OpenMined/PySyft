@@ -1,17 +1,11 @@
-# TODO Workaround to cyclic import
-# HELP NEEDED HERE
-# This file is normally inside the nn/ directory. In the precision.py file
-# when we import nn, the nn/__init__.py gets called. Currently all other classes
-# (ie Conv2d, AvgPool2d, etc) behave well when imported in the nn/__init__.py
-# But due to the RNN Classes requiring the import of FixedPrecisionTensor (line 14)
-# and precision.py requiring the import of nn module, there is a problem.
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
 
+
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+from syft.frameworks.torch.tensors.interpreters import precision
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
@@ -50,7 +44,7 @@ class RNNCellBase(nn.Module):
         h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
@@ -306,7 +300,7 @@ class RNNBase(nn.Module):
         )
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
