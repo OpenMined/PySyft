@@ -717,7 +717,6 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
-    # owner.de_register_obj(tensor)
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
