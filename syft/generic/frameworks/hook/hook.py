@@ -8,7 +8,6 @@ from typing import List, Tuple
 
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.hook.trace import tracer
 from syft.generic.object import initialize_object
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -100,7 +99,7 @@ class FrameworkHook(ABC):
             if f"native_{attr}" not in dir(tensor_type):
                 native_method = getattr(tensor_type, attr)
                 setattr(tensor_type, f"native_{attr}", native_method)
-                new_method = self._get_hooked_method(tensor_type, attr)
+                new_method = self._get_hooked_method(attr)
                 setattr(tensor_type, attr, new_method)
 
     def _hook_properties(hook_self, tensor_type: type):
@@ -392,7 +391,7 @@ class FrameworkHook(ABC):
         return overloaded_syft_method
 
     @classmethod
-    def _get_hooked_method(cls, tensor_type, method_name):
+    def _get_hooked_method(cls, method_name):
         """
         Hook a method in order to replace all args/kwargs syft/torch tensors with
         their child attribute if they exist
@@ -406,8 +405,7 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
-        @tracer(method_name=method_name)
-        @wraps(getattr(tensor_type, method_name))
+        @wraps(method_name)
         def overloaded_native_method(self, *args, **kwargs):
             """
             Operate the hooking
@@ -581,13 +579,11 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
-        @tracer(func_name=cmd_name)
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
             Operate the hooking
             """
-
             try:
                 tensor_type = (
                     type(args[0]) if not isinstance(args[0], (tuple, list)) else type(args[0][0])
