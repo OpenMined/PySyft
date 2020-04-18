@@ -30,3 +30,13 @@ def test_import():
         assert isinstance(e, ImportError)
 
     assert catched
+
+
+def test_ser_deser():
+    func = jail.JailRunner(func=add_tensors, modules=[th])
+    func_ser = jail.JailRunner.simplify(func)
+    func_deser = jail.JailRunner.detail(func_ser)
+
+    t = th.tensor(2)
+    expected = th.tensor(7)
+    assert expected == func_deser(t)

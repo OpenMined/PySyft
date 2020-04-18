@@ -53,9 +53,12 @@ class JailRunner:
         self._func_src = func_src
 
         self._jail_globals = global_kwargs
+        # save names for serialization
+        self._module_names = []
         # add modules
         for module in modules:
             self._jail_globals[module.__name__] = module
+            self._module_names.append(module.__name__)
 
         self._is_built = False
         self._build()
@@ -106,3 +109,20 @@ class JailRunner:
             return (False, "")
 
         return (True, func_def.name)
+
+    @staticmethod
+    def simplify(jail: "JailRunner") -> tuple:
+        return (jail._func_src, jail._module_names)
+
+    @staticmethod
+    def detail(jail_tuple: tuple) -> "JailRunner":
+        available_modules = {
+            "torch": torch,
+            "crypten": crypten,
+            "syft": syft,
+        }
+
+        func_src, module_names = jail_tuple
+        modules = [available_modules[name] for name in module_names]
+
+        return JailRunner(func_src=func_src, modules=modules)
