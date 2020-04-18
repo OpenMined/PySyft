@@ -120,8 +120,8 @@ def test_plan_torch_function_no_args(workers):
     from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        y = th.tensor([-1])
+    def serde_plan(x, torch=th):
+        y = torch.tensor([-1])
         z = x + y
         return z
 
@@ -134,8 +134,8 @@ def test_plan_torch_function_no_args(workers):
     assert actual == expected == th.tensor([0.0])
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        y = th.arange(3)
+    def serde_plan(x, torch=th):
+        y = torch.arange(3)
         z = y + x
         return z
 
@@ -149,9 +149,9 @@ def test_plan_torch_function_no_args(workers):
     assert (actual == th.tensor([1, 2, 3])).all()
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        th.manual_seed(14)
-        y = th.randint(2, size=(1,), dtype=th.uint8)
+    def serde_plan(x, torch=th):
+        torch.manual_seed(14)
+        y = torch.randint(2, size=(1,), dtype=torch.uint8)
         y = y + 10
         return y
 
