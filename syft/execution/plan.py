@@ -33,10 +33,16 @@ class FrameworkWrapper:
         self.role = role
 
     def __getattr__(self, attr_name):
-        def trace_wrapper(*args, **kwargs):
-            command = (attr_name, None, args, kwargs)
+        package_attr = getattr(self.package, attr_name)
+        # Forward directly the attribute if it's not a function
+        if not callable(package_attr):
+            return package_attr
 
-            result = getattr(self.package, attr_name)(*args, **kwargs)
+        def trace_wrapper(*args, **kwargs):
+            cmd_name = ".".join((self.package.__name__, attr_name))
+            command = (cmd_name, None, args, kwargs)
+
+            result = package_attr(*args, **kwargs)
             ph = PlaceHolder(role=self.role, tracing=True, owner=self.role.owner)
             response = ph.instantiate(result)
 
