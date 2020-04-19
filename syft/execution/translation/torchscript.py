@@ -20,11 +20,28 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         tmp_forward = plan.forward
         plan.forward = None
 
-        # To avoid storing Plan state tensors in torchscript, they will be send as parameters
+        # To avoid storing Plan state tensors inside the torchscript,
+        # we trace wrapper func, which accepts state parameters as last arg
+        # and sets them into the Plan before executing the Plan
+        def wrap_stateful_plan(*args):
+            role = plan.role
+            state = args[-1]
+            if 0 < len(role.state.state_placeholders) == len(state) and isinstance(
+                state, (list, tuple)
+            ):
+                state_placeholders = tuple(
+                    role.placeholders[ph.id.value] for ph in role.state.state_placeholders
+                )
+                PlaceHolder.instantiate_placeholders(role.state.state_placeholders, state)
+                PlaceHolder.instantiate_placeholders(state_placeholders, state)
+
+            return plan(*args[:-1])
+
         plan_params = plan.parameters()
         if len(plan_params) > 0:
-            args = (*args, plan_params)
-        torchscript_plan = jit.trace(plan, args)
+            torchscript_plan = jit.trace(wrap_stateful_plan, (*args, plan_params))
+        else:
+            torchscript_plan = jit.trace(plan, args)
         plan.torchscript = torchscript_plan
         plan.forward = tmp_forward
 
