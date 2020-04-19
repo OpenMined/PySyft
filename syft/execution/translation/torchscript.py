@@ -11,30 +11,26 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         super().__init__(plan)
 
     def translate(self):
-        plan = self.plan
+        translation_plan = self.plan.copy()
+        translation_plan.forward = None
 
-        args_shape = plan.get_args_shape()
+        args_shape = translation_plan.get_args_shape()
         args = PlaceHolder.create_placeholders(args_shape)
 
-        # Temporarily remove reference to original function
-        tmp_forward = plan.forward
-        plan.forward = None
-
         # To avoid storing Plan state tensors in torchscript, they will be send as parameters
-        plan_params = plan.parameters()
+        plan_params = translation_plan.parameters()
         if len(plan_params) > 0:
             args = (*args, plan_params)
-        torchscript_plan = jit.trace(plan, args)
-        plan.torchscript = torchscript_plan
-        plan.forward = tmp_forward
+        torchscript_plan = jit.trace(translation_plan, args)
 
-        return plan
+        self.plan.torchscript = torchscript_plan
+
+        return self.plan
 
     def remove(self):
-        plan = self.plan
-        plan.torchscript = None
+        self.plan.torchscript = None
 
-        return plan
+        return self.plan
 
 
 # Register translators that should apply at Plan build time
