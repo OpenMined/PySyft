@@ -94,7 +94,7 @@ class PlaceHolder(AbstractTensor):
 
         We remove Placeholders if is there are any.
         """
-        if isinstance(tensor, PlaceHolder):
+        if isinstance(tensor, PlaceHolder) or tensor.is_wrapper:
             self.child = tensor.child
         else:
             self.child = tensor

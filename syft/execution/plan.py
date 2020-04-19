@@ -301,7 +301,7 @@ class Plan(AbstractObject):
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param.data)
+                self.role.register_state_tensor(param)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
@@ -311,21 +311,19 @@ class Plan(AbstractObject):
             raise AttributeError("State attribute not found.")
 
         value = self.state_attributes[name]
-
         if not self.is_building:
             return value
 
         if isinstance(value, FrameworkTensor):
-            value = PlaceHolder(role=self.role, owner=self.role.owner).instantiate(value)
+            return self.role.placeholders[value.id]
         elif isinstance(value, FrameworkLayerModule):
             # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
-            value = copy.deepcopy(value)
-            for param in value.parameters():
-                param.data = PlaceHolder(role=self.role, owner=self.role.owner).instantiate(
-                    param.data
-                )
+            copied_layer = copy.deepcopy(value)
+            for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
+                (copied_name, _) = copied_param
+                copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
 
-        return value
+            return copied_layer
 
     def __call__(self, *args):
         """

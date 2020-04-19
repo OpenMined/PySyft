@@ -270,10 +270,10 @@ def test_plan_built_on_class(hook):
 
             self.bias = th.tensor([1000.0])
 
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
+        def forward(self, x, torch=th):
+            x = torch.nn.functional.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0) + self.bias
+            return torch.nn.functional.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 

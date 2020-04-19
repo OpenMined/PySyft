@@ -94,7 +94,7 @@ class Role(AbstractObject):
         self.actions.append(action)
 
     def register_state_tensor(self, tensor):
-        placeholder = sy.PlaceHolder(id=tensor.id, owner=self.owner)
+        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=self.owner)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
         # TODO isn't it weird that state placeholders are both in state and plan?
