@@ -60,7 +60,7 @@ class PlaceHolder(AbstractTensor):
         """
         cmd, _, args, kwargs = command
 
-        # Replace all FixedPrecisionTensor with their child attribute
+        # Replace all PlaceHolders with their child attribute
         new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
 
         # build the new command

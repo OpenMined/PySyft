@@ -210,11 +210,12 @@ def test_plan_method_execute_locally(hook):
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
 
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
+        def forward(self, x, torch=th):
+            x = torch.nn.functional.relu(self.fc1(x))
+            print(x)
             x = self.fc2(x)
             x = self.fc3(x)
-            return F.log_softmax(x, dim=0)
+            return torch.nn.functional.log_softmax(x, dim=0)
 
     model = Net()
 

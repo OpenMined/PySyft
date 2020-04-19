@@ -3,6 +3,7 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
+import copy
 import inspect
 import io
 import torch
@@ -165,6 +166,8 @@ class Plan(AbstractObject):
         self.role = role or Role(state_tensors=state_tensors, owner=owner)
 
         self.include_state = include_state
+        self.is_building = False
+        self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
 
@@ -227,6 +230,7 @@ class Plan(AbstractObject):
 
         # Enable tracing
         self.toggle_tracing(True)
+        self.is_building = True
 
         # Run once to build the plan
         args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
@@ -246,6 +250,7 @@ class Plan(AbstractObject):
 
         # Disable tracing
         self.toggle_tracing(False)
+        self.is_building = False
 
         # Register inputs in role
         self.role.register_inputs(args)
@@ -291,13 +296,36 @@ class Plan(AbstractObject):
         """Add new tensors or parameter attributes to the state and register them
         in the owner's registry
         """
-        object.__setattr__(self, name, value)
-
         if isinstance(value, FrameworkTensor):
             self.role.register_state_tensor(value)
+            self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
-            for tensor_name, tensor in value.named_tensors():
-                self.__setattr__(f"{name}_{tensor_name}", tensor)
+            for param in value.parameters():
+                self.role.register_state_tensor(param.data)
+            self.state_attributes[name] = value
+        else:
+            object.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        if name not in self.state_attributes:
+            raise AttributeError("State attribute not found.")
+
+        value = self.state_attributes[name]
+
+        if not self.is_building:
+            return value
+
+        if isinstance(value, FrameworkTensor):
+            value = PlaceHolder(role=self.role, owner=self.role.owner).instantiate(value)
+        elif isinstance(value, FrameworkLayerModule):
+            # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
+            value = copy.deepcopy(value)
+            for param in value.parameters():
+                param.data = PlaceHolder(role=self.role, owner=self.role.owner).instantiate(
+                    param.data
+                )
+
+        return value
 
     def __call__(self, *args):
         """
