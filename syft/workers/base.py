@@ -542,13 +542,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             obj = self.get_obj(obj_id)
             response = source_worker.send(obj, *destinations, **kwargs_)
-
-            response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-
-            # @lariffle: We only remove remote objects when the operations are inplace
-            # otherwise we could have stale pointers which we really want to avoid.
-            # TODO: needs more discussion
-            if kwargs_.get("inplace"):
+            if kwargs_.get("requires_grad", False):
+                response = hook_args.register_response(
+                    "send", response, [sy.ID_PROVIDER.pop()], self
+                )
+            else:
+                response.garbage_collect_data = False
                 self.rm_obj(obj_id)
             return response
 

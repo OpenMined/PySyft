@@ -7,6 +7,23 @@ import torch.nn.functional as F
 import syft.frameworks.torch.nn as syft_nn
 
 
+def test_nn_linear(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1.0, 2]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    y = model(x)
+
+    assert len(alice._objects) == 4  # x, y, weight, bias
+    assert len(bob._objects) == 4
+    assert y.get().float_prec() == torch.tensor([[2.0]])
+
+
 def test_conv2d(workers):
     """
     Test the nn.Conv2d module to ensure that it produces the exact same
