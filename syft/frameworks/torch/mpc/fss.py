@@ -11,6 +11,7 @@ import hashlib
 import math
 from numba import jit
 import numpy as np
+import sha_loop
 
 import torch as th
 import syft as sy
@@ -75,7 +76,6 @@ def fss_op(x1, x2, type_op="eq"):
         shares of the comparison
     """
 
-    me = sy.local_worker
     locations = x1.locations
 
     shares = []
@@ -195,7 +195,7 @@ class DPF:
         s, t, CW = (
             Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, n_values),
-            Array(n, 2 * (λs + 1), n_values),
+            Array(n, 2, (λs + 1), n_values),
         )
         s[0] = randbit(shape=(2, λ, n_values))
         t[0] = np.array([[0, 1]] * n_values).T
@@ -212,7 +212,6 @@ class DPF:
 
             for b in (0, 1):
                 τ = [g0, g1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λs + 1, n_values)
                 filtered_τ = multi_dim_filter(τ, α[i])
                 s[i + 1, b], t[i + 1, b] = split(filtered_τ, (λs, 1))
 
@@ -232,7 +231,6 @@ class DPF:
         t[0] = b
         for i in range(0, n):
             τ = G(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λs + 1, n_values)
             filtered_τ = multi_dim_filter(τ, x[i])
             s[i + 1], t[i + 1] = split(filtered_τ, (λs, 1))
 
@@ -255,7 +253,7 @@ class DIF:
         s, t, CW = (
             Array(n + 1, 2, λs, n_values),
             Array(n + 1, 2, n_values),
-            Array(n, 2 + 2 * (λs + 1), n_values),
+            Array(n, 2, 1 + (λs + 1), n_values),
         )
         s[0] = randbit(shape=(2, λ, n_values))
         t[0] = np.array([[0, 1]] * n_values).T
@@ -271,7 +269,6 @@ class DIF:
 
             for b in (0, 1):
                 τ = [h0, h1][b] ^ (t[i, b] * CW[i])
-                τ = τ.reshape(2, λs + 2, n_values)
                 # filtered_τ = τ[𝛼[i]] OLD
                 filtered_τ = multi_dim_filter(τ, α[i])
                 σ_leaf, s[i + 1, b], t[i + 1, b] = split(filtered_τ, (1, λs, 1))
@@ -291,14 +288,12 @@ class DIF:
         t[0] = b
         for i in range(0, n):
             τ = H(s[i]) ^ (t[i] * CW[i])
-            τ = τ.reshape(2, λs + 2, n_values)
             filtered_τ = multi_dim_filter(τ, x[i])
             σ_leaf, s[i + 1], t[i + 1] = split(filtered_τ, (1, λs, 1))
             FnOutput[i] = σ_leaf
 
         # Last tour, the other σ is also a leaf:
         FnOutput[n] = t[n]
-        # print(FnOutput)
         flat_result = FnOutput.sum(axis=0) % 2
         return flat_result.astype(np.int64).reshape(original_shape)
 
@@ -307,15 +302,23 @@ def Array(*shape):
     return np.empty(shape, dtype=np.uint64)
 
 
-def bit_decomposition(x, nbits=n):
-    return np.flip((x.reshape(-1, 1) >> np.arange(nbits, dtype=np.uint64)) % 2, axis=1).T
+def bit_decomposition(x):
+    x = x.astype(np.uint32)
+    n_values = x.shape[0]
+    x = x.reshape(-1, 1).view(np.uint8)
+    x = x.reshape(n_values, 4, 1)
+    x = x >> np.arange(8, dtype=np.uint8)
+    x = x & 0b1
+    x = np.flip(x.reshape(n_values, -1), axis=1).T
+    return x
 
 
 def randbit(shape):
+    assert len(shape) == 3
     byte_dim = shape[-2]
     shape_with_bytes = shape[:-2] + (math.ceil(byte_dim / 64), shape[-1])
     randvalues = np.random.randint(0, 2 ** 64, size=shape_with_bytes, dtype=np.uint64)
-    randvalues[0] = randvalues[0] % 2 ** (byte_dim % 64)
+    randvalues[:, 0] = randvalues[:, 0] % 2 ** (byte_dim % 64)
     return randvalues
 
 
@@ -335,63 +338,85 @@ def huge_loop(seed_t_bytes, n_iter):
 
 def G(seed):
     """ λ -> 2(λ + 1)"""
+
+    assert len(seed.shape) == 2
+    n_values = seed.shape[1]
     assert seed.shape[0] == λs
-    seed_t = seed.T
-    seed_t_bytes = seed_t.tobytes()
+    x = seed
+    x = x.T
+    dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
+    x2 = x.view(dtype=dt1)
+    x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    buffers = huge_loop(seed_t_bytes, seed_t.shape[0])
+    assert x.shape == (n_values, 2 * 8)
 
-    buffer = b"".join(buffers)
+    out = np.empty((n_values, 32), dtype=np.uint8)
 
-    buffer = np.frombuffer(buffer, dtype=np.uint64).reshape(-1, 4)
+    out = sha_loop.sha_loop_func(x, out)
+
+    buffer = out.view(np.uint64).T
+
+    valuebits = np.empty((2, 3, n_values), dtype=np.uint64)
 
     # [λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1]
-    buffer0, part0 = consume(buffer[:, 0], λ - 64)
-    part1 = buffer[:, 1]
-    part2 = buffer0 % 2
-    buffer2, part3 = consume(buffer[:, 2], λ - 64)
-    part4 = buffer[:, 3]
-    part5 = buffer2 % 2
+    buffer0, valuebits[0, 0] = consume(buffer[0], λ - 64)
+    valuebits[0, 1] = buffer[1]
+    valuebits[0, 2] = buffer0 & 0b1
+    buffer2, valuebits[1, 0] = consume(buffer[2], λ - 64)
+    valuebits[1, 1] = buffer[3]
+    valuebits[1, 2] = buffer2 & 0b1
 
-    valuebits = np.stack([part0, part1, part2, part3, part4, part5], axis=1)
-    return valuebits.T
+    return valuebits
+
+
+empty_dict = {}
 
 
 def H(seed):
     """ λ -> 2 + 2(λ + 1)"""
+
+    assert len(seed.shape) == 2
+    n_values = seed.shape[1]
     assert seed.shape[0] == λs
-    seed_t = seed.T
-    seed_t_bytes = seed_t.tobytes()
+    x = seed
+    x = x.T
+    dt1 = np.dtype((np.uint64, [("uint8", np.uint8, 8)]))
+    x2 = x.view(dtype=dt1)
+    x = x2["uint8"].reshape(*x.shape[:-1], -1)
 
-    buffers = huge_loop(seed_t_bytes, seed_t.shape[0])
+    assert x.shape == (n_values, 2 * 8)
 
-    buffer = b"".join(buffers)
+    if n_values not in empty_dict:
+        empty_dict[n_values] = np.empty((n_values, 32), dtype=np.uint8)
 
-    buffer = np.frombuffer(buffer, dtype=np.uint64).reshape(-1, 4)
+    out = empty_dict[n_values]
+
+    out = sha_loop.sha_loop_func(x, out)
+
+    buffer = out.view(np.uint64).T
 
     # [1, λ, 1, 1, λ, 1]
     # [1, λ - 64, 64, 1, 1, λ - 64, 64, 1]
-    buffer0, part1 = consume(buffer[:, 0], λ - 64)
-    part2 = buffer[:, 1]
-    doublebit = buffer0 % 4
-    part0 = doublebit // 2
-    part3 = doublebit % 2
-    buffer2, part4 = consume(buffer[:, 2], λ - 64)
-    part5 = buffer[:, 3]
-    doublebit = buffer2 % 4
-    part6 = doublebit // 2
-    part7 = doublebit % 2
+    valuebits = np.empty((2, 4, n_values), dtype=np.uint64)
 
-    valuebits = np.stack([part0, part1, part2, part3, part4, part5, part6, part7], axis=1)
-    return valuebits.T
+    buffer0, valuebits[0, 1] = consume(buffer[0], λ - 64)
+    valuebits[0, 2] = buffer[1]
+    valuebits[0, 0] = (buffer0 & 0b10) >> 1
+    valuebits[0, 3] = buffer0 & 0b1
+    buffer2, valuebits[1, 1] = consume(buffer[2], λ - 64)
+    valuebits[1, 2] = buffer[3]
+    valuebits[1, 0] = (buffer2 & 0b10) >> 1
+    valuebits[1, 3] = buffer2 & 0b1
+
+    return valuebits
 
 
 split_helpers = {
     (2, 1): lambda x: (x[:2], x[2]),
-    (2, 1, 2, 1): lambda x: (x[:2], x[2], x[3:5], x[5]),
+    (2, 1, 2, 1): lambda x: (x[0, :2], x[0, 2], x[1, :2], x[1, 2]),
     (1, 2, 1): lambda x: (x[0], x[1:3], x[3]),
-    (1, 2, 1, 1, 2, 1): lambda x: (x[0], x[1:3], x[3], x[4], x[5:7], x[7]),
+    (1, 2, 1, 1, 2, 1): lambda x: (x[0, 0], x[0, 1:3], x[0, 3], x[1, 0], x[1, 1:3], x[1, 3]),
 }
 
 
@@ -402,7 +427,7 @@ def split(list_, idx):
 ones_dict2 = {}
 
 
-def SwitchTableDPF(s, α_i, reshape=True):
+def SwitchTableDPF(s, α_i):
     one = np.ones((1, s.shape[1]), dtype=np.uint64)
     s_one = concat(s, one)
 
@@ -413,13 +438,7 @@ def SwitchTableDPF(s, α_i, reshape=True):
     pad = concat(1 - pad, pad, axis=0)
     Table = pad * s_one
 
-    if reshape:
-        return Table.reshape(-1, Table.shape[2])
-    else:
-        return Table
-
-
-ones_dict3 = {}
+    return Table
 
 
 def SwitchTableDIF(s, α_i):
@@ -431,26 +450,17 @@ def SwitchTableDIF(s, α_i):
     # [[[1 1 0]]
     #
     #  [[0 0 0]]]
-    zeros = np.zeros((1, 1, len(α_i)), dtype=np.uint64)
-    leafTable = concat(α_i.reshape(1, 1, -1), zeros, axis=0)
+    leafTable = np.zeros((2, 1, len(α_i)), dtype=np.uint64)
+    leafTable[0] = α_i.reshape(1, 1, -1)
 
-    nextTable = SwitchTableDPF(s, α_i, reshape=False)
+    nextTable = SwitchTableDPF(s, α_i)
 
     Table = concat(leafTable, nextTable, axis=1)
-    return Table.reshape(-1, Table.shape[2])
-
-
-ones_dict = {}
+    return Table  # .reshape(-1, Table.shape[2])
 
 
 def multi_dim_filter(τ, idx):
-    if τ.shape[1:] not in ones_dict:
-        ones_dict[τ.shape[1:]] = np.ones(τ.shape[1:], dtype=np.uint64)
-    ones = ones_dict[τ.shape[1:]]
-    pad = idx * ones
-    pad = pad.reshape(1, *pad.shape)
-    filtered = concat(1 - pad, pad, axis=0) * τ
-    filtered_τ = filtered.sum(axis=0)
+    filtered_τ = (1 - idx) * τ[0] + idx * τ[1]
     return filtered_τ
 
 
