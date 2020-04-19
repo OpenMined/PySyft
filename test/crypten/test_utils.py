@@ -50,7 +50,6 @@ def test_pack_crypten_model():
             p.set_(th.zeros_like(p))
 
     crypten_model = utils.unpack_values(packed, model=expected_crypten_model)
-    assert isinstance(crypten_model, syft_crypten._WrappedCryptenModel)
 
     out = crypten_model(dummy_input)
     assert th.all(expected_out == out)

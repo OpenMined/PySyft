@@ -79,4 +79,4 @@ def _unpack_value(value, model=None):
             with torch.no_grad():
                 p.set_(torch.tensor(p_val))
 
-        return syft_crypten.crypten_to_syft_model(model)
+        return model
