@@ -100,6 +100,10 @@ class PlaceHolder(AbstractTensor):
             self.child = tensor.child
         else:
             self.child = tensor
+
+        if self.child.shape is not None:
+            self.expected_shape = tuple(self.child.shape)
+
         return self
 
     def __str__(self) -> str:
