@@ -40,7 +40,12 @@ class JailRunner:
             if func is None:
                 raise ValueError("Either func_src or func must be set")
             else:
-                func_src = getsource(func)
+                try:
+                    func_src = getsource(func)
+                except:  # use inspect if dill fail
+                    import inspect
+
+                    func_src = inspect.getsource(func)
 
         if rm_decorators:
             # Remove decorator if any
