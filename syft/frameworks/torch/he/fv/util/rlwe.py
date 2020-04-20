@@ -20,7 +20,7 @@ def sample_poly_ternary(parms):
     result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
     for i in range(coeff_count):
         r = SystemRandom()
-        rand_index = round(r.choice([-1, 0, 1]))
+        rand_index = r.choice([-1, 0, 1])
         if rand_index == 1:
             for j in range(coeff_mod_count):
                 result[i + j * coeff_count] = 1
@@ -95,12 +95,7 @@ def encrypt_zero_asymmetric(context, public_key):
             for i in range(coeff_count):
                 result[k][i + j * coeff_count] = (
                     u[i + j * coeff_count] * public_key[k][i + j * coeff_count]
-                )
-
-    for k in range(encrypted_size):
-        for j in range(coeff_mod_count):
-            for i in range(coeff_count):
-                result[k][i + j * coeff_count] = result[k][i + j * coeff_count] % coeff_modulus[j]
+                ) % coeff_modulus[j]
 
     # Generate e_j <-- chi
     # c[j] = public_key[j] * u + e[j]
@@ -110,7 +105,7 @@ def encrypt_zero_asymmetric(context, public_key):
             for i in range(coeff_count):
                 result[k][i + j * coeff_count] = (
                     result[k][i + j * coeff_count] + e[i + j * coeff_count]
-                )
+                ) % coeff_modulus[j]
 
     return CipherText(result)  # result = public_key[j] * u + e[j]
 
