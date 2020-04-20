@@ -1108,8 +1108,6 @@ class AdditiveSharingTensor(AbstractTensor):
             Examples:
                 shared_tensor = detail(data)
             """
-        tensor_id, field, dtype, crypto_provider, chain = tensor_tuple
-
         tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
 
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
