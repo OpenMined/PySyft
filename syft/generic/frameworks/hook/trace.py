@@ -60,6 +60,11 @@ def tracer(func_name=None, method_name=None):
                     recording sub actions
             """
 
+            if not hasattr(syft, "hook") or syft.hook == None:
+                # Make sure that in the "hooking process" we do not access the
+                # syft.hook because it is not initialized
+                return func(*args, **kwargs)
+
             if syft.hook.trace.active and syft.hook.trace.out_of_action:
                 # Select if the tracer records a function or a method, not none or both
                 assert (func_name is None) ^ (method_name is None)
