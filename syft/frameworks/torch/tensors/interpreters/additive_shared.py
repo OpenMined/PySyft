@@ -226,6 +226,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share.get())
             else:
                 shares.append(share)
+                self.owner.de_register_obj(share)
 
         # For dtype values long and int modulo is automatically handled by native torch tensors
         result = self.modulo(sum(shares))
@@ -302,7 +303,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         workers = self.locations
 
-        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
+        ptr_to_sh = self.copy().wrap().send(workers[0], **no_wrap)
         pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
@@ -1083,6 +1084,7 @@ class AdditiveSharingTensor(AbstractTensor):
             chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
+        garbage_collect = tensor.get_garbage_collect_data()
         tensor.set_garbage_collect_data(False)
 
         return (
@@ -1091,6 +1093,7 @@ class AdditiveSharingTensor(AbstractTensor):
             tensor.dtype,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
+            garbage_collect,
         )
 
     @staticmethod
@@ -1105,8 +1108,10 @@ class AdditiveSharingTensor(AbstractTensor):
             Examples:
                 shared_tensor = detail(data)
             """
-
         tensor_id, field, dtype, crypto_provider, chain = tensor_tuple
+
+        tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
+
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
@@ -1120,6 +1125,8 @@ class AdditiveSharingTensor(AbstractTensor):
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
+
+        tensor.set_garbage_collect_data(garbage_collect)
 
         return tensor
 

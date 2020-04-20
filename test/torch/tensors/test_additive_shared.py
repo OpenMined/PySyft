@@ -548,21 +548,6 @@ def test_roll(workers):
     assert (res2.get() == torch.roll(t, (1, 2), dims=(0, 1))).all()
 
 
-def test_nn_linear(workers):
-    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    t = torch.tensor([[1.0, 2]])
-    x = t.fix_prec().share(bob, alice, crypto_provider=james)
-    model = nn.Linear(2, 1)
-    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
-    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
-    model.fix_precision().share(bob, alice, crypto_provider=james)
-
-    y = model(x)
-
-    assert y.get().float_prec() == torch.tensor([[2.0]])
-
-
 def test_matmul(workers):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -979,3 +964,37 @@ def test_dtype(workers):
         )
         and (x.get().float_prec() == torch.tensor([4.1, 5.2, 6.3])).all()
     )
+
+
+def test_garbage_collect_reconstruct(workers):
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    a = torch.ones(1, 5)
+    a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
+    a_recon = a_sh.child.child.reconstruct()
+
+    assert len(alice._objects) == 2
+    assert len(bob._objects) == 2
+
+
+def test_garbage_collect_move(workers):
+    bob, alice, me = (workers["bob"], workers["alice"], workers["me"])
+    a = torch.ones(1, 5).send(alice)
+    b = a.copy().move(bob)
+
+    assert len(alice._objects) == 1
+    assert len(bob._objects) == 1
+
+
+def test_garbage_collect_mul(workers):
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    a = torch.ones(1, 5)
+    b = torch.ones(1, 5)
+
+    a = a.encrypt(workers=[alice, bob], crypto_provider=james)
+    b = b.encrypt(workers=[alice, bob], crypto_provider=james)
+
+    for _ in range(3):
+        c = a * b
+
+    assert len(alice._objects) == 3
+    assert len(bob._objects) == 3
