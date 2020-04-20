@@ -22,11 +22,11 @@ from syft.exceptions import RemoteObjectFoundError
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
-    A PointerTensor forwards all API calls to the remote.PointerTensor objects
-    point to tensors (as their name implies). They exist to mimic the entire
-    API of a normal tensor, but instead of computing a tensor function locally
-    (such as addition, subtraction, etc.) they forward the computation to a
-    remote machine as specified by self.location. Specifically, every
+    A PointerTensor forwards all API calls to the remote tensor. PointerTensor
+    objects point to tensors (as their name implies). They exist to mimic the
+    entire API of a normal tensor, but instead of computing a tensor function
+    locally (such as addition, subtraction, etc.) they forward the computation
+    to a remote machine as specified by self.location. Specifically, every
     PointerTensor has a tensor located somewhere that it points to (they should
     never exist by themselves). Note that PointerTensor objects can point to
     both FrameworkTensor objects AND to other PointerTensor objects. Furthermore,
