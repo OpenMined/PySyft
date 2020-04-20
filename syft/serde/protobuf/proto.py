@@ -28,7 +28,7 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.execution.v1.type_wrapper_pb2 import type as typePB
+from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
@@ -51,7 +51,7 @@ from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedMo
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
-    type: typePB,
+    type: ClassTypePB,
     # Torch types
     torch.Tensor: TorchTensorPB,
     torch.device: DevicePB,

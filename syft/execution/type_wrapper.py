@@ -3,7 +3,7 @@ from syft.workers.abstract import AbstractWorker
 from warnings import warn
 from typing import Union
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
-
+from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
 
 class NestedTypeWrapper:
     """
@@ -183,57 +183,73 @@ class NestedTypeWrapper:
             nested_type_pb = NestedTypeWrapperPB()
 
             if isinstance(obj, list):
-                _ = [nested_type_pb.nested_type_list.append(bufferize_nested_structure(worker, elem)) for elem in obj]
+                for elem in obj:
+                    type_wrapper = NestedTypeWrapperPB.TypeContainer()
+                    type_wrapper.nested_type_list.CopyFrom(bufferize_nested_structure(worker, elem))
+                    nested_type_pb.nested_types.append(type_wrapper)
 
             if isinstance(obj, tuple):
-                _ = [nested_type_pb.nested_type_tuple.append(bufferize_nested_structure(worker, elem)) for elem in obj]
+                for elem in obj:
+                    type_wrapper = NestedTypeWrapperPB.TypeContainer()
+                    type_wrapper.nested_type_tuple.CopyFrom(bufferize_nested_structure(worker, elem))
+                    nested_type_pb.nested_types.append(type_wrapper)
 
             if isinstance(obj, dict):
                 for k, v in obj.items():
+                    type_wrapper = NestedTypeWrapperPB.TypeContainer()
                     if not isinstance(k, str):
                         raise NotImplementedError("Plans support at input only dicts with string keys only at this moment.")
-                    key_value_message = NestedTypeWrapperPB.key_value()
+                    key_value_message = NestedTypeWrapperPB.KeyValue()
                     key_value_message.key = k.encode("utf-8")
                     key_value_message.value.CopyFrom(bufferize_nested_structure(worker, v))
-
-                    nested_type_pb.nested_type_dict.append(key_value_message)
+                    type_wrapper.nested_type_dict.CopyFrom(key_value_message)
+                    nested_type_pb.nested_types.append(type_wrapper)
 
             if isinstance(obj, type):
+                typePB = ClassTypePB()
+                type_wrapper = NestedTypeWrapperPB.TypeContainer()
                 msg = sy.serde.protobuf.serde._bufferize(worker, obj)
-                nested_type_pb.nested_type.id = msg.id
-                nested_type_pb.nested_type.type = msg.type
+                typePB.id = msg.id
+                typePB.type = msg.type
+                type_wrapper.nested_type.CopyFrom(typePB)
+                nested_type_pb.nested_types.append(type_wrapper)
             return nested_type_pb
 
         result = bufferize_nested_structure(worker, nested_type_wrapper.serialized_nested_type)
         return result
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, obj):
-        def unbufferize_nested_structure(worker, obj):
-            if obj.nested_type_list:
-                nested_type_list = []
-                for elem in obj.nested_type_list:
-                    nested_type_list.append(unbufferize_nested_structure(worker, elem))
-                return nested_type_list
+    def unbufferize(worker: AbstractWorker, message):
+        def unbufferize_nested_structure(worker, message):
+            container = None
+            is_tuple = False
+            for obj in message.nested_types:
+                if obj.HasField("nested_type"):
+                    return sy.serde.protobuf.serde._unbufferize(worker, obj.nested_type)
 
-            if obj.nested_type_tuple:
-                nested_type_tuple = []
-                for elem in obj.nested_type_tuple:
-                    nested_type_tuple.append(unbufferize_nested_structure(worker, elem))
-                return tuple(nested_type_tuple)
+                if obj.HasField("nested_type_list"):
+                    if container is None:
+                        container = []
+                    container.append(unbufferize_nested_structure(worker, obj.nested_type_list))
+                if obj.HasField("nested_type_tuple"):
+                    if container is None:
+                        container = []
+                    is_tuple = True
+                    container.append(unbufferize_nested_structure(worker, obj.nested_type_tuple))
 
-            if obj.nested_type_dict:
-                nested_type_dict = {}
-                for elem in obj.nested_type_dict:
-                    key = elem.key.decode("utf-8")
-                    value = unbufferize_nested_structure(worker, elem.value)
-                    nested_type_dict[key] = value
-                return nested_type_dict
+                if obj.HasField("nested_type_dict"):
+                    if container is None:
+                        container = {}
 
-            if obj.nested_type:
-                return sy.serde.protobuf.serde._unbufferize(worker, obj.nested_type)
+                    key = obj.nested_type_dict.key.decode("utf-8")
+                    value = unbufferize_nested_structure(worker, obj.nested_type_dict.value)
+                    container[key] = value
 
-        result = unbufferize_nested_structure(worker, obj)
+            if is_tuple:
+                container = tuple(container)
+
+            return container
+        result = unbufferize_nested_structure(worker, message)
         wrapper = NestedTypeWrapper()
         wrapper.serialized_nested_type = result
         return wrapper

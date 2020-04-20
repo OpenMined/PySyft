@@ -9,7 +9,7 @@ import syft
 from collections import OrderedDict
 from google.protobuf.empty_pb2 import Empty
 from syft.workers.abstract import AbstractWorker
-from syft_proto.execution.v1.type_wrapper_pb2 import type as typePB
+from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
 
 def _bufferize_none(worker: AbstractWorker, obj: "type(None)") -> "Empty":
     """
@@ -36,8 +36,8 @@ def _unbufferize_none(worker: AbstractWorker, obj: "Empty") -> "type(None)":
     """
     return None
 
-def _bufferize_type(worker: AbstractWorker, obj) -> typePB:
-    proto_type = typePB()
+def _bufferize_type(worker: AbstractWorker, obj) -> ClassTypePB:
+    proto_type = ClassTypePB()
 
     if isinstance(obj, type):
         serialized_type = syft.serde.msgpack.serde._simplify(worker, obj)
@@ -46,7 +46,7 @@ def _bufferize_type(worker: AbstractWorker, obj) -> typePB:
 
     return proto_type
 
-def _unbufferize_type(worker: AbstractWorker, obj: typePB):
+def _unbufferize_type(worker: AbstractWorker, obj: ClassTypePB):
     if obj.type:
         original_type = syft.serde.msgpack.serde._detail(worker, (obj.id, obj.type))
         return original_type
