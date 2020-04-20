@@ -87,7 +87,9 @@ def add_support_to_workers(worker):
     worker._message_router[CryptenInitJail] = types.MethodType(run_crypten_party_jail, worker)
 
     for method in methods_to_add:
-        setattr(worker, method.__name__, types.MethodType(method, worker))
+        method_name = method.__name
+        if not hasattr(worker, method_name):
+            setattr(worker, method_name, types.MethodType(method, worker))
 
 
 def remove_support_from_worker(worker):

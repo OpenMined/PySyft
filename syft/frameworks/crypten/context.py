@@ -25,10 +25,6 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
     for key, val in communicator_args.items():
         os.environ[key] = str(val)
 
-    if rank == 1:
-        import pdb
-
-        pdb.set_trace()
     crypten.init()
     return_value = func(*func_args, **func_kwargs)
     crypten.uninit()

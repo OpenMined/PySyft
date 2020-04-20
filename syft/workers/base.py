@@ -35,6 +35,9 @@ from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
 
+from syft.workers.worker_support import add_support, remove_support
+
+
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ObjectNotFoundError
 from syft.exceptions import PlanCommandUnknownError
@@ -1121,14 +1124,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def add_crypten_support(self):
         """Add CrypTen specific methods"""
-        from syft.workers.worker_support import add_support
-
         add_support(self, "crypten")
 
     def remove_crypten_support(self):
         """Remove CrypTen specifc methods"""
-        from syft.workers.worker_support import remove_support
-
         remove_support(self, "crypten")
 
     @property
