@@ -5,6 +5,7 @@ import time
 import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
+import codecs
 
 import pytest
 import nbformat
@@ -26,6 +27,26 @@ advanced_notebooks = [
 translated_notebooks = [
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
 ]
+# Exclude all translated basic tutorials that are also
+# excluded in their original version.
+excluded_translated_notebooks = [
+    Path(nb).name for part in ["10", "13b", "13c"] for nb in translated_notebooks if part in nb
+]
+
+
+# Include only the translations that have been changed
+gitdiff = Path("test/notebooks/git-diff.txt")
+changed_files = []
+if gitdiff.is_file():
+    changed_files = open(gitdiff, "r")
+    changed_files = changed_files.readlines()
+    changed_files = [
+        codecs.decode(file.replace('"', "").replace("\n", ""), "unicode-escape")
+        .encode("latin-1")
+        .decode()
+        for file in changed_files
+    ]
+translated_notebooks_diff = list(set(changed_files) & set(translated_notebooks))
 
 # buggy notebooks with explanation what does not work
 exclusion_list_notebooks = [
@@ -43,17 +64,20 @@ exclusion_list_notebooks = [
     "Federated learning with websockets and federated averaging.ipynb",
 ]
 
+# Add excluded translated notebooks to the exclusion list
+exclusion_list_notebooks += excluded_translated_notebooks
+
 exclusion_list_folders = [
     "examples/tutorials/websocket",
-    "examples/tutorials/advanced/Monitor_Network_Traffic",
-    "examples/tutorials/advanced/websockets-example-MNIST-parallel",
+    "examples/tutorials/advanced/monitor_network_traffic",
+    "examples/tutorials/advanced/privacy_attacks",
+    "examples/tutorials/advanced/websockets_mnist_parallel",
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in travis and we do not know why for the moment
-    # new note: now that travis has been replaced with github actions, someone should test this to see if this is still needed or removed.
-    "examples/tutorials/advanced/Federated SMS Spam prediction",
+    # This notebook is skipped because it fails in github actions and we do not know why for the moment
+    "examples/tutorials/advanced/federated_sms_spam_prediction",
 ]
 
 
@@ -82,11 +106,37 @@ def test_notebooks_basic(isolated_filesystem, notebook):
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
 
+@pytest.mark.translation
 @pytest.mark.parametrize(
     "translated_notebook", sorted(set(translated_notebooks) - set(excluded_notebooks))
 )
 def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):  # pragma: no cover
     """Test Notebooks in the tutorial translations folder."""
+    notebook = "/".join(translated_notebook.split("/")[-2:])
+    notebook = f"translations/{notebook}"
+    list_name = Path(f"examples/tutorials/{notebook}")
+    tested_notebooks.append(str(list_name))
+    res = pm.execute_notebook(
+        notebook,
+        "/dev/null",
+        parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
+        timeout=400,
+    )
+    assert isinstance(res, nbformat.notebooknode.NotebookNode)
+
+
+@pytest.mark.translation
+@pytest.mark.parametrize(
+    "translated_notebook", sorted(set(translated_notebooks_diff) - set(excluded_notebooks))
+)
+def test_notebooks_basic_translations_diff(
+    isolated_filesystem, translated_notebook
+):  # pragma: no cover
+    """
+    Test Notebooks in the tutorial translations folder if they have been
+    modified in the current pull request. This test should not consider any
+    notebooks locally. It should be used on Github Actions.
+    """
     notebook = "/".join(translated_notebook.split("/")[-2:])
     notebook = f"translations/{notebook}"
     list_name = Path(f"examples/tutorials/{notebook}")
@@ -110,9 +160,9 @@ def test_notebooks_advanced(isolated_filesystem, notebook):
 
 
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
-    os.chdir("advanced/Federated Learning with TrainConfig/")
+    os.chdir("advanced/federated_learning_with_trainconfig")
     notebook = "Introduction to TrainConfig.ipynb"
-    p_name = Path("examples/tutorials/advanced/Federated Learning with TrainConfig/")
+    p_name = Path("examples/tutorials/advanced/federated_learning_with_trainconfig/")
     tested_notebooks.append(str(p_name / notebook))
     hook.local_worker.remove_worker_from_registry("alice")
     kwargs = {"id": "alice", "host": "localhost", "port": 8777, "hook": hook}
@@ -128,13 +178,13 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
 
 @pytest.mark.skip
 def test_fl_sms(isolated_filesystem):  # pragma: no cover
-    sys.path.append("advanced/Federated SMS Spam prediction/")
+    sys.path.append("advanced/federated_sms_spam_prediction/")
     import preprocess
 
-    os.chdir("advanced/Federated SMS Spam prediction/")
+    os.chdir("advanced/federated_sms_spam_prediction/")
 
     notebook = "Federated SMS Spam prediction.ipynb"
-    p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
+    p_name = Path("examples/tutorials/advanced/federated_sms_spam_prediction/")
     tested_notebooks.append(str(p_name / notebook))
     Path("data").mkdir(parents=True, exist_ok=True)
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip"
@@ -150,9 +200,9 @@ def test_fl_sms(isolated_filesystem):  # pragma: no cover
 def test_fl_with_websockets_and_averaging(
     isolated_filesystem, start_remote_server_worker_only, hook
 ):
-    os.chdir("advanced/websockets-example-MNIST/")
+    os.chdir("advanced/websockets_mnist/")
     notebook = "Federated learning with websockets and federated averaging.ipynb"
-    p_name = Path("examples/tutorials/advanced/websockets-example-MNIST/")
+    p_name = Path("examples/tutorials/advanced/websockets_mnist/")
     tested_notebooks.append(str(p_name / notebook))
     for n in ["alice", "bob", "charlie"]:
         hook.local_worker.remove_worker_from_registry(n)
@@ -185,6 +235,7 @@ def test_all_notebooks_except_translations():
     assert len(untested_notebooks) == 0, untested_notebooks
 
 
+@pytest.mark.translation
 def test_all_translation_notebooks():  # pragma: no cover
     untested_notebooks = set(translated_notebooks) - set(excluded_notebooks) - set(tested_notebooks)
     assert len(untested_notebooks) == 0, untested_notebooks

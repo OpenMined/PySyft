@@ -1,6 +1,7 @@
 import syft as sy
 import torch
-from typing import List
+from typing import Dict
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,12 +76,16 @@ def scale_model(model, scale):
     return model
 
 
-def federated_avg(models: List[torch.nn.Module], data_amount: List[int] = None) -> torch.nn.Module:
-    """Calculate the federated average of a list of models.
-    Args:
+def federated_avg(models: Dict[Any, torch.nn.Module], data_amount: List[int] = None) -> torch.nn.Module:
+    """Calculate the federated average of a dictionary containing models.
+       The models are extracted from the dictionary
+       via the models.values() command.
 
+    Args:
+        models (Dict[Any, torch.nn.Module]): a dictionary of models
+        for which the federated average is calculated.
         models: the list of models of which the federated average is calculated.
-        data_num: the list of number of data within corresponding model.
+        data_amount: the list of number of data within corresponding model.
     Returns:
 
         torch.nn.Module: the module with averaged parameters.
@@ -135,8 +140,8 @@ def create_gaussian_mixture_toy_data(nr_samples: int):  # pragma: no cover
     """
     sample_dim = 2
     one_half = int(nr_samples / 2)
-    X1 = torch.randn(one_half, sample_dim, requires_grad=True)
-    X2 = torch.randn(one_half, sample_dim, requires_grad=True) + 2
+    X1 = torch.randn(one_half, sample_dim, requires_grad=True) - 5
+    X2 = torch.randn(one_half, sample_dim, requires_grad=True) + 5
     X = torch.cat([X1, X2], dim=0)
     Y1 = torch.zeros(one_half, requires_grad=False).long()
     Y2 = torch.ones(one_half, requires_grad=False).long()

@@ -4,7 +4,7 @@ import syft as sy
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.messaging.protocol import Protocol
+from syft.execution.protocol import Protocol
 
 
 def _create_inc_protocol():

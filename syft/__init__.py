@@ -51,10 +51,10 @@ from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, Base
 from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
-from syft.messaging.protocol import Protocol
-from syft.messaging.plan import Plan
-from syft.messaging.plan import func2plan
-from syft.messaging.plan import method2plan
+from syft.execution.protocol import Protocol
+from syft.execution.plan import Plan
+from syft.execution.plan import func2plan
+from syft.execution.plan import method2plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -64,13 +64,11 @@ from syft.workers.websocket_server import WebsocketServerWorker
 # Import Syft's Public Tensor Types
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -82,6 +80,9 @@ from syft import serde
 # import functions
 from syft.frameworks.torch.functions import combine_pointers
 from syft.frameworks.torch.he.paillier import keygen
+
+# import common
+import syft.common.util
 
 
 def pool():
@@ -106,10 +107,8 @@ __all__.extend(
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
-        "CRTPrecisionTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
-        "LargePrecisionTensor",
         "PointerTensor",
         "MultiPointerTensor",
         "PrivateGridNetwork",

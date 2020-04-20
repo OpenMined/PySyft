@@ -34,6 +34,7 @@ samples[numpy.int64] = partial(make_numpy_number, numpy.int64)
 
 # PyTorch
 samples[torch.device] = make_torch_device
+samples[torch.dtype] = make_torch_dtype
 samples[torch.jit.ScriptModule] = make_torch_scriptmodule
 samples[torch.jit.ScriptFunction] = make_torch_scriptfunction
 samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
@@ -49,28 +50,31 @@ samples[
 samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
-samples[
-    syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
-] = make_crtprecisiontensor
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
+samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.role.Role] = make_role
+samples[syft.execution.state.State] = make_state
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
+samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.federated.train_config.TrainConfig] = make_trainconfig
+samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
+samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
+samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
+samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
 samples[syft.generic.pointers.multi_pointer.MultiPointerTensor] = make_multipointertensor
-samples[syft.messaging.plan.plan.Plan] = make_plan
-samples[syft.messaging.plan.state.State] = make_state
-samples[syft.messaging.protocol.Protocol] = make_protocol
+samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_plan.PointerPlan] = make_pointerplan
 samples[syft.generic.pointers.pointer_protocol.PointerProtocol] = make_pointerprotocol
-samples[syft.generic.pointers.object_wrapper.ObjectWrapper] = make_objectwrapper
-samples[syft.generic.pointers.object_pointer.ObjectPointer] = make_objectpointer
+samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.workers.base.BaseWorker] = make_baseworker
-samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
-samples[syft.frameworks.torch.tensors.interpreters.private.PrivateTensor] = make_privatetensor
-samples[syft.frameworks.torch.tensors.interpreters.placeholder.PlaceHolder] = make_placeholder
 
-samples[syft.messaging.message.Message] = make_message
-samples[syft.messaging.message.Operation] = make_operation
+samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
@@ -78,34 +82,39 @@ samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
 samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
+samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
 
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 
-# Dynamically added to msgpack.serde.simplifiers by some other test
-samples[syft.workers.virtual.VirtualWorker] = make_baseworker
-
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip(cls, workers):
+def test_serde_roundtrip(cls, workers, hook, start_remote_worker):
     """Checks that values passed through serialization-deserialization stay same"""
-    _samples = samples[cls](workers=workers)
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
+    workers["serde_worker"] = serde_worker
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9000,
+        id="roundtrip",
+    )
     for sample in _samples:
         _simplify = (
             msgpack.serde._simplify
             if not sample.get("forced", False)
             else msgpack.serde._force_full_simplify
         )
-        serde_worker = syft.hook.local_worker
         serde_worker.framework = sample.get("framework", torch)
         obj = sample.get("value")
         simplified_obj = _simplify(serde_worker, obj)
@@ -126,9 +135,17 @@ def test_serde_roundtrip(cls, workers):
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_simplify(cls, workers):
+def test_serde_simplify(cls, workers, hook, start_remote_worker):
     """Checks that simplified structures match expected"""
-    _samples = samples[cls](workers=workers)
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
+    workers["serde_worker"] = serde_worker
+    _samples = samples[cls](
+        workers=workers,
+        hook=hook,
+        start_remote_worker=start_remote_worker,
+        port=9001,
+        id="simplify",
+    )
     for sample in _samples:
         obj, expected_simplified_obj = sample.get("value"), sample.get("simplified")
         _simplify = (
@@ -136,9 +153,8 @@ def test_serde_simplify(cls, workers):
             if not sample.get("forced", False)
             else msgpack.serde._force_full_simplify
         )
-        serde_worker = syft.hook.local_worker
         serde_worker.framework = sample.get("framework", torch)
-        simplified_obj = _simplify(syft.hook.local_worker, obj)
+        simplified_obj = _simplify(serde_worker, obj)
 
         if sample.get("cmp_simplified", None):
             # Custom simplified objects comparison function.
