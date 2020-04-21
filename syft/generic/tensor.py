@@ -6,9 +6,9 @@ import syft as sy
 from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
-
-class AbstractTensor(AbstractObject):
+class AbstractTensor(AbstractObject, ProtobufInterface):
     def __init__(
         self,
         id: int = None,

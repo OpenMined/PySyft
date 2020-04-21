@@ -20,7 +20,7 @@ from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject, ProtobufInterface):
+class Role(AbstractObject):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """

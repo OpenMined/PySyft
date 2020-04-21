@@ -14,7 +14,7 @@ from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 from syft.interfaces.protobuf_interface import ProtobufInterface
 
 
-class Protocol(AbstractObject, ProtobufInterface):
+class Protocol(AbstractObject):
     """
     A Protocol coordinates a sequence of Plans, deploys them on distant workers
     and run them in a single pass.

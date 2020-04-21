@@ -25,7 +25,7 @@ from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandM
 from syft.interfaces.protobuf_interface import ProtobufInterface
 
 
-class Message(ABC):
+class Message(ABC, ProtobufInterface):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
@@ -53,7 +53,7 @@ class Message(ABC):
         return self.__str__()
 
 
-class TensorCommandMessage(Message, ProtobufInterface):
+class TensorCommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
@@ -207,7 +207,7 @@ class TensorCommandMessage(Message, ProtobufInterface):
         return CommandMessagePB
 
 
-class ObjectMessage(Message, ProtobufInterface):
+class ObjectMessage(Message):
     """Send an object to another worker using this message type.
 
     When a worker has an object in its local object repository (such as a tensor) and it wants

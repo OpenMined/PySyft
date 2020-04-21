@@ -19,7 +19,7 @@ from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as P
 from syft.exceptions import RemoteObjectFoundError
 
 
-class PointerTensor(ObjectPointer, AbstractTensor, ProtobufInterface):
+class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
     A PointerTensor forwards all API calls to the remote tensor. PointerTensor

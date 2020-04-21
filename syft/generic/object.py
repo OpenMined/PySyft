@@ -4,9 +4,9 @@ from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
-
-class AbstractObject(ABC):
+class AbstractObject(ABC, ProtobufInterface):
     """
     This is a generic object abstraction.
     """

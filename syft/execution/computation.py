@@ -8,7 +8,7 @@ from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
-class ComputationAction(Action, ProtobufInterface):
+class ComputationAction(Action):
     """Describes mathematical operations performed on tensors"""
 
     def __init__(self, name, target, args_, kwargs_, return_ids):

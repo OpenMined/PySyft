@@ -20,7 +20,7 @@ from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 no_wrap = {"no_wrap": True}
 
 
-class AdditiveSharingTensor(AbstractTensor, ProtobufInterface):
+class AdditiveSharingTensor(AbstractTensor):
     def __init__(
         self,
         shares: dict = None,

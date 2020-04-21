@@ -11,7 +11,7 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 
 
-class CommunicationAction(Action, ProtobufInterface):
+class CommunicationAction(Action):
     """Describes communication actions performed on tensors"""
 
     def __init__(
