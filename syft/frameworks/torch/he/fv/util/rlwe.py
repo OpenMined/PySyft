@@ -135,4 +135,4 @@ def encrypt_zero_symmetric(context, secret_key):
         for i in range(coeff_count):
             c0[i + j * coeff_count] = c0[i + j * coeff_count] % coeff_modulus[j]
 
-    return [c0, c1]
+    return CipherText([c0, c1])

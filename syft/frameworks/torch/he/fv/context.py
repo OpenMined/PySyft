@@ -1,4 +1,5 @@
 import numpy as np
+from syft.frameworks.torch.he.fv.util.base_convertor import BaseConvertor
 
 
 class Context:
@@ -14,18 +15,16 @@ class Context:
 
     def __init__(self, encryption_param):
         self._param = encryption_param
+        self._poly_modulus_degree = self._param.poly_modulus_degree
         self._coeff_modulus = self._param.coeff_modulus
         self._plain_modulus = encryption_param.plain_modulus
         self._coeff_div_plain_modulus = [int(x / self._plain_modulus) for x in self._coeff_modulus]
         self._plain_div_coeff_modulus = [self._plain_modulus / x for x in self._coeff_modulus]
+        # self._base_converter = BaseConvertor(self._coeff_modulus, self._poly_modulus_degree, self._plain_modulus)
 
     @property
     def param(self):
         return self._param
-
-    @param.setter
-    def param(self, value):
-        self._param = value
 
     @property
     def plain_modulus(self):
@@ -35,14 +34,10 @@ class Context:
     def coeff_div_plain_modulus(self):
         return self._coeff_div_plain_modulus
 
-    @coeff_div_plain_modulus.setter
-    def coeff_div_plain_modulus(self, value):
-        self._coeff_div_plain_modulus = value
-
     @property
     def plain_div_coeff_modulus(self):
         return self._plain_div_coeff_modulus
 
-    @plain_div_coeff_modulus.setter
-    def plain_div_coeff_modulus(self, value):
-        self._plain_div_coeff_modulus = value
+    @property
+    def base_convertor(self):
+        return self._base_converter
