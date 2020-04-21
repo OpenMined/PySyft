@@ -524,7 +524,7 @@ class TorchHook(FrameworkHook):
                         p.grad -= p.grad
 
         def module_send_(nn_self, *dest, force_send=False, **kwargs):
-            """Overloads torch.nn instances so that they could be sent to other workers"""
+            """Overloads crypten.nn instances so that they could be sent to other workers"""
             nn_self._check_encrypted()
 
             if module_is_missing_grad(nn_self):
@@ -550,7 +550,7 @@ class TorchHook(FrameworkHook):
         crypten.nn.Module.move = module_move_
 
         def module_get_(nn_self):
-            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
+            """Overloads crypten.nn instances with get method so that parameters could be sent back to owner"""
             nn_self._check_encrypted()
             for p in nn_self.parameters():
                 p.get_()
@@ -564,7 +564,7 @@ class TorchHook(FrameworkHook):
         crypten.nn.Module.get = module_get_
 
         def module_share_(nn_self, *args, **kwargs):
-            """Overloads fix_precision for torch.nn.Module."""
+            """Overloads share for crypten.nn.Module."""
             # TODO: add .data and .grad to syft tensors
             nn_self._check_encrypted()
             if module_is_missing_grad(nn_self):
@@ -579,7 +579,7 @@ class TorchHook(FrameworkHook):
         crypten.nn.Module.share = module_share_
 
         def module_fix_precision_(nn_self, *args, **kwargs):
-            """Overloads fix_precision for torch.nn.Module."""
+            """Overloads fix_precision for crypten.nn.Module."""
             nn_self._check_encrypted()
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
@@ -594,7 +594,7 @@ class TorchHook(FrameworkHook):
         crypten.nn.Module.fix_prec = module_fix_precision_
 
         def module_float_precision_(nn_self):
-            """Overloads float_precision for torch.nn.Module, convert fix_precision
+            """Overloads float_precision for crypten.nn.Module, convert fix_precision
             parameters to normal float parameters"""
             # TODO: add .data and .grad to syft tensors
             # if module_is_missing_grad(nn_self):
@@ -610,7 +610,7 @@ class TorchHook(FrameworkHook):
         crypten.nn.Module.float_prec = module_float_precision_
 
         def module_copy(nn_self):
-            """Returns a copy of a torch.nn.Module"""
+            """Returns a copy of a crypten.nn.Module"""
             nn_self._check_encrypted()
             return copy.deepcopy(nn_self)
 
