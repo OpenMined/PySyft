@@ -50,6 +50,9 @@ class AutogradTensor(AbstractTensor):
             grad = self * 0 + 1
         backwards_grad(self.grad_fn, grad)
 
+    def __del__(self):
+        print("!!Test from AutoGrad!!")
+
     @property
     def data(self):
         return self
