@@ -10,7 +10,7 @@ def test_placeholder_forwarding():
             return "Method 1"
 
         def copy(self):
-            return "Method 2"
+            return "Method 2" # noqa: F821
 
     placeholder = PlaceHolder()
     placeholder.instantiate(TestClass())
