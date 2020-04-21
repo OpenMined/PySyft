@@ -132,11 +132,11 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     @staticmethod
-    def create_from(tensor, role, owner, tracing=False):
+    def create_from(tensor, owner, role=None, tracing=False):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
-        return PlaceHolder(role=role, owner=owner, tracing=tracing).instantiate(tensor)
+        return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
     def create_placeholders(args_shape):
