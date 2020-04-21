@@ -650,6 +650,7 @@ class PointerTensor(ObjectPointer, AbstractTensor, ProtobufInterface):
     def get_protobuf_schema() -> PointerTensorPB:
         return PointerTensorPB
 
+
 ### Register the tensor with hook_args.py ###
 register_type_rule({PointerTensor: one})
 register_forward_func({PointerTensor: lambda p: (_ for _ in ()).throw(RemoteObjectFoundError(p))})

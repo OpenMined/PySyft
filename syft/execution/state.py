@@ -13,6 +13,7 @@ from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorP
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft.interfaces.protobuf_interface import ProtobufInterface
 
+
 class State(ProtobufInterface):
     """The State is a Plan attribute and is used to send tensors along functions.
 

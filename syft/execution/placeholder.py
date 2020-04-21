@@ -282,5 +282,6 @@ class PlaceHolder(AbstractTensor):
     def get_protobuf_schema() -> PlaceholderPB:
         return PlaceholderPB
 
+
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(PlaceHolder)

@@ -23,6 +23,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 from syft.interfaces.protobuf_interface import ProtobufInterface
+
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
 else:

@@ -1209,5 +1209,6 @@ class AdditiveSharingTensor(AbstractTensor, ProtobufInterface):
     def get_protobuf_schema() -> AdditiveSharingTensorPB:
         return AdditiveSharingTensorPB
 
+
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(AdditiveSharingTensor)

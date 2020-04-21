@@ -62,6 +62,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
 for proto_class in ProtobufInterface.__subclasses__():
     MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
 
+
 def set_protobuf_id(field, id):
     if type(id) == type("str"):
         field.id_str = id

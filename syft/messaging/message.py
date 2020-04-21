@@ -24,6 +24,7 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 from syft.interfaces.protobuf_interface import ProtobufInterface
 
+
 class Message(ABC):
     """All syft message types extend this class
 
@@ -205,6 +206,7 @@ class TensorCommandMessage(Message, ProtobufInterface):
     def get_protobuf_schema() -> CommandMessagePB:
         return CommandMessagePB
 
+
 class ObjectMessage(Message, ProtobufInterface):
     """Send an object to another worker using this message type.
 
@@ -282,6 +284,7 @@ class ObjectMessage(Message, ProtobufInterface):
     @staticmethod
     def get_protobuf_schema() -> ObjectMessagePB:
         return ObjectMessagePB
+
 
 class ObjectRequestMessage(Message):
     """Request another worker to send one of its objects
