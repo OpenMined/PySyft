@@ -694,3 +694,15 @@ def test_plan_input_usage(hook):
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
     assert (result == x12).all
+
+
+def test_training_plan_can_be_traced(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def autograd_test(X):
+        y = (X * 5).sum()
+        y.backward()
+        return X.grad
+
+    X = th.ones(5, 5, requires_grad=True)
+    grads = autograd_test(X)
+    assert grads.eq(th.ones(5, 5) * 5).all()
