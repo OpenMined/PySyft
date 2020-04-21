@@ -423,7 +423,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         # Send the msg
         response = self.owner.send_msg(message=message, location=self.location)
 
-        return response
+        return self
 
     def value(self, *args, **kwargs):
         """
