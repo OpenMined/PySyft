@@ -29,7 +29,6 @@ class CommunicationAction(Action):
 
         self.obj_id = obj_id
         if name in ["move", "remote_send", "remote_get", "get", "share", "value", "share_"]:
-            #  move, remote_send, remote_get, fix_prec => should be communication actions
             #  float_prec, fix_prec => should be computation actions (they modify tensors)?
             self.name = name
         else:
