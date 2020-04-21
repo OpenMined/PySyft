@@ -42,3 +42,14 @@ def test_move_module(workers, model):
     assert model.location == bob
     model.get()
     assert model.location is None
+
+
+def test_copy(model):
+    copy_model = model.copy()
+    with torch.no_grad():
+        for p in model.parameters():
+            assert isinstance(p, torch.Tensor)
+            p.set_(torch.zeros_like(p))
+
+        for p in copy_model.parameters():
+            assert not torch.all(p == 0)
