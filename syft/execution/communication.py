@@ -1,9 +1,8 @@
 from typing import List, Union, Tuple
 
 import syft as sy
-from syft.workers.abstract import AbstractWorker
-
 from syft.execution.action import Action
+from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.communication_action_pb2 import (
     CommunicationAction as CommunicationActionPB,
