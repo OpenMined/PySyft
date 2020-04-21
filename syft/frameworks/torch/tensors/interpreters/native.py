@@ -138,6 +138,9 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_shape
 
+    def size(self):
+        return self.shape
+
     @property
     def data(self):
         if self.is_wrapper:
