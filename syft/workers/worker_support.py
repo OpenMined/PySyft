@@ -11,8 +11,8 @@ if dependency_check.crypten_available:
 
 
 def add_support(worker: BaseWorker, framework: str) -> None:
-    supported_frameworks[framework][0]()
+    supported_frameworks[framework][0](worker)
 
 
 def remove_support(worker: BaseWorker, framework: str) -> None:
-    supported_frameworks[framework][1]()
+    supported_frameworks[framework][1](worker)

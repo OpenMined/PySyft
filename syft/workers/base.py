@@ -35,8 +35,6 @@ from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
 
-from syft.workers.worker_support import add_support, remove_support
-
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ObjectNotFoundError
@@ -1123,10 +1121,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return sy.serde.deserialize(self.msg_history[index], worker=self)
 
     def add_crypten_support(self):
+        from syft.workers.worker_support import add_support
+
         """Add CrypTen specific methods"""
         add_support(self, "crypten")
 
     def remove_crypten_support(self):
+        from syft.workers.worker_support import remove_support
+
         """Remove CrypTen specifc methods"""
         remove_support(self, "crypten")
 
