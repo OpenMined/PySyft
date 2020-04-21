@@ -22,7 +22,7 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 
 
@@ -75,7 +75,7 @@ def method2plan(*args, **kwargs):
     )
 
 
-class Plan(AbstractObject):
+class Plan(AbstractObject, ProtobufInterface):
     """
     A Plan stores a sequence of torch actions, just like a function.
 
@@ -622,6 +622,9 @@ class Plan(AbstractObject):
 
         return plan
 
+    @staticmethod
+    def get_protobuf_schema() -> PlanPB:
+        return PlanPB
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)

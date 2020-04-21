@@ -22,7 +22,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
 else:
@@ -43,20 +43,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [
-    AdditiveSharingTensor,
-    CommunicationAction,
-    ComputationAction,
-    ObjectMessage,
-    PlaceholderId,
-    PlaceHolder,
-    Plan,
-    PointerTensor,
-    Protocol,
-    Role,
-    State,
-    TensorCommandMessage,
-]
+OBJ_PROTOBUF_TRANSLATORS = ProtobufInterface.__subclasses__()
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]

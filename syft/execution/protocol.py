@@ -11,9 +11,9 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
-
-class Protocol(AbstractObject):
+class Protocol(AbstractObject, ProtobufInterface):
     """
     A Protocol coordinates a sequence of Plans, deploys them on distant workers
     and run them in a single pass.
@@ -477,3 +477,7 @@ class Protocol(AbstractObject):
             self.plans = [(worker_map[name], plan) for name, plan in self.plans]
 
         self.workers_resolved = True
+
+    @staticmethod
+    def get_protobuf_schema() -> ProtocolPB:
+        return ProtocolPB

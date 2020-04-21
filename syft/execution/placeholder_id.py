@@ -1,10 +1,10 @@
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
 
-class PlaceholderId:
+class PlaceholderId(ProtobufInterface):
     """
     PlaceholderIds are used to identify which Placeholder tensors should be used
     as the inputs and outputs of Actions.
@@ -42,3 +42,7 @@ class PlaceholderId:
         value = sy.serde.protobuf.proto.get_protobuf_id(protobuf_id.id)
 
         return PlaceholderId(value)
+
+    @staticmethod
+    def get_protobuf_schema() -> PlaceholderIdPB:
+        return PlaceholderIdPB

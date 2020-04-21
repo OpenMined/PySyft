@@ -11,9 +11,9 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
-
-class State(object):
+class State(ProtobufInterface):
     """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make
@@ -193,3 +193,7 @@ class State(object):
 
         state = State(owner=worker, state_placeholders=state_placeholders)
         return state
+
+    @staticmethod
+    def get_protobuf_schema() -> StatePB:
+        return StatePB

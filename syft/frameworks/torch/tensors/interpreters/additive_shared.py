@@ -10,6 +10,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
@@ -19,7 +20,7 @@ from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 no_wrap = {"no_wrap": True}
 
 
-class AdditiveSharingTensor(AbstractTensor):
+class AdditiveSharingTensor(AbstractTensor, ProtobufInterface):
     def __init__(
         self,
         shares: dict = None,
@@ -1204,6 +1205,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return tensor
 
+    @staticmethod
+    def get_protobuf_schema() -> AdditiveSharingTensorPB:
+        return AdditiveSharingTensorPB
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(AdditiveSharingTensor)

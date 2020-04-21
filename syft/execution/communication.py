@@ -3,7 +3,7 @@ from typing import Union
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.execution.action import Action
 
 from syft_proto.execution.v1.communication_action_pb2 import (
@@ -11,7 +11,7 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 
 
-class CommunicationAction(Action):
+class CommunicationAction(Action, ProtobufInterface):
     """Describes communication actions performed on tensors"""
 
     def __init__(
@@ -153,3 +153,7 @@ class CommunicationAction(Action):
         }
 
         return CommunicationAction(obj_id, source, destinations, kwargs_)
+
+    @staticmethod
+    def get_protobuf_schema() -> CommunicationActionPB:
+        return CommunicationActionPB

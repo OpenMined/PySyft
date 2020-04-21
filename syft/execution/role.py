@@ -16,11 +16,11 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
 from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject):
+class Role(AbstractObject, ProtobufInterface):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
@@ -416,3 +416,7 @@ class Role(AbstractObject):
         role.state = state
 
         return role
+
+    @staticmethod
+    def get_protobuf_schema() -> RolePB:
+        return RolePB

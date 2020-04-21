@@ -4,11 +4,11 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
-class ComputationAction(Action):
+class ComputationAction(Action, ProtobufInterface):
     """Describes mathematical operations performed on tensors"""
 
     def __init__(self, name, target, args_, kwargs_, return_ids):
@@ -201,3 +201,7 @@ class ComputationAction(Action):
             action = ComputationAction(command, target, tuple(args_), kwargs_, tuple(return_ids))
 
         return action
+
+    @staticmethod
+    def get_protobuf_schema() -> ComputationActionPB:
+        return ComputationActionPB

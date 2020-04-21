@@ -22,7 +22,7 @@ from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
 class Message(ABC):
     """All syft message types extend this class
@@ -52,7 +52,7 @@ class Message(ABC):
         return self.__str__()
 
 
-class TensorCommandMessage(Message):
+class TensorCommandMessage(Message, ProtobufInterface):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
@@ -201,8 +201,11 @@ class TensorCommandMessage(Message):
         detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
         return TensorCommandMessage(detailed_action)
 
+    @staticmethod
+    def get_protobuf_schema() -> CommandMessagePB:
+        return CommandMessagePB
 
-class ObjectMessage(Message):
+class ObjectMessage(Message, ProtobufInterface):
     """Send an object to another worker using this message type.
 
     When a worker has an object in its local object repository (such as a tensor) and it wants
@@ -276,6 +279,9 @@ class ObjectMessage(Message):
 
         return object_msg
 
+    @staticmethod
+    def get_protobuf_schema() -> ObjectMessagePB:
+        return ObjectMessagePB
 
 class ObjectRequestMessage(Message):
     """Request another worker to send one of its objects

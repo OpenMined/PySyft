@@ -45,7 +45,7 @@ from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-
+from syft.interfaces.protobuf_interface import ProtobufInterface
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
@@ -57,21 +57,10 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.jit.ScriptFunction: ScriptFunctionPB,
     torch.jit.TopLevelTracedModule: TracedModulePB,
     torch.Size: SizePB,
-    # Syft types
-    AdditiveSharingTensor: AdditiveSharingTensorPB,
-    PlaceholderId: PlaceholderIdPB,
-    ObjectMessage: ObjectMessagePB,
-    TensorCommandMessage: CommandMessagePB,
-    CommunicationAction: CommunicationActionPB,
-    ComputationAction: ComputationActionPB,
-    PlaceHolder: PlaceholderPB,
-    Plan: PlanPB,
-    PointerTensor: PointerTensorPB,
-    Protocol: ProtocolPB,
-    Role: RolePB,
-    State: StatePB,
 }
 
+for proto_class in ProtobufInterface.__subclasses__():
+    MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
 
 def set_protobuf_id(field, id):
     if type(id) == type("str"):
