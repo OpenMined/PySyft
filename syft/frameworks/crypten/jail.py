@@ -111,7 +111,7 @@ class JailRunner:
             return (False, "")
         # The body should contain a function defintion
         func_def = tree.body[0]
-        if type(func_def) is not ast.FunctionDef:
+        if not isinstance(func_def, ast.FunctionDef):
             return (False, "")
 
         return (True, func_def.name)
