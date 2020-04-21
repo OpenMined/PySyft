@@ -99,11 +99,16 @@ class CommunicationAction(Action):
         detailed_name = sy.serde.msgpack.serde._detail(worker, name)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
-        detailed_destinations = sy.serde.msgpack.serde._detail(worker, args_)
+        detailed_args = sy.serde.msgpack.serde._detail(worker, args_)
         detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
 
         return CommunicationAction(
-            detailed_obj, detailed_name, detailed_source, detailed_destinations, detailed_kwargs
+            detailed_obj,
+            detailed_name,
+            detailed_source,
+            detailed_destinations,
+            detailed_args,
+            detailed_kwargs,
         )
 
     @staticmethod
