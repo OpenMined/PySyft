@@ -63,22 +63,24 @@ def connection_speed_test():
     try:
         _worker_id = request.args.get("worker_id", None)
         _random = request.args.get("random", None)
+        _is_ping = request.args.get("is_ping", None)
 
         if not _worker_id or not _random:
             raise PyGridError
 
         # If GET method
         if request.method == "GET":
-            # Download data sample (1MB)
-            data_sample = b"x" * 67108864  # 64 Megabyte
-            response = {"sample": data_sample}
-            form = MultipartEncoder(response)
-            return Response(form.to_string(), mimetype=form.content_type)
-        elif request.method == "POST":  # Otherwise, it's POST method
-            if len(request.files) == 1:
-                status_code = 200  # Success
+            if _is_ping is None:
+                # Download data sample (64MB)
+                data_sample = b"x" * 67108864  # 64 Megabyte
+                response = {"sample": data_sample}
+                form = MultipartEncoder(response)
+                return Response(form.to_string(), mimetype=form.content_type)
             else:
-                raise PyGridError
+                status_code = 200  # Success
+        elif request.method == "POST":  # Otherwise, it's POST method
+            status_code = 200  # Success
+
     except PyGridError as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
