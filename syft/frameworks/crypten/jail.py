@@ -91,6 +91,7 @@ class JailRunner:
         compiled = compile_restricted(self._func_src)
         exec(compiled, exec_globals, exec_locals)  # nosec
         self._func = exec_locals[self._func_name]
+        self._is_built = True
 
     def run(self, *args, **kwargs):
         return self._func(*args, **kwargs)
