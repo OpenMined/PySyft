@@ -86,10 +86,13 @@ class Role(AbstractObject):
         """
         command, response = traced_action
         command_placeholder_ids = self._store_placeholders(command)
-        return_placeholder_ids = self._store_placeholders(response)
+        return_placeholder_ids = None
 
-        if not isinstance(return_placeholder_ids, (list, tuple)):
-            return_placeholder_ids = (return_placeholder_ids,)
+        if response is not None:
+            return_placeholder_ids = self._store_placeholders(response)
+            if not isinstance(return_placeholder_ids, (list, tuple)):
+                return_placeholder_ids = (return_placeholder_ids,)
+
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 

@@ -44,14 +44,20 @@ class FrameworkWrapper:
             command = (cmd_name, None, args, kwargs)
 
             result = package_attr(*args, **kwargs)
-            ph = PlaceHolder(role=self.role, tracing=True, owner=self.role.owner)
-            response = ph.instantiate(result)
 
-            self.role.register_action(
-                (command, response), sy.execution.computation.ComputationAction
-            )
+            if isinstance(result, FrameworkTensor):
+                ph = PlaceHolder(role=self.role, tracing=True, owner=self.role.owner)
+                result = ph.instantiate(result)
 
-            return response
+                self.role.register_action(
+                    (command, result), sy.execution.computation.ComputationAction
+                )
+            else:
+                self.role.register_action(
+                    (command, None), sy.execution.computation.ComputationAction
+                )
+
+            return result
 
         return trace_wrapper
 
