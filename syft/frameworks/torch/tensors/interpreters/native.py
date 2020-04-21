@@ -138,8 +138,8 @@ class TorchTensor(AbstractTensor):
         else:
             return self.native_shape
 
-    def size(self):
-        return self.shape
+    def size(self, dim=None):
+        return self.shape if dim is None else self.shape[dim]
 
     @property
     def data(self):
