@@ -1,8 +1,6 @@
-from typing import List
-from typing import Union
+from typing import List, Union
 
 import syft
-from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -300,14 +298,25 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 a message to update the gradient of the value on A.
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
+        _args = ()
         message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs_
+            self.id_at_location, "remote_send", self.location.id, [destination.id], _args, kwargs_
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
-        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+
+        # less compact but for better for readability while this is WIP
+        ptr_id = self.id_at_location
+        source = self.location[ptr_id].location_id
+        _kwargs = {}
+        _args = ()
+        message = TensorCommandMessage.communication(
+            ptr_id, "mid_get", source, [self.location.id], _args, _kwargs
+        )
+
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -404,10 +413,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             A pointer to an AdditiveSharingTensor
         """
 
-        # Send the command
-        command = ("share", self, args, kwargs)
+        ptr_id = self.id_at_location
+        source = self.owner.id
+        _kwargs = {}
+        message = TensorCommandMessage.communication(
+            ptr_id, "share", source, [self.location.id], args, _kwargs
+        )
 
-        response = self.owner.send_command(self.location, command)
+        # Send the msg
+        response = self.owner.send_msg(message=message, location=self.location)
 
         return response
 
@@ -418,9 +432,16 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-        command = ("value", self, args, kwargs)
+        ptr_id = self.id_at_location
+        source = self.owner.id
+        _kwargs = {}
+        _args = ()
+        message = TensorCommandMessage.communication(
+            ptr_id, "value", source, [self.location.id], _args, _kwargs
+        )
 
-        response = self.owner.send_command(self.location, command)
+        # Send the msg
+        response = self.owner.send_msg(message=message, location=self.owner)
 
         return response
 
@@ -432,12 +453,17 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             A pointer to an AdditiveSharingTensor
         """
 
-        # Send the command
-        command = ("share_", self, args, kwargs)
+        ptr_id = self.id_at_location
+        source = self.owner.id
+        _kwargs = {}
+        message = TensorCommandMessage.communication(
+            ptr_id, "share_", source, [self.location.id], args, _kwargs
+        )
 
-        response = self.owner.send_command(self.location, command)
+        # Send the msg
+        response = self.owner.send_msg(message=message, location=self.owner)
 
-        return self
+        return response
 
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
