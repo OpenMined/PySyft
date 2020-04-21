@@ -1,6 +1,7 @@
 from abc import ABC
 from syft.interfaces.protobuf_interface import ProtobufInterface
 
+
 class Action(ABC, ProtobufInterface):
     """Describes the concrete steps workers can take with objects they own
 

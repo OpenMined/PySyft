@@ -4,7 +4,6 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
-from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 

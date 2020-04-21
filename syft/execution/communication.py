@@ -3,7 +3,6 @@ from typing import Union
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.execution.action import Action
 
 from syft_proto.execution.v1.communication_action_pb2 import (

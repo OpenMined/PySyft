@@ -11,7 +11,6 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
-from syft.interfaces.protobuf_interface import ProtobufInterface
 
 
 class Protocol(AbstractObject):

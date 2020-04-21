@@ -10,7 +10,6 @@ from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
-from syft.interfaces.protobuf_interface import ProtobufInterface
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
