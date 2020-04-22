@@ -50,9 +50,6 @@ class AutogradTensor(AbstractTensor):
             grad = self * 0 + 1
         backwards_grad(self.grad_fn, grad)
 
-    def __del__(self):
-        print("!!Test from AutoGrad!!")
-
     @property
     def data(self):
         return self
@@ -156,7 +153,6 @@ class AutogradTensor(AbstractTensor):
                 # Put back SyftTensor on the tensors found in the response
                 result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
-                result.grad_fn.result = result
 
                 return result
 
