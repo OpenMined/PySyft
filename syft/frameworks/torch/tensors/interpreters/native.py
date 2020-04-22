@@ -23,9 +23,12 @@ from syft.exceptions import SendNotPermittedError
 
 
 def _get_maximum_precision():
-    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+    """
+    This function returns the maximum value allowed for precision
+    fractions before the chain decides to use LPT.
 
-    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+    This function can be overridden if the setup requires the use
+    of LargePrecisionTensor from a smaller precision.
 
     The default value is the size of torch.long
 
@@ -36,13 +39,15 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**63-1 is not fun with precision tensors.
+    """
+    Dealing with integers > 2**63-1 is not fun with precision tensors.
     """
     return 63
 
 
 class TorchTensor(AbstractTensor):
-    """Add methods to this tensor to have them added to every torch.Tensor object.
+    """
+    Add methods to this tensor to have them added to every torch.Tensor object.
 
     This tensor is simply a more convenient way to add custom functions to
     all Torch tensor types. When you add a function to this tensor, it will
@@ -292,7 +297,7 @@ class TorchTensor(AbstractTensor):
     def handle_func_command(cls, command):
         """
         Operates as a router for functions. A function call always starts
-        by being handled here and 3 scenarii must be considered:
+        by being handled here and 3 scenarios must be considered:
 
         Real Torch tensor:
             The arguments of the function are real tensors so we should
@@ -314,9 +319,11 @@ class TorchTensor(AbstractTensor):
             means that by default the command is treated here in the
             global router.
 
-        :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs_])
-        :return: the response of the function command
+        Args:
+            command: instruction of a function command: (command name, <no self>, arguments[, kwargs_])
+
+        Returns:
+            the response of the function command
         """
         cmd, _, args_, kwargs_ = command
 
@@ -369,7 +376,7 @@ class TorchTensor(AbstractTensor):
 
     def _get_response(cmd, args_, kwargs_):
         """
-            Return the evaluation of the cmd string parameter
+        Return the evaluation of the cmd string parameter
         """
         module = syft.local_worker.hook
         segments = cmd.split(".")
@@ -389,7 +396,7 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-            Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid erros.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
@@ -406,10 +413,11 @@ class TorchTensor(AbstractTensor):
         no_wrap: bool = False,
         garbage_collect_data: bool = True,
     ):
-        """Gets the pointer to a new remote object.
+        """
+        Sends the object to the specified location (remote worker).
 
-        One of the most commonly used methods in PySyft, this method serializes the object upon
-        which it is called (self), sends the object to a remote worker, creates a pointer to
+        This method serializes the object upon which it is called (self),
+        sends the object to a remote worker, creates a pointer to
         that worker, and then returns that pointer from this function.
 
         Args:
@@ -432,7 +440,7 @@ class TorchTensor(AbstractTensor):
             object will likely be wrapped by a torch.Tensor wrapper.
 
         Raises:
-                SendNotPermittedError: Raised if send is not permitted on this tensor.
+            SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
 
         if not self.allow(user=user):
@@ -541,8 +549,10 @@ class TorchTensor(AbstractTensor):
     def send_(self, *location, **kwargs):
         """
         Calls send() with inplace option, but only with a single location
-        :param location: workers locations
-        :return:
+
+        Args:
+            location: workers locations
+
         """
         if len(location) > 1:
             raise NotImplementedError("Inplace send to several workers is currently not supported.")
@@ -560,7 +570,8 @@ class TorchTensor(AbstractTensor):
         shape=None,
         **kwargs,
     ) -> PointerTensor:
-        """Creates a pointer to the "self" torch.Tensor object.
+        """
+        Creates a pointer to the "self" torch.Tensor object.
 
         Returns:
             A PointerTensor pointer to self. Note that this
@@ -585,14 +596,17 @@ class TorchTensor(AbstractTensor):
         return ptr
 
     def mid_get(self):
-        """This method calls .get() on a child pointer and correctly registers the results"""
+        """
+        This method calls .get() on a child pointer and correctly registers the results
+        """
         if not hasattr(self, "child"):
             raise InvalidTensorForRemoteGet(self)
 
         self.child.mid_get()
 
     def remote_get(self):
-        """Assuming .child is a PointerTensor, this method calls .get() on the tensor
+        """
+        Assuming .child is a PointerTensor, this method calls .get() on the tensor
         that the .child is pointing to (which should also be a PointerTensor)
 
         TODO: make this kind of message forwarding generic?
@@ -605,13 +619,16 @@ class TorchTensor(AbstractTensor):
         return self
 
     def get(self, *args, inplace: bool = False, user=None, reason: str = "", **kwargs):
-        """Requests the tensor/chain being pointed to, be serialized and return
-            Args:
-                args: args to forward to worker
-                inplace: if true, return the same object instance, else a new wrapper
-                kwargs: kwargs to forward to worker
-            Raises:
-                GetNotPermittedError: Raised if get is not permitted on this tensor
+        """
+        Requests the tensor/chain being pointed to, be serialized and return
+
+        Args:
+            args: args to forward to worker
+            inplace: if true, return the same object instance, else a new wrapper
+            kwargs: kwargs to forward to worker
+
+        Raises:
+            GetNotPermittedError: Raised if get is not permitted on this tensor
         """
 
         # If it is a local tensor/chain, we don't need to verify permissions
@@ -656,15 +673,16 @@ class TorchTensor(AbstractTensor):
         return self.get(*args, inplace=True, **kwargs)
 
     def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        """
+        This function returns True if it isn't a PrivateTensor, otherwise it will
         return the result of PrivateTensor's allow method.
 
-            Args:
-                user (object,optional): User credentials to be verified.
+        Args:
+            user (object,optional): User credentials to be verified.
 
-            Returns:
-                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns
-                false.
+        Returns:
+            boolean: If it is a public tensor/ allowed user, returns True,
+                otherwise it returns False.
         """
         # If it is a wrapper
         if self.is_wrapper:
@@ -687,15 +705,16 @@ class TorchTensor(AbstractTensor):
         """
         Move acts on a pointer to A to move the remote value to B (=location).
 
-        Note a A will keep a copy of his value that he sent to B. This follows the
-        .send() paradigm where the local worker keeps a copy of the value he sends.
+        Basically, this function sends data directly from one worker to other.
+        Note that A will keep a copy of its value that it sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value it sends.
 
         Args:
             location: the worker where the remote value should be moved
             requires_grad: see send() for details
 
         Returns:
-            A pointer to the worker location
+            A pointer to the new worker location
         """
         self.child = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
@@ -857,7 +876,8 @@ class TorchTensor(AbstractTensor):
         requires_grad: bool = False,
         no_wrap: bool = False,
     ):
-        """This is a pass through method which calls .share on the child.
+        """
+        This is a pass through method which calls .share on the child.
 
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
@@ -917,11 +937,11 @@ class TorchTensor(AbstractTensor):
             return self.share(*args, **kwargs)  # TODO change to inplace
 
     def combine(self, *pointers):
-        """This method will combine the child pointer with another list of pointers
+        """
+        This method will combine the child pointer with another list of pointers
 
         Args:
             *pointers a list of pointers to be combined into a MultiPointerTensor
-
         """
 
         assert isinstance(self.child, PointerTensor)
@@ -932,7 +952,8 @@ class TorchTensor(AbstractTensor):
         return syft.combine_pointers(*ps)
 
     def value(self):
-        """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
+        """
+        Call .value() on self's child if the child is a Promise (otherwise an error is raised).
         .value() is used to retrieve the oldest unused value the promise was kept with.
         """
         return self.child.value()
@@ -966,6 +987,7 @@ class TorchTensor(AbstractTensor):
                 With Respect to Paillier accepts:
                     public_key (phe.paillier.PaillierPublicKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+
         Returns:
             An encrypted version of the Tensor following the protocol specified
 
@@ -1018,6 +1040,7 @@ class TorchTensor(AbstractTensor):
                 With Respect to Paillier accepts:
                     private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
+
         Returns:
             An decrypted version of the Tensor following the protocol specified
 
@@ -1043,8 +1066,10 @@ class TorchTensor(AbstractTensor):
             )
 
     def numpy_tensor(self):
-        """This method will cast the current tensor to one with numpy as the underlying
-        representation. The tensor chain will be Wrapper > NumpyTensor > np.ndarray"""
+        """
+        This method will cast the current tensor to one with numpy as the underlying
+        representation. The tensor chain will be Wrapper > NumpyTensor > np.ndarray
+        """
 
         if not self.is_wrapper:
             return syft.NumpyTensor(self.numpy())
