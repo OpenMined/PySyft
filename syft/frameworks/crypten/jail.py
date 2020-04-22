@@ -26,7 +26,7 @@ class JailRunner:
         **global_kwargs,
     ):
         """
-        Control what should be accesible from inside the function.
+        Control what should be accessible from inside the function.
 
         Args:
             func_src: function's src to be jailed. Required if func isn't set.
