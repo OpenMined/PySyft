@@ -53,7 +53,7 @@ class JailRunner:
 
         is_func, self._func_name = JailRunner._check_func_def(func_src)
         if not is_func:
-            raise ValueError("Not valid function definition")
+            raise ValueError("Not a valid function definition")
 
         self._func_src = func_src
 
