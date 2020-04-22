@@ -705,9 +705,10 @@ class TorchTensor(AbstractTensor):
         """
         Move acts on a pointer to A to move the remote value to B (=location).
 
-        Basically, this function sends data directly from one worker to other.
-        Note that A will keep a copy of its value that it sent to B. This follows the
-        .send() paradigm where the local worker keeps a copy of the value it sends.
+        Note that A destroys its copy of the object after it is sent to B. Hence 
+        resulting in one less object in A and one extra object in B than we started 
+        with. It's behaviour differs from the `.send()` paradigm where A keeps its 
+        copy of the object it sends.
 
         Args:
             location: the worker where the remote value should be moved
