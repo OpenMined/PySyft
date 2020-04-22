@@ -7,9 +7,10 @@ from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
 from syft.interfaces.protobuf_interface import ProtobufInterface
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
 
-class AbstractTensor(AbstractObject, ProtobufInterface):
+class AbstractTensor(AbstractObject, ProtobufInterface, MsgpackInterface):
     def __init__(
         self,
         id: int = None,

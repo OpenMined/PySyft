@@ -2,11 +2,11 @@
 
 import syft
 from syft.workers.abstract import AbstractWorker
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
 from . import gradients
 
 __all__ = ["GradFunc", "apply_dim_transformations"]
-
 
 def forward_grad(tensor):
     ## tensor here should be an AutogradTensor or a Tensor where we can set .grad
@@ -24,7 +24,7 @@ def forward_grad(tensor):
         return grad_fn
 
 
-class GradFunc:
+class GradFunc(MsgpackInterface):
     def __init__(self, *args):
         # This part builds our graph. It takes grad functions (if they exist)
         # from the input arguments and builds a tuple pointing to them. This way

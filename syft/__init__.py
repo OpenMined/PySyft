@@ -55,6 +55,11 @@ from syft.execution.protocol import Protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
 from syft.execution.plan import method2plan
+from syft.execution.placeholder import PlaceHolder
+
+# Import federate learning objects
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.federated.train_config import TrainConfig
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -68,7 +73,7 @@ from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.execution.placeholder import PlaceHolder
+
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -84,6 +89,9 @@ from syft.frameworks.torch.he.paillier import keygen
 # import common
 import syft.common.util
 
+# Import grids
+from syft.grid.private_grid import PrivateGridNetwork
+from syft.grid.public_grid import PublicGridNetwork
 
 def pool():
     if not hasattr(syft, "_pool"):

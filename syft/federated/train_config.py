@@ -7,9 +7,9 @@ import syft as sy
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
-
-class TrainConfig:
+class TrainConfig(MsgpackInterface):
     """TrainConfig abstraction.
 
     A wrapper object that contains all that is needed to run a training loop

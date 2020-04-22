@@ -17,6 +17,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
 from syft.interfaces.protobuf_interface import ProtobufInterface
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:

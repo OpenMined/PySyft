@@ -255,41 +255,41 @@ class PaillierTensor(AbstractTensor):
         # Just register it using the module variable
         module.mul = mul
 
-    @staticmethod
-    def simplify(worker: AbstractWorker, tensor: "PaillierTensor") -> tuple:
-        """
-        This function takes the attributes of a LogTensor and saves them in a tuple
-        Args:
-            tensor (PaillierTensor): a LogTensor
-        Returns:
-            tuple: a tuple holding the unique attributes of the log tensor
-        Examples:
-            data = _simplify(tensor)
-        """
-
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
-        return tensor.id, chain
-
-    @staticmethod
-    def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PaillierTensor":
-        """
-        This function reconstructs a LogTensor given it's attributes in form of a tuple.
-        Args:
-            worker: the worker doing the deserialization
-            tensor_tuple: a tuple holding the attributes of the LogTensor
-        Returns:
-            PaillierTensor: a LogTensor
-        Examples:
-            logtensor = detail(data)
-        """
-        obj_id, chain = tensor_tuple
-
-        tensor = PaillierTensor(owner=worker, id=obj_id)
-
-        if chain is not None:
-            chain = sy.serde.msgpack.serde._detail(worker, chain)
-            tensor.child = chain
-
-        return tensor
+    # @staticmethod
+    # def simplify(worker: AbstractWorker, tensor: "PaillierTensor") -> tuple:
+    #     """
+    #     This function takes the attributes of a LogTensor and saves them in a tuple
+    #     Args:
+    #         tensor (PaillierTensor): a LogTensor
+    #     Returns:
+    #         tuple: a tuple holding the unique attributes of the log tensor
+    #     Examples:
+    #         data = _simplify(tensor)
+    #     """
+    #
+    #     chain = None
+    #     if hasattr(tensor, "child"):
+    #         chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
+    #     return tensor.id, chain
+    #
+    # @staticmethod
+    # def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PaillierTensor":
+    #     """
+    #     This function reconstructs a LogTensor given it's attributes in form of a tuple.
+    #     Args:
+    #         worker: the worker doing the deserialization
+    #         tensor_tuple: a tuple holding the attributes of the LogTensor
+    #     Returns:
+    #         PaillierTensor: a LogTensor
+    #     Examples:
+    #         logtensor = detail(data)
+    #     """
+    #     obj_id, chain = tensor_tuple
+    #
+    #     tensor = PaillierTensor(owner=worker, id=obj_id)
+    #
+    #     if chain is not None:
+    #         chain = sy.serde.msgpack.serde._detail(worker, chain)
+    #         tensor.child = chain
+    #
+    #     return tensor

@@ -23,9 +23,9 @@ from syft.execution.placeholder import PlaceHolder
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 from syft.interfaces.protobuf_interface import ProtobufInterface
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
-
-class Message(ABC, ProtobufInterface):
+class Message(ABC, ProtobufInterface, MsgpackInterface):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction

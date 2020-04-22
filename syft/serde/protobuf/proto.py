@@ -45,7 +45,7 @@ from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-from syft.interfaces.protobuf_interface import ProtobufInterface, get_all_subclasses
+from syft.interfaces.protobuf_interface import ProtobufInterface, get_protobuf_subclasses
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
@@ -59,7 +59,7 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     torch.Size: SizePB,
 }
 
-for proto_class in get_all_subclasses(ProtobufInterface):
+for proto_class in get_protobuf_subclasses(ProtobufInterface):
     MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
 
 

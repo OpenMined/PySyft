@@ -1,8 +1,8 @@
 from abc import ABC
 from syft.interfaces.protobuf_interface import ProtobufInterface
+from syft.interfaces.msgpack_interface import MsgpackInterface
 
-
-class Action(ABC, ProtobufInterface):
+class Action(ABC, ProtobufInterface, MsgpackInterface):
     """Describes the concrete steps workers can take with objects they own
 
     In Syft, an Action is when one worker wishes to tell another worker to do something with

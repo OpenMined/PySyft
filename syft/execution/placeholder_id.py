@@ -1,10 +1,12 @@
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+
 from syft.interfaces.protobuf_interface import ProtobufInterface
+from syft.interfaces.msgpack_interface import MsgpackInterface
+
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
-
-class PlaceholderId(ProtobufInterface):
+class PlaceholderId(ProtobufInterface, MsgpackInterface):
     """
     PlaceholderIds are used to identify which Placeholder tensors should be used
     as the inputs and outputs of Actions.
