@@ -1,3 +1,4 @@
+import pytest
 import torch as th
 from syft.frameworks.crypten import jail
 
@@ -21,15 +22,8 @@ def import_socket():
 
 def test_import():
     func = jail.JailRunner(func=import_socket)
-    catched = True
-
-    try:
+    with pytest.raises(ImportError):
         func()
-        catched = False
-    except Exception as e:
-        assert isinstance(e, ImportError)
-
-    assert catched
 
 
 def test_ser_deser():
