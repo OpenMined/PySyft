@@ -714,7 +714,7 @@ class TorchTensor(AbstractTensor):
             requires_grad: see send() for details
 
         Returns:
-            A pointer to the new worker location
+            A pointer to the object location in the new worker
         """
         self.child = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
