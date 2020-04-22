@@ -7,6 +7,7 @@ from syft.generic.frameworks.hook import hook_args
 from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.interfaces.msgpack_interface import MsgpackInterface
 
+
 class AbstractObject(ABC, ProtobufInterface, MsgpackInterface):
     """
     This is a generic object abstraction.

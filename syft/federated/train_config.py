@@ -9,6 +9,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.interfaces.msgpack_interface import MsgpackInterface
 
+
 class TrainConfig(MsgpackInterface):
     """TrainConfig abstraction.
 

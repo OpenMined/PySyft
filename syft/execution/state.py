@@ -14,6 +14,7 @@ from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.interfaces.msgpack_interface import MsgpackInterface
 
+
 class State(ProtobufInterface, MsgpackInterface):
     """The State is a Plan attribute and is used to send tensors along functions.
 

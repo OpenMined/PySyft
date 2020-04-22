@@ -6,6 +6,7 @@ from syft.interfaces.msgpack_interface import MsgpackInterface
 
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
+
 class PlaceholderId(ProtobufInterface, MsgpackInterface):
     """
     PlaceholderIds are used to identify which Placeholder tensors should be used

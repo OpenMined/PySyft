@@ -93,6 +93,7 @@ import syft.common.util
 from syft.grid.private_grid import PrivateGridNetwork
 from syft.grid.public_grid import PublicGridNetwork
 
+
 def pool():
     if not hasattr(syft, "_pool"):
         import multiprocessing

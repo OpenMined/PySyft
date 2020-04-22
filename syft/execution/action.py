@@ -2,6 +2,7 @@ from abc import ABC
 from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.interfaces.msgpack_interface import MsgpackInterface
 
+
 class Action(ABC, ProtobufInterface, MsgpackInterface):
     """Describes the concrete steps workers can take with objects they own
 

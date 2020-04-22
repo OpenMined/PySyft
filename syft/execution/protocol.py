@@ -12,6 +12,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
+
 class Protocol(AbstractObject):
     """
     A Protocol coordinates a sequence of Plans, deploys them on distant workers

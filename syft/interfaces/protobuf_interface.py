@@ -7,7 +7,10 @@ def get_protobuf_subclasses(cls):
 
     original_subclasses = {s for s in cls.__subclasses__() if check_implementation(s)}
     sub_sets = {
-        s for c in cls.__subclasses__() for s in get_protobuf_subclasses(c) if check_implementation(s)
+        s
+        for c in cls.__subclasses__()
+        for s in get_protobuf_subclasses(c)
+        if check_implementation(s)
     }
     return original_subclasses.union(sub_sets)
 

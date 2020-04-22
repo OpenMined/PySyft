@@ -25,6 +25,7 @@ from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandM
 from syft.interfaces.protobuf_interface import ProtobufInterface
 from syft.interfaces.msgpack_interface import MsgpackInterface
 
+
 class Message(ABC, ProtobufInterface, MsgpackInterface):
     """All syft message types extend this class
 
