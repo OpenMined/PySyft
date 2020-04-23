@@ -151,3 +151,56 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         .contiguous()
     )
     return res
+
+
+def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
+    output_shape = (
+        (tensor.shape[0] - kernel_size) // stride + 1,
+        (tensor.shape[1] - kernel_size) // stride + 1,
+    )
+    kernel_size = (kernel_size, kernel_size)
+    b = torch.ones(tensor.shape)  # when torch.Tensor.stride() is supported: replace with A.stride()
+    a_strides = b.stride()
+    a_w = torch.as_strided(
+        tensor,
+        size=output_shape + kernel_size,
+        stride=(stride * a_strides[0], stride * a_strides[1]) + a_strides,
+    )
+    a_w = a_w.reshape(-1, *kernel_size)
+    result = []
+    if mode is "max":
+        for channel in range(a_w.shape[0]):
+            result.append(a_w[channel].max())
+    else:
+        for channel in range(a_w.shape[0]):
+            result.append(torch.mean(a_w[channel]))
+
+    result = torch.stack(result).reshape(output_shape)
+    return result
+
+
+def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
+    assert len(tensor.shape) == 4
+
+    batches = tensor.shape[0]
+    channels = tensor.shape[1]
+    out_shape = (
+        batches,
+        channels,
+        (tensor.shape[2] - kernel_size) // stride + 1,
+        (tensor.shape[3] - kernel_size) // stride + 1,
+    )
+    result = []
+    for batch in range(batches):
+        for channel in range(channels):
+            result.append(_pool(tensor[batch][channel], kernel_size, stride, mode))
+    result = torch.stack(result).reshape(out_shape)
+    return result
+
+
+def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2):
+    return pool2d(tensor, kernel_size, stride)
+
+
+def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2):
+    return pool2d(tensor, kernel_size, stride, mode="mean")
