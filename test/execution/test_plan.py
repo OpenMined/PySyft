@@ -7,8 +7,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
-from syft.generic.pointers.pointer_tensor import PointerTensor
+from itertools import starmap
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
@@ -24,23 +25,6 @@ def test_plan_built_automatically():
     assert plan_abs.is_built
 
 
-def test_stateful_plan_built_automatically(hook):
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
-    def foo(x, state):
-        (bias,) = state.read()
-        x = x * 2
-        return x + bias
-
-    assert isinstance(foo.__str__(), str)
-    assert len(foo.readable_plan) > 0
-    assert foo.is_built
-
-    t = th.tensor([1.0, 2])
-    x = foo(t)
-
-    assert (x == th.tensor([3.0, 5])).all()
-
-
 def test_plan_build():
     @sy.func2plan(args_shape=())
     def plan_abs(data):
@@ -53,19 +37,6 @@ def test_plan_build():
 
     assert len(plan_abs.readable_plan)
     assert plan_abs.is_built
-
-
-def test_stateful_plan_build(hook):
-    @sy.func2plan(state=(th.tensor([1.0]),))
-    def foo(x, state):
-        (bias,) = state.read()
-        x = x * 2
-        return x + bias
-
-    t = th.tensor([1.0, 2])
-    x = foo(t)
-
-    assert (x == th.tensor([3.0, 5])).all()
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -158,7 +129,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected == th.tensor([0.0])
 
@@ -172,7 +143,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert (actual == expected).all()
     assert (actual == th.tensor([1, 2, 3])).all()
@@ -188,7 +159,7 @@ def test_plan_torch_function_no_args(workers):
     serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
 
     t = th.tensor([1.0])
-    expected = serde_plan_detailed(t)
+    expected = serde_plan(t)
     actual = serde_plan_detailed(t)
     assert actual == expected and actual >= 10
 
@@ -231,21 +202,6 @@ def test_plan_fixed_len_loop(workers):
     assert actual == expected
 
 
-def test_add_to_state():
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 3)
-            self.fc2 = th.tensor([1.0])
-
-        def forward(self, x):
-            pass  # pragma: no cover
-
-    model = Net()
-
-    assert len(model.state.state_placeholders) == 3
-
-
 def test_plan_method_execute_locally(hook):
     class Net(sy.Plan):
         def __init__(self):
@@ -271,28 +227,6 @@ def test_plan_method_execute_locally(hook):
     assert model(th.tensor([1.0, 2.1])) == 0
 
 
-def test_stateful_plan_method_execute_locally(hook):
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(2, 1)
-            self.bias = th.tensor([1000.0])
-
-        def forward(self, x):
-            x = self.fc1(x)
-            return F.log_softmax(x, dim=0) + self.bias
-
-    model = Net()
-
-    model.build(th.tensor([1.0, 2]))
-
-    # Call one time
-    assert model(th.tensor([1.0, 2])) == th.tensor([1000.0])
-
-    # Call one more time
-    assert model(th.tensor([1.0, 2.1])) == th.tensor([1000.0])
-
-
 def test_plan_multiple_send(workers):
     bob, alice = workers["bob"], workers["alice"]
 
@@ -314,31 +248,6 @@ def test_plan_multiple_send(workers):
     p = plan_ptr(x_ptr)
     x_abs = p.get()
     assert (x_abs == th.tensor([1, 2, 3])).all()
-
-
-def test_stateful_plan_multiple_send(hook, workers):
-    bob, alice = workers["bob"], workers["alice"]
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
-    def plan_abs(x, state):
-        (bias,) = state.read()
-        x = x.abs()
-        return x + bias
-
-    plan_ptr = plan_abs.send(bob)
-    x_ptr = th.tensor([-1.0, 7, 3]).send(bob)
-    p = plan_ptr(x_ptr)
-    res = p.get()
-
-    assert (res == th.tensor([2.0, 8, 4])).all()
-
-    # Test get / send plan
-    plan_ptr = plan_abs.send(alice)
-
-    x_ptr = th.tensor([-1.0, 2, 3]).send(alice)
-    p = plan_ptr(x_ptr)
-    res = p.get()
-    assert (res == th.tensor([2.0, 3, 4])).all()
 
 
 def test_plan_built_on_class(hook):
@@ -407,27 +316,6 @@ def test_multiple_workers(workers):
     assert (x_abs == th.tensor([1, 9, 3])).all()
 
 
-def test_stateful_plan_multiple_workers(hook, workers):
-    bob, alice = workers["bob"], workers["alice"]
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
-    def plan_abs(x, state):
-        (bias,) = state.read()
-        x = x.abs()
-        return x + bias
-
-    plan_ptr = plan_abs.send(bob, alice)
-    x_ptr = th.tensor([-1, 7, 3]).send(bob)
-    p = plan_ptr(x_ptr)
-    x_abs = p.get()
-    assert (x_abs == th.tensor([2, 8, 4])).all()
-
-    x_ptr = th.tensor([-1, 9, 3]).send(alice)
-    p = plan_ptr(x_ptr)
-    x_abs = p.get()
-    assert (x_abs == th.tensor([2, 10, 4])).all()
-
-
 def test_fetch_plan(hook, workers):
     alice = workers["alice"]
 
@@ -446,207 +334,6 @@ def test_fetch_plan(hook, workers):
     assert (fetched_plan(x) == th.tensor([-3.0, 6, 9])).all()
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
-
-
-@pytest.mark.parametrize("is_func2plan", [True, False])
-def test_fetch_stateful_plan(hook, is_func2plan, workers):
-
-    if is_func2plan:
-
-        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1.0]),))
-        def plan(data, state):
-            (bias,) = state.read()
-            return data * bias
-
-    else:
-
-        class Net(sy.Plan):
-            def __init__(self):
-                super(Net, self).__init__()
-                self.fc1 = nn.Linear(1, 1)
-
-            def forward(self, x):
-                return self.fc1(x)
-
-        plan = Net()
-        plan.build(th.tensor([1.2]))
-
-    alice = workers["alice"]
-    plan_ptr = plan.send(alice)
-
-    # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan_ptr.id_at_location, alice)
-
-    # Execute it locally
-    x = th.tensor([-1.26])
-    assert th.all(th.eq(fetched_plan(x), plan(x)))
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
-
-    # Make sure fetched_plan is using the readable_plan
-    assert fetched_plan.forward is None
-    assert fetched_plan.is_built
-
-    # Make sure plan is using the blueprint: forward
-    assert plan.forward is not None
-
-
-@pytest.mark.parametrize("is_func2plan", [True, False])
-def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
-
-    server, remote_proxy = start_remote_worker(
-        id=f"test_fetch_stateful_plan_remote_{is_func2plan}", hook=hook, port=8802
-    )
-
-    if is_func2plan:
-
-        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
-        def plan(data, state):
-            (bias,) = state.read()
-            return data * bias
-
-    else:
-
-        class Net(sy.Plan):
-            def __init__(self):
-                super(Net, self).__init__()
-                self.fc1 = nn.Linear(1, 1)
-
-            def forward(self, x):
-                return self.fc1(x)
-
-        plan = Net()
-        plan.build(th.tensor([1.2]))
-
-    x = th.tensor([-1.26])
-    expected = plan(x)
-    plan_ptr = plan.send(remote_proxy)
-
-    # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(plan_ptr.id_at_location, remote_proxy)
-
-    # Execute it locally
-    assert th.all(th.eq(fetched_plan(x), expected))
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
-
-    # Make sure fetched_plan is using the readable_plan
-    assert fetched_plan.forward is None
-    assert fetched_plan.is_built
-
-    # Make sure plan is using the blueprint: forward
-    assert plan.forward is not None
-
-    remote_proxy.close()
-    server.terminate()
-
-
-# TODO: Re-enable these once the rest of the Plan rework is completed
-
-
-def test_binding_fix_precision_plan(hook):
-    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_precision"""
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(1, 1)
-
-        def forward(self, x):
-            return self.fc1(x)
-
-    plan = Net()
-    plan.build(th.tensor([1.2]))
-    original_weight = plan.fc1.weight.clone()
-
-    plan.fix_precision()
-    plan.fc1.weight.float_prec_()
-
-    assert (plan.fc1.weight - original_weight) < 10e-2
-
-
-def test_binding_encrypted_plan(hook, workers):
-    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_prec + share"""
-
-    alice, bob, charlie, james = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-    )
-
-    class Net(sy.Plan):
-        def __init__(self):
-            super(Net, self).__init__()
-            self.fc1 = nn.Linear(1, 1)
-
-        def forward(self, x):
-            return self.fc1(x)
-
-    plan = Net()
-    plan.build(th.tensor([1.2]))
-    original_weight = plan.fc1.weight.clone()
-
-    plan.fix_precision().share(alice, bob, crypto_provider=charlie)
-    plan.fc1.weight.get_().float_prec_()
-
-    assert (plan.fc1.weight - original_weight) < 10e-2
-
-
-@pytest.mark.parametrize("is_func2plan", [True, False])
-def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
-    # TODO: this test is not working properly with remote workers.
-    # We need to investigate why this might be the case.
-
-    alice, bob, charlie, james = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-    )
-
-    if is_func2plan:
-
-        @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3.0]),))
-        def plan(data, state):
-            (bias,) = state.read()
-            return data * bias
-
-    else:
-
-        class Net(sy.Plan):
-            def __init__(self):
-                super(Net, self).__init__()
-                self.fc1 = nn.Linear(1, 1)
-
-            def forward(self, x):
-                return self.fc1(x)
-
-        plan = Net()
-        plan.build(th.tensor([1.2]))
-
-    x = th.tensor([-1.0])
-    expected = plan(x)
-
-    plan.fix_precision().share(alice, bob, crypto_provider=charlie)
-    ptr_plan = plan.send(james)
-
-    # Fetch plan
-    fetched_plan = plan.owner.fetch_plan(ptr_plan.id_at_location, james)
-
-    # Execute the fetch plan
-    x = th.tensor([-1.0])
-    x_sh = x.fix_precision().share(alice, bob, crypto_provider=charlie)
-    decrypted = fetched_plan(x_sh).get().float_prec()
-
-    # Compare with local plan
-    assert th.all(decrypted - expected.detach() < 1e-2)
-    # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
-
-    # Make sure fetched_plan is using the readable_plan
-    assert fetched_plan.forward is None
-    assert fetched_plan.is_built
-
-    # Make sure plan is using the blueprint: forward
-    assert plan.forward is not None
 
 
 @pytest.mark.parametrize("is_func2plan", [True, False])
@@ -871,26 +558,6 @@ def test_train_plan_locally_and_then_send_it(hook, start_remote_worker):
     server.terminate()
 
 
-# Plans are not supporting non-local computation flows for the moment
-# def test_send_with_plan(workers):
-#     bob = workers["bob"]
-#
-#     raise NotImplementedError
-#
-#     @sy.func2plan([th.Size((1, 3))])
-#     def plan_double_abs(x):
-#         x = x.send(bob)
-#         x = x + x
-#         x = th.abs(x)
-#         return x
-#
-#     expected = th.tensor([4.0, 4.0, 4.0])
-#     ptr_result = plan_double_abs(th.tensor([-2.0, 2.0, 2.0]))
-#     assert isinstance(ptr_result.child, sy.PointerTensor)
-#     result = ptr_result.get()
-#     assert th.equal(result, expected)
-
-
 def test_cached_plan_send(workers):
     bob = workers["bob"]
 
@@ -997,105 +664,6 @@ def test_plan_nested_build_inner_plan_after(workers):
     res = plan_double_ptr(x_ptr)
 
     assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(199)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
-    def plan_double(data, state):
-        (bias,) = state.read()
-        return -2 * data + bias
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    plan_abs_ptr(x_ptr)
-
-    res = plan_abs_ptr(x_ptr)
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_multiple_plans_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(1043)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3]),))
-    def plan_3(data, state):
-        (bias,) = state.read()
-        return data + bias + 42
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_2_2(data):
-        return data + 1331
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([2]),))
-    def plan_2_1(data, state):
-        (bias,) = state.read()
-        return -2 * plan_3(data) + bias
-
-    @sy.func2plan()
-    def plan_1(data):
-        res = plan_2_1(data)
-        return plan_2_2(res)
-
-    # (-2 * (x + tensor(3) + 42) + tensor(2) + 1331)
-    #        -------------------
-    #              plan_3
-    # --------------------------------------
-    #                plan_2_1
-    # -----------------------------------------------
-    #                       plan_2_2
-
-    x = th.tensor(100)
-    plan_1.build(x)
-
-    # Test locally
-    assert plan_1(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_1_ptr = plan_1.send(alice)
-
-    res = plan_1_ptr(x_ptr)
-    assert res.get() == expected_res
-
-
-def test_plan_can_be_jit_traced(hook, workers):
-    args_shape = [(1,)]
-
-    @sy.func2plan(args_shape=args_shape, state=(th.tensor([1.0]),))
-    def foo(x, state):
-        (bias,) = state.read()
-        x = x * 2
-        return x + bias
-
-    assert isinstance(foo.__str__(), str)
-    assert len(foo.readable_plan) > 0
-    assert foo.is_built
-
-    t = th.tensor([1.0, 2])
-    x = foo(t)
-
-    assert (x == th.tensor([3.0, 5])).all()
-
-    args = Plan._create_placeholders(args_shape)
-    torchscript_plan = th.jit.trace(foo, args)
-
-    y = torchscript_plan(t)
-
-    assert (y == th.tensor([3.0, 5])).all()
 
 
 def test_plan_input_usage(hook):

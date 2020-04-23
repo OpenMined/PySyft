@@ -44,9 +44,10 @@ from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
+from syft.execution.role import Role
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -69,10 +70,12 @@ from syft.messaging.message import SearchMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import WorkerCommandMessage
 from syft.serde import compression
+from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
+from syft.generic.pointers.pointer_dataset import PointerDataset
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
@@ -107,10 +110,11 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     AdditiveSharingTensor,
     FixedPrecisionTensor,
     PrivateTensor,
-    CRTPrecisionTensor,
     LoggingTensor,
     MultiPointerTensor,
     PlaceHolder,
+    PlaceholderId,
+    Role,
     ObjectPointer,
     Plan,
     State,
@@ -136,6 +140,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     GradFunc,
     String,
     BaseDataset,
+    PointerDataset,
 ]
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
@@ -147,6 +152,10 @@ OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
 EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+
+# cached value
+field = 2 ** 64
+strField = str(2 ** 64)
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
@@ -199,7 +208,7 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
         return _simplify(worker, obj)
 
 
-## SECTION: dinamically generate simplifiers and detailers
+## SECTION: dynamically generate simplifiers and detailers
 def _generate_simplifiers_and_detailers():
     """Generate simplifiers, forced full simplifiers and detailers,
     by registering native and torch types, syft objects with custom
@@ -264,7 +273,7 @@ def _serialize_msgpack_simple(
         worker = syft.framework.hook.local_worker
 
     # 1) Simplify
-    # simplify difficult-to-serialize objects. See the _simpliy method
+    # simplify difficult-to-serialize objects. See the _simplify method
     # for details on how this works. The general purpose is to handle types
     # which the fast serializer cannot handle
     if not simplified:
@@ -375,6 +384,18 @@ def deserialize(binary: bin, worker: AbstractWorker = None) -> object:
     return _deserialize_msgpack_simple(simple_objects, worker)
 
 
+def _simplify_field(obj):
+    """
+    This function converts large numeric values which
+    will cause overflow into str before serialisation
+    """
+    current_type = type(obj)
+    if current_type == int and obj >= field:
+        obj = str(obj)
+        current_type = str
+    return current_type, obj
+
+
 def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """
     This function takes an object as input and returns a simple
@@ -401,7 +422,9 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
     # breakpoint()
-    current_type = type(obj)
+    # current_type = type(obj)
+    current_type, obj = _simplify_field(obj)
+
     # print(current_type, current_type in simplifiers)
     if current_type in simplifiers:
         result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
@@ -446,6 +469,18 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return obj
 
 
+def _detail_field(typeCode, val):
+    """
+    This functions converts the field value 2**64 which was
+    serialised as str to avoid msgpack overflow back to int
+    after deserialisation.
+    """
+    if typeCode == msgpack.proto_type_info(str).code and val == strField:
+        return int(val)
+    else:
+        return val
+
+
 def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """Reverses the functionality of _simplify.
     Where applicable, it converts simple objects into more complex objects such
@@ -463,6 +498,7 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
             deserializing directly.
     """
     if type(obj) in (list, tuple):
-        return detailers[obj[0]](worker, obj[1], **kwargs)
+        val = detailers[obj[0]](worker, obj[1], **kwargs)
+        return _detail_field(obj[0], val)
     else:
         return obj

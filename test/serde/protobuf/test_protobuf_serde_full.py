@@ -33,9 +33,11 @@ samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.plan.Plan] = make_plan
-samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
+samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
@@ -50,10 +52,11 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip_protobuf(cls, workers):
+def test_serde_roundtrip_protobuf(cls, workers, hook):
     """Checks that values passed through serialization-deserialization stay same"""
-    serde_worker = syft.hook.local_worker
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
     original_framework = serde_worker.framework
+    workers["serde_worker"] = serde_worker
     _samples = samples[cls](workers=workers)
     for sample in _samples:
         _to_protobuf = (
