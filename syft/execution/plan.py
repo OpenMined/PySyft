@@ -321,7 +321,9 @@ class Plan(AbstractObject):
         """Add new tensors or parameter attributes to the state and register them
         in the owner's registry
         """
-        if isinstance(value, FrameworkTensor):
+        if isinstance(value, torch.jit.ScriptModule):
+            object.__setattr__(self, name, value)
+        elif isinstance(value, FrameworkTensor):
             self.role.register_state_tensor(value)
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
