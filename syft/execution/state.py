@@ -40,11 +40,7 @@ class State(object):
         """
         Fetch and return all the state elements.
         """
-        tensors = []
-        for placeholder in self.state_placeholders:
-            tensor = placeholder.child
-            tensors.append(tensor)
-        return tensors
+        return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
         return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
