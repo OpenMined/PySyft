@@ -970,11 +970,68 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             return max_value, max_index * 1000
 
+    # def argmax(self, dim=None):
+    #
+    #     max_value, max_index = self.max(dim=dim, return_idx=True)
+    #
+    #     return max_index
+
+    def _one_hot_to_index(self, dim, keepdim):
+        """
+        Converts a one-hot self output from an argmax / argmin function to a
+        self containing indices from the input self from which the result of the
+        argmax / argmin was obtained.
+
+        Inspired from Crypten
+        """
+        if dim is None:
+            result = self.flatten()
+            n_elem = list(self.child.values())[0].nelement()
+            result = result * torch.tensor(list(range(n_elem))).long().wrap()
+            return result.sum()
+        else:
+            size = [1] * self.dim()
+            size[dim] = self.shape[dim]
+            result = self * torch.tensor(list(range(self.shape[dim]))).view(size).long().wrap()
+            return result.sum(dim, keepdim=keepdim)
+
     def argmax(self, dim=None):
+        """
+        Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
 
-        max_value, max_index = self.max(dim=dim, return_idx=True)
+        Inspired from Crypten.
 
-        return max_index
+        Args:
+            dim: compute argmax over a specific diomension
+        """
+        x = self.flatten() if dim is None else self
+
+        x_pairwise_shares = {}
+
+        for worker, share in x.child.items():
+
+            response_ids = [sy.ID_PROVIDER.pop()]
+            command = ("helper_argmax_pairwise", share, tuple(), dict(dim=dim))
+            response = self.owner.send_command(
+                message=command, recipient=share.location, return_ids=response_ids
+            )
+            x_pairwise_shares[worker] = response
+
+        x_pairwise = AdditiveSharingTensor(**self.get_class_attributes()).on(
+            x_pairwise_shares, wrap=False
+        )
+
+        pairwise_comparisons = x_pairwise >= 0
+
+        _dim = -1 if dim is None else dim
+        row_length = x.shape[_dim] if x.shape[_dim] > 1 else 2
+
+        result = pairwise_comparisons.sum(0)
+        result = result >= (row_length - 1)
+
+        result = result.reshape(self.shape) if dim is None else result
+
+        return result._one_hot_to_index(dim, keepdim=False)
 
     ## STANDARD
 
