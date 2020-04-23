@@ -105,8 +105,6 @@ class PlaceHolder(AbstractTensor):
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
-        elif hasattr(tensor, "is_wrapper") and tensor.is_wrapper:
-            self.child = tensor.child
         else:
             self.child = tensor
 
