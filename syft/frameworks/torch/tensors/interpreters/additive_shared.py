@@ -1090,7 +1090,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
             sy.serde.msgpack.serde._simplify(worker, tensor.field),
-            tensor.dtype,
+            tensor.dtype.encode("utf-8"),
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
             garbage_collect,
@@ -1116,7 +1116,7 @@ class AdditiveSharingTensor(AbstractTensor):
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=sy.serde.msgpack.serde._detail(worker, field),
-            dtype=dtype,
+            dtype=dtype.decode("utf-8"),
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
