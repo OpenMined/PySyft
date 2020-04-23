@@ -1,5 +1,5 @@
 from syft.frameworks.torch.nn.conv import Conv2d
-from syft.frameworks.torch.nn.functional import conv2d
+from syft.frameworks.torch.nn.functional import conv2d, maxpool2d, avgpool2d
 from syft.frameworks.torch.nn.functional import dropout
 from syft.frameworks.torch.nn.functional import linear
 from syft.frameworks.torch.nn.pool import AvgPool2d
@@ -26,6 +26,8 @@ def nn(module):
         module.conv2d = conv2d
         module.dropout = dropout
         module.linear = linear
+        module.max_pool2d = maxpool2d
+        module.avg_pool2d = avgpool2d
 
     module.functional = functional
 
