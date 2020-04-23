@@ -250,9 +250,14 @@ class Plan(AbstractObject):
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
+        # Get state as placeholders
+        self.role.state.read_placeholders = True
 
         # Run once to build the plan
-        args = tuple(PlaceHolder(role=self.role, tracing=True).instantiate(arg) for arg in args)
+        args = tuple(
+            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
+            for arg in args
+        )
 
         # Add state to args if needed
         if self.include_state:
@@ -270,6 +275,7 @@ class Plan(AbstractObject):
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
+        self.role.state.read_placeholders = False
 
         # Register inputs in role
         self.role.register_inputs(args)
