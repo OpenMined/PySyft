@@ -379,7 +379,11 @@ class TorchTensor(AbstractTensor):
         for sm in submodules:
             module = getattr(module, sm)
 
-        command_method = getattr(module, f"native_{command}")
+        try:
+            command_method = getattr(module, f"native_{command}")
+        except AttributeError:  # the function isn't overloaded
+            command_method = getattr(module, command)
+
         if isinstance(args_, tuple):
             response = command_method(*args_, **kwargs_)
         else:
