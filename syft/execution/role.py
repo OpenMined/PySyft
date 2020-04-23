@@ -148,9 +148,10 @@ class Role(AbstractObject):
         else:
             response = getattr(_self, cmd)(*args_, **kwargs_)
 
-        if isinstance(response, PlaceHolder) or isinstance(response, FrameworkTensor):
+        if not isinstance(response, (tuple, list)):
             response = (response,)
-            PlaceHolder.instantiate_placeholders(return_placeholder, response)
+
+        PlaceHolder.instantiate_placeholders(return_placeholder, response)
 
     def _fetch_package_method(self, cmd):
         cmd_path = cmd.split(".")

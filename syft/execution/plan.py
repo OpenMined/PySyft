@@ -7,6 +7,7 @@ import copy
 import inspect
 import io
 import torch
+from types import ModuleType
 import warnings
 from contextlib import contextmanager
 
@@ -37,7 +38,11 @@ class FrameworkWrapper:
         package_attr = getattr(self.package, attr_name)
         # Forward directly the attribute if it's not a function
         if not callable(package_attr):
-            return package_attr
+            # If it's a sub-module, wrap that for tracing too
+            if isinstance(package_attr, ModuleType):
+                return FrameworkWrapper(package_attr, self.role)
+            else:
+                return package_attr
 
         def trace_wrapper(*args, **kwargs):
             cmd_name = ".".join((self.package.__name__, attr_name))
@@ -46,9 +51,17 @@ class FrameworkWrapper:
             result = package_attr(*args, **kwargs)
 
             if isinstance(result, FrameworkTensor):
-                ph = PlaceHolder(role=self.role, tracing=True, owner=self.role.owner)
-                result = ph.instantiate(result)
-
+                result = PlaceHolder.create_from(
+                    result, owner=self.role.owner, role=self.role, tracing=True
+                )
+                self.role.register_action(
+                    (command, result), sy.execution.computation.ComputationAction
+                )
+            elif isinstance(result, (list, tuple)):
+                result = tuple(
+                    PlaceHolder.create_from(r, owner=self.role.owner, role=self.role, tracing=True)
+                    for r in result
+                )
                 self.role.register_action(
                     (command, result), sy.execution.computation.ComputationAction
                 )

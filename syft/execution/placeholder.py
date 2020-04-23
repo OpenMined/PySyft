@@ -76,9 +76,18 @@ class PlaceHolder(AbstractTensor):
             if isinstance(arg, PlaceHolder):
                 ph_arg = arg
 
-        # Turn back response to a PlaceHolder
-        result = PlaceHolder(role=ph_arg.role, tracing=ph_arg.tracing, owner=ph_arg.owner)
-        response = result.instantiate(response)
+        if isinstance(response, (tuple, list)):
+            # Turn back response to PlaceHolders
+            response = tuple(
+                PlaceHolder.create_from(
+                    r, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+                )
+                for r in response
+            )
+        else:
+            response = PlaceHolder.create_from(
+                response, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+            )
 
         if ph_arg.tracing:
             ph_arg.role.register_action(
