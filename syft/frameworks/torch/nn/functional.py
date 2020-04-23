@@ -151,6 +151,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     )
     return res
 
+
 def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     output_shape = (
         (tensor.shape[0] - kernel_size) // stride + 1,

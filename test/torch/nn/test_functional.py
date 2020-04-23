@@ -125,6 +125,7 @@ def test_torch_nn_functional_conv2d(workers):
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
 
+
 def test_torch_nn_functional_maxpool(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     enc_tensor = torch.tensor(
