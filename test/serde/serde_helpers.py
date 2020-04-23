@@ -1940,3 +1940,23 @@ def make_gradfn(**kwargs):
             "cmp_detailed": compare,
         }
     ]
+
+def make_paillier(**kwargs):
+    # TODO: Add proper testing for paillier tensor
+
+    def compare(original, detailed):
+        return True
+
+    tensor = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor()
+    simplfied = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor.simplify(kwargs["workers"]["serde_worker"], tensor)
+
+    return [
+        {
+            "value": tensor,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
+                simplfied
+            ),
+            "cmp_detailed": compare
+        }
+    ]

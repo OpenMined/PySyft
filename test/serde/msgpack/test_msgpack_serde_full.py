@@ -88,7 +88,7 @@ samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = ma
 
 samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
-
+samples[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor] = make_paillier
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
