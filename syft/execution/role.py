@@ -309,8 +309,6 @@ class Role(AbstractObject):
             id=id_,
             owner=worker,
             actions=actions,
-            state=state,
-            # placeholders=placeholders,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
         )
@@ -406,10 +404,15 @@ class Role(AbstractObject):
             id=id_,
             owner=worker,
             actions=actions,
-            state=state,
-            placeholders=placeholders,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
         )
+        for ph in placeholders.values():
+            ph.role = role
+        for ph in state.state_placeholders:
+            ph.role = role
+
+        role.placeholders = placeholders
+        role.state = state
 
         return role
