@@ -37,13 +37,10 @@ class Role:
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
     ):
-        owner = owner or sy.local_worker
-
         self.id = id or sy.ID_PROVIDER.pop()
 
-        self.owner = owner
         self.actions = actions or []
-        self.state = state or State(owner=owner)
+
         # All placeholders
         self.placeholders = placeholders or {}
         # Input placeholders, stored by id
@@ -51,6 +48,8 @@ class Role:
         # Output placeholders
         self.output_placeholder_ids = output_placeholder_ids or ()
 
+        owner = owner or sy.local_worker
+        self.state = state or State(owner=owner)
         # state_tensors are provided when plans are created using func2plan
         if state_tensors:
             # we want to make sure in that case that the state is empty
@@ -249,7 +248,6 @@ class Role:
             input_placeholder_ids=new_input_placeholder_ids,
             output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
-            owner=self.owner,
         )
 
     @staticmethod
