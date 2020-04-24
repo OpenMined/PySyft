@@ -8,9 +8,10 @@ from syft.generic.frameworks.types import FrameworkTensor
 
 
 class FrameworkWrapper:
-    def __init__(self, package, role):
+    def __init__(self, package, role, owner):
         self.package = package
         self.role = role
+        self.owner = owner
 
     def __getattr__(self, attr_name):
         package_attr = getattr(self.package, attr_name)
@@ -18,7 +19,7 @@ class FrameworkWrapper:
         if not callable(package_attr):
             # If it's a sub-module, wrap that for tracing too
             if isinstance(package_attr, ModuleType):
-                return FrameworkWrapper(package_attr, self.role)
+                return FrameworkWrapper(package_attr, self.role, self.owner)
             else:
                 return package_attr
 
@@ -30,14 +31,14 @@ class FrameworkWrapper:
 
             if isinstance(result, FrameworkTensor):
                 result = PlaceHolder.create_from(
-                    result, owner=self.role.owner, role=self.role, tracing=True
+                    result, owner=self.owner, role=self.role, tracing=True
                 )
                 self.role.register_action(
                     (command, result), sy.execution.computation.ComputationAction
                 )
             elif isinstance(result, (list, tuple)):
                 result = tuple(
-                    PlaceHolder.create_from(r, owner=self.role.owner, role=self.role, tracing=True)
+                    PlaceHolder.create_from(r, owner=self.owner, role=self.role, tracing=True)
                     for r in result
                 )
                 self.role.register_action(
@@ -54,9 +55,9 @@ class FrameworkWrapper:
 
 
 @contextmanager
-def trace(package, role):
+def trace(package, role, owner):
     try:
-        wrapped = FrameworkWrapper(package, role)
+        wrapped = FrameworkWrapper(package, role, owner)
         yield wrapped
     except:
         raise

@@ -204,7 +204,7 @@ class Plan(AbstractObject):
         if self.include_state:
             args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role) as wrapped_torch:
+        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
             # Look for framework kwargs
             framework_kwargs = {}
             forward_args = inspect.getargspec(self.forward).args
