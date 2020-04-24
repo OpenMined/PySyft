@@ -943,7 +943,7 @@ class AdditiveSharingTensor(AbstractTensor):
             the maximum value (possibly across an axis)
             and optionally the index of the maximum value (possibly across an axis)
         """
-        values = self
+        values = self.copy()
         n_dim = self.dim()
 
         # Make checks and transformation
@@ -966,7 +966,11 @@ class AdditiveSharingTensor(AbstractTensor):
             **no_wrap,
         )
 
+        # 4, 4
         for i in range(1, len(values)):
+            # import pprint
+            # pprint.pprint(self.locations[0]._objects)
+            print("#" * 3)
             a = values[i]
             beta = a >= max_value
             max_index = max_index + beta * (i - max_index)
