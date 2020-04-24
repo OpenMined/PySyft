@@ -8,7 +8,6 @@ from typing import List, Tuple
 
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.hook.trace import tracer
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -397,7 +396,6 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
-        @tracer(method_name=method_name)
         @wraps(getattr(tensor_type, method_name))
         def overloaded_native_method(self, *args, **kwargs):
             """
@@ -572,7 +570,6 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
-        @tracer(func_name=cmd_name)
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
