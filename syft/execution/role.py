@@ -20,7 +20,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject):
+class Role:
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
@@ -36,11 +36,10 @@ class Role(AbstractObject):
         # General kwargs
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
-        tags: List[str] = None,
-        description: str = None,
     ):
         owner = owner or sy.local_worker
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+
+        self.id = id or sy.ID_PROVIDER.pop()
 
         self.owner = owner
         self.actions = actions or []
@@ -251,8 +250,6 @@ class Role(AbstractObject):
             output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
-            tags=self.tags,
-            description=self.description,
         )
 
     @staticmethod
@@ -353,11 +350,6 @@ class Role(AbstractObject):
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.input_placeholder_ids.add(), id_)
         for id_ in role.output_placeholder_ids:
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.output_placeholder_ids.add(), id_)
-
-        if role.description:
-            protobuf_role.description = role.description
-        if role.tags:
-            protobuf_role.tags = role.tags
 
         return protobuf_role
 
