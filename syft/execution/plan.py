@@ -1,4 +1,3 @@
-from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -7,15 +6,13 @@ import copy
 import inspect
 import io
 import torch
-from types import ModuleType
 import warnings
-from contextlib import contextmanager
 
 import syft as sy
-from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
+from syft.execution.tracing import trace
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.generic.frameworks import framework_packages
@@ -26,62 +23,6 @@ from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
-
-
-class FrameworkWrapper:
-    def __init__(self, package, role):
-        self.package = package
-        self.role = role
-
-    def __getattr__(self, attr_name):
-        package_attr = getattr(self.package, attr_name)
-        # Forward directly the attribute if it's not a function
-        if not callable(package_attr):
-            # If it's a sub-module, wrap that for tracing too
-            if isinstance(package_attr, ModuleType):
-                return FrameworkWrapper(package_attr, self.role)
-            else:
-                return package_attr
-
-        def trace_wrapper(*args, **kwargs):
-            cmd_name = ".".join((self.package.__name__, attr_name))
-            command = (cmd_name, None, args, kwargs)
-
-            result = package_attr(*args, **kwargs)
-
-            if isinstance(result, FrameworkTensor):
-                result = PlaceHolder.create_from(
-                    result, owner=self.role.owner, role=self.role, tracing=True
-                )
-                self.role.register_action(
-                    (command, result), sy.execution.computation.ComputationAction
-                )
-            elif isinstance(result, (list, tuple)):
-                result = tuple(
-                    PlaceHolder.create_from(r, owner=self.role.owner, role=self.role, tracing=True)
-                    for r in result
-                )
-                self.role.register_action(
-                    (command, result), sy.execution.computation.ComputationAction
-                )
-            else:
-                self.role.register_action(
-                    (command, None), sy.execution.computation.ComputationAction
-                )
-
-            return result
-
-        return trace_wrapper
-
-
-@contextmanager
-def trace(package, role):
-    try:
-        wrapped = FrameworkWrapper(package, role)
-        yield wrapped
-    except:
-        raise
 
 
 class func2plan(object):
