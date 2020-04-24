@@ -215,12 +215,12 @@ class Role:
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
-            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=self.owner).instantiate(
+            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=ph.owner).instantiate(
                 ph.child
             )
             state_placeholders.append(new_ph)
 
-        state = State(owner=self.owner, state_placeholders=state_placeholders)
+        state = State(owner=self.state.owner, state_placeholders=state_placeholders)
 
         def _replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):
