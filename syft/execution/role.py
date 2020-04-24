@@ -56,7 +56,7 @@ class Role:
             # we want to make sure in that case that the state is empty
             assert state is None
             for tensor in state_tensors:
-                self.register_state_tensor(tensor)
+                self.register_state_tensor(tensor, owner)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
@@ -95,8 +95,8 @@ class Role:
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def register_state_tensor(self, tensor):
-        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=self.owner)
+    def register_state_tensor(self, tensor, owner):
+        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=owner)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
         # TODO isn't it weird that state placeholders are both in state and plan?

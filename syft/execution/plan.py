@@ -265,11 +265,11 @@ class Plan(AbstractObject):
         if isinstance(value, torch.jit.ScriptModule):
             object.__setattr__(self, name, value)
         elif isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value)
+            self.role.register_state_tensor(value, self.owner)
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param)
+                self.role.register_state_tensor(param, self.owner)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
