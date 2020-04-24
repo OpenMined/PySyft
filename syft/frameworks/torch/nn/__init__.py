@@ -1,5 +1,7 @@
 from syft.frameworks.torch.nn.conv import Conv2d
-from syft.frameworks.torch.nn.functional import conv2d, maxpool2d, avgpool2d
+from syft.frameworks.torch.nn.functional import conv2d
+from syft.frameworks.torch.nn.functional import maxpool2d
+from syft.frameworks.torch.nn.functional import avgpool2d
 from syft.frameworks.torch.nn.functional import dropout
 from syft.frameworks.torch.nn.functional import linear
 from syft.frameworks.torch.nn.pool import AvgPool2d
