@@ -186,7 +186,7 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
-        self.owner.init_plan = self
+        self.owner.tracing_plan = self
 
         # Enable tracing
         self.toggle_tracing(True)
@@ -222,7 +222,7 @@ class Plan(AbstractObject):
         self.role.register_outputs(results)
 
         self.is_built = True
-        self.owner.init_plan = None
+        self.owner.tracing_plan = None
 
         # Build registered translations
         for translator in Plan._build_translators:

@@ -53,19 +53,19 @@ class State(object):
         currently building.
         """
         # TODO clean this function
-        # If there is a plan building, it is referenced in init_plan
-        if self.owner.init_plan:
-            parent_plan = self.owner.init_plan
+        # If there is a plan building, it is referenced in tracing_plan
+        tracing_plan = self.owner.tracing_plan
+        if tracing_plan:
             # to see if we are in a sub plan, we use state objects equality
-            if parent_plan.state != self:
+            if tracing_plan.state != self:
                 # for all the placeholders in this sub plan, we report a copy of them
                 # in the parent plan and notify their origin using the #inner tag
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
                     placeholder.id = PlaceholderId(placeholder.child.id)
                     placeholder.inner = True
-                    parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.role.placeholders[placeholder.child.id] = placeholder
+                    tracing_plan.state.state_placeholders.append(placeholder)
+                    tracing_plan.role.placeholders[placeholder.child.id] = placeholder
 
             return [ph for ph in self.state_placeholders if not ph.inner]
         else:
