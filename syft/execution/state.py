@@ -63,13 +63,13 @@ class State(object):
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
                     placeholder.id = PlaceholderId(placeholder.child.id)
-                    placeholder.tags = set(("#inner",))
+                    placeholder.inner = True
                     parent_plan.state.state_placeholders.append(placeholder)
                     parent_plan.role.placeholders[placeholder.child.id] = placeholder
 
-            return [ph for ph in self.state_placeholders if "#inner" not in ph.tags]
+            return [ph for ph in self.state_placeholders if not ph.inner]
         else:
-            return [ph.child for ph in self.state_placeholders if "#inner" not in ph.tags]
+            return [ph.child for ph in self.state_placeholders if not ph.inner]
 
     @staticmethod
     def create_grad_if_missing(tensor):
