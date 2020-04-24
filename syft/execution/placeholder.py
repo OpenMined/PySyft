@@ -72,7 +72,6 @@ class PlaceHolder(AbstractTensor):
         # Find first placeholder in args
         ph_arg = None
         for arg in args:
-            # TODO throw an error or handle the case where no placeholder provided in args
             if isinstance(arg, PlaceHolder):
                 ph_arg = arg
 
