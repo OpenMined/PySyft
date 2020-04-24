@@ -28,7 +28,7 @@ def test_placeholder_forwarding():
             return "Method 1"
 
         def copy(self):
-            return "Method 2"  # noqa
+            return "Method 2"  # pragma: no cover
 
     placeholder = PlaceHolder()
     placeholder.instantiate(TestClass())
