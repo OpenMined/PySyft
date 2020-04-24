@@ -191,8 +191,6 @@ class Plan(AbstractObject):
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
-        # Get state as placeholders
-        self.role.state.read_placeholders = True
 
         # Run once to build the plan
         args = tuple(
@@ -216,7 +214,6 @@ class Plan(AbstractObject):
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
-        self.role.state.read_placeholders = False
 
         # Register inputs in role
         self.role.register_inputs(args)
