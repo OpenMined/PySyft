@@ -130,6 +130,7 @@ class Plan(AbstractObject):
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -235,8 +236,10 @@ class Plan(AbstractObject):
         return results
 
     def toggle_tracing(self, value=None):
+        self.tracing = value if value is not None else not self.tracing
+        self.state.tracing = self.tracing
         for ph in self.role.placeholders.values():
-            ph.tracing = value if value is not None else not ph.tracing
+            ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a plan."""

@@ -23,6 +23,7 @@ class State(object):
     def __init__(self, owner, state_placeholders=None):
         self.owner = owner
         self.state_placeholders = state_placeholders or []
+        self.tracing = False
 
     def __str__(self):
         """Returns the string representation of the State."""
@@ -52,8 +53,7 @@ class State(object):
         If run while a plan is building, declare all the state tensors to the plan
         currently building.
         """
-        # TODO clean this function
-        if self.owner.tracing:
+        if self.tracing:
             return [ph for ph in self.state_placeholders]
         else:
             return [ph.child for ph in self.state_placeholders]
