@@ -49,7 +49,7 @@ class Role:
         self.output_placeholder_ids = output_placeholder_ids or ()
 
         owner = owner or sy.local_worker
-        self.state = state or State(owner=owner)
+        self.state = state or State()
         # state_tensors are provided when plans are created using func2plan
         if state_tensors:
             # we want to make sure in that case that the state is empty
@@ -219,7 +219,7 @@ class Role:
             )
             state_placeholders.append(new_ph)
 
-        state = State(owner=self.state.owner, state_placeholders=state_placeholders)
+        state = State(state_placeholders=state_placeholders)
 
         def _replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):

@@ -880,7 +880,7 @@ def make_state(**kwargs):
     p1, p2 = syft.PlaceHolder(), syft.PlaceHolder()
     p1.tag("state1"), p2.tag("state2")
     p1.instantiate(t1), p2.instantiate(t2)
-    state = syft.execution.state.State(owner=me, state_placeholders=[p1, p2])
+    state = syft.execution.state.State(state_placeholders=[p1, p2])
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.state.State

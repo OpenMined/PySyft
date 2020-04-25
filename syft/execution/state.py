@@ -20,8 +20,7 @@ class State(object):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, state_placeholders=None):
-        self.owner = owner
+    def __init__(self, state_placeholders=None):
         self.state_placeholders = state_placeholders or []
         self.tracing = False
 
@@ -44,7 +43,7 @@ class State(object):
         return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
-        return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
+        return State(state_placeholders=self.state_placeholders.copy())
 
     def read(self):
         """
@@ -117,7 +116,7 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders=state_placeholders)
         return state
 
     @staticmethod
@@ -176,5 +175,5 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders=state_placeholders)
         return state
