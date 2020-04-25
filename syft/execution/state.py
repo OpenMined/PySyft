@@ -13,7 +13,7 @@ from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorP
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
-class State(object):
+class State:
     """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make
@@ -43,7 +43,7 @@ class State(object):
         return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
-        return State(state_placeholders=self.state_placeholders.copy())
+        return State(self.state_placeholders.copy())
 
     def read(self):
         """
@@ -116,7 +116,7 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state
 
     @staticmethod
@@ -175,5 +175,5 @@ class State(object):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state

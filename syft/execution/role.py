@@ -219,7 +219,7 @@ class Role:
             )
             state_placeholders.append(new_ph)
 
-        state = State(state_placeholders=state_placeholders)
+        state = State(state_placeholders)
 
         def _replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):
