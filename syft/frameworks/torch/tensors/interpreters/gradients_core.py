@@ -34,7 +34,7 @@ class GradFunc:
         self.next_functions = tuple(
             filter(lambda x: x is not None, [forward_grad(arg) for arg in args])
         )
-        self.result = None
+        # self.result = None TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
         self._attributes = list()
 
     def gradient(self, grad):

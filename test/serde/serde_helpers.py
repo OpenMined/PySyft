@@ -532,7 +532,7 @@ def make_additivesharingtensor(**kwargs):
                     (CODE[str], (str(ast.field).encode("utf-8"),))
                     if ast.field == 2 ** 64
                     else ast.field,  # (int or str) field
-                    ast.dtype,  # (str) dtype
+                    ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], ast.child

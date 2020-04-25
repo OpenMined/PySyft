@@ -164,5 +164,5 @@ def create_sandbox(gbs, verbose=True, download_data=True):
     print("Done!")
 
 
-def hook(gbs):
+def make_hook(gbs):
     return create_sandbox(gbs, False, False)

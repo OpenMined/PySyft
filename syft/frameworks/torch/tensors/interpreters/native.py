@@ -180,7 +180,7 @@ class TorchTensor(AbstractTensor):
         ):
             self.child.grad = new_grad  # .wrap()
         else:
-            if self.native_grad is not None:
+            if hasattr(self, "native_grad"):
                 with torch.no_grad():
                     self.native_grad = new_grad
             elif new_grad is not None:
@@ -379,7 +379,11 @@ class TorchTensor(AbstractTensor):
         for sm in submodules:
             module = getattr(module, sm)
 
-        command_method = getattr(module, f"native_{command}")
+        try:
+            command_method = getattr(module, f"native_{command}")
+        except AttributeError:  # the function isn't overloaded
+            command_method = getattr(module, command)
+
         if isinstance(args_, tuple):
             response = command_method(*args_, **kwargs_)
         else:

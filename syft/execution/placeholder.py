@@ -1,13 +1,21 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None, shape=None):
+    def __init__(
+        self,
+        role=None,
+        tracing=False,
+        owner=None,
+        id=None,
+        tags: set = None,
+        description: str = None,
+        shape=None,
+    ):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -21,11 +29,84 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        if not isinstance(self.id, PlaceholderId):
-            self.id = PlaceholderId(self.id)
+        if not isinstance(self.id, syft.execution.placeholder_id.PlaceholderId):
+            self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
 
         self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
+        self.role = role
+        self.tracing = tracing
+
+    def get_class_attributes(self):
+        """
+        Specify all the attributes need to build a wrapper correctly when returning a response.
+        """
+        return {"role": self.role, "tracing": self.tracing, "owner": self.owner}
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """ Receive an instruction for a function to be applied on a Placeholder,
+        Replace in the args with their child attribute, forward the command
+        instruction to the handle_function_command of the type of the child attributes,
+        get the response and wrap it in a Placeholder.
+        We use this method to perform the tracing.
+
+        Args:
+            command: instruction of a function command: (command name,
+                <no self>, arguments[, kwargs])
+
+        Returns:
+            the response of the function command
+        """
+        cmd, _, args, kwargs = command
+
+        # Replace all PlaceHolders with their child attribute
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+
+        # build the new command
+        new_command = (cmd, None, new_args, new_kwargs)
+
+        # Send it to the appropriate class and get the response
+        response = new_type.handle_func_command(new_command)
+
+        # Find first placeholder in args
+        ph_arg = None
+        for arg in args:
+            if isinstance(arg, PlaceHolder):
+                ph_arg = arg
+
+        if isinstance(response, (tuple, list)):
+            # Turn back response to PlaceHolders
+            response = tuple(
+                PlaceHolder.create_from(
+                    r, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+                )
+                for r in response
+            )
+        else:
+            response = PlaceHolder.create_from(
+                response, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+            )
+
+        if ph_arg.tracing:
+            ph_arg.role.register_action(
+                (command, response), syft.execution.computation.ComputationAction
+            )
+
+        return response
+
+    def __getattribute__(self, name):
+        """Try to find the attribute in the current object
+        and in case we can not then we forward it to the child
+
+        """
+        try:
+            response = object.__getattribute__(self, name)
+        except AttributeError:
+            child = object.__getattribute__(self, "child")
+            response = getattr(child, name)
+
+        return response
 
     def instantiate(self, tensor):
         """
@@ -38,6 +119,10 @@ class PlaceHolder(AbstractTensor):
             self.child = tensor.child
         else:
             self.child = tensor
+
+        if hasattr(self.child, "shape"):
+            self.expected_shape = tuple(self.child.shape)
+
         return self
 
     def __str__(self) -> str:
@@ -64,6 +149,13 @@ class PlaceHolder(AbstractTensor):
         placeholder = PlaceHolder(tags=self.tags, owner=self.owner, shape=self.expected_shape)
         placeholder.child = self.child
         return placeholder
+
+    @staticmethod
+    def create_from(tensor, owner, role=None, tracing=False):
+        """ Helper method to create a placeholder already
+        instantiated with tensor.
+        """
+        return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
     def create_placeholders(args_shape):
