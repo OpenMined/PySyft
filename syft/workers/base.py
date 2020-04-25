@@ -165,6 +165,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 self.add_worker(self)
 
         # Used to keep track of a building plan
+        self.tracing = False
         self.tracing_plan = None
 
         if hook is None:

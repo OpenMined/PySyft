@@ -36,7 +36,6 @@ class PlaceHolder(AbstractTensor):
         self.child = None
         self.role = role
         self.tracing = tracing
-        self.inner = False
 
     def get_class_attributes(self):
         """
