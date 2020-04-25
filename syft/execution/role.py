@@ -35,7 +35,6 @@ class Role:
         state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
-        owner: "sy.workers.BaseWorker" = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
 
@@ -48,14 +47,7 @@ class Role:
         # Output placeholders
         self.output_placeholder_ids = output_placeholder_ids or ()
 
-        owner = owner or sy.local_worker
         self.state = state or State()
-        # state_tensors are provided when plans are created using func2plan
-        if state_tensors:
-            # we want to make sure in that case that the state is empty
-            assert state is None
-            for tensor in state_tensors:
-                self.register_state_tensor(tensor, owner)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
@@ -302,7 +294,6 @@ class Role:
 
         role = Role(
             id=id_,
-            owner=worker,
             actions=actions,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
@@ -392,7 +383,6 @@ class Role:
 
         role = Role(
             id=id_,
-            owner=worker,
             actions=actions,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,

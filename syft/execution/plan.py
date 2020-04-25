@@ -110,7 +110,7 @@ class Plan(AbstractObject):
         include_state: bool = False,
         is_built: bool = False,
         forward_func=None,
-        state_tensors=None,
+        state_tensors=[],
         role: Role = None,
         # General kwargs
         id: Union[str, int] = None,
@@ -123,7 +123,11 @@ class Plan(AbstractObject):
         # Plan instance info
         self.name = name or self.__class__.__name__
 
-        self.role = role or Role(state_tensors=state_tensors, owner=owner)
+        self.role = role or Role()
+
+        if role is None:
+            for st in state_tensors:
+                self.role.register_state_tensor(st, owner)
 
         self.include_state = include_state
         self.is_building = False
