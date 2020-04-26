@@ -181,8 +181,11 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
 
 
 def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
-    assert len(tensor.shape) == 4
-
+    assert len(tensor.shape) < 5
+    if len(tensor.shape) == 2:
+        return _pool(tensor, kernel_size, stride, mode)
+    if len(tensor.shape) == 3:
+        return torch.squeeze(pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, mode))
     batches = tensor.shape[0]
     channels = tensor.shape[1]
     out_shape = (
