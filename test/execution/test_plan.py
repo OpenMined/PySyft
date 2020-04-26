@@ -11,6 +11,7 @@ from itertools import starmap
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
+from syft.serde.msgpack import serde
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
 
@@ -80,7 +81,6 @@ def test_plan_execute_locally():
 
 def test_plan_execute_locally_ambiguous_output(workers):
     bob, alice = workers["bob"], workers["alice"]
-    from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(1,)])
     def serde_plan(x):
@@ -98,7 +98,6 @@ def test_plan_execute_locally_ambiguous_output(workers):
 
 def test_plan_execute_locally_ambiguous_input(workers):
     bob, alice = workers["bob"], workers["alice"]
-    from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(1,), (1,), (1,)])
     def serde_plan(x, y, z):
@@ -117,11 +116,10 @@ def test_plan_execute_locally_ambiguous_input(workers):
 
 def test_plan_torch_function_no_args(workers):
     bob, alice = workers["bob"], workers["alice"]
-    from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        y = th.tensor([-1])
+    def serde_plan(x, torch=th):
+        y = torch.tensor([-1])
         z = x + y
         return z
 
@@ -134,8 +132,8 @@ def test_plan_torch_function_no_args(workers):
     assert actual == expected == th.tensor([0.0])
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        y = th.arange(3)
+    def serde_plan(x, torch=th):
+        y = torch.arange(3)
         z = y + x
         return z
 
@@ -149,9 +147,9 @@ def test_plan_torch_function_no_args(workers):
     assert (actual == th.tensor([1, 2, 3])).all()
 
     @sy.func2plan(args_shape=[(1,)])
-    def serde_plan(x):
-        th.manual_seed(14)
-        y = th.randint(2, size=(1,), dtype=th.uint8)
+    def serde_plan(x, torch=th):
+        torch.manual_seed(14)
+        y = torch.randint(2, size=(1,), dtype=torch.uint8)
         y = y + 10
         return y
 
@@ -166,7 +164,6 @@ def test_plan_torch_function_no_args(workers):
 
 def test_plan_with_comp(workers):
     bob, alice = workers["bob"], workers["alice"]
-    from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(2,), (2,)])
     def serde_plan(x, y):
@@ -185,7 +182,6 @@ def test_plan_with_comp(workers):
 
 def test_plan_fixed_len_loop(workers):
     bob, alice = workers["bob"], workers["alice"]
-    from syft.serde.msgpack import serde
 
     @sy.func2plan(args_shape=[(1,)])
     def serde_plan(x):
@@ -202,6 +198,24 @@ def test_plan_fixed_len_loop(workers):
     assert actual == expected
 
 
+def test_plan_several_output_action(workers):
+    bob, alice = workers["bob"], workers["alice"]
+
+    @sy.func2plan(args_shape=[(4,)])
+    def serde_plan(x, torch=th):
+        y, z = torch.split(x, 2)
+        return y + z
+
+    serde_plan_simplified = serde._simplify(bob, serde_plan)
+    serde_plan_detailed = serde._detail(bob, serde_plan_simplified)
+
+    t = th.tensor([1, 2, 3, 4])
+    expected = serde_plan_detailed(t)
+    actual = serde_plan_detailed(t)
+    assert (actual == th.tensor([4, 6])).all()
+    assert (actual == expected).all()
+
+
 def test_plan_method_execute_locally(hook):
     class Net(sy.Plan):
         def __init__(self):
@@ -210,11 +224,11 @@ def test_plan_method_execute_locally(hook):
             self.fc2 = nn.Linear(3, 2)
             self.fc3 = nn.Linear(2, 1)
 
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
+        def forward(self, x, torch=th):
+            x = torch.nn.functional.relu(self.fc1(x))
             x = self.fc2(x)
             x = self.fc3(x)
-            return F.log_softmax(x, dim=0)
+            return torch.nn.functional.log_softmax(x, dim=0)
 
     model = Net()
 
@@ -269,10 +283,10 @@ def test_plan_built_on_class(hook):
 
             self.bias = th.tensor([1000.0])
 
-        def forward(self, x):
-            x = F.relu(self.fc1(x))
+        def forward(self, x, torch=th):
+            x = torch.nn.functional.relu(self.fc1(x))
             x = self.fc2(x)
-            return F.log_softmax(x, dim=0) + self.bias
+            return torch.nn.functional.log_softmax(x, dim=0) + self.bias
 
     net = Net()
 

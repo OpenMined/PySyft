@@ -23,6 +23,7 @@ class State(object):
     def __init__(self, owner, state_placeholders=None):
         self.owner = owner
         self.state_placeholders = state_placeholders or []
+        self.read_placeholders = False
 
     def __str__(self):
         """Returns the string representation of the State."""
@@ -40,11 +41,7 @@ class State(object):
         """
         Fetch and return all the state elements.
         """
-        tensors = []
-        for placeholder in self.state_placeholders:
-            tensor = placeholder.child
-            tensors.append(tensor)
-        return tensors
+        return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
         return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
@@ -56,6 +53,7 @@ class State(object):
         If run while a plan is building, declare all the state tensors to the plan
         currently building.
         """
+        # TODO clean this function
         # If there is a plan building, it is referenced in init_plan
         if self.owner.init_plan:
             parent_plan = self.owner.init_plan
@@ -66,18 +64,14 @@ class State(object):
                 for placeholder in self.state_placeholders:
                     placeholder = placeholder.copy()
                     placeholder.id = PlaceholderId(placeholder.child.id)
-                    placeholder.tags = set()
-                    placeholder.tag("#inner")
+                    placeholder.tags = set(("#inner",))
                     parent_plan.state.state_placeholders.append(placeholder)
                     parent_plan.role.placeholders[placeholder.child.id] = placeholder
 
-        tensors = []
-        for placeholder in self.state_placeholders:
-            # State elements from sub plan should not be reported when read() is used
-            if "#inner" not in placeholder.tags:
-                tensor = placeholder.child
-                tensors.append(tensor)
-        return tensors
+        if self.read_placeholders or self.owner.init_plan:
+            return [ph for ph in self.state_placeholders if "#inner" not in ph.tags]
+        else:
+            return [ph.child for ph in self.state_placeholders if "#inner" not in ph.tags]
 
     @staticmethod
     def create_grad_if_missing(tensor):
