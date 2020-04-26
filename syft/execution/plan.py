@@ -147,10 +147,6 @@ class Plan(AbstractObject):
         return self.role.state
 
     @property
-    def _known_workers(self):
-        return self.owner._known_workers
-
-    @property
     def actions(self):
         return self.role.actions
 
