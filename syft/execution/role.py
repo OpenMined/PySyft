@@ -32,7 +32,6 @@ class Role:
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
-        state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
     ):
