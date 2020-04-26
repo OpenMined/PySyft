@@ -174,7 +174,7 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
         for channel in range(a_w.shape[0]):
             result.append(torch.mean(a_w[channel]))
     else:
-        raise Exception("unknown pooling mode")
+        raise ValueError("unknown pooling mode")
 
     result = torch.stack(result).reshape(output_shape)
     return result
