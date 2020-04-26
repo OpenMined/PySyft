@@ -492,6 +492,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if type(_self) == str and _self == "self":
                 _self = self
             if sy.framework.is_inplace_method(op_name):
+                # TODO [sharan]: Can this be used to fix the inplace operations breakages??
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
                 getattr(_self, op_name)(*args_, **kwargs_)

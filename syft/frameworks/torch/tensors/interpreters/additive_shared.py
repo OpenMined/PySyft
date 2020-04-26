@@ -970,7 +970,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for i in range(1, len(values)):
             # import pprint
             # pprint.pprint(self.locations[0]._objects)
-            print("#" * 3)
+            # print("#" * 3)
             a = values[i]
             beta = a >= max_value
             max_index = max_index + beta * (i - max_index)
