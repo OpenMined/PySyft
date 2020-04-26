@@ -447,16 +447,16 @@ def relu_deriv(a_sh):
     L = a_sh.field
     dtype = get_dtype(L)
     # Common randomness
-    u = _shares_of_zero(1, L, dtype, crypto_provider, alice, bob)  # 1 Residue
+    u = _shares_of_zero(1, L, dtype, crypto_provider, alice, bob)
 
     # 1)
     y_sh = a_sh * 2
 
     # 2) Not applicable with algebraic shares
-    y_sh = share_convert(y_sh)  # 1 residue (due to _shares_of_zeros)
+    y_sh = share_convert(y_sh)
 
     # 3)
-    alpha_sh = msb(y_sh)  # 1 residue (due to _shares_of_zeros)
+    alpha_sh = msb(y_sh)
 
     # 4)
     j = sy.MultiPointerTensor(

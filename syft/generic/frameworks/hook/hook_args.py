@@ -717,6 +717,8 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
+    # `de_register` initially as this causes the original PT
+    # to not get GC'd. Inplace operations do not follow this as expected.
     owner.de_register_obj(tensor)
     tensor.owner = owner
     try:
