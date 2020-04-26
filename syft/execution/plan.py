@@ -68,12 +68,6 @@ class func2plan(object):
         return plan
 
 
-def method2plan(*args, **kwargs):
-    raise SyntaxError(
-        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
-    )
-
-
 class Plan(AbstractObject):
     """
     A Plan stores a sequence of torch actions, just like a function.
