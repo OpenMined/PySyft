@@ -19,7 +19,7 @@ def load(tag: str, src: int, **kwargs):
         result = crypten.load_from_party(preloaded=result, src=src, **kwargs)
 
     else:
-        result = crypten.load_from_party(f=load, src=src, **kwargs)
+        result = crypten.load_from_party(preloaded=-1, src=src, **kwargs)
 
     return result
 
