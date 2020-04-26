@@ -52,6 +52,7 @@ from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
 from syft.execution.protocol import Protocol
+from syft.execution.protocol import func2protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
 from syft.execution.plan import method2plan
@@ -101,6 +102,8 @@ __all__.extend(
         "VirtualWorker",
         "WebsocketClientWorker",
         "WebsocketServerWorker",
+        "Protocol",
+        "func2protocol",
         "Plan",
         "func2plan",
         "method2plan",
