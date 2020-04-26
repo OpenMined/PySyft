@@ -23,7 +23,7 @@ def test_stateful_plan_built_automatically(hook):
         return x + bias
 
     assert isinstance(foo.__str__(), str)
-    assert len(foo.readable_plan) > 0
+    assert len(foo.actions) > 0
     assert foo.is_built
 
     t = th.tensor([1.0, 2])
@@ -162,7 +162,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
     assert th.all(th.eq(fetched_plan(x), plan(x)))
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
@@ -208,7 +208,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
     assert th.all(th.eq(fetched_plan(x), expected))
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
@@ -325,7 +325,7 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
         )
     )
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 

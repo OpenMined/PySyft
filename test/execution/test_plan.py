@@ -22,7 +22,7 @@ def test_plan_built_automatically():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
     assert plan_abs.is_built
 
 
@@ -32,11 +32,11 @@ def test_plan_build():
         return data.abs()
 
     assert not plan_abs.is_built
-    assert not len(plan_abs.readable_plan)
+    assert not len(plan_abs.actions)
 
     plan_abs.build(th.tensor([-1]))
 
-    assert len(plan_abs.readable_plan)
+    assert len(plan_abs.actions)
     assert plan_abs.is_built
 
 
@@ -46,7 +46,7 @@ def test_plan_built_automatically_with_any_dimension():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
 
 
 def test_raise_exception_for_invalid_shape():

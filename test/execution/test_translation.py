@@ -24,7 +24,7 @@ def test_plan_can_be_jit_traced(hook, workers):
         return x + bias
 
     assert isinstance(foo.__str__(), str)
-    assert len(foo.readable_plan) > 0
+    assert len(foo.actions) > 0
     assert foo.is_built
 
     t = th.tensor([1.0, 2])

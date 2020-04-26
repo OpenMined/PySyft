@@ -155,10 +155,8 @@ class Plan(AbstractObject):
     def location(self):
         raise AttributeError("Plan has no attribute location")
 
-    # TODO is it necessary to maintain this?
-    # For backward compatibility
     @property
-    def readable_plan(self):
+    def actions(self):
         return self.role.actions
 
     def parameters(self):
