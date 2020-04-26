@@ -150,11 +150,6 @@ class Plan(AbstractObject):
     def _known_workers(self):
         return self.owner._known_workers
 
-    # TODO is it necessary to maintain this?
-    @property
-    def location(self):
-        raise AttributeError("Plan has no attribute location")
-
     @property
     def actions(self):
         return self.role.actions
