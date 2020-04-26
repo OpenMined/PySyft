@@ -16,10 +16,10 @@ def load(tag: str, src: int, **kwargs):
         assert len(results) == 1
 
         result = results[0]
-        result = crypten.native_load(f=None, preloaded=result, src=src, **kwargs)
+        result = crypten.load_from_party(preloaded=result, src=src, **kwargs)
 
     else:
-        result = crypten.native_load(f=None, src=src, **kwargs)
+        result = crypten.load_from_party(f=load, src=src, **kwargs)
 
     return result
 

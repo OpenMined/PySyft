@@ -481,10 +481,6 @@ class TorchHook(FrameworkHook):
     def _hook_crypten(self):
         from syft.frameworks.crypten import load as crypten_load
         from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
-        from crypten.mpc import MPCTensor
-
-        native_func = getattr(crypten, "load")
-        setattr(crypten, "native_load", native_func)  # Currenty we do nothing with the native load
 
         new_func = get_hooked_crypten_func("load", crypten_load)
         setattr(crypten, "load", new_func)
