@@ -133,7 +133,7 @@ class TorchAttributes(FrameworkAttributes):
 
         # Dict {method_name: <is_inplace:bool>
         self.inplace_methods = {}
-        self._inplace_pattern = re.compile(r"(^__i(?!nit|mport|ter).+_)|^((?!^_+).+)_$")
+        self._inplace_pattern = re.compile(r"(^__i(?!nit|mport|ter).+_)|^((?!^_+).+[^_])_$")
         # Positives:
         # __iadd__, share_
 

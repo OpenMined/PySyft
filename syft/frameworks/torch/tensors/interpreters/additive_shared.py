@@ -943,7 +943,7 @@ class AdditiveSharingTensor(AbstractTensor):
             the maximum value (possibly across an axis)
             and optionally the index of the maximum value (possibly across an axis)
         """
-        values = self.copy()
+        values = self
         n_dim = self.dim()
 
         # Make checks and transformation

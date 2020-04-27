@@ -717,9 +717,11 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
-    # `de_register` initially as this causes the original PT
-    # to not get GC'd. Inplace operations do not follow this as expected.
-    owner.de_register_obj(tensor)
+    # This method often leads to re-registration of tensors
+    # hence creating two copies of the same info. The older tensor
+    # is left hanging and is never deleted. De-Registering the original
+    # tensor (if-exists) before registration addresses this problem.
+    owner.de_register_obj(tensor)  # Doesn't raise Exceptions absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
