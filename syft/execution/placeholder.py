@@ -131,7 +131,7 @@ class PlaceHolder(AbstractTensor):
         """
         tags = " ".join(list(self.tags or []))
 
-        out = f"{type(self).__name__ }[Tags:{tags}]"
+        out = f"{type(self).__name__ }[Id:{self.id.value}]"
 
         if hasattr(self, "child") and self.child is not None:
             out += f">{self.child}"
@@ -146,8 +146,19 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags, owner=self.owner, shape=self.expected_shape)
+        placeholder = PlaceHolder(
+            role=self.role,
+            tracing=self.tracing,
+            tags=self.tags,
+            owner=self.owner,
+            shape=self.expected_shape,
+        )
         placeholder.child = self.child
+
+        if self.tracing:
+            command = ("copy", self, tuple(), {}), placeholder
+            self.role.register_action(command, syft.execution.computation.ComputationAction)
+
         return placeholder
 
     @staticmethod

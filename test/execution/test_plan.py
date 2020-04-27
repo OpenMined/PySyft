@@ -14,6 +14,7 @@ from syft.execution.plan import Plan
 from syft.serde.msgpack import serde
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 
 
 def test_plan_built_automatically():
@@ -711,12 +712,35 @@ def test_plan_input_usage(hook):
 
 
 def test_training_plan_can_be_traced(hook, workers):
+    # sy.ID_PROVIDER = list(reversed(range(1, 10000)))
+
     @sy.func2plan(args_shape=[(5, 5)])
     def autograd_test(X):
-        y = (X * 5).sum()
+        y = X * 5
+        y = -y.log() / 2
+        y = y.sum()
         y.backward()
         return X.grad
 
     X = th.ones(5, 5, requires_grad=True)
-    grads = autograd_test(X)
-    assert grads.eq(th.ones(5, 5) * 5).all()
+
+    # Result of torch autograd
+    torch_grads = autograd_test(X)
+
+    # Result of traced backprop
+    autograd_test.forward = None
+    plan_grads = autograd_test(X)
+
+    # Translate to torchscript
+    autograd_test.add_translation(PlanTranslatorTorchscript)
+
+    # Result of torchscript'ed traced backprop
+    ts_plan_grads = autograd_test.torchscript(X)
+
+    # (debug out)
+    print("Traced Plan:\n", autograd_test.code)
+    print("Torchscript Plan:\n", autograd_test.torchscript.code)
+
+    # Test all results are equal
+    assert torch_grads.eq(plan_grads).all()
+    assert torch_grads.eq(ts_plan_grads).all()

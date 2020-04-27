@@ -35,6 +35,7 @@ class ComputationAction(Action):
         self.args = args_
         self.kwargs = kwargs_
         self.return_ids = return_ids
+        self.__repr = self.__str__
 
     @property
     def contents(self):
@@ -201,3 +202,32 @@ class ComputationAction(Action):
             action = ComputationAction(command, target, tuple(args_), kwargs_, tuple(return_ids))
 
         return action
+
+    def __str__(self) -> str:
+        """Returns string representation of action"""
+        _self = self
+
+        def stringify(obj):
+            if isinstance(obj, PlaceHolder):
+                line = f"var_{obj.id.value}"
+            elif isinstance(obj, PlaceholderId):
+                line = f"var_{obj.value}"
+            elif isinstance(obj, (tuple, list)):
+                line = ", ".join(stringify(o) for o in obj)
+            else:
+                line = str(obj)
+
+            return line
+
+        line = ""
+        if self.return_ids is not None:
+            line += stringify(self.return_ids) + " = "
+        if self.target is not None:
+            line += stringify(self.target) + "."
+        line += self.name + "("
+        line += stringify(self.args)
+        if self.kwargs:
+            line += ", " + ", ".join(f"{k}={w}" for k, w in self.kwargs.items())
+        line += ")"
+
+        return f"{type(self).__name__ }[{line}]"
