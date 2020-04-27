@@ -51,6 +51,7 @@ class AdditiveSharingTensor(AbstractTensor):
             description: an optional string describing the purpose of the
                 tensor
         """
+        # TODO[sharan]: More control over int and long dtypes
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
         self.child = shares
@@ -115,6 +116,12 @@ class AdditiveSharingTensor(AbstractTensor):
         if dtype != "custom":
             warnings.warn(f"Private method called for dtype '{dtype}'")
         tensor = AdditiveSharingTensor(*args, **kwargs)
+
+        field = kwargs["field"]
+        if field is None:
+            raise ValueError("Field cannot be None for custom dtype")
+        tensor.field = field
+        tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
         tensor.dtype = dtype
         return tensor
 

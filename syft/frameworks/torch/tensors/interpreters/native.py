@@ -888,6 +888,10 @@ class TorchTensor(AbstractTensor):
                 syft.AdditiveSharingTensor(
                     field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
                 )
+                if dtype != "custom"
+                else syft.AdditiveSharingTensor._init_custom_dtype(
+                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+                )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)
             )
