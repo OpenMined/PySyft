@@ -699,7 +699,7 @@ class CryptenInitPlan(Message):
         return (self.crypten_context,)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "CryptenInitPlan") -> tuple:
+    def simplify(worker: AbstractWorker, message: "CryptenInitPlan") -> tuple:
         """
         This function takes the attributes of a CryptenInitPlan and saves them in a tuple
 
@@ -710,7 +710,7 @@ class CryptenInitPlan(Message):
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
-        return (sy.serde.msgpack.serde._simplify(worker, ptr.crypten_context),)
+        return (sy.serde.msgpack.serde._simplify(worker, message.crypten_context),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitPlan":
@@ -739,9 +739,10 @@ class CryptenInitJail(Message):
     so they can communicate and exchange tensors and shares while doing computation. This message
     allows the exchange of information such as the ip and port of the master party to connect to,
     as well as the rank of the party to run and the number of parties involved. Compared to
-    CryptenInitPlan, this message also send two extra field, a JailRunner and a crypten model."""
+    CryptenInitPlan, this message also sends two extra fields, a JailRunner and a Crypten model."""
 
     def __init__(self, crypten_context, jail_runner, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
         self.crypten_context = crypten_context
         self.jail_runner = jail_runner
         self.model = model
@@ -756,7 +757,7 @@ class CryptenInitJail(Message):
         return (self.crypten_context,)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, ptr: "CryptenInitJail") -> tuple:
+    def simplify(worker: AbstractWorker, message: "CryptenInitJail") -> tuple:
         """
         This function takes the attributes of a CryptenInitJail and saves them in a tuple
 
@@ -769,7 +770,7 @@ class CryptenInitJail(Message):
         """
         return (
             sy.serde.msgpack.serde._simplify(
-                worker, (*ptr.crypten_context, ptr.jail_runner, ptr.model)
+                worker, (*message.crypten_context, message.jail_runner, message.model)
             ),
         )
 
@@ -791,7 +792,5 @@ class CryptenInitJail(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
-        context = msg_tuple[0:4]
-        jail_runner = msg_tuple[4]
-        model = msg_tuple[5]
+        *context , jail_runner, model = msg_tuple
         return CryptenInitJail(context, jail_runner, model)
