@@ -721,7 +721,7 @@ def register_tensor(
     # hence creating two copies of the same info. The older tensor
     # is left hanging and is never deleted. De-Registering the original
     # tensor (if-exists) before registration addresses this problem.
-    owner.de_register_obj(tensor)  # Doesn't raise Exceptions absent on owner
+    owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
