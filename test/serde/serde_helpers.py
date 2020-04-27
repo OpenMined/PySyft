@@ -529,11 +529,15 @@ def make_additivesharingtensor(**kwargs):
                 ],
                 (
                     ast.id,  # (int or str) id
-                    ast.field,  # (int) field
+                    (CODE[str], (str(ast.field).encode("utf-8"),))
+                    if ast.field == 2 ** 64
+                    else ast.field,  # (int or str) field
+                    ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], ast.child
                     ),  # (dict of AbstractTensor) simplified chain
+                    ast.get_garbage_collect_data(),
                 ),
             ),
             "cmp_detailed": compare,
@@ -577,7 +581,10 @@ def make_fixedprecisiontensor(**kwargs):
                 CODE[syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor],
                 (
                     fpt.id,  # (int or str) id
-                    fpt.field,  # (int) field
+                    (CODE[str], (str(fpt.field).encode("utf-8"),))
+                    if fpt.field == 2 ** 64
+                    else fpt.field,  # (int or str) field
+                    fpt.dtype,  # (str) dtype
                     12,  # (int) base
                     5,  # (int) precision_fractional
                     fpt.kappa,  # (int) kappa
@@ -586,45 +593,6 @@ def make_fixedprecisiontensor(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], fpt.child
                     ),  # (AbstractTensor) chain
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
-# CRTPrecisionTensor
-def make_crtprecisiontensor(**kwargs):
-    workers = kwargs["workers"]
-    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    t = torch.tensor([[3.1, 4.3]])
-    cpt = t.fix_prec(storage="crt").share(alice, bob, crypto_provider=james).child
-    # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
-    # This changes tensors' internal state in chain and is required to pass the test
-    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], cpt)
-
-    def compare(detailed, original):
-        assert (
-            type(detailed)
-            == syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor
-        )
-        assert detailed.id == original.id
-        assert detailed.base == original.base
-        assert detailed.precision_fractional == original.precision_fractional
-        return True
-
-    return [
-        {
-            "value": cpt,
-            "simplified": (
-                CODE[syft.frameworks.torch.tensors.interpreters.crt_precision.CRTPrecisionTensor],
-                (
-                    cpt.id,  # (int) id
-                    cpt.base,  # (int) base
-                    cpt.precision_fractional,  # (int) precision_fractional
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], cpt.child
-                    ),  # (dict of AbstractTensor) simplified chain
                 ),
             ),
             "cmp_detailed": compare,

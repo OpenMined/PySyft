@@ -10,7 +10,6 @@ import torch
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
-from syft.frameworks.torch.tensors.interpreters.crt_precision import _moduli_for_fields
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
@@ -37,9 +36,9 @@ def _get_maximum_precision():
 
 
 def default_pytorch_maximum_precision():
-    """Dealing with integers > 2**62-1 is not fun with precision tensors.
+    """Dealing with integers > 2**63-1 is not fun with precision tensors.
     """
-    return 62
+    return 63
 
 
 class TorchTensor(AbstractTensor):
@@ -181,7 +180,7 @@ class TorchTensor(AbstractTensor):
         ):
             self.child.grad = new_grad  # .wrap()
         else:
-            if self.native_grad is not None:
+            if hasattr(self, "native_grad"):
                 with torch.no_grad():
                     self.native_grad = new_grad
             elif new_grad is not None:
@@ -380,7 +379,11 @@ class TorchTensor(AbstractTensor):
         for sm in submodules:
             module = getattr(module, sm)
 
-        command_method = getattr(module, f"native_{command}")
+        try:
+            command_method = getattr(module, f"native_{command}")
+        except AttributeError:  # the function isn't overloaded
+            command_method = getattr(module, command)
+
         if isinstance(args_, tuple):
             response = command_method(*args_, **kwargs_)
         else:
@@ -797,14 +800,12 @@ class TorchTensor(AbstractTensor):
 
         return private_tensor
 
-    def fix_prec(self, *args, storage="auto", field_type="int100", no_wrap: bool = False, **kwargs):
+    def fix_prec(self, *args, no_wrap: bool = False, **kwargs):
         """
         Convert a tensor or syft tensor to fixed precision
 
         Args:
             *args (tuple): args to transmit to the fixed precision tensor
-            storage (str): code to define the type of fixed precision tensor (values in (auto, crt, large))
-            field_type (str): code to define a storage type (only for CRTPrecisionTensor)
             no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
             **kwargs (dict): kwargs to transmit to the fixed precision tensor
         """
@@ -823,45 +824,7 @@ class TorchTensor(AbstractTensor):
         prec_fractional = kwargs.get("precision_fractional", 3)
 
         max_precision = _get_maximum_precision()
-        need_large_prec = self._requires_large_precision(max_precision, base, prec_fractional)
-
-        if storage == "crt":
-            assert (
-                "field" not in kwargs
-            ), 'When storage is set to "crt", choose the field size with the field_type argument'
-
-            possible_field_types = list(_moduli_for_fields.keys())
-            assert (
-                field_type in possible_field_types
-            ), f"Choose field_type in {possible_field_types} to build CRT tensors"
-
-            residues = {}
-            for mod in _moduli_for_fields[field_type]:
-                residues[mod] = (
-                    syft.FixedPrecisionTensor(*args, field=mod, **kwargs)
-                    .on(self, wrap=False)
-                    .fix_precision(check_range=False)
-                    .wrap()
-                )
-
-            fpt_tensor = syft.CRTPrecisionTensor(residues, *args, **kwargs)
-
-        elif need_large_prec or storage == "large":
-            fpt_tensor = (
-                syft.LargePrecisionTensor(*args, **kwargs)
-                .on(self, wrap=False)
-                .fix_large_precision()
-            )
-        else:
-            assert not need_large_prec, "This tensor needs large precision to be correctly stored"
-            if "internal_type" in kwargs:
-                warnings.warn(
-                    "do not provide internal_type if data does not need LargePrecisionTensor to be stored"
-                )
-                del kwargs["internal_type"]
-            fpt_tensor = (
-                syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
-            )
+        fpt_tensor = syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
 
         if not no_wrap:
             fpt_tensor = fpt_tensor.wrap()
@@ -889,19 +852,11 @@ class TorchTensor(AbstractTensor):
 
     fix_precision_ = fix_prec_
 
-    def _requires_large_precision(self, max_precision, base, precision_fractional):
-        """Check if any of the elements in the tensor would require large precision.
-        """
-        base_fractional = math.log2(base ** precision_fractional)
-        # We need to use NumPy here as log2 is not yet implemented for LongTensor PyTorch objects
-        return np.any(
-            np.log2(np.abs(self.clone().detach().numpy()) + 1) + base_fractional > max_precision
-        )
-
     def share(
         self,
         *owners: List[BaseWorker],
         field: Union[int, None] = None,
+        dtype: Union[str, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,
         no_wrap: bool = False,
@@ -911,6 +866,7 @@ class TorchTensor(AbstractTensor):
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
             field (int or None): The arithmetic field where live the shares.
+            dtype (str or None): The dtype of shares
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
@@ -922,7 +878,7 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, crypto_provider=crypto_provider, **kwargs_
+                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs_
             )
         else:
             if self.type() == "torch.FloatTensor":
@@ -930,7 +886,7 @@ class TorchTensor(AbstractTensor):
 
             shared_tensor = (
                 syft.AdditiveSharingTensor(
-                    field=field, crypto_provider=crypto_provider, owner=self.owner
+                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
                 )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)

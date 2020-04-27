@@ -8,7 +8,6 @@ from typing import List, Tuple
 
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.hook.trace import tracer
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -236,10 +235,20 @@ class FrameworkHook(ABC):
         comparators to the hooking
         """
 
+        def create_tracing_method(base_method, name):
+            def tracing_method(self, *args, **kwargs):
+                response = base_method(self, *args, **kwargs)
+                command = (name, self, args, kwargs), response
+                if self.tracing:
+                    self.role.register_action(command, syft.execution.computation.ComputationAction)
+                return response
+
+            return tracing_method
+
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
             if attr not in dir(syft_type) or attr in self.boolean_comparators:
-                new_method = self._get_hooked_syft_method(attr)
+                new_method = create_tracing_method(self._get_hooked_syft_method(attr), attr)
                 setattr(syft_type, attr, new_method)
 
     def _hook_private_tensor_methods(self, tensor_type: type, syft_type: type):
@@ -387,7 +396,6 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
-        @tracer(method_name=method_name)
         @wraps(getattr(tensor_type, method_name))
         def overloaded_native_method(self, *args, **kwargs):
             """
@@ -562,7 +570,6 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
-        @tracer(func_name=cmd_name)
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
