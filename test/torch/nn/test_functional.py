@@ -124,3 +124,63 @@ def test_torch_nn_functional_conv2d(workers):
 
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
+
+
+def test_torch_nn_functional_maxpool(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    enc_tensor = torch.tensor(
+        [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_max = F.max_pool2d(enc_tensor, kernel_size=2)
+    r_max = r_max.get().float_prec()
+    exp_max = torch.tensor([[[[6.0, 8.0], [3.0, 4.0]]]])
+    assert (r_max == exp_max).all()
+    # 3d
+    enc_tensor = torch.tensor(
+        [[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_max = F.max_pool2d(enc_tensor, kernel_size=2)
+    r_max = r_max.get().float_prec()
+    exp_max = torch.tensor([[[6.0, 8.0], [3.0, 4.0]]])
+    assert (r_max == exp_max).all()
+    # 2d
+    enc_tensor = torch.tensor(
+        [[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_max = F.max_pool2d(enc_tensor, kernel_size=2)
+    r_max = r_max.get().float_prec()
+    exp_max = torch.tensor([[6.0, 8.0], [3.0, 4.0]])
+    assert (r_max == exp_max).all()
+
+
+def test_torch_nn_functional_avgpool(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    enc_tensor = torch.tensor(
+        [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_avg = F.avg_pool2d(enc_tensor, kernel_size=2)
+    r_avg = r_avg.get().float_prec()
+    exp_avg = torch.tensor([[[[3.2500, 5.2500], [2.0000, 2.0000]]]])
+    assert (r_avg == exp_avg).all()
+    # 3d
+    enc_tensor = torch.tensor(
+        [[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_avg = F.avg_pool2d(enc_tensor, kernel_size=2)
+    r_avg = r_avg.get().float_prec()
+    exp_avg = torch.tensor([[[3.2500, 5.2500], [2.0000, 2.0000]]])
+    assert (r_avg == exp_avg).all()
+    # 2d
+    enc_tensor = torch.tensor(
+        [[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_avg = F.avg_pool2d(enc_tensor, kernel_size=2)
+    r_avg = r_avg.get().float_prec()
+    exp_avg = torch.tensor([[3.2500, 5.2500], [2.0000, 2.0000]])
+    assert (r_avg == exp_avg).all()

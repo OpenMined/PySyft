@@ -146,22 +146,6 @@ def test_dim(workers):
     assert tensor_local.dim() == tensor_remote.dim()
 
 
-def test_does_not_require_large_precision():
-    x = torch.tensor([[[-1.5, 2.0, 30000000000.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
-    base = 10
-    prec_fractional = 3
-    max_precision = 62
-    assert not x._requires_large_precision(max_precision, base, prec_fractional)
-
-
-def test_requires_large_precision():
-    x = torch.tensor([[[-1.5, 2.0, 30000000000.0]], [[4.5, 5.0, 6.0]], [[7.0, 8.0, 9.0]]])
-    base = 10
-    prec_fractional = 256
-    max_precision = 62
-    assert x._requires_large_precision(max_precision, base, prec_fractional)
-
-
 def test_roll(workers):
     x = torch.tensor([1.0, 2.0, 3, 4, 5])
     expected = torch.roll(x, -1)
@@ -225,3 +209,13 @@ def test_encrypt_decrypt(workers):
     x_encrypted = x.encrypt(protocol="paillier", public_key=public)
     x_decrypted = x_encrypted.decrypt(protocol="paillier", private_key=private)
     assert torch.all(torch.eq(x_decrypted, x))
+
+
+def test_get_response():
+    test_func = lambda x: x
+    t = torch.tensor(73)
+    # a non overloaded function
+    setattr(torch, "_test_func", test_func)
+    result = torch.Tensor._get_response("torch._test_func", t, {})
+    delattr(torch, "_test_func")
+    assert t == result
