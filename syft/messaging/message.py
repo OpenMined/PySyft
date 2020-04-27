@@ -792,5 +792,5 @@ class CryptenInitJail(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
-        *context , jail_runner, model = msg_tuple
+        *context, jail_runner, model = msg_tuple
         return CryptenInitJail(context, jail_runner, model)
