@@ -53,3 +53,30 @@ def test_pack_crypten_model():
 
     out = crypten_model(dummy_input)
     assert th.all(expected_out == out)
+
+
+def test_serialize_models():
+    class ExampleNet(th.nn.Module):
+        def __init__(self):
+            super(ExampleNet, self).__init__()
+            self.fc1 = th.nn.Linear(1024, 100)
+            self.fc2 = th.nn.Linear(
+                100, 2
+            )  # For binary classification, final layer needs only 2 outputs
+
+        def forward(self, x):
+            out = self.fc1(x)
+            out = th.nn.functional.relu(out)
+            out = self.fc2(out)
+            return out
+
+    dummy_input = th.empty(1, 1024)
+    example_net = ExampleNet()
+
+    expected_output = example_net(dummy_input)
+
+    onnx_bytes = utils.pytorch_to_onnx(example_net, dummy_input)
+    crypten_model = utils.onnx_to_crypten(onnx_bytes)
+    output = crypten_model(dummy_input)
+
+    assert th.allclose(expected_output, output)
