@@ -33,6 +33,7 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
+from syft.messaging.message import StackTraceMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -128,6 +129,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
+            StackTraceMessage: self.handle_stacktrace,
         }
 
         self._plan_command_router = {
@@ -457,6 +459,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         self.force_rm_obj(msg.object_id)
+
+    def handle_stacktrace(self, msg: StackTraceMessage):
+        print(msg)
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):

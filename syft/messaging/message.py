@@ -676,3 +676,19 @@ class WorkerCommandMessage(Message):
             sy.serde.msgpack.serde._detail(worker, command_name),
             sy.serde.msgpack.serde._detail(worker, message),
         )
+
+
+class StackTraceMessage(Message):
+    def __init__(self, stack: str):
+        self.stack = stack
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: str):
+        return sy.serde.msgpack.serde._simplify(worker, msg.stack)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, obj) -> "StackTraceMessage":
+        return StackTraceMessage(sy.serde.msgpack.serde._detail(worker, obj))
+
+    def __str__(self):
+        return self.stack

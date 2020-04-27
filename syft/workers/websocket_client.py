@@ -14,13 +14,14 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import SearchMessage
 from syft.generic.tensor import AbstractTensor
 from syft.workers.base import BaseWorker
+from syft.workers.error_handler import WebsocketClientErrorHandler
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT_INTERVAL = 60
 
 
-class WebsocketClientWorker(BaseWorker):
+class WebsocketClientWorker(BaseWorker, metaclass=WebsocketClientErrorHandler):
     def __init__(
         self,
         hook,
