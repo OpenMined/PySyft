@@ -39,17 +39,6 @@ else:
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook
 
-# Import grids
-from syft.grid.private_grid import PrivateGridNetwork
-from syft.grid.public_grid import PublicGridNetwork
-
-# Import sandbox
-from syft.sandbox import create_sandbox, make_hook
-
-# Import federate learning objects
-from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
-from syft.federated.train_config import TrainConfig
-
 # Import messaging objects
 from syft.execution.protocol import Protocol
 from syft.execution.plan import Plan
@@ -92,6 +81,13 @@ import syft.common.util
 # Import grids
 from syft.grid.private_grid import PrivateGridNetwork
 from syft.grid.public_grid import PublicGridNetwork
+
+# Import sandbox
+from syft.sandbox import create_sandbox, make_hook
+
+# Import federate learning objects
+from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
+from syft.federated.train_config import TrainConfig
 
 
 def pool():
