@@ -16,6 +16,7 @@ from syft.execution.state import State
 from syft.execution.tracing import trace
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -693,3 +694,7 @@ class Plan(AbstractObject):
         out += stringify(outputs)
 
         return out
+
+
+# Auto-register Plan build-time translations
+Plan.register_build_translator(PlanTranslatorTorchscript)
