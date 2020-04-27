@@ -55,12 +55,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
         self.dtype = dtype
-        if dtype == "custom":
-            if field is None:
-                raise ValueError("Field cannot be None for custom dtype")
-            self.field = field
-            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        elif dtype == "long":
+
+        if dtype == "long":
             self.field = 2 ** 64
             self.torch_dtype = torch.int64
         elif dtype == "int":
@@ -112,6 +108,15 @@ class AdditiveSharingTensor(AbstractTensor):
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
+
+    @staticmethod
+    def _init_custom_dtype(*args, **kwargs):
+        dtype = kwargs.pop("dtype")
+        if dtype != "custom":
+            warnings.warn(f"Private method called for dtype '{dtype}'")
+        tensor = AdditiveSharingTensor(*args, **kwargs)
+        tensor.dtype = dtype
+        return tensor
 
     def __repr__(self):
         return self.__str__()
