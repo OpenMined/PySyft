@@ -935,12 +935,6 @@ class TorchTensor(AbstractTensor):
 
         return syft.combine_pointers(*ps)
 
-    def value(self):
-        """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
-        .value() is used to retrieve the oldest unused value the promise was kept with.
-        """
-        return self.child.value()
-
     def torch_type(self):
 
         if isinstance(self, torch.Tensor) and not self.is_wrapper:

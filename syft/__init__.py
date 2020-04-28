@@ -55,7 +55,6 @@ from syft.execution.protocol import Protocol
 from syft.execution.protocol import func2protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
-from syft.execution.plan import method2plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -106,7 +105,6 @@ __all__.extend(
         "func2protocol",
         "Plan",
         "func2plan",
-        "method2plan",
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
