@@ -1,8 +1,6 @@
-from typing import List
-from typing import Union
+from typing import List, Union
 
 import syft
-from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
@@ -301,7 +299,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs_
+            self.id_at_location, "remote_send", self.location.id, [destination.id], kwargs_
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
@@ -369,12 +367,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an FixPrecisionTensor
         """
-
-        # Send the command
         command = ("fix_prec", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     fix_precision = fix_prec
@@ -386,12 +380,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-
-        # Send the command
         command = ("float_prec", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     float_precision = float_prec
@@ -403,12 +393,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        # Send the command
         command = ("share", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     def value(self, *args, **kwargs):
@@ -419,9 +405,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             A pointer to a Tensor
         """
         command = ("value", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     def share_(self, *args, **kwargs):
@@ -431,12 +415,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        # Send the command
         command = ("share_", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return self
 
     def set_garbage_collect_data(self, value):

@@ -1421,14 +1421,26 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.obj_id, detailed.source, detailed.destinations, detailed.kwargs)
-        original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
+        detailed_msg = (
+            detailed.obj_id,
+            detailed.name,
+            detailed.source,
+            detailed.destinations,
+            detailed.kwargs,
+        )
+        original_msg = (
+            original.obj_id,
+            original.name,
+            original.source,
+            original.destinations,
+            original.kwargs,
+        )
         assert type(detailed) == syft.messaging.message.CommunicationAction
         for i in range(len(original_msg)):
             assert detailed_msg[i] == original_msg[i]
         return True
 
-    msg = (com.obj_id, com.source, com.destinations, com.kwargs)
+    msg = (com.obj_id, com.name, com.source, com.destinations, com.kwargs)
 
     return [
         {
@@ -1437,6 +1449,7 @@ def make_communication_action(**kwargs):
                 CODE[syft.execution.communication.CommunicationAction],
                 (
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),
