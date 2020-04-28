@@ -717,9 +717,7 @@ def test_comp(workers, protocol):
     )
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
-        )
+        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], [alice, bob], n_instances=50)
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -779,9 +777,7 @@ def test_max(workers, protocol):
     )
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
-        )
+        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], [alice, bob], n_instances=16)
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -812,9 +808,7 @@ def test_argmax(workers, protocol):
     )
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
+        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], [alice, bob], n_instances=128)
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
@@ -834,7 +828,7 @@ def test_argmax(workers, protocol):
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([2.0])
 
-    # no dim=
+    # no dim
     t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax().get().float_prec()

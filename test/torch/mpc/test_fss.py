@@ -10,7 +10,7 @@ from syft.frameworks.torch.mpc.fss import DPF, DIF, n
 def test_fss_class(op):
     class_ = {"eq": DPF, "le": DIF}[op]
     th_op = {"eq": np.equal, "le": np.less_equal}[op]
-    gather_op = {"eq": "__add__", "le": "__xor__"}[op]
+    gather_op = {"eq": "__add__", "le": "__add__"}[op]
 
     # single value
     primitive = class_.keygen(n_values=1)
@@ -69,7 +69,7 @@ def test_fss_class(op):
 def test_torch_to_numpy(op):
     class_ = {"eq": DPF, "le": DIF}[op]
     th_op = {"eq": th.eq, "le": th.le}[op]
-    gather_op = {"eq": "__add__", "le": "__xor__"}[op]
+    gather_op = {"eq": "__add__", "le": "__add__"}[op]
 
     # 1D tensor
     primitive = class_.keygen(n_values=3)
@@ -94,7 +94,7 @@ def test_using_crypto_store(workers, op):
     alice, bob, me = workers["alice"], workers["bob"], workers["me"]
     class_ = {"eq": DPF, "le": DIF}[op]
     th_op = {"eq": th.eq, "le": th.le}[op]
-    gather_op = {"eq": "__add__", "le": "__xor__"}[op]
+    gather_op = {"eq": "__add__", "le": "__add__"}[op]
     primitive = {"eq": "fss_eq", "le": "fss_comp"}[op]
 
     me.crypto_store.provide_primitives([primitive], [alice, bob], n_instances=6)
