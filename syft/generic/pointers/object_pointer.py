@@ -343,6 +343,23 @@ class ObjectPointer(AbstractObject):
             if self.point_to_attr is None:
                 self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
 
+    def force_delete(self):
+        """Forcing to delete the object pointed to by this pointer. By default,
+        PySyft assumes that every object only has one pointer to it. Thus, if
+        the pointer gets garbage collected, we want to automatically garbage
+        collect the object being pointed to.
+        """
+
+        # if .get() gets called on the pointer before this method is called, then
+        # the remote object has already been removed. This results in an error on
+        # this next line because self no longer has .owner. Thus, we need to check
+        # first here and not try to call self.owner.anything if self doesn't have
+        # .owner anymore.
+        if hasattr(self, "owner") and self.garbage_collect_data:
+            # attribute pointers are not in charge of GC
+            if self.point_to_attr is None:
+                self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
+
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
             point_to_attr = f"{self.point_to_attr}.{attr_name}"
