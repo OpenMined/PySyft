@@ -29,7 +29,6 @@ class CommunicationAction(Action):
         self.obj_id = obj_id
         if name in ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]:
             #  float_prec, fix_prec => should be computation actions (they modify tensors)?
-            #  "value" is currently broken and it seems not very much used... defn: ln 982 - framework/torch/tensors/interperter/native.py
             self.name = name
         else:
             raise ValueError(
