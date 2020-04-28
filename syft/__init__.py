@@ -39,6 +39,9 @@ else:
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook
 
+# communication interfaces
+import syft.interfaces
+
 # Import messaging objects
 from syft.execution.protocol import Protocol
 from syft.execution.plan import Plan
