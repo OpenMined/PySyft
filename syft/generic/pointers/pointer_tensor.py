@@ -305,16 +305,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return self
 
     def remote_get(self):
-
-        # less compact but for better for readability while this is WIP
-        ptr_id = self.id_at_location
-        source = self.location[ptr_id].id
-        _kwargs = {}
-        message = TensorCommandMessage.communication(
-            ptr_id, "mid_get", source, [self.location.id], _kwargs
-        )
-
-        self.owner.send_msg(message=message, location=self.owner)
+        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -376,12 +367,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an FixPrecisionTensor
         """
-
-        # Send the command
         command = ("fix_prec", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     fix_precision = fix_prec
@@ -393,12 +380,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-
-        # Send the command
         command = ("float_prec", self, args, kwargs)
-
         response = self.owner.send_command(self.location, command)
-
         return response
 
     float_precision = float_prec
@@ -410,17 +393,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        ptr_id = self.id_at_location
-        source = self.location.id
-        _kwargs = {}
-        destination = [worker.id for worker in args]
-        message = TensorCommandMessage.communication(ptr_id, "share", source, destination, _kwargs)
-
-        # Send the msg
-        response = self.owner.send_msg(message=message, location=self.owner)
-
-        return self
+        command = ("share", self, args, kwargs)
+        response = self.owner.send_command(self.location, command)
+        return response
 
     def value(self, *args, **kwargs):
         """
@@ -429,16 +404,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-        ptr_id = self.id_at_location
-        source = self.owner.id
-        _kwargs = {}
-        message = TensorCommandMessage.communication(
-            ptr_id, "value", source, [self.location.id], _kwargs
-        )
-
-        # Send the msg
-        response = self.owner.send_msg(message=message, location=self.owner)
-
+        command = ("value", self, args, kwargs)
+        response = self.owner.send_command(self.location, command)
         return response
 
     def share_(self, *args, **kwargs):
@@ -448,16 +415,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        ptr_id = self.id_at_location
-        source = self.location.id
-        _kwargs = {}
-        destination = [worker.id for worker in args]
-        message = TensorCommandMessage.communication(ptr_id, "share_", source, destination, _kwargs)
-
-        # Send the msg
-        response = self.owner.send_msg(message=message, location=self.owner)
-
+        command = ("share_", self, args, kwargs)
+        response = self.owner.send_command(self.location, command)
         return self
 
     def set_garbage_collect_data(self, value):
