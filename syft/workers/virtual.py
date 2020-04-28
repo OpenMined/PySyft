@@ -5,7 +5,7 @@ from syft.federated.federated_client import FederatedClient
 from syft.workers.error_handler import VirtualErrorWorkerHandler
 
 
-class VirtualWorker(BaseWorker, FederatedClient, metaclass=VirtualErrorWorkerHandler):
+class VirtualWorker(BaseWorker, FederatedClient):
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
         """send message to worker location"""
         if self.message_pending_time > 0:

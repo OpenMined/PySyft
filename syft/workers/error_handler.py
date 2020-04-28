@@ -2,15 +2,14 @@ import syft
 import traceback
 from syft.messaging.message import StackTraceMessage
 from syft.workers.base import BaseWorker
-import remote_pdb
 
 
 class ErrorWorkerHandler(type):
-    @staticmethod
-    def generate_stacktrace(e, name):
-        stack = f"Exception on worker {name}:\n"
-        stack = stack + "".join(traceback.TracebackException.from_exception(e).format())
-        return stack
+    def error_cleanup(cls):
+        raise NotImplementedError
+
+    def error_worker_info(cls):
+        raise NotImplementedError
 
     @staticmethod
     def _wrap_send(wrapped_func):
@@ -18,10 +17,11 @@ class ErrorWorkerHandler(type):
             try:
                 return wrapped_func(self, message, location)
             except Exception as e:
-                remote_pdb.set_trace()
-                stack = StackTraceMessage(ErrorWorkerHandler.generate_stacktrace(e, self.id))
+                stack_string = self.error_worker_info() + "".join(traceback.TracebackException.from_exception(e).format())
+                stack = StackTraceMessage(stack_string)
                 bin_message = syft.serde.serialize(stack, worker=self)
-                wrapped_func(self, bin_message, location)
+                self.ws.send(bin_message)
+                self.error_cleanup()
                 raise e
 
         return wrapper_send_msg
@@ -32,9 +32,11 @@ class ErrorWorkerHandler(type):
             try:
                 return wrapped_func(self, message)
             except Exception as e:
-                stack = StackTraceMessage(ErrorWorkerHandler.generate_stacktrace(e, self.id))
-                bin_message = syft.serde.serialize(stack, worker=self)
-                wrapped_func(self, bin_message)
+                # stack_string = self.error_worker_info() + "".join(traceback.TracebackException.from_exception(e).format())
+                # stack = StackTraceMessage(stack_string)
+                # bin_message = syft.serde.serialize(stack, worker=self)
+                self.ws.send("Test")
+                self.error_cleanup()
                 raise e
 
         return wrapper_recv_msg
@@ -46,12 +48,21 @@ class ErrorWorkerHandler(type):
         if "_recv_msg" in class_dict:
             class_dict["_recv_msg"] = ErrorWorkerHandler._wrap_recv(class_dict["_recv_msg"])
 
+        class_dict["error_cleanup"] = meta.error_cleanup
+        class_dict["error_worker_info"] = meta.error_worker_info
         return super(ErrorWorkerHandler, meta).__new__(meta, classname, bases, class_dict)
 
 
 class VirtualErrorWorkerHandler(type(BaseWorker), ErrorWorkerHandler):
-    pass
+    def error_cleanup(self):
+        pass
 
+    def error_worker_info(self):
+        return f"VirtualWorker {self.id} raised the following error:\n"
 
 class WebsocketClientErrorHandler(type(BaseWorker), ErrorWorkerHandler):
-    pass
+    def error_cleanup(self):
+        self.ws.close()
+
+    def error_worker_info(self):
+        return f"WebsockerClientWorker {self.id}, host {self.host}, port {self.port} raised the following error:\n"

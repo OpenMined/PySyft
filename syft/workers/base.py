@@ -462,6 +462,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def handle_stacktrace(self, msg: StackTraceMessage):
         print(msg)
+        return None
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
