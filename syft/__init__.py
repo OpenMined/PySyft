@@ -35,9 +35,6 @@ if dependency_check.tfe_available:
 else:
     logger.info("TF Encrypted Keras not available.")
 
-if dependency_check.crypten_available:
-    import syft.frameworks.crypten.hook
-
 # Pytorch dependencies
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook
