@@ -14,12 +14,11 @@ class CommunicationAction(Action):
 
     def __init__(
         self,
-        obj_id: Union[str, int],
-        name: str,  # @TODO: maybe refactor into enum later?
-        source: Union[str, int],
-        destinations: List[Union[str, int]],
-        args_: Tuple,  # The arguments to the method call, needed for .share()
-        kwargs_: dict,
+        obj_id: Union[str, int],  # id of target object (almost always) pointer_tensor
+        name: str,  # the pointer_tensor method # @TODO: reactor to enum
+        source: Union[str, int],  # id of the sender (worker)
+        destinations: List[Union[str, int]],  # id of the receiver(s) (worker(s))
+        kwargs_: dict,  # key word args needed for the pointer tensor method == self.name
     ):
         """Initialize an communication action
 
@@ -28,8 +27,9 @@ class CommunicationAction(Action):
         super().__init__()
 
         self.obj_id = obj_id
-        if name in ["move", "remote_send", "remote_get", "get", "share", "value", "share_"]:
+        if name in ["move", "remote_send", "remote_get", "get", "share", "share_"]:
             #  float_prec, fix_prec => should be computation actions (they modify tensors)?
+            #  "value" is currently broken and it seems not very much used... defn: ln 982 - framework/torch/tensors/interperter/native.py
             self.name = name
         else:
             raise ValueError(
@@ -37,14 +37,13 @@ class CommunicationAction(Action):
             )
         self.source = source
         self.destinations = destinations
-        self.args = args_
         self.kwargs = kwargs_
 
     @property
     def contents(self):
         """Return a tuple with the contents of the operation (backwards compatability)."""
 
-        return (self.obj_id, self.name, self.source, self.destinations, self.args, self.kwargs)
+        return (self.obj_id, self.name, self.source, self.destinations, self.kwargs)
 
     def __eq__(self, other):
         return (
@@ -52,7 +51,6 @@ class CommunicationAction(Action):
             and self.name == other.name
             and self.source == other.source
             and self.destinations == other.destinations
-            and self.args == other.args
             and self.kwargs == other.kwargs
         )
 
@@ -73,7 +71,6 @@ class CommunicationAction(Action):
             sy.serde.msgpack.serde._simplify(worker, communication.name),
             sy.serde.msgpack.serde._simplify(worker, communication.source),
             sy.serde.msgpack.serde._simplify(worker, communication.destinations),
-            sy.serde.msgpack.serde._simplify(worker, communication.args),
             sy.serde.msgpack.serde._simplify(worker, communication.kwargs),
         )
 
@@ -93,22 +90,16 @@ class CommunicationAction(Action):
             communication = detail(sy.local_worker, communication_tuple)
         """
 
-        (obj_id, name, source, destinations, args_, kwargs_) = communication_tuple
+        (obj_id, name, source, destinations, kwargs_) = communication_tuple
 
         detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
         detailed_name = sy.serde.msgpack.serde._detail(worker, name)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
-        detailed_args = sy.serde.msgpack.serde._detail(worker, args_)
         detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
 
         return CommunicationAction(
-            detailed_obj,
-            detailed_name,
-            detailed_source,
-            detailed_destinations,
-            detailed_args,
-            detailed_kwargs,
+            detailed_obj, detailed_name, detailed_source, detailed_destinations, detailed_kwargs
         )
 
     @staticmethod
@@ -133,10 +124,6 @@ class CommunicationAction(Action):
 
         for destination in communication.destinations:
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.destinations.add(), destination)
-
-        if communication.args:
-            for args in communication.args:
-                protobuf_obj.args.extend(sy.serde.protobuf.serde.bufferize_args(worker, args))
 
         if communication.kwargs:
             for key, value in communication.kwargs.items():
@@ -172,11 +159,9 @@ class CommunicationAction(Action):
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
         ]
 
-        args_ = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
-
         kwargs_ = {
             key: sy.serde.protobuf.serde.unbufferize_arg(worker, kwarg)
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj_id, name, source, destinations, args_, kwargs_)
+        return CommunicationAction(obj_id, name, source, destinations, kwargs_)

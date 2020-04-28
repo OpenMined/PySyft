@@ -298,9 +298,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 a message to update the gradient of the value on A.
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
-        _args = ()
         message = TensorCommandMessage.communication(
-            self.id_at_location, "remote_send", self.location.id, [destination.id], _args, kwargs_
+            self.id_at_location, "remote_send", self.location.id, [destination.id], kwargs_
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
@@ -311,9 +310,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr_id = self.id_at_location
         source = self.location[ptr_id].location_id
         _kwargs = {}
-        _args = ()
         message = TensorCommandMessage.communication(
-            ptr_id, "mid_get", source, [self.location.id], _args, _kwargs
+            ptr_id, "mid_get", source, [self.location.id], _kwargs
         )
 
         self.owner.send_msg(message=message, location=self.location)
@@ -414,11 +412,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
 
         ptr_id = self.id_at_location
-        source = self.owner.id
+        source = self.location.id
         _kwargs = {}
-        message = TensorCommandMessage.communication(
-            ptr_id, "share", source, [self.location.id], args, _kwargs
-        )
+        destination = [worker.id for worker in args]
+        message = TensorCommandMessage.communication(ptr_id, "share", source, destination, _kwargs)
 
         # Send the msg
         response = self.owner.send_msg(message=message, location=self.location)
@@ -435,9 +432,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr_id = self.id_at_location
         source = self.owner.id
         _kwargs = {}
-        _args = ()
         message = TensorCommandMessage.communication(
-            ptr_id, "value", source, [self.location.id], _args, _kwargs
+            ptr_id, "value", source, [self.location.id], _kwargs
         )
 
         # Send the msg
@@ -454,16 +450,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
 
         ptr_id = self.id_at_location
-        source = self.owner.id
+        source = self.location.id
         _kwargs = {}
-        message = TensorCommandMessage.communication(
-            ptr_id, "share_", source, [self.location.id], args, _kwargs
-        )
+        destination = [worker.id for worker in args]
+        message = TensorCommandMessage.communication(ptr_id, "share_", source, destination, _kwargs)
 
         # Send the msg
-        response = self.owner.send_msg(message=message, location=self.owner)
+        response = self.owner.send_msg(message=message, location=self.location)
 
-        return response
+        return self
 
     def set_garbage_collect_data(self, value):
         self.garbage_collect_data = value
