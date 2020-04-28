@@ -69,12 +69,6 @@ class func2plan(object):
         return plan
 
 
-def method2plan(*args, **kwargs):
-    raise SyntaxError(
-        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
-    )
-
-
 class Plan(AbstractObject):
     """
     A Plan stores a sequence of torch actions, just like a function.
@@ -153,18 +147,7 @@ class Plan(AbstractObject):
         return self.role.state
 
     @property
-    def _known_workers(self):
-        return self.owner._known_workers
-
-    # TODO is it necessary to maintain this?
-    @property
-    def location(self):
-        raise AttributeError("Plan has no attribute location")
-
-    # TODO is it necessary to maintain this?
-    # For backward compatibility
-    @property
-    def readable_plan(self):
+    def actions(self):
         return self.role.actions
 
     def parameters(self):
