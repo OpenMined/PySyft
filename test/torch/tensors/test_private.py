@@ -188,18 +188,6 @@ def test_torch_add():
     assert z.allow("UserCredential")
     assert not z.allow("NonRegisteredUser")
 
-    # When overflow occurs
-    x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(field=1e4, precision_fractional=2)
-
-    # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("UserCredential"))
-
-    y = torch.add(x, x)
-    y = torch.add(y, y)
-    y_fp = y.float_prec()
-
-    assert (y_fp == torch.tensor([40.0, -20.0, 20.0])).all()
-
 
 def test_torch_sub():
     x = torch.tensor([0.5, 0.8, 1.3]).fix_prec()

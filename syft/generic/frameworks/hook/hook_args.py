@@ -298,7 +298,7 @@ def build_rule(args_):
         return 0
 
 
-def build_unwrap_args_with_rules(args_, rules, return_tuple=False):
+def build_unwrap_args_with_rules(args_, rules, return_tuple=False, return_list=False):
     """
     Build a function given some rules to efficiently replace in the args object
     syft tensors with their child (but not pointer as they don't have .child),
@@ -312,6 +312,7 @@ def build_unwrap_args_with_rules(args_, rules, return_tuple=False):
         rules (tuple): the same structure but with boolean, true when there is
             a tensor
         return_tuple (bool): force to return a tuple even with a single element
+        return_list (bool): force to return a list instead of a tuple
 
     Return:
         a function that replace syft arg in args_ with arg.child
@@ -321,10 +322,12 @@ def build_unwrap_args_with_rules(args_, rules, return_tuple=False):
     lambdas = [
         typed_identity(a)  # return the same obj with an identity fct with a type check if needed
         if not r  # if the rule is a number == 0.
+        else build_unwrap_args_with_rules(a, r, True, True)
+        if isinstance(r, list)
         else build_unwrap_args_with_rules(
             a, r, True
         )  # If not, call recursively build_unwrap_args_with_rules
-        if isinstance(r, (tuple, list))
+        if isinstance(r, tuple)
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: forward_func[type(i)](i)
         for a, r in zip(args_, rules)  # And do this for all the args / rules provided
@@ -347,6 +350,9 @@ def build_unwrap_args_with_rules(args_, rules, return_tuple=False):
         f = folds[len(lambdas)]
     except KeyError:
         f = many_fold
+
+    if return_list:
+        return lambda x: list(f(lambdas, x))
 
     return lambda x: f(lambdas, x)
 
@@ -711,6 +717,11 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
+    # This method often leads to re-registration of tensors
+    # hence creating two copies of the same info. The older tensor
+    # is left hanging and is never deleted. De-Registering the original
+    # tensor (if-exists) before registration addresses this problem.
+    owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)

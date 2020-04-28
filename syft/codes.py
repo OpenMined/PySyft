@@ -36,3 +36,4 @@ class RESPONSE_MSG(object):
     SUCCESS = "success"
     MODELS = "models"
     INFERENCE_RESULT = "prediction"
+    SYFT_VERSION = "syft_version"

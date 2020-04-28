@@ -70,6 +70,7 @@ exclusion_list_notebooks += excluded_translated_notebooks
 exclusion_list_folders = [
     "examples/tutorials/websocket",
     "examples/tutorials/advanced/monitor_network_traffic",
+    "examples/tutorials/advanced/privacy_attacks",
     "examples/tutorials/advanced/websockets_mnist_parallel",
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
@@ -119,7 +120,7 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         notebook,
         "/dev/null",
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+        timeout=400,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
