@@ -54,7 +54,7 @@ def multiply_add_plain_with_scaling_variant(pue, message, context):
     # here pue = pk * u * e
     param = context.param
     coeff_modulus = param.coeff_modulus
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
     delta = context.coeff_div_plain_modulus
@@ -65,7 +65,7 @@ def multiply_add_plain_with_scaling_variant(pue, message, context):
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
-        for j in range(coeff_mod_count):
+        for j in range(coeff_mod_size):
             temp = delta[j] * plaintext[i]
             pue_0[j * coeff_count] = (
                 pue_0[j * coeff_count] + (temp % coeff_modulus[j])

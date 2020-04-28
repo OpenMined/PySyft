@@ -17,9 +17,6 @@ class Encrypter:
 
     def __init__(self, context, key):
         self._context = context
-        self._coeff_modulus = context.param.coeff_modulus
-        self._coeff_mod_count = len(self._coeff_modulus)
-        self._coeff_count = context.param.poly_modulus_degree
         self._key = key
 
     def encrypt_internal(self, message, is_asymmetric):

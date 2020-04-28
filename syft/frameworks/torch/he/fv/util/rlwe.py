@@ -15,55 +15,55 @@ def sample_poly_ternary(parms):
     """
     coeff_modulus = parms.coeff_modulus
     coeff_count = parms.poly_modulus_degree
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
 
-    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
+    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
     for i in range(coeff_count):
         r = SystemRandom()
         rand_index = r.choice([-1, 0, 1])
         if rand_index == 1:
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = 1
         elif rand_index == -1:
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = coeff_modulus[j] - 1
         else:
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = 0
     return result
 
 
 def sample_poly_normal(param):
     coeff_modulus = param.coeff_modulus
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
 
-    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
+    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
     for i in range(coeff_count):
         noise = Normal(th.tensor([0.0]), th.tensor(NOISE_STANDARD_DEVIATION))
         noise = int(noise.sample().item())
         if noise > 0:
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = noise
         elif noise < 0:
             noise = -noise
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = coeff_modulus[j] - noise
         else:
-            for j in range(coeff_mod_count):
+            for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = 0
     return result
 
 
 def sample_poly_uniform(param):
     coeff_modulus = param.coeff_modulus
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
 
     max_random = 0x7FFFFFFFFFFFFFFF
-    result = th.zeros(coeff_count * coeff_mod_count, dtype=th.int64)
+    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
 
-    for j in range(coeff_mod_count):
+    for j in range(coeff_mod_size):
         modulus = coeff_modulus[j]
         max_multiple = max_random - (max_random % modulus) - 1
         for i in range(coeff_count):
@@ -79,7 +79,7 @@ def sample_poly_uniform(param):
 def encrypt_zero_asymmetric(context, public_key):
     param = context.param
     coeff_modulus = param.coeff_modulus
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
     public_key = public_key.data
     encrypted_size = len(public_key)
@@ -87,11 +87,11 @@ def encrypt_zero_asymmetric(context, public_key):
     u = sample_poly_ternary(param)
 
     # c[j] = u * public_key[j]
-    c_0 = [0] * coeff_count * coeff_mod_count
-    c_1 = [0] * coeff_count * coeff_mod_count
+    c_0 = [0] * coeff_count * coeff_mod_size
+    c_1 = [0] * coeff_count * coeff_mod_size
     result = [c_0, c_1]
     for k in range(encrypted_size):
-        for j in range(coeff_mod_count):
+        for j in range(coeff_mod_size):
             for i in range(coeff_count):
                 result[k][i + j * coeff_count] = (
                     u[i + j * coeff_count] * public_key[k][i + j * coeff_count]
@@ -101,7 +101,7 @@ def encrypt_zero_asymmetric(context, public_key):
     # c[j] = public_key[j] * u + e[j]
     for k in range(encrypted_size):
         e = sample_poly_normal(param)
-        for j in range(coeff_mod_count):
+        for j in range(coeff_mod_size):
             for i in range(coeff_count):
                 result[k][i + j * coeff_count] = (
                     result[k][i + j * coeff_count] + e[i + j * coeff_count]
@@ -113,7 +113,7 @@ def encrypt_zero_asymmetric(context, public_key):
 def encrypt_zero_symmetric(context, secret_key):
     param = context.param
     coeff_modulus = param.coeff_modulus
-    coeff_mod_count = len(coeff_modulus)
+    coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
     secret_key = secret_key.data
 
@@ -124,14 +124,14 @@ def encrypt_zero_symmetric(context, secret_key):
     e = sample_poly_normal(param)
 
     # calculate -(a*s + e) (mod q) and store in c0
-    c0 = [0] * coeff_count * coeff_mod_count
-    for j in range(coeff_mod_count):
+    c0 = [0] * coeff_count * coeff_mod_size
+    for j in range(coeff_mod_size):
         for i in range(coeff_count):
             c0[i + j * coeff_count] = -(
                 c1[i + j * coeff_count] * secret_key[i + j * coeff_count] + e[i + j * coeff_count]
             )
 
-    for j in range(coeff_mod_count):
+    for j in range(coeff_mod_size):
         for i in range(coeff_count):
             c0[i + j * coeff_count] = c0[i + j * coeff_count] % coeff_modulus[j]
 
