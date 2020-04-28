@@ -16,7 +16,7 @@ def get_hooked_crypten_func(func_api_name, func):
         if syft.hook.trace.active:
             response = crypten.cryptensor(th.zeros([]))
         else:
-            response = func(*args, **kwargs)
+            response = func(*args, **kwargs)  # pragma: no cover
 
         return response
 

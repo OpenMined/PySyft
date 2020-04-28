@@ -10,7 +10,9 @@ import crypten
 from crypten.communicator import DistributedCommunicator
 
 
-def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs):
+def _launch(
+    func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
+):  # pragma: no cover
     communicator_args = {
         "RANK": rank,
         "WORLD_SIZE": world_size,
@@ -58,6 +60,7 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
         func, rank, world_size, master_addr, master_port, func_args, func_kwargs
     )
     was_initialized = DistributedCommunicator.is_initialized()
+
     if was_initialized:
         crypten.uninit()
     process.start()
@@ -102,9 +105,14 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
-            crypten.init()
+            was_initialized = DistributedCommunicator.is_initialized()
+            if not was_initialized:
+                crypten.init()
+
             plan.build()
-            crypten.uninit()
+
+            if not was_initialized:
+                crypten.uninit()
 
             # Mark the plan so the other workers will use that tag to retrieve the plan
             plan.tags = ["crypten_plan"]
@@ -128,7 +136,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
 
             # Run TTP if required
             # TODO: run ttp in a specified worker
-            if crypten.mpc.ttp_required():
+            if crypten.mpc.ttp_required():  # pragma: no cover
                 ttp_process, _ = _new_party(
                     crypten.mpc.provider.TTPServer,
                     world_size,

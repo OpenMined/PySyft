@@ -1,11 +1,14 @@
 import pytest
 import syft as sy
 from syft.frameworks.crypten.context import run_multiworkers
+
 import torch as th
 import crypten
+from crypten.communicator import DistributedCommunicator
 
 
-def test_context(workers):
+@pytest.mark.parametrize("crypten_initialized", [False, True])
+def test_context(workers, crypten_initialized):
     # self, alice and bob
     n_workers = 3
 
@@ -14,6 +17,10 @@ def test_context(workers):
 
     alice_tensor_ptr = th.tensor([42, 53, 3, 2]).tag("crypten_data").send(alice)
     bob_tensor_ptr = th.tensor([101, 32, 29, 2]).tag("crypten_data").send(bob)
+
+    print(crypten_initialized)
+    if crypten_initialized:
+        crypten.init()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
@@ -26,6 +33,15 @@ def test_context(workers):
         return result
 
     return_values = plan_func()
+
+    is_initialized = DistributedCommunicator.is_initialized()
+
+    # Check crypten state is left in the same state as beore
+    if crypten_initialized:
+        assert is_initialized
+        crypten.uninit()
+    else:
+        assert not is_initialized
 
     # A toy function is ran at each party, and they should all decrypt
     # a tensor with value [143, 85]
