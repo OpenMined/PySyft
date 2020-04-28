@@ -117,9 +117,9 @@ class CommunicationAction(Action):
             data = bufferize(sy.local_worker, communication)
         """
         protobuf_obj = CommunicationActionPB()
+        protobuf_obj.name = communication.name
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
-        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.name, communication.name)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
 
         for destination in communication.destinations:
@@ -152,8 +152,9 @@ class CommunicationAction(Action):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
+        name = protobuf_obj.name
+
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj_id)
-        name = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.name)
         source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
         destinations = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
