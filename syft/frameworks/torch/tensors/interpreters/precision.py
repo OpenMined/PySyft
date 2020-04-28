@@ -127,6 +127,8 @@ class FixedPrecisionTensor(AbstractTensor):
         self.child = field_element.type(self.torch_dtype)
         return self
 
+    fix_prec = fix_precision
+
     def float_precision(self):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
@@ -138,6 +140,8 @@ class FixedPrecisionTensor(AbstractTensor):
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
 
         return result
+
+    float_prec = float_precision
 
     def truncate(self, precision_fractional, check_sign=True):
         truncation = self.base ** precision_fractional

@@ -28,7 +28,7 @@ def test_send_default_garbage_collector_true(workers):
 
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
-    assert x_ptr.child.garbage_collect_data
+    assert x_ptr.garbage_collect_data
 
 
 def test_send_garbage_collect_data_false(workers):
@@ -41,7 +41,7 @@ def test_send_garbage_collect_data_false(workers):
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
     x_ptr.garbage_collection = False
-    assert x_ptr.child.garbage_collect_data == False
+    assert x_ptr.garbage_collect_data == False
 
 
 def test_send_gc_false(workers):
@@ -53,7 +53,7 @@ def test_send_gc_false(workers):
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
     x_ptr.gc = False
-    assert x_ptr.child.garbage_collect_data == False
+    assert x_ptr.garbage_collect_data == False
     assert x_ptr.gc == False, "property GC is not in sync"
     assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
 
@@ -76,8 +76,11 @@ def test_send_disable_gc(workers):
     alice = workers["alice"]
 
     x = torch.Tensor([-1, 2])
-    x_ptr = x.send(alice).disable_gc
-    assert x_ptr.child.garbage_collect_data == False
+    x_ptr = x.send(alice)
+
+    x_ptr.disable_gc
+
+    assert x_ptr.garbage_collect_data == False
     assert x_ptr.gc == False, "property GC is not in sync"
     assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
 
@@ -100,6 +103,9 @@ def test_send_get(workers):
     assert (torch.Tensor([1, 2]) == x_back).all()
 
     # double send
+    # import pdb
+
+    # pdb.set_trace()
     x = torch.Tensor([1, 2])
     x_ptr = x.send(bob)
     x_ptr_ptr = x_ptr.send(alice)
@@ -239,12 +245,12 @@ def test_method_on_attribute(workers):
     x = syft.LoggingTensor().on(x).send(bob)
 
     # call method on data tensor directly
-    x.child.point_to_attr = "child.child"
+    x.point_to_attr = "child.child"
     y = x.add(x)
     assert isinstance(y.get(), torch.Tensor)
 
     # call method on loggingtensor directly
-    x.child.point_to_attr = "child"
+    x.point_to_attr = "child"
     y = x.add(x)
     y = y.get()
     assert isinstance(y.child, syft.LoggingTensor)
@@ -259,7 +265,7 @@ def test_method_on_attribute(workers):
     # assert isinstance(y.child.child, torch.Tensor)
 
     # call .get() on pinter to attribute (should error)
-    x.child.point_to_attr = "child"
+    x.point_to_attr = "child"
     try:
         x.get()
     except syft.exceptions.CannotRequestObjectAttribute as e:
@@ -323,11 +329,14 @@ def test_move(workers):
 
     alice.clear_objects()
     bob.clear_objects()
-    t = torch.tensor([1.0, 2, 3, 4, 5])
-    x = t.send(bob)
-    y = x.move(alice)
-    z = y.move(me)
-    assert (z == t).all()
+    x = torch.tensor([1.0, 2, 3, 4, 5])
+
+    x_ptr = x.send(bob)
+    y_ptr = x_ptr.move(alice)
+    z = y_ptr.move(me)
+
+    # y_ptr an x_ptr should be invalid
+    assert (z == x).all()
 
     # Move object to same location
     alice.clear_objects()
@@ -423,8 +432,8 @@ def test_fix_prec_on_pointer_tensor(workers):
     # check that fix_precision is not inplace
     assert (remote_tensor == tensor).all()
 
-    assert isinstance(ptr.child, PointerTensor)
-    assert isinstance(remote_fp_tensor.child, FixedPrecisionTensor)
+    assert isinstance(ptr, PointerTensor)
+    assert isinstance(remote_fp_tensor, FixedPrecisionTensor)
 
 
 def test_fix_prec_on_pointer_of_pointer(workers):
@@ -460,7 +469,7 @@ def test_float_prec_on_pointer_tensor(workers):
     ptr = ptr.float_precision()
     remote_tensor = bob.object_store.get_obj(ptr.id_at_location)
 
-    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(ptr, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
 
 
@@ -499,8 +508,8 @@ def test_share_get(workers):
     ptr = ptr.share(charlie, alice)
     remote_tensor = bob.object_store.get_obj(ptr.id_at_location)
 
-    assert isinstance(ptr.child, PointerTensor)
-    assert isinstance(remote_tensor.child, AdditiveSharingTensor)
+    assert isinstance(ptr, PointerTensor)
+    assert isinstance(remote_tensor, AdditiveSharingTensor)
 
 
 def test_registration_of_action_on_pointer_of_pointer(workers):

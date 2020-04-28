@@ -189,10 +189,7 @@ class TorchTensor(AbstractTensor):
 
     def __str__(self) -> str:
         if self.has_child():
-            if self.is_wrapper:
-                return "(Wrapper)>" + self.child.__str__()
-            else:
-                return type(self).__name__ + ">" + self.child.__str__()
+            return type(self).__name__ + ">" + self.child.__str__()
         else:
             return self.native___str__()
 
@@ -235,35 +232,6 @@ class TorchTensor(AbstractTensor):
             except AttributeError:
                 self._id = syft.ID_PROVIDER.pop()
                 return self._id
-
-    @property
-    def gc(self):
-        return self.garbage_collection
-
-    @gc.setter
-    def gc(self, flag):
-        self.garbage_collection = flag
-
-    @property
-    def disable_gc(self):
-        self.child.garbage_collect_data = False
-        self.garbage_collection = False
-        return self
-
-    @property
-    def garbage_collection(self):
-        if not self.has_child():
-            if hasattr(self, "ptr") and self.ptr is not None:
-                self.child = self.ptr
-                self.child.garbage_collect_data = True
-        return self.child.garbage_collect_data
-
-    @garbage_collection.setter
-    def garbage_collection(self, flag):
-        if not self.has_child():
-            if hasattr(self, "ptr") and self.ptr is not None:
-                self.child = self.ptr
-        self.child.garbage_collect_data = flag
 
     @id.setter
     def id(self, new_id):
@@ -421,7 +389,6 @@ class TorchTensor(AbstractTensor):
         local_autograd: bool = False,
         requires_grad: bool = False,
         preinitialize_grad: bool = False,
-        no_wrap: bool = False,
         garbage_collect_data: bool = True,
     ):
         """Gets the pointer to a new remote object.
@@ -442,7 +409,6 @@ class TorchTensor(AbstractTensor):
                 will have its gradient updated (for example when calling .backward()), a call
                 will be made to set back the local gradient value.
             preinitialize_grad: Initialize gradient for AutogradTensors to a tensor
-            no_wrap: If True, wrap() is called on the created pointer
             garbage_collect_data: argument passed down to create_pointer()
 
         Returns:
@@ -502,8 +468,6 @@ class TorchTensor(AbstractTensor):
                     self.data = ptr
                     output = self
                 else:
-                    if no_wrap:
-                        raise ValueError("Parameters can't accept no_wrap=True")
                     wrapper = torch.Tensor()
                     param_wrapper = torch.nn.Parameter(wrapper)
                     param_wrapper.is_wrapper = True
@@ -518,7 +482,7 @@ class TorchTensor(AbstractTensor):
                     self.child = ptr
                     return self
                 else:
-                    output = ptr if no_wrap else ptr.wrap()
+                    output = ptr
 
             if self.requires_grad:
                 # This is for AutogradTensor to work on MultiPointerTensors
@@ -547,12 +511,9 @@ class TorchTensor(AbstractTensor):
 
             children = list()
             for loc in location:
-                children.append(self.clone().send(loc, no_wrap=True))
+                children.append(self.clone().send(loc))
 
             output = syft.MultiPointerTensor(children=children)
-
-            if not no_wrap:
-                output = output.wrap()
 
         return output
 
@@ -762,27 +723,12 @@ class TorchTensor(AbstractTensor):
         return cloned_tensor
 
     def float_prec(self):
-        if isinstance(self.child, PointerTensor):
-            self.child = self.child.float_precision()
-            return self
-
-        return self.child.float_precision()
+        return self.float_precision()
 
     float_precision = float_prec
 
     def float_prec_(self):
-        tensor = self.float_prec()
-        if hasattr(tensor, "child"):
-            self.child = tensor.child
-        elif self._is_parameter():
-            self.is_wrapper = False
-            self.data = tensor
-            self.data.is_wrapper = False
-        else:
-            del self.child
-            self.set_(tensor)
-            self.is_wrapper = False
-        return self
+        return self.float_prec()
 
     float_precision_ = float_prec_
 
@@ -830,25 +776,14 @@ class TorchTensor(AbstractTensor):
             no_wrap (bool): if True, we don't add a wrapper on top of the fixed precision tensor
             **kwargs (dict): kwargs to transmit to the fixed precision tensor
         """
-
         if not kwargs.get("owner"):
             kwargs["owner"] = self.owner
-
-        if self.is_wrapper:
-            child = self.child.fix_prec(*args, **kwargs)
-            if no_wrap:
-                return child
-            else:
-                return child.wrap()
 
         base = kwargs.get("base", 10)
         prec_fractional = kwargs.get("precision_fractional", 3)
 
         max_precision = _get_maximum_precision()
         fpt_tensor = syft.FixedPrecisionTensor(*args, **kwargs).on(self, wrap=False).fix_precision()
-
-        if not no_wrap:
-            fpt_tensor = fpt_tensor.wrap()
 
         return fpt_tensor
 
@@ -951,21 +886,6 @@ class TorchTensor(AbstractTensor):
             return self
         else:
             return self.share(*args, **kwargs)  # TODO change to inplace
-
-    def combine(self, *pointers):
-        """This method will combine the child pointer with another list of pointers
-
-        Args:
-            *pointers a list of pointers to be combined into a MultiPointerTensor
-
-        """
-
-        assert isinstance(self.child, PointerTensor)
-
-        ps = list(pointers)
-        ps.append(self)
-
-        return syft.combine_pointers(*ps)
 
     def torch_type(self):
 

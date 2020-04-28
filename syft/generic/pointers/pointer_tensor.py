@@ -248,7 +248,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
-        Will move the remove value from self.location A to destination B
+        Will move the value from self.location A to destination B
+
         Note a A will keep a copy of his value that he sent to B. This follows the
         .send() paradigm where the local worker keeps a copy of the value he sends.
         Args:
@@ -259,7 +260,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         # move to local target is equivalent to doing .get()
         if self.owner.id == destination.id:
-            return self.get()
+            val = self.get()
+            self.owner.register_obj(val)
+            return val
 
         if self.location.id == destination.id:
             return self
@@ -273,6 +276,17 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         ptr.location = destination
 
         return ptr
+
+    def send(self, destination: AbstractWorker):
+        """ Sends a pointer tensor from one worker to another
+        For instance, if C hold a pointer, ptr, to a tensor on A and calls ptr.send(B),
+        C will hold a pointer to a pointer on B which points to a tensor on A.
+        """
+
+        # import pdb
+
+        # pdb.set_trace()
+        return self.owner.send(obj=self, workers=destination)
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
@@ -323,12 +337,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
 
-        # TODO: remove these 3 lines
-        # The fact we have to check this means
-        # something else is probably broken
-        if tensor.is_wrapper:
-            if isinstance(tensor.child, FrameworkTensor):
-                return tensor.child
         return tensor
 
     def attr(self, attr_name):
@@ -344,6 +352,18 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def dim(self) -> int:
         return len(self.shape)
+
+    def combine(self, *pointers):
+        """This method will combine the child pointer with another list of pointers
+
+        Args:
+            *pointers a list of pointers to be combined into a MultiPointerTensor
+
+        """
+        ps = list(pointers)
+        ps.append(self)
+
+        return syft.combine_pointers(*ps)
 
     def fix_prec(self, *args, **kwargs):
         """
@@ -602,6 +622,28 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     @staticmethod
     def get_protobuf_schema() -> PointerTensorPB:
         return PointerTensorPB
+
+    @property
+    def gc(self):
+        return self.garbage_collection
+
+    @gc.setter
+    def gc(self, flag):
+        self.garbage_collection = flag
+
+    @property
+    def disable_gc(self):
+        self.garbage_collect_data = False
+        self.garbage_collection = False
+        return self
+
+    @property
+    def garbage_collection(self):
+        return self.garbage_collect_data
+
+    @garbage_collection.setter
+    def garbage_collection(self, flag):
+        self.garbage_collect_data = flag
 
 
 ### Register the tensor with hook_args.py ###
