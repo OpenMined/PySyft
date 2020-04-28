@@ -111,7 +111,7 @@ class Plan(AbstractObject):
         include_state: bool = False,
         is_built: bool = False,
         forward_func=None,
-        state_tensors=None,
+        state_tensors=[],
         role: Role = None,
         # General kwargs
         id: Union[str, int] = None,
@@ -124,13 +124,18 @@ class Plan(AbstractObject):
         # Plan instance info
         self.name = name or self.__class__.__name__
 
-        self.role = role or Role(state_tensors=state_tensors, owner=owner)
+        self.role = role or Role()
+
+        if role is None:
+            for st in state_tensors:
+                self.role.register_state_tensor(st, owner)
 
         self.include_state = include_state
         self.is_building = False
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -187,13 +192,10 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
-        self.owner.init_plan = self
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
-        # Get state as placeholders
-        self.role.state.read_placeholders = True
 
         # Run once to build the plan
         args = tuple(
@@ -205,7 +207,7 @@ class Plan(AbstractObject):
         if self.include_state:
             args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role) as wrapped_torch:
+        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
             # Look for framework kwargs
             framework_kwargs = {}
             forward_args = inspect.getargspec(self.forward).args
@@ -217,7 +219,6 @@ class Plan(AbstractObject):
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
-        self.role.state.read_placeholders = False
 
         # Register inputs in role
         self.role.register_inputs(args)
@@ -226,7 +227,6 @@ class Plan(AbstractObject):
         self.role.register_outputs(results)
 
         self.is_built = True
-        self.owner.init_plan = None
 
         # Build registered translations
         for translator in Plan._build_translators:
@@ -239,8 +239,10 @@ class Plan(AbstractObject):
         return results
 
     def toggle_tracing(self, value=None):
+        self.tracing = value if value is not None else not self.tracing
+        self.state.tracing = self.tracing
         for ph in self.role.placeholders.values():
-            ph.tracing = value if value is not None else not ph.tracing
+            ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -266,11 +268,11 @@ class Plan(AbstractObject):
         if isinstance(value, torch.jit.ScriptModule):
             object.__setattr__(self, name, value)
         elif isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value)
+            self.role.register_state_tensor(value, self.owner)
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param)
+                self.role.register_state_tensor(param, self.owner)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
