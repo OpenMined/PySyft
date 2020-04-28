@@ -27,13 +27,13 @@ class CommunicationAction(Action):
         super().__init__()
 
         self.obj_id = obj_id
-        if name in ["move", "remote_send", "remote_get", "get", "share", "share_"]:
+        if name in ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]:
             #  float_prec, fix_prec => should be computation actions (they modify tensors)?
             #  "value" is currently broken and it seems not very much used... defn: ln 982 - framework/torch/tensors/interperter/native.py
             self.name = name
         else:
             raise ValueError(
-                f"name ${name} for CommunicationAction is not in the list of supported actions"
+                f"name `{name}` for CommunicationAction is not in the list of supported actions"
             )
         self.source = source
         self.destinations = destinations

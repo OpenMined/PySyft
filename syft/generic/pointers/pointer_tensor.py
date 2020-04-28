@@ -308,13 +308,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         # less compact but for better for readability while this is WIP
         ptr_id = self.id_at_location
-        source = self.location[ptr_id].location_id
+        source = self.location[ptr_id].id
         _kwargs = {}
         message = TensorCommandMessage.communication(
             ptr_id, "mid_get", source, [self.location.id], _kwargs
         )
 
-        self.owner.send_msg(message=message, location=self.location)
+        self.owner.send_msg(message=message, location=self.owner)
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -418,7 +418,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = TensorCommandMessage.communication(ptr_id, "share", source, destination, _kwargs)
 
         # Send the msg
-        response = self.owner.send_msg(message=message, location=self.location)
+        response = self.owner.send_msg(message=message, location=self.owner)
 
         return self
 
@@ -456,7 +456,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = TensorCommandMessage.communication(ptr_id, "share_", source, destination, _kwargs)
 
         # Send the msg
-        response = self.owner.send_msg(message=message, location=self.location)
+        response = self.owner.send_msg(message=message, location=self.owner)
 
         return self
 
