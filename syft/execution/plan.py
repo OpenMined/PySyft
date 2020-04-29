@@ -193,7 +193,7 @@ class Plan(AbstractObject):
         with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
             # Look for framework kwargs
             framework_kwargs = {}
-            forward_args = inspect.getargspec(self.forward).args
+            forward_args = inspect.getfullargspec(self.forward).args
             if "torch" in forward_args:
                 framework_kwargs["torch"] = wrapped_torch
 
