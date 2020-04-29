@@ -21,7 +21,6 @@ from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
-from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
@@ -338,47 +337,47 @@ class Protocol(AbstractObject):
         # TODO: can we reuse result_ids?
         return self.__call__(*args_)
 
-    def send(self, *locations: AbstractWorker, force=False) -> PointerProtocol:
-        """Send protocol to locations.
+    # def send(self, *locations: AbstractWorker, force=False):
+    #     """Send protocol to locations.
 
-        If the protocol was not built locally it will raise an exception.
-        If `force` = true protocol is going to be sent either way.
+    #     If the protocol was not built locally it will raise an exception.
+    #     If `force` = true protocol is going to be sent either way.
 
-        Args:
-            locations: List of workers.
-            force: A boolean indicating if this action should be forced.
-        """
-        if not self.is_built and not force:
-            raise RuntimeError("A protocol needs to be built before being sent to a worker.")
+    #     Args:
+    #         locations: List of workers.
+    #         force: A boolean indicating if this action should be forced.
+    #     """
+    #     if not self.is_built and not force:
+    #         raise RuntimeError("A protocol needs to be built before being sent to a worker.")
 
-        if len(locations) == 1:
-            location = locations[0]
+    #     if len(locations) == 1:
+    #         location = locations[0]
 
-            # Check if protocol was already sent at the location
-            if location in self.pointers:
-                return self.pointers[location]
+    #         # Check if protocol was already sent at the location
+    #         if location in self.pointers:
+    #             return self.pointers[location]
 
-            # Send the Protocol
-            pointer = self.owner.send(self, workers=location)
+    #         # Send the Protocol
+    #         pointer = self.owner.send(self, workers=location)
 
-            self.pointers[location] = pointer
-        else:
-            ids_at_location = []
-            for location in locations:
-                if location in self.pointers:
-                    # Use the pointer that was already sent
-                    pointer = self.pointers[location]
-                else:
-                    # Send the Protocol
-                    pointer = self.owner.send(self, workers=location)
+    #         self.pointers[location] = pointer
+    #     else:
+    #         ids_at_location = []
+    #         for location in locations:
+    #             if location in self.pointers:
+    #                 # Use the pointer that was already sent
+    #                 pointer = self.pointers[location]
+    #             else:
+    #                 # Send the Protocol
+    #                 pointer = self.owner.send(self, workers=location)
 
-                    self.pointers[location] = pointer
+    #                 self.pointers[location] = pointer
 
-                ids_at_location.append(pointer.id_at_location)
+    #             ids_at_location.append(pointer.id_at_location)
 
-            pointer = sy.PointerProtocol(location=locations, id_at_location=ids_at_location)
+    #         pointer = sy.PointerProtocol(location=locations, id_at_location=ids_at_location)
 
-        return pointer
+    #     return pointer
 
     def get_args_shape(self):
         """Returns input tensors shapes"""
@@ -425,29 +424,29 @@ class Protocol(AbstractObject):
 
     share = share_
 
-    def create_pointer(
-        self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
-    ):
-        """
-        Create a pointer to the protocol
+    # def create_pointer(
+    #     self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
+    # ):
+    #     """
+    #     Create a pointer to the protocol
 
-        Args:
-            owner: the owner of the pointer
-            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
-            location: the location of the pointer
-            id_at_location: the remote id at location
-            tags: the tags inherited from the Protocol
+    #     Args:
+    #         owner: the owner of the pointer
+    #         garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+    #         location: the location of the pointer
+    #         id_at_location: the remote id at location
+    #         tags: the tags inherited from the Protocol
 
-        Returns:
-            PointerProtocol: pointer to the protocol
-        """
-        return PointerProtocol(
-            owner=owner,
-            location=location or self.owner,
-            id_at_location=id_at_location or self.id,
-            garbage_collect_data=garbage_collect_data,
-            tags=tags,
-        )
+    #     Returns:
+    #         PointerProtocol: pointer to the protocol
+    #     """
+    #     return PointerProtocol(
+    #         owner=owner,
+    #         location=location or self.owner,
+    #         id_at_location=id_at_location or self.id,
+    #         garbage_collect_data=garbage_collect_data,
+    #         tags=tags,
+    #     )
 
     def __str__(self):
         """Returns the string representation of Protocol."""
