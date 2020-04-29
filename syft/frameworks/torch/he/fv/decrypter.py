@@ -15,29 +15,19 @@ class Decrypter:
         self._secret_key = secret_key.data
         self._plain_modulus = context.plain_modulus
 
-    def decrypt(self, ciphertext):
-        t_div_q = self._context.plain_div_coeff_modulus
-        result = [0] * self._coeff_count * self._coeff_mod_size
-        c_0, c_1 = ciphertext.data
+    def decrypt(self, encrypted):
+        pass
 
-        for j in range(self._coeff_mod_size):
-            for i in range(self._coeff_mod_size):
-                result[i + j * self._coeff_count] = (
-                    (
-                        (
-                            (
-                                c_1[i + j * self._coeff_count]
-                                * self._secret_key[i + j * self._coeff_count]
-                            )
-                            % self._coeff_modulus[j]
-                            + c_0[i + j * self._coeff_count]
-                        )
-                        % self._coeff_modulus[j]
-                    )
-                    * t_div_q[j]
-                ).round() % self._plain_modulus
+    def dot_product_ct_sk_array(self, encrypted):
+        product = [0] * self._coeff_count * self._coeff_mod_size
+        c_0, c_1 = encrypted.data
 
         for j in range(self._coeff_mod_size):
             for i in range(self._coeff_count):
-                result[i + j * self._coeff_count] = round(result[i + j * self._coeff_count].item())
-        return PlainText(result)
+                product[i + j * self._coeff_count] = (
+                    (c_1[i + j * self._coeff_count] * self._secret_key[i + j * self._coeff_count])
+                    % self._coeff_modulus[j]
+                    + c_0[i + j * self._coeff_count]
+                ) % self._coeff_modulus[j]
+
+        return product  # product  = c_0 + c_1 * sk
