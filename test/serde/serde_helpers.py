@@ -917,58 +917,58 @@ def make_state(**kwargs):
 
 
 # Protocol
-def make_protocol(**kwargs):
-    worker = kwargs["workers"]["serde_worker"]
+# def make_protocol(**kwargs):
+#     worker = kwargs["workers"]["serde_worker"]
 
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
+#     @syft.func2plan([torch.Size((1, 3))])
+#     def plan(x):
+#         x = x + x
+#         x = torch.abs(x)
+#         return x
 
-    with worker.registration_enabled():
-        worker.register_obj(plan)
+#     with worker.registration_enabled():
+#         worker.register_obj(plan)
 
-    plan.owner = worker
-    protocol = syft.execution.protocol.Protocol(
-        [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
-    )
-    protocol.tag("aaa")
-    protocol.describe("desc")
+#     plan.owner = worker
+#     protocol = syft.execution.protocol.Protocol(
+#         [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
+#     )
+#     protocol.tag("aaa")
+#     protocol.describe("desc")
 
-    def compare(detailed, original):
-        assert type(detailed) == syft.execution.protocol.Protocol
-        assert detailed.id == original.id
-        assert detailed.tags == original.tags
-        assert detailed.description == original.description
-        assert detailed.plans == original.plans
-        assert detailed.owner == original.owner
-        assert detailed.workers_resolved == original.workers_resolved
-        return True
+#     def compare(detailed, original):
+#         assert type(detailed) == syft.execution.protocol.Protocol
+#         assert detailed.id == original.id
+#         assert detailed.tags == original.tags
+#         assert detailed.description == original.description
+#         assert detailed.plans == original.plans
+#         assert detailed.owner == original.owner
+#         assert detailed.workers_resolved == original.workers_resolved
+#         return True
 
-    return [
-        {
-            "value": protocol,
-            "simplified": (
-                CODE[syft.execution.protocol.Protocol],
-                (
-                    protocol.id,  # (int)
-                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
-                    (CODE[str], (b"desc",)),  # (str) description
-                    (
-                        CODE[list],  # (list) plans reference
-                        (
-                            # (tuple) reference: worker_id (int/str), plan_id (int/str)
-                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-                        ),
-                    ),
-                    False,  # (bool) workers_resolved
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
+#     return [
+#         {
+#             "value": protocol,
+#             "simplified": (
+#                 CODE[syft.execution.protocol.Protocol],
+#                 (
+#                     protocol.id,  # (int)
+#                     (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
+#                     (CODE[str], (b"desc",)),  # (str) description
+#                     (
+#                         CODE[list],  # (list) plans reference
+#                         (
+#                             # (tuple) reference: worker_id (int/str), plan_id (int/str)
+#                             (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
+#                             (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
+#                         ),
+#                     ),
+#                     False,  # (bool) workers_resolved
+#                 ),
+#             ),
+#             "cmp_detailed": compare,
+#         }
+#     ]
 
 
 # syft.generic.pointers.pointer_tensor.PointerTensor
