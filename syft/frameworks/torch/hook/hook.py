@@ -260,9 +260,9 @@ class TorchHook(FrameworkHook):
 
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
-        self.to_auto_overload[tensor_type].extend(self._which_methods_should_we_auto_overload(
-            tensor_type
-        ))
+        self.to_auto_overload[tensor_type].extend(
+            self._which_methods_should_we_auto_overload(tensor_type)
+        )
 
         # [We don't rename native methods as torch tensors are not hooked] Rename native functions
         # #self._rename_native_functions(tensor_type)
@@ -479,6 +479,7 @@ class TorchHook(FrameworkHook):
 
     def _hook_crypten(self):
         from syft.frameworks.crypten import load as crypten_load
+
         setattr(crypten, "load", crypten_load)
 
     def _hook_crypten_module(self):
