@@ -3,9 +3,9 @@ import torch as th
 from syft.frameworks.crypten import jail
 
 
-def add_tensors(tensor):
+def add_tensors(tensor):  # pragma: no cover
     # torch here is from the jail
-    t = torch.tensor(5)  # noqa
+    t = torch.tensor(5)  # noqa: F821
     return t + tensor
 
 
@@ -16,7 +16,7 @@ def test_simple_func():
     assert expected == func(t)
 
 
-def import_socket():
+def import_socket():  # pragma: no cover
     import socket
 
 
