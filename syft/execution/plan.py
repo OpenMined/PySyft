@@ -12,7 +12,7 @@ import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
+from syft.execution.tracing import FrameworkWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
@@ -137,6 +137,10 @@ class Plan(AbstractObject):
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
 
+        self.wrapped_framework = {}
+        for f_name, f_packages in framework_packages.items():
+            self.wrapped_framework[f_name] = FrameworkWrapper(f_packages, self.role, self.owner)
+
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
         # List of available translations
@@ -190,14 +194,15 @@ class Plan(AbstractObject):
         if self.include_state:
             args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
-            # Look for framework kwargs
-            framework_kwargs = {}
-            forward_args = inspect.getargspec(self.forward).args
-            if "torch" in forward_args:
-                framework_kwargs["torch"] = wrapped_torch
+        # Look for framework kwargs
+        framework_kwargs = {}
+        forward_args = inspect.getargspec(self.forward).args
 
-            results = self.forward(*args, **framework_kwargs)
+        for f_name, wrapped_framework in self.wrapped_framework.items():
+            if f_name in forward_args:
+                framework_kwargs[f_name] = self.wrapped_framework[f_name]
+
+        results = self.forward(*args, **framework_kwargs)
 
         # Disable tracing
         self.toggle_tracing(False)

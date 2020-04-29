@@ -7,6 +7,7 @@ import syft as sy
 from syft.messaging.message import CryptenInit
 
 import crypten
+from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_building
 from crypten.communicator import DistributedCommunicator
 
 
@@ -102,9 +103,14 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
+
+            hook_plan_building()
             crypten.init()
+
             plan.build()
+
             crypten.uninit()
+            unhook_plan_building()
 
             # Mark the plan so the other workers will use that tag to retrieve the plan
             plan.tags = ["crypten_plan"]
