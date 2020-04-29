@@ -70,7 +70,6 @@ from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
