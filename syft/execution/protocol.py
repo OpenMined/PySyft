@@ -120,6 +120,8 @@ class Protocol(AbstractObject):
         self.name = name or self.__class__.__name__
 
         self.roles = {}
+        self.input_repartition = []
+        self.output_repartition = []
 
         if role is None:
             for st in state_tensors:
@@ -179,6 +181,8 @@ class Protocol(AbstractObject):
         """
         # Reset previous build
         self.roles = {}
+        self.input_repartition = []
+        self.output_repartition = []
 
         # Enable tracing
         self.toggle_tracing(True)
@@ -192,6 +196,8 @@ class Protocol(AbstractObject):
             ph_arg = PlaceHolder.create_from(arg, owner=arg.owner, role=arg_role, tracing=True)
             # Register inputs in role
             arg_role.register_input(ph_arg)
+
+            self.input_repartition.append(arg.owner.id)
 
             ph_args += (ph_arg,)
 
@@ -219,6 +225,8 @@ class Protocol(AbstractObject):
                 result_role = self.get_role_for_owner(result.owner)
                 result_role.register_output(result)
 
+                self.output_repartition.append(result.owner.id)
+
         self.is_built = True
 
         # Build registered translations
@@ -234,8 +242,9 @@ class Protocol(AbstractObject):
     def toggle_tracing(self, value=None):
         self.tracing = value if value is not None else not self.tracing
         # self.state.tracing = self.tracing
-        # for ph in self.role.placeholders.values():
-        # ph.tracing = self.tracing
+        for role in self.roles.values():
+            for ph in role.placeholders.values():
+                ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a protocol."""
@@ -306,7 +315,17 @@ class Protocol(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            return self.role.execute(args)
+            results_per_role = {}
+            for role_id, role in self.roles.items():
+                args_for_role = [
+                    arg for ind, arg in enumerate(args) if self.input_repartition[ind] == role_id
+                ]
+                results_per_role[role_id] = list(role.execute(args_for_role))
+
+            results = ()
+            for role_id in self.output_repartition:
+                results += (results_per_role[role_id].pop(0),)
+            return results
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote protocol execution.

@@ -296,7 +296,10 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            return self.role.execute(args)
+            result = self.role.execute(args)
+            if len(result) == 1:
+                return result[0]
+            return result
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.

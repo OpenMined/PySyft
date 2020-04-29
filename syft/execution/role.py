@@ -112,11 +112,8 @@ class Role:
         output_placeholders = tuple(
             self.placeholders[output_id] for output_id in self.output_placeholder_ids
         )
-        result = tuple(p.child for p in output_placeholders)
 
-        if len(result) == 1:
-            return result[0]
-        return result
+        return tuple(p.child for p in output_placeholders)
 
     def _instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
