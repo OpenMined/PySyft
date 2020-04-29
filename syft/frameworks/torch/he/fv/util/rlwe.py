@@ -82,7 +82,7 @@ def encrypt_zero_asymmetric(context, public_key):
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
     public_key = public_key.data
-    encrypted_size = len(public_key)
+    encrypted_size = 2
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
 
@@ -90,6 +90,7 @@ def encrypt_zero_asymmetric(context, public_key):
     c_0 = [0] * coeff_count * coeff_mod_size
     c_1 = [0] * coeff_count * coeff_mod_size
     result = [c_0, c_1]
+
     for k in range(encrypted_size):
         for j in range(coeff_mod_size):
             for i in range(coeff_count):
