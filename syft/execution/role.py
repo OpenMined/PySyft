@@ -54,19 +54,29 @@ class Role:
     def output_placeholders(self):
         return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
 
+    def register_input(self, arg_):
+        """ Takes input argument for this role and generate placeholder.
+        """
+        self.input_placeholder_ids += (self._store_placeholders(arg_).value,)
+
     def register_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids = tuple(
+        self.input_placeholder_ids += tuple(
             self._store_placeholders(arg).value for arg in args_ if isinstance(arg, PlaceHolder)
         )
+
+    def register_output(self, result):
+        """ Takes output tensor for this role and generate placeholder.
+        """
+        self.output_placeholder_ids += (self._store_placeholders(result).value,)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
-        self.output_placeholder_ids = tuple(
+        self.output_placeholder_ids += tuple(
             self._store_placeholders(result).value for result in results
         )
 

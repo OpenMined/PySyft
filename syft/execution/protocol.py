@@ -13,6 +13,10 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import trace
+
+# from syft.execution.translation.abstract import AbstractPlanTranslator
+# from syft.execution.translation.default import PlanTranslatorDefault
+# from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -66,12 +70,6 @@ class func2protocol(object):
         return protocol
 
 
-def method2protocol(*args, **kwargs):
-    raise SyntaxError(
-        "method2protocol is not supported anymore. Consider instead subclassing your object from sy.Protocol."
-    )
-
-
 class Protocol(AbstractObject):
     """
     A Protocol stores a sequence of torch actions, just like a function.
@@ -100,6 +98,8 @@ class Protocol(AbstractObject):
         description: protocol description
     """
 
+    # _build_translators = []
+
     def __init__(
         self,
         name: str = None,
@@ -119,7 +119,7 @@ class Protocol(AbstractObject):
         # Protocol instance info
         self.name = name or self.__class__.__name__
 
-        self.role = role or Role()
+        self.roles = {}
 
         if role is None:
             for st in state_tensors:
@@ -140,24 +140,12 @@ class Protocol(AbstractObject):
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
+        # List of available translations
+        # self.translations = []
+
     @property
     def state(self):
         return self.role.state
-
-    @property
-    def _known_workers(self):
-        return self.owner._known_workers
-
-    # TODO is it necessary to maintain this?
-    @property
-    def location(self):
-        raise AttributeError("Protocol has no attribute location")
-
-    # TODO is it necessary to maintain this?
-    # For backward compatibility
-    @property
-    def readable_protocol(self):
-        return self.role.actions
 
     def parameters(self):
         """
@@ -167,6 +155,11 @@ class Protocol(AbstractObject):
             return self.state.tensors()
         else:
             return []
+
+    def get_role_for_owner(self, owner):
+        if owner.id not in self.roles:
+            self.roles[owner.id] = Role()
+        return self.roles[owner.id]
 
     def build(self, *args):
         """Builds the protocol.
@@ -184,49 +177,65 @@ class Protocol(AbstractObject):
         Args:
             args: Input arguments to run the protocol
         """
+        # Reset previous build
+        self.roles = {}
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
 
         # Run once to build the protocol
-        args = tuple(
-            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-            for arg in args
-        )
+        ph_args = tuple()
+        for arg in args:
+            arg_role = self.get_role_for_owner(arg.owner)
+
+            ph_arg = PlaceHolder.create_from(arg, owner=arg.owner, role=arg_role, tracing=True)
+            # Register inputs in role
+            arg_role.register_input(ph_arg)
+
+            ph_args += (ph_arg,)
 
         # Add state to args if needed
         if self.include_state:
-            args += (self.state,)
+            ph_args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
-            # Look for framework kwargs
-            framework_kwargs = {}
-            forward_args = inspect.getargspec(self.forward).args
-            if "torch" in forward_args:
-                framework_kwargs["torch"] = wrapped_torch
+        # with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
+        # Look for framework kwargs
+        # framework_kwargs = {}
+        # forward_args = inspect.getargspec(self.forward).args
+        # if "torch" in forward_args:
+        #     framework_kwargs["torch"] = wrapped_torch
 
-            results = self.forward(*args, **framework_kwargs)
+        # results = self.forward(*args, **framework_kwargs)
+        results = self.forward(*ph_args)
 
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
 
-        # Register inputs in role
-        self.role.register_inputs(args)
-
-        # Register outputs in role
-        self.role.register_outputs(results)
+        # Register outputs in roles
+        for result in results:
+            if isinstance(result, PlaceHolder):
+                result_role = self.get_role_for_owner(result.owner)
+                result_role.register_output(result)
 
         self.is_built = True
+
+        # Build registered translations
+        # for translator in Protocol._build_translators:
+        #     try:
+        #         self.add_translation(translator)
+        #         self.translations.append(translator)
+        #     except:
+        #         warnings.warn(f"Failed to translate Protocol with {translator}")
 
         return results
 
     def toggle_tracing(self, value=None):
         self.tracing = value if value is not None else not self.tracing
-        self.state.tracing = self.tracing
-        for ph in self.role.placeholders.values():
-            ph.tracing = self.tracing
+        # self.state.tracing = self.tracing
+        # for ph in self.role.placeholders.values():
+        # ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a protocol."""
@@ -358,6 +367,17 @@ class Protocol(AbstractObject):
             raise RuntimeError("A protocol needs to be built before input shapes can be known.")
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    # @staticmethod
+    # def register_build_translator(translator: "AbstractPlanTranslator"):
+    #     Plan._build_translators.append(translator)
+
+    # def add_translation(self, plan_translator: "AbstractPlanTranslator"):
+    #     return plan_translator(self).translate()
+
+    # def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
+    #     plan_translator(self).remove()
+    #     return self
 
     def get_(self):
         self.state.get_()
@@ -596,3 +616,7 @@ class Protocol(AbstractObject):
             protocol.torchscript = torch.jit.load(torchscript)
 
         return protocol
+
+
+# Auto-register Protocol build-time translations
+# Protocol.register_build_translator(PlanTranslatorTorchscript)
