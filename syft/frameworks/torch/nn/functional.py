@@ -37,6 +37,61 @@ def dropout(input, p=0.5, training=True, inplace=False):
 
 def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
+        Proposal for unrolling convolution: (WIP)
+
+        unrolled_input = torch.tensor([])
+        for ba in range(input.shape[0]):
+            batch = torch.tensor([])
+            for ch in range(input.shape[1]):
+                channel = []
+                for i in range(0,input.shape[2],stride):
+                    if i+kernel.shape[2]>input.shape[2]:
+                        break
+                    for j in range(0,input.shape[3],stride):
+                        temp_array = []
+                        if j+kernel.shape[3]>input.shape[3]:
+                            break
+                        for n in range(kernel.shape[2]):
+                            for m in range(kernel.shape[3]): # assuming that kernel is n x m
+                                temp_array.append(input[ba, ch, i+n,j+m])
+                        channel.append(temp_array)
+                channel = torch.tensor(channel)
+                if ch == 0:
+                    batch = channel
+                else:
+                    batch = torch.cat([batch, channel], dim=1)
+            output_tensor = torch.tensor(batch)
+            if ba == 0:
+                unrolled_input = output_tensor.reshape([1,*list(output_tensor.shape)])
+            else:
+                output_tensor = output_tensor.unsqueeze(dim=0)
+                unrolled_input = torch.cat((unrolled_input,output_tensor),dim=0)
+        
+        creating a matrix for weights
+
+
+        batch_w = torch.tensor([])
+        for b in range(weight.shape[0]):
+            ch_w = torch.tensor([])
+            for ch in range(weight.shape[1]):
+                ch_w = torch.cat((ch_w,weight[b,ch].flatten()))
+            ch_w = ch_w.reshape([ch_w.shape[0],1])
+            if b == 0:
+                batch_w = ch_w
+            else:
+                batch_w = torch.cat([ batch_w,ch_w], dim=1)
+
+        res = torch.matmul(unrolled_input,batch_w)
+        return res # result is stored as a column of the matrix, when reshaped to a matrix, 
+                     the result is identical to the torch.nn.functional.conv2d
+
+    """
+
+
+
+
+
+    """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
     The idea is to build new tensors from input and weight to compute a
     matrix multiplication equivalent to the convolution.
