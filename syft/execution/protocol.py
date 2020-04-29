@@ -13,9 +13,6 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import trace
-from syft.execution.translation.abstract import AbstractProtocolTranslator
-from syft.execution.translation.default import ProtocolTranslatorDefault
-from syft.execution.translation.torchscript import ProtocolTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -97,8 +94,6 @@ class Protocol(AbstractObject):
         description: protocol description
     """
 
-    _build_translators = []
-
     def __init__(
         self,
         name: str = None,
@@ -138,9 +133,6 @@ class Protocol(AbstractObject):
             self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
-
-        # List of available translations
-        self.translations = []
 
     @property
     def state(self):
@@ -210,14 +202,6 @@ class Protocol(AbstractObject):
         self.role.register_outputs(results)
 
         self.is_built = True
-
-        # Build registered translations
-        for translator in Protocol._build_translators:
-            try:
-                self.add_translation(translator)
-                self.translations.append(translator)
-            except:
-                warnings.warn(f"Failed to translate Protocol with {translator}")
 
         return results
 
@@ -357,19 +341,6 @@ class Protocol(AbstractObject):
             raise RuntimeError("A protocol needs to be built before input shapes can be known.")
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
-
-    @staticmethod
-    def register_build_translator(translator: "AbstractProtocolTranslator"):
-        Protocol._build_translators.append(translator)
-
-    def add_translation(self, protocol_translator: "AbstractProtocolTranslator"):
-        return protocol_translator(self).translate()
-
-    def remove_translation(
-        self, protocol_translator: "AbstractProtocolTranslator" = ProtocolTranslatorDefault
-    ):
-        protocol_translator(self).remove()
-        return self
 
     def get_(self):
         self.state.get_()
@@ -608,7 +579,3 @@ class Protocol(AbstractObject):
             protocol.torchscript = torch.jit.load(torchscript)
 
         return protocol
-
-
-# Auto-register Protocol build-time translations
-Protocol.register_build_translator(ProtocolTranslatorTorchscript)
