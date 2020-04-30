@@ -137,6 +137,11 @@ class Plan(AbstractObject):
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
 
+        """
+        When we use methods defined in a framework (like: torch.randn) we have a framework
+        wrapper that helps as register and keep track of what methods are called
+        With the below lines, we "register" what frameworks we have support to handle
+        """
         self.wrapped_framework = {}
         for f_name, f_packages in framework_packages.items():
             self.wrapped_framework[f_name] = FrameworkWrapper(f_packages, self.role, self.owner)
@@ -194,7 +199,7 @@ class Plan(AbstractObject):
         if self.include_state:
             args += (self.state,)
 
-        # Look for framework kwargs
+        # Check the plan arguments to see what framework wrappers we might need to send to the plan
         framework_kwargs = {}
         forward_args = inspect.getargspec(self.forward).args
 
