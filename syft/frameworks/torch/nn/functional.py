@@ -39,20 +39,32 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
         Proposal for unrolling convolution: (WIP)
 
+        # Change to tuple if not one
+        stride = torch.nn.modules.utils._pair(stride)
+        padding = torch.nn.modules.utils._pair(padding)
+        dilation = torch.nn.modules.utils._pair(dilation)
+        
+        if padding != (0, 0):
+            padding_mode = "constant"
+            input = torch.nn.functional.pad(
+                input, (padding[1], padding[1], padding[0], padding[0]), padding_mode
+            )
+        
+        # Unrolling the input
         unrolled_input = torch.tensor([])
         for ba in range(input.shape[0]):
             batch = torch.tensor([])
             for ch in range(input.shape[1]):
                 channel = []
-                for i in range(0,input.shape[2],stride):
-                    if i+kernel.shape[2]>input.shape[2]:
+                for i in range(0,input.shape[2],stride[0]):
+                    if i+weight.shape[2]>input.shape[2]:
                         break
-                    for j in range(0,input.shape[3],stride):
+                    for j in range(0,input.shape[3],stride[1]):
                         temp_array = []
-                        if j+kernel.shape[3]>input.shape[3]:
+                        if j+weight.shape[3]>input.shape[3]:
                             break
-                        for n in range(kernel.shape[2]):
-                            for m in range(kernel.shape[3]): # assuming that kernel is n x m
+                        for n in range(weight.shape[2]):
+                            for m in range(weight.shape[3]): # assuming that weight is n x m
                                 temp_array.append(input[ba, ch, i+n,j+m])
                         channel.append(temp_array)
                 channel = torch.tensor(channel)
@@ -60,16 +72,16 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
                     batch = channel
                 else:
                     batch = torch.cat([batch, channel], dim=1)
-            output_tensor = torch.tensor(batch)
+            output_tensor = batch
             if ba == 0:
                 unrolled_input = output_tensor.reshape([1,*list(output_tensor.shape)])
             else:
                 output_tensor = output_tensor.unsqueeze(dim=0)
                 unrolled_input = torch.cat((unrolled_input,output_tensor),dim=0)
-        
-        creating a matrix for weights
-
-
+        # Dividing the batches into groups
+        _unrolled_input = unrolled_input.transpose(1,2).unfold(1,unrolled_input.shape[2]//groups,unrolled_input.shape[2]//groups)
+                
+        # Unrolling the weights 
         batch_w = torch.tensor([])
         for b in range(weight.shape[0]):
             ch_w = torch.tensor([])
@@ -80,11 +92,27 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
                 batch_w = ch_w
             else:
                 batch_w = torch.cat([ batch_w,ch_w], dim=1)
-
-        res = torch.matmul(unrolled_input,batch_w)
-        return res # result is stored as a column of the matrix, when reshaped to a matrix, 
-                     the result is identical to the torch.nn.functional.conv2d
-
+        
+        if groups == 1:
+            res = torch.matmul(_unrolled_input,batch_w).transpose(1,2)
+        else:
+            n = 0
+            c = int(batch_w.shape[1]/g)
+            for m in range(0, batch_w.shape[1], c):
+                mul = torch.matmul(_unrolled_input[0,n:n+_unrolled_input.shape[-2]-1], batch_w.narrow(1,m,c))
+                if m == 0:
+                    res =  mul
+                else:
+                    res = torch.cat([res,mul], 0)
+                n+=_unrolled_input.shape[-2]-1
+        # Calculating the output shape
+        input_width, input_height = (input.shape[2], input.shape[3])
+        weight_width, weight_height = (weight.shape[2], weight.shape[3])
+        output_width = (input_width-weight_width)//stride[0]+1
+        output_height = (input_height-weight_height)//stride[1]+1
+        shape = [input.shape[0], weight.shape[0], output_width, output_height]
+        
+        return res.reshape(shape)
     """
 
 
