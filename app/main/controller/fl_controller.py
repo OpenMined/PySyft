@@ -152,7 +152,7 @@ class FLController:
                 fl_process_id=_fl_process.id, is_completed=True
             )
 
-            _max_cycles = server_config.get["num_cycles"]
+            _max_cycles = server_config["num_cycles"]
 
             response = {
                 CYCLE.STATUS: "rejected",

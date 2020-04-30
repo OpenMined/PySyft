@@ -69,7 +69,6 @@ class ModelManager:
     def serialize_model_params(params):
         """Serializes list of tensors into State/protobuf"""
         model_params_state = State(
-            owner=None,
             state_placeholders=[PlaceHolder().instantiate(param) for param in params],
         )
 
