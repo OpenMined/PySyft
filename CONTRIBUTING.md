@@ -69,7 +69,7 @@ Each issue someone is currently working on should have an assignee. If you want 
 
 If you want to work on an open issue, please post a comment telling that you will work on that issue, we will assign you as the assignee then.
 
-**Caution**: We try our best to keep the assignee up-to-date but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when no one is assigned to it.
+**Caution**: We try our best to keep the assignee up-to-date, but as we are all humans with our own schedule delays are possible, so make sure to check the comments once before you start working on an issue even when no one is assigned to it.
 
 ### Writing Test Cases
 
@@ -161,7 +161,7 @@ Due to issue [#2323](https://github.com/OpenMined/PySyft/issues/2323) you can ig
 
 ### Keep it DRY (Don't repeat yourself)
 
-As with any software project it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
+As with any software project, it's important to keep the amount of code to a minimum, so keep code duplication to a minimum!
 
 ### Contributing a notebook and adding it to the CI system
 
@@ -181,4 +181,4 @@ After each commit GitHub Actions will check your new code against the formatting
 
 We will only merge PRs that pass the GitHub Actions checks.
 
-If your check fails don't worry you will still be able to make changes and make your code pass the checks.
+If your check fails, don't worry, you will still be able to make changes and make your code pass the checks.
