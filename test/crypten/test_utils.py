@@ -70,7 +70,7 @@ def test_serialize_models():
             out = self.fc2(out)
             return out
 
-    dummy_input = th.empty(1, 1024)
+    dummy_input = th.ones(1, 1024)
     example_net = ExampleNet()
 
     expected_output = example_net(dummy_input)
