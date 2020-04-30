@@ -928,7 +928,7 @@ def make_state(**kwargs):
     p1, p2 = syft.PlaceHolder(), syft.PlaceHolder()
     p1.tag("state1"), p2.tag("state2")
     p1.instantiate(t1), p2.instantiate(t2)
-    state = syft.execution.state.State(owner=me, state_placeholders=[p1, p2])
+    state = syft.execution.state.State(state_placeholders=[p1, p2])
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.state.State
@@ -1469,14 +1469,26 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.obj_id, detailed.source, detailed.destinations, detailed.kwargs)
-        original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
+        detailed_msg = (
+            detailed.obj_id,
+            detailed.name,
+            detailed.source,
+            detailed.destinations,
+            detailed.kwargs,
+        )
+        original_msg = (
+            original.obj_id,
+            original.name,
+            original.source,
+            original.destinations,
+            original.kwargs,
+        )
         assert type(detailed) == syft.messaging.message.CommunicationAction
         for i in range(len(original_msg)):
             assert detailed_msg[i] == original_msg[i]
         return True
 
-    msg = (com.obj_id, com.source, com.destinations, com.kwargs)
+    msg = (com.obj_id, com.name, com.source, com.destinations, com.kwargs)
 
     return [
         {
@@ -1485,6 +1497,7 @@ def make_communication_action(**kwargs):
                 CODE[syft.execution.communication.CommunicationAction],
                 (
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),

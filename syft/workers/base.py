@@ -164,9 +164,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # self is the to-be-created local worker
                 self.add_worker(self)
 
-        # Used to keep track of a building plan
-        self.init_plan = None
-
         if hook is None:
             self.framework = None
         else:
