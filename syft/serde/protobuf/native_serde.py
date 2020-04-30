@@ -10,6 +10,7 @@ from collections import OrderedDict
 from google.protobuf.empty_pb2 import Empty
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
+import pydoc
 
 def _bufferize_none(worker: AbstractWorker, obj: "type(None)") -> "Empty":
     """
@@ -40,18 +41,17 @@ def _bufferize_type(worker: AbstractWorker, obj) -> ClassTypePB:
     proto_type = ClassTypePB()
 
     if isinstance(obj, type):
-        serialized_type = syft.serde.msgpack.serde._simplify(worker, obj)
-        proto_type.id = serialized_type[0]
-        proto_type.type = serialized_type[1]
+        module_path = obj.__module__
+        full_path_type = module_path + "." + obj.__name__
+        proto_type.type_name = full_path_type
 
     return proto_type
 
 def _unbufferize_type(worker: AbstractWorker, obj: ClassTypePB):
-    if obj.type:
-        original_type = syft.serde.msgpack.serde._detail(worker, (obj.id, obj.type))
-        return original_type
-
-    return object
+    result = pydoc.locate(obj.type_name)
+    if result is None:
+        return object
+    return result
 
 # Maps a type to its bufferizer and unbufferizer functions
 MAP_NATIVE_PROTOBUF_TRANSLATORS = OrderedDict(
