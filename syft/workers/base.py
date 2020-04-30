@@ -165,9 +165,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # self is the to-be-created local worker
                 self.add_worker(self)
 
-        # Used to keep track of a building plan
-        self.init_plan = None
-
         if hook is None:
             self.framework = None
         else:
@@ -320,7 +317,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         msg = sy.serde.deserialize(bin_message, worker=self)
 
         if self.verbose:
-            print(f"worker {self} received {type(msg).__name__} {msg.contents}")
+            print(
+                f"worker {self} received {type(msg).__name__} {msg.contents}"
+                if hasattr(msg, "contents")
+                else f"worker {self} received {type(msg).__name__}"
+            )
 
         # Step 1: route message to appropriate function
         response = self._message_router[type(msg)](msg)

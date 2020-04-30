@@ -239,7 +239,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        response_hook_function = build_wrap_reponse_from_function(response, wrap_type, wrap_args)
+        response_hook_function = build_wrap_response_from_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -252,7 +252,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     return new_response
 
 
-def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
+def build_wrap_response_from_function(response, wrap_type, wrap_args):
     """
     Build the function that hook the response.
 
@@ -467,6 +467,7 @@ def build_wrap_response_with_rules(
         rules: the same structure objects but with boolean, at true when is replaces
             a tensor
         return_tuple: force to return a tuple even with a single element
+        return_list: force to return a list instead of a tuple
 
     Response:
         a function to "wrap" the response
@@ -717,6 +718,11 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
+    # This method often leads to re-registration of tensors
+    # hence creating two copies of the same info. The older tensor
+    # is left hanging and is never deleted. De-Registering the original
+    # tensor (if-exists) before registration addresses this problem.
+    owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)

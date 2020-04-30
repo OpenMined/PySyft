@@ -9,7 +9,7 @@ Fixes # (issue)
 
 ## Type of change
 
-Please mark options that are relevant.
+Please mark the options that are relevant.
 
 - [ ] Added/Modified tutorials
 - [ ] Bug fix (non-breaking change which fixes an issue)

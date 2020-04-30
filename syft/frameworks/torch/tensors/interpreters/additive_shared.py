@@ -872,7 +872,7 @@ class AdditiveSharingTensor(AbstractTensor):
         def nn(module):
             @overloaded.module
             def functional(module):
-                def relu(tensor_shares):
+                def relu(tensor_shares, inplace=False):
                     return tensor_shares.relu()
 
                 module.relu = relu
@@ -893,7 +893,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     ## SECTION SNN
 
-    def relu(self):
+    def relu(self, inplace=False):
         return securenn.relu(self)
 
     def positive(self):
@@ -1121,7 +1121,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
             sy.serde.msgpack.serde._simplify(worker, tensor.field),
-            tensor.dtype,
+            tensor.dtype.encode("utf-8"),
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
             garbage_collect,
@@ -1147,7 +1147,7 @@ class AdditiveSharingTensor(AbstractTensor):
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=sy.serde.msgpack.serde._detail(worker, field),
-            dtype=dtype,
+            dtype=dtype.decode("utf-8"),
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
