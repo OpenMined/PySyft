@@ -558,13 +558,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             obj = self.get_obj(obj_id)
             response = source_worker.send(obj, *destinations, **kwargs_)
-
-            response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-
-            # @lariffle: We only remove remote objects when the operations are inplace
-            # otherwise we could have stale pointers which we really want to avoid.
-            # TODO: needs more discussion
-            if kwargs_.get("inplace"):
+            if kwargs_.get("requires_grad", False):
+                response = hook_args.register_response(
+                    "send", response, [sy.ID_PROVIDER.pop()], self
+                )
+            else:
+                response.garbage_collect_data = False
                 self.rm_obj(obj_id)
             return response
 
@@ -1204,14 +1203,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 'torch': serialization will only work between workers that support PyTorch
                 (more to come: 'tensorflow', 'numpy', etc)
         """
-        if workers is not None:
-            if not isinstance(workers, list):
-                workers = [workers]
-            workers.append(self)
-        else:
-            # self is referenced in self.__known_workers
-            # NOTE: for some reason self._known_workers may contain a Plan
-            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
+        if workers is None:
+            workers = [w for w in self._known_workers.values() if isinstance(w, AbstractWorker)]
+
+        if not isinstance(workers, list):
+            workers = [workers]
+
+        workers.append(self)
 
         frameworks = set()
         for worker in workers:

@@ -1,11 +1,13 @@
 import math
 import torch
+import warnings
 
 import syft as sy
 from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import memorize
 
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
@@ -27,8 +29,8 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
-        n_bits=None,
         protocol="snn",
+        dtype=None,
         crypto_provider=None,
         tags=None,
         description=None,
@@ -45,7 +47,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 the tensor is located.
             id: An optional string or integer id of the AdditiveSharingTensor.
             field: size of the arithmetic field in which the shares live
-            n_bits: linked to the field with the relation (2 ** nbits) == field
+            dtype: dtype of the field in which shares live
             crypto_provider: an optional BaseWorker providing crypto elements
                 such as Beaver triples
             tags: an optional set of hashtags corresponding to this tensor
@@ -54,6 +56,40 @@ class AdditiveSharingTensor(AbstractTensor):
                 tensor
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
+
+        self.child = shares
+        self.dtype = dtype
+        if dtype == "custom":
+            if field is None:
+                raise ValueError("Field cannot be None for custom dtype")
+            self.field = field
+            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
+        elif dtype == "long":
+            self.field = 2 ** 64
+            self.torch_dtype = torch.int64
+        elif dtype == "int":
+            self.field = 2 ** 32
+            self.torch_dtype = torch.int32
+        else:
+            if dtype is not None:
+                raise ValueError("Invalid dtype value: " + dtype)
+            warnings.warn("Use dtype instead of field")
+            # Since n mod 0 is not defined
+            if isinstance(field, int) and field > 0:
+                if field <= 2 ** 32:
+                    self.dtype = "int"
+                    self.field = 2 ** 32
+                    self.torch_dtype = torch.int32
+                else:
+                    self.dtype = "long"
+                    self.field = 2 ** 64
+                    self.torch_dtype = torch.int64
+            else:
+                warnings.warn("Default args selected")
+                # Default args
+                self.dtype = "long"
+                self.field = 2 ** 64
+                self.torch_dtype = torch.int64
 
         if shares is not None:
             self.child = {}
@@ -69,11 +105,14 @@ class AdditiveSharingTensor(AbstractTensor):
         else:
             self.child = None
 
-        self.field = (2 ** securenn.Q_BITS) if field is None else field  # < 63 bits
-        self.n_bits = (
-            n_bits if n_bits is not None else max(8, round(math.log(self.field, 2)))
-        )  # < 63 bits
+        self.n_bits = self.calculateBits(self.field)
         # assert 2 ** self.n_bits == self.field
+
+        # min value for shares in field
+        self._min_value = None
+        # max value for shares in field
+        self._max_value = None
+
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
@@ -112,6 +151,18 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return share.shape
 
+    @property
+    def min_value(self):
+        if self._min_value is None:
+            self._min_value = -(self.field // 2)
+        return self._min_value
+
+    @property
+    def max_value(self):
+        if self._max_value is None:
+            self._max_value = (self.field - 1) // 2
+        return self._max_value
+
     def dim(self):
         for share in self.child.values():
             return len(share.shape)
@@ -134,12 +185,7 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {
-            "crypto_provider": self.crypto_provider,
-            "field": self.field,
-            "n_bits": self.n_bits,
-            "protocol": self.protocol,
-        }
+        return {"crypto_provider": self.crypto_provider, "dtype": self.dtype, "field": self.field, "protocol": self.protocol}
 
     @property
     def grad(self):
@@ -156,6 +202,26 @@ class AdditiveSharingTensor(AbstractTensor):
         we just ignore the call."""
         pass
 
+    @staticmethod
+    @memorize
+    def calculateBits(field: int):
+        return round(math.log(field, 2))
+
+    def modulo(self, x):
+        if self.dtype == "custom":
+            mask_pos = x > self.max_value
+            mask_neg = x < self.min_value
+            if mask_pos.any():
+                mask_pos = mask_pos.long()
+                return self.modulo(x - (mask_pos * self.field))
+            elif mask_neg.any():
+                mask_neg = mask_neg.long()
+                return self.modulo(x + (mask_neg * self.field))
+            else:
+                return x.type(self.torch_dtype)
+        else:
+            return x
+
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
@@ -166,14 +232,10 @@ class AdditiveSharingTensor(AbstractTensor):
                 shares.append(share.get())
             else:
                 shares.append(share)
+                self.owner.de_register_obj(share)
 
-        res_field = sum(shares) % self.field
-
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
+        # For dtype values long and int modulo is automatically handled by native torch tensors
+        result = self.modulo(sum(shares))
         return result
 
     def virtual_get(self):
@@ -186,13 +248,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share = v.location._objects[v.id_at_location]
             shares.append(share)
 
-        res_field = sum(shares) % self.field
-
-        gate = res_field.native_gt(self.field / 2).long()
-        neg_nums = (res_field - self.field) * gate
-        pos_nums = res_field * (1 - gate)
-        result = neg_nums + pos_nums
-
+        result = self.modulo(sum(shares))
         return result
 
     def init_shares(self, *owners):
@@ -203,7 +259,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
             """
         shares = self.generate_shares(
-            self.child, n_workers=len(owners), field=self.field, random_type=torch.LongTensor
+            self.child, n_workers=len(owners), random_type=self.torch_dtype
         )
 
         shares_dict = {}
@@ -214,27 +270,24 @@ class AdditiveSharingTensor(AbstractTensor):
         self.child = shares_dict
         return self
 
-    @staticmethod
-    def generate_shares(secret, n_workers, field, random_type):
+    def generate_shares(self, secret, n_workers, random_type):
         """The cryptographic method for generating shares given a secret tensor.
 
         Args:
             secret: the tensor to be shared.
             n_workers: the number of shares to generate for each value
                 (i.e., the number of tensors to return)
-            field: 1 + the max value for a share
-            random_type: the torch type shares should be encoded in (use the smallest possible
-                given the choise of mod"
+            random_type: the torch type shares should be encoded in (use the smallest possible)
+                given the choice of mod"
             """
-
+        random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
         if not isinstance(secret, random_type):
             secret = secret.type(random_type)
 
         random_shares = [random_type(secret.shape) for _ in range(n_workers - 1)]
 
         for share in random_shares:
-            share.random_(int(-field / 2), int(field / 2) - 1)
-
+            share.random_(self.min_value, self.max_value)
         shares = []
         for i in range(n_workers):
             if i == 0:
@@ -243,9 +296,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 share = random_shares[i] - random_shares[i - 1]
             else:
                 share = secret - random_shares[i - 1]
-            share %= field  # Generated shares should be in a finite field Zq
-            shares.append(share)
-
+            shares.append(self.modulo(share))
         return shares
 
     def reconstruct(self):
@@ -258,7 +309,7 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         workers = self.locations
 
-        ptr_to_sh = self.wrap().send(workers[0], **no_wrap)
+        ptr_to_sh = self.copy().wrap().send(workers[0], **no_wrap)
         pointer = ptr_to_sh.remote_get()
 
         pointers = [pointer]
@@ -275,12 +326,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if shape == None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
-        zero = (
-            torch.zeros(*shape)
-            .long()
-            .share(
-                *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
-            )
+        zero = torch.zeros(*shape, dtype=self.torch_dtype).share(
+            *self.locations,
+            field=self.field,
+            dtype=self.dtype,
+            crypto_provider=self.crypto_provider,
+            **no_wrap,
         )
         return zero
 
@@ -363,23 +414,25 @@ class AdditiveSharingTensor(AbstractTensor):
                 - a constant
         """
         if isinstance(other, int):
-            other = torch.LongTensor([other])
+            other = torch.tensor([other], dtype=self.torch_dtype)
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(),
                 field=self.field,
+                dtype=self.dtype,
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.Tensor([other])
+                torch.tensor([other], dtype=self.torch_dtype)
                 .share(
                     *self.child.keys(),
                     field=self.field,
+                    dtype=self.dtype,
                     crypto_provider=self.crypto_provider,
                     **no_wrap,
                 )
@@ -392,8 +445,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (other[k] + v) % self.field
-
+            new_shares[k] = self.modulo(other[k] + v)
         return new_shares
 
     __add__ = add
@@ -413,23 +465,25 @@ class AdditiveSharingTensor(AbstractTensor):
         """
 
         if isinstance(other, int):
-            other = torch.LongTensor([other])
+            other = torch.tensor([other], dtype=self.torch_dtype)
 
         if isinstance(other, (torch.LongTensor, torch.IntTensor)):
             # if someone passes a torch tensor, we share it and keep the dict
             other = other.share(
                 *self.child.keys(),
                 field=self.field,
+                dtype=self.dtype,
                 crypto_provider=self.crypto_provider,
                 **no_wrap,
             ).child
         elif not isinstance(other, dict):
             # if someone passes in a constant, we cast it to a tensor, share it and keep the dict
             other = (
-                torch.tensor([other])
+                torch.tensor([other], dtype=self.torch_dtype)
                 .share(
                     *self.child.keys(),
                     field=self.field,
+                    dtype=self.dtype,
                     crypto_provider=self.crypto_provider,
                     **no_wrap,
                 )
@@ -442,7 +496,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # to the location of the share
         new_shares = {}
         for k, v in shares.items():
-            new_shares[k] = (v - other[k]) % self.field
+            new_shares[k] = self.modulo(v - other[k])
 
         return new_shares
 
@@ -471,7 +525,7 @@ class AdditiveSharingTensor(AbstractTensor):
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
-        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field)
+        shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
 
         return shares
 
@@ -497,7 +551,7 @@ class AdditiveSharingTensor(AbstractTensor):
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
             return {
-                worker: (cmd(share, other[worker]) % self.field) for worker, share in shares.items()
+                worker: (self.modulo(cmd(share, other[worker]))) for worker, share in shares.items()
             }
         else:
             other_is_zero = False
@@ -516,12 +570,11 @@ class AdditiveSharingTensor(AbstractTensor):
                     if first_it:
                         first_it = False
                         zero_shares = self.zero(cmd_res.shape).child
-
-                    res[worker] = (cmd(share, other) + zero_shares[worker]) % self.field
+                    res[worker] = self.modulo(cmd(share, other) + zero_shares[worker])
                 return res
             else:
                 return {
-                    worker: (cmd(share, other) % self.field) for worker, share in shares.items()
+                    worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()
                 }
 
     def mul(self, other):
@@ -610,12 +663,7 @@ class AdditiveSharingTensor(AbstractTensor):
             # Still no solution to perform a real division on a additive shared tensor
             # without a heavy crypto protocol.
             # For now, the solution works in most cases when the tensor is shared between 2 workers
-            # The idea is to compute Q - (Q - pointer) / divisor for as many worker
-            # as the number of times the sum of shares "crosses" Q/2.
-            if i_worker % 2 == 0:
-                divided_shares[location] = self.field - (self.field - pointer) / divisor
-            else:
-                divided_shares[location] = pointer / divisor
+            divided_shares[location] = pointer / divisor
 
         return divided_shares
 
@@ -732,10 +780,8 @@ class AdditiveSharingTensor(AbstractTensor):
 
         module.unbind = unbind
 
-        @overloaded.function
-        def stack(tensors_shares, **kwargs):
+        def share_combine(tensors_shares):
             results = {}
-
             workers = tensors_shares[0].keys()
 
             for worker in workers:
@@ -743,29 +789,25 @@ class AdditiveSharingTensor(AbstractTensor):
                 for tensor_shares in tensors_shares:
                     tensor_share = tensor_shares[worker]
                     tensors_share.append(tensor_share)
-                stacked_share = torch.stack(tensors_share, **kwargs)
-                results[worker] = stacked_share
+                results[worker] = tensors_share
 
             return results
+
+        @overloaded.function
+        def stack(tensors_shares, **kwargs):
+            return {
+                worker: torch.stack(share, **kwargs)
+                for (worker, share) in share_combine(tensors_shares).items()
+            }
 
         module.stack = stack
 
         @overloaded.function
         def cat(tensors_shares, **kwargs):
-            # The code is the same for cat and stack, maybe we could factorize
-
-            results = {}
-
-            workers = tensors_shares[0].keys()
-
-            for worker in workers:
-                cat_share = []
-                for tensor_shares in tensors_shares:
-                    tensor_share = tensor_shares[worker]
-                    cat_share.append(tensor_share)
-                results[worker] = torch.cat(cat_share, **kwargs)
-
-            return results
+            return {
+                worker: torch.cat(share, **kwargs)
+                for (worker, share) in share_combine(tensors_shares).items()
+            }
 
         module.cat = cat
 
@@ -948,13 +990,17 @@ class AdditiveSharingTensor(AbstractTensor):
         # Init max vals and idx to the first element
         max_value = values[0]
         max_index = torch.tensor([0]).share(
-            *self.locations, field=self.field, crypto_provider=self.crypto_provider, **no_wrap
+            *self.locations,
+            field=self.field,
+            dtype=self.dtype,
+            crypto_provider=self.crypto_provider,
+            **no_wrap,
         )
 
         for i in range(1, len(values)):
             a = values[i]
             beta = a >= max_value
-            max_index = max_index + beta * (-max_index + i)  # TODO i - max_index doesn't work
+            max_index = max_index + beta * (i - max_index)
             max_value = max_value + beta * (a - max_value)
 
         if dim is None and return_idx is False:
@@ -1069,13 +1115,16 @@ class AdditiveSharingTensor(AbstractTensor):
             chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
 
         # Don't delete the remote values of the shares at simplification
+        garbage_collect = tensor.get_garbage_collect_data()
         tensor.set_garbage_collect_data(False)
 
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
-            tensor.field,
+            sy.serde.msgpack.serde._simplify(worker, tensor.field),
+            tensor.dtype,
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
+            garbage_collect,
         )
 
     @staticmethod
@@ -1090,20 +1139,23 @@ class AdditiveSharingTensor(AbstractTensor):
             Examples:
                 shared_tensor = detail(data)
             """
+        tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
 
-        tensor_id, field, crypto_provider, chain = tensor_tuple
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
         tensor = AdditiveSharingTensor(
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-            field=field,
+            field=sy.serde.msgpack.serde._detail(worker, field),
+            dtype=dtype,
             crypto_provider=worker.get_worker(crypto_provider),
         )
 
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
             tensor.child = chain
+
+        tensor.set_garbage_collect_data(garbage_collect)
 
         return tensor
 
@@ -1140,6 +1192,7 @@ class AdditiveSharingTensor(AbstractTensor):
             protobuf_tensor.field_str = str(tensor.field)
         else:
             protobuf_tensor.field_int = tensor.field
+        protobuf_tensor.dtype = tensor.dtype
 
         return protobuf_tensor
 
@@ -1163,11 +1216,13 @@ class AdditiveSharingTensor(AbstractTensor):
             protobuf_tensor.crypto_provider_id
         )
         field = int(getattr(protobuf_tensor, protobuf_tensor.WhichOneof("field_size")))
+        dtype = protobuf_tensor.dtype
 
         tensor = AdditiveSharingTensor(
             owner=worker,
             id=tensor_id,
             field=field,
+            dtype=dtype,
             crypto_provider=worker.get_worker(crypto_provider_id),
         )
 
