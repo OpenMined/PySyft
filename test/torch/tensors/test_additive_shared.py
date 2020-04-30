@@ -1038,8 +1038,8 @@ def test_garbage_collect_reconstruct(workers):
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
 
-    assert len(alice._objects) == 2
-    assert len(bob._objects) == 2
+    assert len(alice._objects) == 8
+    assert len(bob._objects) == 8
 
 
 def test_garbage_collect_move(workers):
@@ -1047,8 +1047,8 @@ def test_garbage_collect_move(workers):
     a = torch.ones(1, 5).send(alice)
     b = a.copy().move(bob)
 
-    assert len(alice._objects) == 1
-    assert len(bob._objects) == 1
+    assert len(alice._objects) == 7
+    assert len(bob._objects) == 7
 
 
 def test_garbage_collect_mul(workers):
@@ -1062,5 +1062,5 @@ def test_garbage_collect_mul(workers):
     for _ in range(3):
         c = a * b
 
-    assert len(alice._objects) == 3
-    assert len(bob._objects) == 3
+    assert len(alice._objects) == 9
+    assert len(bob._objects) == 9

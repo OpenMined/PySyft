@@ -262,14 +262,11 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
         Will move the remove value from self.location A to destination B
-
         Note a A will keep a copy of his value that he sent to B. This follows the
         .send() paradigm where the local worker keeps a copy of the value he sends.
-
         Args:
             destination: the new location of the remote data
             requires_grad: see send() for details
-
         Returns:
             A pointer to location
         """
@@ -277,17 +274,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
-        kwargs = {"inplace": False, "requires_grad": requires_grad}
-        message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs
-        )
-        return self.owner.send_msg(message=message, location=self.location)
+        ptr = self.remote_send(destination, requires_grad=requires_grad)
+
+        # We make the pointer point at the remote value. As the id doesn't change,
+        # we don't update ptr.id_at_location. See issue #3217 about this.
+        # Note that you have now 2 pointers on different locations pointing to the
+        # same tensor.
+        ptr.location = destination
+
+        return ptr
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-
         Args:
             destination: where the remote value should be sent
             requires_grad: if true updating the grad of the remote tensor on destination B will trigger
@@ -297,8 +297,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = TensorCommandMessage.communication(
             self.id_at_location, "remote_send", self.location.id, [destination.id], kwargs_
         )
-        ptr = self.owner.send_msg(message=message, location=self.location)
-        ptr.garbage_collect_data = False
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):

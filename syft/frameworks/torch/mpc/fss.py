@@ -11,9 +11,6 @@ import hashlib
 
 import torch as th
 import syft as sy
-from syft.execution.plan import func2plan
-from syft.generic.frameworks.hook.trace import tracer
-from syft.workers.base import BaseWorker
 
 
 λ = 110  # 6  # 110 or 63  # security parameter
