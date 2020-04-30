@@ -17,7 +17,7 @@ flask_sqlalchemy
 flask_migrate
 flask_testing
 psycopg2-binary
-jwt
+pyjwt
 git+https://github.com/OpenMined/PySyft@master#egg=syft
 black
 coverage
