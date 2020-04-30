@@ -40,6 +40,21 @@ def test_plan_build():
     assert plan_abs.is_built
 
 
+def test_tracing_torch():
+    @sy.func2plan()
+    def plan_torch(x, torch=th):
+        a = torch.rand([2])
+        x = torch.mul(a, x)
+        return torch.split(x, 2)
+
+    plan_torch.build(th.tensor([1, 2]))
+    plan_torch.forward = None
+    res = plan_torch(th.tensor([1, 2]))
+
+    assert len(plan_torch.actions) == 3
+    assert len(res) == 2
+
+
 def test_plan_built_automatically_with_any_dimension():
     @sy.func2plan(args_shape=[(-1, 1)])
     def plan_abs(data):
