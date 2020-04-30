@@ -63,6 +63,12 @@ class AdditiveSharingTensor(AbstractTensor):
         elif dtype == "int":
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
+        elif description == "custom data-type":
+            if field is None:
+                raise ValueError("Field cannot be None for custom dtype")
+            self.field = field
+            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
+            self.dtype = dtype
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
@@ -111,18 +117,20 @@ class AdditiveSharingTensor(AbstractTensor):
         )
 
     @staticmethod
-    def _init_custom_dtype(*args, **kwargs):
+    def __init_custom_dtype(*args, **kwargs):
         dtype = kwargs.pop("dtype")
         if dtype != "custom":
             warnings.warn(f"Private method called for dtype '{dtype}'")
+
+        # field = kwargs["field"]
+        # if field is None:
+        #     raise ValueError("Field cannot be None for custom dtype")
+        # tensor.field = field
+        # tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
+        # tensor.dtype = dtype
+
         tensor = AdditiveSharingTensor(*args, **kwargs)
 
-        field = kwargs["field"]
-        if field is None:
-            raise ValueError("Field cannot be None for custom dtype")
-        tensor.field = field
-        tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        tensor.dtype = dtype
         return tensor
 
     def __repr__(self):
