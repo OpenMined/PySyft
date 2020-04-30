@@ -1,12 +1,8 @@
-import pytest
-
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 
 import syft as sy
-from itertools import starmap
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript

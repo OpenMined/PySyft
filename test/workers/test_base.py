@@ -97,10 +97,10 @@ def test_execute_worker_function(hook):
 
 
 def test_enable_registration_with_ctx(hook):
-    assert hook.local_worker.is_client_worker == True
+    assert hook.local_worker.is_client_worker
     with hook.local_worker.registration_enabled():
-        hook.local_worker.is_client_worker == False
-    assert hook.local_worker.is_client_worker == True
+        hook.local_worker.is_client_worker is False
+    assert hook.local_worker.is_client_worker
 
 
 def test_send_command_whitelist(hook, workers):

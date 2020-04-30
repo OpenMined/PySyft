@@ -7,9 +7,8 @@ def test_clear_objects():
     """
     Checks the clear_objects method
     """
-    obj_storage = (
-        object_storage.ObjectStore()
-    )  #  obj_storage is a wrapper object to a collection of objects
+    #  obj_storage is a wrapper object to a collection of objects
+    obj_storage = object_storage.ObjectStorage()
 
     x = torch.tensor(1)
     obj_storage.set_obj(x)

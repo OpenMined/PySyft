@@ -3,7 +3,6 @@ import json
 import binascii
 import base64
 import websocket
-import websockets
 import requests
 
 import syft as sy
@@ -51,10 +50,11 @@ class GridClient:
 
     def _send_msg(self, message: dict) -> dict:
         """ Prepare/send a JSON message to a PyGrid server and receive the response.
-            Args:
-                message (dict) : message payload.
-            Returns:
-                response (dict) : response payload.
+
+        Args:
+            message (dict) : message payload.
+        Returns:
+            response (dict) : response payload.
         """
         if self.ws is None or not self.ws.connected:
             self.connect()
@@ -185,7 +185,7 @@ class GridClient:
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
             "type": "federated/report",
-            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64,},
+            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
         }
         return self._send_msg(params)
 

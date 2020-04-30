@@ -47,6 +47,9 @@ from syft.workers.virtual import VirtualWorker
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 
+from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
+from syft.serde.msgpack.proto import proto_type_info
+
 if dependency_check.torch_available:
     from syft.serde.msgpack.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
 else:
@@ -56,9 +59,6 @@ if dependency_check.tensorflow_available:
     from syft_tensorflow.serde import MAP_TF_SIMPLIFIERS_AND_DETAILERS
 else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
-
-from syft.serde.msgpack.proto import proto_type_info
-from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
 
 class MetaMsgpackGlobalState(type):
@@ -141,7 +141,8 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
         if not self.stale_state:
             return self
 
-        # If an object implements its own simplify and detail functions it should be stored in this list
+        # If an object implements its own simplify and detail functions it should be stored
+        # in this list
         # NOTE: serialization constants for these objects need to be defined in `proto.json` file
         # in https://github.com/OpenMined/proto
 
@@ -191,7 +192,7 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
 
 # cached value
 field = 2 ** 64
-strField = str(2 ** 64)
+str_field = str(2 ** 64)
 
 
 ## SECTION: High Level Simplification Router
@@ -484,7 +485,7 @@ def _detail_field(typeCode, val):
     serialised as str to avoid msgpack overflow back to int
     after deserialisation.
     """
-    if typeCode == msgpack.proto_type_info(str).code and val == strField:
+    if typeCode == msgpack.proto_type_info(str).code and val == str_field:
         return int(val)
     else:
         return val

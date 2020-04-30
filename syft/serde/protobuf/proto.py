@@ -9,7 +9,7 @@ a dependency in setup.py.
 
 
 def set_protobuf_id(field, id):
-    if type(id) == type("str"):
+    if isinstance(id, str):
         field.id_str = id
     else:
         field.id_int = id

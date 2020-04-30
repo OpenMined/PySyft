@@ -62,14 +62,15 @@ class Role(SyftSerializable):
     @staticmethod
     def nested_object_traversal(obj: any, leaf_function: Callable, leaf_type: type):
         """
-        Class method to iterate through a tree-like structure, where the branching is determined by the elements of list,
-        tuples and dicts, returning the same tree-like structure with a function applied to its leafs.
+        Class method to iterate through a tree-like structure, where the branching is determined
+        by the elements of list, tuples and dicts, returning the same tree-like structure with a
+        function applied to its leafs.
 
         Args:
             obj: The tree-like structure, can be only the root as well.
             leaf_function: The function to be applied on the leaf nodes of the tree-like structure.
-            leaf_type: On what type on function to apply the function, if the types won't match, the leaf is returned,
-            to apply on all leafs pass any.
+            leaf_type: On what type on function to apply the function, if the types won't match,
+            the leaf is returned, to apply on all leafs pass any.
 
         Returns:
             Same structure as the obj argument, but with the function applied to the leaf elements.
@@ -408,7 +409,9 @@ class Role(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_role: RolePB) -> tuple:
         """
-        This function reconstructs a Role object given its attributes in the form of a Protobuf message.
+        This function reconstructs a Role object given its attributes in the form of a
+        Protobuf message.
+
         Args:
             worker: the worker doing the deserialization
             protobuf_role: a Protobuf message holding the attributes of the Role

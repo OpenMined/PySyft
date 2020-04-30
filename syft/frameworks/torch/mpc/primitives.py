@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import torch as th
 import syft as sy
@@ -77,17 +77,14 @@ class PrimitiveStorage:
         n_instances: int = 10,
         **kwargs,
     ):
-        """
-        Build n_instances of crypto primitives of the different crypto_types given and send them to some workers.
+        """ Build n_instances of crypto primitives of the different crypto_types given and
+        send them to some workers.
 
         Args:
             crypto_types: type of primitive (fss_eq, etc)
             workers: recipients for those primitive
             n_instances: how many of them are needed
             **kwargs: any parameters needs for the primitive builder
-
-        Returns:
-
         """
         if isinstance(crypto_types, str):
             crypto_types = [crypto_types]

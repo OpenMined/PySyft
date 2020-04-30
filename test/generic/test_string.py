@@ -3,8 +3,9 @@ import syft as sy
 
 
 def test_string_methods():
-    """Tests some of the `String` methods which are hooked from `str`.
-       more tests are to be added
+    """
+        Tests some of the `String` methods which are hooked from `str`.
+    more tests are to be added
     """
 
     # Create a string
@@ -28,17 +29,17 @@ def test_string_methods():
     assert string.title() >= String("Hello Pysyft")
     assert string.title() <= String("Hello Pysyft")
 
-    assert string.startswith("Hel") == True
-    assert string.startswith(String("Hel")) == True
+    assert string.startswith("Hel") is True
+    assert string.startswith(String("Hel")) is True
 
-    assert string.endswith("Syft") == True
-    assert string.endswith(String("Syft")) == True
+    assert string.endswith("Syft") is True
+    assert string.endswith(String("Syft")) is True
 
-    assert (string > "Hello PySyfa") == True
-    assert (string >= "Hello PySyfa") == True
+    assert (string > "Hello PySyfa") is True
+    assert (string >= "Hello PySyfa") is True
 
-    assert (string < "Hello PySyfz") == True
-    assert (string <= "Hello PySyfz") == True
+    assert (string < "Hello PySyfz") is True
+    assert (string <= "Hello PySyfz") is True
 
     assert String(" Hello").lstrip() == "Hello"
     assert String("Hello ").rstrip() == "Hello"

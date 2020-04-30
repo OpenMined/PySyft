@@ -116,7 +116,7 @@ def test_abstract_dataset():
     dataset = BaseDataset(inputs, targets, id=1)
 
     assert dataset.id == 1
-    assert dataset.description == None
+    assert dataset.description is None
 
 
 def test_get_dataset(workers):
@@ -136,7 +136,10 @@ def test_get_dataset(workers):
 
 
 def test_illegal_get(workers):
-    """test getting error message when calling .get() on a dataset that's a part of fedratedDataset object"""
+    """
+    test getting error message when calling .get() on a
+    dataset that's a part of fedratedDataset object
+    """
     bob = workers["bob"]
     alice = workers["alice"]
 

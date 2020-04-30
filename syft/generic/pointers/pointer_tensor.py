@@ -280,8 +280,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         C will hold a pointer to a pointer on A which points to the tensor on B.
         Args:
             destination: where the remote value should be sent
-            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
-                a message to update the gradient of the value on A.
+            requires_grad: if true updating the grad of the remote tensor on destination B will
+                trigger a message to update the gradient of the value on A.
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
