@@ -899,7 +899,12 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, protocol=protocol, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs_
+                *owners,
+                protocol=protocol,
+                field=field,
+                dtype=dtype,
+                crypto_provider=crypto_provider,
+                **kwargs_,
             )
         else:
             if self.type() == "torch.FloatTensor":
@@ -907,7 +912,11 @@ class TorchTensor(AbstractTensor):
 
             shared_tensor = (
                 syft.AdditiveSharingTensor(
-                    protocol=protocol, field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+                    protocol=protocol,
+                    field=field,
+                    dtype=dtype,
+                    crypto_provider=crypto_provider,
+                    owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)
