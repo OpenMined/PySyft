@@ -884,17 +884,23 @@ class TorchTensor(AbstractTensor):
             if self.type() == "torch.FloatTensor":
                 raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
 
-            shared_tensor = (
-                syft.AdditiveSharingTensor(
-                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+            if dtype == "custom":
+                shared_tensor = (
+                    syft.AdditiveSharingTensor._AdditiveSharingTensor__init_custom_dtype(
+                        field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+                    )
+                    .on(self.copy(), wrap=False)
+                    .init_shares(*owners)
                 )
-                if dtype != "custom"
-                else syft.AdditiveSharingTensor._init_custom_dtype(
-                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+
+            else:
+                shared_tensor = (
+                    syft.AdditiveSharingTensor(
+                        field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+                    )
+                    .on(self.copy(), wrap=False)
+                    .init_shares(*owners)
                 )
-                .on(self.copy(), wrap=False)
-                .init_shares(*owners)
-            )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)

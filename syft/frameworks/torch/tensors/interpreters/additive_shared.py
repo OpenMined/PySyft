@@ -63,12 +63,6 @@ class AdditiveSharingTensor(AbstractTensor):
         elif dtype == "int":
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
-        elif description == "custom data-type":
-            if field is None:
-                raise ValueError("Field cannot be None for custom dtype")
-            self.field = field
-            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-            self.dtype = dtype
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
@@ -122,14 +116,14 @@ class AdditiveSharingTensor(AbstractTensor):
         if dtype != "custom":
             warnings.warn(f"Private method called for dtype '{dtype}'")
 
-        # field = kwargs["field"]
-        # if field is None:
-        #     raise ValueError("Field cannot be None for custom dtype")
-        # tensor.field = field
-        # tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        # tensor.dtype = dtype
-
         tensor = AdditiveSharingTensor(*args, **kwargs)
+
+        field = kwargs.get("field")
+        if field is None:
+            raise ValueError(f"Field cannot be None for {dtype} dtype")
+        tensor.field = field
+        tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
+        tensor.dtype = dtype
 
         return tensor
 
@@ -1132,13 +1126,23 @@ class AdditiveSharingTensor(AbstractTensor):
 
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
-        tensor = AdditiveSharingTensor(
-            owner=worker,
-            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-            field=sy.serde.msgpack.serde._detail(worker, field),
-            dtype=dtype.decode("utf-8"),
-            crypto_provider=worker.get_worker(crypto_provider),
-        )
+        dtype_decoded = dtype.decode("utf-8")
+        if dtype_decoded == "custom":
+            tensor = AdditiveSharingTensor._AdditiveSharingTensor__init_custom_dtype(
+                owner=worker,
+                id=sy.serde.msgpack.serde._detail(worker, tensor_id),
+                field=sy.serde.msgpack.serde._detail(worker, field),
+                dtype=dtype_decoded,
+                crypto_provider=worker.get_worker(crypto_provider),
+            )
+        else:
+            tensor = AdditiveSharingTensor(
+                owner=worker,
+                id=sy.serde.msgpack.serde._detail(worker, tensor_id),
+                field=sy.serde.msgpack.serde._detail(worker, field),
+                dtype=dtype.decode("utf-8"),
+                crypto_provider=worker.get_worker(crypto_provider),
+            )
 
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
