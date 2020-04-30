@@ -20,7 +20,7 @@ from syft.generic.frameworks.hook.trace import tracer
 from syft.workers.base import BaseWorker
 
 
-λ = 110  # 6  # 110 or 63  # security parameter
+λ = 127  # 6  # 110 or 63  # security parameter
 n = 32  # 8  # 32  # bit precision
 λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
 assert λs == 2
@@ -313,10 +313,9 @@ def concat(*args, **kwargs):
     return np.concatenate(args, **kwargs)
 
 
-def consume(buffer, nbits):
-    new_buffer = buffer >> nbits
-    extracted = buffer - (new_buffer << nbits)
-    return extracted, new_buffer
+def split_last_bit(buffer):
+    # Numbers are on 64 bits
+    return buffer & 0b1111111111111111111111111111111111111111111111111111111111111110, buffer & 0b1
 
 
 def huge_loop(seed_t_bytes, n_iter):
@@ -347,12 +346,12 @@ def G(seed):
 
     # [λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1]
-    buffer0, valuebits[0, 0] = consume(buffer[0], λ - 64)
+    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
     valuebits[0, 1] = buffer[1]
-    valuebits[0, 2] = buffer0 & 0b1
-    buffer2, valuebits[1, 0] = consume(buffer[2], λ - 64)
+    valuebits[0, 2] = last_bit
+    valuebits[1, 0], last_bit = split_last_bit(buffer[2])
     valuebits[1, 1] = buffer[3]
-    valuebits[1, 2] = buffer2 & 0b1
+    valuebits[1, 2] = last_bit
 
     return valuebits
 
@@ -361,7 +360,7 @@ empty_dict = {}
 
 
 def H(seed):
-    """ λ -> 2 + 2(λ + 1)"""
+    """ λ -> 4(λ + 1)"""
 
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
@@ -376,9 +375,12 @@ def H(seed):
 
     if n_values not in empty_dict:
         # 64 bytes are needed to store a sha512
-        empty_dict[n_values] = np.empty((n_values, 64), dtype=np.uint8)
+        empty_dict[n_values] = (
+            np.empty((n_values, 64), dtype=np.uint8),
+            np.empty((2, 6, n_values), dtype=np.uint64),
+        )
 
-    out = empty_dict[n_values]
+    out, valuebits = empty_dict[n_values]
 
     out = sha_loop.sha512_loop_func(x, out)
 
@@ -386,20 +388,21 @@ def H(seed):
 
     # [λ, 1, λ, 1, λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
-    valuebits = np.empty((2, 6, n_values), dtype=np.uint64)
 
-    valuebits[0, 0], buffer0 = consume(buffer[0], λ - 64)
+    # valuebits[0] = buffer[0] & b63_, buffer[1], buffer[0] & b_1, buffer[2] & b63_, buffer[3], buffer[2] & b_1
+    # valuebits[1] = buffer[4] & b63_, buffer[5], buffer[4] & b_1, buffer[6] & b63_, buffer[7], buffer[6] & b_1
+    valuebits[0, 0], last_bit = split_last_bit(buffer[0])
     valuebits[0, 1] = buffer[1]
-    valuebits[0, 2] = buffer0 & 0b1
-    valuebits[0, 3], buffer2 = consume(buffer[2], λ - 64)
+    valuebits[0, 2] = last_bit
+    valuebits[0, 3], last_bit = split_last_bit(buffer[2])
     valuebits[0, 4] = buffer[3]
-    valuebits[0, 5] = buffer2 & 0b1
-    valuebits[1, 0], buffer4 = consume(buffer[4], λ - 64)
+    valuebits[0, 5] = last_bit
+    valuebits[1, 0], last_bit = split_last_bit(buffer[4])
     valuebits[1, 1] = buffer[5]
-    valuebits[1, 2] = buffer4 & 0b1
-    valuebits[1, 3], buffer6 = consume(buffer[6], λ - 64)
+    valuebits[1, 2] = last_bit
+    valuebits[1, 3], last_bit = split_last_bit(buffer[6])
     valuebits[1, 4] = buffer[7]
-    valuebits[1, 5] = buffer6 & 0b1
+    valuebits[1, 5] = last_bit
 
     return valuebits
 
@@ -459,5 +462,6 @@ def convert(x):
     """
     convert a multi dim big tensor to a "random" single tensor
     """
-    r = x[-1] % 2 ** 8
+    # Select the 16th least significant bits
+    r = x[-1] & 0b1111111111111111
     return r.astype(np.int64)
