@@ -349,7 +349,7 @@ def test_fetch_plan(hook, workers):
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
-
+@pytest.mark.parametrize("is_func2plan", [True, False])
 def test_fetch_plan_multiple_times(hook, is_func2plan, workers):
 
     alice, bob, charlie, james = (
@@ -817,8 +817,8 @@ def test_plan_input_serialization(hook):
 
 
 def test_plan_input_usage(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
 
@@ -830,8 +830,8 @@ def test_plan_input_usage(hook):
     def plan_test_2(x, y):
         return y
 
-    pointer_to_data_1 = device_1.search("input_data")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
 
     plan_test_1.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
     pointer_plan = plan_test_1.send(device_1)
@@ -848,8 +848,8 @@ def test_plan_input_usage(hook):
 
 
 def test_plan_wrong_number_of_parameters(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
 
@@ -857,8 +857,8 @@ def test_plan_wrong_number_of_parameters(hook):
     def plan_test(x, y, z, t):
         return x
 
-    pointer_to_data_1 = device_1.search("input_data")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
 
     dummy_input_list = [th.tensor([1, -2]), th.tensor([1, 2]), 2, False]
     input_list = [pointer_to_data_1, pointer_to_data_2, 5, True]
@@ -879,8 +879,8 @@ def test_plan_wrong_number_of_parameters(hook):
 
 
 def test_plan_list(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data1")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     @sy.func2plan()
     def plan_list(data, x):
@@ -892,15 +892,15 @@ def test_plan_list(hook):
 
     plan_list.build([th.tensor([1, 2]), th.tensor([2, 3])], th.tensor([0, 0]))
     pointer_to_plan = plan_list.send(device_1)
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
     result = pointer_to_plan([pointer_to_data_1, pointer_to_data_2], th.tensor([1, 1]))
     assert (result.get() == th.tensor([0, 3])).all()
 
 
 def test_plan_tuple(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data1")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     @sy.func2plan()
     def plan_tuple(data, x):
@@ -912,15 +912,17 @@ def test_plan_tuple(hook):
 
     plan_tuple.build((th.tensor([1, 2]), th.tensor([2, 3])), th.tensor([0, 0]))
     pointer_to_plan = plan_tuple.send(device_1)
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+
     result = pointer_to_plan((pointer_to_data_1, pointer_to_data_2), th.tensor([1, 1]))
     assert (result.get() == th.tensor([0, 3])).all()
 
 
 def test_plan_dict(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data1")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     @sy.func2plan()
     def plan_dict(data, x):
@@ -931,8 +933,8 @@ def test_plan_dict(hook):
     device_1 = sy.VirtualWorker(hook, id="test_plan_dict", data=(x11, x12))
     plan_dict.build({"input1": th.tensor([1, 2]), "input2": th.tensor([2, 3])}, th.tensor([0, 0]))
     pointer_to_plan = plan_dict.send(device_1)
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
     result = pointer_to_plan(
         {"input1": pointer_to_data_1, "input2": pointer_to_data_2}, th.tensor([1, 1])
     )
@@ -940,10 +942,10 @@ def test_plan_dict(hook):
 
 
 def test_plan_nested_structures(hook):
-    x1 = th.tensor([-1, 2.0]).tag("input_data1")
-    x2 = th.tensor([1, -2.0]).tag("input_data2")
-    x3 = th.tensor([2, -1]).tag("input_data3")
-    x4 = th.tensor([2, 1]).tag("input_data4")
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+    x3 = th.tensor([2, -1])
+    x4 = th.tensor([2, 1])
 
     @sy.func2plan()
     def plan_nested(dict):
@@ -971,10 +973,10 @@ def test_plan_nested_structures(hook):
     device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2, x3, x4))
     plan_nested.build(dummy_build)
 
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
-    pointer_to_data_3 = device_1.search("input_data3")[0]
-    pointer_to_data_4 = device_1.search("input_data4")[0]
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+    pointer_to_data_3 = x3.send(device_1)
+    pointer_to_data_4 = x4.send(device_1)
 
     call_build = {
         "tensors": {
@@ -989,8 +991,8 @@ def test_plan_nested_structures(hook):
 
 
 def test_plan_type_warning(hook):
-    x1 = th.tensor([-1, 2.0]).tag("input_data1")
-    x2 = th.tensor([1, -2.0]).tag("input_data2")
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
 
     @sy.func2plan()
     def plan_type_warn(dic):
@@ -1007,8 +1009,8 @@ def test_plan_type_warning(hook):
     device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2))
     plan_type_warn.build(dummy_build)
 
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
         "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
@@ -1023,8 +1025,8 @@ def test_plan_type_warning(hook):
 
 
 def test_plan_key_error(hook):
-    x1 = th.tensor([-1, 2.0]).tag("input_data1")
-    x2 = th.tensor([1, -2.0]).tag("input_data2")
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
 
     @sy.func2plan()
     def plan_type_warn(dic):
@@ -1041,8 +1043,8 @@ def test_plan_key_error(hook):
     device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2))
     plan_type_warn.build(dummy_build)
 
-    pointer_to_data_1 = device_1.search("input_data1")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
         "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},

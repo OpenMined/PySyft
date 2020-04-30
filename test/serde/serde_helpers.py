@@ -875,7 +875,7 @@ def make_role(**kwargs):
 
 
 def make_type(**kwargs):
-    serialiez_type = type("test")
+    serialized_type = type("test")
 
     def compare(detailed, original):
         assert type(detailed) == type(original)
@@ -884,14 +884,14 @@ def make_type(**kwargs):
 
     return [
         {
-            "value": serialiez_type,
-            "simplified": (msgpack.serde._simplify(syft.hook.local_worker, serialiez_type)),
+            "value": serialized_type,
+            "simplified": (msgpack.serde._simplify(syft.hook.local_worker, serialized_type)),
             "cmp_detailed": compare,
         }
     ]
 
 def make_nested_type_wrapper(**kwargs):
-    reference_serialized_input_1 = (
+    reference_serialized_input = (
         (type(torch.tensor([1.0, -2.0])), type(torch.tensor([1, 2]))),
         {
             "k1": [type(5), (type(True), type(False))],
@@ -906,7 +906,7 @@ def make_nested_type_wrapper(**kwargs):
     )
 
     wrapper = syft.execution.plan.NestedTypeWrapper()
-    wrapper.serialized_nested_type = reference_serialized_input_1
+    wrapper.serialized_nested_type = reference_serialized_input
 
     def compare(detailed, original):
         assert detailed.serialized_nested_type == original.serialized_nested_type

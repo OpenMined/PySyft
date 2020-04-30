@@ -9,7 +9,6 @@ import io
 import syft
 from syft.serde import protobuf
 from test.serde.serde_helpers import *
-from syft.execution import Plan
 
 # Dictionary containing test samples functions
 samples = OrderedDict()

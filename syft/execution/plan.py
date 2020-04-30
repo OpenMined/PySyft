@@ -173,8 +173,6 @@ class Plan(AbstractObject):
 
     def build(self, *args):
         """
-        Outdated!!
-
         Builds the plan.
 
         First, run the function to be converted in a plan in a context which
@@ -190,6 +188,19 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
+
+        def build_nested_arg(arg):
+            if isinstance(arg, list):
+                return [build_nested_arg(obj) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple([build_nested_arg(obj) for obj in arg])
+            elif isinstance(arg, dict):
+                return {k: build_nested_arg(v) for k, v in arg.items()}
+            else:
+                return PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
+
+
+
         self.owner.init_plan = self
 
         # Enable tracing
@@ -198,11 +209,11 @@ class Plan(AbstractObject):
         # Get state as placeholders
         self.role.state.read_placeholders = True
 
+        #typecheck
+        self.serialized_input = NestedTypeWrapper(args)
+
         # Run once to build the plan
-        args = tuple(
-            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-            for arg in args
-        )
+        args = build_nested_arg(args)
 
         # Add state to args if needed
         if self.include_state:
@@ -224,7 +235,6 @@ class Plan(AbstractObject):
 
         # Register inputs in role
         self.role.register_inputs(args)
-        self.serialized_input = NestedTypeWrapper(args)
 
         # Register outputs in role
         self.role.register_outputs(results)

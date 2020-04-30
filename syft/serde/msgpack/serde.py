@@ -60,6 +60,7 @@ from syft.execution.state import State
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.execution.protocol import Protocol
+from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -76,7 +77,6 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
 from syft.generic.pointers.pointer_dataset import PointerDataset
-from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 

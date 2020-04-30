@@ -24,6 +24,7 @@ samples[slice] = make_slice
 samples[str] = make_str
 samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
+samples[type] = make_type
 
 # Numpy
 samples[numpy.ndarray] = make_numpy_ndarray
