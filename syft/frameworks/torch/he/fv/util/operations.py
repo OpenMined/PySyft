@@ -50,6 +50,15 @@ def reverse_bit(value):
     return result
 
 
+def multiply_many_except(operands, count, expt):
+    count
+    result = 1
+    for i in range(count):
+        if i != expt:
+            result *= operands[i]
+    return result
+
+
 def multiply_add_plain_with_scaling_variant(pue, message, context):
     # here pue = pk * u * e
     param = context.param

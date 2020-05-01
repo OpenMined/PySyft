@@ -1,6 +1,7 @@
 import pytest
 
 from syft.frameworks.torch.he.fv.util.numth import is_prime
+from syft.frameworks.torch.he.fv.util.operations import multiply_many_except
 from syft.frameworks.torch.he.fv.modulus import CoeffModulus
 from syft.frameworks.torch.he.fv.encryption_params import EncryptionParams
 from syft.frameworks.torch.he.fv.modulus import SeqLevelType
@@ -174,3 +175,20 @@ def test_key_generation():
     print("pk: ", pk)
     print("pk length c0", len(pk.data[0]), " c1 : ", len(pk.data[1]))
     # TODO tests for key generations will be added after encrypter and decrypter
+
+
+@pytest.mark.parametrize(
+    "operand, count, exp, result",
+    [
+        ([0, 0, 0], 2, 0, 0),
+        ([0, 0, 0], 3, 0, 0),
+        ([0, 0, 0], 2, 0, 0),
+        ([2, 3, 5], 2, 0, 3),
+        ([2, 3, 5], 2, 1, 2),
+        ([2, 3, 5], 3, 0, 15),
+        ([2, 3, 5], 3, 1, 10),
+        ([2, 3, 5], 3, 2, 6),
+    ],
+)
+def test_multiply_many_except(operand, count, exp, result):
+    assert multiply_many_except(operand, count, exp) == result
