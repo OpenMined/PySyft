@@ -59,3 +59,34 @@ def test_multi_role_execution(workers):
     assert (a.get() == th.tensor([2])).all()
     assert (b.get() == th.tensor([4])).all()
     assert (c.get() == th.tensor([6])).all()
+
+
+def test_copy(workers):
+    alice, bob = workers["alice"], workers["bob"]
+
+    @sy.func2protocol(args_shape=((1,), (1,)))
+    def protocol(tensor1, tensor2):
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    alice_tensor = th.tensor([1]).send(alice)
+    bob_tensor = th.tensor([1]).send(bob)
+    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
+    alice_tensor.owner = alice
+    bob_tensor.owner = bob
+
+    protocol.build(alice_tensor, bob_tensor)
+
+    copy = protocol.copy()
+
+    assert copy.name == protocol.name
+    assert copy.roles.keys() == protocol.roles.keys()
+    assert [
+        len(copy_role.actions) == len(role.actions)
+        for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
+    ]
+    assert copy.input_repartition == protocol.input_repartition
+    assert copy.output_repartition == protocol.output_repartition
+    assert copy.is_built == protocol.is_built

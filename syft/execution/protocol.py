@@ -1,3 +1,4 @@
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -106,7 +107,9 @@ class Protocol(AbstractObject):
         is_built: bool = False,
         forward_func=None,
         state_tensors=[],
-        role: Role = None,
+        roles: Dict[str, Role] = {},
+        input_repartition: List[str] = [],
+        output_repartition: List[str] = [],
         # General kwargs
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
@@ -118,13 +121,13 @@ class Protocol(AbstractObject):
         # Protocol instance info
         self.name = name or self.__class__.__name__
 
-        self.roles = {}
-        self.input_repartition = []
-        self.output_repartition = []
+        self.roles = roles
+        self.input_repartition = input_repartition
+        self.output_repartition = output_repartition
 
-        if role is None:
-            for st in state_tensors:
-                self.role.register_state_tensor(st, owner)
+        # if role is None:
+        #     for st in state_tensors:
+        #         self.role.register_state_tensor(st, owner)
 
         self.include_state = include_state
         self.is_building = False
@@ -144,18 +147,18 @@ class Protocol(AbstractObject):
         # List of available translations
         # self.translations = []
 
-    @property
-    def state(self):
-        return self.role.state
+    # @property
+    # def state(self):
+    #     return self.role.state
 
-    def parameters(self):
-        """
-        This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
-        """
-        if self.state is not None:
-            return self.state.tensors()
-        else:
-            return []
+    # def parameters(self):
+    #     """
+    #     This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
+    #     """
+    #     if self.state is not None:
+    #         return self.state.tensors()
+    #     else:
+    #         return []
 
     def get_role_for_owner(self, owner):
         if owner.id not in self.roles:
@@ -201,8 +204,8 @@ class Protocol(AbstractObject):
             ph_args += (ph_arg,)
 
         # Add state to args if needed
-        if self.include_state:
-            ph_args += (self.state,)
+        # if self.include_state:
+        #     ph_args += (self.state,)
 
         # with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
         # Look for framework kwargs
@@ -249,7 +252,9 @@ class Protocol(AbstractObject):
         """Creates a copy of a protocol."""
         protocol_copy = Protocol(
             name=self.name,
-            role=self.role.copy(),
+            roles={role_id: role.copy() for role_id, role in self.roles.items()},
+            input_repartition=self.input_repartition,
+            output_repartition=self.output_repartition,
             include_state=self.include_state,
             is_built=self.is_built,
             id=sy.ID_PROVIDER.pop(),
