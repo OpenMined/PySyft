@@ -917,58 +917,68 @@ def make_state(**kwargs):
 
 
 # Protocol
-# def make_protocol(**kwargs):
-#     worker = kwargs["workers"]["serde_worker"]
+def make_protocol(**kwargs):
+    alice = kwargs["workers"]["alice"]
+    bob = kwargs["workers"]["bob"]
 
-#     @syft.func2plan([torch.Size((1, 3))])
-#     def plan(x):
-#         x = x + x
-#         x = torch.abs(x)
-#         return x
+    @syft.func2protocol(args_shape=((1,), (1,)))
+    def protocol(tensor1, tensor2):
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
 
-#     with worker.registration_enabled():
-#         worker.register_obj(plan)
+        return t1plus, t2plus
 
-#     plan.owner = worker
-#     protocol = syft.execution.protocol.Protocol(
-#         [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
-#     )
-#     protocol.tag("aaa")
-#     protocol.describe("desc")
+    alice_tensor = torch.tensor([1]).send(alice)
+    bob_tensor = torch.tensor([1]).send(bob)
+    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
+    alice_tensor.owner = alice
+    bob_tensor.owner = bob
 
-#     def compare(detailed, original):
-#         assert type(detailed) == syft.execution.protocol.Protocol
-#         assert detailed.id == original.id
-#         assert detailed.tags == original.tags
-#         assert detailed.description == original.description
-#         assert detailed.plans == original.plans
-#         assert detailed.owner == original.owner
-#         assert detailed.workers_resolved == original.workers_resolved
-#         return True
+    protocol.build(alice_tensor, bob_tensor)
 
-#     return [
-#         {
-#             "value": protocol,
-#             "simplified": (
-#                 CODE[syft.execution.protocol.Protocol],
-#                 (
-#                     protocol.id,  # (int)
-#                     (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
-#                     (CODE[str], (b"desc",)),  # (str) description
-#                     (
-#                         CODE[list],  # (list) plans reference
-#                         (
-#                             # (tuple) reference: worker_id (int/str), plan_id (int/str)
-#                             (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-#                             (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-#                         ),
-#                     ),
-#                     False,  # (bool) workers_resolved
-#                 ),
-#             ),
-#             "cmp_detailed": compare,
-#         }
-#     ]
+    # plan.owner = worker
+    protocol.tag("aaa")
+    protocol.describe("desc")
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.protocol.Protocol
+        assert detailed.id == original.id
+        assert detailed.name == original.name
+        assert detailed.roles.keys() == original.roles.keys()
+        for k, v in detailed.roles.items():
+            assert compare_roles(original.roles[k], v)
+        assert detailed.input_repartition == original.input_repartition
+        assert detailed.output_repartition == original.output_repartition
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+        return True
+
+    return [
+        {
+            "value": protocol,
+            "simplified": (
+                CODE[syft.execution.protocol.Protocol],
+                (
+                    protocol.id,  # (int or str) id
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.roles),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], protocol.input_repartition
+                    ),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], protocol.output_repartition
+                    ),
+                    protocol.include_state,
+                    protocol.is_built,
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], protocol.description
+                    ),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
 
 
 # syft.generic.pointers.pointer_tensor.PointerTensor

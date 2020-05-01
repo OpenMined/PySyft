@@ -50,14 +50,14 @@ samples[
 samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
-samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
-samples[syft.execution.computation.ComputationAction] = make_computation_action
-samples[syft.execution.plan.Plan] = make_plan
-samples[syft.execution.role.Role] = make_role
-samples[syft.execution.state.State] = make_state
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
+samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.role.Role] = make_role
+samples[syft.execution.state.State] = make_state
 samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
@@ -158,4 +158,5 @@ def test_serde_simplify(cls, workers, hook, start_remote_worker):
             # Custom simplified objects comparison function.
             assert sample.get("cmp_simplified")(simplified_obj, expected_simplified_obj) is True
         else:
+            print(simplified_obj)
             assert simplified_obj == expected_simplified_obj

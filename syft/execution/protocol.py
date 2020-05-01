@@ -384,12 +384,12 @@ class Protocol(AbstractObject):
 
     #     return pointer
 
-    def get_args_shape(self):
-        """Returns input tensors shapes"""
-        if not self.is_built:
-            raise RuntimeError("A protocol needs to be built before input shapes can be known.")
+    # def get_args_shape(self):
+    #     """Returns input tensors shapes"""
+    #     if not self.is_built:
+    #         raise RuntimeError("A protocol needs to be built before input shapes can be known.")
 
-        return [ph.expected_shape for ph in self.role.input_placeholders()]
+    #     return [ph.expected_shape for ph in self.role.input_placeholders()]
 
     # @staticmethod
     # def register_build_translator(translator: "AbstractPlanTranslator"):
@@ -402,11 +402,11 @@ class Protocol(AbstractObject):
     #     plan_translator(self).remove()
     #     return self
 
-    def get_(self):
-        self.state.get_()
-        return self
+    # def get_(self):
+    #     self.state.get_()
+    #     return self
 
-    get = get_
+    # get = get_
 
     def get_pointers(self):
         return self.pointers
@@ -453,65 +453,6 @@ class Protocol(AbstractObject):
     #         tags=tags,
     #     )
 
-    def __str__(self):
-        """Returns the string representation of Protocol."""
-        out = "<"
-        out += str(type(self)).split("'")[1].split(".")[-1]
-        out += " " + str(self.name)
-        out += " id:" + str(self.id)
-        out += " owner:" + str(self.owner.id)
-
-        if self.tags is not None and len(self.tags):
-            out += " Tags:"
-            for tag in self.tags:
-                out += " " + str(tag)
-
-        if self.is_built:
-            out += " built"
-
-        out += ">"
-        out += "\n"
-        _self = self
-
-        # out += f"def {self.name}("
-        # out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
-        # out += "):\n"
-        # for action in self.actions:
-        #     line = "    "
-        #     if action.return_ids is not None:
-        #         if isinstance(action.return_ids, PlaceHolder):
-        #             tag = extract_tag(action.return_ids)
-        #             line += f"_{tag} = "
-        #         elif isinstance(action.return_ids, tuple):
-        #             line += (
-        #                 ", ".join(
-        #                     f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
-        #                     for o in action.return_ids
-        #                 )
-        #                 + " = "
-        #             )
-        #         else:
-        #             line += str(action.return_ids) + " = "
-        #     if action.target is not None:
-        #         line += f"_{extract_tag(self.placeholders[action.target.value])}."
-        #     line += action.name + "("
-        #     line += ", ".join(
-        #         f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
-        #         for arg in action.args
-        #     )
-        #     if action.kwargs:
-        #         line += ", " + ", ".join(f"{k}={w}" for k, w in action.kwargs.items())
-        #     line += ")\n"
-        #     out += line
-
-        # out += "    return "
-        # out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
-
-        return out
-
-    def __repr__(self):
-        return self.__str__()
-
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
         # Replace non-instanciated placeholders from protocol.placeholders by instanciated placeholders
@@ -535,13 +476,14 @@ class Protocol(AbstractObject):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, protocol.id),
-            sy.serde.msgpack.serde._simplify(worker, protocol.role),
+            sy.serde.msgpack.serde._simplify(worker, protocol.name),
+            sy.serde.msgpack.serde._simplify(worker, protocol.roles),
+            sy.serde.msgpack.serde._simplify(worker, protocol.input_repartition),
+            sy.serde.msgpack.serde._simplify(worker, protocol.output_repartition),
             sy.serde.msgpack.serde._simplify(worker, protocol.include_state),
             sy.serde.msgpack.serde._simplify(worker, protocol.is_built),
-            sy.serde.msgpack.serde._simplify(worker, protocol.name),
             sy.serde.msgpack.serde._simplify(worker, protocol.tags),
             sy.serde.msgpack.serde._simplify(worker, protocol.description),
-            sy.serde.msgpack.serde._simplify(worker, protocol.torchscript),
         )
 
     @staticmethod
@@ -553,29 +495,38 @@ class Protocol(AbstractObject):
         Returns:
             protocol: a Protocol object
         """
-        (id_, role, include_state, is_built, name, tags, description, torchscript) = protocol_tuple
+        (
+            id_,
+            name,
+            roles,
+            input_repartition,
+            output_repartition,
+            include_state,
+            is_built,
+            tags,
+            description,
+        ) = protocol_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
-        role = sy.serde.msgpack.serde._detail(worker, role)
         name = sy.serde.msgpack.serde._detail(worker, name)
+        roles = sy.serde.msgpack.serde._detail(worker, roles)
+        input_repartition = sy.serde.msgpack.serde._detail(worker, input_repartition)
+        output_repartition = sy.serde.msgpack.serde._detail(worker, output_repartition)
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
-        torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
 
-        protocol = sy.Protocol(
-            role=role,
+        return sy.Protocol(
+            id=id_,
+            name=name,
+            owner=worker,
+            roles=roles,
+            input_repartition=input_repartition,
+            output_repartition=output_repartition,
             include_state=include_state,
             is_built=is_built,
-            id=id_,
-            owner=worker,
-            name=name,
             tags=tags,
             description=description,
         )
-
-        protocol.torchscript = torchscript
-
-        return protocol
 
     @staticmethod
     def bufferize(worker: AbstractWorker, protocol: "Protocol") -> ProtocolPB:
@@ -587,6 +538,7 @@ class Protocol(AbstractObject):
         Returns:
             ProtocolPB: a Protobuf message holding the unique attributes of the Protocol object
         """
+        # TODO
         protobuf_protocol = ProtocolPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_protocol.id, protocol.id)
@@ -615,6 +567,7 @@ class Protocol(AbstractObject):
         Returns:
             protocol: a Protocol object
         """
+        # TODO
         id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_protocol.id)
 
         role = sy.serde.protobuf.serde._unbufferize(worker, protobuf_protocol.role)
