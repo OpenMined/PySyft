@@ -616,6 +616,7 @@ def test_cached_multiple_location_plan_send(workers):
 
     assert len(pointers) == 2
 
+
 def test_plan_input_serialization(hook):
     @sy.func2plan()
     def plan_serialized_input_1(x, y, z, t):

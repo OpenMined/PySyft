@@ -56,9 +56,7 @@ class NestedTypeWrapper:
         return type(input_arg)
 
     @staticmethod
-    def raise_typecheck_warn(
-        typechecked_object: any, build: str, call: str, path: str
-    ) -> None:
+    def raise_typecheck_warn(typechecked_object: any, build: str, call: str, path: str) -> None:
         """
             Function to raise a typecheck warning if two types differ.
 
@@ -156,7 +154,10 @@ class NestedTypeWrapper:
         """
 
         def check_type_nested_structure(
-            typechecked_object, build_arg_nested_type: Union[list, tuple, dict, type], call_arg_nested_obj: any, path: str
+            typechecked_object,
+            build_arg_nested_type: Union[list, tuple, dict, type],
+            call_arg_nested_obj: any,
+            path: str,
         ) -> None:
             """
                 Recursive method to compare the nested input argument and the nested build argument.
@@ -174,37 +175,55 @@ class NestedTypeWrapper:
             if type(call_arg_nested_obj) not in iterable_supported_list:
                 if not isinstance(call_arg_nested_obj, build_arg_nested_type):
                     NestedTypeWrapper.raise_typecheck_warn(
-                        typechecked_object, build_arg_nested_type.__name__, type(call_arg_nested_obj).__name__, path
+                        typechecked_object,
+                        build_arg_nested_type.__name__,
+                        type(call_arg_nested_obj).__name__,
+                        path,
                     )
                 return
 
             if type(build_arg_nested_type) != type(call_arg_nested_obj):
                 NestedTypeWrapper.raise_typecheck_warn(
-                    typechecked_object, type(build_arg_nested_type).__name__, type(call_arg_nested_obj).__name__, path
+                    typechecked_object,
+                    type(build_arg_nested_type).__name__,
+                    type(call_arg_nested_obj).__name__,
+                    path,
                 )
                 return
 
             if isinstance(build_arg_nested_type, (list, tuple)):
                 if len(build_arg_nested_type) != len(call_arg_nested_obj):
                     NestedTypeWrapper.raise_missmatch_err(
-                        typechecked_object, len(build_arg_nested_type), len(call_arg_nested_obj), path
+                        typechecked_object,
+                        len(build_arg_nested_type),
+                        len(call_arg_nested_obj),
+                        path,
                     )
 
                 for idx in range(len(build_arg_nested_type)):
                     check_type_nested_structure(
-                        typechecked_object, build_arg_nested_type[idx], call_arg_nested_obj[idx], f"element {idx} of " + path
+                        typechecked_object,
+                        build_arg_nested_type[idx],
+                        call_arg_nested_obj[idx],
+                        f"element {idx} of " + path,
                     )
 
             if isinstance(build_arg_nested_type, dict):
                 if len(build_arg_nested_type) != len(call_arg_nested_obj):
                     NestedTypeWrapper.raise_missmatch_err(
-                        typechecked_object, len(build_arg_nested_type), len(call_arg_nested_obj), path
+                        typechecked_object,
+                        len(build_arg_nested_type),
+                        len(call_arg_nested_obj),
+                        path,
                     )
 
                 for key in build_arg_nested_type.keys():
                     if key in call_arg_nested_obj:
                         check_type_nested_structure(
-                            typechecked_object, build_arg_nested_type[key], call_arg_nested_obj[key], f"key {key} of " + path
+                            typechecked_object,
+                            build_arg_nested_type[key],
+                            call_arg_nested_obj[key],
+                            f"key {key} of " + path,
                         )
                     else:
                         NestedTypeWrapper.raise_key_missing_err(typechecked_object, key, path)
