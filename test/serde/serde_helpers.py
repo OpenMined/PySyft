@@ -809,7 +809,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.serialized_input),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,
@@ -831,7 +831,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.serialized_input),
+                    msgpack.serde._simplify(syft.hook.local_worker, plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,
@@ -890,6 +890,7 @@ def make_type(**kwargs):
         }
     ]
 
+
 def make_nested_type_wrapper(**kwargs):
     reference_serialized_input = (
         (type(torch.tensor([1.0, -2.0])), type(torch.tensor([1, 2]))),
@@ -909,17 +910,18 @@ def make_nested_type_wrapper(**kwargs):
     wrapper.serialized_nested_type = reference_serialized_input
 
     def compare(detailed, original):
-        assert detailed.serialized_nested_type == original.serialized_nested_type
+        assert detailed.nested_input_types == original.nested_input_types
         return True
 
     return [
         {
             "value": wrapper,
             "simplified": syft.serde.msgpack.serde._simplify(syft.hook.local_worker, wrapper),
-            "cmp_detailed": compare
+            "cmp_detailed": compare,
         }
-
     ]
+
+
 # State
 def make_state(**kwargs):
     me = kwargs["workers"]["me"]

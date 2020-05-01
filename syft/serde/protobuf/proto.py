@@ -49,6 +49,7 @@ from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptMo
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
 
+
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
     type: ClassTypePB,

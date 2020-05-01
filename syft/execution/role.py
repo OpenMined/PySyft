@@ -55,6 +55,9 @@ class Role:
         return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
 
     def register_inputs(self, args_):
+        """ Takes input arguments for this role and generate placeholders.
+        """
+        # TODO Should we be able to rebuild?
         def register_nested_inputs(obj) -> None:
             if isinstance(obj, (list, tuple)):
                 _ = [register_nested_inputs(elem) for elem in obj]
@@ -67,10 +70,10 @@ class Role:
         register_nested_inputs(args_)
         self.input_placeholder_ids = tuple(self.input_placeholder_ids)
 
-
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
+
         def register_nested_outputs(obj) -> None:
             if isinstance(obj, (list, tuple)):
                 _ = [register_nested_outputs(elem) for elem in obj]
@@ -148,7 +151,6 @@ class Role:
         input_placeholders = [
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
         ]
-        test = args_
         instantiate_nested_input(input_placeholders, args_)
 
     def _execute_action(self, action):

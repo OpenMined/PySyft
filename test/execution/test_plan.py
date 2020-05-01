@@ -364,6 +364,7 @@ def test_fetch_plan(hook, workers):
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
+
 @pytest.mark.parametrize("is_func2plan", [True, False])
 def test_fetch_plan_multiple_times(hook, is_func2plan, workers):
 
@@ -826,14 +827,14 @@ def test_plan_input_serialization(hook):
         (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
     )
 
-    serialized_input_1 = plan_serialized_input_1.serialized_input
+    serialized_input_1 = plan_serialized_input_1.input_types.nested_input_types
 
     assert reference_serialized_input_1 == serialized_input_1
 
 
 def test_plan_input_usage(hook):
-    x11 = th.tensor([-1, 2.0])
-    x12 = th.tensor([1, -2.0])
+    x11 = th.tensor([-1, 2.0]).tag("input_data")
+    x12 = th.tensor([1, -2.0]).tag("input_data2")
 
     device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
 
@@ -858,8 +859,7 @@ def test_plan_input_usage(hook):
     pointer_plan = plan_test_2.send(device_1)
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
-
-    assert (result == x12).all
+    assert (result == x12).all()
 
 
 def test_plan_wrong_number_of_parameters(hook):

@@ -77,6 +77,7 @@ from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.frameworks.torch.fl import BaseDataset
 from syft.generic.pointers.pointer_dataset import PointerDataset
+
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
 

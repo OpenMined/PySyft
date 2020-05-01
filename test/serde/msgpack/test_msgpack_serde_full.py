@@ -91,6 +91,7 @@ samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
 samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 
+
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():

@@ -23,7 +23,9 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
+
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
+
 
 class func2plan(object):
     """Decorator which converts a function to a plan.
@@ -110,7 +112,7 @@ class Plan(AbstractObject):
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
-        serialized_input: list = None,
+        input_types: list = None,
         description: str = None,
     ):
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
@@ -129,7 +131,7 @@ class Plan(AbstractObject):
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
-        self.serialized_input = serialized_input
+        self.input_types = input_types
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
@@ -161,8 +163,7 @@ class Plan(AbstractObject):
             return []
 
     def build(self, *args):
-        """
-        Builds the plan.
+        """Builds the plan.
 
         First, run the function to be converted in a plan in a context which
         activates the tracing and record the actions in trace.logs
@@ -177,6 +178,7 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
+
         def build_nested_arg(arg):
             if isinstance(arg, list):
                 return [build_nested_arg(obj) for obj in arg]
@@ -185,18 +187,16 @@ class Plan(AbstractObject):
             elif isinstance(arg, dict):
                 return {k: build_nested_arg(v) for k, v in arg.items()}
             else:
-                return PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-
-
-
-        self.owner.init_plan = self
+                return PlaceHolder.create_from(
+                    arg, owner=sy.local_worker, role=self.role, tracing=True
+                )
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
 
-        #typecheck
-        self.serialized_input = NestedTypeWrapper(args)
+        # typecheck
+        self.input_types = NestedTypeWrapper(args)
 
         # Run once to build the plan
         args = build_nested_arg(args)
@@ -252,7 +252,7 @@ class Plan(AbstractObject):
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
-            serialized_input=self.serialized_input,
+            input_types=self.input_types,
             description=self.description,
         )
 
@@ -295,9 +295,8 @@ class Plan(AbstractObject):
 
             return copied_layer
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args):
         """
-        Outdated!!
         Calls a plan execution with some arguments.
 
         When possible, run the original function to improve efficiency. When
@@ -313,7 +312,7 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            self.serialized_input.input_check(type(self).__name__, self.name, args)
+            self.input_types.input_check(type(self).__name__, self.name, args)
             return self.role.execute(args)
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
@@ -527,7 +526,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
-            sy.serde.msgpack.serde._simplify(worker, plan.serialized_input),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_types),
         )
 
     @staticmethod
@@ -548,7 +547,7 @@ class Plan(AbstractObject):
             tags,
             description,
             torchscript,
-            serialized_input,
+            input_types,
         ) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
@@ -557,7 +556,7 @@ class Plan(AbstractObject):
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
-        serialized_input = sy.serde.msgpack.serde._detail(worker, serialized_input)
+        input_types = sy.serde.msgpack.serde._detail(worker, input_types)
 
         plan = sy.Plan(
             role=role,
@@ -568,7 +567,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
-            serialized_input=serialized_input,
+            input_types=input_types,
         )
 
         plan.torchscript = torchscript
@@ -602,9 +601,9 @@ class Plan(AbstractObject):
         if plan.torchscript:
             protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
-        if plan.serialized_input:
-            serialized = sy.serde.protobuf.serde._bufferize(worker, plan.serialized_input)
-            protobuf_plan.serialized_input.CopyFrom(serialized)
+        if plan.input_types:
+            input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
+            protobuf_plan.serialized_input.CopyFrom(input_types)
 
         return protobuf_plan
 
@@ -624,7 +623,7 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
-        serialized_input = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.serialized_input)
+        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.serialized_input)
 
         plan = Plan(
             role=role,
@@ -635,7 +634,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
-            serialized_input=serialized_input,
+            input_types=input_types,
         )
 
         if protobuf_plan.torchscript:

@@ -5,15 +5,17 @@ from typing import Union
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
 from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
 
+
 class NestedTypeWrapper:
     """
         Class for input type serialization and type checking for nested structures.
     """
+
     def __init__(self, nested_type=None):
         if nested_type:
-            self.serialized_nested_type = NestedTypeWrapper.serialize_nested_type(nested_type)
+            self.nested_input_types = NestedTypeWrapper.serialize_nested_type(nested_type)
         else:
-            self.serialized_nested_type = None
+            self.nested_input_types = None
 
     @staticmethod
     def serialize_nested_type(input_arg: any) -> Union[list, tuple, dict, type]:
@@ -33,13 +35,17 @@ class NestedTypeWrapper:
             return tuple(result) if isinstance(input_arg, tuple) else result
 
         if isinstance(input_arg, dict):
-            serialized_dict = {k: NestedTypeWrapper.serialize_nested_type(v) for k, v in input_arg.items()}
+            serialized_dict = {
+                k: NestedTypeWrapper.serialize_nested_type(v) for k, v in input_arg.items()
+            }
             return serialized_dict
 
         return type(input_arg)
 
     @staticmethod
-    def raise_typecheck_warn(obj_type: str, obj_name: str, build: str, call: str, path: str) -> None:
+    def raise_typecheck_warn(
+        obj_type: str, obj_name: str, build: str, call: str, path: str
+    ) -> None:
         """
             Function to raise a typecheck warning if two types differ.
 
@@ -73,7 +79,9 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
-        raise TypeError(f"{obj_type} {obj_name} {path} has length {call}, while being build with length {build}.")
+        raise TypeError(
+            f"{obj_type} {obj_name} {path} has length {call}, while being build with length {build}."
+        )
 
     @staticmethod
     def raise_wrong_no_arguments_err(obj_type: str, obj_name: str, build: int, call: int) -> None:
@@ -105,7 +113,9 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
-        raise KeyError(f"{obj_type} {obj_name} {path} does not provide the key {key}, while being build with that key.")
+        raise KeyError(
+            f"{obj_type} {obj_name} {path} does not provide the key {key}, while being build with that key."
+        )
 
     def input_check(self, obj_type: str, obj_name: str, args: list) -> None:
         """
@@ -127,28 +137,41 @@ class NestedTypeWrapper:
             Returns:
                 None
         """
-        def check_type_nested_structure(obj_type: str, obj_name: str, build: any, call: any, path: str) -> None:
+
+        def check_type_nested_structure(
+            obj_type: str, obj_name: str, build: any, call: any, path: str
+        ) -> None:
             iterable_supported_list = (list, tuple, dict)
 
             if type(call) not in iterable_supported_list:
                 if not isinstance(call, build):
-                    NestedTypeWrapper.raise_typecheck_warn(obj_type, obj_name, build.__name__, type(call).__name__, path)
+                    NestedTypeWrapper.raise_typecheck_warn(
+                        obj_type, obj_name, build.__name__, type(call).__name__, path
+                    )
                 return
 
             if type(build) != type(call):
-                NestedTypeWrapper.raise_typecheck_warn(obj_type, obj_name, type(build).__name__, type(call).__name__, path)
+                NestedTypeWrapper.raise_typecheck_warn(
+                    obj_type, obj_name, type(build).__name__, type(call).__name__, path
+                )
                 return
 
             if isinstance(build, (list, tuple)):
                 if len(build) != len(call):
-                    NestedTypeWrapper.raise_missmatch_err(obj_type, obj_name, len(build), len(call), path)
+                    NestedTypeWrapper.raise_missmatch_err(
+                        obj_type, obj_name, len(build), len(call), path
+                    )
 
                 for idx in range(len(build)):
-                    check_type_nested_structure(obj_type, obj_name, build[idx], call[idx], f"element {idx} of " + path)
+                    check_type_nested_structure(
+                        obj_type, obj_name, build[idx], call[idx], f"element {idx} of " + path
+                    )
 
             if isinstance(build, dict):
                 if len(build) != len(call):
-                    NestedTypeWrapper.raise_missmatch_err(obj_type, obj_name, len(build), len(call), path)
+                    NestedTypeWrapper.raise_missmatch_err(
+                        obj_type, obj_name, len(build), len(call), path
+                    )
 
                 for key in build.keys():
                     if key in call:
@@ -158,27 +181,35 @@ class NestedTypeWrapper:
                     else:
                         NestedTypeWrapper.raise_key_missing_err(obj_type, obj_name, key, path)
 
-        if len(args) != len(self.serialized_nested_type):
-            NestedTypeWrapper.raise_wrong_no_arguments_err(obj_type, obj_name, len(self.serialized_nested_type), len(args))
+        if len(args) != len(self.nested_input_types):
+            NestedTypeWrapper.raise_wrong_no_arguments_err(
+                obj_type, obj_name, len(self.nested_input_types), len(args)
+            )
 
         for idx in range(len(args)):
             check_type_nested_structure(
-                obj_type, obj_name, self.serialized_nested_type[idx], args[idx], f"element {idx} of input"
+                obj_type,
+                obj_name,
+                self.nested_input_types[idx],
+                args[idx],
+                f"element {idx} of input",
             )
 
     @staticmethod
     def simplify(worker: AbstractWorker, nested_type_wrapper: "NestedTypeWrapper") -> list:
-        return sy.serde.msgpack.serde._simplify(worker, nested_type_wrapper.serialized_nested_type)
+        return sy.serde.msgpack.serde._simplify(worker, nested_type_wrapper.nested_input_types)
 
     @staticmethod
     def detail(worker: AbstractWorker, simplified_nested_type: list) -> "NestedTypeWrapper":
         nested_type_wrapper = sy.serde.msgpack.serde._detail(worker, simplified_nested_type)
         result = NestedTypeWrapper()
-        result.serialized_nested_type = nested_type_wrapper
+        result.nested_input_types = nested_type_wrapper
         return result
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, nested_type_wrapper: "NestedTypeWrapper") -> NestedTypeWrapperPB:
+    def bufferize(
+        worker: AbstractWorker, nested_type_wrapper: "NestedTypeWrapper"
+    ) -> NestedTypeWrapperPB:
         def bufferize_nested_structure(worker: AbstractWorker, obj: any) -> NestedTypeWrapperPB:
             nested_type_pb = NestedTypeWrapperPB()
 
@@ -222,7 +253,7 @@ class NestedTypeWrapper:
                 nested_type_pb.nested_types.CopyFrom(container)
             return nested_type_pb
 
-        result = bufferize_nested_structure(worker, nested_type_wrapper.serialized_nested_type)
+        result = bufferize_nested_structure(worker, nested_type_wrapper.nested_input_types)
         return result
 
     @staticmethod
@@ -230,7 +261,9 @@ class NestedTypeWrapper:
         def unbufferize_nested_structure(worker, message):
             container = None
             if message.nested_types.HasField("nested_type"):
-                return sy.serde.protobuf.serde._unbufferize(worker, message.nested_types.nested_type)
+                return sy.serde.protobuf.serde._unbufferize(
+                    worker, message.nested_types.nested_type
+                )
 
             if message.nested_types.HasField("nested_type_list"):
                 container = []
@@ -252,11 +285,8 @@ class NestedTypeWrapper:
 
         result = unbufferize_nested_structure(worker, message)
         wrapper = NestedTypeWrapper()
-        wrapper.serialized_nested_type = result
+        wrapper.nested_input_types = result
         return wrapper
 
     def __iter__(self):
-        return iter(self.serialized_nested_type)
-
-    def __eq__(self, other):
-        return self.serialized_nested_type == other
+        return iter(self.nested_input_types)
