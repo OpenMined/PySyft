@@ -46,9 +46,6 @@ def test_inplace_encode_decode(workers):
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
 
-    x = torch.tensor([3.0]).fix_precision()
-    assert x.float_prec_().is_wrapper is False
-
 
 def test_fix_prec_inplace_registration(hook):
 
@@ -110,13 +107,6 @@ def test_torch_add(workers):
 
     assert (z == torch.tensor([0.3, -0.7, -0.3])).all()
 
-    # When overflow occurs
-    x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(field=1e4, precision_fractional=2)
-    y = torch.add(x, x)
-    y = torch.add(y, y).float_prec()
-
-    assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
-
     # with AdditiveSharingTensor
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec()
@@ -149,6 +139,13 @@ def test_torch_add(workers):
 
     z = (c + x).float_prec()
     assert ((z - (c + t)) < 10e-3).all()
+
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x + y
+    assert (z.float_prec() == torch.tensor([1.1, 2.2, 3.3])).all()
 
 
 def test_torch_add_():
@@ -218,6 +215,13 @@ def test_torch_sub(workers):
 
     z = (c - x).float_prec()
     assert ((z - (c - t)) < 10e-3).all()
+
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x - y
+    assert (z.float_prec() == torch.tensor([0.9, 1.8, 2.7])).all()
 
 
 def test_torch_sub_():
@@ -293,6 +297,13 @@ def test_torch_mul(workers):
 
     assert (z == torch.mul(t, u)).all()
 
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x * y
+    assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
+
 
 def test_torch_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -320,6 +331,13 @@ def test_torch_div(workers):
     z = torch.div(x, y).get().float_prec()
 
     assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
+
+    # With dtype int
+    x = torch.tensor([[-9.0, 25.42], [-3.3, 0.0]]).fix_prec(dtype="int")
+    y = torch.tensor([[3.0, -6.2], [-3.3, 4.7]]).fix_prec(dtype="int")
+
+    z = torch.div(x, y)
+    assert (z.float_prec() == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
 
 
 def test_inplace_operations():
@@ -443,7 +461,7 @@ def test_torch_exp_approx(prec_frac, tolerance, workers):
     [
         ("chebyshev", 3, 6 / 100),
         ("chebyshev", 4, 1 / 1000),
-        ("exp", 3, 6 / 100),
+        ("exp", 3, 6.5 / 100),
         ("exp", 4, 1 / 100),
         ("maclaurin", 3, 7 / 100),
         ("maclaurin", 4, 15 / 100),
@@ -588,3 +606,42 @@ def test_comp():
     assert (x <= y).float_prec()
     assert not (x > y).float_prec()
     assert (x < y).float_prec()
+
+    # with dtype int
+    x = torch.tensor([2.1]).fix_prec(dtype="int")
+    y = torch.tensor([3.1]).fix_prec(dtype="int")
+
+    assert not (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert (x < y).float_prec()
+
+
+def test_dtype():
+    x = torch.tensor([3.1]).fix_prec()
+    assert (
+        x.child.dtype == "long"
+        and x.child.field == 2 ** 64
+        and isinstance(x.child.child, torch.LongTensor)
+    )
+
+    x = torch.tensor([2.1]).fix_prec(dtype="int")
+    assert (
+        x.child.dtype == "int"
+        and x.child.field == 2 ** 32
+        and isinstance(x.child.child, torch.IntTensor)
+    )
+
+    x = torch.tensor([2.1]).fix_prec(dtype=None, field=2 ** 16)
+    assert (
+        x.child.dtype == "int"
+        and x.child.field == 2 ** 32
+        and isinstance(x.child.child, torch.IntTensor)
+    )
+
+    x = torch.tensor([3.1]).fix_prec(dtype=None, field=2 ** 62)
+    assert (
+        x.child.dtype == "long"
+        and x.child.field == 2 ** 64
+        and isinstance(x.child.child, torch.LongTensor)
+    )

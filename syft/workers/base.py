@@ -164,9 +164,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # self is the to-be-created local worker
                 self.add_worker(self)
 
-        # Used to keep track of a building plan
-        self.init_plan = None
-
         if hook is None:
             self.framework = None
         else:
@@ -314,7 +311,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         msg = sy.serde.deserialize(bin_message, worker=self)
 
         if self.verbose:
-            print(f"worker {self} received {type(msg).__name__} {msg.contents}")
+            print(
+                f"worker {self} received {type(msg).__name__} {msg.contents}"
+                if hasattr(msg, "contents")
+                else f"worker {self} received {type(msg).__name__}"
+            )
 
         # Step 1: route message to appropriate function
         response = self._message_router[type(msg)](msg)
@@ -475,8 +476,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         op_name = action.name
         _self = action.target
-        args = action.args
-        kwargs = action.kwargs
+        args_ = action.args
+        kwargs_ = action.kwargs
         return_ids = action.return_ids
 
         # Handle methods
@@ -490,17 +491,17 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
-                getattr(_self, op_name)(*args, **kwargs)
+                getattr(_self, op_name)(*args_, **kwargs_)
                 return
             else:
                 try:
-                    response = getattr(_self, op_name)(*args, **kwargs)
+                    response = getattr(_self, op_name)(*args_, **kwargs_)
                 except TypeError:
                     # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
                     new_args = [
-                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args
+                        arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args_
                     ]
-                    response = getattr(_self, op_name)(*new_args, **kwargs)
+                    response = getattr(_self, op_name)(*new_args, **kwargs_)
         # Handle functions
         else:
             # At this point, the command is ALWAYS a path to a
@@ -514,7 +515,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             for path in paths:
                 command = getattr(command, path)
 
-            response = command(*args, **kwargs)
+            response = command(*args_, **kwargs_)
 
         # some functions don't return anything (such as .backward())
         # so we need to check for that here.
@@ -535,20 +536,19 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         obj_id = action.obj_id
         source = action.source
         destinations = action.destinations
-        kwargs = action.kwargs
+        kwargs_ = action.kwargs
         source_worker = self.get_worker(source)
         if source_worker != self:
             return None
         else:
             obj = self.get_obj(obj_id)
-            response = source_worker.send(obj, *destinations, **kwargs)
-
-            response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-
-            # @lariffle: We only remove remote objects when the operations are inplace
-            # otherwise we could have stale pointers which we really want to avoid.
-            # TODO: needs more discussion
-            if kwargs.get("inplace"):
+            response = source_worker.send(obj, *destinations, **kwargs_)
+            if kwargs_.get("requires_grad", False):
+                response = hook_args.register_response(
+                    "send", response, [sy.ID_PROVIDER.pop()], self
+                )
+            else:
+                response.garbage_collect_data = False
                 self.rm_obj(obj_id)
             return response
 
@@ -562,9 +562,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             A pointer to the result.
         """
         command_name = message.command_name
-        args, kwargs, return_ids = message.message
+        args_, kwargs_, return_ids = message.message
 
-        response = getattr(self, command_name)(*args, **kwargs)
+        response = getattr(self, command_name)(*args_, **kwargs_)
         #  TODO [midokura-silvia]: send the tensor directly
         #  TODO this code is currently necessary for the async_fit method in websocket_client.py
         if isinstance(response, FrameworkTensor):
@@ -582,14 +582,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             msg: A PlanCommandMessage specifying the command and args.
         """
         command_name = msg.command_name
-        args = msg.args
+        args_ = msg.args
 
         try:
             command = self._plan_command_router[command_name]
         except KeyError:
             raise PlanCommandUnknownError(command_name)
 
-        return command(*args)
+        return command(*args_)
 
     def send_command(
         self, recipient: "BaseWorker", message: tuple, return_ids: str = None
@@ -1178,14 +1178,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 'torch': serialization will only work between workers that support PyTorch
                 (more to come: 'tensorflow', 'numpy', etc)
         """
-        if workers is not None:
-            if not isinstance(workers, list):
-                workers = [workers]
-            workers.append(self)
-        else:
-            # self is referenced in self.__known_workers
-            # NOTE: for some reason self._known_workers may contain a Plan
-            workers = [w for _, w in self._known_workers.items() if isinstance(w, AbstractWorker)]
+        if workers is None:
+            workers = [w for w in self._known_workers.values() if isinstance(w, AbstractWorker)]
+
+        if not isinstance(workers, list):
+            workers = [workers]
+
+        workers.append(self)
 
         frameworks = set()
         for worker in workers:

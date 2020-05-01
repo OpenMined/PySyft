@@ -55,14 +55,14 @@ class PointerProtocol(ObjectPointer):
         response = self.request_remote_run(location, args, kwargs)
         return response
 
-    def request_remote_run(self, location: "BaseWorker", args, kwargs) -> object:
+    def request_remote_run(self, location: "BaseWorker", args_, kwargs_) -> object:
         """Requests remote protocol execution.
 
         Send a request to execute the protocol on the remote location.
 
         Args:
             location: to which worker the request should be sent
-            args: arguments used as input data for the protocol
+            args_: arguments used as input data for the protocol
             kwargs: named arguments used as input data for the protocol
 
         Returns:
@@ -70,10 +70,10 @@ class PointerProtocol(ObjectPointer):
         """
 
         plan_name = f"plan{self.id}"
-        args, _, _ = hook_args.unwrap_args_from_function(plan_name, args, {})
+        args_, _, _ = hook_args.unwrap_args_from_function(plan_name, args_, {})
 
         # return_ids = kwargs.get("return_ids", {})
-        command = ("run", self.id_at_location, args, kwargs)
+        command = ("run", self.id_at_location, args_, kwargs_)
 
         response = self.owner.send_command(
             message=command, recipient=location  # , return_ids=return_ids

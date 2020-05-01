@@ -12,7 +12,7 @@ import abc
 
 class String(AbstractObject):
     """
-       This is a class that wraps the Python built-in `str` class. In addition to 
+       This is a class that wraps the Python built-in `str` class. In addition to
        providing access to most of `str`'s method call API, it allows sending
        such wrapped string between workers the same way Syft tensors can be
        moved around among workers.
@@ -96,7 +96,7 @@ class String(AbstractObject):
 
            Args:
                object: This could be any object whose string representation,i.e.,
-                   the output of its __str__() method is to be wrapped as a 
+                   the output of its __str__() method is to be wrapped as a
                    String object.
                encoding: This should be specified if the above `object` argument is
                    a bytes-like object. It specifies the encoding scheme used to create the
@@ -116,7 +116,7 @@ class String(AbstractObject):
 
         """
 
-        # get the specified kwargs for creating the base 'str'
+        # get the specified kwargs_ for creating the base 'str'
         # class
 
         self.encoding = encoding
@@ -147,7 +147,7 @@ class String(AbstractObject):
 
     def send(self, location: BaseWorker):
         """
-           Sends this String object to the worker specified by 'location'. 
+           Sends this String object to the worker specified by 'location'.
            and returns a pointer to that string as a StringPointer object.
 
            Args:
@@ -165,12 +165,12 @@ class String(AbstractObject):
         return ptr
 
     def get_class_attributes(self):
-        """returns minimal necessary keyword arguments to create a 
+        """returns minimal necessary keyword arguments to create a
            String object
         """
-        kwargs = dict(owner=self.owner)
+        kwargs_ = dict(owner=self.owner)
 
-        return kwargs
+        return kwargs_
 
     def on(self, object: str, wrap=False):
         """Takes and object of type strings and assigns it to
@@ -205,8 +205,8 @@ class String(AbstractObject):
         """This method is created in a way adapted to the logic implemented
            in hook_args.py. That is, it can be wrapped with the decorator
            @oerloaded.method.
-           
-           hook_args.py args hooking logic needs that the data types of 
+
+           hook_args.py args hooking logic needs that the data types of
            argument be unchanged. For instance, 'other' should always
            be of a fixed type 'String' or 'str' but not alternating
            between both. This can cause unexpected behaviou due to caching
@@ -219,12 +219,12 @@ class String(AbstractObject):
                       the decorator methods strips the `str` out of the `String`
                       object.
                other: a String object that we wish to concatenate to `_self`.
-                      Same as above, it is a String object as received by the 
+                      Same as above, it is a String object as received by the
                       decorator but here it will always be of type `str`.
 
            Returns:
                The concatentenated `str` object between `_self` and `other`.
-               this `str` object will be wrapped by the decorator into a 
+               this `str` object will be wrapped by the decorator into a
                String object
         """
 
@@ -277,7 +277,7 @@ class String(AbstractObject):
                string: the String object to be simplified
 
            Returns:
-               
+
                A tuple of simpler objects that are sufficient to recreate
                a String object that is a clone of `string`.
 
