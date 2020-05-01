@@ -11,7 +11,7 @@ from collections import OrderedDict
 from google.protobuf.empty_pb2 import Empty
 from syft.workers.abstract import AbstractWorker
 
-from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
+from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as InputTypeDescriptorPB
 
 
 def _bufferize_none(worker: AbstractWorker, obj: "type(None)") -> "Empty":
@@ -40,7 +40,7 @@ def _unbufferize_none(worker: AbstractWorker, obj: "Empty") -> "type(None)":
     return None
 
 
-def _bufferize_type(worker: AbstractWorker, obj) -> ClassTypePB:
+def _bufferize_type(worker: AbstractWorker, obj) -> InputTypeDescriptorPB:
     """
     This function gets the type object and returns the ClassType Protobuf message containing the string with the path
     of that that and the actual type..
@@ -55,7 +55,7 @@ def _bufferize_type(worker: AbstractWorker, obj) -> ClassTypePB:
           str_type_representation = _bufferize_type(worker, type("i'm a string"))
     """
 
-    proto_type = ClassTypePB()
+    proto_type = InputTypeDescriptorPB()
 
     if isinstance(obj, type):
         module_path = obj.__module__
@@ -65,7 +65,7 @@ def _bufferize_type(worker: AbstractWorker, obj) -> ClassTypePB:
     return proto_type
 
 
-def _unbufferize_type(worker: AbstractWorker, class_type_msg: ClassTypePB):
+def _unbufferize_type(worker: AbstractWorker, class_type_msg: InputTypeDescriptorPB):
     """
     This function receives the ClassType Protobuf message containing the string with the path + type, decodes the string
     and locates the type in a module, returning the type object.

@@ -3,7 +3,7 @@ from syft.workers.abstract import AbstractWorker
 from warnings import warn
 from typing import Union
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
-from syft_proto.execution.v1.type_wrapper_pb2 import ClassType as ClassTypePB
+from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as InputTypeDescriptorPB
 
 
 class NestedTypeWrapper:
@@ -12,15 +12,25 @@ class NestedTypeWrapper:
     """
 
     def __init__(self, nested_type=None):
-        if nested_type:
-            self.nested_input_types = NestedTypeWrapper.serialize_nested_type(nested_type)
-        else:
-            self.nested_input_types = None
+        self.nested_input_types = NestedTypeWrapper.enumerate_nested_types(nested_type)
 
     @staticmethod
-    def serialize_nested_type(input_arg: any) -> Union[list, tuple, dict, type]:
+    def get_object_identifiers(obj):
+        type_name = type(obj).__name__
+
+        if hasattr(obj, "name"):
+            object_name = obj.name
+        elif hasattr(obj, "id"):
+            object_name = obj.id
+        else:
+            object_name = repr(obj)
+
+        return (type_name, object_name)
+
+    @staticmethod
+    def enumerate_nested_types(input_arg: any) -> Union[list, tuple, dict, type]:
         """
-            Function to serialize input of a function/Plan, including nested types.
+            Method to enumerate the input of a function/Plan, including nested types.
 
             Note: supported nested structures: list, tuple, dict with string keys.
 
@@ -30,13 +40,16 @@ class NestedTypeWrapper:
             Returns:
                 Union[list, tuple, dict, type]: Nested structured with types instead of objects.
         """
+        if input_arg is None:
+            return None
+
         if isinstance(input_arg, (list, tuple)):
-            result = [NestedTypeWrapper.serialize_nested_type(elem) for elem in input_arg]
+            result = [NestedTypeWrapper.enumerate_nested_types(elem) for elem in input_arg]
             return tuple(result) if isinstance(input_arg, tuple) else result
 
         if isinstance(input_arg, dict):
             serialized_dict = {
-                k: NestedTypeWrapper.serialize_nested_type(v) for k, v in input_arg.items()
+                k: NestedTypeWrapper.enumerate_nested_types(v) for k, v in input_arg.items()
             }
             return serialized_dict
 
@@ -44,7 +57,7 @@ class NestedTypeWrapper:
 
     @staticmethod
     def raise_typecheck_warn(
-        obj_type: str, obj_name: str, build: str, call: str, path: str
+        typechecked_object: any, build: str, call: str, path: str
     ) -> None:
         """
             Function to raise a typecheck warning if two types differ.
@@ -59,13 +72,14 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
+        type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
         warn(
-            f"{obj_type} {obj_name} {path} has type {build}, while being built with type {call}.",
+            f"{type_name} {obj_name} {path} has type {build}, while being built with type {call}.",
             RuntimeWarning,
         )
 
     @staticmethod
-    def raise_missmatch_err(obj_type: str, obj_name: str, build: int, call: int, path: str) -> None:
+    def raise_missmatch_err(typechecked_object: any, build: int, call: int, path: str) -> None:
         """
             Function to raise an error if two nested structures differ in length.
 
@@ -79,12 +93,13 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
+        type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
         raise TypeError(
-            f"{obj_type} {obj_name} {path} has length {call}, while being build with length {build}."
+            f"{type_name} {obj_name} {path} has length {call}, while being build with length {build}."
         )
 
     @staticmethod
-    def raise_wrong_no_arguments_err(obj_type: str, obj_name: str, build: int, call: int) -> None:
+    def raise_wrong_number_arguments_err(typechecked_object: any, build: int, call: int) -> None:
         """
             Function to raise an error if the build/reference function has a different number of arguments.
 
@@ -97,10 +112,11 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
-        raise TypeError(f"{obj_type} {obj_name} requires {build} arguments, received {call}.")
+        type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
+        raise TypeError(f"{type_name} {obj_name} requires {build} arguments, received {call}.")
 
     @staticmethod
-    def raise_key_missing_err(obj_type: str, obj_name: str, key: any, path: str) -> None:
+    def raise_key_missing_err(typechecked_object: any, key: any, path: str) -> None:
         """
             Function to raise an error if the build/reference function has a different number of arguments.
 
@@ -113,11 +129,12 @@ class NestedTypeWrapper:
             Returns:
                  None
         """
+        type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
         raise KeyError(
-            f"{obj_type} {obj_name} {path} does not provide the key {key}, while being build with that key."
+            f"{type_name} {obj_name} {path} does not provide the key {key}, while being build with that key."
         )
 
-    def input_check(self, obj_type: str, obj_name: str, args: list) -> None:
+    def input_check(self, typechecked_object: any, args: list) -> None:
         """
             Method for input validation by comparing the serialized build input with the
             current call input, following the following steps:
@@ -139,57 +156,67 @@ class NestedTypeWrapper:
         """
 
         def check_type_nested_structure(
-            obj_type: str, obj_name: str, build: any, call: any, path: str
+            typechecked_object, build_arg_nested_type: Union[list, tuple, dict, type], call_arg_nested_obj: any, path: str
         ) -> None:
+            """
+                Recursive method to compare the nested input argument and the nested build argument.
+
+                Params:
+                    build_arg_nested_type: Can be either a nested element (list, tuple, dict) or a type.
+                    call_arg_nested_obj: Can be either a nested element (list, tuple, dict) or an object.
+
+                Returns:
+                    None
+            """
+
             iterable_supported_list = (list, tuple, dict)
 
-            if type(call) not in iterable_supported_list:
-                if not isinstance(call, build):
+            if type(call_arg_nested_obj) not in iterable_supported_list:
+                if not isinstance(call_arg_nested_obj, build_arg_nested_type):
                     NestedTypeWrapper.raise_typecheck_warn(
-                        obj_type, obj_name, build.__name__, type(call).__name__, path
+                        typechecked_object, build_arg_nested_type.__name__, type(call_arg_nested_obj).__name__, path
                     )
                 return
 
-            if type(build) != type(call):
+            if type(build_arg_nested_type) != type(call_arg_nested_obj):
                 NestedTypeWrapper.raise_typecheck_warn(
-                    obj_type, obj_name, type(build).__name__, type(call).__name__, path
+                    typechecked_object, type(build_arg_nested_type).__name__, type(call_arg_nested_obj).__name__, path
                 )
                 return
 
-            if isinstance(build, (list, tuple)):
-                if len(build) != len(call):
+            if isinstance(build_arg_nested_type, (list, tuple)):
+                if len(build_arg_nested_type) != len(call_arg_nested_obj):
                     NestedTypeWrapper.raise_missmatch_err(
-                        obj_type, obj_name, len(build), len(call), path
+                        typechecked_object, len(build_arg_nested_type), len(call_arg_nested_obj), path
                     )
 
-                for idx in range(len(build)):
+                for idx in range(len(build_arg_nested_type)):
                     check_type_nested_structure(
-                        obj_type, obj_name, build[idx], call[idx], f"element {idx} of " + path
+                        typechecked_object, build_arg_nested_type[idx], call_arg_nested_obj[idx], f"element {idx} of " + path
                     )
 
-            if isinstance(build, dict):
-                if len(build) != len(call):
+            if isinstance(build_arg_nested_type, dict):
+                if len(build_arg_nested_type) != len(call_arg_nested_obj):
                     NestedTypeWrapper.raise_missmatch_err(
-                        obj_type, obj_name, len(build), len(call), path
+                        typechecked_object, len(build_arg_nested_type), len(call_arg_nested_obj), path
                     )
 
-                for key in build.keys():
-                    if key in call:
+                for key in build_arg_nested_type.keys():
+                    if key in call_arg_nested_obj:
                         check_type_nested_structure(
-                            obj_type, obj_name, build[key], call[key], f"key {key} of " + path
+                            typechecked_object, build_arg_nested_type[key], call_arg_nested_obj[key], f"key {key} of " + path
                         )
                     else:
-                        NestedTypeWrapper.raise_key_missing_err(obj_type, obj_name, key, path)
+                        NestedTypeWrapper.raise_key_missing_err(typechecked_object, key, path)
 
         if len(args) != len(self.nested_input_types):
-            NestedTypeWrapper.raise_wrong_no_arguments_err(
-                obj_type, obj_name, len(self.nested_input_types), len(args)
+            NestedTypeWrapper.raise_wrong_number_arguments_err(
+                typechecked_object, len(self.nested_input_types), len(args)
             )
 
         for idx in range(len(args)):
             check_type_nested_structure(
-                obj_type,
-                obj_name,
+                typechecked_object,
                 self.nested_input_types[idx],
                 args[idx],
                 f"element {idx} of input",
@@ -245,7 +272,7 @@ class NestedTypeWrapper:
 
             if isinstance(obj, type):
                 container = NestedTypeWrapperPB.TypeContainer()
-                typePB = ClassTypePB()
+                typePB = InputTypeDescriptorPB()
                 module_path = obj.__module__
                 full_path_type = module_path + "." + obj.__name__
                 typePB.type_name = full_path_type

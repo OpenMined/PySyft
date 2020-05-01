@@ -617,157 +617,6 @@ def test_cached_multiple_location_plan_send(workers):
     assert len(pointers) == 2
 
 
-def test_plan_nested_no_build_inner(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return 2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    # Run plan remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_before(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_after(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-    plan_double.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_double_ptr = plan_abs.send(alice)
-    res = plan_double_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(199)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
-    def plan_double(data, state):
-        (bias,) = state.read()
-        return -2 * data + bias
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    plan_abs_ptr(x_ptr)
-
-    res = plan_abs_ptr(x_ptr)
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_multiple_plans_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(1043)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3]),))
-    def plan_3(data, state):
-        (bias,) = state.read()
-        return data + bias + 42
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_2_2(data):
-        return data + 1331
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([2]),))
-    def plan_2_1(data, state):
-        (bias,) = state.read()
-        return -2 * plan_3(data) + bias
-
-    @sy.func2plan()
-    def plan_1(data):
-        res = plan_2_1(data)
-        return plan_2_2(res)
-
-    # (-2 * (x + tensor(3) + 42) + tensor(2) + 1331)
-    #        -------------------
-    #              plan_3
-    # --------------------------------------
-    #                plan_2_1
-    # -----------------------------------------------
-    #                       plan_2_2
-
-    x = th.tensor(100)
-    plan_1.build(x)
-
-    # Test locally
-    assert plan_1(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_1_ptr = plan_1.send(alice)
-
-    res = plan_1_ptr(x_ptr)
-    assert res.get() == expected_res
-
-
 def test_plan_can_be_jit_traced(hook, workers):
     args_shape = [(1,)]
 
@@ -833,8 +682,8 @@ def test_plan_input_serialization(hook):
 
 
 def test_plan_input_usage(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
 
@@ -854,6 +703,9 @@ def test_plan_input_usage(hook):
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
     assert (result == x11).all()
+
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
 
     plan_test_2.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
     pointer_plan = plan_test_2.send(device_1)

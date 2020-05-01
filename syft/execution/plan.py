@@ -312,7 +312,7 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            self.input_types.input_check(type(self).__name__, self.name, args)
+            self.input_types.input_check(self, args)
             return self.role.execute(args)
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):

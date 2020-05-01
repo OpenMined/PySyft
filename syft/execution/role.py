@@ -60,9 +60,11 @@ class Role:
         # TODO Should we be able to rebuild?
         def register_nested_inputs(obj) -> None:
             if isinstance(obj, (list, tuple)):
-                _ = [register_nested_inputs(elem) for elem in obj]
+                for elem in obj:
+                    register_nested_inputs(elem)
             elif isinstance(obj, dict):
-                _ = [register_nested_inputs(v) for _, v in sorted(obj.items())]
+                for _, v in sorted(obj.items()):
+                    register_nested_inputs(v)
             elif isinstance(obj, PlaceHolder):
                 self.input_placeholder_ids.append(self._store_placeholders(obj).value)
 
