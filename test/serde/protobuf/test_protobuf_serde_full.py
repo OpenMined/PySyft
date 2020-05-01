@@ -33,6 +33,7 @@ samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
 samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id

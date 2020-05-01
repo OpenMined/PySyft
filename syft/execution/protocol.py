@@ -538,23 +538,25 @@ class Protocol(AbstractObject):
         Returns:
             ProtocolPB: a Protobuf message holding the unique attributes of the Protocol object
         """
-        # TODO
         protobuf_protocol = ProtocolPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_protocol.id, protocol.id)
+        protobuf_protocol.name = protocol.name
 
-        protobuf_protocol.role.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, protocol.role))
+        for role_id, role in protocol.roles.items():
+            protobuf_protocol.roles.get_or_create(role_id).CopyFrom(
+                sy.serde.protobuf.serde._bufferize(worker, role)
+            )
+
+        protobuf_protocol.input_repartition.extend(protocol.input_repartition)
+        protobuf_protocol.output_repartition.extend(protocol.output_repartition)
 
         protobuf_protocol.include_state = protocol.include_state
         protobuf_protocol.is_built = protocol.is_built
-        protobuf_protocol.name = protocol.name
         protobuf_protocol.tags.extend(protocol.tags)
 
-        if protobuf_protocol.description:
+        if protocol.description:
             protobuf_protocol.description = protocol.description
-
-        if protocol.torchscript:
-            protobuf_protocol.torchscript = protocol.torchscript.save_to_buffer()
 
         return protobuf_protocol
 
@@ -567,31 +569,34 @@ class Protocol(AbstractObject):
         Returns:
             protocol: a Protocol object
         """
-        # TODO
         id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_protocol.id)
-
-        role = sy.serde.protobuf.serde._unbufferize(worker, protobuf_protocol.role)
-
         name = protobuf_protocol.name
+
+        roles = {
+            role_id: sy.serde.protobuf.serde._unbufferize(worker, role)
+            for role_id, role in protobuf_protocol.roles.items()
+        }
+
+        input_repartition = protobuf_protocol.input_repartition
+        output_repartition = protobuf_protocol.output_repartition
+
+        include_state = protobuf_protocol.include_state
+        is_built = protobuf_protocol.is_built
         tags = set(protobuf_protocol.tags) if protobuf_protocol.tags else None
         description = protobuf_protocol.description if protobuf_protocol.description else None
 
-        protocol = Protocol(
-            role=role,
-            include_state=protobuf_protocol.include_state,
-            is_built=protobuf_protocol.is_built,
+        return Protocol(
             id=id_,
-            owner=worker,
             name=name,
+            roles=roles,
+            input_repartition=input_repartition,
+            output_repartition=output_repartition,
+            include_state=include_state,
+            is_built=is_built,
+            owner=worker,
             tags=tags,
             description=description,
         )
-
-        if protobuf_protocol.torchscript:
-            torchscript = io.BytesIO(protobuf_protocol.torchscript)
-            protocol.torchscript = torch.jit.load(torchscript)
-
-        return protocol
 
 
 # Auto-register Protocol build-time translations

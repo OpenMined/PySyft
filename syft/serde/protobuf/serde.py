@@ -13,6 +13,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
 from syft.execution.plan import Plan
+from syft.execution.protocol import Protocol
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.serde import compression
@@ -50,6 +51,7 @@ OBJ_PROTOBUF_TRANSLATORS = [
     PlaceholderId,
     PlaceHolder,
     Plan,
+    Protocol,
     PointerTensor,
     Role,
     State,
