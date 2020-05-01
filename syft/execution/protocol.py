@@ -267,40 +267,40 @@ class Protocol(AbstractObject):
 
         return protocol_copy
 
-    def __setattr__(self, name, value):
-        """Add new tensors or parameter attributes to the state and register them
-        in the owner's registry
-        """
-        if isinstance(value, torch.jit.ScriptModule):
-            object.__setattr__(self, name, value)
-        elif isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value, self.owner)
-            self.state_attributes[name] = value
-        elif isinstance(value, FrameworkLayerModule):
-            for param in value.parameters():
-                self.role.register_state_tensor(param, self.owner)
-            self.state_attributes[name] = value
-        else:
-            object.__setattr__(self, name, value)
+    # def __setattr__(self, name, value):
+    #     """Add new tensors or parameter attributes to the state and register them
+    #     in the owner's registry
+    #     """
+    #     if isinstance(value, torch.jit.ScriptModule):
+    #         object.__setattr__(self, name, value)
+    #     elif isinstance(value, FrameworkTensor):
+    #         self.role.register_state_tensor(value, self.owner)
+    #         self.state_attributes[name] = value
+    #     elif isinstance(value, FrameworkLayerModule):
+    #         for param in value.parameters():
+    #             self.role.register_state_tensor(param, self.owner)
+    #         self.state_attributes[name] = value
+    #     else:
+    #         object.__setattr__(self, name, value)
 
-    def __getattr__(self, name):
-        if name not in self.state_attributes:
-            raise AttributeError("State attribute not found.")
+    # def __getattr__(self, name):
+    #     if name not in self.state_attributes:
+    #         raise AttributeError("State attribute not found.")
 
-        value = self.state_attributes[name]
-        if not self.is_building:
-            return value
+    #     value = self.state_attributes[name]
+    #     if not self.is_building:
+    #         return value
 
-        if isinstance(value, FrameworkTensor):
-            return self.role.placeholders[value.id]
-        elif isinstance(value, FrameworkLayerModule):
-            # We need to deepcopy here otherwise the real layer is modified when the Protocol is being built
-            copied_layer = copy.deepcopy(value)
-            for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
-                (copied_name, _) = copied_param
-                copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
+    #     if isinstance(value, FrameworkTensor):
+    #         return self.role.placeholders[value.id]
+    #     elif isinstance(value, FrameworkLayerModule):
+    #         # We need to deepcopy here otherwise the real layer is modified when the Protocol is being built
+    #         copied_layer = copy.deepcopy(value)
+    #         for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
+    #             (copied_name, _) = copied_param
+    #             copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
 
-            return copied_layer
+    #         return copied_layer
 
     def __call__(self, *args):
         """
