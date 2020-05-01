@@ -75,6 +75,8 @@ class AutogradTensor(AbstractTensor):
         return attr_val
 
     def __add__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.add(other)
 
     def __iadd__(self, other):
@@ -83,6 +85,8 @@ class AutogradTensor(AbstractTensor):
         self.grad_fn = result.grad_fn
 
     def __sub__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.sub(other)
 
     def __isub__(self, other):
@@ -91,9 +95,14 @@ class AutogradTensor(AbstractTensor):
         self.grad_fn = result.grad_fn
 
     def __mul__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.mul(other)
 
     def __matmul__(self, other):
+        if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
+            other = AutogradTensor(requires_grad=False).on(other, wrap=False)
+
         return self.matmul(other)
 
     def __pow__(self, power, **kwargs):
@@ -144,7 +153,6 @@ class AutogradTensor(AbstractTensor):
                 # Put back SyftTensor on the tensors found in the response
                 result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
-                result.grad_fn.result = result
 
                 return result
 
@@ -181,6 +189,9 @@ class AutogradTensor(AbstractTensor):
         module.div = div
 
         def addmm(bias, input_tensor, weight):
+            if not isinstance(input_tensor, AutogradTensor):
+                input_tensor = AutogradTensor(requires_grad=False).on(input_tensor, wrap=False)
+
             matmul = input_tensor.matmul(weight)
             result = bias.add(matmul)
             return result
@@ -225,22 +236,22 @@ class AutogradTensor(AbstractTensor):
         response and replace a AutogradTensor on top of all tensors found in
         the response.
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
 
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -297,7 +308,6 @@ class AutogradTensor(AbstractTensor):
         )
 
         return (
-            tensor.owner,
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             chain,
             tensor.requires_grad,
@@ -311,7 +321,7 @@ class AutogradTensor(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AutogradTensor":
         """
-            This function reconstructs (deserializes) an AutogradTensors given its attributes in form of a tuple.
+            This function reconstructs (deserializes) an AutogradTensor given its attributes in form of a tuple.
             Args:
                 worker: the worker doing the deserialization
                 tensor_tuple: a tuple holding the attributes of the AutogradTensor
@@ -321,7 +331,6 @@ class AutogradTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
         (
-            owner,
             tensor_id,
             chain,
             requires_grad,
@@ -335,7 +344,7 @@ class AutogradTensor(AbstractTensor):
             chain = syft.serde.msgpack.serde._detail(worker, chain)
 
         tensor = AutogradTensor(
-            owner=owner,
+            owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,

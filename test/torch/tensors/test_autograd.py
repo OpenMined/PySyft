@@ -118,7 +118,7 @@ def test_backward_for_binary_cmd_with_inputs_of_different_dim_and_autograd(cmd, 
     assert (b.child.grad == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 @pytest.mark.parametrize("backward_one", [True, False])
 def test_backward_for_remote_binary_cmd_with_autograd(workers, cmd, backward_one):
     """
@@ -179,7 +179,7 @@ def test_backward_for_remote_inplace_binary_cmd_with_autograd(workers, cmd):
     assert (c.grad.get() == c_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on remote tensors using implicit wrapping
@@ -216,7 +216,7 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     assert (b.grad.get() == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["sqrt", "asin", "sin", "sinh", "tanh", "sigmoid"])
+@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on unary methods on remote tensors using
@@ -241,7 +241,7 @@ def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     assert (a.grad.get() == a_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 @pytest.mark.parametrize("backward_one", [True, False])
 def test_backward_for_fix_prec_binary_cmd_with_autograd(cmd, backward_one):
     """
@@ -308,7 +308,7 @@ def test_backward_for_linear_model_on_fix_prec_params_with_autograd():
     assert (model.bias.grad == bias_grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["__add__", "__mul__", "__matmul__"])
+@pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
 @pytest.mark.parametrize("backward_one", [True, False])
 def test_backward_for_additive_shared_binary_cmd_with_autograd(workers, cmd, backward_one):
     """
@@ -718,3 +718,103 @@ def test_train_remote_autograd_tensor(workers):
             model_local_trained.weight.copy().get().data, model_remote.weight.copy().get().data
         )
     )
+
+
+def test_train_without_requires_grad(workers):
+    def train(enc_model, enc_data, enc_target):
+        optimizer = torch.optim.SGD(enc_model.parameters(), lr=0.1).fix_precision()
+
+        for i in range(1):
+            optimizer.zero_grad()
+            enc_pred = enc_model(enc_data).squeeze(1)
+            l = (((enc_pred - enc_target) ** 2)).sum().refresh()
+            l.backward()
+            optimizer.step()
+
+        return enc_model.weight.copy().get().data
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+    james = workers["james"]
+
+    x_1 = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]]).to(torch.float)
+    y_1 = torch.tensor([0, 0, 1, 1]).to(torch.float)
+
+    enc_data_1 = x_1.fix_precision().share(alice, bob, crypto_provider=james, requires_grad=True)
+    enc_target_1 = y_1.fix_precision().share(alice, bob, crypto_provider=james, requires_grad=True)
+
+    model_1 = torch.nn.Linear(2, 1)
+    model_2 = torch.nn.Linear(2, 1)
+
+    # Make sure both networks have the same initial values for the parameters
+    for param_model_2, param_model_1 in zip(model_2.parameters(), model_1.parameters()):
+        param_model_2.data = param_model_1.data
+
+    enc_model_1 = model_1.fix_precision().share(
+        alice, bob, crypto_provider=james, requires_grad=True
+    )
+
+    model_weights_1 = train(enc_model_1, enc_data_1, enc_target_1)
+
+    # Prepare for new train
+    bob.clear_objects()
+    alice.clear_objects()
+    james.clear_objects()
+
+    enc_model_2 = model_2.fix_precision().share(
+        alice, bob, crypto_provider=james, requires_grad=True
+    )
+
+    # Without requires_grad
+    x_2 = torch.tensor([[0, 0], [0, 1], [1, 0], [1, 1]]).to(torch.float)
+    y_2 = torch.tensor([0, 0, 1, 1]).to(torch.float)
+
+    enc_data_2 = x_2.fix_precision().share(alice, bob, crypto_provider=james)
+    enc_target_2 = y_2.fix_precision().share(alice, bob, crypto_provider=james)
+
+    model_weights_2 = train(enc_model_2, enc_data_2, enc_target_2)
+
+    # Check the weights for the two models
+    assert torch.all(torch.eq(model_weights_1, model_weights_2))
+
+
+def test_garbage_collection(workers):
+    alice = workers["alice"]
+    bob = workers["bob"]
+    crypto_provider = workers["james"]
+
+    a = torch.ones(1, 5)
+    b = torch.ones(1, 5)
+    a = a.encrypt(workers=[alice, bob], crypto_provider=crypto_provider, requires_grad=True)
+    b = b.encrypt(workers=[alice, bob], crypto_provider=crypto_provider, requires_grad=True)
+
+    class Classifier(torch.nn.Module):
+        def __init__(self, in_features, out_features):
+            super(Classifier, self).__init__()
+            self.fc = torch.nn.Linear(in_features, out_features)
+
+        def forward(self, x):
+            logits = self.fc(x)
+            return logits
+
+    classifier = Classifier(in_features=5, out_features=5)
+    model = classifier.fix_prec().share(
+        alice, bob, crypto_provider=crypto_provider, requires_grad=True
+    )
+    opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
+    num_objs = 11
+    prev_loss = float("inf")
+    for i in range(3):
+        preds = classifier(a)
+        loss = ((b - preds) ** 2).sum()
+
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+        loss = loss.get().float_prec()
+
+        assert len(alice._objects) == num_objs
+        assert len(bob._objects) == num_objs
+        assert loss < prev_loss
+
+        prev_loss = loss

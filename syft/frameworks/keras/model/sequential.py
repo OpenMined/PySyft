@@ -69,7 +69,7 @@ def serve(model, num_requests=5):
 
     def step_fn():
         global request_ix
-        print("Served encrypted prediction {i} to client.".format(i=request_ix))
+        print(f"Served encrypted prediction {request_ix} to client.")
         request_ix += 1
 
     model._queue_server.run(model._tfe_session, num_steps=num_requests, step_fn=step_fn)
@@ -137,9 +137,7 @@ def _instantiate_tfe_layer(keras_layer, stored_keras_weights):
     except AttributeError:
         # TODO: rethink how we warn the user about this, maybe codegen a list of
         #       supported layers in a doc somewhere
-        raise RuntimeError(
-            "TF Encrypted does not yet support the " "{lcls} layer.".format(lcls=keras_layer_type)
-        )
+        raise RuntimeError(f"TF Encrypted does not yet support the {keras_layer_type} layer.")
 
     # Extract argument list expected by layer __init__
     # TODO[jason]: find a better way

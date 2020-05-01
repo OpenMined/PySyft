@@ -43,11 +43,11 @@ def test_federated_dataloader_shuffle(workers):
             if counter < 1:  # one batch for bob, two batches for alice (batch_size == 2)
                 assert (
                     data.location.id == "bob"
-                ), "id should be bob, counter = {0}, epoch = {1}".format(counter, epoch)
+                ), f"id should be bob, counter = {counter}, epoch = {epoch}"
             else:
                 assert (
                     data.location.id == "alice"
-                ), "id should be alice, counter = {0}, epoch = {1}".format(counter, epoch)
+                ), f"id should be alice, counter = {counter}, epoch = {epoch}"
             counter += 1
         assert counter == len(fdataloader), f"{counter} == {len(fdataloader)}"
 

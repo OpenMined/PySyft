@@ -2,7 +2,7 @@ import torch as th
 import syft as sy
 
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.messaging.plan import Plan
+from syft.execution.plan import Plan
 
 
 def test_create_pointer_to_plan(hook, workers):
@@ -94,7 +94,7 @@ def test_pointer_plan_parameters(workers):
             return x
 
     model = Net()
-    model.build(th.tensor([[0, 0]]))
+    model.build(th.tensor([[0.0, 0.0]]))
     model = model.send(bob)
 
     param_ptrs = model.parameters()

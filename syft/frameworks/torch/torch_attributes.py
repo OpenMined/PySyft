@@ -1,10 +1,8 @@
+import re
 from types import ModuleType
-from typing import Union
-from typing import Callable
-from typing import Any
 
-from syft.generic.frameworks.attributes import FrameworkAttributes
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
+from syft.generic.frameworks.attributes import FrameworkAttributes
 
 
 class TorchAttributes(FrameworkAttributes):
@@ -61,7 +59,6 @@ class TorchAttributes(FrameworkAttributes):
         # - functions like native_*
         # - functions that could use pointers or syft tensors
         self.exclude = [
-            "arange",
             "as_tensor",
             "from_numpy",
             "get_default_dtype",
@@ -88,9 +85,6 @@ class TorchAttributes(FrameworkAttributes):
             "isclose",
             "isfinite",
             "load",
-            "manual_seed",
-            "ones",
-            "range",
             "save",
             "set_",
             "set_num_threads",
@@ -101,7 +95,6 @@ class TorchAttributes(FrameworkAttributes):
             "stride",
             "tensor",
             "typename",
-            "zeros",
         ]
 
         self.worker_methods = ["tensor", "rand", "zeros", "randn", "randint"]
@@ -140,6 +133,12 @@ class TorchAttributes(FrameworkAttributes):
 
         # Dict {method_name: <is_inplace:bool>
         self.inplace_methods = {}
+        self._inplace_pattern = re.compile(r"(^__i(?!nit|mport|ter).+_)|^((?!^_+).+[^_])_$")
+        # Positives:
+        # __iadd__, share_
+
+        # Negatives:
+        # __init__, __import__, __iter__, __foo__, __bar_foo
 
     def is_inplace_method(self, method_name):
         """Determine if a method is inplace or not.
@@ -155,24 +154,7 @@ class TorchAttributes(FrameworkAttributes):
         try:
             return self.inplace_methods[method_name]
         except KeyError:
-            is_inplace = method_name[-1] == "_" and "__" not in method_name
+            is_inplace = True if re.search(self._inplace_pattern, method_name) else False
+
             self.inplace_methods[method_name] = is_inplace
             return is_inplace
-
-    @staticmethod
-    def apply_fix16922(torch):
-        """
-        Apply the fix made in PR16922 of PyTorch until people use PyTorch 1.0.2
-        :param torch: the pytorch module
-        """
-        broken_funcs = [
-            "max_pool1d",
-            "max_pool2d",
-            "max_pool3d",
-            "adaptive_max_pool1d",
-            "adaptive_max_pool2d",
-            "adaptive_max_pool3d",
-        ]
-        for broken_func in broken_funcs:
-            getattr(torch.nn.functional, broken_func).__module__ = "torch.nn.functional"
-            getattr(torch.nn.functional, broken_func).__name__ = broken_func

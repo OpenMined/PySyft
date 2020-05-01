@@ -312,6 +312,21 @@ def test_torch_device_simplify(workers):
     assert msgpack.serde._simplify(me, device)[1][0] == msgpack.serde._simplify(me, "cpu")
 
 
+def test_torch_dtype_simplify(workers):
+    """Test the simplification of torch.dtype"""
+
+    me = workers["me"]
+    dtype = torch.int32
+
+    assert (
+        msgpack.serde.detailers[msgpack.serde._simplify(me, dtype)[0]]
+        == torch_serde._detail_torch_dtype
+    )
+
+    # the simplified torch.dtype
+    assert msgpack.serde._simplify(me, dtype)[1] == "int32"
+
+
 def test_pointer_tensor_simplify(workers):
     """Test the simplification of PointerTensor"""
 
@@ -417,13 +432,13 @@ def test_ndarray_serde(compress):
 
 
 @pytest.mark.parametrize(
-    "compress_scheme", [compression.LZ4, compression.ZSTD, compression.NO_COMPRESSION]
+    "compress_scheme", [compression.LZ4, compression.ZLIB, compression.NO_COMPRESSION]
 )
 def test_compress_decompress(compress_scheme):
     if compress_scheme == compression.LZ4:
         compression._apply_compress_scheme = compression.apply_lz4_compression
-    elif compress_scheme == compression.ZSTD:
-        compression._apply_compress_scheme = compression.apply_zstd_compression
+    elif compress_scheme == compression.ZLIB:
+        compression._apply_compress_scheme = compression.apply_zlib_compression
     else:
         compression._apply_compress_scheme = compression.apply_no_compression
 
@@ -435,13 +450,13 @@ def test_compress_decompress(compress_scheme):
 
 
 @pytest.mark.parametrize(
-    "compress_scheme", [compression.LZ4, compression.ZSTD, compression.NO_COMPRESSION]
+    "compress_scheme", [compression.LZ4, compression.ZLIB, compression.NO_COMPRESSION]
 )
 def test_compressed_serde(compress_scheme):
     if compress_scheme == compression.LZ4:
         compression._apply_compress_scheme = compression.apply_lz4_compression
-    elif compress_scheme == compression.ZSTD:
-        compression._apply_compress_scheme = compression.apply_zstd_compression
+    elif compress_scheme == compression.ZLIB:
+        compression._apply_compress_scheme = compression.apply_zlib_compression
     else:
         compression._apply_compress_scheme = compression.apply_no_compression
 
@@ -626,8 +641,8 @@ def test_float(compress):
     [
         (True, compression.LZ4),
         (False, compression.LZ4),
-        (True, compression.ZSTD),
-        (False, compression.ZSTD),
+        (True, compression.ZLIB),
+        (False, compression.ZLIB),
         (True, compression.NO_COMPRESSION),
         (False, compression.NO_COMPRESSION),
     ],
@@ -636,8 +651,8 @@ def test_hooked_tensor(compress, compress_scheme):
     if compress:
         if compress_scheme == compression.LZ4:
             compression._apply_compress_scheme = compression.apply_lz4_compression
-        elif compress_scheme == compression.ZSTD:
-            compression._apply_compress_scheme = compression.apply_zstd_compression
+        elif compress_scheme == compression.ZLIB:
+            compression._apply_compress_scheme = compression.apply_zlib_compression
         else:
             compression._apply_compress_scheme = compression.apply_no_compression
     else:
