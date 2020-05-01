@@ -4,8 +4,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import syft.frameworks.torch.rnn as rnn
-import syft.frameworks.torch.nn as nn2
+import syft.frameworks.torch.nn as syft_nn
+
+
+def test_nn_linear(workers):
+    torch.manual_seed(121)  # Truncation might not always work so we set the random seed
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    t = torch.tensor([[1.0, 2]])
+    x = t.fix_prec().share(bob, alice, crypto_provider=james)
+    model = nn.Linear(2, 1)
+    model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
+    model.bias = nn.Parameter(torch.tensor([[-1.0]]))
+    model.fix_precision().share(bob, alice, crypto_provider=james)
+
+    y = model(x)
+
+    assert len(alice._objects) == 4  # x, y, weight, bias
+    assert len(bob._objects) == 4
+    assert y.get().float_prec() == torch.tensor([[2.0]])
 
 
 def test_conv2d(workers):
@@ -20,7 +36,7 @@ def test_conv2d(workers):
     torch._C._set_mkldnn_enabled(False)
 
     # Direct Import from Syft
-    model = nn2.Conv2d(1, 2, 3, bias=True)
+    model = syft_nn.Conv2d(1, 2, 3, bias=True)
     model_1 = nn.Conv2d(1, 2, 3, bias=True)
     model.weight = model_1.weight.fix_prec()
     model.bias = model_1.bias.fix_prec()
@@ -69,7 +85,7 @@ def test_pool2d():
         padding_mode="zeros",
     )
 
-    pool = nn2.AvgPool2d(2)
+    pool = syft_nn.AvgPool2d(2)
     pool_1 = nn.AvgPool2d(2)
     pool_2 = pool_1.copy().fix_prec()
 
@@ -135,10 +151,10 @@ def test_RNNCell():
     test_hidden = torch.rand(batch_size, hidden_size)
 
     # RNNCell implemented in pysyft
-    rnn_syft = rnn.RNNCell(input_size, hidden_size, True, "tanh")
+    rnn_syft = syft_nn.RNNCell(input_size, hidden_size, True, "tanh")
 
     # RNNCell implemented in original pytorch
-    rnn_torch = torch.nn.RNNCell(input_size, hidden_size, True, "tanh")
+    rnn_torch = nn.RNNCell(input_size, hidden_size, True, "tanh")
 
     # Make sure the weights of both RNNCell are identical
     rnn_syft.fc_xh.weight = rnn_torch.weight_ih
@@ -149,10 +165,10 @@ def test_RNNCell():
     output_syft = rnn_syft(test_input, test_hidden)
     output_torch = rnn_torch(test_input, test_hidden)
 
+    assert torch.allclose(output_syft, output_torch, atol=1e-2)
+
     # Reset mkldnn to the original state
     torch._C._set_mkldnn_enabled(mkldnn_enabled_init)
-
-    assert torch.all(torch.lt(torch.abs(output_syft - output_torch), 1e-6))
 
 
 def test_GRUCell():
@@ -173,10 +189,10 @@ def test_GRUCell():
     test_hidden = torch.rand(batch_size, hidden_size)
 
     # GRUCell implemented in pysyft
-    rnn_syft = rnn.GRUCell(input_size, hidden_size, True)
+    rnn_syft = syft_nn.GRUCell(input_size, hidden_size, True)
 
     # GRUCell implemented in original pytorch
-    rnn_torch = torch.nn.GRUCell(input_size, hidden_size, True)
+    rnn_torch = nn.GRUCell(input_size, hidden_size, True)
 
     # Make sure the weights of both GRUCell are identical
     rnn_syft.fc_xh.weight = rnn_torch.weight_ih
@@ -212,10 +228,10 @@ def test_LSTMCell():
     test_cell_state = torch.rand(batch_size, hidden_size)
 
     # LSTMCell implemented in pysyft
-    rnn_syft = rnn.LSTMCell(input_size, hidden_size, True)
+    rnn_syft = syft_nn.LSTMCell(input_size, hidden_size, True)
 
     # LSTMCell implemented in original pytorch
-    rnn_torch = torch.nn.LSTMCell(input_size, hidden_size, True)
+    rnn_torch = nn.LSTMCell(input_size, hidden_size, True)
 
     # Make sure the weights of both LSTMCell are identical
     rnn_syft.fc_xh.weight = rnn_torch.weight_ih
@@ -254,10 +270,10 @@ def test_RNN():
     test_hidden_state = torch.rand(num_layers, batch_size, hidden_size)
 
     # RNN implemented in pysyft
-    rnn_syft = rnn.RNN(input_size, hidden_size, num_layers)
+    rnn_syft = syft_nn.RNN(input_size, hidden_size, num_layers)
 
     # RNN implemented in original pytorch
-    rnn_torch = torch.nn.RNN(input_size, hidden_size, num_layers)
+    rnn_torch = nn.RNN(input_size, hidden_size, num_layers)
 
     # Make sure the weights of both RNN are identical
     rnn_syft.rnn_forward[0].fc_xh.weight = rnn_torch.weight_ih_l0
@@ -296,10 +312,10 @@ def test_GRU():
     test_hidden_state = torch.rand(num_layers, batch_size, hidden_size)
 
     # GRU implemented in pysyft
-    rnn_syft = rnn.GRU(input_size, hidden_size, num_layers)
+    rnn_syft = syft_nn.GRU(input_size, hidden_size, num_layers)
 
     # GRU implemented in original pytorch
-    rnn_torch = torch.nn.GRU(input_size, hidden_size, num_layers)
+    rnn_torch = nn.GRU(input_size, hidden_size, num_layers)
 
     # Make sure the weights of both GRU are identical
     rnn_syft.rnn_forward[0].fc_xh.weight = rnn_torch.weight_ih_l0
@@ -339,10 +355,10 @@ def test_LSTM():
     test_cell_state = torch.rand(num_layers, batch_size, hidden_size)
 
     # LSTM implemented in pysyft
-    rnn_syft = rnn.LSTM(input_size, hidden_size, num_layers)
+    rnn_syft = syft_nn.LSTM(input_size, hidden_size, num_layers)
 
     # LSTM implemented in original pytorch
-    rnn_torch = torch.nn.LSTM(input_size, hidden_size, num_layers)
+    rnn_torch = nn.LSTM(input_size, hidden_size, num_layers)
 
     # Make sure the weights of both LSTM are identical
     rnn_syft.rnn_forward[0].fc_xh.weight = rnn_torch.weight_ih_l0

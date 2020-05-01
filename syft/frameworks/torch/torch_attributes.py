@@ -1,10 +1,8 @@
+import re
 from types import ModuleType
-from typing import Union
-from typing import Callable
-from typing import Any
 
-from syft.generic.frameworks.attributes import FrameworkAttributes
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
+from syft.generic.frameworks.attributes import FrameworkAttributes
 
 
 class TorchAttributes(FrameworkAttributes):
@@ -135,6 +133,12 @@ class TorchAttributes(FrameworkAttributes):
 
         # Dict {method_name: <is_inplace:bool>
         self.inplace_methods = {}
+        self._inplace_pattern = re.compile(r"(^__i(?!nit|mport|ter).+_)|^((?!^_+).+[^_])_$")
+        # Positives:
+        # __iadd__, share_
+
+        # Negatives:
+        # __init__, __import__, __iter__, __foo__, __bar_foo
 
     def is_inplace_method(self, method_name):
         """Determine if a method is inplace or not.
@@ -150,6 +154,7 @@ class TorchAttributes(FrameworkAttributes):
         try:
             return self.inplace_methods[method_name]
         except KeyError:
-            is_inplace = method_name[-1] == "_" and "__" not in method_name
+            is_inplace = True if re.search(self._inplace_pattern, method_name) else False
+
             self.inplace_methods[method_name] = is_inplace
             return is_inplace
