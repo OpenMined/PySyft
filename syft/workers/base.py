@@ -559,12 +559,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             obj = self.get_obj(obj_id)
             response = source_worker.send(obj, *destinations, **kwargs_)
+            response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                response.garbage_collect_data = False
                 self.rm_obj(obj_id)
             return response
 
