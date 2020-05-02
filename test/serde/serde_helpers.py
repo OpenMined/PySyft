@@ -11,7 +11,7 @@ from syft.serde import msgpack
 
 # Make dict of type codes
 CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.simplifiers.items():
+for cls, simplifier in msgpack.serde.get_simplifiers():
     CODE[cls] = simplifier[0]
 FORCED_CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():

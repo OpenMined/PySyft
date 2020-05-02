@@ -16,7 +16,7 @@ from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.script_module_pb2 import ScriptModule as ScriptModulePB
 from syft_proto.types.torch.v1.script_function_pb2 import ScriptFunction as ScriptFunctionPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-from serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
+from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,

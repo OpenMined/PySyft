@@ -1,10 +1,12 @@
+import functools
 from typing import List
 import weakref
 
 import syft as sy
+from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
-from serde.syft_serializable import SyftSerializable
+from syft.serde.syft_serializable import SyftSerializable
 
 
 class AbstractTensor(AbstractObject, SyftSerializable):

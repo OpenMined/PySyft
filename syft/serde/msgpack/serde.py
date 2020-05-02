@@ -58,7 +58,7 @@ else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
 from syft.serde.msgpack.proto import proto_type_info
-from serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
+from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
 # Maps a type to a tuple containing its simplifier and detailer function
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
@@ -72,7 +72,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # If an object implements its own simplify and detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
-OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
+OBJ_SIMPLIFIER_AND_DETAILERS = None
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
@@ -88,6 +88,19 @@ EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureErr
 field = 2 ** 64
 strField = str(2 ** 64)
 
+
+def get_simplifiers():
+    init_global_vars_msgpack()
+    return simplifiers.items()
+
+
+def init_global_vars_msgpack():
+    global OBJ_SIMPLIFIER_AND_DETAILERS, simplifiers, forced_full_simplifiers, detailers
+    if OBJ_SIMPLIFIER_AND_DETAILERS is None:
+        OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
+        simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+
+
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     """To force a full simplify generally if the usual _simplify is not suitable.
@@ -100,6 +113,9 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     Returns:
         The simplified object.
     """
+
+    init_global_vars_msgpack()
+
     # check to see if there is a full simplifier
     # for this type. If there is, return the full simplified object.
     current_type = type(obj)
@@ -184,7 +200,7 @@ def _generate_simplifiers_and_detailers():
     return simplifiers, forced_full_simplifiers, detailers
 
 
-simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+simplifiers, forced_full_simplifiers, detailers = None, None, None
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
@@ -199,6 +215,9 @@ def _serialize_msgpack_simple(
     simplified: bool = False,
     force_full_simplification: bool = False,
 ) -> bin:
+
+    init_global_vars_msgpack()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -267,6 +286,9 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+
+    init_global_vars_msgpack()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -350,6 +372,8 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         characters.
     """
 
+    init_global_vars_msgpack()
+
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
     # breakpoint()
@@ -428,6 +452,9 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
+
+    init_global_vars_msgpack()
+
     if type(obj) in (list, tuple):
         val = detailers[obj[0]](worker, obj[1], **kwargs)
         return _detail_field(obj[0], val)

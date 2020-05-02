@@ -7,7 +7,7 @@ import syft as sy
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
-from serde.syft_serializable import SyftSerializable
+from syft.serde.syft_serializable import SyftSerializable
 
 
 class TrainConfig(SyftSerializable):

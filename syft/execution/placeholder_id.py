@@ -1,8 +1,7 @@
 import syft as sy
 from syft.workers.abstract import AbstractWorker
 
-from serde.syft_serializable import SyftSerializable
-
+from syft.serde.syft_serializable import SyftSerializable
 from syft_proto.execution.v1.placeholder_id_pb2 import PlaceholderId as PlaceholderIdPB
 
 

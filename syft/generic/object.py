@@ -4,7 +4,7 @@ from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
-from serde.syft_serializable import SyftSerializable
+from syft.serde.syft_serializable import SyftSerializable
 
 
 class AbstractObject(ABC, SyftSerializable):

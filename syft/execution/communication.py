@@ -164,7 +164,7 @@ class CommunicationAction(Action):
             for key, kwarg in protobuf_obj.kwargs.items()
         }
 
-        return CommunicationAction(obj_id, source, destinations, kwargs_)
+        return CommunicationAction(obj_id, name, source, destinations, kwargs_)
 
     @staticmethod
     def get_protobuf_schema() -> CommunicationActionPB:

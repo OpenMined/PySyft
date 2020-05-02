@@ -1,5 +1,5 @@
 from abc import ABC
-from serde.syft_serializable import SyftSerializable
+from syft.serde.syft_serializable import SyftSerializable
 
 
 class Action(ABC, SyftSerializable):

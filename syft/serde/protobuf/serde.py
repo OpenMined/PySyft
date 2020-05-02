@@ -12,7 +12,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
-from serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
+from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
 
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
@@ -34,7 +34,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+OBJ_PROTOBUF_TRANSLATORS = None
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -43,6 +43,22 @@ OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
 # For registering syft objects with custom bufferize and unbufferize methods
 # EXCEPTION_PROTOBUF_TRANSLATORS = [GetNotPermittedError, ResponseSignatureError]
 EXCEPTION_PROTOBUF_TRANSLATORS = []
+
+
+def get_buffarizers():
+    init_global_vars()
+    return bufferizers.items()
+
+
+def init_global_vars():
+    global OBJ_PROTOBUF_TRANSLATORS, bufferizers, forced_full_bufferizers, unbufferizers
+    if OBJ_PROTOBUF_TRANSLATORS is None:
+        OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+        (
+            bufferizers,
+            forced_full_bufferizers,
+            unbufferizers,
+        ) = _generate_bufferizers_and_unbufferizers()
 
 
 ## SECTION: High Level Translation Router
@@ -117,6 +133,7 @@ def _generate_bufferizers_and_unbufferizers():
     def _add_bufferizer_and_unbufferizer(
         curr_type, proto_type, bufferizer, unbufferizer, forced=False
     ):
+
         if forced:
             forced_full_bufferizers[curr_type] = bufferizer
             unbufferizers[proto_type] = unbufferizer
@@ -150,7 +167,7 @@ def _generate_bufferizers_and_unbufferizers():
     return bufferizers, forced_full_bufferizers, unbufferizers
 
 
-bufferizers, forced_full_bufferizers, unbufferizers = _generate_bufferizers_and_unbufferizers()
+bufferizers, forced_full_bufferizers, unbufferizers = None, None, None
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_bufferizers_found, no_full_bufferizers_found = set(), set()
@@ -197,6 +214,9 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+
+    init_global_vars()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -265,6 +285,9 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
     Returns:
         object: the deserialized form of the binary input.
     """
+
+    init_global_vars()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -303,6 +326,7 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # Check to see if there is a bufferizer
     # for this type. If there is, return the bufferized object.
     # breakpoint()
+    init_global_vars()
     current_type = type(obj)
     if current_type in bufferizers:
         result = bufferizers[current_type](worker, obj, **kwargs)
@@ -356,6 +380,9 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
+
+    init_global_vars()
+
     current_type = type(obj)
     if current_type in unbufferizers:
         return unbufferizers[current_type](worker, obj, **kwargs)

@@ -16,7 +16,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
-from serde.syft_serializable import SyftSerializable
+from syft.serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
