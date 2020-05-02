@@ -18,10 +18,9 @@ class State(SyftSerializable):
     sure they are provided to remote workers who are sent the Plan.
     """
 
-    def __init__(self, owner, state_placeholders=None):
-        self.owner = owner
+    def __init__(self, state_placeholders=None):
         self.state_placeholders = state_placeholders or []
-        self.read_placeholders = False
+        self.tracing = False
 
     def __str__(self):
         """Returns the string representation of the State."""
@@ -42,7 +41,7 @@ class State(SyftSerializable):
         return [placeholder.child for placeholder in self.state_placeholders]
 
     def copy(self) -> "State":
-        return State(owner=self.owner, state_placeholders=self.state_placeholders.copy())
+        return State(self.state_placeholders.copy())
 
     def read(self):
         """
@@ -51,25 +50,10 @@ class State(SyftSerializable):
         If run while a plan is building, declare all the state tensors to the plan
         currently building.
         """
-        # TODO clean this function
-        # If there is a plan building, it is referenced in init_plan
-        if self.owner.init_plan:
-            parent_plan = self.owner.init_plan
-            # to see if we are in a sub plan, we use state objects equality
-            if parent_plan.state != self:
-                # for all the placeholders in this sub plan, we report a copy of them
-                # in the parent plan and notify their origin using the #inner tag
-                for placeholder in self.state_placeholders:
-                    placeholder = placeholder.copy()
-                    placeholder.id = PlaceholderId(placeholder.child.id)
-                    placeholder.tags = set(("#inner",))
-                    parent_plan.state.state_placeholders.append(placeholder)
-                    parent_plan.role.placeholders[placeholder.child.id] = placeholder
-
-        if self.read_placeholders or self.owner.init_plan:
-            return [ph for ph in self.state_placeholders if "#inner" not in ph.tags]
+        if self.tracing:
+            return [ph for ph in self.state_placeholders]
         else:
-            return [ph.child for ph in self.state_placeholders if "#inner" not in ph.tags]
+            return [ph.child for ph in self.state_placeholders]
 
     @staticmethod
     def create_grad_if_missing(tensor):
@@ -130,7 +114,7 @@ class State(SyftSerializable):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state
 
     @staticmethod
@@ -189,7 +173,7 @@ class State(SyftSerializable):
         for state_placeholder, state_element in zip(state_placeholders, state_elements):
             state_placeholder.instantiate(state_element)
 
-        state = State(owner=worker, state_placeholders=state_placeholders)
+        state = State(state_placeholders)
         return state
 
     @staticmethod

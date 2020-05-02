@@ -1,10 +1,8 @@
-from typing import List
-from typing import Union
+from typing import List, Union, Tuple
 
 import syft as sy
-from syft.workers.abstract import AbstractWorker
-
 from syft.execution.action import Action
+from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.communication_action_pb2 import (
     CommunicationAction as CommunicationActionPB,
@@ -16,10 +14,11 @@ class CommunicationAction(Action):
 
     def __init__(
         self,
-        obj_id: Union[str, int],
-        source: Union[str, int],
-        destinations: List[Union[str, int]],
-        kwargs_: dict,
+        obj_id: Union[str, int],  # id of target object (almost always) pointer_tensor
+        name: str,  # the pointer_tensor method # @TODO: reactor to enum
+        source: Union[str, int],  # id of the sender (worker)
+        destinations: List[Union[str, int]],  # id of the receiver(s) (worker(s))
+        kwargs_: dict,  # key word args needed for the pointer tensor method == self.name
     ):
         """Initialize an communication action
 
@@ -28,6 +27,13 @@ class CommunicationAction(Action):
         super().__init__()
 
         self.obj_id = obj_id
+        if name in ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]:
+            #  float_prec, fix_prec => should be computation actions (they modify tensors)?
+            self.name = name
+        else:
+            raise ValueError(
+                f"name `{name}` for CommunicationAction is not in the list of supported actions"
+            )
         self.source = source
         self.destinations = destinations
         self.kwargs = kwargs_
@@ -36,11 +42,12 @@ class CommunicationAction(Action):
     def contents(self):
         """Return a tuple with the contents of the operation (backwards compatability)."""
 
-        return (self.obj_id, self.source, self.destinations, self.kwargs)
+        return (self.obj_id, self.name, self.source, self.destinations, self.kwargs)
 
     def __eq__(self, other):
         return (
             self.obj_id == other.obj_id
+            and self.name == other.name
             and self.source == other.source
             and self.destinations == other.destinations
             and self.kwargs == other.kwargs
@@ -60,6 +67,7 @@ class CommunicationAction(Action):
         """
         return (
             sy.serde.msgpack.serde._simplify(worker, communication.obj_id),
+            sy.serde.msgpack.serde._simplify(worker, communication.name),
             sy.serde.msgpack.serde._simplify(worker, communication.source),
             sy.serde.msgpack.serde._simplify(worker, communication.destinations),
             sy.serde.msgpack.serde._simplify(worker, communication.kwargs),
@@ -81,15 +89,16 @@ class CommunicationAction(Action):
             communication = detail(sy.local_worker, communication_tuple)
         """
 
-        (obj_id, source, destinations, kwargs_) = communication_tuple
+        (obj_id, name, source, destinations, kwargs_) = communication_tuple
 
         detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
+        detailed_name = sy.serde.msgpack.serde._detail(worker, name)
         detailed_source = sy.serde.msgpack.serde._detail(worker, source)
         detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
         detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
 
         return CommunicationAction(
-            detailed_obj, detailed_source, detailed_destinations, detailed_kwargs
+            detailed_obj, detailed_name, detailed_source, detailed_destinations, detailed_kwargs
         )
 
     @staticmethod
@@ -107,6 +116,7 @@ class CommunicationAction(Action):
             data = bufferize(sy.local_worker, communication)
         """
         protobuf_obj = CommunicationActionPB()
+        protobuf_obj.name = communication.name
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
@@ -141,6 +151,8 @@ class CommunicationAction(Action):
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
+        name = protobuf_obj.name
+
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj_id)
         source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
         destinations = [

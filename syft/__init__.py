@@ -43,12 +43,6 @@ from syft.frameworks.torch.hook.hook import TorchHook
 from syft.execution.protocol import Protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
-from syft.execution.plan import method2plan
-from syft.execution.placeholder import PlaceHolder
-
-# Import federate learning objects
-from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
-from syft.federated.train_config import TrainConfig
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -108,7 +102,6 @@ __all__.extend(
         "WebsocketServerWorker",
         "Plan",
         "func2plan",
-        "method2plan",
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
