@@ -31,7 +31,6 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-from typing import Callable
 
 import inspect
 import msgpack as msgpack_lib
@@ -59,7 +58,7 @@ else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
 from syft.serde.msgpack.proto import proto_type_info
-from syft.interfaces.msgpack_interface import MsgpackInterface, get_msgpack_subclasses
+from serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
 # Maps a type to a tuple containing its simplifier and detailer function
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
@@ -73,7 +72,7 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # If an object implements its own simplify and detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
-OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(MsgpackInterface))
+OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file

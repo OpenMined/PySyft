@@ -1,9 +1,8 @@
 from abc import ABC
-from syft.interfaces.protobuf_interface import ProtobufInterface
-from syft.interfaces.msgpack_interface import MsgpackInterface
+from serde.syft_serializable import SyftSerializable
 
 
-class Action(ABC, ProtobufInterface, MsgpackInterface):
+class Action(ABC, SyftSerializable):
     """Describes the concrete steps workers can take with objects they own
 
     In Syft, an Action is when one worker wishes to tell another worker to do something with

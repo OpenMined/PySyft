@@ -1,6 +1,6 @@
 from abc import ABC
-from syft.interfaces.msgpack_interface import MsgpackInterface
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractWorker(ABC, MsgpackInterface):
+class AbstractWorker(ABC, SyftSerializable):
     pass

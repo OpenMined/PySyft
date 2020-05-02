@@ -4,25 +4,15 @@ import inspect
 import re
 import syft
 from syft import dependency_check
-from syft.execution.computation import ComputationAction
-from syft.execution.communication import CommunicationAction
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.execution.placeholder import PlaceHolder
-from syft.execution.placeholder_id import PlaceholderId
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
-from syft.execution.plan import Plan
-from syft.execution.protocol import Protocol
-from syft.execution.role import Role
-from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
-from syft.interfaces.protobuf_interface import ProtobufInterface, get_protobuf_subclasses
+from serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
 
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
@@ -44,7 +34,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(ProtobufInterface))
+OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]

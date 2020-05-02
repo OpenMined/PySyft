@@ -16,8 +16,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
-from syft.interfaces.protobuf_interface import ProtobufInterface
-from syft.interfaces.msgpack_interface import MsgpackInterface
+from serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -25,7 +24,7 @@ if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractObject, ProtobufInterface):
+class ObjectPointer(AbstractObject, SyftSerializable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects

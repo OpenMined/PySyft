@@ -9,8 +9,6 @@ All Syft message types extend the Message class.
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Union
-from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
@@ -18,15 +16,13 @@ from syft.workers.abstract import AbstractWorker
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
-from syft.interfaces.protobuf_interface import ProtobufInterface
-from syft.interfaces.msgpack_interface import MsgpackInterface
+from serde.syft_serializable import SyftSerializable
 
 
-class Message(ABC, ProtobufInterface, MsgpackInterface):
+class Message(ABC, SyftSerializable):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction

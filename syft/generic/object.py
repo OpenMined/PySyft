@@ -4,11 +4,10 @@ from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
-from syft.interfaces.protobuf_interface import ProtobufInterface
-from syft.interfaces.msgpack_interface import MsgpackInterface
+from serde.syft_serializable import SyftSerializable
 
 
-class AbstractObject(ABC, ProtobufInterface, MsgpackInterface):
+class AbstractObject(ABC, SyftSerializable):
     """
     This is a generic object abstraction.
     """
