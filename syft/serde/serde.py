@@ -10,10 +10,10 @@ from typing import Callable
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
-    worker: "AbstractWorker" = None,
+    worker=None,
     simplified: bool = False,
     force_full_simplification: bool = False,
-    strategy: Callable[[object, "AbstractWorker"], bin] = None,
+    strategy: Callable[[object], bin] = None,
 ) -> bin:
     """This method can serialize any object PySyft needs to send or store.
 
@@ -46,8 +46,8 @@ def serialize(
 
 def deserialize(
     binary: bin,
-    worker: "AbstractWorker" = None,
-    strategy: Callable[[bin, "AbstractWorker"], object] = None,
+    worker=None,
+    strategy: Callable[[bin], object] = None,
 ) -> object:
     """ This method can deserialize any object PySyft needs to send or store.
 
