@@ -474,6 +474,9 @@ class Protocol(AbstractObject):
             tuple: a tuple holding the unique attributes of the Protocol object
 
         """
+        if not protocol.is_built:
+            raise RuntimeError("A Protocol needs to be built before being serialized.")
+
         return (
             sy.serde.msgpack.serde._simplify(worker, protocol.id),
             sy.serde.msgpack.serde._simplify(worker, protocol.name),
@@ -481,7 +484,6 @@ class Protocol(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, protocol.input_repartition),
             sy.serde.msgpack.serde._simplify(worker, protocol.output_repartition),
             sy.serde.msgpack.serde._simplify(worker, protocol.include_state),
-            sy.serde.msgpack.serde._simplify(worker, protocol.is_built),
             sy.serde.msgpack.serde._simplify(worker, protocol.tags),
             sy.serde.msgpack.serde._simplify(worker, protocol.description),
         )
@@ -502,7 +504,6 @@ class Protocol(AbstractObject):
             input_repartition,
             output_repartition,
             include_state,
-            is_built,
             tags,
             description,
         ) = protocol_tuple
@@ -523,7 +524,7 @@ class Protocol(AbstractObject):
             input_repartition=input_repartition,
             output_repartition=output_repartition,
             include_state=include_state,
-            is_built=is_built,
+            is_built=True,
             tags=tags,
             description=description,
         )
@@ -538,6 +539,9 @@ class Protocol(AbstractObject):
         Returns:
             ProtocolPB: a Protobuf message holding the unique attributes of the Protocol object
         """
+        if not protocol.is_built:
+            raise RuntimeError("A Protocol needs to be built before being serialized.")
+
         protobuf_protocol = ProtocolPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_protocol.id, protocol.id)
@@ -552,7 +556,6 @@ class Protocol(AbstractObject):
         protobuf_protocol.output_repartition.extend(protocol.output_repartition)
 
         protobuf_protocol.include_state = protocol.include_state
-        protobuf_protocol.is_built = protocol.is_built
         protobuf_protocol.tags.extend(protocol.tags)
 
         if protocol.description:
@@ -581,7 +584,6 @@ class Protocol(AbstractObject):
         output_repartition = protobuf_protocol.output_repartition
 
         include_state = protobuf_protocol.include_state
-        is_built = protobuf_protocol.is_built
         tags = set(protobuf_protocol.tags) if protobuf_protocol.tags else None
         description = protobuf_protocol.description if protobuf_protocol.description else None
 
@@ -592,7 +594,7 @@ class Protocol(AbstractObject):
             input_repartition=input_repartition,
             output_repartition=output_repartition,
             include_state=include_state,
-            is_built=is_built,
+            is_built=True,
             owner=worker,
             tags=tags,
             description=description,
