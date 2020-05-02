@@ -1,7 +1,11 @@
 coverage:
-    range: 95..100
-    round: up
-    precision: 2
+    status:
+        project:
+            default:
+                informational: true
+        patch:
+            default:
+                informational: true
 
 comment:
     layout: "reach, diff, flags, files"

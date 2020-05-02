@@ -52,10 +52,11 @@ def test_serde_coverage():
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip_protobuf(cls, workers):
+def test_serde_roundtrip_protobuf(cls, workers, hook):
     """Checks that values passed through serialization-deserialization stay same"""
-    serde_worker = syft.hook.local_worker
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
     original_framework = serde_worker.framework
+    workers["serde_worker"] = serde_worker
     _samples = samples[cls](workers=workers)
     for sample in _samples:
         _to_protobuf = (

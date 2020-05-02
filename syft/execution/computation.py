@@ -11,7 +11,7 @@ from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as 
 class ComputationAction(Action):
     """Describes mathematical operations performed on tensors"""
 
-    def __init__(self, name, target, args_, kwargs_, return_ids):
+    def __init__(self, name, target, args_, kwargs_, return_ids, return_value=False):
         """Initialize an action
 
         Args:
@@ -24,6 +24,9 @@ class ComputationAction(Action):
                 the results will be ahead of time. Importantly, this allows the client to pre-initalize the
                 pointers to the future data, regardless of whether the action has yet executed. It also
                 reduces the size of the response from the action (which is very often empty).
+            return_value (boolean): return the result or not. If true, the result is directly returned,
+                if not, the command sender will create a pointer to the remote result using the return_ids
+                and will need to do .get() later to get the result.
 
         """
 
@@ -35,6 +38,7 @@ class ComputationAction(Action):
         self.args = args_
         self.kwargs = kwargs_
         self.return_ids = return_ids
+        self.return_value = return_value
 
     @property
     def contents(self):
@@ -48,7 +52,7 @@ class ComputationAction(Action):
 
         message = (self.name, self.target, self.args, self.kwargs)
 
-        return (message, self.return_ids)
+        return (message, self.return_ids, self.return_value)
 
     @staticmethod
     def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
@@ -69,6 +73,7 @@ class ComputationAction(Action):
         return (
             sy.serde.msgpack.serde._simplify(worker, message),
             sy.serde.msgpack.serde._simplify(worker, action.return_ids),
+            sy.serde.msgpack.serde._simplify(worker, action.return_value),
         )
 
     @staticmethod
@@ -88,13 +93,15 @@ class ComputationAction(Action):
         """
         message = msg_tuple[0]
         return_ids = msg_tuple[1]
+        return_value = msg_tuple[2]
 
         detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
         detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
+        detailed_return_value = sy.serde.msgpack.serde._detail(worker, return_value)
 
         name, target, args_, kwargs_ = detailed_msg
 
-        return ComputationAction(name, target, args_, kwargs_, detailed_ids)
+        return ComputationAction(name, target, args_, kwargs_, detailed_ids, detailed_return_value)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, action: "ComputationAction") -> "ComputationActionPB":
@@ -178,11 +185,11 @@ class ComputationAction(Action):
             )
         else:
             target = None
-        args = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
+        args_ = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
 
-        kwargs = {}
+        kwargs_ = {}
         for key in protobuf_obj.kwargs:
-            kwargs[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
+            kwargs_[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = [
             sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
@@ -194,8 +201,10 @@ class ComputationAction(Action):
         ]
 
         if return_placeholder_ids:
-            action = ComputationAction(command, target, tuple(args), kwargs, return_placeholder_ids)
+            action = ComputationAction(
+                command, target, tuple(args_), kwargs_, return_placeholder_ids
+            )
         else:
-            action = ComputationAction(command, target, tuple(args), kwargs, tuple(return_ids))
+            action = ComputationAction(command, target, tuple(args_), kwargs_, tuple(return_ids))
 
         return action

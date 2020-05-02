@@ -8,7 +8,7 @@ import torch
 import numpy as np
 from torchvision import datasets
 from torchvision import transforms
-
+from syft.frameworks.torch.fl import utils
 
 KEEP_LABELS_DICT = {
     "alice": [0, 1, 2, 3],
@@ -19,7 +19,9 @@ KEEP_LABELS_DICT = {
 }
 
 
-def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=None, training=True):
+def start_websocket_server_worker(
+    id, host, port, hook, verbose, keep_labels=None, training=True, pytest_testing=False
+):
     """Helper function for spinning up a websocket server and setting up the local datasets."""
 
     server = WebsocketServerWorker(id=id, host=host, port=port, hook=hook, verbose=verbose)
@@ -57,14 +59,40 @@ def start_websocket_server_worker(id, host, port, hook, verbose, keep_labels=Non
         )
         key = "mnist_testing"
 
+    # Adding Dataset
     server.add_dataset(dataset, key=key)
-    count = [0] * 10
-    logger.info(
-        "MNIST dataset (%s set), available numbers on %s: ", "train" if training else "test", id
-    )
-    for i in range(10):
-        count[i] = (dataset.targets == i).sum().item()
-        logger.info("      %s: %s", i, count[i])
+    if pytest_testing:
+        # Setup toy data (vectors example)
+        data_vectors = torch.tensor([[-1, 2.0], [0, 1.1], [-1, 2.1], [0, 1.2]], requires_grad=True)
+        target_vectors = torch.tensor([[1], [0], [1], [0]])
+
+        server.add_dataset(sy.BaseDataset(data_vectors, target_vectors), key="vectors")
+
+        # Setup toy data (xor example)
+        data_xor = torch.tensor(
+            [[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True
+        )
+        target_xor = torch.tensor([1.0, 1.0, 0.0, 0.0], requires_grad=False)
+
+        server.add_dataset(sy.BaseDataset(data_xor, target_xor), key="xor")
+
+        # Setup gaussian mixture dataset
+        data, target = utils.create_gaussian_mixture_toy_data(nr_samples=100)
+        server.add_dataset(sy.BaseDataset(data, target), key="gaussian_mixture")
+
+        # Setup partial iris dataset
+        data, target = utils.iris_data_partial()
+        dataset = sy.BaseDataset(data, target)
+        dataset_key = "iris"
+        server.add_dataset(dataset, key=dataset_key)
+    else:
+        count = [0] * 10
+        logger.info(
+            "MNIST dataset (%s set), available numbers on %s: ", "train" if training else "test", id
+        )
+        for i in range(10):
+            count[i] = (dataset.targets == i).sum().item()
+            logger.info("      %s: %s", i, count[i])
 
     logger.info("datasets: %s", server.datasets)
     if training:
@@ -104,7 +132,7 @@ def start_proc_steal_data_over_sockets(participant, kwargs):  # pragma: no cover
 if __name__ == "__main__":
 
     # Logging setup
-    FORMAT = "%(asctime)s | %(message)s"
+    FORMAT = "%(asctime)s %(levelname)s %(filename)s(l:%(lineno)d, p:%(process)d) - %(message)s"
     logging.basicConfig(format=FORMAT)
     logger = logging.getLogger("run_websocket_server")
     logger.setLevel(level=logging.DEBUG)
@@ -137,10 +165,11 @@ if __name__ == "__main__":
         type=str,
         default="normal",
         help="""can run websocket server for websockets examples of mnist/mnist-parallel or
-        pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
-        for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
-        and 'steal_data' for pen_tesing stealing data over sockets""",
+    pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
+    for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
+    and 'steal_data' for pen_tesing stealing data over sockets""",
     )
+    parser.add_argument("--pytest_testing", action="store_true", help="""Used for pytest testing""")
     args = parser.parse_args()
 
     # Hook and start server
@@ -162,13 +191,15 @@ if __name__ == "__main__":
         else:
             server = WebsocketServerWorker(**kwargs)
             server.start()
-    elif args.notebook == "mnist-parallel":
+    elif args.notebook == "mnist-parallel" or args.pytest_testing == True:
         server = start_websocket_server_worker(
             id=args.id,
             host=args.host,
             port=args.port,
             hook=hook,
             verbose=args.verbose,
-            keep_labels=KEEP_LABELS_DICT[args.id],
+            keep_labels=KEEP_LABELS_DICT[args.id]
+            if args.id in KEEP_LABELS_DICT
+            else list(range(10)),
             training=not args.testing,
         )

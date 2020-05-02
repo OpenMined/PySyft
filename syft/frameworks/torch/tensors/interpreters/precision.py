@@ -1,4 +1,5 @@
 import torch
+import warnings
 
 import syft
 from syft.frameworks.torch.nn import nn
@@ -15,7 +16,8 @@ class FixedPrecisionTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field: int = 2 ** 62,
+        field: int = None,
+        dtype: str = "long",
         base: int = 10,
         precision_fractional: int = 3,
         kappa: int = 1,
@@ -39,10 +41,33 @@ class FixedPrecisionTensor(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
-        self.field = field
         self.base = base
         self.precision_fractional = precision_fractional
         self.kappa = kappa
+        self.dtype = dtype
+        if dtype == "long":
+            self.field = 2 ** 64
+            self.torch_dtype = torch.int64
+        elif dtype == "int":
+            self.field = 2 ** 32
+            self.torch_dtype = torch.int32
+        else:
+            # Since n mod 0 is not defined
+            warnings.warn("Prefer to use dtype instead of field")
+            if isinstance(field, int) and field > 0:
+                if field <= 2 ** 32:
+                    self.dtype = "int"
+                    self.field = 2 ** 32
+                    self.torch_dtype = torch.int32
+                else:
+                    self.dtype = "long"
+                    self.field = 2 ** 64
+                    self.torch_dtype = torch.int64
+            else:
+                # Invalid args dtype and field
+                raise ValueError(
+                    "Unsupported arg value for dtype. Use dtype='long' or dtype='int'."
+                )
 
     def get_class_attributes(self):
         """
@@ -55,6 +80,7 @@ class FixedPrecisionTensor(AbstractTensor):
             "base": self.base,
             "precision_fractional": self.precision_fractional,
             "kappa": self.kappa,
+            "dtype": self.dtype,
         }
 
     @property
@@ -88,9 +114,7 @@ class FixedPrecisionTensor(AbstractTensor):
         """This method encodes the .child object using fixed precision"""
 
         rational = self.child
-
         upscaled = (rational * self.base ** self.precision_fractional).long()
-
         if check_range:
             assert (
                 upscaled.abs() < (self.field / 2)
@@ -98,21 +122,18 @@ class FixedPrecisionTensor(AbstractTensor):
                 f"{rational} cannot be correctly embedded: choose bigger field or a lower precision"
             )
 
-        field_element = upscaled % self.field
+        field_element = upscaled
         field_element.owner = rational.owner
-
-        self.child = field_element
+        self.child = field_element.type(self.torch_dtype)
         return self
 
     def float_precision(self):
         """this method returns a new tensor which has the same values as this
         one, encoded with floating point precision"""
+        value = self.child.type(self.torch_dtype)
+        gate = value.native_lt(0).type(self.torch_dtype)
 
-        value = self.child.long() % self.field
-        torch_max_value = torch.tensor(self.field).long()
-
-        gate = value.native_gt(torch_max_value / 2).long()
-        neg_nums = (value - self.field) * gate
+        neg_nums = value * gate
         pos_nums = value * (1 - gate)
         result = (neg_nums + pos_nums).float() / (self.base ** self.precision_fractional)
 
@@ -128,9 +149,8 @@ class FixedPrecisionTensor(AbstractTensor):
             self.child = self.child / truncation
             return self
         else:
-            torch_max_value = torch.tensor(self.field).long()
-            gate = self.child.native_gt(torch_max_value / 2).long()
-            neg_nums = (self.child - self.field) / truncation + self.field
+            gate = self.child.native_lt(0).type(self.torch_dtype)
+            neg_nums = self.child / truncation
             pos_nums = self.child / truncation
             self.child = neg_nums * gate + pos_nums * (1 - gate)
             return self
@@ -153,7 +173,6 @@ class FixedPrecisionTensor(AbstractTensor):
             _self, other = other, _self.wrap()
 
         response = getattr(_self, "add")(other)
-        response %= self.field  # Wrap around the field
 
         return response
 
@@ -194,7 +213,6 @@ class FixedPrecisionTensor(AbstractTensor):
             _self, other = -other, -_self.wrap()
 
         response = getattr(_self, "sub")(other)
-        response %= self.field  # Wrap around the field
 
         return response
 
@@ -288,33 +306,17 @@ class FixedPrecisionTensor(AbstractTensor):
             # 2) overflow when scaling self in division
 
             # sgn_self is 1 when new_self is positive else it's 0
-            # The comparison is different is new_self is a torch tensor or an AST
-            sgn_self = (
-                (new_self < self.field // 2).long()
-                if isinstance(new_self, torch.Tensor)
-                else new_self > 0
-            )
+            # The comparison is different if new_self is a torch tensor or an AST
+            sgn_self = (new_self > 0).type(self.torch_dtype)
             pos_self = new_self * sgn_self
-            neg_self = (
-                (self.field - new_self) * (1 - sgn_self)
-                if isinstance(new_self, torch.Tensor)
-                else new_self * (sgn_self - 1)
-            )
+            neg_self = new_self * (sgn_self - 1)
             new_self = neg_self + pos_self
 
             # sgn_other is 1 when new_other is positive else it's 0
-            # The comparison is different is new_other is a torch tensor or an AST
-            sgn_other = (
-                (new_other < self.field // 2).long()
-                if isinstance(new_other, torch.Tensor)
-                else new_other > 0
-            )
+            # The comparison is different if new_other is a torch tensor or an AST
+            sgn_other = (new_other > 0).type(self.torch_dtype)
             pos_other = new_other * sgn_other
-            neg_other = (
-                (self.field - new_other) * (1 - sgn_other)
-                if isinstance(new_other, torch.Tensor)
-                else new_other * (sgn_other - 1)
-            )
+            neg_other = new_other * (sgn_other - 1)
             new_other = neg_other + pos_other
 
             # If both have the same sign, sgn is 1 else it's 0
@@ -325,30 +327,22 @@ class FixedPrecisionTensor(AbstractTensor):
 
             if cmd == "div":
                 new_self *= self.base ** self.precision_fractional
-
         # Send it to the appropriate class and get the response
         response = getattr(new_self, cmd)(new_other)
-
         # Put back SyftTensor on the tensors found in the response
         response = hook_args.hook_response(
             cmd, response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
-
         if not isinstance(other, (int, torch.Tensor, AdditiveSharingTensor)):
             if cmd == "mul":
                 # If operation is mul, we need to truncate
                 response = response.truncate(self.precision_fractional, check_sign=False)
-
-            response %= self.field  # Wrap around the field
 
             if changed_sign:
                 # Give back its sign to response
                 pos_res = response * sgn
                 neg_res = response * (sgn - 1)
                 response = neg_res + pos_res
-
-        else:
-            response %= self.field  # Wrap around the field
 
         return response
 
@@ -442,7 +436,6 @@ class FixedPrecisionTensor(AbstractTensor):
             "matmul", response, wrap_type=type(self), wrap_args=self.get_class_attributes()
         )
 
-        response %= self.field  # Wrap around the field
         response = response.truncate(other.precision_fractional)
 
         return response
@@ -626,10 +619,10 @@ class FixedPrecisionTensor(AbstractTensor):
         """
 
         coeffs = syft.common.util.chebyshev_series(torch.tanh, maxval, terms)[1::2]
-        coeffs = coeffs.fix_precision(**tensor.get_class_attributes()) % tensor.field
+        coeffs = coeffs.fix_precision(**tensor.get_class_attributes())
         coeffs = coeffs.unsqueeze(1)
 
-        value = torch.tensor(maxval).fix_precision(**tensor.get_class_attributes()) % tensor.field
+        value = torch.tensor(maxval).fix_precision(**tensor.get_class_attributes())
         tanh_polys = syft.common.util.chebyshev_polynomials(tensor.div(value.child), terms)
         tanh_polys_flipped = tanh_polys.unsqueeze(dim=-1).transpose(0, -1).squeeze(dim=0)
 
@@ -664,27 +657,27 @@ class FixedPrecisionTensor(AbstractTensor):
     @overloaded.method
     def __gt__(self, _self, other):
         result = _self.__gt__(other)
-        return result.long() * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __ge__(self, _self, other):
         result = _self.__ge__(other)
-        return result.long() * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __lt__(self, _self, other):
         result = _self.__lt__(other)
-        return result.long() * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def __le__(self, _self, other):
         result = _self.__le__(other)
-        return result.long() * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     @overloaded.method
     def eq(self, _self, other):
         result = _self.eq(other)
-        return result.long() * self.base ** self.precision_fractional
+        return result.type(self.torch_dtype) * self.base ** self.precision_fractional
 
     __eq__ = eq
 
@@ -769,23 +762,23 @@ class FixedPrecisionTensor(AbstractTensor):
         response and replace a FixedPrecision on top of all tensors found in
         the response.
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
-        tensor = args[0] if not isinstance(args[0], (tuple, list)) else args[0][0]
+        tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -800,7 +793,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def share(self, *owners, field=None, crypto_provider=None):
+    def share(self, *owners, protocol=None, field=None, dtype=None, crypto_provider=None):
         """
         Forward the .share() command to the child tensor, and reconstruct a new
         FixedPrecisionTensor since the command is not inplace and should return
@@ -808,31 +801,34 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Args:
             *owners: the owners of the shares of the resulting AdditiveSharingTensor
+            protocol: the crypto protocol used to perform the computations ('snn' or 'fss')
             field: the field size in which the share values live
+            dtype: the dtype in which the share values live
             crypto_provider: the worker used to provide the crypto primitives used
                 to perform some computations on AdditiveSharingTensors
 
         Returns:
             A FixedPrecisionTensor whose child has been shared
         """
-        if field is None:
-            field = self.field
+        if dtype is None:
+            dtype = self.dtype
         else:
             assert (
-                field == self.field
-            ), "When sharing a FixedPrecisionTensor, the field of the resulting AdditiveSharingTensor \
+                dtype == self.dtype
+            ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
                 must be the same as the one of the original tensor"
+
         tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
 
         tensor.child = self.child.share(
-            *owners, field=field, crypto_provider=crypto_provider, no_wrap=True
+            *owners, protocol=protocol, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
         )
         return tensor
 
     def share_(self, *args, **kwargs):
         """
         Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
-        contrary to the classic share version version
+        contrary to the classic share version
         """
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
@@ -854,7 +850,8 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
-            tensor.field,
+            syft.serde.msgpack.serde._simplify(worker, tensor.field),
+            tensor.dtype,
             tensor.base,
             tensor.precision_fractional,
             tensor.kappa,
@@ -876,12 +873,23 @@ class FixedPrecisionTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
 
-        tensor_id, field, base, precision_fractional, kappa, tags, description, chain = tensor_tuple
+        (
+            tensor_id,
+            field,
+            dtype,
+            base,
+            precision_fractional,
+            kappa,
+            tags,
+            description,
+            chain,
+        ) = tensor_tuple
 
         tensor = FixedPrecisionTensor(
             owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
-            field=field,
+            field=syft.serde.msgpack.serde._detail(worker, field),
+            dtype=dtype,
             base=base,
             precision_fractional=precision_fractional,
             kappa=kappa,
