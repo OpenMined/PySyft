@@ -180,12 +180,23 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     return result
 
 
-def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
+def pool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, mode="max"):
     assert len(tensor.shape) < 5
     if len(tensor.shape) == 2:
         return _pool(tensor, kernel_size, stride, mode)
     if len(tensor.shape) == 3:
-        return torch.squeeze(pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, mode))
+        return torch.squeeze(
+            pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, padding, mode)
+        )
+    if padding != 0:
+        # padding isn't straight forward, check torch documentation to know how it works
+        if isinstance(padding, int):
+            padding = (padding, padding)
+        elif isinstance(padding, tuple):
+            padding = (padding[0], padding[0], padding[1], padding[1])
+        else:
+            raise TypeError("padding must be int or tuple")
+        tensor = torch.nn.functional.pad(tensor, padding, mode="constant")
     batches = tensor.shape[0]
     channels = tensor.shape[1]
     out_shape = (
@@ -202,9 +213,9 @@ def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     return result
 
 
-def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2):
-    return pool2d(tensor, kernel_size, stride)
+def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0):
+    return pool2d(tensor, kernel_size, stride, padding)
 
 
-def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2):
-    return pool2d(tensor, kernel_size, stride, mode="mean")
+def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0):
+    return pool2d(tensor, kernel_size, stride, padding, mode="mean")
