@@ -831,12 +831,12 @@ def test_plan_nested_structures(hook):
     assert (result.get() == th.tensor([1, 3])).all()
 
 
-def test_plan_type_warning(hook):
+def test_plan_type_error(hook):
     x1 = th.tensor([-1, 2.0])
     x2 = th.tensor([1, -2.0])
 
     @sy.func2plan()
-    def plan_type_warn(dic):
+    def plan_type_err(dic):
         return dic["k1"]["kk2"]
 
     dummy_build = {
@@ -848,7 +848,7 @@ def test_plan_type_warning(hook):
     }
 
     device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2))
-    plan_type_warn.build(dummy_build)
+    plan_type_err.build(dummy_build)
 
     pointer_to_data_1 = x1.send(device_1)
     pointer_to_data_2 = x2.send(device_1)
@@ -858,11 +858,14 @@ def test_plan_type_warning(hook):
         "k2": [pointer_to_data_1, pointer_to_data_2],
     }
 
-    pointer_to_plan = plan_type_warn.send(device_1)
-    with pytest.warns(RuntimeWarning) as e:
+    pointer_to_plan = plan_type_err.send(device_1)
+    with pytest.raises(TypeError) as e:
         _ = pointer_to_plan(call_build)
 
-    assert len(e) == 4
+    assert (
+        str(e.value)
+        == "Plan plan_type_warn element 1 of element 0 of key kk1 of key k1 of element 0 of input has type int, while being built with type float."
+    )
 
 
 def test_plan_key_error(hook):

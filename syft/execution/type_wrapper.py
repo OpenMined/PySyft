@@ -58,7 +58,7 @@ class NestedTypeWrapper:
     @staticmethod
     def raise_typecheck_warn(typechecked_object: any, build: str, call: str, path: str) -> None:
         """
-            Function to raise a typecheck warning if two types differ.
+            Function to raise a type error if two types differ.
 
             Params:
                 obj_type: the type of the object returned by calling .__name__ on it.
@@ -71,9 +71,8 @@ class NestedTypeWrapper:
                  None
         """
         type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
-        warn(
+        raise TypeError(
             f"{type_name} {obj_name} {path} has type {build}, while being built with type {call}.",
-            RuntimeWarning,
         )
 
     @staticmethod

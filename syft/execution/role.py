@@ -3,8 +3,6 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import copy
-
 from syft.generic.frameworks import framework_packages
 
 import syft as sy
@@ -13,8 +11,6 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.object import AbstractObject
-from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
@@ -54,39 +50,45 @@ class Role:
     def output_placeholders(self):
         return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
 
+    @staticmethod
+    def nested_object_traversal(obj, leaf_function, leaf_type):
+        if isinstance(obj, (list, tuple)):
+            result = [Role.nested_object_traversal(elem, leaf_function, leaf_type) for elem in obj]
+            return type(obj)(result)
+        elif isinstance(obj, dict):
+            return {
+                k: Role.nested_object_traversal(v, leaf_function, leaf_type)
+                for k, v in sorted(obj.items())
+            }
+        elif isinstance(obj, leaf_type):
+            return leaf_function(obj)
+        else:
+            return obj
+
     def register_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        def register_nested_inputs(obj) -> None:
-            if isinstance(obj, (list, tuple)):
-                for elem in obj:
-                    register_nested_inputs(elem)
-            elif isinstance(obj, dict):
-                for _, v in sorted(obj.items()):
-                    register_nested_inputs(v)
-            elif isinstance(obj, PlaceHolder):
-                self.input_placeholder_ids.append(self._store_placeholders(obj).value)
+
+        traversal_function = lambda x: self.input_placeholder_ids.append(
+            self._store_placeholders(x).value
+        )
 
         self.input_placeholder_ids = []
-        register_nested_inputs(args_)
+        Role.nested_object_traversal(args_, traversal_function, PlaceHolder)
         self.input_placeholder_ids = tuple(self.input_placeholder_ids)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
 
-        def register_nested_outputs(obj) -> None:
-            if isinstance(obj, (list, tuple)):
-                _ = [register_nested_outputs(elem) for elem in obj]
-            elif isinstance(obj, dict):
-                _ = [register_nested_outputs(v) for _, v in sorted(obj.items())]
-            elif isinstance(obj, PlaceHolder):
-                self.output_placeholder_ids.append(self._store_placeholders(obj).value)
+        traversal_function = lambda x: self.output_placeholder_ids.append(
+            self._store_placeholders(x).value
+        )
 
         results = (results,) if not isinstance(results, tuple) else results
         self.output_placeholder_ids = []
-        register_nested_outputs(results)
+        Role.nested_object_traversal(results, traversal_function, PlaceHolder)
         self.output_placeholder_ids = tuple(self.output_placeholder_ids)
 
     def register_action(self, traced_action, action_type):
@@ -131,29 +133,15 @@ class Role:
         """ Takes input arguments for this role and generate placeholders.
         """
 
-        def instantiate_nested_input(input_placeholders, obj):
-            """
-                Function to instantiate all the placeholders in order, even if in nested structures.
-                Args:
-                    input_placeholders: the input placeholders generated at build time.
-                    args: the arguments received on __call__
-            """
-
-            if isinstance(obj, FrameworkTensor):
-                placeholder = input_placeholders.pop(0)
-                placeholder.instantiate(obj)
-            elif isinstance(obj, (list, tuple, set)):
-                for elem in obj:
-                    instantiate_nested_input(input_placeholders, elem)
-            elif isinstance(obj, dict):
-                _ = [
-                    instantiate_nested_input(input_placeholders, v) for _, v in sorted(obj.items())
-                ]
+        def traversal_function(obj):
+            placeholder = input_placeholders.pop(0)
+            placeholder.instantiate(obj)
 
         input_placeholders = [
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
         ]
-        instantiate_nested_input(input_placeholders, args_)
+
+        Role.nested_object_traversal(args_, traversal_function, FrameworkTensor)
 
     def _execute_action(self, action):
         """ Build placeholders and store action.
@@ -198,31 +186,21 @@ class Role:
         """
         Replace in an object all FrameworkTensors with Placeholder ids
         """
-        if isinstance(obj, (tuple, list)):
-            r = [self._store_placeholders(o) for o in obj]
-            return type(obj)(r)
-        elif isinstance(obj, dict):
-            return {key: self._store_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, PlaceHolder):
+
+        def traversal_function(obj):
             if obj.id.value not in self.placeholders:
                 self.placeholders[obj.id.value] = obj
             return obj.id
-        else:
-            return obj
+
+        return Role.nested_object_traversal(obj, traversal_function, PlaceHolder)
 
     def _fetch_placeholders_from_ids(self, obj):
         """
         Replace in an object all ids with Placeholders
         """
-        if isinstance(obj, (tuple, list)):
-            r = [self._fetch_placeholders_from_ids(o) for o in obj]
-            return type(obj)(r)
-        elif isinstance(obj, dict):
-            return {key: self._fetch_placeholders_from_ids(value) for key, value in obj.items()}
-        elif isinstance(obj, PlaceholderId):
-            return self.placeholders[obj.value]
-        else:
-            return obj
+        return Role.nested_object_traversal(
+            obj, lambda x: self.placeholders[x.value], PlaceholderId
+        )
 
     def copy(self):
         # TODO not the cleanest method ever
@@ -251,16 +229,9 @@ class Role:
 
         state = State(state_placeholders)
 
-        def _replace_placeholder_ids(obj):
-            if isinstance(obj, (tuple, list)):
-                r = [_replace_placeholder_ids(o) for o in obj]
-                return type(obj)(r)
-            elif isinstance(obj, dict):
-                return {key: _replace_placeholder_ids(value) for key, value in obj.items()}
-            elif isinstance(obj, PlaceholderId):
-                return PlaceholderId(old_ids_2_new_ids[obj.value])
-            else:
-                return obj
+        _replace_placeholder_ids = lambda obj: Role.nested_object_traversal(
+            obj, lambda x: PlaceholderId(old_ids_2_new_ids[x.value]), PlaceholderId
+        )
 
         new_actions = []
         for action in self.actions:
