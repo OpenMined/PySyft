@@ -289,7 +289,7 @@ def test_move(workers):
 
     p = x.move(alice)
 
-    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in bob._objects
     assert x.id_at_location in alice._objects
 
     x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
@@ -299,7 +299,7 @@ def test_move(workers):
 
     p = x.move(alice)
 
-    assert x.id_at_location in bob._objects
+    assert x.id_at_location not in bob._objects
     assert x.id_at_location in alice._objects
 
     alice.clear_objects()
@@ -402,17 +402,23 @@ def test_raising_error_when_item_func_called(workers):
 def test_fix_prec_on_pointer_tensor(workers):
     """
     Ensure .fix_precision() works as expected.
+    Also check that fix_precision() is not inplace.
     """
     bob = workers["bob"]
 
     tensor = torch.tensor([1, 2, 3, 4.0])
     ptr = tensor.send(bob)
 
-    ptr = ptr.fix_precision()
+    ptr_fp = ptr.fix_precision()
+
     remote_tensor = bob._objects[ptr.id_at_location]
+    remote_fp_tensor = bob._objects[ptr_fp.id_at_location]
+
+    # check that fix_precision is not inplace
+    assert (remote_tensor == tensor).all()
 
     assert isinstance(ptr.child, PointerTensor)
-    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
+    assert isinstance(remote_fp_tensor.child, FixedPrecisionTensor)
 
 
 def test_fix_prec_on_pointer_of_pointer(workers):
@@ -549,3 +555,15 @@ def test_setting_back_grad_to_origin_after_move(workers):
         z.backward()
 
         assert (x.grad == th.tensor([4.0, 4.0, 4.0, 4.0, 4.0])).all()
+
+
+def test_iadd(workers):
+    alice = workers["alice"]
+    a = torch.ones(1, 5)
+    b = torch.ones(1, 5)
+    a_pt = a.send(alice)
+    b_pt = b.send(alice)
+
+    b_pt += a_pt
+
+    assert len(alice._objects) == 2

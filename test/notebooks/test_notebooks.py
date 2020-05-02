@@ -69,14 +69,15 @@ exclusion_list_notebooks += excluded_translated_notebooks
 
 exclusion_list_folders = [
     "examples/tutorials/websocket",
-    "examples/tutorials/advanced/Monitor_Network_Traffic",
-    "examples/tutorials/advanced/websockets-example-MNIST-parallel",
+    "examples/tutorials/advanced/monitor_network_traffic",
+    "examples/tutorials/advanced/privacy_attacks",
+    "examples/tutorials/advanced/websockets_mnist_parallel",
     # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
     # This notebook is skipped because it fails in github actions and we do not know why for the moment
-    "examples/tutorials/advanced/Federated SMS Spam prediction",
+    "examples/tutorials/advanced/federated_sms_spam_prediction",
 ]
 
 
@@ -119,7 +120,7 @@ def test_notebooks_basic_translations(isolated_filesystem, translated_notebook):
         notebook,
         "/dev/null",
         parameters={"epochs": 1, "n_test_batches": 5, "n_train_items": 64, "n_test_items": 64},
-        timeout=300,
+        timeout=400,
     )
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
 
@@ -159,9 +160,9 @@ def test_notebooks_advanced(isolated_filesystem, notebook):
 
 
 def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
-    os.chdir("advanced/Federated Learning with TrainConfig/")
+    os.chdir("advanced/federated_learning_with_trainconfig")
     notebook = "Introduction to TrainConfig.ipynb"
-    p_name = Path("examples/tutorials/advanced/Federated Learning with TrainConfig/")
+    p_name = Path("examples/tutorials/advanced/federated_learning_with_trainconfig/")
     tested_notebooks.append(str(p_name / notebook))
     hook.local_worker.remove_worker_from_registry("alice")
     kwargs = {"id": "alice", "host": "localhost", "port": 8777, "hook": hook}
@@ -177,13 +178,13 @@ def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_onl
 
 @pytest.mark.skip
 def test_fl_sms(isolated_filesystem):  # pragma: no cover
-    sys.path.append("advanced/Federated SMS Spam prediction/")
+    sys.path.append("advanced/federated_sms_spam_prediction/")
     import preprocess
 
-    os.chdir("advanced/Federated SMS Spam prediction/")
+    os.chdir("advanced/federated_sms_spam_prediction/")
 
     notebook = "Federated SMS Spam prediction.ipynb"
-    p_name = Path("examples/tutorials/advanced/Federated SMS Spam prediction/")
+    p_name = Path("examples/tutorials/advanced/federated_sms_spam_prediction/")
     tested_notebooks.append(str(p_name / notebook))
     Path("data").mkdir(parents=True, exist_ok=True)
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00228/smsspamcollection.zip"
@@ -199,9 +200,9 @@ def test_fl_sms(isolated_filesystem):  # pragma: no cover
 def test_fl_with_websockets_and_averaging(
     isolated_filesystem, start_remote_server_worker_only, hook
 ):
-    os.chdir("advanced/websockets-example-MNIST/")
+    os.chdir("advanced/websockets_mnist/")
     notebook = "Federated learning with websockets and federated averaging.ipynb"
-    p_name = Path("examples/tutorials/advanced/websockets-example-MNIST/")
+    p_name = Path("examples/tutorials/advanced/websockets_mnist/")
     tested_notebooks.append(str(p_name / notebook))
     for n in ["alice", "bob", "charlie"]:
         hook.local_worker.remove_worker_from_registry(n)

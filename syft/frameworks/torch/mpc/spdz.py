@@ -45,7 +45,7 @@ def spdz_compute(j, delta, epsilon, type_op):
         return delta_b + a_epsilon + c
 
 
-def spdz_mul(cmd, x, y, crypto_provider, field):
+def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     """
     Define the workflow for a binary operation using Function Secret Sharing
 
@@ -89,7 +89,9 @@ def spdz_mul(cmd, x, y, crypto_provider, field):
     return response
 
 
-def spdz_mul_old(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: int):
+def spdz_mul_old(
+    cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: int, dtype: str
+):
     """Abstractly multiplies two tensors (mul or matmul)
 
     Args:
@@ -98,6 +100,7 @@ def spdz_mul_old(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, fie
         y_sh (AdditiveSharingTensor): the right part of the operation
         crypto_provider (AbstractWorker): an AbstractWorker which is used to generate triples
         field (int): an integer denoting the size of the field
+        dtype (str): denotes the dtype of shares
 
     Return:
         an AdditiveSharingTensor
@@ -106,9 +109,12 @@ def spdz_mul_old(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, fie
     assert isinstance(y_sh, sy.AdditiveSharingTensor)
 
     locations = x_sh.locations
+    torch_dtype = x_sh.torch_dtype
 
     # Get triples
-    a, b, a_mul_b = request_triple(crypto_provider, cmd, field, x_sh.shape, y_sh.shape, locations)
+    a, b, a_mul_b = request_triple(
+        crypto_provider, cmd, field, dtype, x_sh.shape, y_sh.shape, locations
+    )
 
     delta = x_sh - a
     epsilon = y_sh - b
@@ -119,8 +125,8 @@ def spdz_mul_old(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, fie
     delta_epsilon = cmd(delta, epsilon)
 
     # Trick to keep only one child in the MultiPointerTensor (like in SNN)
-    j1 = th.ones(delta_epsilon.shape).long().send(locations[0], **no_wrap)
-    j0 = th.zeros(delta_epsilon.shape).long().send(*locations[1:], **no_wrap)
+    j1 = th.ones(delta_epsilon.shape).type(torch_dtype).send(locations[0], **no_wrap)
+    j0 = th.zeros(delta_epsilon.shape).type(torch_dtype).send(*locations[1:], **no_wrap)
     if len(locations) == 2:
         j = sy.MultiPointerTensor(children=[j1, j0])
     else:
@@ -128,5 +134,6 @@ def spdz_mul_old(cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, fie
 
     delta_b = cmd(delta, b)
     a_epsilon = cmd(a, epsilon)
-
-    return delta_epsilon * j + delta_b + a_epsilon + a_mul_b
+    res = delta_epsilon * j + delta_b + a_epsilon + a_mul_b
+    res = res.type(torch_dtype)
+    return res

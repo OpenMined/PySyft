@@ -1,12 +1,13 @@
 import syft
 from syft.generic.frameworks.hook import hook_args
+from syft.execution.placeholder_id import PlaceholderId
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.placeholder_pb2 import Placeholder as PlaceholderPB
 
 
 class PlaceHolder(AbstractTensor):
-    def __init__(self, owner=None, id=None, tags: set = None, description: str = None):
+    def __init__(self, owner=None, id=None, tags: set = None, description: str = None, shape=None):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
         will send forward all the commands it receives to its child tensor.
@@ -20,6 +21,10 @@ class PlaceHolder(AbstractTensor):
         """
         super().__init__(id=id, owner=owner, tags=tags, description=description)
 
+        if not isinstance(self.id, PlaceholderId):
+            self.id = PlaceholderId(self.id)
+
+        self.expected_shape = tuple(shape) if shape is not None else None
         self.child = None
 
     def instantiate(self, tensor):
@@ -27,12 +32,10 @@ class PlaceHolder(AbstractTensor):
         Add a tensor as a child attribute. All operations on the placeholder will be also
         executed on this child tensor.
 
-        We remove wrappers or Placeholders if is there are any.
+        We remove Placeholders if is there are any.
         """
         if isinstance(tensor, PlaceHolder):
             self.child = tensor.child
-        elif tensor.is_wrapper:
-            self.instantiate(tensor.child)
         else:
             self.child = tensor
         return self
@@ -58,26 +61,59 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags, owner=self.owner)
+        placeholder = PlaceHolder(tags=self.tags, owner=self.owner, shape=self.expected_shape)
         placeholder.child = self.child
         return placeholder
 
     @staticmethod
-    def simplify(worker: AbstractWorker, tensor: "PlaceHolder") -> tuple:
+    def create_placeholders(args_shape):
+        """ Helper method to create a list of placeholders with shapes
+        in args_shape.
+        """
+        # In order to support -1 value in shape to indicate any dimension
+        # we map -1 to 1 for shape dimensions.
+        # TODO: A more complex strategy could be used
+        mapped_shapes = []
+        for shape in args_shape:
+            if list(filter(lambda x: x < -1, shape)):
+                raise ValueError(f"Invalid shape {shape}")
+            mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
+
+        return [syft.framework.hook.create_zeros(shape) for shape in mapped_shapes]
+
+    @staticmethod
+    def instantiate_placeholders(obj, response):
+        """
+        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
+        """
+        if obj is not None:
+            if isinstance(obj, PlaceHolder):
+                obj.instantiate(response)
+            elif isinstance(obj, (list, tuple)):
+                for ph, rep in zip(obj, response):
+                    PlaceHolder.instantiate_placeholders(ph, rep)
+            else:
+                raise ValueError(
+                    f"Response of type {type(response)} is not supported in Placeholder.instantiate."
+                )
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, placeholder: "PlaceHolder") -> tuple:
         """Takes the attributes of a PlaceHolder and saves them in a tuple.
 
         Args:
             worker: the worker doing the serialization
-            tensor: a PlaceHolder.
+            placeholder: a PlaceHolder.
 
         Returns:
             tuple: a tuple holding the unique attributes of the PlaceHolder.
         """
 
         return (
-            syft.serde.msgpack.serde._simplify(worker, tensor.id),
-            syft.serde.msgpack.serde._simplify(worker, tensor.tags),
-            syft.serde.msgpack.serde._simplify(worker, tensor.description),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.id),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.tags),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.description),
+            syft.serde.msgpack.serde._simplify(worker, placeholder.expected_shape),
         )
 
     @staticmethod
@@ -91,39 +127,38 @@ class PlaceHolder(AbstractTensor):
                 PlaceHolder: a PlaceHolder
             """
 
-        tensor_id, tags, description = tensor_tuple
+        tensor_id, tags, description, shape = tensor_tuple
 
         tensor_id = syft.serde.msgpack.serde._detail(worker, tensor_id)
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
+        shape = syft.serde.msgpack.serde._detail(worker, shape)
 
-        if not hasattr(worker, "_tmp_placeholders"):
-            worker._tmp_placeholders = {}
-
-        if tensor_id not in worker._tmp_placeholders:
-            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            worker._tmp_placeholders[tensor_id] = tensor
-
-        return worker._tmp_placeholders[tensor_id]
+        return PlaceHolder(
+            owner=worker, id=tensor_id, tags=tags, description=description, shape=shape
+        )
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, tensor: "PlaceHolder") -> PlaceholderPB:
+    def bufferize(worker: AbstractWorker, placeholder: "PlaceHolder") -> PlaceholderPB:
         """Takes the attributes of a PlaceHolder and saves them in a Protobuf message.
 
         Args:
             worker: the worker doing the serialization
-            tensor: a PlaceHolder.
+            placeholder: a PlaceHolder.
 
         Returns:
             PlaceholderPB: a Protobuf message holding the unique attributes of the PlaceHolder.
         """
 
         protobuf_placeholder = PlaceholderPB()
-        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, tensor.id)
-        protobuf_placeholder.tags.extend(tensor.tags)
+        syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, placeholder.id.value)
+        protobuf_placeholder.tags.extend(placeholder.tags)
 
-        if tensor.description:
-            protobuf_placeholder.description = tensor.description
+        if placeholder.description:
+            protobuf_placeholder.description = placeholder.description
+
+        if placeholder.expected_shape:
+            protobuf_placeholder.expected_shape.dims.extend(placeholder.expected_shape)
 
         return protobuf_placeholder
 
@@ -145,14 +180,11 @@ class PlaceHolder(AbstractTensor):
         if bool(protobuf_placeholder.description):
             description = protobuf_placeholder.description
 
-        if not hasattr(worker, "_tmp_placeholders"):
-            worker._tmp_placeholders = {}
+        expected_shape = tuple(protobuf_placeholder.expected_shape.dims) or None
 
-        if tensor_id not in worker._tmp_placeholders:
-            tensor = PlaceHolder(owner=worker, id=tensor_id, tags=tags, description=description)
-            worker._tmp_placeholders[tensor_id] = tensor
-
-        return worker._tmp_placeholders[tensor_id]
+        return PlaceHolder(
+            owner=worker, id=tensor_id, tags=tags, description=description, shape=expected_shape
+        )
 
 
 ### Register the tensor with hook_args.py ###

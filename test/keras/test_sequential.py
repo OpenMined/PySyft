@@ -51,7 +51,7 @@ def test_instantiate_tfe_layer():  # pragma: no cover
             actual = sess.run(out.reveal())
 
     # compares results and raises error if not equal up to 0.001
-    np.testing.assert_allclose(actual, expected, rtol=0.001)
+    np.testing.assert_allclose(actual, expected, rtol=0.005, atol=0.001)
 
 
 @pytest.mark.skipif(not dependency_check.tfe_available, reason="tf_encrypted not installed")
