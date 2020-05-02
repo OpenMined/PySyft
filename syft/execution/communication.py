@@ -32,6 +32,10 @@ class CommunicationAction(Action):
         self.destinations = destinations
         self.kwargs = kwargs_
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} ({self.obj_id}, {self.source}, {self.destinations}, {self.kwargs})"
+
     @property
     def contents(self):
         """Return a tuple with the contents of the operation (backwards compatability)."""

@@ -283,8 +283,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             The deserialized form of message from the worker at specified
             location.
         """
-        if self.verbose:
-            print(f"worker {self} sending {message} to {location}")
+        if self.verbose or True:
+            print(f"{self.id}->{location.id} sending {message} ")
 
         # Step 1: serialize the message to a binary
         bin_message = sy.serde.serialize(message, worker=self)

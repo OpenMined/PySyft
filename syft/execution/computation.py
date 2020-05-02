@@ -39,6 +39,22 @@ class ComputationAction(Action):
         self.return_ids = return_ids
         self.return_value = return_value
 
+    def __str__(self):
+        """Return a human readable version of this message"""
+        from syft.generic.pointers.pointer_tensor import PointerTensor
+
+        args = [
+            f"{type(a).__name__ } {str(a.owner.id)}->{str(a.location.id)}"
+            if isinstance(a, PointerTensor)
+            else a
+            for a in self.args
+        ]
+        if isinstance(self.target, PointerTensor):
+            target = f"{type(self.target).__name__ } {str(self.target.owner.id)}->{str(self.target.location.id)}"
+        else:
+            target = self.target
+        return f"({type(self).__name__} ({self.name}, {target}, {args}, {self.kwargs}, {self.return_value})"
+
     @property
     def contents(self):
         """Return a tuple with the contents of the action (backwards compatability)
