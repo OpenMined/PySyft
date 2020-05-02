@@ -864,7 +864,7 @@ def test_plan_type_error(hook):
 
     assert (
         str(e.value)
-        == "Plan plan_type_warn element 1 of element 0 of key kk1 of key k1 of element 0 of input has type int, while being built with type float."
+        == "Plan plan_type_err element 1 of element 0 of key kk1 of key k1 of element 0 of input has type int, while being built with type float."
     )
 
 
