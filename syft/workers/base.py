@@ -545,7 +545,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 return_id_provider.start_recording_ids()
                 response = hook_args.register_response(op_name, response, return_id_provider, self)
                 new_ids = return_id_provider.get_recorded_ids()
-                raise ResponseSignatureError(new_ids)
+                if return_value or isinstance(response, (int, float, bool, str)):
+                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                else:
+                    raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
         obj_id = action.obj_id

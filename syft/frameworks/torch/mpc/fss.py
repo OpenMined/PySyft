@@ -28,7 +28,7 @@ assert λs == 2
 no_wrap = {"no_wrap": True}
 
 NAMESPACE = "syft.frameworks.torch.mpc.fss"
-authorized = set(f"{NAMESPACE}.{name}" for name in ["mask_builder", "evaluate"])
+authorized1 = set(f"{NAMESPACE}.{name}" for name in ["mask_builder", "evaluate"])
 
 # internal codes
 EQ = 0

@@ -6,7 +6,11 @@ from typing import Callable
 from typing import Any
 
 from syft.generic.frameworks.hook.hook import FrameworkHook
-from syft.frameworks.torch.mpc.fss import authorized
+from syft.frameworks.torch.mpc.fss import authorized1
+from syft.frameworks.torch.mpc.spdz import authorized2
+
+
+authorized = authorized1.union(authorized2)
 
 
 class FrameworkAttributes(ABC):

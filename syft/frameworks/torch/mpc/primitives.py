@@ -25,18 +25,16 @@ class PrimitiveStorage:
         # tensorized key generation algorithms.
         self.fss_eq: list = []
         self.fss_comp: list = []
-        self.beaver: list = []
-        self.xor_add_couple: list = []  # couple of the same value shared via ^ or + op
+        self.beaver: list = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
             "fss_eq": self.build_fss_keys(type_op="eq"),
             "fss_comp": self.build_fss_keys(type_op="comp"),
             "beaver": self.build_triples,
-            "xor_add_couple": self.build_xor_add_couple,
         }
 
-    def get_keys(self, type_op, n_instances=1, remove=True):
+    def get_keys(self, type_op, n_instances=1, remove=True, **kwargs):
         """
         Return FSS keys primitives #TODO
 
@@ -50,29 +48,56 @@ class PrimitiveStorage:
         """
         primitive_stack = getattr(self, type_op)
 
-        available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-        if available_instances >= n_instances:
-            keys = []
-            # We iterate on the different elements that constitute a given primitive, for
-            # example of the beaver triples, you would have 3 elements.
-            for i, prim in enumerate(primitive_stack):
-                # We're selecting on the last dimension of the tensor because it's simpler for
-                # generating those primitives in crypto protocols
-                # [:] ~ [slice(None)]
-                # [:1] ~ [slice(1)]
-                # [1:] ~ [slice(1, None)]
-                # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
-                n_dim = len(prim.shape)
-                get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                remaining_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances, None)])
-
-                keys.append(prim[get_slice])
-                if remove:
-                    primitive_stack[i] = prim[remaining_slice]
-
-            return keys
+        if type_op == "beaver":
+            op = kwargs.get("op")
+            shapes = kwargs.get("shapes")
+            op_shapes = (op, *shapes)
+            primitive_stack = primitive_stack[op_shapes]
+            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            if available_instances >= n_instances:
+                keys = []
+                for i, prim in enumerate(primitive_stack):
+                    if n_instances == 1:
+                        keys.append(prim[0])
+                        if remove:
+                            primitive_stack[i] = prim[1:]
+                    else:
+                        keys.append(prim[:n_instances])
+                        if remove:
+                            primitive_stack[i] = prim[n_instances:]
+                return keys
+            else:
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, type_op, available_instances, n_instances, **kwargs
+                )
         else:
-            raise EmptyCryptoPrimitiveStoreError(self, type_op, available_instances, n_instances)
+            available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            if available_instances >= n_instances:
+                keys = []
+                # We iterate on the different elements that constitute a given primitive, for
+                # example of the beaver triples, you would have 3 elements.
+                for i, prim in enumerate(primitive_stack):
+                    # We're selecting on the last dimension of the tensor because it's simpler for
+                    # generating those primitives in crypto protocols
+                    # [:] ~ [slice(None)]
+                    # [:1] ~ [slice(1)]
+                    # [1:] ~ [slice(1, None)]
+                    # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
+                    n_dim = len(prim.shape)
+                    get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
+                    remaining_slice = tuple(
+                        [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
+                    )
+
+                    keys.append(prim[get_slice])
+                    if remove:
+                        primitive_stack[i] = prim[remaining_slice]
+
+                return keys
+            else:
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, type_op, available_instances, n_instances
+                )
 
     def provide_primitives(
         self,
@@ -122,23 +147,28 @@ class PrimitiveStorage:
             assert hasattr(self, crypto_type), f"Unknown crypto primitives {crypto_type}"
 
             current_primitives = getattr(self, crypto_type)
-            if len(current_primitives) == 0:
-                setattr(self, crypto_type, list(primitives))
-            else:
-                for i, primitive in enumerate(primitives):
-                    if len(current_primitives[i]) == 0:
-                        current_primitives[i] = primitive
+            if crypto_type == "beaver":
+                for op_shapes, primitive_triple in primitives.items():
+                    if op_shapes not in current_primitives:
+                        current_primitives[op_shapes] = primitive_triple
                     else:
-                        if crypto_type == "xor_add_couple":
-                            current_primitives[i] = th.cat(
-                                (current_primitives[i], primitive), dim=len(primitive.shape) - 1
+                        for i, primitive in enumerate(primitive_triple):
+                            current_primitives[op_shapes][i] = th.cat(
+                                (current_primitives[op_shapes][i], primitive)
                             )
-                        elif crypto_type in ("fss_eq", "fss_comp"):
+            elif crypto_type in ("fss_eq", "fss_comp"):
+                if len(current_primitives) == 0:
+                    setattr(self, crypto_type, list(primitives))
+                else:
+                    for i, primitive in enumerate(primitives):
+                        if len(current_primitives[i]) == 0:
+                            current_primitives[i] = primitive
+                        else:
                             current_primitives[i] = np.concatenate(
                                 (current_primitives[i], primitive), axis=len(primitive.shape) - 1
                             )
-                        else:
-                            raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
+            else:
+                raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
 
     def build_fss_keys(self, type_op):
         """
@@ -164,16 +194,30 @@ class PrimitiveStorage:
 
         return build_separate_fss_keys
 
-    @staticmethod
-    def build_xor_add_couple(n_party, n_instances=100):
-        assert (
-            n_party == 2
-        ), f"build_xor_add_couple is only implemented for 2 workers, {n_party} were provided."
-        r = th.randint(2, size=(n_instances,))
-        mask1 = th.randint(2, size=(n_instances,))
-        mask2 = th.randint(2, size=(n_instances,))
+    def build_triples(self, n_party, n_instances, **kwargs):
+        # TODO n -> field
+        assert n_party == 2, f"Only 2 workers supported for the moment"
+        n = sy.frameworks.torch.mpc.fss.n
+        op_shapes = kwargs["beaver"]["op_shapes"]
+        primitives_worker = [{}, {}]
+        for op, a_shape, b_shape in op_shapes:
+            cmd = getattr(th, op)
+            a = th.randint(0, 2 ** n, (n_instances, *a_shape))
+            b = th.randint(0, 2 ** n, (n_instances, *b_shape))
+            # a = th.ones(*(n_instances, *a_shape)).long()
+            # b = th.ones(*(n_instances, *b_shape)).long()
 
-        return [(r ^ mask1, r - mask2), (mask1, mask2)]
+            c = cmd(a, b)
 
-    def build_triples(self, **kwargs):
-        raise NotImplementedError
+            for i in range(n_party):
+                primitives_worker[i][(op, a_shape, b_shape)] = [None, None, None]
+
+            for i, tensor in enumerate([a, b, c]):
+                mask = th.randint(0, 2 ** n, tensor.shape)  #
+                # mask = th.zeros(*tensor.shape).long()
+                primitives_worker[0][(op, a_shape, b_shape)][i] = (
+                    tensor - mask
+                ) % 2 ** 62  # TODO fix
+                primitives_worker[1][(op, a_shape, b_shape)][i] = mask
+
+        return primitives_worker
