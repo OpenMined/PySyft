@@ -53,9 +53,6 @@ def get_dtype(field: int):
 
 def decompose(tensor, field):
     """decompose a tensor into its binary representation."""
-    assert (
-        tensor.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     torch_dtype = get_torch_dtype(field)
     n_bits = get_n_bits(field)
     powers = torch.arange(n_bits, dtype=torch_dtype)
@@ -192,10 +189,6 @@ def private_compare(x_bit_sh, r, beta, L):
     assert isinstance(x_bit_sh, sy.AdditiveSharingTensor)
     assert isinstance(r, sy.MultiPointerTensor)
     assert isinstance(beta, sy.MultiPointerTensor)
-    assert (
-        x_bit_sh.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
-
     # Would it be safer to have a different r/beta for each value in the tensor?
 
     alice, bob = x_bit_sh.locations
@@ -286,9 +279,6 @@ def msb(a_sh):
     Return:
         the most significant bit
     """
-    assert (
-        a_sh.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
