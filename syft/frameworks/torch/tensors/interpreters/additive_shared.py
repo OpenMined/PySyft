@@ -71,7 +71,7 @@ class AdditiveSharingTensor(AbstractTensor):
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
         elif dtype == "short" or "int16":
-            self.field = 2 ** 15
+            self.field = 2 ** 16
             self.torch_dtype = torch.int16
         elif dtype == "int8":
             self.field = 2 ** 8
