@@ -532,7 +532,7 @@ def make_additivesharingtensor(**kwargs):
                     (CODE[str], (str(ast.field).encode("utf-8"),))
                     if ast.field == 2 ** 64
                     else ast.field,  # (int or str) field
-                    ast.dtype,  # (str) dtype
+                    ast.dtype.encode("utf-8"),
                     (CODE[str], (ast.crypto_provider.id.encode("utf-8"),)),  # (str) worker_id
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], ast.child
@@ -880,7 +880,7 @@ def make_state(**kwargs):
     p1, p2 = syft.PlaceHolder(), syft.PlaceHolder()
     p1.tag("state1"), p2.tag("state2")
     p1.instantiate(t1), p2.instantiate(t2)
-    state = syft.execution.state.State(owner=me, state_placeholders=[p1, p2])
+    state = syft.execution.state.State(state_placeholders=[p1, p2])
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.state.State
@@ -1421,14 +1421,26 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.obj_id, detailed.source, detailed.destinations, detailed.kwargs)
-        original_msg = (original.obj_id, original.source, original.destinations, original.kwargs)
+        detailed_msg = (
+            detailed.obj_id,
+            detailed.name,
+            detailed.source,
+            detailed.destinations,
+            detailed.kwargs,
+        )
+        original_msg = (
+            original.obj_id,
+            original.name,
+            original.source,
+            original.destinations,
+            original.kwargs,
+        )
         assert type(detailed) == syft.messaging.message.CommunicationAction
         for i in range(len(original_msg)):
             assert detailed_msg[i] == original_msg[i]
         return True
 
-    msg = (com.obj_id, com.source, com.destinations, com.kwargs)
+    msg = (com.obj_id, com.name, com.source, com.destinations, com.kwargs)
 
     return [
         {
@@ -1437,6 +1449,7 @@ def make_communication_action(**kwargs):
                 CODE[syft.execution.communication.CommunicationAction],
                 (
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),
@@ -1487,6 +1500,7 @@ def make_computation_action(**kwargs):
                         kwargs["workers"]["serde_worker"], message1
                     ),  # (Any) message
                     (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
+                    False,  # return value
                 ),
             ),
             "cmp_detailed": compare,
@@ -1499,7 +1513,8 @@ def make_computation_action(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], message2
                     ),  # (Any) message
-                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
+                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids,
+                    False,  # return value
                 ),
             ),
             "cmp_detailed": compare,
@@ -1792,7 +1807,7 @@ def make_workercommandmessage(**kwargs):
     )
 
     remote_proxy._log_msgs_remote(value=True)
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 0
 
     objects_count_msg = remote_proxy._get_msg_remote(
@@ -1813,7 +1828,7 @@ def make_workercommandmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.WorkerCommandMessage],
                 (
-                    (CODE[str], (b"objects_count",)),  # (str) command
+                    (CODE[str], (b"tensors_count",)),  # (str) command
                     (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),
                 ),
             ),
