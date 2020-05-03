@@ -23,7 +23,7 @@ def test_plan_built_automatically():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
     assert plan_abs.is_built
 
 
@@ -33,12 +33,27 @@ def test_plan_build():
         return data.abs()
 
     assert not plan_abs.is_built
-    assert not len(plan_abs.readable_plan)
+    assert not len(plan_abs.actions)
 
     plan_abs.build(th.tensor([-1]))
 
-    assert len(plan_abs.readable_plan)
+    assert len(plan_abs.actions)
     assert plan_abs.is_built
+
+
+def test_tracing_torch():
+    @sy.func2plan()
+    def plan_torch(x, torch=th):
+        a = torch.rand([2])
+        x = torch.mul(a, x)
+        return torch.split(x, 2)
+
+    plan_torch.build(th.tensor([1, 2]))
+    plan_torch.forward = None
+    res = plan_torch(th.tensor([1, 2]))
+
+    assert len(plan_torch.actions) == 3
+    assert len(res) == 2
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -47,7 +62,7 @@ def test_plan_built_automatically_with_any_dimension():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
 
 
 def test_raise_exception_for_invalid_shape():
@@ -601,84 +616,6 @@ def test_cached_multiple_location_plan_send(workers):
     pointers = plan_abs.get_pointers()
 
     assert len(pointers) == 2
-
-
-def test_plan_nested_no_build_inner(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return 2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    # Run plan remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_before(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_after(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-    plan_double.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_double_ptr = plan_abs.send(alice)
-    res = plan_double_ptr(x_ptr)
-
-    assert res.get() == expected_res
 
 
 def test_plan_input_usage(hook):

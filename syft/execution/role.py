@@ -20,7 +20,7 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role(AbstractObject):
+class Role:
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
@@ -32,19 +32,13 @@ class Role(AbstractObject):
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
-        state_tensors=None,
         # General kwargs
         id: Union[str, int] = None,
-        owner: "sy.workers.BaseWorker" = None,
-        tags: List[str] = None,
-        description: str = None,
     ):
-        owner = owner or sy.local_worker
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        self.id = id or sy.ID_PROVIDER.pop()
 
-        self.owner = owner
         self.actions = actions or []
-        self.state = state or State(owner=owner)
+
         # All placeholders
         self.placeholders = placeholders or {}
         # Input placeholders, stored by id
@@ -52,12 +46,7 @@ class Role(AbstractObject):
         # Output placeholders
         self.output_placeholder_ids = output_placeholder_ids or ()
 
-        # state_tensors are provided when plans are created using func2plan
-        if state_tensors:
-            # we want to make sure in that case that the state is empty
-            assert state is None
-            for tensor in state_tensors:
-                self.register_state_tensor(tensor)
+        self.state = state or State()
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
@@ -97,8 +86,8 @@ class Role(AbstractObject):
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def register_state_tensor(self, tensor):
-        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=self.owner)
+    def register_state_tensor(self, tensor, owner):
+        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=owner)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
         # TODO isn't it weird that state placeholders are both in state and plan?
@@ -217,12 +206,12 @@ class Role(AbstractObject):
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
-            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=self.owner).instantiate(
+            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=ph.owner).instantiate(
                 ph.child
             )
             state_placeholders.append(new_ph)
 
-        state = State(owner=self.owner, state_placeholders=state_placeholders)
+        state = State(state_placeholders)
 
         def _replace_placeholder_ids(obj):
             if isinstance(obj, (tuple, list)):
@@ -251,9 +240,6 @@ class Role(AbstractObject):
             input_placeholder_ids=new_input_placeholder_ids,
             output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
-            owner=self.owner,
-            tags=self.tags,
-            description=self.description,
         )
 
     @staticmethod
@@ -308,7 +294,6 @@ class Role(AbstractObject):
 
         role = Role(
             id=id_,
-            owner=worker,
             actions=actions,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
@@ -355,11 +340,6 @@ class Role(AbstractObject):
         for id_ in role.output_placeholder_ids:
             sy.serde.protobuf.proto.set_protobuf_id(protobuf_role.output_placeholder_ids.add(), id_)
 
-        if role.description:
-            protobuf_role.description = role.description
-        if role.tags:
-            protobuf_role.tags = role.tags
-
         return protobuf_role
 
     @staticmethod
@@ -403,7 +383,6 @@ class Role(AbstractObject):
 
         role = Role(
             id=id_,
-            owner=worker,
             actions=actions,
             input_placeholder_ids=input_placeholder_ids,
             output_placeholder_ids=output_placeholder_ids,
