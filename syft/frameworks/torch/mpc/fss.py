@@ -12,6 +12,7 @@ import math
 from numba import jit
 import numpy as np
 import sha_loop
+import multiprocessing
 
 import torch as th
 import syft as sy
@@ -47,9 +48,13 @@ def remote_exec(
     worker=None,
     return_value=False,
     return_arity=1,
+    multiprocessing=False,
 ):
     if worker is None:
         worker = sy.local_worker
+
+    if isinstance(location, str):
+        location = worker.get_worker(location)
 
     response_ids = [sy.ID_PROVIDER.pop() for _ in range(return_arity)]
 
@@ -58,7 +63,11 @@ def remote_exec(
     response = worker.send_command(
         message=command, recipient=location, return_ids=response_ids, return_value=return_value
     )
-    return response
+
+    if multiprocessing:
+        return response.get()
+    else:
+        return response
 
 
 def fss_op(x1, x2, type_op="eq"):
@@ -76,8 +85,18 @@ def fss_op(x1, x2, type_op="eq"):
     Returns:
         shares of the comparison
     """
+    # simple vs multi depending on num elements
+    # {
+    #     5_000: [0.085, 0.10]
+    #     10_000: [0.15, 0.15],
+    #     20_000: [0.28, 0.23]
+    #     50_000: [0.75, 0.47],
+    #     100_000: [1.50, 0.95]
+    # }
 
     locations = x1.locations
+
+    numel = x1.child[locations[0].id].numel()
 
     shares = []
     for location in locations:
@@ -87,11 +106,27 @@ def fss_op(x1, x2, type_op="eq"):
 
     mask_value = sum(shares) % 2 ** n
 
-    shares = []
-    for i, location in enumerate(locations):
-        args = (th.IntTensor([i]), mask_value, type_op)
-        share = remote_exec(full_name(evaluate), location, args=args, return_value=False)
-        shares.append(share)
+    if numel > 10_000:
+        multiprocessing_args = []
+        for i, location in enumerate(locations):
+            args = (th.IntTensor([i]), mask_value, type_op)
+            multiprocessing_args.append(
+                (full_name(evaluate), location.id, args, {}, None, False, 1, True)
+            )
+
+        p = multiprocessing.Pool()
+        real_shares = p.starmap(remote_exec, multiprocessing_args)
+        p.close()
+
+        shares = []
+        for real_share, location in zip(real_shares, locations):
+            shares.append(real_share.send(location))
+    else:
+        shares = []
+        for i, location in enumerate(locations):
+            args = (th.IntTensor([i]), mask_value, type_op)
+            share = remote_exec(full_name(evaluate), location, args=args, return_value=False)
+            shares.append(share)
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
