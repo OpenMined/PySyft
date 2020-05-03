@@ -20,7 +20,7 @@ class Encrypter:
         self._key = key
 
     def encrypt_internal(self, message, is_asymmetric):
-        result = CipherText([])
+        result = None
         if is_asymmetric:
             result = encrypt_zero_asymmetric(self._context, self._key)
         else:

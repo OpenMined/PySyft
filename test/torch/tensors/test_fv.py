@@ -151,11 +151,13 @@ def test_get_significant_count(ptr, result):
     ],
 )
 def test_integer_encoder(plain_modulus, value):
+    # TODO For creating IntegerEncoder we should not need to create coeff_modulus so need to change the way we pass ctx object in IntegerEncoder class.
+    # due to which currently we have to create coeff modulus of very big size and it slows down these tests.
     enc_param = EncryptionParams()
     enc_param.plain_modulus = plain_modulus
+    enc_param.coeff_modulus = CoeffModulus().create(plain_modulus, [100, 100, 100])
     ctx = Context(enc_param)
     encoder = IntegerEncoder(ctx)
-
     poly = encoder.encode(value)
     assert value == encoder.decode(poly)
 
