@@ -17,7 +17,7 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
-    def plan_func():
+    def plan_func(crypten=crypten):
         alice_tensor = crypten.load("crypten_data", 1)
         bob_tensor = crypten.load("crypten_data", 2)
 

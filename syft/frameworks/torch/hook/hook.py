@@ -1,5 +1,6 @@
 import copy
 from functools import wraps
+from collections import defaultdict
 import logging
 from math import inf
 import torch
@@ -130,14 +131,16 @@ class TorchHook(FrameworkHook):
         else:
             self.local_worker.hook = self
 
-        self.to_auto_overload = {}
+        self.to_auto_overload = defaultdict(list)
 
         self.args_hook_for_overloaded_attr = {}
 
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
         if dependency_check.crypten_available:
+            self.to_auto_overload[crypten.mpc.MPCTensor] = ["get_plain_text"]
             self._hook_native_tensor(crypten.mpc.MPCTensor, TorchTensor)
+            self._hook_syft_placeholder_methods(crypten.mpc.MPCTensor, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
@@ -257,8 +260,8 @@ class TorchHook(FrameworkHook):
 
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
-        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
-            tensor_type
+        self.to_auto_overload[tensor_type].extend(
+            self._which_methods_should_we_auto_overload(tensor_type)
         )
 
         # [We don't rename native methods as torch tensors are not hooked] Rename native functions
@@ -476,10 +479,8 @@ class TorchHook(FrameworkHook):
 
     def _hook_crypten(self):
         from syft.frameworks.crypten import load as crypten_load
-        from syft.frameworks.crypten.hook.hook import get_hooked_crypten_func
 
-        new_func = get_hooked_crypten_func("load", crypten_load)
-        setattr(crypten, "load", new_func)
+        setattr(crypten, "load", crypten_load)
 
     def _hook_crypten_module(self):
         """Overloading crypten.nn.Module with PySyft functionality, the primary module

@@ -8,6 +8,7 @@ from syft.messaging.message import CryptenInitPlan, CryptenInitJail
 from syft.frameworks.crypten import jail, utils
 
 import crypten
+from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_building
 from crypten.communicator import DistributedCommunicator
 
 
@@ -108,9 +109,13 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             if isinstance(func, sy.Plan):
                 using_plan = True
                 plan = func
+                
+                # This is needed because at building we use a set of methods defined in syft (ex: load)
+                hook_plan_building()
                 crypten.init()
                 plan.build()
                 crypten.uninit()
+                unhook_plan_building()
 
                 # Mark the plan so the other workers will use that tag to retrieve the plan
                 plan.tags = ["crypten_plan"]
