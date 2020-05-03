@@ -806,6 +806,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Args:
             *owners: the owners of the shares of the resulting AdditiveSharingTensor
+            protocol: the crypto protocol used to perform the computations ('snn' or 'fss')
             field: the field size in which the share values live
             protocol: the crypto protocol used to perform the computations ('snn' or 'fss')
             dtype: the dtype in which the share values live

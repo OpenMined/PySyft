@@ -73,6 +73,9 @@ Slack.
 
 You can also install PySyft from source on a variety of operating systems by following this [installation guide](https://github.com/OpenMined/PySyft/blob/dev/INSTALLATION.md).
 
+## Documentation
+Latest official documentation is hosted here: [https://pysyft.readthedocs.io/](https://pysyft.readthedocs.io/en/latest/index.html#)
+
 ## Run Local Notebook Server
 
 All the examples can be played with by running the command

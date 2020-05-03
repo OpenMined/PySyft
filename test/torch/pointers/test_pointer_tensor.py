@@ -566,4 +566,4 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    assert len(alice._objects) == 2
+    assert len(alice._objects) == 8

@@ -181,7 +181,7 @@ class TorchTensor(AbstractTensor):
         ):
             self.child.grad = new_grad  # .wrap()
         else:
-            if self.native_grad is not None:
+            if hasattr(self, "native_grad"):
                 with torch.no_grad():
                     self.native_grad = new_grad
             elif new_grad is not None:
@@ -381,7 +381,7 @@ class TorchTensor(AbstractTensor):
 
         try:
             command_method = getattr(module, f"native_{command}")
-        except AttributeError:
+        except AttributeError:  # the function isn't overloaded
             command_method = getattr(module, command)
 
         return command_method
@@ -874,6 +874,7 @@ class TorchTensor(AbstractTensor):
     def share(
         self,
         *owners: List[BaseWorker],
+        protocol: str = "snn",
         field: Union[int, None] = None,
         protocol: str = "snn",
         dtype: Union[str, None] = None,
@@ -885,6 +886,7 @@ class TorchTensor(AbstractTensor):
 
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
+            protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             field (int or None): The arithmetic field where live the shares.
             protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             dtype (str or None): The dtype of shares
@@ -964,12 +966,6 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
-
-    def value(self):
-        """ Call .value() on self's child if the child is a Promise (otherwise an error is raised).
-        .value() is used to retrieve the oldest unused value the promise was kept with.
-        """
-        return self.child.value()
 
     def torch_type(self):
 

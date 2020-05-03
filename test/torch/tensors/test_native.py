@@ -210,3 +210,13 @@ def test_encrypt_decrypt(workers):
     x_encrypted = x.encrypt(protocol="paillier", public_key=public)
     x_decrypted = x_encrypted.decrypt(protocol="paillier", private_key=private)
     assert torch.all(torch.eq(x_decrypted, x))
+
+
+def test_get_response():
+    test_func = lambda x: x
+    t = torch.tensor(73)
+    # a non overloaded function
+    setattr(torch, "_test_func", test_func)
+    result = torch.Tensor._get_response("torch._test_func", t, {})
+    delattr(torch, "_test_func")
+    assert t == result

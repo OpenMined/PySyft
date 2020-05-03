@@ -1,20 +1,22 @@
-from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
 
-import json
+import copy
+import inspect
 import io
 import torch
 import warnings
 
 import syft as sy
-from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
+from syft.execution.tracing import trace
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
@@ -22,7 +24,6 @@ from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.execution.v1.computation_action_pb2 import ComputationAction as ComputationActionPB
 
 
 class func2plan(object):
@@ -68,12 +69,6 @@ class func2plan(object):
         return plan
 
 
-def method2plan(*args, **kwargs):
-    raise SyntaxError(
-        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
-    )
-
-
 class Plan(AbstractObject):
     """
     A Plan stores a sequence of torch actions, just like a function.
@@ -110,7 +105,7 @@ class Plan(AbstractObject):
         include_state: bool = False,
         is_built: bool = False,
         forward_func=None,
-        state_tensors=None,
+        state_tensors=[],
         role: Role = None,
         # General kwargs
         id: Union[str, int] = None,
@@ -123,11 +118,18 @@ class Plan(AbstractObject):
         # Plan instance info
         self.name = name or self.__class__.__name__
 
-        self.role = role or Role(state_tensors=state_tensors, owner=owner)
+        self.role = role or Role()
+
+        if role is None:
+            for st in state_tensors:
+                self.role.register_state_tensor(st, owner)
 
         self.include_state = include_state
+        self.is_building = False
+        self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -145,18 +147,7 @@ class Plan(AbstractObject):
         return self.role.state
 
     @property
-    def _known_workers(self):
-        return self.owner._known_workers
-
-    # TODO is it necessary to maintain this?
-    @property
-    def location(self):
-        raise AttributeError("Plan has no attribute location")
-
-    # TODO is it necessary to maintain this?
-    # For backward compatibility
-    @property
-    def readable_plan(self):
+    def actions(self):
         return self.role.actions
 
     def parameters(self):
@@ -184,16 +175,33 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
-        self.owner.init_plan = self
+
+        # Enable tracing
+        self.toggle_tracing(True)
+        self.is_building = True
 
         # Run once to build the plan
-        with sy.hook.trace.enabled():
-            # We usually have include_state==True for functions converted to plan
-            # using @func2plan and we need therefore to add the state manually
-            if self.include_state:
-                results = self.forward(*args, self.state)
-            else:
-                results = self.forward(*args)
+        args = tuple(
+            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
+            for arg in args
+        )
+
+        # Add state to args if needed
+        if self.include_state:
+            args += (self.state,)
+
+        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
+            # Look for framework kwargs
+            framework_kwargs = {}
+            forward_args = inspect.getfullargspec(self.forward).args
+            if "torch" in forward_args:
+                framework_kwargs["torch"] = wrapped_torch
+
+            results = self.forward(*args, **framework_kwargs)
+
+        # Disable tracing
+        self.toggle_tracing(False)
+        self.is_building = False
 
         # Register inputs in role
         self.role.register_inputs(args)
@@ -201,12 +209,7 @@ class Plan(AbstractObject):
         # Register outputs in role
         self.role.register_outputs(results)
 
-        for log in sy.hook.trace.logs:
-            self.role.register_action(log, ComputationAction)
-
-        sy.hook.trace.clear()
         self.is_built = True
-        self.owner.init_plan = None
 
         # Build registered translations
         for translator in Plan._build_translators:
@@ -217,6 +220,12 @@ class Plan(AbstractObject):
                 warnings.warn(f"Failed to translate Plan with {translator}")
 
         return results
+
+    def toggle_tracing(self, value=None):
+        self.tracing = value if value is not None else not self.tracing
+        self.state.tracing = self.tracing
+        for ph in self.role.placeholders.values():
+            ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a plan."""
@@ -239,13 +248,36 @@ class Plan(AbstractObject):
         """Add new tensors or parameter attributes to the state and register them
         in the owner's registry
         """
-        object.__setattr__(self, name, value)
+        if isinstance(value, torch.jit.ScriptModule):
+            object.__setattr__(self, name, value)
+        elif isinstance(value, FrameworkTensor):
+            self.role.register_state_tensor(value, self.owner)
+            self.state_attributes[name] = value
+        elif isinstance(value, FrameworkLayerModule):
+            for param in value.parameters():
+                self.role.register_state_tensor(param, self.owner)
+            self.state_attributes[name] = value
+        else:
+            object.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        if name not in self.state_attributes:
+            raise AttributeError("State attribute not found.")
+
+        value = self.state_attributes[name]
+        if not self.is_building:
+            return value
 
         if isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value)
+            return self.role.placeholders[value.id]
         elif isinstance(value, FrameworkLayerModule):
-            for tensor_name, tensor in value.named_tensors():
-                self.__setattr__(f"{name}_{tensor_name}", tensor)
+            # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
+            copied_layer = copy.deepcopy(value)
+            for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
+                (copied_name, _) = copied_param
+                copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
+
+            return copied_layer
 
     def __call__(self, *args):
         """
@@ -574,3 +606,7 @@ class Plan(AbstractObject):
             plan.torchscript = torch.jit.load(torchscript)
 
         return plan
+
+
+# Auto-register Plan build-time translations
+Plan.register_build_translator(PlanTranslatorTorchscript)
