@@ -1,4 +1,5 @@
 from syft.frameworks.torch.he.fv.plaintext import PlainText
+from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 
 class Decrypter:
@@ -14,9 +15,16 @@ class Decrypter:
         self._coeff_count = context.param.poly_modulus_degree
         self._secret_key = secret_key.data
         self._plain_modulus = context.plain_modulus
+        self._rns_tools = context.rns_tool
 
     def decrypt(self, encrypted):
-        pass
+        temp_product_modq = self.dot_product_ct_sk_array(encrypted)
+
+        # Divide scaling variant using BEHZ FullRNS techniques
+        result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)
+
+        plain_coeff_count = get_significant_count(result, self._coeff_count)
+        return PlainText(result[:plain_coeff_count])
 
     def dot_product_ct_sk_array(self, encrypted):
         product = [0] * self._coeff_count * self._coeff_mod_size

@@ -1,4 +1,5 @@
 import numpy as np
+from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 
 
 class Context:
@@ -18,7 +19,9 @@ class Context:
         self._coeff_modulus = self._param.coeff_modulus
         self._plain_modulus = encryption_param.plain_modulus
         self._coeff_div_plain_modulus = [int(x / self._plain_modulus) for x in self._coeff_modulus]
-        self._plain_div_coeff_modulus = [self._plain_modulus / x for x in self._coeff_modulus]
+        self._rns_tool = RNSTool(
+            self._poly_modulus_degree, self._coeff_modulus, self._plain_modulus
+        )
 
     @property
     def param(self):
@@ -33,5 +36,5 @@ class Context:
         return self._coeff_div_plain_modulus
 
     @property
-    def plain_div_coeff_modulus(self):
-        return self._plain_div_coeff_modulus
+    def rns_tool(self):
+        return self._rns_tool
