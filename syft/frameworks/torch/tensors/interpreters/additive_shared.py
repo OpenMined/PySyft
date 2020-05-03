@@ -61,6 +61,9 @@ class AdditiveSharingTensor(AbstractTensor):
         self.child = shares
         self.dtype = dtype
         if dtype == "custom":
+            warnings.warn(
+                "Custom dtype called"
+            )  # This is a temp line. Will be removed when the PR is ready
             if field is None:
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
