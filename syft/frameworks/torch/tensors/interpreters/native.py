@@ -15,6 +15,7 @@ from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
@@ -185,7 +186,7 @@ class TorchTensor(AbstractTensor):
         ):
             self.child.grad = new_grad  # .wrap()
         else:
-            if self.native_grad is not None:
+            if hasattr(self, "native_grad"):
                 with torch.no_grad():
                     self.native_grad = new_grad
             elif new_grad is not None:
@@ -374,10 +375,9 @@ class TorchTensor(AbstractTensor):
 
         return response
 
-    def _get_response(cmd, args_, kwargs_):
-        """
-        Return the evaluation of the cmd string parameter
-        """
+    @staticmethod
+    @memorize
+    def _get_method(cmd):
         module = syft.local_worker.hook
         segments = cmd.split(".")
         submodules = segments[:-1]
@@ -386,7 +386,20 @@ class TorchTensor(AbstractTensor):
         for sm in submodules:
             module = getattr(module, sm)
 
-        command_method = getattr(module, f"native_{command}")
+        try:
+            command_method = getattr(module, f"native_{command}")
+        except AttributeError:  # the function isn't overloaded
+            command_method = getattr(module, command)
+
+        return command_method
+
+    @staticmethod
+    def _get_response(cmd, args_, kwargs_):
+        """
+        Return the evaluation of the cmd string parameter
+        """
+        command_method = TorchTensor._get_method(cmd)
+
         if isinstance(args_, tuple):
             response = command_method(*args_, **kwargs_)
         else:
@@ -717,15 +730,25 @@ class TorchTensor(AbstractTensor):
         Returns:
             A pointer to the object location in the new worker
         """
-        self.child = self.child.move(location, requires_grad)
+        new_ptr = self.child.move(location, requires_grad)
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the syft.local_worker
         self.child.owner.register_obj(self)
+        if isinstance(new_ptr, PointerTensor):
+            return new_ptr.wrap()
+        else:
+            return new_ptr
+
+    def move_(self, location: BaseWorker, requires_grad: bool = False):
+        """
+        Inplace version of move
+        """
+        new_ptr = self.move(location, requires_grad)
+        self.child = new_ptr
         return self
 
     def remote_send(self, location):
-        self.child.remote_send(location)
-        return self
+        return self.child.remote_send(location).wrap()
 
     def attr(self, attr_name):
         """"""
@@ -871,6 +894,7 @@ class TorchTensor(AbstractTensor):
     def share(
         self,
         *owners: List[BaseWorker],
+        protocol: str = "snn",
         field: Union[int, None] = None,
         dtype: Union[str, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
@@ -882,6 +906,7 @@ class TorchTensor(AbstractTensor):
 
         Args:
             owners (list): A list of BaseWorker objects determining who to send shares to.
+            protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             field (int or None): The arithmetic field where live the shares.
             dtype (str or None): The dtype of shares
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
@@ -895,7 +920,12 @@ class TorchTensor(AbstractTensor):
                 {"requires_grad": requires_grad} if isinstance(chain, syft.PointerTensor) else {}
             )
             shared_tensor = chain.share(
-                *owners, field=field, dtype=dtype, crypto_provider=crypto_provider, **kwargs_
+                *owners,
+                protocol=protocol,
+                field=field,
+                dtype=dtype,
+                crypto_provider=crypto_provider,
+                **kwargs_,
             )
         else:
             if self.type() == "torch.FloatTensor":
@@ -903,7 +933,11 @@ class TorchTensor(AbstractTensor):
 
             shared_tensor = (
                 syft.AdditiveSharingTensor(
-                    field=field, dtype=dtype, crypto_provider=crypto_provider, owner=self.owner
+                    protocol=protocol,
+                    field=field,
+                    dtype=dtype,
+                    crypto_provider=crypto_provider,
+                    owner=self.owner,
                 )
                 .on(self.copy(), wrap=False)
                 .init_shares(*owners)
@@ -951,13 +985,6 @@ class TorchTensor(AbstractTensor):
         ps.append(self)
 
         return syft.combine_pointers(*ps)
-
-    def value(self):
-        """
-        Call .value() on self's child if the child is a Promise (otherwise an error is raised).
-        .value() is used to retrieve the oldest unused value the promise was kept with.
-        """
-        return self.child.value()
 
     def torch_type(self):
 

@@ -147,14 +147,14 @@ class SinhBackward(GradFunc):
         return (grad_self_,)
 
 
-class SqrtBackward(GradFunc):
-    def __init__(self, self_):
-        super().__init__(self, self_)
-        self.self_ = self_
-
-    def gradient(self, grad):
-        grad_self_ = grad / (2 * self.result)
-        return (grad_self_,)
+# class SqrtBackward(GradFunc):
+#     def __init__(self, self_):
+#         super().__init__(self, self_)
+#         self.self_ = self_
+#
+#     def gradient(self, grad):
+#         grad_self_ = grad / (2 * self.result) TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
+#         return (grad_self_,)
 
 
 class TanhBackward(GradFunc):
