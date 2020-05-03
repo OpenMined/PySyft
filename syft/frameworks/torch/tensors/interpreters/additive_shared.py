@@ -67,15 +67,19 @@ class AdditiveSharingTensor(AbstractTensor):
         elif dtype == "long" or dtype == "int64":
             self.field = 2 ** 64
             self.torch_dtype = torch.int64
+            self.dtype = "long"
         elif dtype == "int" or dtype == "int32":
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
+            self.dtype = "int"
         elif dtype == "short" or "int16":
             self.field = 2 ** 16
             self.torch_dtype = torch.int16
+            self.dtype = "int"
         elif dtype == "int8":
             self.field = 2 ** 8
             self.torch_dtype = torch.int8
+            self.dtype = "int"
 
         else:
             if dtype is not None:
