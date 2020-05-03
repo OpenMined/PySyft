@@ -194,10 +194,7 @@ def private_compare(x_bit_sh, r, beta, L):
     perm = torch.randperm(x_bit_sh.shape[-1]).send(*workers, **no_wrap)
 
     j = sy.MultiPointerTensor(
-        children=[
-            torch.tensor([int(i == 0)]).send(w, **no_wrap)
-            for i, w in enumerate(workers)
-        ]
+        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
     )
 
     # 1)
@@ -235,11 +232,7 @@ def private_compare(x_bit_sh, r, beta, L):
     r_mask = r_mask.unsqueeze(-1)
 
     # Mask combination to execute the if / else statements of 4), 7), 10)
-    c = (
-        (1 - beta) * c_beta0
-        + (beta * (1 - r_mask)) * c_beta1
-        + (beta * r_mask) * c_else
-    )
+    c = (1 - beta) * c_beta0 + (beta * (1 - r_mask)) * c_beta1 + (beta * r_mask) * c_else
 
     # 14)
     # Hide c values
@@ -318,13 +311,10 @@ def msb(a_sh):
     beta_prime_sh = beta_prime.share(
         *workers, field=L, dtype=dtype, crypto_provider=crypto_provider, **no_wrap
     )
-    
+
     # 7)
     j = sy.MultiPointerTensor(
-        children=[
-            torch.tensor([int(i == 0)]).send(w, **no_wrap)
-            for i, w in enumerate(workers)
-        ]
+        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
     )
     gamma = beta_prime_sh + (j * beta) - (2 * beta * beta_prime_sh)
 
@@ -404,7 +394,7 @@ def share_convert(a_sh):
     # alpha0 = wrap(r_sh, L)
     # alphas = [alpha0.copy().move(w) for w in workers[1:]]
     # alpha = sy.MultiPointerTensor(children=[alpha0, *alphas])
-    
+
     # WORKS WITH 2 PARTIES
     # alpha0 = (
     #    (
@@ -503,10 +493,7 @@ def relu_deriv(a_sh):
 
     # 4)
     j = sy.MultiPointerTensor(
-        children=[
-            torch.tensor([int(i == 0)]).send(w, **no_wrap)
-            for i, w in enumerate(workers)
-        ]
+        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
     )
     gamma_sh = j - alpha_sh + u
     return gamma_sh
@@ -673,10 +660,7 @@ def maxpool_deriv(x_sh):
 
     # 2)
     j = sy.MultiPointerTensor(
-        children=[
-            torch.tensor([int(i == 0)]).send(w, **no_wrap)
-            for i, w in enumerate(workers)
-        ]
+        children=[torch.tensor([int(i == 0)]).send(w, **no_wrap) for i, w in enumerate(workers)]
     )
     k_sh = ind_max_sh + j * r
 
@@ -718,12 +702,10 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
 
     # Calculate output shapes
     nb_rows_out = int(
-        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0]
-        + 1
+        (nb_rows_in + 2 * padding[0] - dilation[0] * (kernel[0] - 1) - 1) / stride[0] + 1
     )
     nb_cols_out = int(
-        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1]
-        + 1
+        (nb_cols_in + 2 * padding[1] - dilation[1] * (kernel[1] - 1) - 1) / stride[1] + 1
     )
 
     # Apply padding to the input
@@ -743,10 +725,7 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
                 for c_in in range(0, nb_cols_in - (kernel[1] - 1), stride[1]):
                     m, _ = maxpool(
                         a_sh[
-                            batch,
-                            channel,
-                            r_in : r_in + kernel[0],
-                            c_in : c_in + kernel[1],
+                            batch, channel, r_in : r_in + kernel[0], c_in : c_in + kernel[1],
                         ].child
                     )
                     res.append(m.wrap())

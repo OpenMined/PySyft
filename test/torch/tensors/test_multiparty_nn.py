@@ -10,15 +10,9 @@ def test_select_share(workers):
         workers["charlie"],
         workers["james"],
     )
-    alpha_1 = (
-        torch.tensor([[0, 1]]).share(alice, bob, charlie, crypto_provider=james).child
-    )
-    ones = (
-        torch.tensor([[1, 1]]).share(alice, bob, charlie, crypto_provider=james).child
-    )
-    twos = (
-        torch.tensor([[2, 2]]).share(alice, bob, charlie, crypto_provider=james).child
-    )
+    alpha_1 = torch.tensor([[0, 1]]).share(alice, bob, charlie, crypto_provider=james).child
+    ones = torch.tensor([[1, 1]]).share(alice, bob, charlie, crypto_provider=james).child
+    twos = torch.tensor([[2, 2]]).share(alice, bob, charlie, crypto_provider=james).child
     selected = securenn.select_share(alpha_1, ones, twos)
     assert (selected.get() == torch.tensor([[1, 2]])).all()
 
@@ -112,14 +106,10 @@ def test_division(workers):
         workers["james"],
     )
     tensorA = (
-        torch.tensor([[0, 10, 10, 20, 20]])
-        .share(alice, bob, charlie, crypto_provider=james)
-        .child
+        torch.tensor([[0, 10, 10, 20, 20]]).share(alice, bob, charlie, crypto_provider=james).child
     )
     tensorB = (
-        torch.tensor([[1, 2, 3, 4, 5]])
-        .share(alice, bob, charlie, crypto_provider=james)
-        .child
+        torch.tensor([[1, 2, 3, 4, 5]]).share(alice, bob, charlie, crypto_provider=james).child
     )
     division = securenn.division(tensorA, tensorB)
     assert (division.get() == torch.tensor([[0, 5, 3, 5, 4]])).all()
@@ -133,9 +123,7 @@ def test_maxpool(workers):
         workers["james"],
     )
     tensorA = (
-        torch.tensor([[0, 1, 8, 3, 4]])
-        .share(alice, bob, charlie, crypto_provider=james)
-        .child
+        torch.tensor([[0, 1, 8, 3, 4]]).share(alice, bob, charlie, crypto_provider=james).child
     )
     v, i = securenn.maxpool(tensorA)
     assert (v.get() == torch.tensor([[8]])).all()
