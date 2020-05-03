@@ -145,13 +145,7 @@ def select_share(alpha_sh, x_sh, y_sh):
         z_sh = (1 - alpha_sh) * x_sh + alpha_sh * y_sh
     """
     assert (
-        alpha_sh.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
-    assert (
-        x_sh.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
-    assert (
-        y_sh.dtype != "custom"
+        alpha_sh.dtype == x_sh.dtype == y_sh.dtype != "custom"
     ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
 
     alice, bob = alpha_sh.locations
@@ -522,10 +516,7 @@ def division(x_sh, y_sh, bit_len_max=None):
         element-wise integer division of x_sh by y_sh
     """
     assert (
-        x_sh.dtype != "custom"
-    ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
-    assert (
-        y_sh.dtype != "custom"
+        x_sh.dtype == y_sh.dtype != "custom"
     ), "`custom` dtype shares are unsupported in SecureNN, use dtype = `long` or `int` instead"
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
