@@ -329,6 +329,12 @@ def test_move(workers):
     z = y.move(me)
     assert (z == t).all()
 
+    # Move object to same location
+    alice.clear_objects()
+    t = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
+    t = t.move(bob)
+    assert torch.all(torch.eq(t.get(), torch.tensor([1.0, 2, 3, 4, 5])))
+
 
 def test_combine_pointers(workers):
     """
