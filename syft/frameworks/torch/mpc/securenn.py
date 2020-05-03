@@ -53,7 +53,7 @@ def get_dtype(field: int):
 
 def decompose(tensor, field):
     """decompose a tensor into its binary representation."""
-    assert tensor.dtype != "custom"
+    assert tensor.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
     torch_dtype = get_torch_dtype(field)
     n_bits = get_n_bits(field)
     powers = torch.arange(n_bits, dtype=torch_dtype)
@@ -71,7 +71,7 @@ def flip(x, dim, dtype):
     """
     Reverse the order of the elements in a tensor
     """
-    assert x.dtype != "custom"
+    assert x.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
     indices = torch.arange(x.shape[dim] - 1, -1, -1).type(dtype)
 
     if hasattr(x, "child") and isinstance(x.child, dict):
@@ -143,9 +143,9 @@ def select_share(alpha_sh, x_sh, y_sh):
     Return:
         z_sh = (1 - alpha_sh) * x_sh + alpha_sh * y_sh
     """
-    assert alpha_sh.dtype != "custom"
-    assert x_sh.dtype != "custom"
-    assert y_sh.dtype != "custom"
+    assert alpha_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
+    assert x_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
+    assert y_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     alice, bob = alpha_sh.locations
     crypto_provider = alpha_sh.crypto_provider
@@ -182,7 +182,7 @@ def private_compare(x_bit_sh, r, beta, L):
     assert isinstance(x_bit_sh, sy.AdditiveSharingTensor)
     assert isinstance(r, sy.MultiPointerTensor)
     assert isinstance(beta, sy.MultiPointerTensor)
-    assert x_bit_sh.dtype != "custom"
+    assert x_bit_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     # Would it be safer to have a different r/beta for each value in the tensor?
 
@@ -274,7 +274,7 @@ def msb(a_sh):
     Return:
         the most significant bit
     """
-    assert a_sh.dtype != "custom"
+    assert a_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -352,7 +352,7 @@ def share_convert(a_sh):
         An additive sharing tensor with shares in field L-1
     """
     assert isinstance(a_sh, sy.AdditiveSharingTensor)
-    assert a_sh.dtype != "custom"
+    assert a_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     workers = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -451,7 +451,7 @@ def relu_deriv(a_sh):
         1 if Dec(a_sh) > 0
         encrypted in an AdditiveSharingTensor
     """
-    assert a_sh.dtype != "custom"
+    assert a_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -488,7 +488,7 @@ def relu(a_sh):
         Dec(a_sh) > 0
         encrypted in an AdditiveSharingTensor
     """
-    assert a_sh.dtype != "custom"
+    assert a_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     alice, bob = a_sh.locations
     crypto_provider = a_sh.crypto_provider
@@ -511,8 +511,8 @@ def division(x_sh, y_sh, bit_len_max=None):
     Returns:
         element-wise integer division of x_sh by y_sh
     """
-    assert x_sh.dtype != "custom"
-    assert y_sh.dtype != "custom"
+    assert x_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
+    assert y_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
     L = x_sh.field
@@ -570,7 +570,7 @@ def maxpool(x_sh):
         maximum value as an AdditiveSharingTensor
         index of this value in the flattened tensor as an AdditiveSharingTensor
     """
-    assert x_sh.dtype != "custom"
+    assert x_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     if x_sh.is_wrapper:
         x_sh = x_sh.child
@@ -622,7 +622,7 @@ def maxpool_deriv(x_sh):
         an AdditiveSharingTensor of the same shape as x_sh full of zeros except for
         a 1 at the position of the max value
     """
-    assert x_sh.dtype != "custom"
+    assert x_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
 
     alice, bob = x_sh.locations
     crypto_provider = x_sh.crypto_provider
@@ -671,7 +671,7 @@ def maxpool2d(a_sh, kernel_size: int = 1, stride: int = 1, padding: int = 0):
         stride: the stride of the window
         padding: implicit zero padding to be added on both sides
     """
-    assert a_sh.dtype != "custom"
+    assert a_sh.dtype != "custom", "`custom` dtype are unsupported in SecureNN"
     assert len(a_sh.shape) == 4
 
     # Change to tuple if not one
