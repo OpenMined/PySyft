@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.execution.plan import Plan
+from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook import hook_args
@@ -20,9 +21,9 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.object import AbstractObject
-from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.tensor import AbstractTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
@@ -164,9 +165,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # self is the to-be-created local worker
                 self.add_worker(self)
 
-        # Used to keep track of a building plan
-        self.init_plan = None
-
         if hook is None:
             self.framework = None
         else:
@@ -180,6 +178,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
+
+        # storage object for crypto primitives
+        self.crypto_store = PrimitiveStorage(owner=self)
+        # declare the plans used for crypto computations
+        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -434,7 +437,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
 
-        # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Receive an object from a another worker
 
         Args:
@@ -474,7 +476,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Args:
             message: A tuple specifying the command and the args.
         Returns:
-            A pointer to the result.
+            The result or None if return_value is False.
         """
 
         op_name = action.name
@@ -482,6 +484,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         args_ = action.args
         kwargs_ = action.kwargs
         return_ids = action.return_ids
+        return_value = action.return_value
 
         # Handle methods
         if _self is not None:
@@ -489,8 +492,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
-            if type(_self) == str and _self == "self":
-                _self = self
+            elif isinstance(_self, str):
+                if _self == "self":
+                    _self = self
+                else:
+                    res: list = self.search(_self)
+                    assert (
+                        len(res) == 1
+                    ), f"Searching for {_self} on {self.id}. /!\\ {len(res)} found"
+                    _self = res[0]
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
@@ -526,7 +536,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
-                return response
+                if return_value or isinstance(response, (int, float, bool, str)):
+                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                else:
+                    return None
             except ResponseSignatureError:
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)
@@ -546,12 +559,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             obj = self.get_obj(obj_id)
             response = source_worker.send(obj, *destinations, **kwargs_)
+            response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                response.garbage_collect_data = False
                 self.rm_obj(obj_id)
             return response
 
@@ -595,7 +608,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args_)
 
     def send_command(
-        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
+        self,
+        recipient: "BaseWorker",
+        message: tuple,
+        return_ids: str = None,
+        return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
@@ -615,7 +632,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         name, target, args_, kwargs_ = message
 
         try:
-            message = TensorCommandMessage.computation(name, target, args_, kwargs_, return_ids)
+            message = TensorCommandMessage.computation(
+                name, target, args_, kwargs_, return_ids, return_value
+            )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
@@ -1058,6 +1077,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 results = results.intersection(results_by_tag)
             else:
                 results = results_by_tag
+
         if results is not None:
             return list(results)
         else:
@@ -1162,6 +1182,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = []
         return WorkerCommandMessage(command_name, (args, kwargs, return_ids))
+
+    def feed_crypto_primitive_store(self, types_primitives: dict):
+        self.crypto_store.add_primitives(types_primitives)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
