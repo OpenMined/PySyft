@@ -154,3 +154,30 @@ def test_plan_translated_on_build(hook, workers):
     res1 = plan(inp)
     res2 = plan.torchscript(inp)
     assert (res1 == res2).all()
+
+
+def test_backward_autograd_can_be_translated(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)], trace_autograd=True)
+    def autograd_test(X):
+        y = X * 5
+        y = -y.log() / 2
+        y = y.sum()
+        y.backward()
+        return X.grad
+
+    X = th.ones(5, 5, requires_grad=True)
+
+    # Result of torch autograd
+    torch_grads = autograd_test(X)
+
+    # Translate to torchscript
+    autograd_test.add_translation(PlanTranslatorTorchscript)
+
+    # Result of torchscript'ed traced backprop
+    ts_plan_grads = autograd_test.torchscript(X)
+
+    # (debug out)
+    print("Torchscript Plan:\n", autograd_test.torchscript.code)
+
+    # Test all results are equal
+    assert torch_grads.eq(ts_plan_grads).all()

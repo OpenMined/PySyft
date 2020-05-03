@@ -37,7 +37,7 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False):
         self.args_shape = args_shape
         self.state_tensors = state or tuple()
         # include_state is used to distinguish if the initial plan is a function or a class:
@@ -45,6 +45,7 @@ class func2plan(object):
         # will be true. And to know if it was indeed a function, we just need to see if a
         # "manual" state was provided.
         self.include_state = state is not None
+        self.trace_autograd = trace_autograd
 
     def __call__(self, plan_function):
         plan = Plan(
@@ -60,7 +61,7 @@ class func2plan(object):
         if self.args_shape:
             args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                plan.build(*args_)
+                plan.build(*args_, trace_autograd=self.trace_autograd)
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
@@ -173,7 +174,7 @@ class Plan(AbstractObject):
         else:
             return []
 
-    def build(self, *args):
+    def build(self, *args, trace_autograd=False):
         """Builds the plan.
 
         First, run the function to be converted in a plan in a context which
@@ -197,22 +198,33 @@ class Plan(AbstractObject):
         # Get state as placeholders
         self.role.state.read_placeholders = True
 
-        # Run once to build the plan
-        args = tuple(
-            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-            for arg in args
-        )
-
-        # Wrap arguments that require gradients with AutogradTensor
-        # Note that AutogradTensor comes before Placeholder in the chain
-        # so that all operations that happen inside AutogradTensor are recorded by Placeholder
-        args_with_grad = tuple(
-            AutogradTensor().on(arg, wrap=False) if arg.child.requires_grad else arg for arg in args
-        )
+        if trace_autograd:
+            # Wrap arguments that require gradients with AutogradTensor,
+            # to be able to trace autograd operations
+            args = tuple(
+                AutogradTensor().on(arg, wrap=False)
+                if isinstance(arg, FrameworkTensor) and arg.requires_grad
+                else arg
+                for arg in args
+            )
+            # Add Placeholder after AutogradTensor in the chain
+            # so that all operations that happen inside AutogradTensor are recorded by Placeholder
+            args_placeholders = tuple(
+                PlaceHolder.insert(
+                    arg, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
+                )
+                for arg in args
+            )
+        else:
+            # Add Placeholder on top of each arg
+            args = args_placeholders = tuple(
+                PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
+                for arg in args
+            )
 
         # Add state to args if needed
         if self.include_state:
-            args_with_grad += (self.state,)
+            args += (self.state,)
 
         with trace(framework_packages["torch"], self.role) as wrapped_torch:
             # Look for framework kwargs
@@ -221,7 +233,7 @@ class Plan(AbstractObject):
             if "torch" in forward_args:
                 framework_kwargs["torch"] = wrapped_torch
 
-            results = self.forward(*args_with_grad, **framework_kwargs)
+            results = self.forward(*args, **framework_kwargs)
 
         # Disable tracing
         self.toggle_tracing(False)
@@ -229,15 +241,14 @@ class Plan(AbstractObject):
         self.role.state.read_placeholders = False
 
         # Register inputs in role
-        self.role.register_inputs(args)
+        self.role.register_inputs(args_placeholders)
 
-        # Unwrap from auto-added AutogradTensor
-        results = (results,) if not isinstance(results, tuple) else results
-        results_without_grad = tuple(
-            result.child if isinstance(result, AutogradTensor) else result for result in results
-        )
         # Register outputs in role
-        self.role.register_outputs(results_without_grad)
+        if isinstance(results, (tuple, list)):
+            results_placeholders = (PlaceHolder.extract(result) for result in results)
+        else:
+            results_placeholders = PlaceHolder.extract(results)
+        self.role.register_outputs(results_placeholders)
 
         self.is_built = True
         self.owner.init_plan = None
@@ -637,61 +648,23 @@ class Plan(AbstractObject):
         return plan
 
     @property
-    def code(self):
+    def code(self) -> str:
         """Returns string representation of Plan actions"""
-        _self = self
+        input_names = {id: f"arg_{i + 1}" for i, id in enumerate(self.role.input_placeholder_ids)}
+        output_names = {id: f"out_{i + 1}" for i, id in enumerate(self.role.output_placeholder_ids)}
+        state_names = {
+            id: f"state_{i + 1}" for i, id in enumerate(self.role.state.state_placeholders)
+        }
+        var_names = {**input_names, **output_names, **state_names}
 
-        def stringify(obj, var_name=""):
-            if isinstance(obj, PlaceHolder):
-                if obj.id in input_names:
-                    line = input_names[obj.id]
-                elif obj.id in output_names:
-                    line = output_names[obj.id]
-                elif obj.id in state_names:
-                    line = state_names[obj.id]
-                else:
-                    if obj.id in var_names:
-                        name = var_names[obj.id]
-                    else:
-                        name = len(var_names)
-                        var_names[obj.id] = name
-                    line = f"_{var_name}{name}"
-            elif isinstance(obj, PlaceholderId):
-                line = stringify(_self.role.placeholders[obj.value])
-            elif isinstance(obj, (tuple, list)):
-                line = ", ".join(stringify(o) for o in obj)
-            else:
-                line = str(obj)
-
-            return line
-
-        inputs = self.role.input_placeholders()
-        outputs = self.role.output_placeholders()
-        states = self.role.state.state_placeholders
-        input_names = {ph.id: f"_arg{i+1}" for i, ph in enumerate(inputs)}
-        output_names = {ph.id: f"_out{i+1}" for i, ph in enumerate(outputs)}
-        state_names = {ph.id: f"_state{i+1}" for i, ph in enumerate(states)}
-        var_names = {}
-
-        out = ""
-        out += f"def {self.name}("
-        out += stringify(inputs)
+        out = f"def {self.name}("
+        out += ", ".join([var_names[id] for id in self.role.input_placeholder_ids])
         out += "):\n"
         for action in self.role.actions:
-            line = "    "
-            if action.return_ids is not None:
-                line += stringify(action.return_ids) + " = "
-            if action.target is not None:
-                line += stringify(action.target) + "."
-            line += action.name + "("
-            line += stringify(action.args)
-            if action.kwargs:
-                line += ", " + ", ".join(f"{k}={w}" for k, w in action.kwargs.items())
-            line += ")\n"
-            out += line
+            out += f"    {action.code(var_names)}\n"
 
         out += "    return "
-        out += stringify(outputs)
+        out += ", ".join([var_names[id] for id in self.role.output_placeholder_ids])
 
         return out
 

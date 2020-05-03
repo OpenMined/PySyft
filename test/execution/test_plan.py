@@ -711,10 +711,8 @@ def test_plan_input_usage(hook):
     assert (result == x12).all
 
 
-def test_training_plan_can_be_traced(hook, workers):
-    # sy.ID_PROVIDER = list(reversed(range(1, 10000)))
-
-    @sy.func2plan(args_shape=[(5, 5)])
+def test_backward_autograd_can_be_traced(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)], trace_autograd=True)
     def autograd_test(X):
         y = X * 5
         y = -y.log() / 2
@@ -731,16 +729,8 @@ def test_training_plan_can_be_traced(hook, workers):
     autograd_test.forward = None
     plan_grads = autograd_test(X)
 
-    # Translate to torchscript
-    autograd_test.add_translation(PlanTranslatorTorchscript)
-
-    # Result of torchscript'ed traced backprop
-    ts_plan_grads = autograd_test.torchscript(X)
-
     # (debug out)
     print("Traced Plan:\n", autograd_test.code)
-    print("Torchscript Plan:\n", autograd_test.torchscript.code)
 
     # Test all results are equal
     assert torch_grads.eq(plan_grads).all()
-    assert torch_grads.eq(ts_plan_grads).all()

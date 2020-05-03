@@ -35,7 +35,7 @@ class ComputationAction(Action):
         self.args = args_
         self.kwargs = kwargs_
         self.return_ids = return_ids
-        self.__repr = self.__str__
+        self.__repr__ = self.__str__
 
     @property
     def contents(self):
@@ -203,31 +203,46 @@ class ComputationAction(Action):
 
         return action
 
-    def __str__(self) -> str:
-        """Returns string representation of action"""
-        _self = self
+    def code(self, var_names=None) -> str:
+        """Returns pseudo-code representation of computation action"""
 
         def stringify(obj):
-            if isinstance(obj, PlaceHolder):
-                line = f"var_{obj.id.value}"
-            elif isinstance(obj, PlaceholderId):
-                line = f"var_{obj.value}"
+            if isinstance(obj, PlaceholderId):
+                id = obj.value
+                if var_names is None:
+                    ret = f"var_{id}"
+                else:
+                    if id in var_names:
+                        ret = var_names[id]
+                    else:
+                        idx = sum("var_" in k for k in var_names.values())
+                        name = f"var_{idx}"
+                        var_names[id] = name
+                        ret = name
+            elif isinstance(obj, PlaceHolder):
+                ret = stringify(obj.id)
             elif isinstance(obj, (tuple, list)):
-                line = ", ".join(stringify(o) for o in obj)
+                ret = ", ".join(stringify(o) for o in obj)
             else:
-                line = str(obj)
+                ret = str(obj)
 
-            return line
+            return ret
 
-        line = ""
+        out = ""
         if self.return_ids is not None:
-            line += stringify(self.return_ids) + " = "
+            out += stringify(self.return_ids) + " = "
         if self.target is not None:
-            line += stringify(self.target) + "."
-        line += self.name + "("
-        line += stringify(self.args)
+            out += stringify(self.target) + "."
+        out += self.name + "("
+        out += stringify(self.args)
         if self.kwargs:
-            line += ", " + ", ".join(f"{k}={w}" for k, w in self.kwargs.items())
-        line += ")"
+            if len(self.args) > 0:
+                out += ", "
+            out += ", ".join(f"{k}={w}" for k, w in self.kwargs.items())
+        out += ")"
 
-        return f"{type(self).__name__ }[{line}]"
+        return out
+
+    def __str__(self) -> str:
+        """Returns string representation of computation action"""
+        return f"{type(self).__name__}[{self.code()}]"

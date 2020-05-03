@@ -169,6 +169,36 @@ class PlaceHolder(AbstractTensor):
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
+    def insert(tensor, after, owner, role=None, tracing=False):
+        """ Helper method to add a placeholder in the specific place of tensor chain. """
+        current_level = tensor
+        while not isinstance(current_level, after) and current_level is not None:
+            current_level = getattr(current_level, "child", None)
+
+        if current_level is None:
+            raise RuntimeError(
+                f"Cannot insert Placeholder, chain does not contain {after.__name__} tensor type."
+            )
+
+        child = getattr(current_level, "child", None)
+        if child is None:
+            raise RuntimeError(
+                f"Cannot insert Placeholder, {after.__name__} does not wrap anything."
+            )
+
+        placeholder = PlaceHolder.create_from(child, owner, role, tracing)
+        current_level.child = placeholder
+        return placeholder
+
+    @staticmethod
+    def extract(tensor):
+        """ Helper method to find and return placeholder in the tensor chain. """
+        current_level = tensor
+        while not isinstance(current_level, PlaceHolder) and current_level is not None:
+            current_level = getattr(current_level, "child", None)
+        return current_level
+
+    @staticmethod
     def create_placeholders(args_shape):
         """ Helper method to create a list of placeholders with shapes
         in args_shape.
