@@ -1,5 +1,6 @@
 import torch
 import crypten
+from crypten.nn import onnx_converter as _onnx_converter
 from syft.frameworks import crypten as syft_crypten
 
 
@@ -80,3 +81,31 @@ def _unpack_value(value, model=None):
                 p.set_(torch.tensor(p_val))
 
         return model
+
+
+def pytorch_to_onnx(pytorch_model, dummy_input):
+    """Export a pytorch model to onnx.
+
+    Args:
+        pytorch_model: torch.nn.Module to export.
+        dummy_input: example input that can be forwarded with the pytorch_model.
+
+    Returns:
+        bytes containing the exported pytorch model.
+    """
+    f = _onnx_converter._from_pytorch_to_bytes(pytorch_model, dummy_input)
+    onnx_bytes = f.read()
+    f.close()
+    return onnx_bytes
+
+
+def onnx_to_crypten(onnx_bytes):
+    """Build a crypten model from onnx bytes.
+
+    Args:
+        onnx_bytes: bytes containing an exported pytorch model.
+
+    Returns:
+        crypten model.
+    """
+    return _onnx_converter.from_onnx(onnx_bytes)
