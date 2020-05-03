@@ -45,15 +45,23 @@ OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
 EXCEPTION_PROTOBUF_TRANSLATORS = []
 
 
-def get_buffarizers():
+def get_bufferizers():
+    """
+        Function to retrieve the bufferizers, so that no other function uses directly de global elements.
+    """
     init_global_vars()
     return bufferizers.items()
 
 
 def init_global_vars():
-    global OBJ_PROTOBUF_TRANSLATORS, bufferizers, forced_full_bufferizers, unbufferizers
+    """
+        Function to initialise at the first usage all the global elements used in protobuf/serde.py and protobuf/proto.py.
+    """
+    global OBJ_PROTOBUF_TRANSLATORS, bufferizers, forced_full_bufferizers, unbufferizers, MAP_PYTHON_TO_PROTOBUF_CLASSES
     if OBJ_PROTOBUF_TRANSLATORS is None:
         OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+        for proto_class in OBJ_PROTOBUF_TRANSLATORS:
+            MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
         (
             bufferizers,
             forced_full_bufferizers,

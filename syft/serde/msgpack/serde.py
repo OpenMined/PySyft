@@ -90,11 +90,17 @@ strField = str(2 ** 64)
 
 
 def get_simplifiers():
+    """
+        Function to retrieve the simplifiers, so that no other function uses directly de global elements.
+    """
     init_global_vars_msgpack()
     return simplifiers.items()
 
 
 def init_global_vars_msgpack():
+    """
+          Function to initialise at the first usage all the global elements used in msgpack/serde.py
+    """
     global OBJ_SIMPLIFIER_AND_DETAILERS, simplifiers, forced_full_simplifiers, detailers
     if OBJ_SIMPLIFIER_AND_DETAILERS is None:
         OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
