@@ -103,10 +103,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
 
-            """
-            This is needed beause at building we use a set of methos written syft,
-             (currently only load is changed).
-            """
+            # This is needed because at building we use a set of methods defined in syft (ex: load)
             hook_plan_building()
             crypten.init()
 
