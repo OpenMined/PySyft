@@ -29,10 +29,10 @@ def test_context(workers):
 
     # A toy function is ran at each party, and they should all decrypt
     # a tensor with value [143, 85]
-    expected_value = [143, 85, 32, 4]
+    expected_value = th.tensor([143, 85, 32, 4])
     for rank in range(n_workers):
         assert (
-            return_values[rank] == expected_value
+            th.all(return_values[rank] == expected_value)
         ), "Crypten party with rank {} don't match expected value {} != {}".format(
             rank, return_values[rank], expected_value
         )
