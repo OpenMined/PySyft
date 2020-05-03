@@ -109,7 +109,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             if isinstance(func, sy.Plan):
                 using_plan = True
                 plan = func
-                
+
                 # This is needed because at building we use a set of methods defined in syft (ex: load)
                 hook_plan_building()
                 crypten.init()
