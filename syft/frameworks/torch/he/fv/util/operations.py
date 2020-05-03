@@ -51,12 +51,57 @@ def reverse_bit(value):
 
 
 def multiply_many_except(operands, count, expt):
-    count
     result = 1
     for i in range(count):
         if i != expt:
             result *= operands[i]
     return result
+
+
+def negate_int_mod(operand, modulus):
+    if modulus == 0:
+        raise ValueError("Modulus cannot be 0")
+    if operand >= modulus:
+        raise OverflowError("operand cannot be greater than modulus")
+    non_zero = operand != 0
+    return (modulus - operand) & (-int(non_zero))
+
+
+def xgcd(x, y):
+    """ Extended GCD:
+        Returns (gcd, x, y) where gcd is the greatest common divisor of a and b.
+        The numbers x, y are such that gcd = ax + by.
+    """
+    prev_a = 1
+    a = 0
+    prev_b = 0
+    b = 1
+
+    while y != 0:
+        q = x // y
+        temp = x % y
+        x = y
+        y = temp
+
+        temp = a
+        a = prev_a - q * a
+        prev_a = temp
+
+        temp = b
+        b = prev_b - q * b
+        prev_b = temp
+    return [x, prev_a, prev_b]
+
+
+def try_invert_int_mod(value, modulus):
+    if value == 0:
+        return False
+    gcd_tuple = xgcd(value, modulus)
+
+    if gcd_tuple[1] < 0:
+        return gcd_tuple[1] + modulus
+    else:
+        return gcd_tuple[1]
 
 
 def multiply_add_plain_with_scaling_variant(pue, message, context):
@@ -69,7 +114,6 @@ def multiply_add_plain_with_scaling_variant(pue, message, context):
     delta = context.coeff_div_plain_modulus
     plaintext = message.data
     pue_0, pue_1 = pue.data
-    print("pue_0", type(pue_0))
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
