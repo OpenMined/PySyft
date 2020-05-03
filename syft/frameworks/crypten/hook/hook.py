@@ -3,21 +3,28 @@ from functools import wraps
 import syft
 
 import crypten
-from syft.generic.frameworks.hook.trace import tracer
 import torch as th
 
+methods_to_hook = ["load"]
 
-def get_hooked_crypten_func(func_api_name, func):
-    cmd_name = f"crypten.{func_api_name}"
 
-    @tracer(func_name=cmd_name)
-    @wraps(func)
-    def overloaded_func(*args, **kwargs):
-        if syft.hook.trace.active:
-            response = crypten.cryptensor(th.zeros([]))
-        else:
-            response = func(*args, **kwargs)
+def hook_plan_building():
+    """When builing the plan we should not call directly specific
+    methods from CrypTen and as such we return here some "dummy" responses
+    only to build the plan.
+    """
 
-        return response
+    f = lambda *args, **kwargs: crypten.cryptensor(th.zeros([]))
+    for method_name in methods_to_hook:
+        method = getattr(crypten, method_name)
+        setattr(crypten, f"native_{method_name}", method)
+        setattr(crypten, method_name, f)
 
-    return overloaded_func
+
+def unhook_plan_building():
+    """After building the plan we unhook the methods such that
+    we call the "real" methods in the actual workers
+    """
+    for method_name in methods_to_hook:
+        method = getattr(crypten, f"native_{method_name}")
+        setattr(crypten, method_name, method)
