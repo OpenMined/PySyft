@@ -1,4 +1,5 @@
 import torch
+import math
 
 
 def linear(*args):
@@ -152,7 +153,16 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     return res
 
 
-def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
+def _pool(tensor, kernel_size: int = 2, stride: int = 2, ceil_mode=False, mode="max"):
+    if ceil_mode:
+        h_diff = tensor.shape[0] % kernel_size
+        v_diff = tensor.shape[1] % kernel_size
+        tensor = torch.unsqueeze(torch.unsqueeze(tensor, dim=0), dim=0)
+        if h_diff != 0 or v_diff != 0:
+            tensor = torch.nn.functional.pad(
+                tensor, (0, h_diff, 0, v_diff)
+            )  # add mode="replicate" when replicate padding is supported for long type
+        tensor = torch.squeeze(tensor)
     output_shape = (
         (tensor.shape[0] - kernel_size) // stride + 1,
         (tensor.shape[1] - kernel_size) // stride + 1,
@@ -180,18 +190,18 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     return result
 
 
-def pool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, mode="max"):
+def pool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, ceil_mode=False, mode="max"):
     assert len(tensor.shape) < 5
     if len(tensor.shape) == 2:
-        return _pool(tensor, kernel_size, stride, mode)
+        return _pool(tensor, kernel_size, stride, ceil_mode, mode)
     if len(tensor.shape) == 3:
         return torch.squeeze(
-            pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, padding, mode)
+            pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, padding, ceil_mode, mode)
         )
     if padding != 0:
-        # padding isn't straight forward, check torch documentation to know how it works
+        # padding within pooling isn't same syntax as F.pad, check torch.nn.pool2d docs
         if isinstance(padding, int):
-            padding = (padding, padding)
+            padding = (padding, padding, 0, 0)
         elif isinstance(padding, tuple):
             padding = (padding[0], padding[0], padding[1], padding[1])
         else:
@@ -199,23 +209,31 @@ def pool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, mode="max")
         tensor = torch.nn.functional.pad(tensor, padding, mode="constant")
     batches = tensor.shape[0]
     channels = tensor.shape[1]
-    out_shape = (
-        batches,
-        channels,
-        (tensor.shape[2] - kernel_size) // stride + 1,
-        (tensor.shape[3] - kernel_size) // stride + 1,
-    )
+    if ceil_mode:
+        out_shape = (
+            batches,
+            channels,
+            math.ceil((tensor.shape[2] - kernel_size) / stride) + 1,
+            math.ceil((tensor.shape[3] - kernel_size) / stride) + 1,
+        )
+    else:
+        out_shape = (
+            batches,
+            channels,
+            (tensor.shape[2] - kernel_size) // stride + 1,
+            (tensor.shape[3] - kernel_size) // stride + 1,
+        )
     result = []
     for batch in range(batches):
         for channel in range(channels):
-            result.append(_pool(tensor[batch][channel], kernel_size, stride, mode))
+            result.append(_pool(tensor[batch][channel], kernel_size, stride, ceil_mode, mode))
     result = torch.stack(result).reshape(out_shape)
     return result
 
 
-def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0):
-    return pool2d(tensor, kernel_size, stride, padding)
+def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, ceil_mode=False):
+    return pool2d(tensor, kernel_size, stride, padding, ceil_mode)
 
 
-def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0):
-    return pool2d(tensor, kernel_size, stride, padding, mode="mean")
+def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, ceil_mode=False):
+    return pool2d(tensor, kernel_size, stride, padding, ceil_mode, mode="mean")
