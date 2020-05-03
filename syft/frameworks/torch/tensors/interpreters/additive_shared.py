@@ -3,9 +3,12 @@ import torch
 import warnings
 
 import syft as sy
-from syft.generic.utils import memorize
+from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
+from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import memorize
+
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -26,6 +29,7 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
+        protocol="snn",
         dtype=None,
         crypto_provider=None,
         tags=None,
@@ -56,8 +60,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
         self.dtype = dtype
-
-        if dtype == "long":
+        if dtype == "custom":
+            if field is None:
+                raise ValueError("Field cannot be None for custom dtype")
+            self.field = field
+            self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
+        elif dtype == "long":
             self.field = 2 ** 64
             self.torch_dtype = torch.int64
         elif dtype == "int":
@@ -110,22 +118,7 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
 
-    @staticmethod
-    def __init_custom_dtype(*args, **kwargs):
-        dtype = kwargs.pop("dtype")
-        if dtype != "custom":
-            warnings.warn(f"Private method called for dtype '{dtype}'")
-
-        tensor = AdditiveSharingTensor(*args, **kwargs)
-
-        field = kwargs.get("field")
-        if field is None:
-            raise ValueError(f"Field cannot be None for {dtype} dtype")
-        tensor.field = field
-        tensor.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        tensor.dtype = dtype
-
-        return tensor
+        self.protocol = protocol
 
     def __repr__(self):
         return self.__str__()
@@ -193,7 +186,12 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "dtype": self.dtype, "field": self.field}
+        return {
+            "crypto_provider": self.crypto_provider,
+            "dtype": self.dtype,
+            "field": self.field,
+            "protocol": self.protocol,
+        }
 
     @property
     def grad(self):
@@ -912,32 +910,57 @@ class AdditiveSharingTensor(AbstractTensor):
         r = self - other - 1
         return r.positive()
 
+    @crypto_protocol("snn")
     def __gt__(self, other):
         return self.gt(other)
+
+    @crypto_protocol("fss")
+    def __gt__(self, other):
+        return (other + 1) <= self
 
     def ge(self, other):
         return (self - other).positive()
 
+    @crypto_protocol("snn")
     def __ge__(self, other):
         return self.ge(other)
+
+    @crypto_protocol("fss")
+    def __ge__(self, other):
+        return other <= self
 
     def lt(self, other):
         return (other - self - 1).positive()
 
+    @crypto_protocol("snn")
     def __lt__(self, other):
         return self.lt(other)
+
+    @crypto_protocol("fss")
+    def __lt__(self, other):
+        return (self + 1) <= other
 
     def le(self, other):
         return (other - self).positive()
 
+    @crypto_protocol("snn")
     def __le__(self, other):
         return self.le(other)
 
+    @crypto_protocol("fss")
+    def __le__(self, other):
+        return fss.le(self, other)
+
+    @crypto_protocol("snn")
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
+
+    @crypto_protocol("fss")
+    def eq(self, other):
+        return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)
@@ -1126,23 +1149,13 @@ class AdditiveSharingTensor(AbstractTensor):
 
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
 
-        dtype_decoded = dtype.decode("utf-8")
-        if dtype_decoded == "custom":
-            tensor = AdditiveSharingTensor._AdditiveSharingTensor__init_custom_dtype(
-                owner=worker,
-                id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-                field=sy.serde.msgpack.serde._detail(worker, field),
-                dtype=dtype_decoded,
-                crypto_provider=worker.get_worker(crypto_provider),
-            )
-        else:
-            tensor = AdditiveSharingTensor(
-                owner=worker,
-                id=sy.serde.msgpack.serde._detail(worker, tensor_id),
-                field=sy.serde.msgpack.serde._detail(worker, field),
-                dtype=dtype.decode("utf-8"),
-                crypto_provider=worker.get_worker(crypto_provider),
-            )
+        tensor = AdditiveSharingTensor(
+            owner=worker,
+            id=sy.serde.msgpack.serde._detail(worker, tensor_id),
+            field=sy.serde.msgpack.serde._detail(worker, field),
+            dtype=dtype.decode("utf-8"),
+            crypto_provider=worker.get_worker(crypto_provider),
+        )
 
         if chain is not None:
             chain = sy.serde.msgpack.serde._detail(worker, chain)
