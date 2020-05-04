@@ -66,8 +66,8 @@ MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     ComputationAction: ComputationActionPB,
     PlaceHolder: PlaceholderPB,
     Plan: PlanPB,
-    Protocol: ProtocolPB,
     PointerTensor: PointerTensorPB,
+    Protocol: ProtocolPB,
     Role: RolePB,
     State: StatePB,
 }

@@ -15,9 +15,6 @@ from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import trace
 
-# from syft.execution.translation.abstract import AbstractPlanTranslator
-# from syft.execution.translation.default import PlanTranslatorDefault
-# from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -72,9 +69,9 @@ class func2protocol(object):
 
 class Protocol(AbstractObject):
     """
-    A Protocol stores a sequence of torch actions, just like a function.
+    A Protocol stores a sequence of actions, just like a function.
 
-    A Protocol is intended to store a sequence of torch actions, just like a function,
+    A Protocol is intended to store a sequence of actions, just like a function,
     but it allows to send this sequence of actions to remote workers and to keep a
     reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
@@ -121,10 +118,6 @@ class Protocol(AbstractObject):
 
         self.roles = roles
 
-        # if role is None:
-        #     for st in state_tensors:
-        #         self.role.register_state_tensor(st, owner)
-
         self.include_state = include_state
         self.is_building = False
         self.state_attributes = {}
@@ -132,29 +125,10 @@ class Protocol(AbstractObject):
         self.torchscript = None
         self.tracing = False
 
-        # The protocol has not been sent so it has no reference to remote locations
-        self.pointers = dict()
-
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
-
-        # List of available translations
-        # self.translations = []
-
-    # @property
-    # def state(self):
-    #     return self.role.state
-
-    # def parameters(self):
-    #     """
-    #     This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
-    #     """
-    #     if self.state is not None:
-    #         return self.state.tensors()
-    #     else:
-    #         return []
 
     def get_role_for_owner(self, owner):
         if owner.id not in self.roles:
@@ -195,18 +169,6 @@ class Protocol(AbstractObject):
 
             ph_args += (ph_arg,)
 
-        # Add state to args if needed
-        # if self.include_state:
-        #     ph_args += (self.state,)
-
-        # with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
-        # Look for framework kwargs
-        # framework_kwargs = {}
-        # forward_args = inspect.getargspec(self.forward).args
-        # if "torch" in forward_args:
-        #     framework_kwargs["torch"] = wrapped_torch
-
-        # results = self.forward(*args, **framework_kwargs)
         results = self.forward(*ph_args)
 
         # Disable tracing
@@ -220,14 +182,6 @@ class Protocol(AbstractObject):
                 result_role.register_output(result)
 
         self.is_built = True
-
-        # Build registered translations
-        # for translator in Protocol._build_translators:
-        #     try:
-        #         self.add_translation(translator)
-        #         self.translations.append(translator)
-        #     except:
-        #         warnings.warn(f"Failed to translate Protocol with {translator}")
 
         return results
 
@@ -255,52 +209,9 @@ class Protocol(AbstractObject):
 
         return protocol_copy
 
-    # def __setattr__(self, name, value):
-    #     """Add new tensors or parameter attributes to the state and register them
-    #     in the owner's registry
-    #     """
-    #     if isinstance(value, torch.jit.ScriptModule):
-    #         object.__setattr__(self, name, value)
-    #     elif isinstance(value, FrameworkTensor):
-    #         self.role.register_state_tensor(value, self.owner)
-    #         self.state_attributes[name] = value
-    #     elif isinstance(value, FrameworkLayerModule):
-    #         for param in value.parameters():
-    #             self.role.register_state_tensor(param, self.owner)
-    #         self.state_attributes[name] = value
-    #     else:
-    #         object.__setattr__(self, name, value)
-
-    # def __getattr__(self, name):
-    #     if name not in self.state_attributes:
-    #         raise AttributeError("State attribute not found.")
-
-    #     value = self.state_attributes[name]
-    #     if not self.is_building:
-    #         return value
-
-    #     if isinstance(value, FrameworkTensor):
-    #         return self.role.placeholders[value.id]
-    #     elif isinstance(value, FrameworkLayerModule):
-    #         # We need to deepcopy here otherwise the real layer is modified when the Protocol is being built
-    #         copied_layer = copy.deepcopy(value)
-    #         for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
-    #             (copied_name, _) = copied_param
-    #             copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
-
-    #         return copied_layer
-
     def __call__(self, *args):
         """
-        Calls a protocol execution with some arguments.
-
-        When possible, run the original function to improve efficiency. When
-        it's not, for example if you fetched the protocol from a remote worker,
-        then run it from the tape of actions:
-        - Instantiate input placeholders
-        - for each recorded action, run the action on the placeholders
-          and use the result(s) to instantiate to appropriate placeholder.
-        - Return the instantiation of all the output placeholders.
+        Run actions on the workers provided for each Role from the Role's tape of actions.
         """
         results_per_role = {}
         for role_id, role in self.roles.items():
@@ -319,117 +230,6 @@ class Protocol(AbstractObject):
         """
         # TODO: can we reuse result_ids?
         return self.__call__(*args_)
-
-    # def send(self, *locations: AbstractWorker, force=False):
-    #     """Send protocol to locations.
-
-    #     If the protocol was not built locally it will raise an exception.
-    #     If `force` = true protocol is going to be sent either way.
-
-    #     Args:
-    #         locations: List of workers.
-    #         force: A boolean indicating if this action should be forced.
-    #     """
-    #     if not self.is_built and not force:
-    #         raise RuntimeError("A protocol needs to be built before being sent to a worker.")
-
-    #     if len(locations) == 1:
-    #         location = locations[0]
-
-    #         # Check if protocol was already sent at the location
-    #         if location in self.pointers:
-    #             return self.pointers[location]
-
-    #         # Send the Protocol
-    #         pointer = self.owner.send(self, workers=location)
-
-    #         self.pointers[location] = pointer
-    #     else:
-    #         ids_at_location = []
-    #         for location in locations:
-    #             if location in self.pointers:
-    #                 # Use the pointer that was already sent
-    #                 pointer = self.pointers[location]
-    #             else:
-    #                 # Send the Protocol
-    #                 pointer = self.owner.send(self, workers=location)
-
-    #                 self.pointers[location] = pointer
-
-    #             ids_at_location.append(pointer.id_at_location)
-
-    #         pointer = sy.PointerProtocol(location=locations, id_at_location=ids_at_location)
-
-    #     return pointer
-
-    # def get_args_shape(self):
-    #     """Returns input tensors shapes"""
-    #     if not self.is_built:
-    #         raise RuntimeError("A protocol needs to be built before input shapes can be known.")
-
-    #     return [ph.expected_shape for ph in self.role.input_placeholders()]
-
-    # @staticmethod
-    # def register_build_translator(translator: "AbstractPlanTranslator"):
-    #     Plan._build_translators.append(translator)
-
-    # def add_translation(self, plan_translator: "AbstractPlanTranslator"):
-    #     return plan_translator(self).translate()
-
-    # def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
-    #     plan_translator(self).remove()
-    #     return self
-
-    # def get_(self):
-    #     self.state.get_()
-    #     return self
-
-    # get = get_
-
-    def get_pointers(self):
-        return self.pointers
-
-    def fix_precision_(self, *args, **kwargs):
-        self.state.fix_precision_(*args, **kwargs)
-        return self
-
-    fix_precision = fix_prec_ = fix_prec = fix_precision_
-
-    def float_precision_(self):
-        self.state.float_precision_()
-        return self
-
-    float_precision = float_prec_ = float_prec = float_precision_
-
-    def share_(self, *args, **kwargs):
-        self.state.share_(*args, **kwargs)
-        return self
-
-    share = share_
-
-    # def create_pointer(
-    #     self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
-    # ):
-    #     """
-    #     Create a pointer to the protocol
-
-    #     Args:
-    #         owner: the owner of the pointer
-    #         garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
-    #         location: the location of the pointer
-    #         id_at_location: the remote id at location
-    #         tags: the tags inherited from the Protocol
-
-    #     Returns:
-    #         PointerProtocol: pointer to the protocol
-    #     """
-    #     return PointerProtocol(
-    #         owner=owner,
-    #         location=location or self.owner,
-    #         id_at_location=id_at_location or self.id,
-    #         garbage_collect_data=garbage_collect_data,
-    #         tags=tags,
-    #     )
 
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
@@ -554,7 +354,3 @@ class Protocol(AbstractObject):
             tags=tags,
             description=description,
         )
-
-
-# Auto-register Protocol build-time translations
-# Protocol.register_build_translator(PlanTranslatorTorchscript)

@@ -71,9 +71,9 @@ class func2plan(object):
 
 class Plan(AbstractObject):
     """
-    A Plan stores a sequence of torch actions, just like a function.
+    A Plan stores a sequence of actions, just like a function.
 
-    A Plan is intended to store a sequence of torch actions, just like a function,
+    A Plan is intended to store a sequence of actions, just like a function,
     but it allows to send this sequence of actions to remote workers and to keep a
     reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
