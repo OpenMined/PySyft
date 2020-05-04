@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import List, Any
 from typing import Union
 import warnings
 import weakref
@@ -351,6 +351,7 @@ class TorchTensor(AbstractTensor):
             try:
                 # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
                 command = cls.rgetattr(cls, cmd)
+                print(354,'native kwargs_', kwargs_)
                 return command(*args_, **kwargs_)
             except AttributeError:
                 pass
@@ -409,6 +410,7 @@ class TorchTensor(AbstractTensor):
         preinitialize_grad: bool = False,
         no_wrap: bool = False,
         garbage_collect_data: bool = True,
+        torch: Any = None,
     ):
         """Gets the pointer to a new remote object.
 

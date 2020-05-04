@@ -123,6 +123,7 @@ class PlaceHolder(AbstractTensor):
             self.child = tensor
 
         if hasattr(self.child, "shape"):
+            print(126, 'ph.instantiate', self.child)
             self.expected_shape = tuple(self.child.shape)
 
         return self
@@ -157,6 +158,7 @@ class PlaceHolder(AbstractTensor):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
+        print(161, 'ph.create_from', tensor)
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
