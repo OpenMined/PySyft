@@ -108,8 +108,6 @@ class Protocol(AbstractObject):
         forward_func=None,
         state_tensors=[],
         roles: Dict[str, Role] = {},
-        input_repartition: List[str] = [],
-        output_repartition: List[str] = [],
         # General kwargs
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
@@ -122,8 +120,6 @@ class Protocol(AbstractObject):
         self.name = name or self.__class__.__name__
 
         self.roles = roles
-        self.input_repartition = input_repartition
-        self.output_repartition = output_repartition
 
         # if role is None:
         #     for st in state_tensors:
@@ -183,8 +179,6 @@ class Protocol(AbstractObject):
         """
         # Reset previous build
         self.roles = {}
-        self.input_repartition = []
-        self.output_repartition = []
 
         # Enable tracing
         self.toggle_tracing(True)
@@ -198,8 +192,6 @@ class Protocol(AbstractObject):
             ph_arg = PlaceHolder.create_from(arg, owner=arg.owner, role=arg_role, tracing=True)
             # Register inputs in role
             arg_role.register_input(ph_arg)
-
-            self.input_repartition.append(arg.owner.id)
 
             ph_args += (ph_arg,)
 
@@ -227,8 +219,6 @@ class Protocol(AbstractObject):
                 result_role = self.get_role_for_owner(result.owner)
                 result_role.register_output(result)
 
-                self.output_repartition.append(result.owner.id)
-
         self.is_built = True
 
         # Build registered translations
@@ -253,8 +243,6 @@ class Protocol(AbstractObject):
         protocol_copy = Protocol(
             name=self.name,
             roles={role_id: role.copy() for role_id, role in self.roles.items()},
-            input_repartition=self.input_repartition,
-            output_repartition=self.output_repartition,
             include_state=self.include_state,
             is_built=self.is_built,
             id=sy.ID_PROVIDER.pop(),
@@ -314,22 +302,12 @@ class Protocol(AbstractObject):
           and use the result(s) to instantiate to appropriate placeholder.
         - Return the instantiation of all the output placeholders.
         """
-        if self.forward is not None:
-            if self.include_state:
-                args = (*args, self.state)
-            return self.forward(*args)
-        else:
-            results_per_role = {}
-            for role_id, role in self.roles.items():
-                args_for_role = [
-                    arg for ind, arg in enumerate(args) if self.input_repartition[ind] == role_id
-                ]
-                results_per_role[role_id] = list(role.execute(args_for_role))
+        results_per_role = {}
+        for role_id, role in self.roles.items():
+            args_for_role = [arg for arg in args if arg.owner == role_id]
+            results_per_role[role_id] = role.execute(args_for_role)
 
-            results = ()
-            for role_id in self.output_repartition:
-                results += (results_per_role[role_id].pop(0),)
-            return results
+        return results_per_role
 
     def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote protocol execution.
@@ -481,8 +459,6 @@ class Protocol(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, protocol.id),
             sy.serde.msgpack.serde._simplify(worker, protocol.name),
             sy.serde.msgpack.serde._simplify(worker, protocol.roles),
-            sy.serde.msgpack.serde._simplify(worker, protocol.input_repartition),
-            sy.serde.msgpack.serde._simplify(worker, protocol.output_repartition),
             sy.serde.msgpack.serde._simplify(worker, protocol.include_state),
             sy.serde.msgpack.serde._simplify(worker, protocol.tags),
             sy.serde.msgpack.serde._simplify(worker, protocol.description),
@@ -497,22 +473,11 @@ class Protocol(AbstractObject):
         Returns:
             protocol: a Protocol object
         """
-        (
-            id_,
-            name,
-            roles,
-            input_repartition,
-            output_repartition,
-            include_state,
-            tags,
-            description,
-        ) = protocol_tuple
+        (id_, name, roles, include_state, tags, description) = protocol_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         name = sy.serde.msgpack.serde._detail(worker, name)
         roles = sy.serde.msgpack.serde._detail(worker, roles)
-        input_repartition = sy.serde.msgpack.serde._detail(worker, input_repartition)
-        output_repartition = sy.serde.msgpack.serde._detail(worker, output_repartition)
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
 
@@ -521,8 +486,6 @@ class Protocol(AbstractObject):
             name=name,
             owner=worker,
             roles=roles,
-            input_repartition=input_repartition,
-            output_repartition=output_repartition,
             include_state=include_state,
             is_built=True,
             tags=tags,
@@ -552,9 +515,6 @@ class Protocol(AbstractObject):
                 sy.serde.protobuf.serde._bufferize(worker, role)
             )
 
-        protobuf_protocol.input_repartition.extend(protocol.input_repartition)
-        protobuf_protocol.output_repartition.extend(protocol.output_repartition)
-
         protobuf_protocol.include_state = protocol.include_state
         protobuf_protocol.tags.extend(protocol.tags)
 
@@ -580,9 +540,6 @@ class Protocol(AbstractObject):
             for role_id, role in protobuf_protocol.roles.items()
         }
 
-        input_repartition = protobuf_protocol.input_repartition
-        output_repartition = protobuf_protocol.output_repartition
-
         include_state = protobuf_protocol.include_state
         tags = set(protobuf_protocol.tags) if protobuf_protocol.tags else None
         description = protobuf_protocol.description if protobuf_protocol.description else None
@@ -591,8 +548,6 @@ class Protocol(AbstractObject):
             id=id_,
             name=name,
             roles=roles,
-            input_repartition=input_repartition,
-            output_repartition=output_repartition,
             include_state=include_state,
             is_built=True,
             owner=worker,

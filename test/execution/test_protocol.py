@@ -54,11 +54,11 @@ def test_multi_role_execution(workers):
     protocol.build(alice_tensor1, bob_tensor2, alice_tensor3)
     protocol.forward = None
 
-    a, b, c = protocol(alice_tensor1, bob_tensor2, alice_tensor3)
+    dict_res = protocol(alice_tensor1, bob_tensor2, alice_tensor3)
 
-    assert (a.get() == th.tensor([2])).all()
-    assert (b.get() == th.tensor([4])).all()
-    assert (c.get() == th.tensor([6])).all()
+    assert (dict_res["bob"][0].get() == th.tensor([2])).all()
+    assert (dict_res["bob"][1].get() == th.tensor([6])).all()
+    assert (dict_res["alice"][0].get() == th.tensor([4])).all()
 
 
 def test_copy(workers):
@@ -87,6 +87,4 @@ def test_copy(workers):
         len(copy_role.actions) == len(role.actions)
         for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
     ]
-    assert copy.input_repartition == protocol.input_repartition
-    assert copy.output_repartition == protocol.output_repartition
     assert copy.is_built == protocol.is_built
