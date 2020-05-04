@@ -749,12 +749,12 @@ class CryptenInitJail(Message):
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.crypten_context})"
+        return f"({type(self).__name__} {self.crypten_context}, {self.jail_runner})"
 
     @property
     def contents(self):
         """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.crypten_context,)
+        return (self.crypten_context, self.jail_runner, self.model)
 
     @staticmethod
     def simplify(worker: AbstractWorker, message: "CryptenInitJail") -> tuple:
@@ -793,4 +793,4 @@ class CryptenInitJail(Message):
         """
         msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
         *context, jail_runner, model = msg_tuple
-        return CryptenInitJail(context, jail_runner, model)
+        return CryptenInitJail(tuple(context), jail_runner, model)

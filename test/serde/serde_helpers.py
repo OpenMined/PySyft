@@ -1999,24 +1999,9 @@ def make_crypteninitjail(**kwargs):
         ((CODE[str], (b"test = 5",)), (CODE[list], ((CODE[str], (b"crypten",)),))),
     )
     model = b"test binary model"
-    model_simplified = (CODE[str], (model,))
+    model_simplified = model
 
     return [
-        {
-            "value": syft.messaging.message.CryptenInitJail(
-                [0, 2, "127.0.0.1", 8080], jail_runner, model
-            ),
-            "simplified": (
-                CODE[syft.messaging.message.CryptenInitJail],
-                (
-                    (
-                        CODE[list],
-                        (0, 2, (CODE[str], (b"127.0.0.1",)), 8080, jr_simplified, model_simplified),
-                    ),
-                ),  # (Any) simplified content
-            ),
-            "cmp_detailed": compare,
-        },
         {
             "value": syft.messaging.message.CryptenInitJail(
                 (0, 2, "127.0.0.1", 8080), jail_runner, model
