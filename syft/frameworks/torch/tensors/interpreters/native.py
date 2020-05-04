@@ -876,7 +876,6 @@ class TorchTensor(AbstractTensor):
         *owners: List[BaseWorker],
         protocol: str = "snn",
         field: Union[int, None] = None,
-        protocol: str = "snn",
         dtype: Union[str, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,

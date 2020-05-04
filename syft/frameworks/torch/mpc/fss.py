@@ -16,9 +16,6 @@ import multiprocessing
 
 import torch as th
 import syft as sy
-from syft.execution.plan import func2plan
-from syft.generic.frameworks.hook.trace import tracer
-from syft.workers.base import BaseWorker
 
 
 λ = 127  # 6  # 110 or 63  # security parameter
@@ -258,8 +255,8 @@ class DIF:
         t[0] = np.array([[0, 1]] * n_values).T
 
         for i in range(0, n):
-            h0 = H(s[i, 0])
-            h1 = H(s[i, 1])
+            h0 = H(s[i, 0], 0)
+            h1 = H(s[i, 1], 1)
             # Re-use useless randomness
             σL_0, _, sL_0, _, σR_0, _, sR_0, _ = split(h0, (COMP, λs, 1, λs, 1, λs, 1, λs, 1))
             σL_1, _, sL_1, _, σR_1, _, sR_1, _ = split(h1, (COMP, λs, 1, λs, 1, λs, 1, λs, 1))
@@ -394,8 +391,12 @@ def G(seed):
 empty_dict = {}
 
 
-def H(seed):
-    """ λ -> 4(λ + 1)"""
+def H(seed, idx=0):
+    """ λ -> 4(λ + 1)
+
+    idx is here to allow not reusing the same empty dict. Otherwise in key generation
+    h0 is erased by h1
+    """
 
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
@@ -408,14 +409,14 @@ def H(seed):
 
     assert x.shape == (n_values, 2 * 8)
 
-    if n_values not in empty_dict:
+    if (n_values, idx) not in empty_dict:
         # 64 bytes are needed to store a sha512
-        empty_dict[n_values] = (
+        empty_dict[(n_values, idx)] = (
             np.empty((n_values, 64), dtype=np.uint8),
             np.empty((2, 6, n_values), dtype=np.uint64),
         )
 
-    out, valuebits = empty_dict[n_values]
+    out, valuebits = empty_dict[(n_values, idx)]
 
     out = sha_loop.sha512_loop_func(x, out)
 

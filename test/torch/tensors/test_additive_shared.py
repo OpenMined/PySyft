@@ -754,7 +754,6 @@ def test_comp(workers, protocol):
     x = t1.fix_prec().share(*args, **kwargs)
     y = t2.fix_prec().share(*args, **kwargs)
 
-
     assert ((x >= y).get().float_prec() == (t1 >= t2)).all()
     assert ((x <= y).get().float_prec() == (t1 <= t2)).all()
     assert ((x > y).get().float_prec() == (t1 > t2)).all()
