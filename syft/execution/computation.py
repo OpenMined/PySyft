@@ -39,7 +39,6 @@ class ComputationAction(Action):
         self.kwargs = kwargs_
         self.return_ids = return_ids
         self.return_value = return_value
-        self.__repr__ = self.__str__
 
     @property
     def contents(self):
