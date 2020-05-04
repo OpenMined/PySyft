@@ -81,8 +81,10 @@ class Role:
             return_placeholder_ids = self._store_placeholders(response)
             if not isinstance(return_placeholder_ids, (list, tuple)):
                 return_placeholder_ids = (return_placeholder_ids,)
-
-        action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
+        print(84, 'role.reg_action', *command_placeholder_ids)
+        kwargs_={'return_ids':return_placeholder_ids}
+        comm_action = [command_placeholder_ids[1], 'remote_'+command_placeholder_ids[0], 'alice', command_placeholder_ids[2][0].id,  kwargs_]
+        action = action_type(*comm_action)
         self.actions.append(action)
 
     def register_state_tensor(self, tensor, owner):
