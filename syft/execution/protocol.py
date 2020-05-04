@@ -203,15 +203,15 @@ class Protocol(AbstractObject):
                 print(framework_kwargs)
 
             results = self.forward(*args)  #
-            if isinstance(results, PlaceHolder) or (
-                isinstance(results, (list, tuple))
-                and any(isinstance(r, PlaceHolder) for r in results)
-            ):
-                cmd = ('send', None, args, framework_kwargs)
-                # if use framework_kwargs => send() got unexpected keyword
-                # if use None => argument after ** must be a mapping
-                # if use {} => syft/generic/pointers/multi_pointer.py:120: IndexError => index out of range
-                results.handle_func_command(cmd)
+            # if isinstance(results, PlaceHolder) or (
+            #     isinstance(results, (list, tuple))
+            #     and any(isinstance(r, PlaceHolder) for r in results)
+            # ):
+            #     cmd = ('send', None, args, framework_kwargs)
+            #     # if use framework_kwargs => send() got unexpected keyword
+            #     # if use None => argument after ** must be a mapping
+            #     # if use {} => syft/generic/pointers/multi_pointer.py:120: IndexError => index out of range
+            #     results.handle_func_command(cmd)
 
         # Disable tracing
         self.toggle_tracing(False)
