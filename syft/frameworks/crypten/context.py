@@ -3,6 +3,7 @@ import multiprocessing
 import threading
 import os
 
+import torch as th
 import syft as sy
 from syft.messaging.message import CryptenInitPlan, CryptenInitJail
 from syft.frameworks.crypten import jail, utils
@@ -87,7 +88,7 @@ def _send_party_info(worker, rank, msg, return_values, model=None):
     return_values[rank] = utils.unpack_values(response.object, model)
 
 
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
+def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463, model=None, dummy_input=None):
     """Defines decorator to run function across multiple workers.
 
     Args:
@@ -102,6 +103,19 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             # TODO:
             # - check if workers are reachable / they can handle the computation
             # - check return code of processes for possible failure
+
+            if model is not None:
+                if not isinstance(model, th.nn.Module):
+                    raise TypeError("model must be a torch.nn.Module")
+                if dummy_input is None:
+                    raise ValueError("must provide dummy_input when model is set")
+                if not isinstance(dummy_input, th.Tensor):
+                    raise TypeError("dummy_input must be a torch.Tensor")
+                onnx_model = utils.pytorch_to_onnx(model, dummy_input)
+            else:
+                onnx_model = None
+
+            crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
 
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
@@ -127,7 +141,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
 
             else:  # func
                 using_plan = False
-                jail_runner = jail.JailRunner(func=func)
+                jail_runner = jail.JailRunner(func=func, model=crypten_model)
                 ser_jail_runner = jail.JailRunner.simplify(jail_runner)
 
                 jail_or_plan = jail_runner
@@ -172,7 +186,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
                     msg = CryptenInitJail(
                         (rank_to_worker_id, world_size, master_addr, master_port),
                         ser_jail_runner,
-                        None,
+                        onnx_model,
                     )
                 thread = threading.Thread(
                     target=_send_party_info, args=(workers[i], rank, msg, return_values)
@@ -182,7 +196,7 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
 
             # Wait for local party and sender threads
             process.join()
-            return_values[0] = utils.unpack_values(queue.get(), None)
+            return_values[0] = utils.unpack_values(queue.get(), crypten_model)
             for thread in threads:
                 thread.join()
             if was_initialized:
