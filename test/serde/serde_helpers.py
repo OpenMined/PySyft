@@ -802,7 +802,6 @@ def make_plan(**kwargs):
                     plan.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.role),
                     plan.include_state,
-                    plan.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.tags),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.description),
@@ -821,7 +820,6 @@ def make_plan(**kwargs):
                     model_plan.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.role),
                     model_plan.include_state,
-                    model_plan.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.tags),
                     msgpack.serde._simplify(
@@ -961,7 +959,6 @@ def make_protocol(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.roles),
                     protocol.include_state,
-                    protocol.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], protocol.description
