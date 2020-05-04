@@ -194,6 +194,7 @@ class Protocol(AbstractObject):
             framework_kwargs = {}
             forward_args = inspect.getfullargspec(self.forward).args
             print(190, forward_args, inspect.getfullargspec(self.forward))
+            # forward_args did not have "torch" so this if state never got call initially... hack it by adding or "tensor" in forward_args
             if "torch" in forward_args or "tensor" in forward_args:
                 print(192, 'trace?')
                 framework_kwargs["torch"] = wrapped_torch
