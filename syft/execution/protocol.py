@@ -6,6 +6,7 @@ import copy
 import inspect
 import io
 import torch
+import traceback
 import warnings
 
 import syft as sy
@@ -33,6 +34,7 @@ class func2protocol(object):
     """
 
     def __init__(self, args_shape=None, state=None):
+        # print(36, 'proto __init__',args_shape)
         self.args_shape = args_shape
         self.state_tensors = state or tuple()
         # include_state is used to distinguish if the initial protocol is a function or a class:
@@ -52,11 +54,15 @@ class func2protocol(object):
         )
 
         # Build the protocol automatically
+        print(57, 'proto __call__',self.args_shape)
         if self.args_shape:
             args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
+                print(60, 'proto try',*args_)
                 protocol.build(*args_)
             except TypeError as e:
+                tb = traceback.format_exc()
+                print(65, 'proto', tb)
                 raise ValueError(
                     "Automatic build using @func2protocol failed!\nCheck that:\n"
                     " - you have provided the correct number of shapes in args_shape\n"
@@ -177,6 +183,7 @@ class Protocol(AbstractObject):
             PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
             for arg in args
         )
+        print(180, 'protocol.py', args)
 
         # Add state to args if needed
         if self.include_state:
@@ -186,10 +193,15 @@ class Protocol(AbstractObject):
             # Look for framework kwargs
             framework_kwargs = {}
             forward_args = inspect.getfullargspec(self.forward).args
-            if "torch" in forward_args:
+            print(190, forward_args, inspect.getfullargspec(self.forward))
+            if "torch" in forward_args or "tensor" in forward_args:
+                print(192, 'trace?')
                 framework_kwargs["torch"] = wrapped_torch
+                print(194, wrapped_torch, *args)
+                print(framework_kwargs)
 
-            results = self.forward(*args, **framework_kwargs)
+            results = self.forward(*args, )  # **framework_kwargs
+            print(196, 'protocol.py', results)
 
         # Disable tracing
         self.toggle_tracing(False)

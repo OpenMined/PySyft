@@ -58,6 +58,7 @@ class PlaceHolder(AbstractTensor):
         Returns:
             the response of the function command
         """
+        print(61, 'placeholder.handle_func_command')
         cmd, _, args, kwargs = command
 
         # Replace all PlaceHolders with their child attribute
@@ -89,6 +90,7 @@ class PlaceHolder(AbstractTensor):
             )
 
         if ph_arg.tracing:
+            print(39, 'placeholder.action')
             ph_arg.role.register_action(
                 (command, response), syft.execution.computation.ComputationAction
             )
