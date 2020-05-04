@@ -947,8 +947,6 @@ def make_protocol(**kwargs):
         assert detailed.roles.keys() == original.roles.keys()
         for k, v in detailed.roles.items():
             assert compare_roles(original.roles[k], v)
-        assert detailed.input_repartition == original.input_repartition
-        assert detailed.output_repartition == original.output_repartition
         assert detailed.tags == original.tags
         assert detailed.description == original.description
         return True
@@ -962,12 +960,6 @@ def make_protocol(**kwargs):
                     protocol.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.roles),
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], protocol.input_repartition
-                    ),
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], protocol.output_repartition
-                    ),
                     protocol.include_state,
                     protocol.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
