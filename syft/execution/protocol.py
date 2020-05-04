@@ -197,11 +197,20 @@ class Protocol(AbstractObject):
             if "torch" in forward_args or "tensor" in forward_args:
                 print(192, 'trace?')
                 framework_kwargs["torch"] = wrapped_torch
+                # framework_kwargs["tensor"] = wrapped_torch
                 print(194, wrapped_torch, *args)
                 print(framework_kwargs)
 
-            results = self.forward(*args, )  # **framework_kwargs
-            print(196, 'protocol.py', results)
+            results = self.forward(*args)  #
+            if isinstance(results, PlaceHolder) or (
+                isinstance(results, (list, tuple))
+                and any(isinstance(r, PlaceHolder) for r in results)
+            ):
+                cmd = ('send', None, args, framework_kwargs)
+                # if use framework_kwargs => send() got unexpected keyword
+                # if use None => argument after ** must be a mapping
+                # if use {} => syft/generic/pointers/multi_pointer.py:120: IndexError => index out of range
+                results.handle_func_command(cmd)
 
         # Disable tracing
         self.toggle_tracing(False)
