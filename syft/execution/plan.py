@@ -229,7 +229,7 @@ class Plan(AbstractObject):
 
         # Register outputs in role
         if isinstance(results, (tuple, list)):
-            results_placeholders = (PlaceHolder.extract(result) for result in results)
+            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
         else:
             results_placeholders = PlaceHolder.extract(results)
         self.role.register_outputs(results_placeholders)
