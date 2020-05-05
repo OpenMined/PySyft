@@ -35,19 +35,11 @@ class func2protocol(object):
 
     def __init__(self, args_shape=None, state=None):
         self.args_shape = args_shape
-        self.state_tensors = state or tuple()
-        # include_state is used to distinguish if the initial protocol is a function or a class:
-        # if it's a function, then the state should be provided in the args, so include_state
-        # will be true. And to know if it was indeed a function, we just need to see if a
-        # "manual" state was provided.
-        self.include_state = state is not None
 
     def __call__(self, protocol_function):
         protocol = Protocol(
             name=protocol_function.__name__,
-            include_state=self.include_state,
             forward_func=protocol_function,
-            state_tensors=self.state_tensors,
             id=sy.ID_PROVIDER.pop(),
             owner=sy.local_worker,
         )
@@ -81,14 +73,8 @@ class Protocol(AbstractObject):
 
     Args:
         name: the name of the name
-        state: store the protocol tensors like model parameters
-        include_state: if true, implies that the protocol is a function, else a class. If true, the
-            state is re-integrated in the args to be accessed within the function
         is_built: state if the protocol has already been built.
-        placeholders: dict of placeholders used in the protocol
-        actions: list of commands (called actions)
         forward_func: the function to be transformed into a protocol
-        state_tensors: a tuple of state elements. It can be used to populate a state
         id: protocol id
         owner: protocol owner
         tags: protocol tags
@@ -100,10 +86,8 @@ class Protocol(AbstractObject):
     def __init__(
         self,
         name: str = None,
-        include_state: bool = False,
         is_built: bool = False,
         forward_func=None,
-        state_tensors=[],
         roles: Dict[str, Role] = {},
         # General kwargs
         id: Union[str, int] = None,
@@ -118,7 +102,6 @@ class Protocol(AbstractObject):
 
         self.roles = roles
 
-        self.include_state = include_state
         self.is_building = False
         self.state_attributes = {}
         self.is_built = is_built
@@ -197,7 +180,6 @@ class Protocol(AbstractObject):
         protocol_copy = Protocol(
             name=self.name,
             roles={role_id: role.copy() for role_id, role in self.roles.items()},
-            include_state=self.include_state,
             is_built=self.is_built,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
@@ -259,7 +241,6 @@ class Protocol(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, protocol.id),
             sy.serde.msgpack.serde._simplify(worker, protocol.name),
             sy.serde.msgpack.serde._simplify(worker, protocol.roles),
-            sy.serde.msgpack.serde._simplify(worker, protocol.include_state),
             sy.serde.msgpack.serde._simplify(worker, protocol.tags),
             sy.serde.msgpack.serde._simplify(worker, protocol.description),
         )
@@ -273,7 +254,7 @@ class Protocol(AbstractObject):
         Returns:
             protocol: a Protocol object
         """
-        (id_, name, roles, include_state, tags, description) = protocol_tuple
+        (id_, name, roles, tags, description) = protocol_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         name = sy.serde.msgpack.serde._detail(worker, name)
@@ -286,7 +267,6 @@ class Protocol(AbstractObject):
             name=name,
             owner=worker,
             roles=roles,
-            include_state=include_state,
             is_built=True,
             tags=tags,
             description=description,
@@ -315,7 +295,6 @@ class Protocol(AbstractObject):
                 sy.serde.protobuf.serde._bufferize(worker, role)
             )
 
-        protobuf_protocol.include_state = protocol.include_state
         protobuf_protocol.tags.extend(protocol.tags)
 
         if protocol.description:
@@ -340,7 +319,6 @@ class Protocol(AbstractObject):
             for role_id, role in protobuf_protocol.roles.items()
         }
 
-        include_state = protobuf_protocol.include_state
         tags = set(protobuf_protocol.tags) if protobuf_protocol.tags else None
         description = protobuf_protocol.description if protobuf_protocol.description else None
 
@@ -348,7 +326,6 @@ class Protocol(AbstractObject):
             id=id_,
             name=name,
             roles=roles,
-            include_state=include_state,
             is_built=True,
             owner=worker,
             tags=tags,
