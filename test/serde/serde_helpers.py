@@ -958,7 +958,6 @@ def make_protocol(**kwargs):
                     protocol.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.roles),
-                    protocol.include_state,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], protocol.description
