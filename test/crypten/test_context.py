@@ -29,8 +29,8 @@ def test_context(workers):
 
     expected_value = th.tensor([143, 85, 32, 4])
     for rank in range(n_workers):
-        assert (
-            th.all(return_values[rank] == expected_value)
+        assert th.all(
+            return_values[rank] == expected_value
         ), "Crypten party with rank {} don't match expected value {} != {}".format(
             rank, return_values[rank], expected_value
         )
