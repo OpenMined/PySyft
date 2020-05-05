@@ -716,7 +716,7 @@ class CryptenInitPlan(Message):
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitPlan":
         """
         This function takes the simplified tuple version of this message and converts
-        it into an CryptenInitPlan. The simplify() method runs the inverse of this method.
+        it into a CryptenInitPlan. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -778,7 +778,7 @@ class CryptenInitJail(Message):
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitJail":
         """
         This function takes the simplified tuple version of this message and converts
-        it into an CryptenInitJail. The simplify() method runs the inverse of this method.
+        it into a CryptenInitJail. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
