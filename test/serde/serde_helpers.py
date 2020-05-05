@@ -1955,18 +1955,18 @@ def make_gradfn(**kwargs):
     ]
 
 
-# syft.messaging.message.CryptenInit
-def make_crypteninit(**kwargs):
+# syft.messaging.message.CryptenInitPlan
+def make_crypteninitplan(**kwargs):
     def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.CryptenInit
+        assert type(detailed) == syft.messaging.message.CryptenInitPlan
         assert detailed.contents == original.contents
         return True
 
     return [
         {
-            "value": syft.messaging.message.CryptenInit([0, 2, "127.0.0.1", 8080]),
+            "value": syft.messaging.message.CryptenInitPlan([0, 2, "127.0.0.1", 8080]),
             "simplified": (
-                CODE[syft.messaging.message.CryptenInit],
+                CODE[syft.messaging.message.CryptenInitPlan],
                 (
                     (CODE[list], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),
                 ),  # (Any) simplified content
@@ -1974,11 +1974,45 @@ def make_crypteninit(**kwargs):
             "cmp_detailed": compare,
         },
         {
-            "value": syft.messaging.message.CryptenInit((0, 2, "127.0.0.1", 8080)),
+            "value": syft.messaging.message.CryptenInitPlan((0, 2, "127.0.0.1", 8080)),
             "simplified": (
-                CODE[syft.messaging.message.CryptenInit],
+                CODE[syft.messaging.message.CryptenInitPlan],
                 (
                     (CODE[tuple], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),
+                ),  # (Any) simplified content
+            ),
+            "cmp_detailed": compare,
+        },
+    ]
+
+
+# syft.messaging.message.CryptenInitJail
+def make_crypteninitjail(**kwargs):
+    def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CryptenInitJail
+        assert detailed.contents == original.contents
+        return True
+
+    jail_runner = ("test = 5", ["crypten",])
+    jr_simplified = (
+        CODE[tuple],
+        ((CODE[str], (b"test = 5",)), (CODE[list], ((CODE[str], (b"crypten",)),))),
+    )
+    model = b"test binary model"
+    model_simplified = model
+
+    return [
+        {
+            "value": syft.messaging.message.CryptenInitJail(
+                (0, 2, "127.0.0.1", 8080), jail_runner, model
+            ),
+            "simplified": (
+                CODE[syft.messaging.message.CryptenInitJail],
+                (
+                    (
+                        CODE[tuple],
+                        (0, 2, (CODE[str], (b"127.0.0.1",)), 8080, jr_simplified, model_simplified),
+                    ),
                 ),  # (Any) simplified content
             ),
             "cmp_detailed": compare,

@@ -28,14 +28,14 @@ from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import IsNoneMessage
-from syft.messaging.message import CryptenInit
+from syft.messaging.message import CryptenInitPlan
+from syft.messaging.message import CryptenInitJail
 from syft.messaging.message import Message
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
-from syft.messaging.message import CryptenInit
 
 from syft.frameworks.crypten import run_party
 
@@ -132,7 +132,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
-            CryptenInit: self.run_crypten_party,
+            CryptenInitPlan: self.run_crypten_party_plan,
+            CryptenInitJail: self.run_crypten_party_jail,
         }
 
         self._plan_command_router = {
@@ -430,11 +431,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         return pointer
 
-    def run_crypten_party(self, message: tuple):
+    def run_crypten_party_plan(self, message: CryptenInitPlan):
         """Run crypten party according to the information received.
 
         Args:
-            message (CryptenInit): should contain the rank, world_size, master_addr and master_port.
+            message (CryptenInitPlan): should contain the rank, world_size, master_addr and master_port.
 
         Returns:
             An ObjectMessage containing the return value of the crypten function computed.
@@ -453,9 +454,35 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 rank = r
                 break
 
-        assert rank != None
+        assert rank is not None
 
         return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
+        return ObjectMessage(return_value)
+
+    def run_crypten_party_jail(self, message: CryptenInitJail):
+        """Run crypten party according to the information received.
+
+        Args:
+            message (CryptenInitJail): should contain the rank, world_size, master_addr and master_port.
+
+        Returns:
+            An ObjectMessage containing the return value of the crypten function computed.
+        """
+        from syft.frameworks.crypten.jail import JailRunner
+
+        self.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
+        ser_func = message.jail_runner
+        jail_runner = JailRunner.detail(ser_func)
+
+        rank = None
+        for r, worker_id in self.rank_to_worker_id.items():
+            if worker_id == self.id:
+                rank = r
+                break
+
+        assert rank is not None
+
+        return_value = run_party(jail_runner, rank, world_size, master_addr, master_port, (), {})
         return ObjectMessage(return_value)
 
     def handle_object_msg(self, obj_msg: ObjectMessage):
