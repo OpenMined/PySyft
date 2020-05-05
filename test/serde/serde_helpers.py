@@ -1050,47 +1050,6 @@ def make_pointerplan(**kwargs):
     ]
 
 
-# syft.generic.pointers.pointer_protocol.PointerProtocol
-def make_pointerprotocol(**kwargs):
-    alice, me = kwargs["workers"]["alice"], kwargs["workers"]["me"]
-
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
-
-    protocol = syft.execution.protocol.Protocol(
-        [("worker1", plan), ("worker2", plan)], tags=["aaa", "bbb"], description="desc"
-    )
-    protocol.send(alice)
-    ptr = me.request_search([protocol.id], location=alice)[0]
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.generic.pointers.pointer_protocol.PointerProtocol
-        assert detailed.id == original.id
-        assert detailed.id_at_location == original.id_at_location
-        assert detailed.location == original.location
-        assert detailed.garbage_collect_data == original.garbage_collect_data
-        return True
-
-    return [
-        {
-            "value": ptr,
-            "simplified": (
-                CODE[syft.generic.pointers.pointer_protocol.PointerProtocol],
-                (
-                    ptr.id,  # (int or str) id
-                    ptr.id_at_location,  # (int) id_at_location
-                    (CODE[str], (b"alice",)),  # (str) location.id
-                    False,  # (bool) garbage_collect_data
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
 # syft.generic.pointers.object_wrapper.ObjectWrapper
 def make_objectwrapper(**kwargs):
     obj = torch.randn(3, 3)
