@@ -99,9 +99,6 @@ def test_get_method(workers):
 def test_private_tensor_registration(hook):
     with hook.local_worker.registration_enabled():
         x = torch.tensor([1.0])
-        import pdb
-
-        pdb.set_trace()
         private_x = x.private_tensor(allowed_users=("User",))
 
         assert hook.local_worker.get_obj(x.id) == x
