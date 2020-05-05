@@ -10,6 +10,7 @@ import warnings
 
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import trace
@@ -22,6 +23,7 @@ from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 
@@ -35,7 +37,7 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False):
         self.args_shape = args_shape
         self.state_tensors = state or tuple()
         # include_state is used to distinguish if the initial plan is a function or a class:
@@ -43,6 +45,7 @@ class func2plan(object):
         # will be true. And to know if it was indeed a function, we just need to see if a
         # "manual" state was provided.
         self.include_state = state is not None
+        self.trace_autograd = trace_autograd
 
     def __call__(self, plan_function):
         plan = Plan(
@@ -58,7 +61,7 @@ class func2plan(object):
         if self.args_shape:
             args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                plan.build(*args_)
+                plan.build(*args_, trace_autograd=self.trace_autograd)
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2plan failed!\nCheck that:\n"
@@ -159,7 +162,7 @@ class Plan(AbstractObject):
         else:
             return []
 
-    def build(self, *args):
+    def build(self, *args, trace_autograd=False):
         """Builds the plan.
 
         First, run the function to be converted in a plan in a context which
@@ -180,11 +183,29 @@ class Plan(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        # Run once to build the plan
-        args = tuple(
-            PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-            for arg in args
-        )
+        if trace_autograd:
+            # Wrap arguments that require gradients with AutogradTensor,
+            # to be able to trace autograd operations
+            args = tuple(
+                AutogradTensor().on(arg, wrap=False)
+                if isinstance(arg, FrameworkTensor) and arg.requires_grad
+                else arg
+                for arg in args
+            )
+            # Add Placeholder after AutogradTensor in the chain
+            # so that all operations that happen inside AutogradTensor are recorded by Placeholder
+            args_placeholders = tuple(
+                PlaceHolder.insert(
+                    arg, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
+                )
+                for arg in args
+            )
+        else:
+            # Add Placeholder on top of each arg
+            args = args_placeholders = tuple(
+                PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
+                for arg in args
+            )
 
         # Add state to args if needed
         if self.include_state:
@@ -204,10 +225,14 @@ class Plan(AbstractObject):
         self.is_building = False
 
         # Register inputs in role
-        self.role.register_inputs(args)
+        self.role.register_inputs(args_placeholders)
 
         # Register outputs in role
-        self.role.register_outputs(results)
+        if isinstance(results, (tuple, list)):
+            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
+        else:
+            results_placeholders = PlaceHolder.extract(results)
+        self.role.register_outputs(results_placeholders)
 
         self.is_built = True
 
@@ -217,7 +242,7 @@ class Plan(AbstractObject):
                 self.add_translation(translator)
                 self.translations.append(translator)
             except:
-                warnings.warn(f"Failed to translate Plan with {translator}")
+                warnings.warn(f"Failed to translate Plan with {translator.__name__}")
 
         return results
 
@@ -606,6 +631,27 @@ class Plan(AbstractObject):
             plan.torchscript = torch.jit.load(torchscript)
 
         return plan
+
+    @property
+    def code(self) -> str:
+        """Returns string representation of Plan actions"""
+        input_names = {id: f"arg_{i + 1}" for i, id in enumerate(self.role.input_placeholder_ids)}
+        output_names = {id: f"out_{i + 1}" for i, id in enumerate(self.role.output_placeholder_ids)}
+        state_names = {
+            id: f"state_{i + 1}" for i, id in enumerate(self.role.state.state_placeholders)
+        }
+        var_names = {**input_names, **output_names, **state_names}
+
+        out = f"def {self.name}("
+        out += ", ".join([var_names[id] for id in self.role.input_placeholder_ids])
+        out += "):\n"
+        for action in self.role.actions:
+            out += f"    {action.code(var_names)}\n"
+
+        out += "    return "
+        out += ", ".join([var_names[id] for id in self.role.output_placeholder_ids])
+
+        return out
 
 
 # Auto-register Plan build-time translations
