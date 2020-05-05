@@ -93,7 +93,7 @@ def run_crypten_party_jail(worker: BaseWorker, message: CryptenInitJail):
     return ObjectMessage(return_value)
 
 
-def add_support_to_workers(worker):
+def add_support_to_worker(worker):
     worker._message_router[CryptenInitPlan] = types.MethodType(run_crypten_party_plan, worker)
     worker._message_router[CryptenInitJail] = types.MethodType(run_crypten_party_jail, worker)
 
