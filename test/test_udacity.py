@@ -294,15 +294,15 @@ def test_section_2_federated_learning(hook):
 
     bob = sy.VirtualWorker(hook, id="bob_udacity")
 
-    bob._objects
+    bob._tensors
 
     x = th.tensor([1, 2, 3, 4, 5])
 
     x = x.send(bob)
 
-    bob._objects
+    bob._tensors
 
-    assert len(bob._objects) == 1
+    assert len(bob._tensors) == 1
 
     x.location
 
@@ -319,9 +319,9 @@ def test_section_2_federated_learning(hook):
     x = x.get()
     x
 
-    bob._objects
+    bob._tensors
 
-    assert len(bob._objects) == 0
+    assert len(bob._tensors) == 0
 
     alice = sy.VirtualWorker(hook, id="alice_udacity")
 

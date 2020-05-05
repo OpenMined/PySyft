@@ -117,13 +117,13 @@ def test_list_objects_remote(hook, start_remote_worker):
 
     x = torch.tensor([1, 2, 3]).send(remote_proxy)
 
-    res = remote_proxy.list_objects_remote()
+    res = remote_proxy.list_tensors_remote()
 
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 1
 
     y = torch.tensor([4, 5, 6]).send(remote_proxy)
-    res = remote_proxy.list_objects_remote()
+    res = remote_proxy.list_tensors_remote()
     res_dict = eval(res.replace("tensor", "torch.tensor"))
     assert len(res_dict) == 2
 
@@ -143,15 +143,15 @@ def test_objects_count_remote(hook, start_remote_worker):
 
     x = torch.tensor([1, 2, 3]).send(remote_proxy)
 
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 1
 
     y = torch.tensor([4, 5, 6]).send(remote_proxy)
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 2
 
     x.get()
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 1
 
     # delete remote object before terminating the websocket connection
@@ -169,7 +169,7 @@ def test_clear_objects_remote(hook, start_remote_worker):
     x = torch.tensor([1, 2, 3]).send(remote_proxy, garbage_collect_data=False)
     y = torch.tensor(4).send(remote_proxy, garbage_collect_data=False)
 
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 2
 
     remote_proxy.clear_objects_remote()
@@ -187,7 +187,7 @@ def test_connect_close(hook, start_remote_worker):
     x = torch.tensor([1, 2, 3])
     x_ptr = x.send(remote_proxy)
 
-    assert remote_proxy.objects_count_remote() == 1
+    assert remote_proxy.tensors_count_remote() == 1
 
     remote_proxy.close()
 
@@ -195,7 +195,7 @@ def test_connect_close(hook, start_remote_worker):
 
     remote_proxy.connect()
 
-    assert remote_proxy.objects_count_remote() == 1
+    assert remote_proxy.tensors_count_remote() == 1
 
     x_val = x_ptr.get()
     assert (x_val == x).all()

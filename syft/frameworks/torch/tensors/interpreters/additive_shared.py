@@ -3,9 +3,12 @@ import torch
 import warnings
 
 import syft as sy
-from syft.generic.utils import memorize
+from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
+from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import memorize
+
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -26,6 +29,7 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
+        protocol="snn",
         dtype=None,
         crypto_provider=None,
         tags=None,
@@ -60,12 +64,15 @@ class AdditiveSharingTensor(AbstractTensor):
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
             self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        elif dtype == "long":
+        elif dtype == "long" or dtype == "int64":
             self.field = 2 ** 64
             self.torch_dtype = torch.int64
-        elif dtype == "int":
+            self.dtype = "long"
+        elif dtype == "int" or dtype == "int32":
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
+            self.dtype = "int"
+
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
@@ -112,6 +119,8 @@ class AdditiveSharingTensor(AbstractTensor):
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
+
+        self.protocol = protocol
 
     def __repr__(self):
         return self.__str__()
@@ -179,7 +188,12 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "dtype": self.dtype, "field": self.field}
+        return {
+            "crypto_provider": self.crypto_provider,
+            "dtype": self.dtype,
+            "field": self.field,
+            "protocol": self.protocol,
+        }
 
     @property
     def grad(self):
@@ -898,32 +912,57 @@ class AdditiveSharingTensor(AbstractTensor):
         r = self - other - 1
         return r.positive()
 
+    @crypto_protocol("snn")
     def __gt__(self, other):
         return self.gt(other)
+
+    @crypto_protocol("fss")
+    def __gt__(self, other):
+        return (other + 1) <= self
 
     def ge(self, other):
         return (self - other).positive()
 
+    @crypto_protocol("snn")
     def __ge__(self, other):
         return self.ge(other)
+
+    @crypto_protocol("fss")
+    def __ge__(self, other):
+        return other <= self
 
     def lt(self, other):
         return (other - self - 1).positive()
 
+    @crypto_protocol("snn")
     def __lt__(self, other):
         return self.lt(other)
+
+    @crypto_protocol("fss")
+    def __lt__(self, other):
+        return (self + 1) <= other
 
     def le(self, other):
         return (other - self).positive()
 
+    @crypto_protocol("snn")
     def __le__(self, other):
         return self.le(other)
 
+    @crypto_protocol("fss")
+    def __le__(self, other):
+        return fss.le(self, other)
+
+    @crypto_protocol("snn")
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
+
+    @crypto_protocol("fss")
+    def eq(self, other):
+        return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)

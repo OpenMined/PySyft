@@ -287,7 +287,7 @@ def test_move(workers):
     assert x.id_at_location in bob._objects
     assert x.id_at_location not in alice._objects
 
-    x.move(alice)
+    p = x.move(alice)
 
     assert x.id_at_location not in bob._objects
     assert x.id_at_location in alice._objects
@@ -297,7 +297,7 @@ def test_move(workers):
     assert x.id_at_location in bob._objects
     assert x.id_at_location not in alice._objects
 
-    x.move(alice)
+    p = x.move(alice)
 
     assert x.id_at_location not in bob._objects
     assert x.id_at_location in alice._objects
@@ -305,9 +305,9 @@ def test_move(workers):
     alice.clear_objects()
     bob.clear_objects()
     x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
-    x.move(alice)
+    p = x.move(alice)
 
-    assert len(alice._objects) == 1
+    assert len(alice._tensors) == 1
 
     # Test .move on remote objects
 
@@ -323,10 +323,11 @@ def test_move(workers):
 
     alice.clear_objects()
     bob.clear_objects()
-    x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
+    t = torch.tensor([1.0, 2, 3, 4, 5])
+    x = t.send(bob)
     y = x.move(alice)
     z = y.move(me)
-    assert (z == x).all()
+    assert (z == t).all()
 
 
 def test_combine_pointers(workers):
@@ -506,8 +507,8 @@ def test_registration_of_action_on_pointer_of_pointer(workers):
     ptr = ptr.send(alice)
     ptr_action = ptr + ptr
 
-    assert len(alice._objects) == 2
-    assert len(bob._objects) == 2
+    assert len(alice._tensors) == 2
+    assert len(bob._tensors) == 2
 
 
 def test_setting_back_grad_to_origin_after_send(workers):
@@ -565,4 +566,4 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    assert len(alice._objects) == 2
+    assert len(alice._objects) == 8

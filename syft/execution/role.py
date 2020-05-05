@@ -76,8 +76,9 @@ class Role:
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
-        self.output_placeholder_ids += tuple(
-            self._store_placeholders(result).value for result in results
+        results += tuple(self._store_placeholders(result) for result in results)
+        self.output_placeholder_ids = tuple(
+            result.value for result in results if isinstance(result, PlaceholderId)
         )
 
     def register_action(self, traced_action, action_type):

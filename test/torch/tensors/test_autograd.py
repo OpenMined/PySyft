@@ -802,7 +802,7 @@ def test_garbage_collection(workers):
         alice, bob, crypto_provider=crypto_provider, requires_grad=True
     )
     opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
-    num_objs = 11
+    num_objs = 17
     prev_loss = float("inf")
     for i in range(3):
         preds = classifier(a)
