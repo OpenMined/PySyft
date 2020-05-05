@@ -88,7 +88,9 @@ def _send_party_info(worker, rank, msg, return_values, model=None):
     return_values[rank] = utils.unpack_values(response.object, model)
 
 
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463, model=None, dummy_input=None):
+def run_multiworkers(
+    workers: list, master_addr: str, master_port: int = 15463, model=None, dummy_input=None
+):
     """Defines decorator to run function across multiple workers.
 
     Args:
