@@ -115,6 +115,12 @@ class WebsocketClientWorker(BaseWorker, metaclass=WebsocketClientErrorHandler):
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
+    def list_tensors_remote(self):
+        return self._send_msg_and_deserialize("list_tensors")
+
+    def tensors_count_remote(self):
+        return self._send_msg_and_deserialize("tensors_count")
+
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
 
@@ -241,7 +247,7 @@ class WebsocketClientWorker(BaseWorker, metaclass=WebsocketClientErrorHandler):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #objects local:" + str(len(self._objects))
-        out += " #objects remote: " + str(self.objects_count_remote())
+        out += " #tensors local:" + str(len(self._tensors))
+        out += " #tensors remote: " + str(self.tensors_count_remote())
         out += ">"
         return out

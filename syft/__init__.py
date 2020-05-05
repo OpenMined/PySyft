@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
+__all__ = []
 if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
     from syft.workers.tfe import TFECluster
     from syft.workers.tfe import TFEWorker
 
-    __all__ = ["KerasHook", "TFECluster", "TFEWorker"]
+    __all__.extend(["KerasHook", "TFECluster", "TFEWorker"])
 else:
     logger.info("TF Encrypted Keras not available.")
-    __all__ = []
 
 # Pytorch dependencies
 # Import Hook
@@ -44,7 +44,7 @@ from syft.grid.private_grid import PrivateGridNetwork
 from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
-from syft.sandbox import create_sandbox, hook
+from syft.sandbox import create_sandbox, make_hook
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -54,7 +54,6 @@ from syft.federated.train_config import TrainConfig
 from syft.execution.protocol import Protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
-from syft.execution.plan import method2plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -103,7 +102,6 @@ __all__.extend(
         "WebsocketServerWorker",
         "Plan",
         "func2plan",
-        "method2plan",
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",

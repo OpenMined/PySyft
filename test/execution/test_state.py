@@ -23,7 +23,7 @@ def test_stateful_plan_built_automatically(hook):
         return x + bias
 
     assert isinstance(foo.__str__(), str)
-    assert len(foo.readable_plan) > 0
+    assert len(foo.actions) > 0
     assert foo.is_built
 
     t = th.tensor([1.0, 2])
@@ -162,7 +162,7 @@ def test_fetch_stateful_plan(hook, is_func2plan, workers):
     assert th.all(th.eq(fetched_plan(x), plan(x)))
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
@@ -208,7 +208,7 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
     assert th.all(th.eq(fetched_plan(x), expected))
     # assert fetched_plan.state.state_placeholders != plan.state.state_placeholders #TODO
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
@@ -325,82 +325,9 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
         )
     )
 
-    # Make sure fetched_plan is using the readable_plan
+    # Make sure fetched_plan is using the actions
     assert fetched_plan.forward is None
     assert fetched_plan.is_built
 
     # Make sure plan is using the blueprint: forward
     assert plan.forward is not None
-
-
-def test_plan_nested_build_inner_plan_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(199)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([1]),))
-    def plan_double(data, state):
-        (bias,) = state.read()
-        return -2 * data + bias
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    plan_abs_ptr(x_ptr)
-
-    res = plan_abs_ptr(x_ptr)
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_multiple_plans_state(hook, workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(1043)
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([3]),))
-    def plan_3(data, state):
-        (bias,) = state.read()
-        return data + bias + 42
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_2_2(data):
-        return data + 1331
-
-    @sy.func2plan(args_shape=[(1,)], state=(th.tensor([2]),))
-    def plan_2_1(data, state):
-        (bias,) = state.read()
-        return -2 * plan_3(data) + bias
-
-    @sy.func2plan()
-    def plan_1(data):
-        res = plan_2_1(data)
-        return plan_2_2(res)
-
-    # (-2 * (x + tensor(3) + 42) + tensor(2) + 1331)
-    #        -------------------
-    #              plan_3
-    # --------------------------------------
-    #                plan_2_1
-    # -----------------------------------------------
-    #                       plan_2_2
-
-    x = th.tensor(100)
-    plan_1.build(x)
-
-    # Test locally
-    assert plan_1(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_1_ptr = plan_1.send(alice)
-
-    res = plan_1_ptr(x_ptr)
-    assert res.get() == expected_res

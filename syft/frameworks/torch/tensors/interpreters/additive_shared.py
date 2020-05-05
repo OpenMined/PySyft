@@ -3,9 +3,12 @@ import torch
 import warnings
 
 import syft as sy
-from syft.generic.utils import memorize
+from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
+from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import memorize
+
 from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -26,6 +29,7 @@ class AdditiveSharingTensor(AbstractTensor):
         owner=None,
         id=None,
         field=None,
+        protocol="snn",
         dtype=None,
         crypto_provider=None,
         tags=None,
@@ -113,6 +117,8 @@ class AdditiveSharingTensor(AbstractTensor):
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
 
+        self.protocol = protocol
+
     def __repr__(self):
         return self.__str__()
 
@@ -179,7 +185,12 @@ class AdditiveSharingTensor(AbstractTensor):
         for example precision_fractional is important when wrapping the result of a method
         on a self which is a fixed precision tensor with a non default precision_fractional.
         """
-        return {"crypto_provider": self.crypto_provider, "dtype": self.dtype, "field": self.field}
+        return {
+            "crypto_provider": self.crypto_provider,
+            "dtype": self.dtype,
+            "field": self.field,
+            "protocol": self.protocol,
+        }
 
     @property
     def grad(self):
@@ -866,7 +877,7 @@ class AdditiveSharingTensor(AbstractTensor):
         def nn(module):
             @overloaded.module
             def functional(module):
-                def relu(tensor_shares):
+                def relu(tensor_shares, inplace=False):
                     return tensor_shares.relu()
 
                 module.relu = relu
@@ -887,7 +898,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     ## SECTION SNN
 
-    def relu(self):
+    def relu(self, inplace=False):
         return securenn.relu(self)
 
     def positive(self):
@@ -898,32 +909,57 @@ class AdditiveSharingTensor(AbstractTensor):
         r = self - other - 1
         return r.positive()
 
+    @crypto_protocol("snn")
     def __gt__(self, other):
         return self.gt(other)
+
+    @crypto_protocol("fss")
+    def __gt__(self, other):
+        return (other + 1) <= self
 
     def ge(self, other):
         return (self - other).positive()
 
+    @crypto_protocol("snn")
     def __ge__(self, other):
         return self.ge(other)
+
+    @crypto_protocol("fss")
+    def __ge__(self, other):
+        return other <= self
 
     def lt(self, other):
         return (other - self - 1).positive()
 
+    @crypto_protocol("snn")
     def __lt__(self, other):
         return self.lt(other)
+
+    @crypto_protocol("fss")
+    def __lt__(self, other):
+        return (self + 1) <= other
 
     def le(self, other):
         return (other - self).positive()
 
+    @crypto_protocol("snn")
     def __le__(self, other):
         return self.le(other)
 
+    @crypto_protocol("fss")
+    def __le__(self, other):
+        return fss.le(self, other)
+
+    @crypto_protocol("snn")
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
         negdiff2 = diff2 * -1
         return negdiff2.positive()
+
+    @crypto_protocol("fss")
+    def eq(self, other):
+        return fss.eq(self, other)
 
     def __eq__(self, other):
         return self.eq(other)
@@ -1090,7 +1126,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return (
             sy.serde.msgpack.serde._simplify(worker, tensor.id),
             sy.serde.msgpack.serde._simplify(worker, tensor.field),
-            tensor.dtype,
+            tensor.dtype.encode("utf-8"),
             sy.serde.msgpack.serde._simplify(worker, tensor.crypto_provider.id),
             chain,
             garbage_collect,
@@ -1116,7 +1152,7 @@ class AdditiveSharingTensor(AbstractTensor):
             owner=worker,
             id=sy.serde.msgpack.serde._detail(worker, tensor_id),
             field=sy.serde.msgpack.serde._detail(worker, field),
-            dtype=dtype,
+            dtype=dtype.decode("utf-8"),
             crypto_provider=worker.get_worker(crypto_provider),
         )
 

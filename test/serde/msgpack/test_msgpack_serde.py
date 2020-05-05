@@ -818,9 +818,9 @@ def test_full_serde_virtual_worker(hook):
 
     assert virtual_worker.id == deserialized_worker.id
     assert virtual_worker.auto_add == deserialized_worker.auto_add
-    assert len(deserialized_worker._objects) == 2
-    assert tensor1.id in deserialized_worker._objects
-    assert tensor2.id in deserialized_worker._objects
+    assert len(deserialized_worker._tensors) == 2
+    assert tensor1.id in deserialized_worker._tensors
+    assert tensor2.id in deserialized_worker._tensors
 
 
 def test_serde_object_wrapper_traced_module():

@@ -216,7 +216,7 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     assert (b.grad.get() == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["sqrt", "asin", "sin", "sinh", "tanh", "sigmoid"])
+@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on unary methods on remote tensors using
@@ -776,3 +776,45 @@ def test_train_without_requires_grad(workers):
 
     # Check the weights for the two models
     assert torch.all(torch.eq(model_weights_1, model_weights_2))
+
+
+def test_garbage_collection(workers):
+    alice = workers["alice"]
+    bob = workers["bob"]
+    crypto_provider = workers["james"]
+
+    a = torch.ones(1, 5)
+    b = torch.ones(1, 5)
+    a = a.encrypt(workers=[alice, bob], crypto_provider=crypto_provider, requires_grad=True)
+    b = b.encrypt(workers=[alice, bob], crypto_provider=crypto_provider, requires_grad=True)
+
+    class Classifier(torch.nn.Module):
+        def __init__(self, in_features, out_features):
+            super(Classifier, self).__init__()
+            self.fc = torch.nn.Linear(in_features, out_features)
+
+        def forward(self, x):
+            logits = self.fc(x)
+            return logits
+
+    classifier = Classifier(in_features=5, out_features=5)
+    model = classifier.fix_prec().share(
+        alice, bob, crypto_provider=crypto_provider, requires_grad=True
+    )
+    opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
+    num_objs = 17
+    prev_loss = float("inf")
+    for i in range(3):
+        preds = classifier(a)
+        loss = ((b - preds) ** 2).sum()
+
+        opt.zero_grad()
+        loss.backward()
+        opt.step()
+        loss = loss.get().float_prec()
+
+        assert len(alice._objects) == num_objs
+        assert len(bob._objects) == num_objs
+        assert loss < prev_loss
+
+        prev_loss = loss
