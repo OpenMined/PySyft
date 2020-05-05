@@ -55,5 +55,5 @@ class GoogleCloud:
         """
         args:
         """
-        os.remove(self.credentials)
         subprocess.call("terraform destroy", shell=True)
+        os.remove(self.credentials)
