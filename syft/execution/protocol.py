@@ -1,479 +1,333 @@
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
+
+import copy
+import inspect
+import io
+import torch
 import warnings
-from typing import List, Optional, Tuple, Union, Set
 
 import syft as sy
-from syft.exceptions import WorkerNotFoundException
-from syft.generic.frameworks.hook import hook_args
+from syft.execution.placeholder import PlaceHolder
+from syft.execution.role import Role
+from syft.execution.state import State
+from syft.execution.tracing import trace
+
+from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
-from syft.generic.pointers.pointer_protocol import PointerProtocol
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
+
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
+
+
+class func2protocol(object):
+    """Decorator which converts a function to a protocol.
+
+    Converts a function containing sequential pytorch code into
+    a protocol object which can be sent to any arbitrary worker.
+
+    This class should be used only as a decorator.
+    """
+
+    def __init__(self, args_shape=None, state=None):
+        self.args_shape = args_shape
+
+    def __call__(self, protocol_function):
+        protocol = Protocol(
+            name=protocol_function.__name__,
+            forward_func=protocol_function,
+            id=sy.ID_PROVIDER.pop(),
+            owner=sy.local_worker,
+        )
+
+        # Build the protocol automatically
+        if self.args_shape:
+            args_ = PlaceHolder.create_placeholders(self.args_shape)
+            try:
+                protocol.build(*args_)
+            except TypeError as e:
+                raise ValueError(
+                    "Automatic build using @func2protocol failed!\nCheck that:\n"
+                    " - you have provided the correct number of shapes in args_shape\n"
+                    " - you have no simple numbers like int or float as args. If you do "
+                    "so, please consider using a tensor instead."
+                )
+        return protocol
 
 
 class Protocol(AbstractObject):
     """
-    A Protocol coordinates a sequence of Plans, deploys them on distant workers
-    and run them in a single pass.
+    A Protocol stores a sequence of actions, just like a function.
 
-    It's a high level object which contains the logic of a complex computation
-    distributed across several workers. The main feature of Protocol is the
-    ability to be sent / searched / fetched back between workers, and finally
-    deployed to identified workers. So a user can design a protocol, upload it
-    to a cloud worker, and any other workers will be able to search for it,
-    download it, and apply the computation program it contains on the workers
-    that it is connected to.
+    A Protocol is intended to store a sequence of actions, just like a function,
+    but it allows to send this sequence of actions to remote workers and to keep a
+    reference to it. This way, to compute remotely this sequence of actions on some remote
+    input referenced through pointers, instead of sending multiple messages you need now to send a
+    single message with the references of the protocol and the pointers.
 
+    All arguments are optional.
 
     Args:
-        plans: a list of pairs (worker, plan). "worker" can be either a real
-            worker or a worker id or a string to represent a fictive worker. This
-            last case can be used at creation to specify that two plans should be
-            owned (or not owned) by the same worker at deployment. "plan" can
-            either be a Plan or a PointerPlan.
-        id: the Protocol id
-        owner: the Protocol owner
-        tags: the Protocol tags (used for search)
-        description: the Protocol description
+        name: the name of the name
+        is_built: state if the protocol has already been built.
+        forward_func: the function to be transformed into a protocol
+        id: protocol id
+        owner: protocol owner
+        tags: protocol tags
+        description: protocol description
     """
+
+    # _build_translators = []
 
     def __init__(
         self,
-        plans: List = None,
-        id: int = None,
-        owner: BaseWorker = None,
+        name: str = None,
+        is_built: bool = False,
+        forward_func=None,
+        roles: Dict[str, Role] = {},
+        # General kwargs
+        id: Union[str, int] = None,
+        owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
         description: str = None,
     ):
-        owner = owner or sy.framework.hook.local_worker
-        super(Protocol, self).__init__(id, owner, tags, description, child=None)
+        AbstractObject.__init__(self, id, owner, tags, description, child=None)
 
-        self.plans = plans or list()
-        self.workers_resolved = len(self.plans) and all(
-            isinstance(w, AbstractWorker) for w, p in self.plans
-        )
-        self.location: Optional[BaseWorker] = None
+        # Protocol instance info
+        self.name = name or self.__class__.__name__
 
-    def deploy(self, *workers: BaseWorker) -> "Protocol":
-        """
-        Calling .deploy() sends the plans to the designated workers.
+        self.roles = roles
 
-        This is done in 2 phases: first, we map the fictive workers provided at creation
-        (named by strings) to the provided workers, and second, we send the corresponding
-        plans to each of them.
-        For the first phase, either there is exactly one real worker per plan or one real
-        worker per fictive_worker. _resolve_workers replaces the fictive workers by the
-        real ones.
+        self.is_building = False
+        self.state_attributes = {}
+        self.is_built = is_built
+        self.torchscript = None
+        self.tracing = False
 
-        Args:
-            workers: BaseWorker. The workers to which plans are to
-                be sent
+        if not hasattr(self, "forward"):
+            self.forward = forward_func or None
 
-        Returns:
-            "Protocol": self
+        self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
-        Raises:
-            RuntimeError: If protocol is already deployed OR
-                the number of workers provided does not equal the number of fictive workers
-                and does not equal the number of plans
-        """
-        if self.workers_resolved:
-            raise RuntimeError(
-                f"This protocol is already deployed to {', '.join(worker.id for worker, plan in self.plans)}."
-            )
+    def get_role_for_owner(self, owner):
+        if owner.id not in self.roles:
+            self.roles[owner.id] = Role()
+        return self.roles[owner.id]
 
-        n_workers = len(set(worker for worker, plan in self.plans))
+    def build(self, *args):
+        """Builds the protocol.
 
-        # to correctly map workers, we must have exactly 1 worker for 1 plan
-        # or 1 worker for 1 fictive worker.
-        # If we don't, raise here
-        if len(self.plans) != len(workers) != n_workers:
-            raise RuntimeError(
-                f"This protocol is designed for {n_workers} workers, but {len(workers)} were provided."
-            )
+        First, run the function to be converted in a protocol in a context which
+        activates the tracing and record the actions in trace.logs
 
-        self._resolve_workers(workers)
+        Second, store the result ids temporarily to helper ordering the output
+        placeholders at return time
 
-        # update plans list with *pointers* to the plans
-        self.plans = [(worker, plan.send(worker)) for (worker, plan) in self.plans]
-
-        return self
-
-    def __call__(self, *args, **kwargs):
-        return self.run(*args, **kwargs)
-
-    def run(self, *args, **kwargs):
-        """
-        Run the protocol by executing the plans sequentially
-
-        The input args_ provided are sent to the first plan location. This first plan is
-        run and its output is moved to the second plan location, and so on. The final
-        result is returned after all plans have run, and it is composed of pointers to
-        the last plan location.
-
-        Raises:
-            RuntimeError: If the protocol has a location attribute and it is not
-                the local worker
-        """
-        self._assert_is_resolved()
-
-        # This is an alternative to having PointerProtocol, when we send the protocol.
-        if self.location is not None:
-            location = Protocol.find_args_location(args)
-            if location != self.location:
-                raise RuntimeError(
-                    f"This protocol has been sent to {self.location.id}, but you provided "
-                    f"local arguments or pointers to {location.id}."
-                )
-
-            print("send remote run request to", self.location.id)
-            response = self.request_remote_run(location, args, kwargs)
-            return response
-
-        # Local and sequential coordination of the plan execution
-        previous_worker_id = None
-        response = None
-        for worker, plan in self.plans:
-            # Transmit the args to the next worker if it's a different one % the previous
-            if None is not previous_worker_id != worker.id:
-                print("move", previous_worker_id, " -> ", worker.id)
-                args = [arg.move(worker) for arg in args]
-            else:
-                print("send", worker.id)
-                args = [arg.send(worker) for arg in args]
-
-            previous_worker_id = worker.id
-
-            response = plan(*args)
-
-            args = response if isinstance(response, tuple) else (response,)
-
-        return response
-
-    def request_remote_run(
-        self, location: AbstractWorker, args_, kwargs_
-    ) -> Union[List[PointerTensor], PointerTensor]:
-        """
-        Requests protocol execution.
-
-        Send a request to execute the protocol on the remote location.
+        Third, loop through the trace logs and replace the tensors found in the
+        actions logged by PlaceHolders. Record those actions in
+        protocol.actions
 
         Args:
-            location: to which worker the request should be sent
-            args_: Arguments used as input data for the protocol.
-            kwargs_: Named arguments used as input data for the protocol.
-
-        Returns:
-            PointerTensor or list of PointerTensors: response from request to
-                execute protocol
+            args: Input arguments to run the protocol
         """
-        plan_name = f"plan{self.id}"
-        args_, _, _ = hook_args.unwrap_args_from_function(plan_name, args_, {})
+        # Reset previous build
+        self.roles = {}
 
-        # return_ids = kwargs_.get("return_ids", {})
-        command = ("run", self.id, args_, kwargs_)
+        # Enable tracing
+        self.toggle_tracing(True)
+        self.is_building = True
 
-        response = self.owner.send_command(
-            message=command, recipient=location  # , return_ids=return_ids
-        )
-        response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
-        return response
+        # Run once to build the protocol
+        ph_args = tuple()
+        for arg in args:
+            arg_role = self.get_role_for_owner(arg.owner)
 
-    @staticmethod
-    def find_args_location(args_) -> BaseWorker:
-        """
-        Return location if args contain pointers else the local worker
+            ph_arg = PlaceHolder.create_from(arg, owner=arg.owner, role=arg_role, tracing=True)
+            # Register inputs in role
+            arg_role.register_input(ph_arg)
 
-        Returns:
-            BaseWorker: The location of a pointer if in args, else local
-                worker
-        """
-        for arg in args_:
-            if isinstance(arg, FrameworkTensor):
-                if hasattr(arg, "child") and isinstance(arg.child, PointerTensor):
-                    return arg.location
-        return sy.framework.hook.local_worker
+            ph_args += (ph_arg,)
 
-    def send(self, location: BaseWorker) -> None:
-        """
-        Send a protocol to a worker, to be fetched by other workers
+        results = self.forward(*ph_args)
 
-        Args:
-            location: BaseWorker. The location to which a protocol
-                is to be sent
-        """
-        # If the workers have not been assigned, then the plans are still local
-        # and should be sent together with the protocol to the location
-        if not self.workers_resolved:
-            for _, plan in self.plans:
-                plan.send(location)
-        # Else, the plans are already deployed and we don't move them
+        # Disable tracing
+        self.toggle_tracing(False)
+        self.is_building = False
 
-        self.owner.send_obj(obj=self, location=location)
+        # Register outputs in roles
+        for result in results:
+            if isinstance(result, PlaceHolder):
+                result_role = self.get_role_for_owner(result.owner)
+                result_role.register_output(result)
 
-        self.location = location
+        self.is_built = True
 
-    @staticmethod
-    def simplify(worker: BaseWorker, protocol: "Protocol") -> Tuple:
-        """
-        This function takes the attributes of a Protocol and saves them in a tuple
+        return results
 
-        Args:
-            worker (BaseWorker) : the worker doing the serialization
-            protocol (Protocol): a Protocol object
+    def toggle_tracing(self, value=None):
+        self.tracing = value if value is not None else not self.tracing
+        # self.state.tracing = self.tracing
+        for role in self.roles.values():
+            for ph in role.placeholders.values():
+                ph.tracing = self.tracing
 
-        Returns:
-            tuple: a tuple holding the unique attributes of the Protocol object
-
-        Raises:
-            TypeError: if a plan is not sy.Plan or sy.PointerPlan
-        """
-        plans_reference = []
-        for worker, plan in protocol.plans:
-            if isinstance(plan, sy.Plan):
-                plan_id = plan.id
-            elif isinstance(plan, sy.PointerPlan):
-                plan_id = plan.id_at_location
-            else:
-                raise TypeError("This is not a valid Plan")
-
-            if isinstance(worker, str):
-                worker_id = worker
-            else:
-                worker_id = worker.id
-
-            plans_reference.append((worker_id, plan_id))
-
-        return (
-            sy.serde.msgpack.serde._simplify(worker, protocol.id),
-            sy.serde.msgpack.serde._simplify(worker, protocol.tags),
-            sy.serde.msgpack.serde._simplify(worker, protocol.description),
-            sy.serde.msgpack.serde._simplify(worker, plans_reference),
-            sy.serde.msgpack.serde._simplify(worker, protocol.workers_resolved),
+    def copy(self):
+        """Creates a copy of a protocol."""
+        protocol_copy = Protocol(
+            name=self.name,
+            roles={role_id: role.copy() for role_id, role in self.roles.items()},
+            is_built=self.is_built,
+            id=sy.ID_PROVIDER.pop(),
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
         )
 
-    @staticmethod
-    def create_from_attributes(
-        worker, id, tags, description, workers_resolved, plans_assignments
-    ) -> "Protocol":
+        protocol_copy.torchscript = self.torchscript
+
+        return protocol_copy
+
+    def __call__(self, *args):
         """
-        This function reconstructs a Protocol object given its attributes.
+        Run actions on the workers provided for each Role from the Role's tape of actions.
+        """
+        results_per_role = {}
+        for role_id, role in self.roles.items():
+            args_for_role = [arg for arg in args if arg.owner == role_id]
+            results_per_role[role_id] = role.execute(args_for_role)
+
+        return results_per_role
+
+    def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
+        """Controls local or remote protocol execution.
+        If the protocol doesn't have the protocol built, first build it using the original function.
 
         Args:
-            worker: the worker doing the deserialization
-            id: Protocol id
-            tags: Protocol tags
-            description: Protocol description
-            workers_resolved: Flag whether workers are resolved
-            plans_assignments: List of workers/plans IDs
-
-        Returns:
-            protocol: a Protocol object
+            args_: Arguments used to run protocol.
+            result_ids: List of ids where the results will be stored.
         """
-        plans = []
-        for owner_id, plan_id in plans_assignments:
-            if workers_resolved:
-                plan_owner = worker.get_worker(owner_id, fail_hard=True)
-                plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
-                worker.register_obj(plan_pointer)
-                plans.append((plan_owner, plan_pointer))
-            else:
-                try:
-                    plan_owner = worker.get_worker(owner_id, fail_hard=True)
-                except WorkerNotFoundException:
-                    plan = worker.get_obj(plan_id)
-                else:
-                    plan_pointer = worker.request_search(plan_id, location=plan_owner)[0]
-                    plan = plan_pointer.get()
-                plans.append((worker.id, plan))
+        # TODO: can we reuse result_ids?
+        return self.__call__(*args_)
 
-        protocol = sy.Protocol(plans=plans, id=id, owner=worker, tags=tags, description=description)
+    @staticmethod
+    def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
+        # Replace non-instanciated placeholders from protocol.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in protocol.state.state_placeholders}
+        protocol.placeholders = {**protocol.placeholders, **state_placeholders}
 
         return protocol
 
     @staticmethod
-    def detail(worker: BaseWorker, protocol_tuple: Tuple) -> "Protocol":
+    def simplify(worker: AbstractWorker, protocol: "Protocol") -> tuple:
         """
-        This function reconstructs a Protocol object given its attributes in the form of a tuple.
+        This function takes the attributes of a Protocol and saves them in a tuple
+        Args:
+            worker (AbstractWorker): the worker doing the serialization
+            protocol (Protocol): a Protocol object
+        Returns:
+            tuple: a tuple holding the unique attributes of the Protocol object
 
+        """
+        if not protocol.is_built:
+            raise RuntimeError("A Protocol needs to be built before being serialized.")
+
+        return (
+            sy.serde.msgpack.serde._simplify(worker, protocol.id),
+            sy.serde.msgpack.serde._simplify(worker, protocol.name),
+            sy.serde.msgpack.serde._simplify(worker, protocol.roles),
+            sy.serde.msgpack.serde._simplify(worker, protocol.tags),
+            sy.serde.msgpack.serde._simplify(worker, protocol.description),
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, protocol_tuple: tuple) -> "Protocol":
+        """This function reconstructs a Protocol object given its attributes in the form of a tuple.
         Args:
             worker: the worker doing the deserialization
             protocol_tuple: a tuple holding the attributes of the Protocol
-
         Returns:
             protocol: a Protocol object
         """
-        id, tags, description, plans_reference, workers_resolved = map(
-            lambda o: sy.serde.msgpack.serde._detail(worker, o), protocol_tuple
-        )
+        (id_, name, roles, tags, description) = protocol_tuple
 
-        return Protocol.create_from_attributes(
-            worker, id, tags, description, workers_resolved, plans_reference
+        id_ = sy.serde.msgpack.serde._detail(worker, id_)
+        name = sy.serde.msgpack.serde._detail(worker, name)
+        roles = sy.serde.msgpack.serde._detail(worker, roles)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
+
+        return sy.Protocol(
+            id=id_,
+            name=name,
+            owner=worker,
+            roles=roles,
+            is_built=True,
+            tags=tags,
+            description=description,
         )
 
     @staticmethod
-    def bufferize(worker: BaseWorker, protocol: "Protocol") -> ProtocolPB:
+    def bufferize(worker: AbstractWorker, protocol: "Protocol") -> ProtocolPB:
         """
-        This function takes the attributes of a Protocol and saves them in protobuf ProtocolPB
-
+        This function takes the attributes of a Protocol and saves them in a Protobuf message
         Args:
-            worker (BaseWorker) : the worker doing the serialization
+            worker (AbstractWorker): the worker doing the serialization
             protocol (Protocol): a Protocol object
-
         Returns:
-            ProtocolPB: a protobuf object holding the unique attributes of the Protocol object
-
-        Raises:
-            TypeError: if a plan is not sy.Plan or sy.PointerPlan
+            ProtocolPB: a Protobuf message holding the unique attributes of the Protocol object
         """
-        pb_protocol = ProtocolPB()
-        for worker, plan in protocol.plans:
-            if isinstance(plan, sy.Plan):
-                plan_id = plan.id
-            elif isinstance(plan, sy.PointerPlan):
-                plan_id = plan.id_at_location
-            else:
-                raise TypeError("This is not a valid Plan")
+        if not protocol.is_built:
+            raise RuntimeError("A Protocol needs to be built before being serialized.")
 
-            if isinstance(worker, str):
-                worker_id = worker
-            else:
-                worker_id = worker.id
+        protobuf_protocol = ProtocolPB()
 
-            plan_assignment = pb_protocol.plan_assignments.add()
-            sy.serde.protobuf.proto.set_protobuf_id(plan_assignment.worker_id, worker_id)
-            sy.serde.protobuf.proto.set_protobuf_id(plan_assignment.plan_id, plan_id)
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_protocol.id, protocol.id)
+        protobuf_protocol.name = protocol.name
 
-        sy.serde.protobuf.proto.set_protobuf_id(pb_protocol.id, protocol.id)
-        if protocol.tags:
-            pb_protocol.tags.extend(protocol.tags)
+        for role_id, role in protocol.roles.items():
+            protobuf_protocol.roles.get_or_create(role_id).CopyFrom(
+                sy.serde.protobuf.serde._bufferize(worker, role)
+            )
+
+        protobuf_protocol.tags.extend(protocol.tags)
+
         if protocol.description:
-            pb_protocol.description = protocol.description
-        pb_protocol.workers_resolved = protocol.workers_resolved
-        return pb_protocol
+            protobuf_protocol.description = protocol.description
+
+        return protobuf_protocol
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, pb_protocol: ProtocolPB) -> "Protocol":
-        """
-        This function reconstructs a Protocol object given protobuf object.
-
+    def unbufferize(worker: AbstractWorker, protobuf_protocol: ProtocolPB) -> "Protocol":
+        """This function reconstructs a Protocol object given its attributes in the form of a Protobuf message
         Args:
             worker: the worker doing the deserialization
-            pb_protocol: a ProtocolPB object
-
+            protobuf_protocol: a Protobuf message holding the attributes of the Protocol
         Returns:
             protocol: a Protocol object
         """
-        id = sy.serde.protobuf.proto.get_protobuf_id(pb_protocol.id)
-        tags = set(pb_protocol.tags)
-        description = pb_protocol.description
-        workers_resolved = pb_protocol.workers_resolved
-        plans_assignments = [
-            (
-                sy.serde.protobuf.proto.get_protobuf_id(item.worker_id),
-                sy.serde.protobuf.proto.get_protobuf_id(item.plan_id),
-            )
-            for item in pb_protocol.plan_assignments
-        ]
+        id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_protocol.id)
+        name = protobuf_protocol.name
 
-        return Protocol.create_from_attributes(
-            worker, id, tags, description, workers_resolved, plans_assignments
-        )
+        roles = {
+            role_id: sy.serde.protobuf.serde._unbufferize(worker, role)
+            for role_id, role in protobuf_protocol.roles.items()
+        }
 
-    def create_pointer(
-        self, owner: AbstractWorker, garbage_collect_data: bool, tags: Set = None
-    ) -> PointerProtocol:
-        """
-        Create a pointer to the protocol
+        tags = set(protobuf_protocol.tags) if protobuf_protocol.tags else None
+        description = protobuf_protocol.description if protobuf_protocol.description else None
 
-        Args:
-            owner: the owner of the pointer
-            garbage_collect_data: bool
-            tags: the tags inherited from the Protocol
-
-        Returns:
-            PointerProtocol: pointer to the protocol
-        """
-        return PointerProtocol(
-            location=self.owner,
-            id_at_location=self.id,
-            owner=owner,
-            garbage_collect_data=garbage_collect_data,
+        return Protocol(
+            id=id_,
+            name=name,
+            roles=roles,
+            is_built=True,
+            owner=worker,
             tags=tags,
+            description=description,
         )
-
-    def __repr__(self):
-        repr = f"<Protocol id:{self.id} owner:{self.owner.id}{' resolved' if self.workers_resolved else ''}>"
-        for worker, plan in self.plans:
-            repr += "\n - "
-            if isinstance(worker, str):
-                repr += worker
-            else:
-                repr += str(worker.id)
-            repr += ": "
-            repr += plan.__repr__()
-        return repr
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    def _assert_is_resolved(self) -> None:
-        """
-        Check if protocol has already been resolved
-
-        Raises:
-            RuntimeError: If protocol has already been resolved
-        """
-        if not self.workers_resolved:
-            raise RuntimeError(
-                "Plans have not been allocated to existing workers. Call deploy(*workers) to do so."
-            )
-
-    def _resolve_workers(self, workers: Tuple[BaseWorker, ...]) -> None:
-        """
-        Map the abstract workers (named by strings) to the provided workers and
-        update the plans accordingly
-
-        Args:
-            workers: Iterable of workers. The workers to map to workers
-                in the protocol
-        """
-        dict_workers = {w.id: w for w in workers}
-        set_fake_ids = set(worker for worker, _ in self.plans)
-        set_real_ids = set(dict_workers.keys())
-
-        if 0 < len(set_fake_ids.intersection(set_real_ids)) < len(set_real_ids):
-            # The user chose fake ids that correspond to real ids but not all of them match.
-            # Maybe it's a mistake so we warn the user.
-            warnings.warn(
-                "You are deploying a protocol with workers for which only a subpart"
-                "have ids that match an id chosen for the protocol."
-            )
-
-        # If the "fake" ids manually set by the user when writing the protocol exactly match the ids
-        # of the workers, these fake ids in self.plans are replaced with the real workers.
-        if set_fake_ids == set_real_ids:
-            self.plans = [(dict_workers[w], p) for w, p in self.plans]
-
-        # If there is an exact one-to-one mapping, just iterate and keep the order
-        # provided when assigning the workers
-        elif len(workers) == len(self.plans):
-            self.plans = [(worker, plan) for (_, plan), worker in zip(self.plans, workers)]
-
-        # Else, there are duplicates in the self.plans keys and we need to build
-        # a small map
-        # Example:
-        #   protocol.plans == [("w1", plan1), ("w2", plan2), ("w1", plan3)
-        #   protocol.deploy(alice, bob)
-        else:
-            worker_map = {
-                abstract_worker_name: worker
-                for worker, abstract_worker_name in zip(
-                    workers, set(name for name, plan in self.plans)
-                )
-            }
-            self.plans = [(worker_map[name], plan) for name, plan in self.plans]
-
-        self.workers_resolved = True
