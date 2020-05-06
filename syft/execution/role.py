@@ -69,10 +69,10 @@ class Role:
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-
-        traversal_function = lambda x: self.input_placeholder_ids.append(
-            self._store_placeholders(x).value
-        )
+        def traversal_function(obj):
+            if obj.id.value not in self.placeholders:
+                self.placeholders[obj.id.value] = obj
+            self.input_placeholder_ids.append(obj.id.value)
 
         self.input_placeholder_ids = []
         Role.nested_object_traversal(args_, traversal_function, PlaceHolder)
@@ -82,9 +82,10 @@ class Role:
         """ Takes output tensors for this role and generate placeholders.
         """
 
-        traversal_function = lambda x: self.output_placeholder_ids.append(
-            self._store_placeholders(x).value
-        )
+        def traversal_function(obj):
+            if obj.id.value not in self.placeholders:
+                self.placeholders[obj.id.value] = obj
+            self.output_placeholder_ids.append(obj.id.value)
 
         results = (results,) if not isinstance(results, tuple) else results
         self.output_placeholder_ids = []
