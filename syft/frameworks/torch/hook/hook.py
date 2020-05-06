@@ -137,6 +137,8 @@ class TorchHook(FrameworkHook):
         else:
             self.local_worker.hook = self
 
+        self._virtual_workers = [self.local_worker]
+
         self.to_auto_overload = {}
 
         self.args_hook_for_overloaded_attr = {}
@@ -839,3 +841,7 @@ class TorchHook(FrameworkHook):
             return total_norm
 
         self.torch.nn.utils.clip_grad_norm_ = clip_grad_norm_remote_
+
+    def set_verbose(self, flag):
+        for workers in self._virtual_workers:
+            workers.verbose = flag
