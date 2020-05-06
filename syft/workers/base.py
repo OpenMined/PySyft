@@ -112,13 +112,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
-        if hasattr(hook, 'verbose') and hook.verbose is True:
+        if hasattr(hook, "verbose") and hook.verbose is True:
             self.verbose = True
         else:
             self.verbose = verbose
 
-        if id != "me" and isinstance(hook, sy.TorchHook) and hasattr(hook, '_virtual_workers'):
-                hook._virtual_workers.append(self)
+        if id != "me" and isinstance(hook, sy.TorchHook) and hasattr(hook, "_virtual_workers"):
+            hook._virtual_workers.append(self)
 
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
