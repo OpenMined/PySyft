@@ -686,7 +686,6 @@ def test_plan_input_usage(hook):
     pointer_plan = plan_test_2.send(device_1)
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
-<<<<<<< HEAD
     assert (result == x12).all()
 
 
@@ -905,9 +904,6 @@ def test_plan_key_error(hook):
         str(e.value)
         == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, while being build with that key.'"
     )
-=======
-    assert (result == x12).all
-
 
 def test_backward_autograd_can_be_traced(hook, workers):
     @sy.func2plan(args_shape=[(5, 5)], trace_autograd=True)
@@ -932,4 +928,3 @@ def test_backward_autograd_can_be_traced(hook, workers):
 
     # Test all results are equal
     assert torch_grads.eq(plan_grads).all()
->>>>>>> master
