@@ -9,13 +9,14 @@ Note that the protocols are quite different in aspect from those papers
 """
 import hashlib
 import math
-from numba import jit
 import numpy as np
 import sha_loop
 import multiprocessing
+import asyncio
 
 import torch as th
 import syft as sy
+from syft.workers.websocket_client import WebsocketClientWorker
 
 
 λ = 127  # 6  # 110 or 63  # security parameter
@@ -93,37 +94,65 @@ def fss_op(x1, x2, type_op="eq"):
 
     locations = x1.locations
 
+    asynchronous = isinstance(locations[0], WebsocketClientWorker)
+
     numel = x1.child[locations[0].id].numel()
 
+    workers_args = [
+        (x1.child[location.id], x2.child[location.id], type_op) for location in locations
+    ]
+
     shares = []
-    for location in locations:
-        args = (x1.child[location.id], x2.child[location.id], type_op)
-        share = remote_exec(full_name(mask_builder), location, args=args, return_value=True)
+    for i, location in enumerate(locations):
+        share = remote_exec(
+            full_name(mask_builder), location, args=workers_args[i], return_value=True
+        )
         shares.append(share)
+
+    # async has a cost which is too expensive for this command
+    # shares = asyncio.run(sy.local_worker.async_dispatch(
+    #     workers=locations,
+    #     commands=[
+    #         (full_name(mask_builder), None, workers_args[i], {})
+    #         for i in [0, 1]
+    #     ],
+    #     return_value=True
+    # ))
 
     mask_value = sum(shares) % 2 ** n
 
-    if numel > 10_000:
-        multiprocessing_args = []
-        for i, location in enumerate(locations):
-            args = (th.IntTensor([i]), mask_value, type_op)
-            multiprocessing_args.append(
-                (full_name(evaluate), location.id, args, {}, None, False, 1, True)
-            )
-
-        p = multiprocessing.Pool()
-        real_shares = p.starmap(remote_exec, multiprocessing_args)
-        p.close()
-
-        shares = []
-        for real_share, location in zip(real_shares, locations):
-            shares.append(real_share.send(location))
+    workers_args = [(th.IntTensor([i]), mask_value, type_op) for i in range(2)]
+    if not asynchronous:
+        if numel > 10_000:
+            print("sync multi")
+            multiprocessing_args = []
+            for i, location in enumerate(locations):
+                multiprocessing_args.append(
+                    (full_name(evaluate), location.id, workers_args[i], {}, None, False, 1, True)
+                )
+            p = multiprocessing.Pool()
+            real_shares = p.starmap(remote_exec, multiprocessing_args)
+            p.close()
+            shares = []
+            # TODO fix the getting back shares
+            for real_share, location in zip(real_shares, locations):
+                shares.append(real_share.send(location))
+        else:
+            print("sync")
+            shares = []
+            for i, location in enumerate(locations):
+                share = remote_exec(
+                    full_name(evaluate), location, args=workers_args[i], return_value=False
+                )
+                shares.append(share)
     else:
-        shares = []
-        for i, location in enumerate(locations):
-            args = (th.IntTensor([i]), mask_value, type_op)
-            share = remote_exec(full_name(evaluate), location, args=args, return_value=False)
-            shares.append(share)
+        print("async")
+        shares = asyncio.run(
+            sy.local_worker.async_dispatch(
+                workers=locations,
+                commands=[(full_name(evaluate), None, workers_args[i], {}) for i in [0, 1]],
+            )
+        )
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 

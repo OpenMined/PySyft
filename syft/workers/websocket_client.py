@@ -146,18 +146,8 @@ class WebsocketClientWorker(BaseWorker):
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
-    async def async_dispatch(self, workers, commands):
-        results = await asyncio.gather(
-            *[
-                worker.async_send_command(message=command)
-                for worker, command in zip(workers, commands)
-            ]
-        )
-        return results
-
     async def async_send_msg(self, message: Message) -> object:
         """Asynchronous version of send_msg."""
-        print("async_send_msg", message)
 
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL

@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from contextlib import contextmanager
 
+import asyncio
 import logging
 from typing import Callable
 from typing import List
@@ -280,7 +281,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             The deserialized form of message from the worker at specified
             location.
         """
-        if self.verbose or True:
+        if self.verbose:
             print(f"{self.id}->{location.id} sending {message} ")
 
         # Step 1: serialize the message to a binary
@@ -609,6 +610,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             raise PlanCommandUnknownError(command_name)
 
         return command(*args_)
+
+    async def async_dispatch(self, workers, commands, return_value=False):
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command, return_value=return_value)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
 
     def send_command(
         self,
