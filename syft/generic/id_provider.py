@@ -22,7 +22,6 @@ class IdProvider:
         self.generated = set()
         self.record_ids = False
         self.recorded_ids = []
-        # self.seed()
 
     def pop(self, *args) -> int:
         """Provides random ids and store them.
