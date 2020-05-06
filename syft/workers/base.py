@@ -112,7 +112,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
-        self.verbose = verbose
+        if hook.verbose is True:
+            self.verbose = True
+        else:
+            self.verbose = verbose
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
         self.msg_history = list()
@@ -537,7 +540,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return (
+                        response
+                    )  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 else:
                     return None
             except ResponseSignatureError:

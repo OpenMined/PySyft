@@ -43,7 +43,6 @@ class IdProvider:
         if self.record_ids:
             self.recorded_ids.append(random_id)
 
-        print(random_id)
         return random_id
 
     def set_next_ids(self, given_ids: List, check_ids: bool = True):
