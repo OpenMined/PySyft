@@ -540,9 +540,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return (
-                        response
-                    )  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 else:
                     return None
             except ResponseSignatureError:
