@@ -216,6 +216,10 @@ class RNNBase(nn.Module):
             if not self.is_lstm:
                 hc = [hc]
 
+            # As we did to x above, we swap back at the end of the procedure
+            if self.batch_first:
+                hc = [item.transpose(0, 1) for item in hc]
+
         batch_size = x.shape[1]
         seq_len = x.shape[0]
 
