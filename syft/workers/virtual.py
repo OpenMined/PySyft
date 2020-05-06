@@ -1,5 +1,6 @@
 from time import sleep
 
+from syft import TorchHook
 from syft.workers.base import BaseWorker
 from syft.federated.federated_client import FederatedClient
 
@@ -8,7 +9,13 @@ class VirtualWorker(BaseWorker, FederatedClient):
     def __init__(self, *args, **kwargs):
         super(VirtualWorker, self).__init__(*args, **kwargs)
         if kwargs["id"] != "me":
-            args[0]._virtual_workers.append(self)
+            hook = kwargs.get("hook")
+            if isinstance(hook, TorchHook):
+                hook._virtual_workers.append(self)
+            elif hook is None:
+                for arg in args:
+                    if isinstance(arg, TorchHook):
+                        args[0]._virtual_workers.append(self)
 
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
         """send message to worker location"""
