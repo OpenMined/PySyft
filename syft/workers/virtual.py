@@ -15,7 +15,7 @@ class VirtualWorker(BaseWorker, FederatedClient):
             elif hook is None:
                 for arg in args:
                     if isinstance(arg, syft.TorchHook):
-                        args[0]._virtual_workers.append(self)
+                        arg._virtual_workers.append(self)
 
     def _send_msg(self, message: bin, location: BaseWorker) -> bin:
         """send message to worker location"""
