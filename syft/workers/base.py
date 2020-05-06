@@ -1186,16 +1186,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def feed_crypto_primitive_store(self, types_primitives: dict):
         self.crypto_store.add_primitives(types_primitives)
 
-    def list_tensors(self, *args):
+    def list_tensors(self):
         return str(self._tensors)
 
-    def tensors_count(self, *args):
+    def tensors_count(self):
         return len(self._tensors)
 
-    def list_objects(self, *args):
+    def list_objects(self):
         return str(self._objects)
 
-    def objects_count(self, *args):
+    def objects_count(self):
         return len(self._objects)
 
     @property
