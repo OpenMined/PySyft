@@ -35,9 +35,9 @@ def spdz_compute(j, delta, epsilon, type_op):
 
     cmd = getattr(th, type_op)
 
-    delta_b = cmd(delta.float(), b.float()).long()
-    a_epsilon = cmd(a.float(), epsilon.float()).long()
-    delta_epsilon = cmd(delta.float(), epsilon.float()).long()
+    delta_b = cmd(delta, b)
+    a_epsilon = cmd(a, epsilon)
+    delta_epsilon = cmd(delta, epsilon)
 
     if j:
         return delta_epsilon + delta_b + a_epsilon + c
