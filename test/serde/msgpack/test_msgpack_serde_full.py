@@ -89,15 +89,8 @@ samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
-<<<<<<< HEAD
-samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
-
-samples[syft.exceptions.GetNotPermittedError] = make_getnotpermittederror
-samples[syft.exceptions.ResponseSignatureError] = make_responsesignatureerror
 samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
-=======
 samples[syft.workers.base.BaseWorker] = make_baseworker
->>>>>>> master
 
 
 def test_serde_coverage():

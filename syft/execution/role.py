@@ -2,6 +2,7 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
+from typing import Callable
 
 from syft.generic.frameworks import framework_packages
 
@@ -51,7 +52,20 @@ class Role:
         return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
 
     @staticmethod
-    def nested_object_traversal(obj, leaf_function, leaf_type):
+    def nested_object_traversal(obj: any, leaf_function: Callable, leaf_type: type):
+        """
+        Class method to iterate through a tree-like structure, where the branching is determined by the elements of list,
+        tuples and dicts, returning the same tree-like structure with a function applied to its leafs.
+
+        Args:
+            obj: The tree-like structure, can be only the root as well.
+            leaf_function: The function to be applied on the leaf nodes of the tree-like structure.
+            leaf_type: On what type on function to apply the function, if the types won't match, the leaf is returned,
+            to apply on all leafs pass any.
+
+        Returns:
+            Same structure as the obj argument, but with the function applied to the leaf elements.
+        """
         if isinstance(obj, (list, tuple)):
             result = [Role.nested_object_traversal(elem, leaf_function, leaf_type) for elem in obj]
             return type(obj)(result)
@@ -64,6 +78,7 @@ class Role:
             return leaf_function(obj)
         else:
             return obj
+
     def register_input(self, arg_):
         """ Takes input argument for this role and generate placeholder.
         """

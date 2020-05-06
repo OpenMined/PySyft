@@ -905,6 +905,7 @@ def test_plan_key_error(hook):
         == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, while being build with that key.'"
     )
 
+
 def test_backward_autograd_can_be_traced(hook, workers):
     @sy.func2plan(args_shape=[(5, 5)], trace_autograd=True)
     def autograd_test(X):

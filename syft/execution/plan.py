@@ -182,17 +182,15 @@ class Plan(AbstractObject):
             args: Input arguments to run the plan
         """
 
-        def build_nested_arg(arg):
+        def build_nested_arg(arg, leaf_function):
             if isinstance(arg, list):
-                return [build_nested_arg(obj) for obj in arg]
+                return [build_nested_arg(obj, leaf_function) for obj in arg]
             elif isinstance(arg, tuple):
-                return tuple([build_nested_arg(obj) for obj in arg])
+                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
             elif isinstance(arg, dict):
-                return {k: build_nested_arg(v) for k, v in arg.items()}
+                return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
             else:
-                return PlaceHolder.create_from(
-                    arg, owner=sy.local_worker, role=self.role, tracing=True
-                )
+                return leaf_function(arg)
 
         # Enable tracing
         self.toggle_tracing(True)
@@ -202,29 +200,30 @@ class Plan(AbstractObject):
         self.input_types = NestedTypeWrapper(args)
 
         # Run once to build the plan
-        args = build_nested_arg(args)
         if trace_autograd:
             # Wrap arguments that require gradients with AutogradTensor,
             # to be able to trace autograd operations
-            args = tuple(
-                AutogradTensor().on(arg, wrap=False)
-                if isinstance(arg, FrameworkTensor) and arg.requires_grad
-                else arg
-                for arg in args
+            args = build_nested_arg(
+                args,
+                lambda x: AutogradTensor().on(x, wrap=False)
+                if isinstance(x, FrameworkTensor) and x.requires_grad
+                else x,
             )
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
-            args_placeholders = tuple(
-                PlaceHolder.insert(
-                    arg, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
-                )
-                for arg in args
+            args_placeholders = build_nested_arg(
+                args,
+                lambda x: PlaceHolder.insert(
+                    x, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
+                ),
             )
         else:
             # Add Placeholder on top of each arg
-            args = args_placeholders = tuple(
-                PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-                for arg in args
+            args = args_placeholders = build_nested_arg(
+                args,
+                lambda x: PlaceHolder.create_from(
+                    x, owner=sy.local_worker, role=self.role, tracing=True
+                ),
             )
 
         # Add state to args if needed
@@ -573,16 +572,7 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (
-            id_,
-            role,
-            include_state,
-            name,
-            tags,
-            description,
-            torchscript,
-            input_types,
-        ) = plan_tuple
+        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
