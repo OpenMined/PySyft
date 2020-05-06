@@ -197,8 +197,11 @@ def run_multiworkers(
                 threads.append(thread)
 
             # Wait for local party and sender threads
-            process.join()
-            return_values[0] = utils.unpack_values(queue.get(), crypten_model)
+            # Joining the process blocks! But queue.get() can also wait for the party 
+            # and it works fine.
+            # process.join() -> blocks
+            local_party_result = queue.get()
+            return_values[0] = utils.unpack_values(local_party_result, crypten_model)
             for thread in threads:
                 thread.join()
             if was_initialized:
