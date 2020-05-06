@@ -22,6 +22,7 @@ class IdProvider:
         self.generated = set()
         self.record_ids = False
         self.recorded_ids = []
+        # self.seed()
 
     def pop(self, *args) -> int:
         """Provides random ids and store them.
@@ -42,6 +43,7 @@ class IdProvider:
         if self.record_ids:
             self.recorded_ids.append(random_id)
 
+        print(random_id)
         return random_id
 
     def set_next_ids(self, given_ids: List, check_ids: bool = True):
@@ -82,3 +84,7 @@ class IdProvider:
             self.record_ids = False
             self.recorded_ids = list()
         return ret_val
+
+    @staticmethod
+    def seed(seed=0):
+        random.seed(seed)
