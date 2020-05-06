@@ -788,7 +788,7 @@ class TorchHook(FrameworkHook):
 
             params = list(nn_self.parameters())
             for p in params:
-                p.move(destination)
+                p.move_(destination)
 
         self.torch.nn.Module.move = module_move_
 

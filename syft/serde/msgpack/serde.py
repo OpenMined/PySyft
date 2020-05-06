@@ -52,14 +52,13 @@ from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.generic.string import String
 from syft.execution.plan import Plan
+from syft.execution.protocol import Protocol
 from syft.execution.state import State
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.protocol import Protocol
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -118,13 +117,12 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     Role,
     ObjectPointer,
     Plan,
+    Protocol,
     State,
     ComputationAction,
     CommunicationAction,
-    Protocol,
     PointerTensor,
     PointerPlan,
-    PointerProtocol,
     ObjectWrapper,
     TrainConfig,
     BaseWorker,

@@ -29,6 +29,13 @@ class FrameworkWrapper:
 
             result = package_attr(*args, **kwargs)
 
+            if isinstance(result, PlaceHolder) or (
+                isinstance(result, (list, tuple))
+                and any(isinstance(r, PlaceHolder) for r in result)
+            ):
+                # In this case, the tracing was already done in Placeholder.handle_func_command
+                return result
+
             if isinstance(result, FrameworkTensor):
                 result = PlaceHolder.create_from(
                     result, owner=self.owner, role=self.role, tracing=True

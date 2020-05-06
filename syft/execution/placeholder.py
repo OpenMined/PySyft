@@ -118,7 +118,7 @@ class PlaceHolder(AbstractTensor):
         """
         tags = " ".join(list(self.tags or []))
 
-        out = f"{type(self).__name__ }[Tags:{tags}]"
+        out = f"{type(self).__name__ }[Id:{self.id.value}]"
 
         if hasattr(self, "child") and self.child is not None:
             out += f">{self.child}"
@@ -133,8 +133,19 @@ class PlaceHolder(AbstractTensor):
         copy operations happen locally where we want to keep reference to the same
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
-        placeholder = PlaceHolder(tags=self.tags, owner=self.owner, shape=self.expected_shape)
+        placeholder = PlaceHolder(
+            role=self.role,
+            tracing=self.tracing,
+            tags=self.tags,
+            owner=self.owner,
+            shape=self.expected_shape,
+        )
         placeholder.child = self.child
+
+        if self.tracing:
+            command = ("copy", self, tuple(), {}), placeholder
+            self.role.register_action(command, syft.execution.computation.ComputationAction)
+
         return placeholder
 
     @staticmethod
@@ -143,6 +154,36 @@ class PlaceHolder(AbstractTensor):
         instantiated with tensor.
         """
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
+
+    @staticmethod
+    def insert(tensor, after, owner, role=None, tracing=False):
+        """ Helper method to add a placeholder in the specific place of tensor chain. """
+        current_level = tensor
+        while not isinstance(current_level, after) and current_level is not None:
+            current_level = getattr(current_level, "child", None)
+
+        if current_level is None:
+            raise RuntimeError(
+                f"Cannot insert Placeholder, chain does not contain {after.__name__} tensor type."
+            )
+
+        child = getattr(current_level, "child", None)
+        if child is None:
+            raise RuntimeError(
+                f"Cannot insert Placeholder, {after.__name__} does not wrap anything."
+            )
+
+        placeholder = PlaceHolder.create_from(child, owner, role, tracing)
+        current_level.child = placeholder
+        return placeholder
+
+    @staticmethod
+    def extract(tensor):
+        """ Helper method to find and return placeholder in the tensor chain. """
+        current_level = tensor
+        while not isinstance(current_level, PlaceHolder) and current_level is not None:
+            current_level = getattr(current_level, "child", None)
+        return current_level
 
     @staticmethod
     def create_placeholders(args_shape):
@@ -158,7 +199,9 @@ class PlaceHolder(AbstractTensor):
                 raise ValueError(f"Invalid shape {shape}")
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
-        return [syft.framework.hook.create_zeros(shape) for shape in mapped_shapes]
+        return [
+            syft.framework.hook.create_zeros(shape, requires_grad=True) for shape in mapped_shapes
+        ]
 
     @staticmethod
     def instantiate_placeholders(obj, response):
