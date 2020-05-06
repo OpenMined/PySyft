@@ -131,3 +131,7 @@ if "ID_PROVIDER" not in globals():
     from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
+
+
+def manual_seed(seed=0):
+    syft.ID_PROVIDER.seed(seed)
