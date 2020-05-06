@@ -31,7 +31,7 @@ def _apply_compress_scheme(decompressed_input_bin) -> tuple:
     Args:
         decompressed_input_bin: the binary to be compressed
     """
-    return apply_no_compression(decompressed_input_bin)
+    return apply_lz4_compression(decompressed_input_bin)
 
 
 def apply_zlib_compression(uncompressed_input_bin) -> tuple:
@@ -89,7 +89,7 @@ def _compress(decompressed_input_bin: bin) -> bin:
     """
     compress_stream, compress_scheme = _apply_compress_scheme(decompressed_input_bin)
     try:
-        z = (compress_scheme, compress_stream)
+        z = scheme_to_bytes[compress_scheme] + compress_stream
         return z
     except KeyError:
         raise CompressionNotFoundException(
@@ -109,8 +109,11 @@ def _decompress(binary: bin) -> bin:
 
     """
 
-    # remove the header to check the compression scheme used
-    compress_scheme, binary = binary
+    # check the 1-byte header to check the compression scheme used
+    compress_scheme = binary[0]
+
+    # remove the 1-byte header from the input stream
+    binary = binary[1:]
 
     # 1)  Decompress or return the original stream
     if compress_scheme == LZ4:
