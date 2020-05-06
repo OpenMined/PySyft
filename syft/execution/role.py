@@ -64,6 +64,10 @@ class Role:
             return leaf_function(obj)
         else:
             return obj
+    def register_input(self, arg_):
+        """ Takes input argument for this role and generate placeholder.
+        """
+        self.input_placeholder_ids += (self._store_placeholders(arg_).value,)
 
     def register_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
@@ -77,6 +81,11 @@ class Role:
         self.input_placeholder_ids = []
         Role.nested_object_traversal(args_, traversal_function, PlaceHolder)
         self.input_placeholder_ids = tuple(self.input_placeholder_ids)
+
+    def register_output(self, result):
+        """ Takes output tensor for this role and generate placeholder.
+        """
+        self.output_placeholder_ids += (self._store_placeholders(result).value,)
 
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
@@ -124,11 +133,8 @@ class Role:
         output_placeholders = tuple(
             self.placeholders[output_id] for output_id in self.output_placeholder_ids
         )
-        result = tuple(p.child for p in output_placeholders)
 
-        if len(result) == 1:
-            return result[0]
-        return result
+        return tuple(p.child for p in output_placeholders)
 
     def _instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
