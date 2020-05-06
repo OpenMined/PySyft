@@ -274,11 +274,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
-        kwargs = {"inplace": False, "requires_grad": requires_grad}
-        message = TensorCommandMessage.communication(
-            self.id_at_location, self.location.id, [destination.id], kwargs
-        )
-        return self.owner.send_msg(message=message, location=self.location)
+        ptr = self.remote_send(destination, requires_grad=requires_grad)
+
+        # We make the pointer point at the remote value. As the id doesn't change,
+        # we don't update ptr.id_at_location. See issue #3217 about this.
+        # Note that you have now 2 pointers on different locations pointing to the
+        # same tensor.
+        ptr.location = destination
+
+        return ptr
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
@@ -293,8 +297,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         message = TensorCommandMessage.communication(
             self.id_at_location, "remote_send", self.location.id, [destination.id], kwargs_
         )
-        ptr = self.owner.send_msg(message=message, location=self.location)
-        ptr.garbage_collect_data = False
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
