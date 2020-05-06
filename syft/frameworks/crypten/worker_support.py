@@ -62,7 +62,6 @@ def run_crypten_party_jail(worker: BaseWorker, message: CryptenInitJail):
             An ObjectMessage containing the return value of the crypten function computed.
         """
     from syft.frameworks.crypten.jail import JailRunner
-<<<<<<< HEAD
     from syft.frameworks.crypten import utils
 
     worker.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
@@ -74,16 +73,6 @@ def run_crypten_party_jail(worker: BaseWorker, message: CryptenInitJail):
     rank = None
     for r, worker_id in worker.rank_to_worker_id.items():
         if worker_id == worker.id:
-=======
-
-    self.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
-    ser_func = message.jail_runner
-    jail_runner = JailRunner.detail(ser_func)
-
-    rank = None
-    for r, worker_id in self.rank_to_worker_id.items():
-        if worker_id == self.id:
->>>>>>> c21c2611... Add dict in dict for support
             rank = r
             break
 
