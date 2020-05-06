@@ -2,201 +2,89 @@ import pytest
 import torch as th
 
 import syft as sy
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.pointers.pointer_protocol import PointerProtocol
-from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
-def _create_inc_protocol():
-    @sy.func2plan(args_shape=[(1,)])
-    def inc1(x):
-        return x + 1
+def test_multi_role_tracing(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    @sy.func2plan(args_shape=[(1,)])
-    def inc2(x):
-        return x + 1
+    @sy.func2protocol(args_shape=((1,), (1,)))
+    def protocol(tensor1, tensor2):
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
 
-    @sy.func2plan(args_shape=[(1,)])
-    def inc3(x):
-        return x + 1
+        return t1plus, t2plus
 
-    protocol = sy.Protocol([("worker1", inc1), ("worker2", inc2), ("worker3", inc3)])
-    return protocol
+    alice_tensor = th.tensor([1]).send(alice)
+    bob_tensor = th.tensor([1]).send(bob)
 
+    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
+    alice_tensor.owner = alice
+    bob_tensor.owner = bob
 
-def test_deploy(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
+    protocol.build(alice_tensor, bob_tensor)
 
-    protocol = _create_inc_protocol()
+    assert protocol.is_built
 
-    workers = alice, bob, charlie
-
-    protocol.deploy(*workers)
-
-    assert protocol.workers_resolved
-
-    protocol._assert_is_resolved()
-
-    # Assert the plan were sent to a consistent worker
-    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
-
-    # Assert the order of the worker was preserved
-    assert all(
-        plan_ptr.location.id == worker.id for (_, plan_ptr), worker in zip(protocol.plans, workers)
-    )
+    assert len(protocol.roles) == 2
+    assert len(protocol.roles["alice"].actions) == 1
+    assert len(protocol.roles["bob"].actions) == 1
 
 
-def test_deploy_with_resolver(workers):
-    """
-    Like test_deploy, but now two of the three plans should be given to the same
-    worker
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
+def test_multi_role_execution(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol = _create_inc_protocol()
-    worker3_plan = protocol.plans[2][1]
-    protocol.plans[2] = ("worker1", worker3_plan)
+    @sy.func2protocol(args_shape=((1,), (1,), (1,)))
+    def protocol(tensor1, tensor2, tensor3):
+        res1 = tensor2
+        res2 = tensor1 + tensor3
+        res3 = tensor2 * 3
 
-    workers = alice, bob
+        return res1, res2, res3
 
-    protocol.deploy(*workers)
+    alice_tensor1 = th.tensor([1]).send(alice)
+    bob_tensor2 = th.tensor([2]).send(bob)
+    alice_tensor3 = th.tensor([3]).send(alice)
 
-    assert protocol.workers_resolved
+    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
+    # The fact that we send before build is not even used
+    alice_tensor1.owner = alice
+    bob_tensor2.owner = bob
+    alice_tensor3.owner = alice
 
-    # Assert the plan were sent to a consistent worker
-    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
+    protocol.build(alice_tensor1, bob_tensor2, alice_tensor3)
+    protocol.forward = None
 
-    # Now test the error case
-    protocol = _create_inc_protocol()
+    dict_res = protocol(alice_tensor1, bob_tensor2, alice_tensor3)
 
-    with pytest.raises(RuntimeError):
-        protocol.deploy(alice, bob)
-
-
-def test_synchronous_run(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    A runs the protocol
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
-
-    protocol = _create_inc_protocol()
-
-    protocol.deploy(alice, bob, charlie)
-
-    x = th.tensor([1.0])
-    ptr = protocol.run(x)
-
-    assert ptr.location == charlie
-
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
-
-    assert ptr.get() == th.tensor([4.0])
+    assert (dict_res["bob"][0].get() == th.tensor([2])).all()
+    assert (dict_res["bob"][1].get() == th.tensor([6])).all()
+    assert (dict_res["alice"][0].get() == th.tensor([4])).all()
 
 
-def test_synchronous_remote_run(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    A sends the protocol to the cloud C
-    A asks a remote run on C
-    """
-    alice, bob, charlie, james = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-    )
+def test_copy(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol = _create_inc_protocol()
+    @sy.func2protocol(args_shape=((1,), (1,)))
+    def protocol(tensor1, tensor2):
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
 
-    protocol.deploy(alice, bob, charlie)
+        return t1plus, t2plus
 
-    protocol.send(james)
+    alice_tensor = th.tensor([1]).send(alice)
+    bob_tensor = th.tensor([1]).send(bob)
+    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
+    alice_tensor.owner = alice
+    bob_tensor.owner = bob
 
-    x = th.tensor([1.0]).send(james)
-    ptr = protocol.run(x)
+    protocol.build(alice_tensor, bob_tensor)
 
-    assert ptr.location == james
-    assert isinstance(ptr, FrameworkTensor) and ptr.is_wrapper
+    copy = protocol.copy()
 
-    ptr = ptr.get()
-
-    assert ptr.location == charlie
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
-
-    res = ptr.get()
-
-    assert res == th.tensor([4.0])
-
-    # BONUS: Error case when data is not correctly located
-
-    x = th.tensor([1.0])
-    with pytest.raises(RuntimeError):
-        protocol.run(x)
-
-
-def test_search_and_deploy(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol (which is not deployed)
-    A sends it to the cloud C
-    B search C for a protocol and get it back
-    B deploys the protocol on workers D, E and F
-    B runs the protocol
-    """
-    alice, bob, charlie, james, me = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-        workers["me"],
-    )
-
-    protocol = _create_inc_protocol()
-
-    protocol.send(james)
-
-    ptr_protocol = me.request_search([protocol.id], location=james)[0]
-
-    assert isinstance(ptr_protocol, PointerProtocol)
-
-    protocol_back = ptr_protocol.get()
-
-    protocol_back.deploy(alice, bob, charlie)
-
-    x = th.tensor([1.0])
-    ptr = protocol_back.run(x)
-
-    assert ptr.location == charlie
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
-
-    res = ptr.get()
-
-    assert res == th.tensor([4.0])
-
-    # BONUS: Re-send to cloud and run remotely
-
-    james.clear_objects()
-    protocol = protocol_back
-
-    protocol.send(james)
-    ptr_protocol = me.request_search([protocol.id], location=james)[0]
-    x = th.tensor([1.0]).send(james)
-    ptr = ptr_protocol.run(x)
-    res = ptr.get().get()
-    assert res == th.tensor([4.0])
+    assert copy.name == protocol.name
+    assert copy.roles.keys() == protocol.roles.keys()
+    assert [
+        len(copy_role.actions) == len(role.actions)
+        for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
+    ]
+    assert copy.is_built == protocol.is_built

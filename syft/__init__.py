@@ -52,9 +52,9 @@ from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
 from syft.execution.protocol import Protocol
+from syft.execution.protocol import func2protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
-from syft.execution.plan import method2plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -70,7 +70,6 @@ from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
@@ -101,9 +100,10 @@ __all__.extend(
         "VirtualWorker",
         "WebsocketClientWorker",
         "WebsocketServerWorker",
+        "Protocol",
+        "func2protocol",
         "Plan",
         "func2plan",
-        "method2plan",
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",

@@ -102,13 +102,13 @@ def test_remote_get(hook, workers):
     assert ptr_ptr_x.location == alice
     assert x.id in bob._objects
 
-    assert len(bob._objects) == 1
-    assert len(alice._objects) == 1
+    assert len(bob._tensors) == 1
+    assert len(alice._tensors) == 1
 
     ptr_ptr_x.remote_get()
 
-    assert len(bob._objects) == 0
-    assert len(alice._objects) == 1
+    assert len(bob._tensors) == 0
+    assert len(alice._tensors) == 1
 
 
 def test_remote_send(hook, workers):
@@ -117,6 +117,7 @@ def test_remote_send(hook, workers):
     alice = workers["alice"]
 
     x = torch.tensor([1, 2, 3, 4, 5])
+    # Note: behavior has been changed to point to the last pointer
     ptr_ptr_x = x.send(bob).remote_send(alice)
 
     assert ptr_ptr_x.owner == me
@@ -126,9 +127,9 @@ def test_remote_send(hook, workers):
 
 def test_copy():
     tensor = torch.rand(5, 3)
-    coppied_tensor = tensor.copy()
-    assert (tensor == coppied_tensor).all()
-    assert tensor is not coppied_tensor
+    copied_tensor = tensor.copy()
+    assert (tensor == copied_tensor).all()
+    assert tensor is not copied_tensor
 
 
 def test_size():
