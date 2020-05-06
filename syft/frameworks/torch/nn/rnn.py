@@ -184,34 +184,40 @@ class RNNBase(nn.Module):
         # TODO: implement a nn.Dropout class for PySyft
         # Link to issue: https://github.com/OpenMined/PySyft/issues/2500
 
-        # Build RNN layers
-        sizes = [input_size, *[hidden_size] * (self.num_layers - 1)]
+        # Build RNN forward layers
+        sizes = [input_size, *(hidden_size for _ in range(self.num_layers - 1))]
         self.rnn_forward = nn.ModuleList(
             (base_cell(sz, hidden_size, bias, nonlinearity) for sz in sizes)
         )
+
+        # Build RNN backward layers, if needed
         if self.bidirectional:
             self.rnn_backward = nn.ModuleList(
                 (base_cell(sz, hidden_size, bias, nonlinearity) for sz in sizes)
             )
 
     def forward(self, x, hc=None):
-        # Treat hc[0] as the hidden state regardless of whether it is an LSTM or GRU
-        if not self.is_lstm and hc is not None:
-            hc = [hc]
-
         # If batch_first == True, swap batch with seq_len
-        # At the end of the process we swap it back to the original structure
+        # At the end of the procedure we swap it back to the original structure
         if self.batch_first:
-            x = torch.transpose(x, 0, 1)
-            if hc is not None:
-                hc = [torch.transpose(item, 0, 1) for item in hc]
+            x = x.transpose(0, 1)
+
+        # If hc is not None, hc is either a Tensor (RNNCell or GRUCell hidden state),
+        #   or a 2-tuple of Tensors (LSTMCell hidden and cell states).
+        # For convenience, we make hc always listy so that:
+        #   hc[0] is the hidden state
+        #   hc[1] if it exists, is the cell state
+        # At the end of the procedure, we swap it back to the original structure
+        if hc is None:
+            # Initialize hc
+            hc = [self._init_hidden(x) for _ in range(2 if self.is_lstm else 1)]
+        else:
+            # Standardize hc per comment above
+            if not self.is_lstm:
+                hc = [hc]
 
         batch_size = x.shape[1]
         seq_len = x.shape[0]
-
-        # Initiate states if needed
-        if hc is None:
-            hc = [self._init_hidden(x) for i in range(2 if self.is_lstm else 1)]
 
         # If bidirectional==True, split states in two, one for each direction
         if self.bidirectional:
@@ -248,10 +254,10 @@ class RNNBase(nn.Module):
 
         # If batch_first == True, swap axis back to get original structure
         if self.batch_first:
-            output = torch.transpose(output, 0, 1)
-            hidden = [torch.transpose(item, 0, 1) for item in hidden]
+            output = output.transpose(0, 1)
+            hidden = [item.transpose(0, 1) for item in hidden]
 
-        # Reshape hidden to the original shape of h
+        # Reshape hidden to the original shape of hc
         hidden = tuple(hidden) if self.is_lstm else hidden[0]
 
         return output, hidden
@@ -280,24 +286,24 @@ class RNNBase(nn.Module):
                 h = h.share(*owners, crypto_provider=crypto_provider)
         return h
 
-    def _apply_time_step(self, x, h, t, reverse_direction=False):
+    def _apply_time_step(self, x, hc, t, reverse_direction=False):
         """
         Apply RNN layers at time t, given input and previous hidden states
         """
         rnn_layers = self.rnn_backward if reverse_direction else self.rnn_forward
 
-        h = torch.stack([*h])
-        h_next = torch.stack([item.new(item.shape).zero_() for item in h])
+        hc = torch.stack([*hc])
+        hc_next = torch.zeros_like(hc)
 
         for layer in range(self.num_layers):
-            inp = x[t, :, :] if layer == 0 else h_next[0][layer - 1, :, :].clone()
+            inp = x[t, :, :] if layer == 0 else hc_next[0][layer - 1, :, :].clone()
 
             if self.is_lstm:
-                h_next[:, layer, :, :] = torch.stack(rnn_layers[layer](inp, h[:, layer, :, :]))
+                hc_next[:, layer, :, :] = torch.stack(rnn_layers[layer](inp, hc[:, layer, :, :]))
             else:
-                h_next[0][layer, :, :] = rnn_layers[layer](inp, h[0][layer, :, :])
+                hc_next[0][layer, :, :] = rnn_layers[layer](inp, hc[0][layer, :, :])
 
-        return h_next
+        return hc_next
 
 
 class RNN(RNNBase):
