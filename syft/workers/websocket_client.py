@@ -92,7 +92,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """
-        Note: is subclassed by the node client when yuo use the GridNode
+        Note: Is subclassed by the node client when you use the GridNode
         """
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
