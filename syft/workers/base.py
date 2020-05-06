@@ -112,7 +112,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
-        if hook.verbose is True:
+        if hasattr(hook, 'verbose') and hook.verbose is True:
             self.verbose = True
         else:
             self.verbose = verbose
