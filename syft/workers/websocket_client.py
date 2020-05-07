@@ -61,12 +61,12 @@ class WebsocketClientWorker(BaseWorker):
         return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
 
     def connect(self):
-        args = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+        args_ = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
 
         if self.secure:
-            args["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
+            args_["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
 
-        self.ws = websocket.create_connection(**args)
+        self.ws = websocket.create_connection(**args_)
         self._log_msgs_remote(self.log_msgs)
 
     def close(self):
@@ -113,6 +113,12 @@ class WebsocketClientWorker(BaseWorker):
         serialized_message = sy.serde.serialize(message)
         response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
+
+    def list_tensors_remote(self):
+        return self._send_msg_and_deserialize("list_tensors")
+
+    def tensors_count_remote(self):
+        return self._send_msg_and_deserialize("tensors_count")
 
     def list_objects_remote(self):
         return self._send_msg_and_deserialize("list_objects")
@@ -240,7 +246,7 @@ class WebsocketClientWorker(BaseWorker):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #objects local:" + str(len(self._objects))
-        out += " #objects remote: " + str(self.objects_count_remote())
+        out += " #tensors local:" + str(len(self._tensors))
+        out += " #tensors remote: " + str(self.tensors_count_remote())
         out += ">"
         return out

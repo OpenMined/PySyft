@@ -90,7 +90,7 @@ def default_register_tensor(*tensorcls):
 ### Main hook args implementation ###
 
 
-def unwrap_args_from_method(attr, method_self, args, kwargs):
+def unwrap_args_from_method(attr, method_self, args_, kwargs_):
     """Method arguments are sometimes simple types (such as strings or ints) but sometimes
     they are custom Syft tensors such as wrappers (i.e. FrameworkTensor), LoggingTensor
     or some other tensor type. Complex types (which have a .child attribute) need to
@@ -106,8 +106,8 @@ def unwrap_args_from_method(attr, method_self, args, kwargs):
     Args:
         attr (str): the name of the method being called
         method_self: the tensor on which the method is being called
-        args (list): the arguments being passed to the method
-        kwargs (dict): the keyword arguments being passed to the function
+        args_ (list): the arguments being passed to the method
+        kwargs_ (dict): the keyword arguments being passed to the function
             (these are not hooked ie replace with their .child attr)
     """
     # Specify an id to distinguish methods from different classes
@@ -119,25 +119,25 @@ def unwrap_args_from_method(attr, method_self, args, kwargs):
         # Load the utility function to transform the args
         hook_args = hook_method_args_functions[attr_id]
         # Try running it
-        new_self, new_args = hook_args((method_self, args))
+        new_self, new_args = hook_args((method_self, args_))
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        args_hook_function, _ = build_unwrap_args_from_function((method_self, args))
+        args_hook_function, _ = build_unwrap_args_from_function((method_self, args_))
         # Store this utility function in the registry
         hook_method_args_functions[attr_id] = args_hook_function
         # Run it
-        new_self, new_args = args_hook_function((method_self, args))
+        new_self, new_args = args_hook_function((method_self, args_))
 
-    return new_self, new_args, kwargs
+    return new_self, new_args, kwargs_
 
 
-def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
+def unwrap_args_from_function(attr, args_, kwargs_, return_args_type=False):
     """See unwrap_args_from_method for details
 
     Args:
         attr (str): the name of the function being called
-        args (list): the arguments being passed to the function
-        kwargs (dict): the keyword arguments being passed to the function
+        args_ (list): the arguments being passed to the function
+        kwargs_ (dict): the keyword arguments being passed to the function
             (these are not hooked ie replace with their .child attr)
         return_args_type (bool): return the type of the tensors in the
         original arguments
@@ -153,41 +153,42 @@ def unwrap_args_from_function(attr, args, kwargs, return_args_type=False):
         # TODO rename registry or use another one than for methods
         hook_args = hook_method_args_functions[attr]
         get_tensor_type_function = get_tensor_type_functions[attr]
+
         # Try running it
-        new_args = hook_args(args)
+        new_args = hook_args(args_)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         args_hook_function, get_tensor_type_function = build_unwrap_args_from_function(
-            args, return_tuple=True
+            args_, return_tuple=True
         )
         # Store the utility functions in registries
         hook_method_args_functions[attr] = args_hook_function
         get_tensor_type_functions[attr] = get_tensor_type_function
         # Run it
-        new_args = args_hook_function(args)
+        new_args = args_hook_function(args_)
 
     new_type = get_tensor_type_function(new_args)
     if return_args_type:
-        args_type = get_tensor_type_function(args)
-        return new_args, kwargs, new_type, args_type
+        args_type = get_tensor_type_function(args_)
+        return new_args, kwargs_, new_type, args_type
     else:
-        return new_args, kwargs, new_type
+        return new_args, kwargs_, new_type
 
 
-def build_unwrap_args_from_function(args, return_tuple=False):
+def build_unwrap_args_from_function(args_, return_tuple=False):
     """
     Build the function f that hook the arguments:
-    f(args) = new_args
+    f(args_) = new_args
     """
     # Inspect the call to find tensor arguments and return a rule whose
-    # structure is the same as the args object, with 1 where there was
+    # structure is the same as the args_ object, with 1 where there was
     # (framework or syft) tensors and 0 when not (ex: number, str, ...)
-    rule = build_rule(args)
+    rule = build_rule(args_)
     # Build a function with this rule to efficiently replace syft tensors
-    # (but not pointer) with their child in the args objects
-    args_hook_function = build_unwrap_args_with_rules(args, rule, return_tuple)
+    # (but not pointer) with their child in the args_ objects
+    args_hook_function = build_unwrap_args_with_rules(args_, rule, return_tuple)
     # Build a function with this rule to efficiently the child type of the
-    # tensor found in the args
+    # tensor found in the args_
     get_tensor_type_function = build_get_tensor_type(rule)
     return args_hook_function, get_tensor_type_function
 
@@ -238,7 +239,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
         new_response = response_hook_function(response)
 
     except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
-        response_hook_function = build_wrap_reponse_from_function(response, wrap_type, wrap_args)
+        response_hook_function = build_wrap_response_from_function(response, wrap_type, wrap_args)
         # Store this utility function in the registry
         hook_method_response_functions[attr_id] = response_hook_function
         # Run it
@@ -251,7 +252,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     return new_response
 
 
-def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
+def build_wrap_response_from_function(response, wrap_type, wrap_args):
     """
     Build the function that hook the response.
 
@@ -270,7 +271,7 @@ def build_wrap_reponse_from_function(response, wrap_type, wrap_args):
     return response_hook_function
 
 
-def build_rule(args):
+def build_rule(args_):
     """
     Inspect the args object to find framework or syft tensor arguments and
     return a rule whose structure is the same as the args object,
@@ -282,22 +283,22 @@ def build_rule(args):
         out: ([1, 1], 0)
     """
 
-    type_args = type(args)
+    type_args = type(args_)
     # for list, tuple but also tensors and syft tensors
     if type_args in type_rule:
-        return type_rule[type_args](args)
+        return type_rule[type_args](args_)
     # for int, float, str, etc
     elif type_args in base_types:
         return 0
     else:
         # New kind of return with pytorch 1.1
         if "torch.return_types" in str(type_args):
-            return type_rule[tuple](args)
+            return type_rule[tuple](args_)
         # Still remain ellipsis, slices, etc.
         return 0
 
 
-def build_unwrap_args_with_rules(args, rules, return_tuple=False):
+def build_unwrap_args_with_rules(args_, rules, return_tuple=False, return_list=False):
     """
     Build a function given some rules to efficiently replace in the args object
     syft tensors with their child (but not pointer as they don't have .child),
@@ -307,26 +308,29 @@ def build_unwrap_args_with_rules(args, rules, return_tuple=False):
     forwarding the call.
 
     Args:
-        args (tuple): the arguments given to the function / method
+        args_ (tuple): the arguments given to the function / method
         rules (tuple): the same structure but with boolean, true when there is
             a tensor
         return_tuple (bool): force to return a tuple even with a single element
+        return_list (bool): force to return a list instead of a tuple
 
     Return:
-        a function that replace syft arg in args with arg.child
+        a function that replace syft arg in args_ with arg.child
     """
 
     # get the transformation lambda for each args
     lambdas = [
         typed_identity(a)  # return the same obj with an identity fct with a type check if needed
         if not r  # if the rule is a number == 0.
+        else build_unwrap_args_with_rules(a, r, True, True)
+        if isinstance(r, list)
         else build_unwrap_args_with_rules(
             a, r, True
         )  # If not, call recursively build_unwrap_args_with_rules
-        if isinstance(r, (tuple, list))
+        if isinstance(r, tuple)
         # Last if not, rule is probably == 1 so use type to return the right transformation.
         else lambda i: forward_func[type(i)](i)
-        for a, r in zip(args, rules)  # And do this for all the args / rules provided
+        for a, r in zip(args_, rules)  # And do this for all the args / rules provided
     ]
 
     # Instead of iterating which is slow, we use trick to efficiently
@@ -346,6 +350,9 @@ def build_unwrap_args_with_rules(args, rules, return_tuple=False):
         f = folds[len(lambdas)]
     except KeyError:
         f = many_fold
+
+    if return_list:
+        return lambda x: list(f(lambdas, x))
 
     return lambda x: f(lambdas, x)
 
@@ -460,6 +467,7 @@ def build_wrap_response_with_rules(
         rules: the same structure objects but with boolean, at true when is replaces
             a tensor
         return_tuple: force to return a tuple even with a single element
+        return_list: force to return a list instead of a tuple
 
     Response:
         a function to "wrap" the response
@@ -509,84 +517,84 @@ def zero_fold(*a, **k):
 
 
 def one_fold(return_tuple, **kwargs):
-    def _one_fold(lambdas, args, **kwargs):
-        return lambdas[0](args[0], **kwargs)
+    def _one_fold(lambdas, args_, **kwargs):
+        return lambdas[0](args_[0], **kwargs)
 
-    def tuple_one_fold(lambdas, args):
-        return (lambdas[0](args[0], **kwargs),)
+    def tuple_one_fold(lambdas, args_):
+        return (lambdas[0](args_[0], **kwargs),)
 
     return {False: _one_fold, True: tuple_one_fold}[return_tuple]
 
 
-def two_fold(lambdas, args, **kwargs):
-    return lambdas[0](args[0], **kwargs), lambdas[1](args[1], **kwargs)
+def two_fold(lambdas, args_, **kwargs):
+    return lambdas[0](args_[0], **kwargs), lambdas[1](args_[1], **kwargs)
 
 
-def three_fold(lambdas, args, **kwargs):
+def three_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
     )
 
 
-def four_fold(lambdas, args, **kwargs):
+def four_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
-        lambdas[3](args[3], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
+        lambdas[3](args_[3], **kwargs),
     )
 
 
-def five_fold(lambdas, args, **kwargs):
+def five_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
-        lambdas[3](args[3], **kwargs),
-        lambdas[4](args[4], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
+        lambdas[3](args_[3], **kwargs),
+        lambdas[4](args_[4], **kwargs),
     )
 
 
-def six_fold(lambdas, args, **kwargs):
+def six_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
-        lambdas[3](args[3], **kwargs),
-        lambdas[4](args[4], **kwargs),
-        lambdas[5](args[5], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
+        lambdas[3](args_[3], **kwargs),
+        lambdas[4](args_[4], **kwargs),
+        lambdas[5](args_[5], **kwargs),
     )
 
 
-def seven_fold(lambdas, args, **kwargs):
+def seven_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
-        lambdas[3](args[3], **kwargs),
-        lambdas[4](args[4], **kwargs),
-        lambdas[5](args[5], **kwargs),
-        lambdas[6](args[6], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
+        lambdas[3](args_[3], **kwargs),
+        lambdas[4](args_[4], **kwargs),
+        lambdas[5](args_[5], **kwargs),
+        lambdas[6](args_[6], **kwargs),
     )
 
 
-def eight_fold(lambdas, args, **kwargs):
+def eight_fold(lambdas, args_, **kwargs):
     return (
-        lambdas[0](args[0], **kwargs),
-        lambdas[1](args[1], **kwargs),
-        lambdas[2](args[2], **kwargs),
-        lambdas[3](args[3], **kwargs),
-        lambdas[4](args[4], **kwargs),
-        lambdas[5](args[5], **kwargs),
-        lambdas[6](args[6], **kwargs),
-        lambdas[7](args[7], **kwargs),
+        lambdas[0](args_[0], **kwargs),
+        lambdas[1](args_[1], **kwargs),
+        lambdas[2](args_[2], **kwargs),
+        lambdas[3](args_[3], **kwargs),
+        lambdas[4](args_[4], **kwargs),
+        lambdas[5](args_[5], **kwargs),
+        lambdas[6](args_[6], **kwargs),
+        lambdas[7](args_[7], **kwargs),
     )
 
 
-def many_fold(lambdas, args, **kwargs):
-    return tuple([lambdas[i](args[i], **kwargs) for i in range(len(lambdas))])
+def many_fold(lambdas, args_, **kwargs):
+    return tuple([lambdas[i](args_[i], **kwargs) for i in range(len(lambdas))])
 
 
 # Add the possibility to make a type check in the identity function applied
@@ -693,7 +701,7 @@ def build_register_response_function(response: object) -> Callable:
     # (framework or syft) tensors and 0 when not (ex: number, str, ...)
     rule = build_rule(response)
     # Build a function with this rule to efficiently replace syft tensors
-    # (but not pointer) with their child in the args objects
+    # (but not pointer) with their child in the args_ objects
     response_hook_function = build_register_response(response, rule)
     return response_hook_function
 
@@ -710,6 +718,11 @@ def register_tensor(
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
     """
+    # This method often leads to re-registration of tensors
+    # hence creating two copies of the same info. The older tensor
+    # is left hanging and is never deleted. De-Registering the original
+    # tensor (if-exists) before registration addresses this problem.
+    owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
@@ -717,6 +730,8 @@ def register_tensor(
         raise exceptions.ResponseSignatureError
 
     owner.register_obj(tensor)
+
+    return tensor
 
 
 def build_register_response(response: object, rules: Tuple, return_tuple: bool = False) -> Callable:
@@ -733,7 +748,7 @@ def build_register_response(response: object, rules: Tuple, return_tuple: bool =
         The function to apply on generic responses
     """
 
-    # get the transformation lambda for each args
+    # get the transformation lambda for each args_
     lambdas = [
         (lambda i, **kwargs: i)  # return the same object
         if not r  # or not hasattr(a, "owner")  # if the rule is a number == 0.

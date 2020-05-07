@@ -177,6 +177,12 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
         except KeyboardInterrupt:
             logging.info("Websocket server stopped.")
 
+    def list_tensors(self, *args):
+        return str(self._tensors)
+
+    def tensors_count(self, *args):
+        return len(self._tensors)
+
     def list_objects(self, *args):
         return str(self._objects)
 

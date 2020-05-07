@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 # Tensorflow / Keras dependencies
 # Import Hooks
 
+__all__ = []
 if dependency_check.tfe_available:
     from syft.frameworks.keras import KerasHook
     from syft.workers.tfe import TFECluster
     from syft.workers.tfe import TFEWorker
 
-    __all__ = ["KerasHook", "TFECluster", "TFEWorker"]
+    __all__.extend(["KerasHook", "TFECluster", "TFEWorker"])
 else:
     logger.info("TF Encrypted Keras not available.")
-    __all__ = []
 
 # Pytorch dependencies
 # Import Hook
@@ -44,7 +44,7 @@ from syft.grid.private_grid import PrivateGridNetwork
 from syft.grid.public_grid import PublicGridNetwork
 
 # Import sandbox
-from syft.sandbox import create_sandbox, hook
+from syft.sandbox import create_sandbox, make_hook
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
@@ -52,9 +52,9 @@ from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
 from syft.execution.protocol import Protocol
+from syft.execution.protocol import func2protocol
 from syft.execution.plan import Plan
 from syft.execution.plan import func2plan
-from syft.execution.plan import method2plan
 
 # Import Worker Types
 from syft.workers.virtual import VirtualWorker
@@ -64,15 +64,12 @@ from syft.workers.websocket_server import WebsocketServerWorker
 # Import Syft's Public Tensor Types
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.crt_precision import CRTPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.numpy import create_numpy_tensor as NumpyTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.frameworks.torch.tensors.interpreters.large_precision import LargePrecisionTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.pointer_protocol import PointerProtocol
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
@@ -103,16 +100,15 @@ __all__.extend(
         "VirtualWorker",
         "WebsocketClientWorker",
         "WebsocketServerWorker",
+        "Protocol",
+        "func2protocol",
         "Plan",
         "func2plan",
-        "method2plan",
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
-        "CRTPrecisionTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
-        "LargePrecisionTensor",
         "PointerTensor",
         "MultiPointerTensor",
         "PrivateGridNetwork",

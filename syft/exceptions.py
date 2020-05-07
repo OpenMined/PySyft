@@ -356,25 +356,39 @@ class UndefinedProtocolTypePropertyError(Exception):
     pass
 
 
-def route_method_exception(exception, self, args, kwargs):
+class EmptyCryptoPrimitiveStoreError(Exception):
+    """Raised when trying to get crypto primtives from an empty crypto store"""
+
+    def __init__(self, crypto_store, crypto_type, available_instances, n_instances):
+        message = (
+            f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
+            f"but its crypto_store doesn't have enough primitives left for the type "
+            f"'{crypto_type}' ({n_instances} were requested while only {available_instances}"
+            f" are available). Use your crypto_provider to `provide_primitives` to your "
+            f"worker."
+        )
+        super().__init__(message)
+
+
+def route_method_exception(exception, self, args_, kwargs_):
     try:
         if self.is_wrapper:
             if isinstance(self.child, sy.PointerTensor):
-                if len(args) > 0:
-                    if not args[0].is_wrapper:
-                        return TensorsNotCollocatedException(self, args[0])
-                    elif isinstance(args[0].child, sy.PointerTensor):
-                        if self.location != args[0].child.location:
-                            return TensorsNotCollocatedException(self, args[0])
+                if len(args_) > 0:
+                    if not args_[0].is_wrapper:
+                        return TensorsNotCollocatedException(self, args_[0])
+                    elif isinstance(args_[0].child, sy.PointerTensor):
+                        if self.location != args_[0].child.location:
+                            return TensorsNotCollocatedException(self, args_[0])
 
         # if self is a normal tensor
         elif isinstance(self, FrameworkTensor):
-            if len(args) > 0:
-                if args[0].is_wrapper:
-                    if isinstance(args[0].child, sy.PointerTensor):
-                        return TensorsNotCollocatedException(self, args[0])
-                elif isinstance(args[0], sy.PointerTensor):
-                    return TensorsNotCollocatedException(self, args[0])
+            if len(args_) > 0:
+                if args_[0].is_wrapper:
+                    if isinstance(args_[0].child, sy.PointerTensor):
+                        return TensorsNotCollocatedException(self, args_[0])
+                elif isinstance(args_[0], sy.PointerTensor):
+                    return TensorsNotCollocatedException(self, args_[0])
     except:
         ""
     return exception
