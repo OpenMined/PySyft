@@ -7,7 +7,7 @@ import crypten.communicator as comm
 import crypten
 
 
-def load(tag: str, src: int, **kwargs):
+def load_from_party(tag: str, src: int, **kwargs):
     if src == comm.get().get_rank():
         worker = syft.local_worker.get_worker_from_rank(src)
         results = worker.search(tag)
@@ -16,12 +16,12 @@ def load(tag: str, src: int, **kwargs):
         assert len(results) == 1
 
         result = results[0]
-        result = crypten.load_from_party(preloaded=result, src=src, **kwargs)
+        result = crypten.native_load_from_party(preloaded=result, src=src, **kwargs)
 
     else:
-        result = crypten.load_from_party(preloaded=-1, src=src, **kwargs)
+        result = crypten.native_load_from_party(preloaded=-1, src=src, **kwargs)
 
     return result
 
 
-__all__ = ["run_party", "load"]
+__all__ = ["run_party", "load_from_party"]

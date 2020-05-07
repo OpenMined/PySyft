@@ -110,7 +110,8 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
                 using_plan = True
                 plan = func
 
-                # This is needed because at building we use a set of methods defined in syft (ex: load)
+                # This is needed because at building we use a set of methods
+                # defined in syft (ex: load)
                 hook_plan_building()
                 crypten.init()
                 plan.build()

@@ -18,8 +18,8 @@ def test_context(workers):
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
     def plan_func(crypten=crypten):
-        alice_tensor = crypten.load("crypten_data", 1)
-        bob_tensor = crypten.load("crypten_data", 2)
+        alice_tensor = crypten.load_from_party("crypten_data", 1)
+        bob_tensor = crypten.load_from_party("crypten_data", 2)
 
         crypt = alice_tensor + bob_tensor
         result = crypt.get_plain_text()

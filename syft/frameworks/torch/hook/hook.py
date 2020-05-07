@@ -478,9 +478,11 @@ class TorchHook(FrameworkHook):
                 self._perform_function_overloading(module_name, torch_module, func)
 
     def _hook_crypten(self):
-        from syft.frameworks.crypten import load as crypten_load
+        from syft.frameworks.crypten import load_from_party as crypten_load
 
-        setattr(crypten, "load", crypten_load)
+        native_method = getattr(crypten, "load_from_party")
+        setattr(crypten, "native_load_from_party", native_method)
+        setattr(crypten, "load_from_party", crypten_load)
 
     def _hook_crypten_module(self):
         """Overloading crypten.nn.Module with PySyft functionality, the primary module
