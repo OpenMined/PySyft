@@ -223,7 +223,7 @@ class Plan(AbstractObject):
         # Check the plan arguments to see what framework wrappers we might need to send to the plan
         framework_kwargs = {}
 
-        forward_args = inspect.getargspec(self.forward).args
+        forward_args = inspect.getfullargspec(self.forward).args
         for f_name, wrapped_framework in self.wrapped_framework.items():
             if f_name in forward_args:
                 framework_kwargs[f_name] = self.wrapped_framework[f_name]
