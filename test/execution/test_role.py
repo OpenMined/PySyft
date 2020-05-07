@@ -35,7 +35,7 @@ def test_register_communication_action():
     placeholder = PlaceHolder()
     target = torch.ones([1])
 
-    action = ("method_name", target, (), {})
+    action = ("get", target, (), {})
 
     role.register_action((action, placeholder), CommunicationAction)
 
@@ -44,7 +44,7 @@ def test_register_communication_action():
     registered = role.actions[0]
 
     assert isinstance(registered, CommunicationAction)
-    assert registered.name == "method_name"
+    assert registered.name == "get"
     assert registered.target == target
     assert registered.args == ()
     assert registered.kwargs == {}
