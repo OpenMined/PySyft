@@ -208,8 +208,6 @@ def run_multiworkers(
             if was_initialized:
                 crypten.init()
 
-            sy.local_worker.remove_crypten_support()
-
             return return_values
 
         return wrapper
