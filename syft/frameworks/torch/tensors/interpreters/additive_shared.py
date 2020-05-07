@@ -69,12 +69,15 @@ class AdditiveSharingTensor(AbstractTensor):
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
             self.torch_dtype = torch.int32 if field <= 2 ** 32 else torch.int64
-        elif dtype == "long":
+        elif dtype == "long" or dtype == "int64":
             self.field = 2 ** 64
             self.torch_dtype = torch.int64
-        elif dtype == "int":
+            self.dtype = "long"
+        elif dtype == "int" or dtype == "int32":
             self.field = 2 ** 32
             self.torch_dtype = torch.int32
+            self.dtype = "int"
+
         else:
             if dtype is not None:
                 raise ValueError("Invalid dtype value: " + dtype)
