@@ -2,7 +2,10 @@ from syft import dependency_check
 
 from syft.workers.base import BaseWorker
 
-from syft.frameworks.crypten.worker_support import add_support_to_worker as add_crypten_support, remove_support_from_worker as remove_crypten_support
+from syft.frameworks.crypten.worker_support import (
+    add_support_to_worker as add_crypten_support,
+    remove_support_from_worker as remove_crypten_support,
+)
 
 
 supported_frameworks = {}
