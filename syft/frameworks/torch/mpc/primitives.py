@@ -210,17 +210,32 @@ class PrimitiveStorage:
             # a = th.ones(*(n_instances, *a_shape)).long()
             # b = th.ones(*(n_instances, *b_shape)).long()
 
-            c = cmd(a, b)
+            if op == "mul" and b.numel() == a.numel():
+                # examples:
+                #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
+                #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
+                if len(a.shape) == len(b.shape):
+                    c = cmd(a, b)
+                elif len(a.shape) > len(b.shape):
+                    shape = b.shape
+                    b = b.reshape_as(a)
+                    c = cmd(a, b)
+                    b = b.reshape(*shape)
+                else:  # len(a.shape) < len(b.shape):
+                    shape = a.shape
+                    a = a.reshape_as(b)
+                    c = cmd(a, b)
+                    a = a.reshape(*shape)
+            else:
+                c = cmd(a, b)
 
             for i in range(n_party):
                 primitives_worker[i][(op, a_shape, b_shape)] = [None, None, None]
 
             for i, tensor in enumerate([a, b, c]):
-                mask = th.randint(0, 2 ** n, tensor.shape)  #
+                mask = th.randint(0, 2 ** n, tensor.shape)
                 # mask = th.zeros(*tensor.shape).long()
-                primitives_worker[0][(op, a_shape, b_shape)][i] = (
-                    tensor - mask
-                ) % 2 ** 62  # TODO fix
+                primitives_worker[0][(op, a_shape, b_shape)][i] = tensor - mask
                 primitives_worker[1][(op, a_shape, b_shape)][i] = mask
 
         return primitives_worker
