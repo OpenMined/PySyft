@@ -14,11 +14,11 @@ class CommunicationAction(Action):
 
     def __init__(
         self,
-        obj_id: Union[str, int],  # id of target object (almost always) pointer_tensor
         name: str,  # the pointer_tensor method # @TODO: reactor to enum
-        source: Union[str, int],  # id of the sender (worker)
-        destinations: List[Union[str, int]],  # id of the receiver(s) (worker(s))
+        target,
+        args,
         kwargs_: dict,  # key word args needed for the pointer tensor method == self.name
+        return_ids,
     ):
         """Initialize an communication action
 
@@ -26,7 +26,6 @@ class CommunicationAction(Action):
         """
         super().__init__()
 
-        self.obj_id = obj_id
         if name in ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]:
             #  float_prec, fix_prec => should be computation actions (they modify tensors)?
             self.name = name
@@ -34,9 +33,10 @@ class CommunicationAction(Action):
             raise ValueError(
                 f"name `{name}` for CommunicationAction is not in the list of supported actions"
             )
-        self.source = source
-        self.destinations = destinations
+        self.target = target
+        self.args = args
         self.kwargs = kwargs_
+        self.return_ids = return_ids
 
     def __eq__(self, other):
         return (
