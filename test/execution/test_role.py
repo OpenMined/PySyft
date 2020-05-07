@@ -14,7 +14,7 @@ def test_register_computation_action():
     placeholder = PlaceHolder()
     target = torch.ones([1])
 
-    action = ("method_name", target, (), {})
+    action = ("__add__", target, (), {})
 
     role.register_action((action, placeholder), ComputationAction)
 
@@ -23,7 +23,7 @@ def test_register_computation_action():
     registered = role.actions[0]
 
     assert isinstance(registered, ComputationAction)
-    assert registered.name == "method_name"
+    assert registered.name == "__add__"
     assert registered.target == target
     assert registered.args == ()
     assert registered.kwargs == {}
