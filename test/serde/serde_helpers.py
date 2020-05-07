@@ -829,7 +829,9 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.input_types),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.input_types
+                    ),
                 ),
             ),
             "cmp_detailed": compare,
