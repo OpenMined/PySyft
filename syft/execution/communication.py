@@ -19,6 +19,7 @@ class CommunicationAction(Action):
         args,
         kwargs_: dict,  # key word args needed for the pointer tensor method == self.name
         return_ids,
+        return_value=False,
     ):
         """Initialize an communication action
 
@@ -37,6 +38,7 @@ class CommunicationAction(Action):
         self.args = args
         self.kwargs = kwargs_
         self.return_ids = return_ids
+        self.return_value = return_value
 
     def __eq__(self, other):
         return (
@@ -48,27 +50,27 @@ class CommunicationAction(Action):
         )
 
     @staticmethod
-    def simplify(worker: AbstractWorker, communication: "CommunicationAction") -> tuple:
+    def simplify(worker: AbstractWorker, action: "CommunicationAction") -> tuple:
         """
         This function takes the attributes of a CommunicationAction and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            communication (CommunicationAction): a CommunicationAction
+            action (CommunicationAction): a CommunicationAction
         Returns:
             tuple: a tuple holding the unique attributes of the CommunicationAction
         Examples:
-            data = simplify(worker, communication)
+            data = simplify(worker, action)
         """
+        message = (action.name, action.target, action.args, action.kwargs)
+
         return (
-            sy.serde.msgpack.serde._simplify(worker, communication.obj_id),
-            sy.serde.msgpack.serde._simplify(worker, communication.name),
-            sy.serde.msgpack.serde._simplify(worker, communication.source),
-            sy.serde.msgpack.serde._simplify(worker, communication.destinations),
-            sy.serde.msgpack.serde._simplify(worker, communication.kwargs),
+            sy.serde.msgpack.serde._simplify(worker, message),
+            sy.serde.msgpack.serde._simplify(worker, action.return_ids),
+            sy.serde.msgpack.serde._simplify(worker, action.return_value),
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, communication_tuple: tuple) -> "CommunicationAction":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CommunicationAction":
         """
         This function takes the simplified tuple version of this message and converts
         it into a CommunicationAction. The simplify() method runs the inverse of this method.
@@ -82,17 +84,18 @@ class CommunicationAction(Action):
         Examples:
             communication = detail(sy.local_worker, communication_tuple)
         """
+        message = msg_tuple[0]
+        return_ids = msg_tuple[1]
+        return_value = msg_tuple[2]
 
-        (obj_id, name, source, destinations, kwargs_) = communication_tuple
+        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
+        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
+        detailed_return_value = sy.serde.msgpack.serde._detail(worker, return_value)
 
-        detailed_obj = sy.serde.msgpack.serde._detail(worker, obj_id)
-        detailed_name = sy.serde.msgpack.serde._detail(worker, name)
-        detailed_source = sy.serde.msgpack.serde._detail(worker, source)
-        detailed_destinations = sy.serde.msgpack.serde._detail(worker, destinations)
-        detailed_kwargs = sy.serde.msgpack.serde._detail(worker, kwargs_)
+        name, target, args_, kwargs_ = detailed_msg
 
         return CommunicationAction(
-            detailed_obj, detailed_name, detailed_source, detailed_destinations, detailed_kwargs
+            name, target, args_, kwargs_, detailed_ids, detailed_return_value
         )
 
     @staticmethod
