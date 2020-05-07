@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import List
 from typing import Union
 
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 
@@ -20,6 +21,10 @@ class ObjectStorage:
         self._objects = {}
         # This is an index to retrieve objects from their tags in an efficient way
         self._tag_to_object_ids = defaultdict(set)
+
+    @property
+    def _tensors(self):
+        return {id_: obj for id_, obj in self._objects.items() if isinstance(obj, FrameworkTensor)}
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
