@@ -339,7 +339,7 @@ class Plan(AbstractObject):
         if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
-            return self.forward(*args)
+            return self.forward(*args)()
         else:
             self.input_types.input_check(self, args)
             result = self.role.execute(args)
@@ -629,7 +629,7 @@ class Plan(AbstractObject):
 
         if plan.input_types:
             input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
-            protobuf_plan.serialized_input.CopyFrom(input_types)
+            protobuf_plan.input_types.CopyFrom(input_types)
 
         return protobuf_plan
 
@@ -649,7 +649,7 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
-        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.serialized_input)
+        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
 
         plan = Plan(
             role=role,
