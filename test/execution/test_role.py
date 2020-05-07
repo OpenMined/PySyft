@@ -27,6 +27,7 @@ def test_register_computation_action():
     assert registered.target == target
     assert registered.args == ()
     assert registered.kwargs == {}
+    assert registered.return_ids == (placeholder.id,)
 
 
 def test_register_communication_action():
