@@ -339,7 +339,7 @@ class Plan(AbstractObject):
         if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
-            return self.forward(*args)()
+            return self.forward(*args)
         else:
             self.input_types.input_check(self, args)
             result = self.role.execute(args)

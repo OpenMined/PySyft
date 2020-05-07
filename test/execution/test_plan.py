@@ -924,8 +924,5 @@ def test_backward_autograd_can_be_traced(hook, workers):
     autograd_test.forward = None
     plan_grads = autograd_test(X)
 
-    # (debug out)
-    print("Traced Plan:\n", autograd_test.code)
-
     # Test all results are equal
     assert torch_grads.eq(plan_grads).all()

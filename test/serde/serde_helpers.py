@@ -778,8 +778,6 @@ def make_plan(**kwargs):
         model_plan.build(torch.tensor([1.0, 2.0, 3.0]))
 
     def compare(detailed, original):
-        test1 = detailed
-        test2 = original
         assert type(detailed) == syft.execution.plan.Plan
         assert detailed.id == original.id
         compare_roles(detailed.role, original.role)
@@ -810,7 +808,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.input_types),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,
@@ -831,7 +829,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
-                    msgpack.serde._simplify(syft.hook.local_worker, plan.input_types),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,

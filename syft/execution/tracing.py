@@ -14,7 +14,6 @@ class FrameworkWrapper:
         self.owner = owner
 
     def __getattr__(self, attr_name):
-        print("TEST")
         package_attr = getattr(self.package, attr_name)
         # Forward directly the attribute if it's not a function
         if not callable(package_attr):
