@@ -59,7 +59,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
         self.dtype = dtype
-        if dtype == "custom":
+        if dtype is None and field is None:
+            # Default args
+            self.dtype = "long"
+            self.field = 2 ** 64
+            self.torch_dtype = torch.int64
+        elif dtype == "custom":
             if field is None:
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
@@ -85,7 +90,7 @@ class AdditiveSharingTensor(AbstractTensor):
                     self.field = 2 ** 64
                     self.torch_dtype = torch.int64
             else:
-                warnings.warn("Default args selected")
+                warnings.warn("Invalid field and no dtype: default args selected")
                 # Default args
                 self.dtype = "long"
                 self.field = 2 ** 64
@@ -530,7 +535,14 @@ class AdditiveSharingTensor(AbstractTensor):
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
-        shares = spdz.spdz_mul(equation, self, other, self.crypto_provider, self.field, self.dtype)
+        if self.protocol == "fss":
+            shares = spdz.spdz_mul(
+                equation, self, other, self.crypto_provider, self.field, self.dtype
+            )
+        else:
+            shares = spdz.old_spdz_mul(
+                cmd, self, other, self.crypto_provider, self.field, self.dtype
+            )
 
         return shares
 
