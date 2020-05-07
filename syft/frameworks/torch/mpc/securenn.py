@@ -289,7 +289,9 @@ def msb(a_sh):
         bob, alice, field=L - 1, dtype="custom", crypto_provider=crypto_provider, **no_wrap
     )
     x_bit_0 = x_bit[..., 0]
-    x_bit_sh_0 = x_bit_0.share(bob, alice, field=L, crypto_provider=crypto_provider, **no_wrap)
+    x_bit_sh_0 = x_bit_0.share(
+        bob, alice, field=L, dtype="custom", crypto_provider=crypto_provider, **no_wrap
+    )
     x_bit_sh = x_bit.share(
         bob, alice, field=p, dtype="custom", crypto_provider=crypto_provider, **no_wrap
     )

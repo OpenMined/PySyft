@@ -806,10 +806,16 @@ def test_max(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], [alice, bob], n_instances=16)
-
     args = (alice, bob)
+    if protocol == "fss":
+        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], args, n_instances=6)
+        me.crypto_store.provide_primitives(
+            ["beaver"],
+            args,
+            n_instances=6,
+            beaver={"op_shapes": [("mul", (), (1,)), ("mul", (), ())]},
+        )
+
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
     t = torch.tensor([3, 1.0, 2])
@@ -1069,8 +1075,8 @@ def test_garbage_collect_reconstruct(workers):
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
 
-    assert len(alice._objects) == 8
-    assert len(bob._objects) == 8
+    assert len(alice._objects) == 2
+    assert len(bob._objects) == 2
 
 
 def test_garbage_collect_move(workers):
@@ -1078,8 +1084,8 @@ def test_garbage_collect_move(workers):
     a = torch.ones(1, 5).send(alice)
     b = a.copy().move(bob)
 
-    assert len(alice._objects) == 7
-    assert len(bob._objects) == 7
+    assert len(alice._objects) == 1
+    assert len(bob._objects) == 1
 
 
 def test_garbage_collect_mul(workers):
@@ -1093,5 +1099,5 @@ def test_garbage_collect_mul(workers):
     for _ in range(3):
         c = a * b
 
-    assert len(alice._objects) == 9
-    assert len(bob._objects) == 9
+    assert len(alice._objects) == 3
+    assert len(bob._objects) == 3

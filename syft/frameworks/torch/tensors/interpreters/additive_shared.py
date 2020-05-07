@@ -1014,11 +1014,7 @@ class AdditiveSharingTensor(AbstractTensor):
         # Init max vals and idx to the first element
         max_value = values[0]
         max_index = torch.tensor([0]).share(
-            *self.locations,
-            field=self.field,
-            dtype=self.dtype,
-            crypto_provider=self.crypto_provider,
-            **no_wrap,
+            *self.locations, dtype=self.dtype, crypto_provider=self.crypto_provider, **no_wrap,
         )
 
         for i in range(1, len(values)):
@@ -1048,7 +1044,8 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         if dim is None:
             result = self.flatten()
-            n_elem = list(self.child.values())[0].nelement()
+            key = list(result.child.keys())[0]
+            n_elem = result.child[key].nelement()
             result = result * torch.tensor(list(range(n_elem))).long().wrap()
             return result.sum()
         else:
