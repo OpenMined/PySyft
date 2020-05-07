@@ -1,6 +1,7 @@
 from math import gcd
 
 from syft.frameworks.torch.he.fv.util.operations import multiply_many_except
+from syft.frameworks.torch.he.fv.util.operations import try_invert_int_mod
 
 
 class RNSBase:
@@ -17,6 +18,7 @@ class RNSBase:
                     raise ValueError("rns_base is invalid")
 
         self._base = base
+        self._base_prod = None
         self._punctured_prod_array = [0] * self._size
         self._inv_punctured_prod_mod_base_array = [0] * self._size
 
@@ -33,11 +35,14 @@ class RNSBase:
                 self._inv_punctured_prod_mod_base_array[i] = (
                     self._punctured_prod_array[i] % self._base[i]
                 )
+                self._inv_punctured_prod_mod_base_array[i] = try_invert_int_mod(
+                    self._inv_punctured_prod_mod_base_array[i], self._base[i]
+                )
 
         else:
             self._base_prod = self._base[0]
-            self._punctured_prod_array = [1]
-            self._inv_punctured_prod_mod_base_array = [1]
+            self._punctured_prod_array[0] = 1
+            self._inv_punctured_prod_mod_base_array[0] = 1
 
     @property
     def base(self):

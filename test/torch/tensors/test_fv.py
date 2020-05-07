@@ -9,6 +9,10 @@ from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 from syft.frameworks.torch.he.fv.key_generator import KeyGenerator
+from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
+from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
+from syft.frameworks.torch.he.fv.util.operations import try_invert_int_mod
+from syft.frameworks.torch.he.fv.util.operations import xgcd
 
 
 @pytest.mark.parametrize(
@@ -162,23 +166,6 @@ def test_integer_encoder(plain_modulus, value):
     assert value == encoder.decode(poly)
 
 
-def test_key_generation():
-    params = EncryptionParams()
-    params.poly_modulus_degree = 1024
-    params.plain_modulus = 64
-    cm = CoeffModulus()
-    params.coeff_modulus = cm.create(4096, [30, 50, 60])
-    print("coeff_modulus: ", params.coeff_modulus)
-    ctx = Context(params)
-    keygenerator = KeyGenerator(ctx)
-    sk, pk = keygenerator.keygen()
-    print("sk: ", sk)
-    print("sk length", sk.size)
-    print("pk: ", pk)
-    print("pk length c0", len(pk.data[0]), " c1 : ", len(pk.data[1]))
-    # TODO tests for key generations will be added after encrypter and decrypter
-
-
 @pytest.mark.parametrize(
     "operand, count, exp, result",
     [
@@ -194,3 +181,46 @@ def test_key_generation():
 )
 def test_multiply_many_except(operand, count, exp, result):
     assert multiply_many_except(operand, count, exp) == result
+
+
+@pytest.mark.parametrize(
+    "x, y, result",
+    [
+        (7, 7, [7, 0, 1]),
+        (2, 2, [2, 0, 1]),
+        (1, 1, [1, 0, 1]),
+        (1, 2, [1, 1, 0]),
+        (5, 6, [1, -1, 1]),
+        (13, 19, [1, 3, -2]),
+        (14, 21, [7, -1, 1]),
+        (2, 1, [1, 0, 1]),
+        (6, 5, [1, 1, -1]),
+        (19, 13, [1, -2, 3]),
+        (21, 14, [7, 1, -1]),
+    ],
+)
+def test_xgcd(x, y, result):
+    assert result == xgcd(x, y)
+
+
+@pytest.mark.parametrize(
+    "input, modulus, result", [(1, 2, 1), (3, 2, 1), (0xFFFFFF, 2, 1), (5, 19, 4), (4, 19, 5)]
+)
+def test_try_invert_int_mod(input, modulus, result):
+    assert result == try_invert_int_mod(input, modulus)
+
+
+@pytest.mark.parametrize(
+    "ibase, obase, input, output",
+    [
+        ([3], [2], [0, 1, 2], [0, 1, 0]),
+        ([2, 3], [2], [0, 1, 0, 0, 1, 2], [0, 1, 0]),
+        ([2, 3], [2, 3], [1, 1, 0, 1, 2, 2], [1, 1, 0, 1, 2, 2]),
+        ([2, 3], [3, 4, 5], [0, 1, 1, 0, 1, 2], [0, 1, 2, 0, 3, 1, 0, 2, 0]),
+    ],
+)
+def test_fast_convert_array(ibase, obase, input, output):
+    base_converter = BaseConvertor(RNSBase(ibase), RNSBase(obase))
+    result = base_converter.fast_convert_array(input, 3)
+    for i in range(len(result)):
+        assert result[i] == output[i]
