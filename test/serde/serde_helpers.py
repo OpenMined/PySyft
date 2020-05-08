@@ -1399,9 +1399,11 @@ def make_communication_action(**kwargs):
 
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
-                assert detailed_msg[i] == original_msg[i]
+                assert detailed_msg[i] == original_msg[i], f"{detailed_msg[i]} != {original_msg[i]}"
             else:
-                assert detailed_msg[i].equal(original_msg[i])
+                assert detailed_msg[i].equal(
+                    original_msg[i]
+                ), f"{detailed_msg[i]} != {original_msg[i]}"
 
         return True
 
@@ -1462,9 +1464,11 @@ def make_computation_action(**kwargs):
 
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
-                assert detailed_msg[i] == original_msg[i]
+                assert detailed_msg[i] == original_msg[i], f"{detailed_msg[i]} != {original_msg[i]}"
             else:
-                assert detailed_msg[i].equal(original_msg[i])
+                assert detailed_msg[i].equal(
+                    original_msg[i]
+                ), f"{detailed_msg[i]} != {original_msg[i]}"
 
         return True
 
