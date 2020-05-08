@@ -1379,25 +1379,34 @@ def make_communication_action(**kwargs):
 
     def compare(detailed, original):
         detailed_msg = (
-            detailed.obj_id,
             detailed.name,
-            detailed.source,
-            detailed.destinations,
+            detailed.target,
+            detailed.args,
             detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
         )
         original_msg = (
-            original.obj_id,
             original.name,
-            original.source,
-            original.destinations,
+            original.target,
+            original.args,
             original.kwargs,
+            original.return_ids,
+            original.return_value,
         )
+
         assert type(detailed) == syft.messaging.message.CommunicationAction
+        assert detailed.return_ids == original.return_ids
+
         for i in range(len(original_msg)):
-            assert detailed_msg[i] == original_msg[i]
+            if type(original_msg[i]) != torch.Tensor:
+                assert detailed_msg[i] == original_msg[i]
+            else:
+                assert detailed_msg[i].equal(original_msg[i])
+
         return True
 
-    msg = (com.obj_id, com.name, com.source, com.destinations, com.kwargs)
+    msg = (com.name, com.target, com.args, com.kwargs, com.return_ids, com.return_value)
 
     return [
         {
@@ -1405,11 +1414,12 @@ def make_communication_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.communication.CommunicationAction],
                 (
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.name),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.args),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.return_value),
                 ),
             ),
             "cmp_detailed": compare,
