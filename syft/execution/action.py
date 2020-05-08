@@ -116,10 +116,11 @@ class Action(ABC):
         Examples:
             data = simplify(worker, action)
         """
-        message = (action.name, action.target, action.args, action.kwargs)
-
         return (
-            sy.serde.msgpack.serde._simplify(worker, message),
+            sy.serde.msgpack.serde._simplify(worker, action.name),
+            sy.serde.msgpack.serde._simplify(worker, action.target),
+            sy.serde.msgpack.serde._simplify(worker, action.args),
+            sy.serde.msgpack.serde._simplify(worker, action.kwargs),
             sy.serde.msgpack.serde._simplify(worker, action.return_ids),
             sy.serde.msgpack.serde._simplify(worker, action.return_value),
         )
@@ -140,14 +141,13 @@ class Action(ABC):
         Examples:
             communication = detail(sy.local_worker, communication_tuple)
         """
-        message = action_tuple[0]
-        return_ids = action_tuple[1]
-        return_value = action_tuple[2]
+        name, target, args_, kwargs_, return_ids, return_value = action_tuple
 
-        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
-        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
-        detailed_return_value = sy.serde.msgpack.serde._detail(worker, return_value)
-
-        name, target, args_, kwargs_ = detailed_msg
-
-        return (name, target, args_, kwargs_, detailed_ids, detailed_return_value)
+        return (
+            sy.serde.msgpack.serde._detail(worker, name),
+            sy.serde.msgpack.serde._detail(worker, target),
+            sy.serde.msgpack.serde._detail(worker, args_),
+            sy.serde.msgpack.serde._detail(worker, kwargs_),
+            sy.serde.msgpack.serde._detail(worker, return_ids),
+            sy.serde.msgpack.serde._detail(worker, return_value),
+        )

@@ -1378,6 +1378,8 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CommunicationAction
+
         detailed_msg = (
             detailed.name,
             detailed.target,
@@ -1395,9 +1397,6 @@ def make_communication_action(**kwargs):
             original.return_value,
         )
 
-        assert type(detailed) == syft.messaging.message.CommunicationAction
-        assert detailed.return_ids == original.return_ids
-
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
@@ -1405,8 +1404,6 @@ def make_communication_action(**kwargs):
                 assert detailed_msg[i].equal(original_msg[i])
 
         return True
-
-    msg = (com.name, com.target, com.args, com.kwargs, com.return_ids, com.return_value)
 
     return [
         {
@@ -1443,19 +1440,33 @@ def make_computation_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-        original_msg = (original.name, original.target, original.args, original.kwargs)
         assert type(detailed) == syft.execution.computation.ComputationAction
+
+        detailed_msg = (
+            detailed.name,
+            detailed.target,
+            detailed.args,
+            detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
+        )
+
+        original_msg = (
+            original.name,
+            original.target,
+            original.args,
+            original.kwargs,
+            original.return_ids,
+            original.return_value,
+        )
+
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
                 assert detailed_msg[i] == original_msg[i]
             else:
                 assert detailed_msg[i].equal(original_msg[i])
-        assert detailed.return_ids == original.return_ids
-        return True
 
-    message1 = (op1.name, op1.target, op1.args, op1.kwargs)
-    message2 = (op2.name, op2.target, op2.args, op2.kwargs)
+        return True
 
     return [
         {
@@ -1463,11 +1474,12 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], message1
-                    ),  # (Any) message
-                    (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
-                    False,  # return value
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1477,11 +1489,12 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], message2
-                    ),  # (Any) message
-                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids,
-                    False,  # return value
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1490,7 +1503,7 @@ def make_computation_action(**kwargs):
 
 
 # syft.messaging.message.TensorCommandMessage
-def make_command_message(**kwargs):
+def make_tensor_command_message(**kwargs):
     bob = kwargs["workers"]["bob"]
     alice = kwargs["workers"]["alice"]
     bob.log_msgs = True
@@ -1510,23 +1523,34 @@ def make_command_message(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        if isinstance(detailed.action, syft.execution.computation.ComputationAction):
-            detailed = detailed.action
-            original = original.action
+        detailed_action = detailed.action
+        original_action = original.action
 
-            detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-            original_msg = (original.name, original.target, original.args, original.kwargs)
-            for i in range(len(original_msg)):
-                if type(original_msg[i]) != torch.Tensor:
-                    assert detailed_msg[i] == original_msg[i]
-                else:
-                    assert detailed_msg[i].equal(original_msg[i])
-            assert detailed.return_ids == original.return_ids
-            return True
+        detailed_action = (
+            detailed.name,
+            detailed.target,
+            detailed.args,
+            detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
+        )
 
-        elif isinstance(detailed.action, syft.execution.communication.CommunicationAction):
-            assert detailed.action == original.action
-            return True
+        original_action = (
+            original.name,
+            original.target,
+            original.args,
+            original.kwargs,
+            original.return_ids,
+            original.return_value,
+        )
+
+        for i in range(len(original_action)):
+            if type(original_action[i]) != torch.Tensor:
+                assert detailed_action[i] == original_action[i]
+            else:
+                assert detailed_action[i].equal(original_action[i])
+
+        return True
 
     return [
         {
