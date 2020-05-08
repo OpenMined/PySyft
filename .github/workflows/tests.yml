@@ -78,6 +78,9 @@ jobs:
     - name: Run codecov
       run: |
         bash <(curl -s https://codecov.io/bash) -t a74f260d-4d79-4591-a38b-77f81447c9fb -X gcov
+    - name: Check docstring coverage
+      run: |
+        interrogate -mvp syft/ -f 52.5
     - name: Build docs
       run: |
         # delete stale existing documentation if there's one
