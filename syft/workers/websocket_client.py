@@ -156,7 +156,8 @@ class WebsocketClientWorker(BaseWorker):
 
     async def async_send_msg(self, message: Message) -> object:
         """Asynchronous version of send_msg."""
-        print("async_send_msg", message)
+        if self.verbose:
+            print("async_send_msg", message)
 
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
