@@ -13,12 +13,16 @@ class RNSTool:
         self._t = t
         self._base_t_gamma = RNSBase([t, gamma])
         self._base_t_gamma_size = 2
-        self.prod_t_gamma_mod_q = [(self._t * gamma) % q for q in self.base_q.base]
+        self.prod_t_gamma_mod_q = [(t * gamma) % q for q in self.base_q.base]
         self._inv_gamma_mod_t = try_invert_int_mod(gamma, self._t)
-        self.neg_inv_q_mod_t_gamma = [0] * self._base_t_gamma_size
 
+        # Compute -prod(q)^(-1) mod {t, gamma}
+        self.neg_inv_q_mod_t_gamma = [0] * self._base_t_gamma_size
         for i in range(self._base_t_gamma_size):
             self.neg_inv_q_mod_t_gamma[i] = self.base_q.base_prod % self._base_t_gamma.base[i]
+            self.neg_inv_q_mod_t_gamma[i] = try_invert_int_mod(
+                self.neg_inv_q_mod_t_gamma[i], self._base_t_gamma.base[i]
+            )
             self.neg_inv_q_mod_t_gamma[i] = negate_int_mod(
                 self.neg_inv_q_mod_t_gamma[i], self._base_t_gamma.base[i]
             )
@@ -35,6 +39,8 @@ class RNSTool:
                     input[i + j * self._coeff_count] * self.prod_t_gamma_mod_q[j]
                 ) % self.base_q.base[j]
 
+        print("temp 1 : ", temp)
+
         # Convert from q to {t, gamma}
         base_q_to_t_gamma_conv = BaseConvertor(self.base_q, self._base_t_gamma)
         temp_t_gamma = base_q_to_t_gamma_conv.fast_convert_array(temp, self._coeff_count)
@@ -46,8 +52,10 @@ class RNSTool:
                     temp_t_gamma[i + j * self._coeff_count] * self.neg_inv_q_mod_t_gamma[j]
                 ) % self._base_t_gamma.base[j]
 
+        print("temp_t_gamma 1 :  ", temp_t_gamma)
+
         # Need to correct values in temp_t_gamma (gamma component only) which are larger than floor(gamma/2)
-        gamma_div_2 = self._base_t_gamma.base[1] >> 1
+        gamma_div_2 = gamma >> 1
 
         # Now compute the subtraction to remove error and perform final multiplication by gamma inverse mod t
         for i in range(self._coeff_count):
@@ -56,7 +64,7 @@ class RNSTool:
 
                 # Compute -(gamma - a) instead of (a - gamma)
                 result[i] = (
-                    temp_t_gamma[i] + (gamma - temp_t_gamma[i + self._coeff_count] % self._t)
+                    temp_t_gamma[i] + (gamma - temp_t_gamma[i + self._coeff_count]) % self._t
                 ) % self._t
             else:
                 # No correction needed
@@ -67,5 +75,7 @@ class RNSTool:
 
                 # Perform final multiplication by gamma inverse mod t
                 result[i] = (result[i] * self._inv_gamma_mod_t) % self._t
+
+            print("result with i : ", i, " : ", result[i])
 
         return result

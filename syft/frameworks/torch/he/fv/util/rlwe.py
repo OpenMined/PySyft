@@ -17,7 +17,7 @@ def sample_poly_ternary(parms):
     coeff_count = parms.poly_modulus_degree
     coeff_mod_size = len(coeff_modulus)
 
-    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
+    result = [0] * coeff_count * coeff_mod_size
     for i in range(coeff_count):
         r = SystemRandom()
         rand_index = r.choice([-1, 0, 1])
@@ -38,7 +38,7 @@ def sample_poly_normal(param):
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
 
-    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
+    result = [0] * coeff_count * coeff_mod_size
     for i in range(coeff_count):
         noise = Normal(th.tensor([0.0]), th.tensor(NOISE_STANDARD_DEVIATION))
         noise = int(noise.sample().item())
@@ -61,7 +61,7 @@ def sample_poly_uniform(param):
     coeff_count = param.poly_modulus_degree
 
     max_random = 0x7FFFFFFFFFFFFFFF
-    result = th.zeros(coeff_count * coeff_mod_size, dtype=th.int64)
+    result = [0] * coeff_count * coeff_mod_size
 
     for j in range(coeff_mod_size):
         modulus = coeff_modulus[j]
@@ -83,6 +83,7 @@ def encrypt_zero_asymmetric(context, public_key):
     coeff_count = param.poly_modulus_degree
     public_key = public_key.data
     encrypted_size = 2
+
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
 
