@@ -6,6 +6,10 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.execution.v1.communication_action_pb2 import (
+    CommunicationAction as CommunicationActionPB,
+)
+
 
 class Action(ABC):
     """Describes the concrete steps workers can take with objects they own
@@ -16,7 +20,9 @@ class Action(ABC):
     tensors and add them together is an Action. Sending an object from one worker to another is
     also an Action."""
 
-    def __init__(self, name, target, args_, kwargs_, return_ids, return_value=False):
+    def __init__(
+        self, name: str, target, args_: tuple, kwargs_: dict, return_ids, return_value=False
+    ):
         """Initialize an action
 
         Args:
@@ -44,6 +50,11 @@ class Action(ABC):
         self.kwargs = kwargs_
         self.return_ids = return_ids
         self.return_value = return_value
+
+        self._type_check("name", str)
+        self._type_check("args", tuple)
+        self._type_check("kwargs", dict)
+        self._type_check("return_ids", tuple)
 
     def __eq__(self, other):
         return (
@@ -97,6 +108,12 @@ class Action(ABC):
     def __str__(self) -> str:
         """Returns string representation of this action"""
         return f"{type(self).__name__}[{self.code()}]"
+
+    def _type_check(self, field_name, expected_type):
+        actual_value = getattr(self, field_name)
+        assert actual_value is None or isinstance(
+            actual_value, expected_type
+        ), f"{field_name} must be {expected_type.__name__}, but was {type(actual_value).__name__}: {actual_value}."
 
     # These methods must be implemented by child classes in order to return the correct type
     # and to be detected by the serdes as serializable. They are therefore marked as abstract
@@ -241,18 +258,20 @@ class Action(ABC):
         for key in protobuf_obj.kwargs:
             kwargs_[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
-        return_ids = [
-            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
-        ]
+        return_ids = tuple(
+            [sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids]
+        )
 
-        return_placeholder_ids = [
-            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_obj.return_placeholder_ids
-        ]
+        return_placeholder_ids = tuple(
+            [
+                sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+                for placeholder in protobuf_obj.return_placeholder_ids
+            ]
+        )
 
         if return_placeholder_ids:
-            action = (command, target, tuple(args_), kwargs_, return_placeholder_ids)
+            action = (command, target, args_, kwargs_, return_placeholder_ids)
         else:
-            action = (command, target, tuple(args_), kwargs_, tuple(return_ids))
+            action = (command, target, args_, kwargs_, return_ids)
 
         return action

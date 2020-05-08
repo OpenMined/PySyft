@@ -295,7 +295,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            "remote_send", self, ([destination.id]), kwargs_, self
+            "remote_send", self, (destination.id,), kwargs_, (self.id,)
         )
         self.owner.send_msg(message=message, location=self.location)
         return self

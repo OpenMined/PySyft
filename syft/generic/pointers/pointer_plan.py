@@ -161,10 +161,10 @@ class PointerPlan(ObjectPointer):
                 id_at_location = id_at_loc
                 break
 
-        command = ("run", id_at_location, args, kwargs)
+        command = ("run", id_at_location, tuple(args), kwargs)
 
         response = self.owner.send_command(
-            message=command, recipient=location, return_ids=response_ids
+            message=command, recipient=location, return_ids=tuple(response_ids)
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         if isinstance(response, (list, tuple)):

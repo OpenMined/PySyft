@@ -397,26 +397,41 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
 
     attr_name = "arg_" + _camel2snake(type(arg).__name__)
 
-    try:
-        setattr(protobuf_arg, attr_name, arg)
-    except:
-        getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+    if isinstance(arg, list) or isinstance(arg, tuple):
+        collection_attr = getattr(protobuf_arg, attr_name)
+        collection_attr.extend([bufferize_arg(worker, attr) for attr in arg])
+    else:
+        try:
+            setattr(protobuf_arg, attr_name, arg)
+        except:
+            getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
     return protobuf_arg
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
     args_ = []
     for protobuf_arg in protobuf_args:
-        args_.append(unbufferize_arg(worker, protobuf_arg))
-    return args_
+        unbufferized = unbufferize_arg(worker, protobuf_arg)
+        args_.append(unbufferized)
+    return tuple(args_)
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-    protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
-    try:
-        arg = _unbufferize(worker, protobuf_arg_field)
-    except:
-        arg = protobuf_arg_field
+    protobuf_field_name = protobuf_arg.WhichOneof("arg")
+
+    if protobuf_field_name in ["arg_list", "arg_tuple"]:
+        protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
+        arg = [unbufferize_arg(worker, a) for a in protobuf_arg_field]
+    else:
+        protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
+        try:
+            arg = _unbufferize(worker, protobuf_arg_field)
+        except:
+            arg = protobuf_arg_field
+
+    if protobuf_field_name == "arg_tuple":
+        arg = tuple(arg)
+
     return arg
 
 
