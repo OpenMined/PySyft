@@ -1,8 +1,10 @@
 from abc import ABC
 from abc import abstractmethod
 
+import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
+from syft.workers.abstract import AbstractWorker
 
 
 class Action(ABC):
@@ -95,3 +97,57 @@ class Action(ABC):
     def __str__(self) -> str:
         """Returns string representation of this action"""
         return f"{type(self).__name__}[{self.code()}]"
+
+    # These methods must be implemented by child classes in order to return the correct type
+    # and to be detected by the serdes as serializable. They are therefore marked as abstract
+    # methods even though implementations are provided. Child classes may delegate to these
+    # implementations, but must implement their own conversions to the appropriate classes.
+
+    @staticmethod
+    @abstractmethod
+    def simplify(worker: AbstractWorker, action: "Action") -> tuple:
+        """
+        This function takes the attributes of a CommunicationAction and saves them in a tuple
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            action (CommunicationAction): a CommunicationAction
+        Returns:
+            tuple: a tuple holding the unique attributes of the CommunicationAction
+        Examples:
+            data = simplify(worker, action)
+        """
+        message = (action.name, action.target, action.args, action.kwargs)
+
+        return (
+            sy.serde.msgpack.serde._simplify(worker, message),
+            sy.serde.msgpack.serde._simplify(worker, action.return_ids),
+            sy.serde.msgpack.serde._simplify(worker, action.return_value),
+        )
+
+    @staticmethod
+    @abstractmethod
+    def detail(worker: AbstractWorker, action_tuple: tuple) -> "Action":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into a CommunicationAction. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            communication_tuple (Tuple): the raw information being detailed.
+        Returns:
+            communication (CommunicationAction): a CommunicationAction.
+        Examples:
+            communication = detail(sy.local_worker, communication_tuple)
+        """
+        message = action_tuple[0]
+        return_ids = action_tuple[1]
+        return_value = action_tuple[2]
+
+        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
+        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
+        detailed_return_value = sy.serde.msgpack.serde._detail(worker, return_value)
+
+        name, target, args_, kwargs_ = detailed_msg
+
+        return (name, target, args_, kwargs_, detailed_ids, detailed_return_value)

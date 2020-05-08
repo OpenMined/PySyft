@@ -32,53 +32,37 @@ class ComputationAction(Action):
         super().__init__(name, target, args_, kwargs_, return_ids, return_value=return_value)
 
     @staticmethod
-    def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
+    def simplify(worker: AbstractWorker, action: "Action") -> tuple:
         """
-        This function takes the attributes of a Action and saves them in a tuple
+        This function takes the attributes of a CommunicationAction and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            action (ComputationAction): the ComputationAction object to simplify
+            action (CommunicationAction): a CommunicationAction
         Returns:
-            tuple: a tuple holding the unique attributes of the message
+            tuple: a tuple holding the unique attributes of the CommunicationAction
         Examples:
-            data = simplify(sy.local_worker, action)
+            data = simplify(worker, action)
         """
-        # NOTE: we can skip calling _simplify on return_ids because they should already be
-        # a list of simple types.
-        message = (action.name, action.target, action.args, action.kwargs)
-
-        return (
-            sy.serde.msgpack.serde._simplify(worker, message),
-            sy.serde.msgpack.serde._simplify(worker, action.return_ids),
-            sy.serde.msgpack.serde._simplify(worker, action.return_value),
-        )
+        return Action.simplify(worker, action)
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ComputationAction":
+    def detail(worker: AbstractWorker, action_tuple: tuple) -> "Action":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a Action. The simplify() method runs the inverse of this method.
+        it into a CommunicationAction. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            msg_tuple (Tuple): the raw information being detailed.
+            communication_tuple (Tuple): the raw information being detailed.
         Returns:
-            action (ComputationAction): a ComputationAction.
+            communication (CommunicationAction): a CommunicationAction.
         Examples:
-            action = detail(sy.local_worker, msg_tuple)
+            communication = detail(sy.local_worker, communication_tuple)
         """
-        message = msg_tuple[0]
-        return_ids = msg_tuple[1]
-        return_value = msg_tuple[2]
+        attrs = Action.detail(worker, action_tuple)
 
-        detailed_msg = sy.serde.msgpack.serde._detail(worker, message)
-        detailed_ids = sy.serde.msgpack.serde._detail(worker, return_ids)
-        detailed_return_value = sy.serde.msgpack.serde._detail(worker, return_value)
-
-        name, target, args_, kwargs_ = detailed_msg
-
-        return ComputationAction(name, target, args_, kwargs_, detailed_ids, detailed_return_value)
+        return ComputationAction(*attrs)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, action: "ComputationAction") -> "ComputationActionPB":
