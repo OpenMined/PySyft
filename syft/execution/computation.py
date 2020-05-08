@@ -29,16 +29,7 @@ class ComputationAction(Action):
                 and will need to do .get() later to get the result.
 
         """
-
-        # call the parent constructor - setting the type integer correctly
-        super().__init__()
-
-        self.name = name
-        self.target = target
-        self.args = args_
-        self.kwargs = kwargs_
-        self.return_ids = return_ids
-        self.return_value = return_value
+        super().__init__(name, target, args_, kwargs_, return_ids, return_value=return_value)
 
     @staticmethod
     def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:

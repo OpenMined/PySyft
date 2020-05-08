@@ -9,36 +9,36 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 
 
+COMMUNICATION_METHODS = ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]
+
+
 class CommunicationAction(Action):
     """Describes communication actions performed on tensors"""
 
-    def __init__(
-        self,
-        name: str,  # the pointer_tensor method # @TODO: reactor to enum
-        target,
-        args,
-        kwargs_: dict,  # key word args needed for the pointer tensor method == self.name
-        return_ids,
-        return_value=False,
-    ):
-        """Initialize an communication action
+    def __init__(self, name, target, args_, kwargs_, return_ids, return_value=False):
+        """Initialize an action
 
         Args:
-        """
-        super().__init__()
+            name (String): The name of the method to be invoked (e.g. "send")
+            target (Tensor): The object to invoke the method on
+            args_ (Tuple): The arguments to the method call
+            kwargs_ (Dictionary): The keyword arguments to the method call
+            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
+                action results are set by the client. This allows the client to be able to predict where
+                the results will be ahead of time. Importantly, this allows the client to pre-initalize the
+                pointers to the future data, regardless of whether the action has yet executed. It also
+                reduces the size of the response from the action (which is very often empty).
+            return_value (boolean): return the result or not. If true, the result is directly returned,
+                if not, the command sender will create a pointer to the remote result using the return_ids
+                and will need to do .get() later to get the result.
 
-        if name in ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]:
-            #  float_prec, fix_prec => should be computation actions (they modify tensors)?
-            self.name = name
-        else:
+        """
+        if name not in COMMUNICATION_METHODS:
             raise ValueError(
-                f"name `{name}` for CommunicationAction is not in the list of supported actions"
+                f"Method `{name}` is not supported by CommunicationActions. Consider using ComputationAction instead."
             )
-        self.target = target
-        self.args = args
-        self.kwargs = kwargs_
-        self.return_ids = return_ids
-        self.return_value = return_value
+
+        super().__init__(name, target, args_, kwargs_, return_ids, return_value=return_value)
 
     def __eq__(self, other):
         return (
