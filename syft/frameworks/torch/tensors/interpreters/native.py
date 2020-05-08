@@ -272,6 +272,12 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def get_class_attributes(self):
+        """
+        Return class attributes for torch tensors
+        """
+        return {"type": self.dtype}
+
     def _is_parameter(self):
         """
         Utility method to test if the tensor is in fact a Parameter

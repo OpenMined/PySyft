@@ -567,3 +567,13 @@ def test_iadd(workers):
     b_pt += a_pt
 
     assert len(alice._objects) == 8
+
+
+def test_inplace_ops_on_remote_long_tensor(workers):
+    alice = workers["alice"]
+
+    t = torch.LongTensor([2])
+    p = t.send_(alice) * 2
+    p.get_()
+
+    assert p == torch.LongTensor([4])

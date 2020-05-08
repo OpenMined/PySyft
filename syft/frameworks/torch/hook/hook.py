@@ -214,11 +214,14 @@ class TorchHook(FrameworkHook):
     def create_wrapper(cls, wrapper_type):
         # Note this overrides FrameworkHook.create_wrapper, so it must conform to
         # that classmethod's signature
-        assert (
-            wrapper_type is None or wrapper_type == torch.Tensor
-        ), "TorchHook only uses torch.Tensor wrappers"
-
-        return torch.Tensor()
+        if wrapper_type is None or wrapper_type == torch.Tensor:
+            return torch.Tensor()
+        elif isinstance(wrapper_type, torch.dtype):
+            return torch.tensor([], dtype=wrapper_type)
+        else:
+            raise ValueError(
+                "Wrapper type should be None, torch.Tensor, or a torch.dtype like torch.long"
+            )
 
     def create_zeros(cls, *shape, dtype=None, **kwargs):
         return torch.zeros(*shape, dtype=dtype, **kwargs)
@@ -647,8 +650,9 @@ class TorchHook(FrameworkHook):
 
         def module_get_(nn_self):
             """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
-            for p in nn_self.parameters():
-                p.get_()
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.get_()
 
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.get()
@@ -660,12 +664,12 @@ class TorchHook(FrameworkHook):
 
         def module_share_(nn_self, *args, **kwargs):
             """Overloads fix_precision for torch.nn.Module."""
-            # TODO: add .data and .grad to syft tensors
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.share_(*args, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.share_(*args, **kwargs)
 
             return nn_self
 
@@ -677,8 +681,9 @@ class TorchHook(FrameworkHook):
             if module_is_missing_grad(nn_self):
                 create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.fix_precision_(*args, **kwargs)
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.fix_precision_(*args, **kwargs)
 
             return nn_self
 
@@ -693,8 +698,9 @@ class TorchHook(FrameworkHook):
             # if module_is_missing_grad(nn_self):
             #    create_grad_objects(nn_self)
 
-            for p in nn_self.parameters():
-                p.float_precision_()
+            for element_iter in tensor_iterator(nn_self):
+                for p in element_iter():
+                    p.float_precision_()
 
             return nn_self
 
