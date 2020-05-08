@@ -13,7 +13,6 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
 from syft.execution.tracing import FrameworkWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
@@ -102,6 +101,7 @@ class Plan(AbstractObject):
     """
 
     _build_translators = []
+    _wrapped_frameworks = {}
 
     def __init__(
         self,
@@ -146,9 +146,6 @@ class Plan(AbstractObject):
         wrapper that helps as register and keep track of what methods are called
         With the below lines, we "register" what frameworks we have support to handle
         """
-        self.wrapped_framework = {}
-        for f_name, f_packages in framework_packages.items():
-            self.wrapped_framework[f_name] = FrameworkWrapper(f_packages, self.role, self.owner)
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
         # List of available translations
@@ -224,9 +221,9 @@ class Plan(AbstractObject):
         framework_kwargs = {}
 
         forward_args = inspect.getfullargspec(self.forward).args
-        for f_name, wrapped_framework in self.wrapped_framework.items():
+        for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
             if f_name in forward_args:
-                framework_kwargs[f_name] = self.wrapped_framework[f_name]
+                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
 
         results = self.forward(*args, **framework_kwargs)
 
@@ -399,6 +396,13 @@ class Plan(AbstractObject):
     @staticmethod
     def register_build_translator(translator: "AbstractPlanTranslator"):
         Plan._build_translators.append(translator)
+
+    @staticmethod
+    def register_framework(f_name, f_package):
+        def call_wrapped_framework(role, owner):
+            return FrameworkWrapper(f_package, role, owner)
+
+        Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
@@ -673,3 +677,7 @@ class Plan(AbstractObject):
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)
+
+# Auto-register Plan build-time frameworks
+for f_name, f_package in framework_packages.items():
+    Plan.register_framework(f_name, f_package)

@@ -13,7 +13,6 @@ import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
 
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor

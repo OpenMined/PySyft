@@ -59,12 +59,3 @@ class FrameworkWrapper:
             return result
 
         return trace_wrapper
-
-
-@contextmanager
-def trace(package, role, owner):
-    try:
-        wrapped = FrameworkWrapper(package, role, owner)
-        yield wrapped
-    except:
-        raise
