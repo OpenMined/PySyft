@@ -535,10 +535,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
+                # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return (
-                        response
-                    )  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return response
                 else:
                     return None
             except ResponseSignatureError:
