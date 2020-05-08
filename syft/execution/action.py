@@ -43,6 +43,15 @@ class Action(ABC):
         self.return_ids = return_ids
         self.return_value = return_value
 
+    def __eq__(self, other):
+        return (
+            self.name == other.name
+            and self.target == other.target
+            and self.args == other.args
+            and self.kwargs == other.kwargs
+            and self.return_ids == other.return_ids
+        )
+
     def code(self, var_names=None) -> str:
         """Returns pseudo-code representation of computation action"""
 

@@ -40,15 +40,6 @@ class CommunicationAction(Action):
 
         super().__init__(name, target, args_, kwargs_, return_ids, return_value=return_value)
 
-    def __eq__(self, other):
-        return (
-            self.obj_id == other.obj_id
-            and self.name == other.name
-            and self.source == other.source
-            and self.destinations == other.destinations
-            and self.kwargs == other.kwargs
-        )
-
     @staticmethod
     def simplify(worker: AbstractWorker, action: "CommunicationAction") -> tuple:
         """
