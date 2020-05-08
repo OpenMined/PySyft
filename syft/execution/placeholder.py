@@ -151,6 +151,14 @@ class PlaceHolder(AbstractTensor):
         )
         return response
 
+    def get(self, *args, **kwargs):
+        response = self.child.send(*args, **kwargs)
+        command = ("get", self, args, kwargs)
+        self.role.register_action(
+            (command, response), syft.execution.communication.CommunicationAction
+        )
+        return response
+
     def copy(self):
         """
         Copying a placeholder doesn't duplicate the child attribute, because all

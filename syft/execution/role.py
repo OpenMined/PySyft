@@ -66,6 +66,12 @@ class Role:
         """ Takes output tensors for this role and generate placeholders.
         """
         results = (results,) if not isinstance(results, tuple) else results
+        print(69, 'role', tuple(
+            (type(result), isinstance(type(o), torch.Tensor)) for result in results
+        ))
+        results = (r for r in results if type(r) != "<class 'torch.Tensor'>")
+        results = list(results)
+        print('after filter', list(results))
         self.output_placeholder_ids = tuple(
             self._store_placeholders(result).value for result in results
         )
@@ -161,6 +167,7 @@ class Role:
         """
         Replace in an object all FrameworkTensors with Placeholder ids
         """
+        print(167, 'role', obj)
         if isinstance(obj, (tuple, list)):
             r = [self._store_placeholders(o) for o in obj]
             return type(obj)(r)

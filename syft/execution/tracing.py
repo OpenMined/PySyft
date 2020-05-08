@@ -9,6 +9,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 
 class FrameworkWrapper:
     def __init__(self, package, role, owner):
+        print('init')
         self.package = package
         self.role = role
         self.owner = owner
