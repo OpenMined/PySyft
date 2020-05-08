@@ -1776,7 +1776,6 @@ def make_workercommandmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.WorkerCommandMessage
-        assert detailed.contents == original.contents
         return True
 
     return [

@@ -40,20 +40,6 @@ class ComputationAction(Action):
         self.return_ids = return_ids
         self.return_value = return_value
 
-    @property
-    def contents(self):
-        """Return a tuple with the contents of the action (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a action, we instead choose to store contents in two pieces,
-        self.message and self.return_ids, which allows for more efficient simplification (we don't have to
-        simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
-
-        message = (self.name, self.target, self.args, self.kwargs)
-
-        return (message, self.return_ids, self.return_value)
-
     @staticmethod
     def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
         """
