@@ -640,11 +640,6 @@ class WorkerCommandMessage(Message):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {(self.command_name, self.message)})"
 
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.command_name, self.message)
-
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "WorkerCommandMessage") -> tuple:
         """
