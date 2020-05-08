@@ -9,7 +9,16 @@ from syft_proto.execution.v1.communication_action_pb2 import (
 )
 
 
-COMMUNICATION_METHODS = ["move", "remote_send", "mid_get", "remote_get", "get", "share", "share_"]
+COMMUNICATION_METHODS = [
+    "get",
+    "mid_get",
+    "move",
+    "remote_get",
+    "remote_send",
+    "send",
+    "share",
+    "share_",
+]
 
 
 class CommunicationAction(Action):
@@ -87,22 +96,9 @@ class CommunicationAction(Action):
         Examples:
             data = bufferize(sy.local_worker, communication)
         """
-        protobuf_obj = CommunicationActionPB()
-        protobuf_obj.name = communication.name
+        protobuf_action = CommunicationActionPB()
 
-        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.obj_id, communication.obj_id)
-        sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.source, communication.source)
-
-        for destination in communication.destinations:
-            sy.serde.protobuf.proto.set_protobuf_id(protobuf_obj.destinations.add(), destination)
-
-        if communication.kwargs:
-            for key, value in communication.kwargs.items():
-                protobuf_obj.kwargs.get_or_create(key).CopyFrom(
-                    sy.serde.protobuf.serde.bufferize_arg(worker, value)
-                )
-
-        return protobuf_obj
+        return Action.bufferize(worker, communication, protobuf_action)
 
     @staticmethod
     def unbufferize(
@@ -110,7 +106,7 @@ class CommunicationAction(Action):
     ) -> "CommunicationAction":
         """
         This function takes the Protobuf version of this message and converts
-        it into a CommunicationAction. The bufferize() method runs the inverse of this method.
+        it into an Action. The bufferize() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
@@ -118,22 +114,11 @@ class CommunicationAction(Action):
             protobuf_obj (CommunicationActionPB): the Protobuf message
 
         Returns:
-            obj_id (CommunicationAction): a CommunicationAction
+            obj (CommunicationAction): a CommunicationAction
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
-        name = protobuf_obj.name
+        attrs = Action.unbufferize(worker, protobuf_obj)
 
-        obj_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.obj_id)
-        source = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.source)
-        destinations = [
-            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.destinations
-        ]
-
-        kwargs_ = {
-            key: sy.serde.protobuf.serde.unbufferize_arg(worker, kwarg)
-            for key, kwarg in protobuf_obj.kwargs.items()
-        }
-
-        return CommunicationAction(obj_id, name, source, destinations, kwargs_)
+        return CommunicationAction(*attrs)

@@ -151,3 +151,108 @@ class Action(ABC):
             sy.serde.msgpack.serde._detail(worker, return_ids),
             sy.serde.msgpack.serde._detail(worker, return_value),
         )
+
+    @staticmethod
+    @abstractmethod
+    def bufferize(worker: AbstractWorker, action: "Action", protobuf_action):
+        """
+        This function takes the attributes of a Action and saves them in Protobuf
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            action (Action): an Action
+        Returns:
+            protobuf_obj: a Protobuf message holding the unique attributes of the message
+        Examples:
+            data = bufferize(message)
+        """
+        protobuf_action.command = action.name
+
+        protobuf_target = None
+        if isinstance(action.target, sy.generic.pointers.pointer_tensor.PointerTensor):
+            protobuf_target = protobuf_action.target_pointer
+        elif isinstance(action.target, sy.execution.placeholder_id.PlaceholderId):
+            protobuf_target = protobuf_action.target_placeholder_id
+        elif isinstance(action.target, (int, str)):
+            sy.serde.protobuf.proto.set_protobuf_id(protobuf_action.target_id, action.target)
+        elif action.target is not None:
+            protobuf_target = protobuf_action.target_tensor
+
+        if protobuf_target is not None:
+            protobuf_target.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, action.target))
+
+        if action.args:
+            protobuf_action.args.extend(sy.serde.protobuf.serde.bufferize_args(worker, action.args))
+
+        if action.kwargs:
+            for key, value in action.kwargs.items():
+                protobuf_action.kwargs.get_or_create(key).CopyFrom(
+                    sy.serde.protobuf.serde.bufferize_arg(worker, value)
+                )
+
+        if action.return_ids is not None:
+            if not isinstance(action.return_ids, (list, tuple)):
+                return_ids = (action.return_ids,)
+            else:
+                return_ids = action.return_ids
+
+            for return_id in return_ids:
+                if isinstance(return_id, PlaceholderId):
+                    # NOTE to know when we have a PlaceholderId, we store it
+                    # in return_placeholder_ids and not in return_ids
+                    protobuf_action.return_placeholder_ids.append(
+                        sy.serde.protobuf.serde._bufferize(worker, return_id)
+                    )
+                else:
+                    sy.serde.protobuf.proto.set_protobuf_id(
+                        protobuf_action.return_ids.add(), return_id
+                    )
+
+        return protobuf_action
+
+    @staticmethod
+    @abstractmethod
+    def unbufferize(worker: AbstractWorker, protobuf_obj):
+        """
+        This function takes the Protobuf version of this message and converts
+        it into an Action. The bufferize() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            protobuf_obj (ActionPB): the Protobuf message
+
+        Returns:
+            obj (tuple): a tuple of the args required to instantiate an Action object
+
+        Examples:
+            message = unbufferize(sy.local_worker, protobuf_msg)
+        """
+        command = protobuf_obj.command
+        protobuf_target = protobuf_obj.WhichOneof("target")
+        if protobuf_target:
+            target = sy.serde.protobuf.serde._unbufferize(
+                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
+            )
+        else:
+            target = None
+        args_ = sy.serde.protobuf.serde.unbufferize_args(worker, protobuf_obj.args)
+
+        kwargs_ = {}
+        for key in protobuf_obj.kwargs:
+            kwargs_[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
+
+        return_ids = [
+            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
+        ]
+
+        return_placeholder_ids = [
+            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
+            for placeholder in protobuf_obj.return_placeholder_ids
+        ]
+
+        if return_placeholder_ids:
+            action = (command, target, tuple(args_), kwargs_, return_placeholder_ids)
+        else:
+            action = (command, target, tuple(args_), kwargs_, tuple(return_ids))
+
+        return action
