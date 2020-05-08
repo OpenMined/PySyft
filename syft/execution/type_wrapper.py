@@ -1,7 +1,7 @@
+from typing import Union
+
 import syft as sy
 from syft.workers.abstract import AbstractWorker
-from warnings import warn
-from typing import Union
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
 from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as InputTypeDescriptorPB
 
@@ -15,13 +15,21 @@ class NestedTypeWrapper:
         self.nested_input_types = NestedTypeWrapper.enumerate_nested_types(nested_type)
 
     @staticmethod
-    def get_object_identifiers(obj):
+    def get_object_identifiers(obj: any) -> (str, str):
+        """
+        Looks for identifiers for different objects, currently, only plans are supported with `name`, other
+        identifiers can be added as well, eg.: `id`.
+
+        Params:
+            ojb: the object that you are typechecking
+
+        Returns:
+            (str, str): a tuple containing the type name and and unique str to identify that object.
+        """
         type_name = type(obj).__name__
 
         if hasattr(obj, "name"):
             object_name = obj.name
-        elif hasattr(obj, "id"):
-            object_name = obj.id
         else:
             object_name = repr(obj)
 
@@ -56,7 +64,7 @@ class NestedTypeWrapper:
         return type(input_arg)
 
     @staticmethod
-    def raise_typecheck_warn(typechecked_object: any, build: str, call: str, path: str) -> None:
+    def raise_typecheck_err(typechecked_object: any, build: str, call: str, path: str) -> None:
         """
             Function to raise a type error if two types differ.
 
@@ -173,7 +181,7 @@ class NestedTypeWrapper:
 
             if type(call_arg_nested_obj) not in iterable_supported_list:
                 if not isinstance(call_arg_nested_obj, build_arg_nested_type):
-                    NestedTypeWrapper.raise_typecheck_warn(
+                    NestedTypeWrapper.raise_typecheck_err(
                         typechecked_object,
                         build_arg_nested_type.__name__,
                         type(call_arg_nested_obj).__name__,
@@ -182,7 +190,7 @@ class NestedTypeWrapper:
                 return
 
             if type(build_arg_nested_type) != type(call_arg_nested_obj):
-                NestedTypeWrapper.raise_typecheck_warn(
+                NestedTypeWrapper.raise_typecheck_err(
                     typechecked_object,
                     type(build_arg_nested_type).__name__,
                     type(call_arg_nested_obj).__name__,

@@ -869,6 +869,84 @@ def test_plan_type_error(hook):
     )
 
 
+def test_plan_missmatch_Err(hook):
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_missmatch_err(lst):
+        return lst[0]
+
+    dummy_build = [[th.tensor([0, 0]), th.tensor([0, 0])], [th.tensor([0, 0]), th.tensor([0, 0])]]
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+    plan_missmatch_err.build(dummy_build)
+
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+
+    call_build = [
+        [pointer_to_data_1, pointer_to_data_1, pointer_to_data_1],
+        [pointer_to_data_2, pointer_to_data_2, pointer_to_data_2],
+    ]
+
+    pointer_to_plan = plan_missmatch_err.send(device_1)
+    with pytest.raises(TypeError) as e:
+        _ = pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_missmatch_err element 0 of element 0 of input has length 3, while being build with length 2."
+    )
+
+
+def test_wrong_type_err(hook):
+    @sy.func2plan()
+    def plan_wrong_type_err(x):
+        return x
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+
+    call_build = [True, 5]
+    dummy_build = ((th.tensor([1, 2, 3]), True),)
+
+    plan_wrong_type_err.build(dummy_build)
+
+    pointer_to_plan = plan_wrong_type_err.send(device_1)
+
+    with pytest.raises(TypeError) as e:
+        pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_wrong_type_err element 0 of input has type tuple, while being built with type list."
+    )
+
+
+def test_wrong_size_dict(hook):
+    @sy.func2plan()
+    def plan_wrong_size_dict(x):
+        return x
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+
+    dummy_build = {"k1": True, "k2": False}
+
+    call_build = {"k1": True, "k2": False, "k3": 1}
+
+    plan_wrong_size_dict.build(dummy_build)
+
+    pointer_to_plan = plan_wrong_size_dict.send(device_1)
+
+    with pytest.raises(TypeError) as e:
+        pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_wrong_size_dict element 0 of input has length 3, while being build with length 2."
+    )
+
+
 def test_plan_key_error(hook):
     x1 = th.tensor([-1, 2.0])
     x2 = th.tensor([1, -2.0])
