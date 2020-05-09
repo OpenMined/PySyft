@@ -571,7 +571,6 @@ class TorchTensor(AbstractTensor):
         self,
         location: BaseWorker = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
@@ -597,7 +596,7 @@ class TorchTensor(AbstractTensor):
             shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
-            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
+            self, location, id_at_location, owner, ptr_id, garbage_collect_data, shape
         )
 
         return ptr
