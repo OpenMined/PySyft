@@ -140,7 +140,7 @@ class MultiPointerTensor(AbstractTensor):
 
         results = list()
         for v in self.child.values():
-            value = v.location._objects[v.id_at_location]
+            value = v.location.object_store._objects[v.id_at_location]
             results.append(value)
 
         if sum_results:

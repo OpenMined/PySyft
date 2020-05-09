@@ -14,7 +14,6 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.object import AbstractObject
-from syft.generic.object_storage import ObjectStorage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB

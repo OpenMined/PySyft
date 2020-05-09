@@ -2,11 +2,11 @@ from collections import defaultdict
 from typing import List
 from typing import Union
 
+from syft.exceptions import ObjectNotFoundError
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
-
-from syft.exceptions import ObjectNotFoundError
+from syft.workers.abstract import AbstractWorker
 
 
 class ObjectStorage:
@@ -16,7 +16,9 @@ class ObjectStorage:
     are stored using their IDs as keys.
     """
 
-    def __init__(self):
+    def __init__(self, owner: AbstractWorker):
+        self._owner = owner
+
         # This is the collection of objects being stored.
         self._objects = {}
         # This is an index to retrieve objects from their tags in an efficient way

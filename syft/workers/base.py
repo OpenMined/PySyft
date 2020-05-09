@@ -50,7 +50,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BaseWorker(AbstractWorker, ObjectStorage):
+class BaseWorker(AbstractWorker):
     """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary
@@ -108,6 +108,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
+
+        self.object_store = ObjectStorage(owner=self)
+
+        # This is hack for backwards compatibility
+        # self._objects = self.object_store._objects
 
         self.id = id
         self.is_client_worker = is_client_worker
@@ -225,6 +230,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
         raise NotImplementedError  # pragma: no cover
+
+    def register_obj(self, obj):
+        self.object_store.register_obj(self, obj)
+
+    def clear_objects(self, return_self: bool = True):
+        self.object_store.clear_objects(return_self)
 
     @contextmanager
     def registration_enabled(self):
@@ -458,10 +469,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
-        self.rm_obj(msg.object_id)
+        self.object_store.rm_obj(msg.object_id)
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        self.force_rm_obj(msg.object_id)
+        self.object_store.force_rm_obj(msg.object_id)
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
@@ -665,7 +676,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-        obj = super().get_obj(obj_id)
+        obj = self.object_store.get_obj(obj_id)
 
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
@@ -708,7 +719,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 string uniquely identifying the object.
         """
         if not self.is_client_worker:
-            super().register_obj(obj, obj_id=obj_id)
+            self.object_store.register_obj(obj, obj_id=obj_id)
 
     def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
         """
@@ -720,7 +731,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 more complex and needs to be explored.
         """
         if not self.is_client_worker:
-            super().de_register_obj(obj, _recurse_torch_objs)
+            self.object_store.de_register_obj(obj, _recurse_torch_objs)
 
     # SECTION: convenience methods for constructing frequently used messages
 
@@ -904,7 +915,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #objects:" + str(len(self._objects))
+        out += " #objects:" + str(len(self.object_store._objects))
         out += ">"
         return out
 
@@ -913,11 +924,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self._objects.get(idx, None)
+        return self.object_store.get_obj(idx, None)
 
     def is_object_none(self, msg):
         obj_id = msg.object_id
-        if obj_id not in self._objects:
+        if obj_id not in self.object_store._objects:
             # If the object is not present on the worker, raise an error
             raise ObjectNotFoundError(obj_id, self)
         obj = self.get_obj(msg.object_id)
@@ -995,8 +1006,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id in self._objects:
-            candidate = self._objects[plan_id]
+        if plan_id in self.object_store._objects:
+            candidate = self.object_store._objects[plan_id]
             if isinstance(candidate, sy.Plan):
                 if copy:
                     return candidate.copy()
@@ -1029,9 +1040,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         Target function of fetch_protocol, find and return a protocol
         """
-        if protocol_id in self._objects:
+        if protocol_id in self.object_store._objects:
 
-            candidate = self._objects[protocol_id]
+            candidate = self.object_store._objects[protocol_id]
             if isinstance(candidate, sy.Protocol):
                 return candidate
 
@@ -1056,7 +1067,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Empty query returns all the tagged and registered values
         elif len(query) == 0:
             result_ids = set()
-            for tag, object_ids in self._tag_to_object_ids.items():
+            for tag, object_ids in self.object_store._tag_to_object_ids.items():
                 result_ids = result_ids.union(object_ids)
             return [self.get_obj(result_id) for result_id in result_ids]
 
@@ -1065,13 +1076,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Search by id is supported but it's not the preferred option
             # It will return a single element and discard tags if the query
             # Mixed an id with tags
-            result_by_id = self.find_by_id(query_item)
+            result_by_id = self.object_store.find_by_id(query_item)
             if result_by_id:
                 results = {result_by_id}
                 break
 
             # results_by_tag can be the empty list
-            results_by_tag = set(self.find_by_tag(query_item))
+            results_by_tag = set(self.object_store.find_by_tag(query_item))
 
             if results:
                 results = results.intersection(results_by_tag)
@@ -1122,7 +1133,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Allow efficient retrieval: if the tag is know locally, return the local
         element. Else, perform a search on location
         """
-        results = self.find_by_tag(tag)
+        results = self.object_store.find_by_tag(tag)
         if results:
             assert all(result.location.id == location.id for result in results)
             return results
@@ -1263,7 +1274,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
             sy.serde.msgpack.serde._simplify(_worker, worker.id),
-            sy.serde.msgpack.serde._simplify(_worker, worker._objects),
+            sy.serde.msgpack.serde._simplify(_worker, worker.object_store._objects),
             worker.auto_add,
         )
 
@@ -1274,11 +1285,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
         _objects = sy.serde.msgpack.serde._detail(worker, _objects)
-        result._objects = _objects
+        result.object_store._objects = _objects
 
         # make sure they weren't accidentally double registered
         for _, obj in _objects.items():
-            if obj.id in worker._objects:
-                del worker._objects[obj.id]
+            if obj.id in worker.object_store._objects:
+                del worker.object_store._objects[obj.id]
 
         return result

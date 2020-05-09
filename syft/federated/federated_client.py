@@ -6,7 +6,7 @@ from syft.generic.object_storage import ObjectStorage
 from syft.federated.train_config import TrainConfig
 
 
-class FederatedClient(ObjectStorage):
+class FederatedClient:
     """A Client able to execute federated learning in local datasets."""
 
     def __init__(self, datasets=None):
@@ -14,6 +14,7 @@ class FederatedClient(ObjectStorage):
         self.datasets = datasets if datasets is not None else dict()
         self.optimizer = None
         self.train_config = None
+        self.object_store = ObjectStorage(owner=self)
 
     def add_dataset(self, dataset, key: str):
         if key not in self.datasets:
@@ -35,7 +36,7 @@ class FederatedClient(ObjectStorage):
             self.train_config = obj
             self.optimizer = None
         else:
-            super().set_obj(obj)
+            self.object_store.set_obj(obj)
 
     def _check_train_config(self):
         if self.train_config is None:

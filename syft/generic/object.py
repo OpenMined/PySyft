@@ -65,10 +65,10 @@ class AbstractObject(ABC):
             self.tags.add(tag)
             if self.owner is not None:
                 # NOTE: this is a fix to correct faulty registration that can sometimes happen
-                if self.id not in self.owner._objects:
+                if self.id not in self.owner.object_store._objects:
                     self.owner.register_obj(self)
                 # note: this is a defaultdict(set)
-                self.owner._tag_to_object_ids[tag].add(self.id)
+                self.owner.object_store._tag_to_object_ids[tag].add(self.id)
             else:
                 raise RuntimeError("Can't tag a tensor which doesn't have an owner")
         return self

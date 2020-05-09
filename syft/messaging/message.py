@@ -56,7 +56,7 @@ class TensorCommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
-    objects contained in the worker._objects registry (or whatever the official object store is
+    objects contained in the worker.object_store registry (or whatever the official object store is
     backed with in the case that it's been overridden). Semantically, one could view all Messages
     as a kind of action, but when we say action this is what we mean. For example, telling a
     worker to take two tensors and add them together is an action. However, sending an object
