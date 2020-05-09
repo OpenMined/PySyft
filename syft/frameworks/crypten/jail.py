@@ -121,7 +121,7 @@ class JailRunner:
         return (jail._func_src, jail._module_names)
 
     @staticmethod
-    def detail(jail_tuple: tuple) -> "JailRunner":
+    def detail(jail_tuple: tuple, **kwargs) -> "JailRunner":
         available_modules = {
             "torch": torch,
             "crypten": crypten,
@@ -131,4 +131,4 @@ class JailRunner:
         func_src, module_names = jail_tuple
         modules = [available_modules[name] for name in module_names]
 
-        return JailRunner(func_src=func_src, modules=modules)
+        return JailRunner(func_src=func_src, modules=modules, **kwargs)

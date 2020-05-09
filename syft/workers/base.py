@@ -469,10 +469,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             An ObjectMessage containing the return value of the crypten function computed.
         """
         from syft.frameworks.crypten.jail import JailRunner
+        from syft.frameworks.crypten import utils
 
         self.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
         ser_func = message.jail_runner
-        jail_runner = JailRunner.detail(ser_func)
+        onnx_model = message.model
+        crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
+        jail_runner = JailRunner.detail(ser_func, model=crypten_model)
 
         rank = None
         for r, worker_id in self.rank_to_worker_id.items():
