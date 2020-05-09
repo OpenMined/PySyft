@@ -102,13 +102,13 @@ def test_remote_get(hook, workers):
     assert ptr_ptr_x.location == alice
     assert x.id in bob.object_store._objects
 
-    assert len(bob._tensors) == 1
-    assert len(alice._tensors) == 1
+    assert len(bob.object_store._tensors) == 1
+    assert len(alice.object_store._tensors) == 1
 
     ptr_ptr_x.remote_get()
 
-    assert len(bob._tensors) == 0
-    assert len(alice._tensors) == 1
+    assert len(bob.object_store._tensors) == 0
+    assert len(alice.object_store._tensors) == 1
 
 
 def test_remote_send(hook, workers):

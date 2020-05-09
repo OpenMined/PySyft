@@ -307,7 +307,7 @@ def test_move(workers):
     x = torch.tensor([1.0, 2, 3, 4, 5]).send(bob)
     p = x.move(alice)
 
-    assert len(alice._tensors) == 1
+    assert len(alice.object_store._tensors) == 1
 
     # Test .move on remote objects
 
@@ -507,8 +507,8 @@ def test_registration_of_action_on_pointer_of_pointer(workers):
     ptr = ptr.send(alice)
     ptr_action = ptr + ptr
 
-    assert len(alice._tensors) == 2
-    assert len(bob._tensors) == 2
+    assert len(alice.object_store._tensors) == 2
+    assert len(bob.object_store._tensors) == 2
 
 
 def test_setting_back_grad_to_origin_after_send(workers):

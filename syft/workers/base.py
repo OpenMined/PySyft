@@ -576,7 +576,7 @@ class BaseWorker(AbstractWorker):
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                self.rm_obj(obj_id)
+                self.object_store.rm_obj(obj_id)
             return response
 
     def execute_worker_command(self, message: tuple):
@@ -1198,16 +1198,16 @@ class BaseWorker(AbstractWorker):
         self.crypto_store.add_primitives(types_primitives)
 
     def list_tensors(self):
-        return str(self._tensors)
+        return str(self.object_store._tensors)
 
     def tensors_count(self):
-        return len(self._tensors)
+        return len(self.object_store._tensors)
 
     def list_objects(self):
-        return str(self._objects)
+        return str(self.object_store._objects)
 
     def objects_count(self):
-        return len(self._objects)
+        return len(self.object_store._objects)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
