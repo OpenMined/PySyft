@@ -386,43 +386,43 @@ def test_section_2_federated_learning(hook):
 
     bob = bob.clear_objects()
 
-    assert len(bob._objects) == 0
+    assert len(bob.object_store._objects) == 0
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    assert len(bob._objects) == 1
+    assert len(bob.object_store._objects) == 1
 
     del x
 
-    assert len(bob._objects) == 0
+    assert len(bob.object_store._objects) == 0
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    assert len(bob._objects) == 1
+    assert len(bob.object_store._objects) == 1
 
     x = "asdf"
 
-    assert len(bob._objects) == 0
+    assert len(bob.object_store._objects) == 0
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    bob._objects
+    bob.object_store._objects
 
     x = "asdf"
 
-    bob._objects
+    bob.object_store._objects
 
     del x
 
-    bob._objects
+    bob.object_store._objects
 
     bob = bob.clear_objects()
-    bob._objects
+    bob.object_store._objects
 
     for i in range(1000):
         x = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    assert len(bob._objects) == 1
+    assert len(bob.object_store._objects) == 1
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
     y = th.tensor([1, 1, 1, 1, 1])
@@ -503,17 +503,17 @@ def test_section_2_federated_learning(hook):
 
     x = x.send(alice)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     y = x + x
 
     y
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     jon = sy.VirtualWorker(hook, id="jon")
 
@@ -522,71 +522,71 @@ def test_section_2_federated_learning(hook):
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
-
-    x = x.get()
-    x
-
-    bob._objects
-
-    alice._objects
+    alice.object_store._objects
 
     x = x.get()
     x
 
-    bob._objects
+    bob.object_store._objects
+
+    alice.object_store._objects
+
+    x = x.get()
+    x
+
+    bob.object_store._objects
 
     bob.clear_objects()
     alice.clear_objects()
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     del x
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     bob.clear_objects()
     alice.clear_objects()
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     x.move(alice)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     x = th.tensor([1, 2, 3, 4, 5]).send(bob).send(alice)
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     x.remote_get()
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
     x.move(bob)
 
     x
 
-    bob._objects
+    bob.object_store._objects
 
-    alice._objects
+    alice.object_store._objects
 
 
 def test_section_3_securing_fl(hook):
@@ -807,7 +807,7 @@ def test_section_3_securing_fl(hook):
 
     x = x.share(bob, alice, secure_worker)
 
-    bob._objects
+    bob.object_store._objects
 
     y = x + x
 

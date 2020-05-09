@@ -813,8 +813,8 @@ def test_garbage_collection(workers):
         opt.step()
         loss = loss.get().float_prec()
 
-        assert len(alice._objects) == num_objs
-        assert len(bob._objects) == num_objs
+        assert len(alice.object_store._objects) == num_objs
+        assert len(bob.object_store._objects) == num_objs
         assert loss < prev_loss
 
         prev_loss = loss

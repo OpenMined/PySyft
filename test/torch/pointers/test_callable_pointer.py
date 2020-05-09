@@ -20,7 +20,7 @@ def test_create_callable_pointer(workers):
     )
 
     assert len(alice._tensors) == 0
-    assert isinstance(bob._objects[500], callable_pointer.CallablePointer)
+    assert isinstance(bob.object_store._objects[500], callable_pointer.CallablePointer)
 
     p = callable_pointer.create_callable_pointer(
         id=501,
@@ -33,8 +33,8 @@ def test_create_callable_pointer(workers):
     )
 
     assert len(alice._tensors) == 0
-    assert isinstance(bob._objects[500], callable_pointer.CallablePointer)
-    assert 501 not in bob._objects
+    assert isinstance(bob.object_store._objects[500], callable_pointer.CallablePointer)
+    assert 501 not in bob.object_store._objects
 
 
 def test_get_obj_callable_pointer(workers):
@@ -59,13 +59,13 @@ def test_get_obj_callable_pointer(workers):
     )
 
     assert len(alice._tensors) == 1
-    assert isinstance(bob._objects[1], callable_pointer.CallablePointer)
+    assert isinstance(bob.object_store._objects[1], callable_pointer.CallablePointer)
 
     x_get = obj_ptr.get()
 
     assert len(alice._tensors) == 0
     assert len(bob._tensors) == 0
-    assert 1 not in bob._objects
+    assert 1 not in bob.object_store._objects
     assert x_get == x
 
 

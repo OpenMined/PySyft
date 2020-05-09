@@ -1240,7 +1240,9 @@ def make_baseworker(**kwargs):
                 FORCED_CODE[syft.workers.base.BaseWorker],
                 (
                     (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
-                    msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
+                    msgpack.serde._simplify(
+                        worker, worker.object_store._objects
+                    ),  # (dict) _objects
                     worker.auto_add,  # (bool) auto_add
                 ),
             ),
