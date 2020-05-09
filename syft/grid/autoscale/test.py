@@ -3,7 +3,7 @@ import gcloud
 
 
 NEW = gcloud.GoogleCloud(
-    credentials="GCP Login/terraf.json", project_id="terraform", region="us-central1"
+    credentials="/usr/terraform.json", project_id="project", region="us-central1",
 )
 
 NEW.compute_instance(
