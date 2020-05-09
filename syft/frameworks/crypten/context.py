@@ -197,7 +197,7 @@ def run_multiworkers(
                 threads.append(thread)
 
             # Wait for local party and sender threads
-            # Joining the process blocks! But queue.get() can also wait for the party 
+            # Joining the process blocks! But queue.get() can also wait for the party
             # and it works fine.
             # process.join() -> blocks
             local_party_result = queue.get()
