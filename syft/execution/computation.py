@@ -40,20 +40,6 @@ class ComputationAction(Action):
         self.return_ids = return_ids
         self.return_value = return_value
 
-    @property
-    def contents(self):
-        """Return a tuple with the contents of the action (backwards compatability)
-
-        Some of our codebase still assumes that all message types have a .contents attribute. However,
-        the contents attribute is very opaque in that it doesn't put any constraints on what the contents
-        might be. Since we know this message is a action, we instead choose to store contents in two pieces,
-        self.message and self.return_ids, which allows for more efficient simplification (we don't have to
-        simplify return_ids because they are always a list of integers, meaning they're already simplified)."""
-
-        message = (self.name, self.target, self.args, self.kwargs)
-
-        return (message, self.return_ids, self.return_value)
-
     @staticmethod
     def simplify(worker: AbstractWorker, action: "ComputationAction") -> tuple:
         """
@@ -209,6 +195,50 @@ class ComputationAction(Action):
 
         return action
 
+    def code(self, var_names=None) -> str:
+        """Returns pseudo-code representation of computation action"""
+
+        def stringify(obj):
+            if isinstance(obj, PlaceholderId):
+                id = obj.value
+                if var_names is None:
+                    ret = f"var_{id}"
+                else:
+                    if id in var_names:
+                        ret = var_names[id]
+                    else:
+                        idx = sum("var_" in k for k in var_names.values())
+                        name = f"var_{idx}"
+                        var_names[id] = name
+                        ret = name
+            elif isinstance(obj, PlaceHolder):
+                ret = stringify(obj.id)
+            elif isinstance(obj, (tuple, list)):
+                ret = ", ".join(stringify(o) for o in obj)
+            else:
+                ret = str(obj)
+
+            return ret
+
+        out = ""
+        if self.return_ids is not None:
+            out += stringify(self.return_ids) + " = "
+        if self.target is not None:
+            out += stringify(self.target) + "."
+        out += self.name + "("
+        out += stringify(self.args)
+        if self.kwargs:
+            if len(self.args) > 0:
+                out += ", "
+            out += ", ".join(f"{k}={w}" for k, w in self.kwargs.items())
+        out += ")"
+
+        return out
+
+    def __str__(self) -> str:
+        """Returns string representation of computation action"""
+        return f"{type(self).__name__}[{self.code()}]"
+      
     @staticmethod
     def get_protobuf_schema() -> ComputationActionPB:
         return ComputationActionPB
