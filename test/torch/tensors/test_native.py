@@ -193,7 +193,15 @@ def test_complex_model(workers):
     ## Forward on the remote model
     pred = model_net(tensor_remote)
 
+    assert pred.is_wrapper
+    assert isinstance(pred.child, syft.PointerTensor)
+
     model_net.get()
+
+    for p in model_net.parameters():
+        assert isinstance(p, torch.nn.Parameter)
+        assert not hasattr(p, "child")
+        break
 
 
 def test_encrypt_decrypt(workers):
