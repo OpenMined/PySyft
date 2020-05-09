@@ -158,6 +158,9 @@ class Protocol(AbstractObject):
         self.toggle_tracing(False)
         self.is_building = False
 
+        if not isinstance(results, (tuple, list)):
+            results = (results,)
+
         # Register outputs in roles
         for result in results:
             if isinstance(result, PlaceHolder):

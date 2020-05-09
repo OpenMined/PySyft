@@ -13,6 +13,8 @@ def test_trace_communication_actions(workers):
 
         return tensor
 
-    assert protocol.is_built
+    traced_actions = protocol.roles["me"].actions
 
-    assert len(protocol.role.actions) == 1
+    assert protocol.is_built
+    assert len(traced_actions) == 1
+    assert "send" in [action.name for action in traced_actions]
