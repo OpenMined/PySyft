@@ -25,7 +25,7 @@ def test_native_private_tensor_method():
     Test native's private_tensor method.
     """
     x_tensor = torch.Tensor([1, 2, 3])
-    private_x = x_tensor.private_tensor(allowed_users=("testing"))
+    private_x = x_tensor.private_tensor(allowed_users=("testing",))
     assert isinstance(private_x, torch.Tensor)
     assert isinstance(private_x.child, PrivateTensor)
     assert isinstance(private_x.child.child, torch.Tensor)
@@ -62,7 +62,7 @@ def test_send_method(workers):
     bob = workers["bob"]
     x_tensor = torch.tensor([4, 5, 6, 7, 8])
 
-    private_x = x_tensor.private_tensor(allowed_users=("User"))
+    private_x = x_tensor.private_tensor(allowed_users=("User",))
 
     # Try to call send() without credentials
     with pytest.raises(SendNotPermittedError):
@@ -80,7 +80,7 @@ def test_get_method(workers):
     bob = workers["bob"]
     x_tensor = torch.Tensor([1, 2, 3])
 
-    private_x = x_tensor.private_tensor(allowed_users=("User"))
+    private_x = x_tensor.private_tensor(allowed_users=("User",))
 
     private_x_pointer = private_x.send(bob, user="User")
 
@@ -99,7 +99,7 @@ def test_get_method(workers):
 def test_private_tensor_registration(hook):
     with hook.local_worker.registration_enabled():
         x = torch.tensor([1.0])
-        private_x = x.private_tensor(allowed_users=("User"))
+        private_x = x.private_tensor(allowed_users=("User",))
 
         assert hook.local_worker.get_obj(x.id) == x
 
@@ -108,7 +108,7 @@ def test_allowed_to_get():
     x = torch.tensor([1, 2, 3, 4, 5, 6])
     assert x.allow("User")  # Public tensors always return true.
 
-    private_x = x.private_tensor(allowed_users=("User"))
+    private_x = x.private_tensor(allowed_users=("User",))
 
     assert private_x.allow("User")  # It Returns true to previously registered user.
     assert not private_x.allow("AnotherUser")  # It Returns False to non previously registered user.
@@ -116,7 +116,7 @@ def test_allowed_to_get():
 
 def test_add_method():
     t = torch.tensor([0.1, 0.2, 0.3])
-    x = t.private_tensor(allowed_users=("User"))
+    x = t.private_tensor(allowed_users=("User",))
 
     y = x + x
 
@@ -141,7 +141,7 @@ def test_methods_for_linear_module(method, parameter):
     fp_tensor = tensor.fix_precision()
 
     # ADD Private Tensor at wrapper stack
-    private_fp_tensor = fp_tensor.private_tensor(allowed_users=("User"))  # ADD Private Layer
+    private_fp_tensor = fp_tensor.private_tensor(allowed_users=("User",))  # ADD Private Layer
 
     if method != "t":
         fp_result = getattr(private_fp_tensor, method)(private_fp_tensor)
@@ -157,7 +157,7 @@ def test_torch_add():
     x = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
 
     y = torch.add(x, x)
 
@@ -176,8 +176,8 @@ def test_torch_add():
     y = torch.tensor([0.4, -0.5, -0.6]).fix_prec()
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("UserCredential"))
-    y = y.private_tensor(allowed_users=("UserCredential"))
+    x = x.private_tensor(allowed_users=("UserCredential",))
+    y = y.private_tensor(allowed_users=("UserCredential",))
 
     z = torch.add(x, y)
     z_fp = z.float_prec()
@@ -194,8 +194,8 @@ def test_torch_sub():
     y = torch.tensor([0.1, 0.2, 0.3]).fix_prec()
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
-    y = y.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
+    y = y.private_tensor(allowed_users=("User",))
 
     z = torch.sub(x, y)
 
@@ -214,7 +214,7 @@ def test_torch_mul():
     x = torch.tensor([2.113]).fix_prec(precision_fractional=2)
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
 
     y = torch.mul(x, x)
 
@@ -234,8 +234,8 @@ def test_torch_mul():
     y = torch.tensor([-0.113]).fix_prec()
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
-    y = y.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
+    y = y.private_tensor(allowed_users=("User",))
 
     z = torch.mul(x, y)
 
@@ -251,7 +251,7 @@ def test_torch_mul():
     x = torch.tensor([11.0]).fix_prec(field=2 ** 16, precision_fractional=2)
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
 
     y = torch.mul(x, x)
 
@@ -264,8 +264,8 @@ def test_torch_mul():
     y = torch.tensor([-0.113]).fix_prec()
 
     # ADD Private Tensor at wrapper stack
-    x = x.private_tensor(allowed_users=("User"))
-    y = y.private_tensor(allowed_users=("User"))
+    x = x.private_tensor(allowed_users=("User",))
+    y = y.private_tensor(allowed_users=("User",))
 
     z = torch.mul(x, y + y)
     z = z.float_prec()
@@ -278,7 +278,7 @@ def test_operate_with_integer_constants():
     x_fp = x.fix_precision()
 
     # PrivateTensor at wrapper stack.
-    x_fp = x_fp.private_tensor(allowed_users=("User"))
+    x_fp = x_fp.private_tensor(allowed_users=("User",))
 
     # ADD
     r_fp = x_fp + 10
