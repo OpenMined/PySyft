@@ -1,4 +1,4 @@
-"""Helper methods to call terrafrom commands"""
+"""Helper methods to call terraform commands"""
 import subprocess
 
 
