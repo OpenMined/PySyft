@@ -96,3 +96,24 @@ def test_send_partially_frozen():
         param.requires_grad = False
 
     model.send(worker)
+
+
+# Find a better name for this
+def test_send_copy():
+    hook = syft.TorchHook(torch)
+    worker = syft.VirtualWorker(hook, id="worker")
+
+    model = torch.nn.Sequential(
+        torch.nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False),
+        torch.nn.BatchNorm2d(64),
+        torch.nn.Flatten(),
+        torch.nn.Linear(1600, 100),
+    )
+
+    model_copy = model.copy()
+
+    model.send(worker)
+    model.get()
+
+    # If we ignore buffers, this raises a KeyError
+    model_copy = model.copy()

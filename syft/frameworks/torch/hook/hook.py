@@ -650,6 +650,9 @@ class TorchHook(FrameworkHook):
             for p in nn_self.parameters():
                 p.get_()
 
+            for b in nn_self.buffers():
+                b.get_()
+
             if isinstance(nn_self.forward, Plan):
                 nn_self.forward.get()
 
