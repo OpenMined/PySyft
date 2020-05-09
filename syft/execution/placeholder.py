@@ -70,30 +70,42 @@ class PlaceHolder(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Find first placeholder in args
-        ph_arg = None
+        template_placeholder = None
         for arg in args:
             if isinstance(arg, PlaceHolder):
-                ph_arg = arg
+                template_placeholder = arg
 
+        placeholders = PlaceHolder.convert_to_placeholders(response, template_placeholder)
+
+        if template_placeholder.tracing:
+            template_placeholder.role.register_action(
+                (command, placeholders), syft.execution.computation.ComputationAction
+            )
+
+        return placeholders
+
+    @staticmethod
+    def convert_to_placeholders(response, template_placeholder):
+        """ Turn back response to PlaceHolders """
         if isinstance(response, (tuple, list)):
-            # Turn back response to PlaceHolders
-            response = tuple(
+
+            placeholders = tuple(
                 PlaceHolder.create_from(
-                    r, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+                    r,
+                    owner=template_placeholder.owner,
+                    role=template_placeholder.role,
+                    tracing=template_placeholder.tracing,
                 )
                 for r in response
             )
         else:
-            response = PlaceHolder.create_from(
-                response, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+            placeholders = PlaceHolder.create_from(
+                response,
+                owner=template_placeholder.owner,
+                role=template_placeholder.role,
+                tracing=template_placeholder.tracing,
             )
-
-        if ph_arg.tracing:
-            ph_arg.role.register_action(
-                (command, response), syft.execution.computation.ComputationAction
-            )
-
-        return response
+        return placeholders
 
     def __getattribute__(self, name):
         """Try to find the attribute in the current object
@@ -142,11 +154,12 @@ class PlaceHolder(AbstractTensor):
 
     def send(self, *args, **kwargs):
         response = self.child.send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("send", self, args, kwargs)
         self.role.register_action(
-            (command, response), syft.execution.communication.CommunicationAction
+            (command, placeholder), syft.execution.communication.CommunicationAction
         )
-        return response
+        return placeholder
 
     def copy(self):
         """
