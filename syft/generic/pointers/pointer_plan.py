@@ -115,7 +115,7 @@ class PointerPlan(ObjectPointer):
         location = self._locations[0]
         id_at_location = self._ids_at_location[0]
 
-        command = ("parameters", id_at_location, [], {})
+        command = ("parameters", id_at_location, (), {})
 
         pointers = self.owner.send_command(message=command, recipient=location)
 
