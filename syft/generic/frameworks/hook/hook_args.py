@@ -635,7 +635,11 @@ register_response_functions = {}
 
 
 def register_response(
-    attr: str, response: object, response_ids: object, owner: AbstractWorker
+    attr: str,
+    response: object,
+    response_ids: object,
+    owner: AbstractWorker,
+    is_identity_operation: bool = False,
 ) -> object:
     """
     When a remote worker execute a command sent by someone else, the response is
@@ -678,7 +682,12 @@ def register_response(
         # Store this utility function in the registry
         register_response_functions[attr_id] = register_response_function
         # Run it
-        new_response = register_response_function(response, response_ids=response_ids, owner=owner)
+        new_response = register_response_function(
+            response,
+            response_ids=response_ids,
+            owner=owner,
+            de_register_obj=not is_identity_operation,  # Dont de-reg if identity
+        )
 
     # Remove the artificial tuple
     if not response_is_tuple:
@@ -707,7 +716,10 @@ def build_register_response_function(response: object) -> Callable:
 
 
 def register_tensor(
-    tensor: FrameworkTensorType, owner: AbstractWorker, response_ids: List = list()
+    tensor: FrameworkTensorType,
+    owner: AbstractWorker,
+    response_ids: List = list(),
+    de_register_obj: bool = True,
 ):
     """
     Registers a tensor.
@@ -717,12 +729,15 @@ def register_tensor(
         owner: The owner that makes the registration.
         response_ids: List of ids where the tensor should be stored
             and each id is pop out when needed.
+        de_register_obj: De-Register the Tensor before the Registration. Set to False to Identity operations
+            as deletes the original object.
     """
     # This method often leads to re-registration of tensors
     # hence creating two copies of the same info. The older tensor
     # is left hanging and is never deleted. De-Registering the original
     # tensor (if-exists) before registration addresses this problem.
-    owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
+    if de_register_obj:
+        owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
         tensor.id = response_ids.pop(-1)
