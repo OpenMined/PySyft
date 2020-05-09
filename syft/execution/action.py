@@ -21,7 +21,7 @@ class Action(ABC):
     also an Action."""
 
     def __init__(
-        self, name: str, target, args_: tuple, kwargs_: dict, return_ids, return_value=False
+        self, name: str, target, args_: tuple, kwargs_: dict, return_ids: tuple, return_value=False
     ):
         """Initialize an action
 
