@@ -302,7 +302,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def remote_get(self):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
-        self.child
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
