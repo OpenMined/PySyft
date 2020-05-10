@@ -257,7 +257,7 @@ def test_fast_convert_array(ibase, obase, input, output):
         (256, 256, [40, 40, 40], 314159265),
     ],
 )
-def test_fv_encryption_decrption(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
+def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
     ctx = Context(
         EncryptionParams(
             poly_modulus, CoeffModulus().create(poly_modulus, coeff_bit_sizes), plain_modulus
@@ -267,4 +267,46 @@ def test_fv_encryption_decrption(poly_modulus, plain_modulus, coeff_bit_sizes, i
     encoder = IntegerEncoder(ctx)
     encrypter = Encrypter(ctx, keys[1])  # keys[1] = public_key
     decrypter = Decrypter(ctx, keys[0])  # keys[0] = secret_key
+    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
+
+
+@pytest.mark.parametrize(
+    "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
+    [
+        (64, 64, [40], 0x12345678),
+        (64, 64, [40], 0),
+        (64, 64, [40], 1),
+        (64, 64, [40], 2),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFD),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
+        (64, 64, [40], 314159265),
+        (128, 128, [40, 40], 0x12345678),
+        (128, 128, [40, 40], 0),
+        (128, 128, [40, 40], 1),
+        (128, 128, [40, 40], 2),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (128, 128, [40, 40], 314159265),
+        (256, 256, [40, 40, 40], 0x12345678),
+        (256, 256, [40, 40, 40], 0),
+        (256, 256, [40, 40, 40], 1),
+        (256, 256, [40, 40, 40], 2),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
+        (256, 256, [40, 40, 40], 314159265),
+    ],
+)
+def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
+    ctx = Context(
+        EncryptionParams(
+            poly_modulus, CoeffModulus().create(poly_modulus, coeff_bit_sizes), plain_modulus
+        )
+    )
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encrypter = Encrypter(ctx, keys[0])  # keys[0] = secret_key
+    decrypter = Decrypter(ctx, keys[0])
     assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
