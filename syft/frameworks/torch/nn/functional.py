@@ -1,4 +1,7 @@
 import torch
+import syft as sy
+from syft.generic.utils import allow_command
+from syft.generic.utils import remote
 
 
 def linear(*args):
@@ -35,23 +38,8 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
-def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
-    """
-    Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
-    The idea is to build new tensors from input and weight to compute a
-    matrix multiplication equivalent to the convolution.
-    Args:
-        input: input image
-        weight: convolution kernels
-        bias: optional additive bias
-        stride: stride of the convolution kernels
-        padding:  implicit paddings on both sides of the input.
-        dilation: spacing between kernel elements
-        groups: split input into groups, in_channels should be divisible by the number of groups
-    Returns:
-        the result of the convolution (FixedPrecision Tensor)
-    """
-
+@allow_command
+def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     assert len(input.shape) == 4
     assert len(weight.shape) == 4
 
@@ -122,18 +110,24 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     #                       [weights for out channel nb_channels_out]].TRANSPOSE()
     weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
 
-    # Now that everything is set up, we can compute the result
-    if groups > 1:
-        res = []
-        chunks_im = torch.chunk(im_reshaped, groups, dim=2)
-        chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
-        for g in range(groups):
-            tmp = chunks_im[g].matmul(chunks_weights[g])
-            res.append(tmp)
-        res = torch.cat(res, dim=2)
-    else:
-        res = im_reshaped.matmul(weight_reshaped)
+    return (
+        im_reshaped,
+        weight_reshaped,
+        torch.tensor(batch_size),
+        torch.tensor(nb_channels_out),
+        torch.tensor(nb_rows_out),
+        torch.tensor(nb_cols_out),
+    )
 
+
+@allow_command
+def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
+    batch_size, nb_channels_out, nb_rows_out, nb_cols_out = (
+        batch_size.item(),
+        nb_channels_out.item(),
+        nb_rows_out.item(),
+        nb_cols_out.item(),
+    )
     # Add a bias if needed
     if bias is not None:
         if bias.is_wrapper and res.is_wrapper:
@@ -149,7 +143,98 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
         .contiguous()
     )
+
     return res
+
+
+def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    """
+    Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
+    The idea is to build new tensors from input and weight to compute a
+    matrix multiplication equivalent to the convolution.
+    Args:
+        input: input image
+        weight: convolution kernels
+        bias: optional additive bias
+        stride: stride of the convolution kernels
+        padding:  implicit paddings on both sides of the input.
+        dilation: spacing between kernel elements
+        groups: split input into groups, in_channels should be divisible by the number of groups
+    Returns:
+        the result of the convolution (FixedPrecision Tensor)
+    """
+    input_fp, weight_fp, bias_fp = input, weight, bias
+    input, weight, bias = input.child, weight.child, bias.child
+
+    locations = input.locations
+
+    im_reshaped_shares = {}
+    weight_reshaped_shares = {}
+    params = {}
+    for location in locations:
+        input_share = input.child[location.id]
+        weight_share = weight.child[location.id]
+        bias_share = bias.child[location.id]
+        r = remote(_pre_conv, location=location)(
+            input_share,
+            weight_share,
+            bias_share,
+            stride,
+            padding,
+            dilation,
+            groups,
+            return_value=False,
+            return_arity=6,
+        )
+        (
+            im_reshaped_share,
+            weight_reshaped_share,
+            batch_size,
+            nb_channels_out,
+            nb_rows_out,
+            nb_cols_out,
+        ) = r
+        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
+
+        im_reshaped_shares[location.id] = im_reshaped_share
+        weight_reshaped_shares[location.id] = weight_reshaped_share
+
+    im_reshaped = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
+        sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes()), wrap=False
+    )
+    weight_reshaped = sy.FixedPrecisionTensor(**weight_fp.get_class_attributes()).on(
+        sy.AdditiveSharingTensor(weight_reshaped_shares, **input.get_class_attributes()), wrap=False
+    )
+
+    # Now that everything is set up, we can compute the result
+    if groups > 1:
+        res = []
+        chunks_im = torch.chunk(im_reshaped, groups, dim=2)
+        chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
+        for g in range(groups):
+            tmp = chunks_im[g].matmul(chunks_weights[g])
+            res.append(tmp)
+        res = torch.cat(res, dim=2)
+        raise NotImplementedError
+    else:
+        print("mat>>>")
+        res_fp = im_reshaped.matmul(weight_reshaped)
+        print("<<<mul")
+        res = res_fp.child
+
+    res_shares = {}
+    for location in locations:
+        bias_share = bias.child[location.id]
+        res_share = res.child[location.id]
+        res_share = remote(_post_conv, location=location)(
+            bias_share, res_share, *params[location.id]
+        )
+        res_shares[location.id] = res_share
+
+    result_fp = sy.FixedPrecisionTensor(**res_fp.get_class_attributes()).on(
+        sy.AdditiveSharingTensor(res_shares, **res.get_class_attributes()), wrap=False
+    )
+    return result_fp
 
 
 def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
