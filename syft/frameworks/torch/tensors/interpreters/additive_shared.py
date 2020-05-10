@@ -1131,21 +1131,25 @@ class AdditiveSharingTensor(AbstractTensor):
         Returns:
             the response of the function command
         """
-        cmd, _, args_, kwargs_ = command
+        cmd_name, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
+        cmd = None
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
+            cmd = cls.rgetattr(cls, cmd_name)
         except AttributeError:
             pass
-        if not isinstance(cmd, str):
+
+        if cmd is not None:
             return cmd(*args_, **kwargs_)
 
         tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         results = {}
         for worker, share in new_args[0].items():
@@ -1153,14 +1157,14 @@ class AdditiveSharingTensor(AbstractTensor):
             new_args_worker = tuple(AdditiveSharingTensor.select_worker(new_args, worker))
 
             # build the new command
-            new_command = (cmd, None, new_args_worker, new_kwargs)
+            new_command = (cmd_name, None, new_args_worker, new_kwargs)
 
             # Send it to the appropriate class and get the response
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back AdditiveSharingTensor on the tensors found in the response
         response = hook_args.hook_response(
-            cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+            cmd_name, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
         return response
