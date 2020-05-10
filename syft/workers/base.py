@@ -609,7 +609,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def send_command(
         self,
         recipient: "BaseWorker",
-        message: tuple,
+        cmd_name: str,
+        target: PointerTensor = None,
+        args_: tuple = (),
+        kwargs_: dict = {},
         return_ids: str = None,
         return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
@@ -618,7 +621,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             recipient: A recipient worker.
-            message: A tuple representing the message being sent.
+            cmd_name: Command number.
+            target: Target pointer Tensor.
+            args_: additional args for command execution.
+            kwargs_: additional kwargs for command execution.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -628,11 +634,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        name, target, args_, kwargs_ = message
-
         try:
             message = TensorCommandMessage.computation(
-                name, target, args_, kwargs_, return_ids, return_value
+                cmd_name, target, args_, kwargs_, return_ids, return_value
             )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
