@@ -94,7 +94,7 @@ class PointerDataset(ObjectPointer):
         data_elem, target_elem = self.owner.send_command(
             cmd_name="__getitem__",
             target=self.id_at_location,
-            args_=(index),
+            args_=tuple(index),
             recipient=self.location,
         )
         return data_elem.wrap(), target_elem.wrap()
