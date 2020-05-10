@@ -162,7 +162,11 @@ class PointerPlan(ObjectPointer):
                 break
 
         response = self.owner.send_command(
-            cmd_name="run", target=id_at_location, args_=tuple(args), recipient=location, return_ids=tuple(response_ids)
+            cmd_name="run",
+            target=id_at_location,
+            args_=tuple(args),
+            recipient=location,
+            return_ids=tuple(response_ids),
         )
         response = hook_args.hook_response(plan_name, response, wrap_type=FrameworkTensor[0])
         if isinstance(response, (list, tuple)):
