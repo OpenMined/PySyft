@@ -195,16 +195,13 @@ class Plan(AbstractObject):
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
             args_placeholders = tuple(
-                PlaceHolder.insert(
-                    arg, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
-                )
+                PlaceHolder.insert(arg, AutogradTensor, role=self.role, tracing=True)
                 for arg in args
             )
         else:
             # Add Placeholder on top of each arg
             args = args_placeholders = tuple(
-                PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-                for arg in args
+                PlaceHolder.create_from(arg, role=self.role, tracing=True) for arg in args
             )
 
         # Add state to args if needed
