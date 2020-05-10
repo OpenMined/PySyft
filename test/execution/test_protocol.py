@@ -231,6 +231,28 @@ def test_multi_role_execution(workers):
     assert (dict_res["alice"][0] == th.tensor([4])).all()
 
 
+def test_stateful_protocol(workers):
+    shapes = {"alice": ((1,),), "bob": ((1,),)}
+    states = {"alice": (th.tensor([1]), th.tensor([3])), "bob": (th.tensor([5]),)}
+
+    @sy.func2protocol(args_shape=shapes, states=states)
+    def protocol(roles):
+        # fetch tensors from stores
+        # TODO will we fetch tensors that come from states this way?
+        # With tags?
+        tensor1 = roles["alice"].fetch(th.tensor([1]))
+        tensor2 = roles["bob"].fetch(th.tensor([1]))
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    assert all(protocol.roles["alice"].state.state_placeholders[0].child == th.tensor([1]))
+    assert all(protocol.roles["alice"].state.state_placeholders[1].child == th.tensor([3]))
+    assert all(protocol.roles["bob"].state.state_placeholders[0].child == th.tensor([5]))
+
+
 def test_copy(workers):
     @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(roles):
