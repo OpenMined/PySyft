@@ -125,7 +125,7 @@ class Plan(AbstractObject):
 
         if role is None:
             for st in state_tensors:
-                self.role.register_state_tensor(st, owner)
+                self.role.register_state_tensor(st)
 
         self.include_state = include_state
         self.is_building = False
@@ -273,11 +273,11 @@ class Plan(AbstractObject):
         if isinstance(value, torch.jit.ScriptModule):
             object.__setattr__(self, name, value)
         elif isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value, self.owner)
+            self.role.register_state_tensor(value)
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param, self.owner)
+                self.role.register_state_tensor(param)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
@@ -318,7 +318,8 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            result = self.role.execute(args)
+            self.role.instantiate_inputs(args)
+            result = self.role.execute()
             if len(result) == 1:
                 return result[0]
             return result
