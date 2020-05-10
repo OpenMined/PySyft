@@ -60,7 +60,7 @@ def test_reset():
     action = ("get", target, (), {})
 
     role.register_action((action, placeholder), CommunicationAction)
-    role.placeholders = [PlaceHolder(), PlaceHolder()]
+    role.placeholders = {"ph_id1": PlaceHolder(), "ph_id2": PlaceHolder()}
     role.input_placeholder_ids = ("input1", "input2")
     role.output_placeholder_ids = ("output1",)
 

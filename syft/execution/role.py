@@ -109,9 +109,13 @@ class Role:
         a Plan or a Protocol several times.
         """
         self.actions = []
-        self.placeholders = {}
         self.input_placeholder_ids = ()
         self.output_placeholder_ids = ()
+        # We don't want to remove placeholders coming from the state
+        state_ph_ids = [ph.id.value for ph in self.state.state_placeholders]
+        self.placeholders = {
+            ph_id: ph for ph_id, ph in self.placeholders.items() if ph_id in state_ph_ids
+        }
 
     def execute(self):
         """ Make the role execute all its actions.

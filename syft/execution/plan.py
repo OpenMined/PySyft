@@ -178,6 +178,8 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
+        # Reset previous build
+        self.role.reset()
 
         # Enable tracing
         self.toggle_tracing(True)
