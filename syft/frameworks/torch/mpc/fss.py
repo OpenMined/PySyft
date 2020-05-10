@@ -60,8 +60,8 @@ def initialize_crypto_plans(worker):
 
 
 def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
-    response_ids = [sy.ID_PROVIDER.pop()]
-    args = [args, response_ids]
+    response_ids = (sy.ID_PROVIDER.pop(),)
+    args = (args, response_ids)
 
     command = ("run", plan_tag, args, kwargs)
 

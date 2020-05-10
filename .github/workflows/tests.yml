@@ -52,7 +52,7 @@ jobs:
         pip3 install pep8-naming
         # stop the build if there are Python syntax errors or undefined names
         flake8 --config=.flake8 .
-        black --check --verbose .
+        black --check .
         # exit-zero treats all errors as warnings.
         # diverting from the standard 79 character line length in
         # accordance with this:
