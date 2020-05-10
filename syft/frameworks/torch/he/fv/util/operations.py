@@ -120,6 +120,6 @@ def multiply_add_plain_with_scaling_variant(pue, message, context):
     for i in range(plain_coeff_count):
         for j in range(coeff_mod_size):
             temp = (delta[j] * plaintext[i]) % coeff_modulus[j]
-            pue_0[j * coeff_count] = (pue_0[j * coeff_count] + temp) % coeff_modulus[j]
+            pue_0[i + j * coeff_count] = (pue_0[i + j * coeff_count] + temp) % coeff_modulus[j]
 
     return CipherText([pue_0, pue_1])  # p0 * u * e1 + delta * m

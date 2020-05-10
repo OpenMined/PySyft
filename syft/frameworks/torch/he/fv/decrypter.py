@@ -23,8 +23,6 @@ class Decrypter:
         # Divide scaling variant using BEHZ FullRNS techniques
         result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)
 
-        print("result   : ", result)
-
         plain_coeff_count = get_significant_count(result, self._coeff_count)
         return PlainText(result[:plain_coeff_count])
 
