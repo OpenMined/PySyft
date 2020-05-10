@@ -390,10 +390,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             A pointer to an AdditiveSharingTensor
         """
         if len(args) < 2:
-            raise RuntimeError(
-                "Error, share must have > 1 arguments all of type syft.workers"
-                "so you can be safely getting the item you need."
-            )
+            raise RuntimeError("Error, share must have > 1 arguments all of type syft.workers")
 
         command = ("share", self, args, kwargs)
         response = self.owner.send_command(self.location, command)
