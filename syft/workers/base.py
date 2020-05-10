@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import asyncio
 import logging
+import time
 from typing import Callable
 from typing import List
 from typing import Tuple
@@ -117,6 +118,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
         self.msg_history = list()
+        self.trash = {}
 
         # For performance, we cache all possible message types
         self._message_router = {
@@ -458,12 +460,30 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                     tensor.trigger_origin_backward_hook(tensor.origin, tensor.id_at_origin)
                 )
 
+    def garbage(self, object_id, location):
+        """
+        Garbage manager which collects all the remote GC request and batch send
+        them every "delay" seconds for every location.
+        """
+        delay = 1
+
+        if location.id not in self.trash:
+            self.trash[location.id] = (time.time(), [])
+
+        self.trash[location.id][1].append(object_id)
+
+        if (time.time() - self.trash[location.id][0]) > delay:
+            self.send_msg(ForceObjectDeleteMessage(self.trash[location.id][1]), location)
+            self.trash[location.id] = (time.time(), [])
+
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
-        self.rm_obj(msg.object_id)
+        for object_id in msg.object_ids:
+            self.rm_obj(object_id)
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        self.force_rm_obj(msg.object_id)
+        for object_id in msg.object_ids:
+            self.force_rm_obj(object_id)
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):

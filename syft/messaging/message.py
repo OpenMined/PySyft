@@ -300,7 +300,7 @@ class ObjectRequestMessage(Message):
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {(self.obj_id, self.user, self.reason)})"
+        return f"({type(self).__name__} {(self.object_id, self.user, self.reason)})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
@@ -461,14 +461,14 @@ class ForceObjectDeleteMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, obj_id):
+    def __init__(self, obj_ids):
         """Initialize the message."""
 
-        self.object_id = obj_id
+        self.object_ids = obj_ids
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.object_id})"
+        return f"({type(self).__name__} {self.object_ids})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ForceObjectDeleteMessage") -> tuple:
@@ -483,7 +483,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, msg.object_id),)
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object_ids),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ForceObjectDeleteMessage":
