@@ -44,6 +44,7 @@ class Role:
         self.output_placeholder_ids = output_placeholder_ids or ()
 
         self.state = state or State()
+        self.tracing = False
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
@@ -131,17 +132,16 @@ class Role:
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def register_state_tensor(self, tensor, owner):
-        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=owner)
+    def register_state_tensor(self, tensor):
+        placeholder = sy.PlaceHolder(id=tensor.id, role=self)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
         # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
-    def execute(self, args_):
-        """ Make the role execute all its actions using args_ as inputs.
+    def execute(self):
+        """ Make the role execute all its actions.
         """
-        self._instantiate_inputs(args_)
         for action in self.actions:
             self._execute_action(action)
 
@@ -151,7 +151,16 @@ class Role:
 
         return tuple(p.child for p in output_placeholders)
 
-    def _instantiate_inputs(self, args_):
+    def fetch(self, tensor):
+        """ Fetch tensors used in a protocol from worker's local store
+        """
+        # TODO mock for now, fetch will use worker's store in a future work
+        if self.tracing:
+            return PlaceHolder.create_from(tensor, role=self, tracing=True)
+        else:
+            return tensor
+
+    def instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
 
@@ -244,9 +253,7 @@ class Role:
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
-            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=ph.owner).instantiate(
-                ph.child
-            )
+            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value]).instantiate(ph.child)
             state_placeholders.append(new_ph)
 
         state = State(state_placeholders)

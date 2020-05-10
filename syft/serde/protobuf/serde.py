@@ -388,10 +388,7 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
 
 def bufferize_args(worker: AbstractWorker, args_: list) -> list:
-    protobuf_args = []
-    for arg in args_:
-        protobuf_args.append(bufferize_arg(worker, arg))
-    return protobuf_args
+    return [bufferize_arg(worker, arg) for arg in args_]
 
 
 def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
@@ -403,22 +400,23 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
         setattr(protobuf_arg, attr_name, arg)
     except:
         getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+
     return protobuf_arg
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-    args_ = []
-    for protobuf_arg in protobuf_args:
-        args_.append(unbufferize_arg(worker, protobuf_arg))
-    return args_
+    return tuple([unbufferize_arg(worker, arg) for arg in protobuf_args])
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-    protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+    protobuf_field_name = protobuf_arg.WhichOneof("arg")
+
+    protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
     try:
         arg = _unbufferize(worker, protobuf_arg_field)
     except:
         arg = protobuf_arg_field
+
     return arg
 
 

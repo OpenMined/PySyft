@@ -308,13 +308,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A binary message response.
         """
-
-        # Step -1: save message if log_msgs ==  True
-        if self.log_msgs:
-            self.msg_history.append(bin_message)
-
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self)
+
+        # Step 1: save message and/or log it out
+        if self.log_msgs:
+            self.msg_history.append(msg)
 
         if self.verbose:
             print(
@@ -323,10 +322,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 else f"worker {self} received {type(msg).__name__}"
             )
 
-        # Step 1: route message to appropriate function
+        # Step 2: route message to appropriate function
         response = self._message_router[type(msg)](msg)
 
-        # Step 2: Serialize the message to simple python objects
+        # Step 3: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
 
         return bin_response
@@ -536,8 +535,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
+                # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return response
                 else:
                     return None
             except ResponseSignatureError:
@@ -549,23 +549,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
-        obj_id = action.obj_id
-        source = action.source
-        destinations = action.destinations
+        owner = action.target.owner
+        destinations = [self.get_worker(id_) for id_ in action.args]
         kwargs_ = action.kwargs
-        source_worker = self.get_worker(source)
-        if source_worker != self:
+
+        if owner != self:
             return None
         else:
-            obj = self.get_obj(obj_id)
-            response = source_worker.send(obj, *destinations, **kwargs_)
+            obj = self.get_obj(action.target.id)
+            response = owner.send(obj, *destinations, **kwargs_)
             response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                self.rm_obj(obj_id)
+                self.rm_obj(action.target.id)
             return response
 
     def execute_worker_command(self, message: tuple):
@@ -1140,7 +1139,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
 
-        return sy.serde.deserialize(self.msg_history[index], worker=self)
+        return self.msg_history[index]
 
     @property
     def message_pending_time(self):
@@ -1185,6 +1184,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def feed_crypto_primitive_store(self, types_primitives: dict):
         self.crypto_store.add_primitives(types_primitives)
+
+    def list_tensors(self):
+        return str(self._tensors)
+
+    def tensors_count(self):
+        return len(self._tensors)
+
+    def list_objects(self):
+        return str(self._objects)
+
+    def objects_count(self):
+        return len(self._objects)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
