@@ -38,16 +38,13 @@ class FrameworkWrapper:
                 return result
 
             if isinstance(result, FrameworkTensor):
-                result = PlaceHolder.create_from(
-                    result, owner=self.owner, role=self.role, tracing=True
-                )
+                result = PlaceHolder.create_from(result, role=self.role, tracing=True)
                 self.role.register_action(
                     (command, result), sy.execution.computation.ComputationAction
                 )
             elif isinstance(result, (list, tuple)):
                 result = tuple(
-                    PlaceHolder.create_from(r, owner=self.owner, role=self.role, tracing=True)
-                    for r in result
+                    PlaceHolder.create_from(r, role=self.role, tracing=True) for r in result
                 )
                 self.role.register_action(
                     (command, result), sy.execution.computation.ComputationAction
