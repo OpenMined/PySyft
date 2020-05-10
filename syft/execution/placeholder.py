@@ -87,6 +87,8 @@ class PlaceHolder(AbstractTensor):
     @staticmethod
     def convert_to_placeholders(response, template_placeholder):
         """ Turn back response to PlaceHolders """
+        print(90, 'ph', response)
+        print(90, 'ph', template_placeholder)
         if isinstance(response, (tuple, list)):
 
             placeholders = tuple(
@@ -105,6 +107,10 @@ class PlaceHolder(AbstractTensor):
                 role=template_placeholder.role,
                 tracing=template_placeholder.tracing,
             )
+        print(108, 'ph', response, 'end')
+        print(108, 'ph', template_placeholder, 'end')
+        print(108, 'ph', placeholders, 'end')
+
         return placeholders
 
     def __getattribute__(self, name):
@@ -132,6 +138,7 @@ class PlaceHolder(AbstractTensor):
         else:
             self.child = tensor
 
+        print(135, 'ph', tensor)
         if hasattr(self.child, "shape"):
             self.expected_shape = tuple(self.child.shape)
 
@@ -156,6 +163,70 @@ class PlaceHolder(AbstractTensor):
         response = self.child.send(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def move(self, *args, **kwargs):
+        response = self.child.move(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("move", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share(self, *args, **kwargs):
+        response = self.child.share(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def mid_get(self, *args, **kwargs):
+        response = self.child.mid_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        command = ("mid_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_get(self, *args, **kwargs):
+        response = self.child.remote_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        command = ("remote_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_send(self, *args, **kwargs):
+        response = self.child.remote_send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("remote_send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share_(self, *args, **kwargs):
+        response = self.child.share_(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share_", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def get(self, *args, **kwargs):
+        response = self.child.get(*args, **kwargs)
+        print(167, 'ph.get', self.child, response)
+        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        command = ("get", self, args, kwargs)
         self.role.register_action(
             (command, placeholder), syft.execution.communication.CommunicationAction
         )
@@ -187,6 +258,7 @@ class PlaceHolder(AbstractTensor):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
+        print(261, 'ph.create_from', tensor)
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
