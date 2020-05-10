@@ -120,8 +120,6 @@ class Role:
         """ Fetch tensors used in a protocol from worker's local store
         """
         # TODO mock for now, fetch will use worker's store in a future work
-        # TODO also need to handle tracing: if tracing mode, return a PH with tracing=True
-        # else return the tensor?
         if self.tracing:
             return PlaceHolder.create_from(tensor, role=self, tracing=True)
         else:
