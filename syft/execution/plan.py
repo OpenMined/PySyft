@@ -212,18 +212,12 @@ class Plan(AbstractObject):
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
             args_placeholders = build_nested_arg(
-                args,
-                lambda x: PlaceHolder.insert(
-                    x, AutogradTensor, role=self.role, tracing=True
-                ),
+                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
             )
         else:
             # Add Placeholder on top of each arg
             args = args_placeholders = build_nested_arg(
-                args,
-                lambda x: PlaceHolder.create_from(
-                    x, role=self.role, tracing=True
-                ),
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
             )
 
         # Add state to args if needed
