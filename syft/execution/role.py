@@ -104,6 +104,15 @@ class Role:
         # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
+    def reset(self):
+        """ Remove the trace actions on this Role to make it possible to build
+        a Plan or a Protocol several times.
+        """
+        self.actions = []
+        self.placeholders = {}
+        self.input_placeholder_ids = ()
+        self.output_placeholder_ids = ()
+
     def execute(self):
         """ Make the role execute all its actions.
         """

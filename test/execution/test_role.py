@@ -50,3 +50,28 @@ def test_register_communication_action():
     assert registered.kwargs == {}
 
     assert registered.return_ids == (placeholder.id,)
+
+
+def test_reset():
+    role = Role()
+    placeholder = PlaceHolder()
+    target = torch.ones([1])
+
+    action = ("get", target, (), {})
+
+    role.register_action((action, placeholder), CommunicationAction)
+    role.placeholders = [PlaceHolder(), PlaceHolder()]
+    role.input_placeholder_ids = ("input1", "input2")
+    role.output_placeholder_ids = ("output1",)
+
+    assert len(role.actions) == 1
+    assert len(role.placeholders) == 2
+    assert role.input_placeholder_ids == ("input1", "input2")
+    assert role.output_placeholder_ids == ("output1",)
+
+    role.reset()
+
+    assert len(role.actions) == 0
+    assert len(role.placeholders) == 0
+    assert role.input_placeholder_ids == ()
+    assert role.output_placeholder_ids == ()
