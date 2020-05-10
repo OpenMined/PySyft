@@ -238,7 +238,7 @@ class ComputationAction(Action):
     def __str__(self) -> str:
         """Returns string representation of computation action"""
         return f"{type(self).__name__}[{self.code()}]"
-      
+
     @staticmethod
     def get_protobuf_schema() -> ComputationActionPB:
         return ComputationActionPB

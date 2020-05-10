@@ -335,4 +335,3 @@ class Protocol(AbstractObject):
     @staticmethod
     def get_protobuf_schema() -> ProtocolPB:
         return ProtocolPB
-

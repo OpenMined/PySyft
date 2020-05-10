@@ -92,7 +92,6 @@ samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 samples[syft.workers.base.BaseWorker] = make_baseworker
 
 
-
 def test_serde_coverage():
     """Checks all types in serde are tested"""
     for cls, _ in msgpack.serde.simplifiers.items():
