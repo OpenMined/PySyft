@@ -17,6 +17,8 @@ import asyncio
 import torch as th
 import syft as sy
 from syft.workers.websocket_client import WebsocketClientWorker
+from syft.generic.utils import allow_command
+from syft.generic.utils import remote
 
 
 λ = 127  # 6  # 110 or 63  # security parameter
@@ -26,46 +28,18 @@ assert λs == 2
 
 no_wrap = {"no_wrap": True}
 
-NAMESPACE = "syft.frameworks.torch.mpc.fss"
-authorized1 = set(f"{NAMESPACE}.{name}" for name in ["mask_builder", "evaluate"])
+
+def full_name(f):
+    return f"syft.frameworks.torch.mpc.fss.{f.__name__}"
+
 
 # internal codes
 EQ = 0
 COMP = 1
 
 
-def full_name(f):
-    return f"{NAMESPACE}.{f.__name__}"
-
-
-def remote_exec(
-    command_name,
-    location,
-    args=tuple(),
-    kwargs=dict(),
-    worker=None,
-    return_value=False,
-    return_arity=1,
-    multiprocessing=False,
-):
-    if worker is None:
-        worker = sy.local_worker
-
-    if isinstance(location, str):
-        location = worker.get_worker(location)
-
-    response_ids = [sy.ID_PROVIDER.pop() for _ in range(return_arity)]
-
-    command = (command_name, None, args, kwargs)
-
-    response = worker.send_command(
-        message=command, recipient=location, return_ids=response_ids, return_value=return_value
-    )
-
-    if multiprocessing:
-        return response.get()
-    else:
-        return response
+def multiprocessing_remote(command, location, args, kwargs):
+    return remote(command, location)(*args, **kwargs)
 
 
 def fss_op(x1, x2, type_op="eq"):
@@ -104,9 +78,7 @@ def fss_op(x1, x2, type_op="eq"):
 
     shares = []
     for i, location in enumerate(locations):
-        share = remote_exec(
-            full_name(mask_builder), location, args=workers_args[i], return_value=True
-        )
+        share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
         shares.append(share)
 
     # async has a cost which is too expensive for this command
@@ -126,12 +98,11 @@ def fss_op(x1, x2, type_op="eq"):
         if numel > 10_000:
             print("sync multi")
             multiprocessing_args = []
+            kwargs = dict(return_value=False, multiprocessing=True)
             for i, location in enumerate(locations):
-                multiprocessing_args.append(
-                    (full_name(evaluate), location.id, workers_args[i], {}, None, False, 1, True)
-                )
+                multiprocessing_args.append((evaluate, location.id, workers_args[i], kwargs))
             p = multiprocessing.Pool()
-            real_shares = p.starmap(remote_exec, multiprocessing_args)
+            real_shares = p.starmap(multiprocessing_remote, multiprocessing_args)
             p.close()
             shares = []
             # TODO fix the getting back shares
@@ -141,9 +112,7 @@ def fss_op(x1, x2, type_op="eq"):
             print("sync")
             shares = []
             for i, location in enumerate(locations):
-                share = remote_exec(
-                    full_name(evaluate), location, args=workers_args[i], return_value=False
-                )
+                share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
                 shares.append(share)
     else:
         print("async")
@@ -161,6 +130,7 @@ def fss_op(x1, x2, type_op="eq"):
 
 
 # share level
+@allow_command
 def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
@@ -172,6 +142,7 @@ def mask_builder(x1, x2, type_op):
     return r
 
 
+@allow_command
 def evaluate(b, x_masked, type_op):
     if type_op == "eq":
         return eq_evaluate(b, x_masked)

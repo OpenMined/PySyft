@@ -5,19 +5,14 @@ import torch as th
 import syft as sy
 from syft.frameworks.torch.mpc.beaver import request_triple
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.torch.mpc.fss import remote_exec, full_name
+from syft.generic.utils import allow_command
+from syft.generic.utils import remote
 
 no_wrap = {"no_wrap": True}
 
-NAMESPACE = "syft.frameworks.torch.mpc.spdz"
-authorized2 = set(f"{NAMESPACE}.{name}" for name in ["spdz_mask", "spdz_compute"])
-
-
-def full_name(f):
-    return f"{NAMESPACE}.{f.__name__}"
-
 
 # share level
+@allow_command
 def spdz_mask(x, y, type_op):
     a, b, c = x.owner.crypto_store.get_keys(
         "beaver", op=type_op, shapes=(x.shape, y.shape), n_instances=1, remove=False
@@ -26,6 +21,7 @@ def spdz_mask(x, y, type_op):
 
 
 # share level
+@allow_command
 def spdz_compute(j, delta, epsilon, type_op):
     a, b, c = delta.owner.crypto_store.get_keys(
         "beaver", op=type_op, shapes=(delta.shape, epsilon.shape), n_instances=1, remove=True
@@ -66,8 +62,8 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     shares_delta, shares_epsilon = [], []
     for location in locations:
         args = (x.child[location.id], y.child[location.id], type_op)
-        share_delta, share_epsilon = remote_exec(
-            full_name(spdz_mask), location, args=args, return_value=True
+        share_delta, share_epsilon = remote(spdz_mask, location=location)(
+            *args, return_value=True, return_arity=2
         )
         shares_delta.append(share_delta)
         shares_epsilon.append(share_epsilon)
@@ -78,7 +74,7 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     shares = []
     for i, location in enumerate(locations):
         args = (th.LongTensor([i]), delta, epsilon, type_op)
-        share = remote_exec(full_name(spdz_compute), location, args=args, return_value=False)
+        share = remote(spdz_compute, location=location)(*args, return_value=False)
         shares.append(share)
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
