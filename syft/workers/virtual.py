@@ -1,5 +1,7 @@
 from time import sleep
+from typing import Union
 
+from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
 from syft.federated.federated_client import FederatedClient
 
@@ -17,3 +19,19 @@ class VirtualWorker(BaseWorker, FederatedClient):
     def _recv_msg(self, message: bin) -> bin:
         """receive message"""
         return self.recv_msg(message)
+
+    @staticmethod
+    def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
+        return BaseWorker.simplify(_worker, worker)
+
+    @staticmethod
+    def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
+        return BaseWorker.detail(worker, worker_tuple)
+
+    @staticmethod
+    def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
+        return BaseWorker.force_simplify(_worker, worker)
+
+    @staticmethod
+    def force_detail(worker: AbstractWorker, worker_tuple: tuple) -> "VirtualWorker":
+        return BaseWorker.force_detail(worker, worker_tuple)

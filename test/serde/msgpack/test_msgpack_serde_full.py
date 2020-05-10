@@ -89,7 +89,7 @@ samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
-samples[syft.workers.base.BaseWorker] = make_baseworker
+samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
 
 def test_serde_coverage():

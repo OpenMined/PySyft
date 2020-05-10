@@ -8,6 +8,7 @@ import io
 
 import syft
 from syft.serde import msgpack
+from syft.workers.virtual import VirtualWorker
 
 # Make dict of type codes
 CODE = OrderedDict()
@@ -1209,16 +1210,16 @@ def make_trainconfig(**kwargs):
     ]
 
 
-# syft.workers.base.BaseWorker
-def make_baseworker(**kwargs):
-    worker = kwargs["workers"]["serde_worker"]
+# syft.workers.virtual.VirtualWorker
+def make_virtual_worker(**kwargs):
+    worker = VirtualWorker(hook=kwargs["workers"]["serde_worker"].hook)
 
     t = torch.rand(3, 3)
     with worker.registration_enabled():
         worker.register_obj(t)
 
     def compare(detailed, original):
-        assert isinstance(detailed, syft.workers.base.BaseWorker)
+        assert isinstance(detailed, syft.workers.virtual.VirtualWorker)
         assert detailed.id == original.id
         return True
 
@@ -1226,7 +1227,7 @@ def make_baseworker(**kwargs):
         {
             "value": worker,
             "simplified": (
-                CODE[syft.workers.base.BaseWorker],
+                CODE[syft.workers.virtual.VirtualWorker],
                 ((CODE[str], (b"serde-worker-BaseWorker",)),),  # id (str)
             ),
             "cmp_detailed": compare,
@@ -1236,7 +1237,7 @@ def make_baseworker(**kwargs):
             "forced": True,
             "value": worker,
             "simplified": (
-                FORCED_CODE[syft.workers.base.BaseWorker],
+                FORCED_CODE[syft.workers.virtual.VirtualWorker],
                 (
                     (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
                     msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects

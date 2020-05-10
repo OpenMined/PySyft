@@ -43,6 +43,7 @@ from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
@@ -78,7 +79,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = None
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
-OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
+OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker, VirtualWorker]
 
 # For registering syft objects with custom simplify and detail methods
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file

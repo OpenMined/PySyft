@@ -122,3 +122,7 @@ class CommunicationAction(Action):
         attrs = Action.unbufferize(worker, protobuf_obj)
 
         return CommunicationAction(*attrs)
+
+    @staticmethod
+    def get_protobuf_schema() -> CommunicationActionPB:
+        return CommunicationActionPB
