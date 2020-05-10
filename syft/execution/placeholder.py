@@ -10,7 +10,6 @@ class PlaceHolder(AbstractTensor):
         self,
         role=None,
         tracing=False,
-        owner=None,
         id=None,
         tags: set = None,
         description: str = None,
@@ -23,11 +22,9 @@ class PlaceHolder(AbstractTensor):
         When you send a PlaceHolder, you don't sent the instantiated tensors.
 
         Args:
-            owner: An optional BaseWorker object to specify the worker on which
-                the tensor is located.
             id: An optional string or integer id of the PlaceHolder.
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description)
+        super().__init__(id=id, tags=tags, description=description)
 
         if not isinstance(self.id, syft.execution.placeholder_id.PlaceholderId):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
@@ -41,7 +38,7 @@ class PlaceHolder(AbstractTensor):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
-        return {"role": self.role, "tracing": self.tracing, "owner": self.owner}
+        return {"role": self.role, "tracing": self.tracing}
 
     @classmethod
     def handle_func_command(cls, command):
@@ -78,15 +75,11 @@ class PlaceHolder(AbstractTensor):
         if isinstance(response, (tuple, list)):
             # Turn back response to PlaceHolders
             response = tuple(
-                PlaceHolder.create_from(
-                    r, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
-                )
+                PlaceHolder.create_from(r, role=ph_arg.role, tracing=ph_arg.tracing)
                 for r in response
             )
         else:
-            response = PlaceHolder.create_from(
-                response, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
-            )
+            response = PlaceHolder.create_from(response, role=ph_arg.role, tracing=ph_arg.tracing)
 
         if ph_arg.tracing:
             ph_arg.role.register_action(
@@ -147,11 +140,7 @@ class PlaceHolder(AbstractTensor):
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
         placeholder = PlaceHolder(
-            role=self.role,
-            tracing=self.tracing,
-            tags=self.tags,
-            owner=self.owner,
-            shape=self.expected_shape,
+            role=self.role, tracing=self.tracing, tags=self.tags, shape=self.expected_shape
         )
         placeholder.child = self.child
 
@@ -162,14 +151,14 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     @staticmethod
-    def create_from(tensor, owner, role=None, tracing=False):
+    def create_from(tensor, role=None, tracing=False):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
-        return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
+        return PlaceHolder(role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
-    def insert(tensor, after, owner, role=None, tracing=False):
+    def insert(tensor, after, role=None, tracing=False):
         """ Helper method to add a placeholder in the specific place of tensor chain. """
         current_level = tensor
         while not isinstance(current_level, after) and current_level is not None:
@@ -186,7 +175,7 @@ class PlaceHolder(AbstractTensor):
                 f"Cannot insert Placeholder, {after.__name__} does not wrap anything."
             )
 
-        placeholder = PlaceHolder.create_from(child, owner, role, tracing)
+        placeholder = PlaceHolder.create_from(child, role, tracing)
         current_level.child = placeholder
         return placeholder
 
@@ -269,9 +258,7 @@ class PlaceHolder(AbstractTensor):
         description = syft.serde.msgpack.serde._detail(worker, description)
         shape = syft.serde.msgpack.serde._detail(worker, shape)
 
-        return PlaceHolder(
-            owner=worker, id=tensor_id, tags=tags, description=description, shape=shape
-        )
+        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=shape)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, placeholder: "PlaceHolder") -> PlaceholderPB:
@@ -317,9 +304,7 @@ class PlaceHolder(AbstractTensor):
 
         expected_shape = tuple(protobuf_placeholder.expected_shape.dims) or None
 
-        return PlaceHolder(
-            owner=worker, id=tensor_id, tags=tags, description=description, shape=expected_shape
-        )
+        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=expected_shape)
 
 
 ### Register the tensor with hook_args.py ###
