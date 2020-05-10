@@ -623,9 +623,7 @@ class FrameworkHook(ABC):
                         raise TensorsNotCollocatedException(pointer, args[0], attr)
 
             # Send the command
-            command = (attr, self, args, kwargs)
-
-            response = owner.send_command(location, command)
+            response = owner.send_command(location, attr, self, args, kwargs)
 
             # For inplace methods, just directly return self
             if syft.framework.is_inplace_method(attr):
@@ -783,10 +781,9 @@ class FrameworkHook(ABC):
             # Create a 'command' variable  that is understood by
             # the send_command() method of a worker.
             # command = (attr, id_at_location, args, kwargs)
-            command = (attr, _self, args, kwargs)
 
             # send the command
-            response = owner.send_command(location, command)
+            response = owner.send_command(location, attr, _self, args, kwargs)
 
             return response
 
