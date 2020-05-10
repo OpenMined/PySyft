@@ -302,6 +302,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def remote_get(self):
         self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        self.child
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -339,7 +340,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if tensor.is_wrapper:
             if isinstance(tensor.child, FrameworkTensor):
                 return tensor.child
-
         return tensor
 
     def attr(self, attr_name):
@@ -389,6 +389,12 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
+        if len(args) < 2:
+            raise RuntimeError(
+                "Error, share must have > 1 arguments all of type syft.workers"
+                "so you can be safely getting the item you need."
+            )
+
         command = ("share", self, args, kwargs)
         response = self.owner.send_command(self.location, command)
         return response

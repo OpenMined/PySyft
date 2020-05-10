@@ -154,6 +154,9 @@ class PlaceHolder(AbstractTensor):
     __repr__ = __str__
 
     def send(self, *args, **kwargs):
+        """
+        calls move on child & register_action to role
+        """
         response = self.child.send(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("send", self, args, kwargs)
@@ -164,7 +167,7 @@ class PlaceHolder(AbstractTensor):
 
     def move(self, *args, **kwargs):
         """
-        calls move on a pointer tensor
+        calls move on a pointer tensor & register_action to role
         """
         response = self.child.move(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
@@ -208,6 +211,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def remote_get(self, *args, **kwargs):
+        """
+        calls remote_get on child & register_action to role
+        """
         response = self.child.remote_get(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("remote_get", self, args, kwargs)
@@ -217,6 +223,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def remote_send(self, *args, **kwargs):
+        """
+        calls remote_send on child & register_action to role
+        """
         response = self.child.remote_send(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("remote_send", self, args, kwargs)
@@ -226,6 +235,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def share_(self, *args, **kwargs):
+        """
+        calls share_ on child & register_action to role
+        """
         response = self.child.share_(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("share_", self, args, kwargs)
@@ -235,7 +247,7 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def get(self, *args, **kwargs):
-        """Requests the tensor/chain being pointed to, be serialized and return via pointer tensor"""
+        """Requests the tensor/chain being pointed to, be serialized and return via child"""
         response = self.child.get(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("get", self, args, kwargs)
