@@ -184,3 +184,25 @@ def test_torch_nn_functional_avgpool(workers):
     r_avg = r_avg.get().float_prec()
     exp_avg = torch.tensor([[3.2500, 5.2500], [2.0000, 2.0000]])
     assert (r_avg == exp_avg).all()
+    # with padding
+    enc_tensor = torch.tensor(
+        [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_avg = F.avg_pool2d(enc_tensor, kernel_size=2, padding=1)
+    r_avg = r_avg.get().float_prec()
+    exp_avg = torch.tensor(
+        [[[[0.2500, 0.7500, 1.0000], [2.0000, 4.0000, 2.0000], [0.2500, 1.2500, 1.0000]]]]
+    )
+    assert (r_avg == exp_avg).all()
+    # with ceil_mode
+    enc_tensor = torch.tensor(
+        [[[[1, 1, 2, 4, 5], [5, 6, 7, 8, 5], [3, 2, 1, 0, 5], [1, 2, 3, 4, 5]]]], dtype=torch.float
+    )
+    enc_tensor = enc_tensor.fix_prec().share(bob, alice, crypto_provider=james)
+    r_avg = F.avg_pool2d(enc_tensor, kernel_size=2, ceil_mode=True)
+    r_avg = r_avg.get().float_prec()
+    # notice these aren't same numbers as torch in the last culomn, because torch pad with mode="replicate" but syft uses
+    # mode="constant" till replicate is supported for long type
+    exp_avg = torch.tensor([[[[3.2500, 5.2500, 2.5000], [2.0000, 2.0000, 2.5000]]]])
+    assert (r_avg == exp_avg).all()

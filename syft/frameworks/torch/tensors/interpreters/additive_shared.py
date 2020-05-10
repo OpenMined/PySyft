@@ -978,7 +978,8 @@ class AdditiveSharingTensor(AbstractTensor):
         """
         if dim is None:
             result = self.flatten()
-            n_elem = list(self.child.values())[0].nelement()
+            key = list(result.child.keys())[0]
+            n_elem = result.child[key].nelement()
             result = result * torch.tensor(list(range(n_elem))).long().wrap()
             return result.sum()
         else:

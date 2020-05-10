@@ -160,7 +160,7 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, ceil_mode=False, mode="
         tensor = torch.unsqueeze(torch.unsqueeze(tensor, dim=0), dim=0)
         if h_diff != 0 or v_diff != 0:
             tensor = torch.nn.functional.pad(
-                tensor, (0, h_diff, 0, v_diff)
+                tensor, (0, v_diff, 0, h_diff)
             )  # add mode="replicate" when replicate padding is supported for long type
         tensor = torch.squeeze(tensor)
     output_shape = (
@@ -201,9 +201,9 @@ def pool2d(tensor, kernel_size: int = 2, stride: int = 2, padding=0, ceil_mode=F
     if padding != 0:
         # padding within pooling isn't same syntax as F.pad, check torch.nn.pool2d docs
         if isinstance(padding, int):
-            padding = (padding, padding, 0, 0)
+            padding = (padding, padding, padding, padding)
         elif isinstance(padding, tuple):
-            padding = (padding[0], padding[0], padding[1], padding[1])
+            padding = (padding[1], padding[1], padding[0], padding[0])
         else:
             raise TypeError("padding must be int or tuple")
         tensor = torch.nn.functional.pad(tensor, padding, mode="constant")
