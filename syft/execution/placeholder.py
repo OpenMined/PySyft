@@ -185,6 +185,15 @@ class PlaceHolder(AbstractTensor):
         )
         return placeholder
 
+    def fix_prec(self, *args, **kwargs):
+        response = self.child.fix_prec(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("fix_prec", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.computation.ComputationAction
+        )
+        return placeholder
+
     def mid_get(self, *args, **kwargs):
         response = self.child.mid_get(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
