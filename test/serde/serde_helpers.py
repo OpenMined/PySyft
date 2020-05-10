@@ -919,20 +919,19 @@ def make_protocol(**kwargs):
     alice = kwargs["workers"]["alice"]
     bob = kwargs["workers"]["bob"]
 
-    @syft.func2protocol(args_shape=((1,), (1,)))
-    def protocol(tensor1, tensor2):
+    @syft.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(roles):
+        # fetch tensors from stores
+        # TODO fix fetch once we have the real implementation of it
+        tensor1 = roles["alice"].fetch(torch.tensor([1]))
+        tensor2 = roles["bob"].fetch(torch.tensor([1]))
+
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
 
         return t1plus, t2plus
 
-    alice_tensor = torch.tensor([1]).send(alice)
-    bob_tensor = torch.tensor([1]).send(bob)
-    # TODO temporary trick to tell during the protocol building to whom belongs the tensors
-    alice_tensor.owner = alice
-    bob_tensor.owner = bob
-
-    protocol.build(alice_tensor, bob_tensor)
+    protocol.build()
 
     # plan.owner = worker
     protocol.tag("aaa")
