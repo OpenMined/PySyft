@@ -13,6 +13,8 @@ from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
 from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 from syft.frameworks.torch.he.fv.util.operations import try_invert_int_mod
 from syft.frameworks.torch.he.fv.util.operations import xgcd
+from syft.frameworks.torch.he.fv.encrypter import Encrypter
+from syft.frameworks.torch.he.fv.decrypter import Decrypter
 
 
 @pytest.mark.parametrize(
@@ -224,3 +226,45 @@ def test_fast_convert_array(ibase, obase, input, output):
     result = base_converter.fast_convert_array(input, 3)
     for i in range(len(result)):
         assert result[i] == output[i]
+
+
+@pytest.mark.parametrize(
+    "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
+    [
+        (64, 64, [40], 0x12345678),
+        (64, 64, [40], 0),
+        (64, 64, [40], 1),
+        (64, 64, [40], 2),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFD),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
+        (64, 64, [40], 314159265),
+        (128, 128, [40, 40], 0x12345678),
+        (128, 128, [40, 40], 0),
+        (128, 128, [40, 40], 1),
+        (128, 128, [40, 40], 2),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
+        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (128, 128, [40, 40], 314159265),
+        (256, 256, [40, 40, 40], 0x12345678),
+        (256, 256, [40, 40, 40], 0),
+        (256, 256, [40, 40, 40], 1),
+        (256, 256, [40, 40, 40], 2),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
+        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
+        (256, 256, [40, 40, 40], 314159265),
+    ],
+)
+def test_fv_encryption_decrption(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
+    ctx = Context(
+        EncryptionParams(
+            poly_modulus, CoeffModulus().create(poly_modulus, coeff_bit_sizes), plain_modulus
+        )
+    )
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encrypter = Encrypter(ctx, keys[1])  # keys[1] = public_key
+    decrypter = Decrypter(ctx, keys[0])  # keys[0] = secret_key
+    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))

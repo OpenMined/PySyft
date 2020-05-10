@@ -38,4 +38,5 @@ class Decrypter:
                     + c_0[i + j * self._coeff_count]
                 ) % self._coeff_modulus[j]
 
-        return product  # product  = c_0 + c_1 * sk
+        # product  = c_0 + c_1 * sk
+        return product
