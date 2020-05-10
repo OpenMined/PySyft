@@ -87,8 +87,8 @@ class PlaceHolder(AbstractTensor):
     @staticmethod
     def convert_to_placeholders(response, template_placeholder):
         """ Turn back response to PlaceHolders """
-        print(90, 'ph', response)
-        print(90, 'ph', template_placeholder)
+        print(90, "ph", response)
+        print(90, "ph", template_placeholder)
         if isinstance(response, (tuple, list)):
 
             placeholders = tuple(
@@ -107,9 +107,9 @@ class PlaceHolder(AbstractTensor):
                 role=template_placeholder.role,
                 tracing=template_placeholder.tracing,
             )
-        print(108, 'ph', response, 'end')
-        print(108, 'ph', template_placeholder, 'end')
-        print(108, 'ph', placeholders, 'end')
+        print(108, "ph", response, "end")
+        print(108, "ph", template_placeholder, "end")
+        print(108, "ph", placeholders, "end")
 
         return placeholders
 
@@ -138,7 +138,7 @@ class PlaceHolder(AbstractTensor):
         else:
             self.child = tensor
 
-        print(135, 'ph', tensor)
+        print(135, "ph", tensor)
         if hasattr(self.child, "shape"):
             self.expected_shape = tuple(self.child.shape)
 
@@ -224,7 +224,7 @@ class PlaceHolder(AbstractTensor):
 
     def get(self, *args, **kwargs):
         response = self.child.get(*args, **kwargs)
-        print(167, 'ph.get', self.child, response)
+        print(167, "ph.get", self.child, response)
         placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
         command = ("get", self, args, kwargs)
         self.role.register_action(
@@ -258,7 +258,7 @@ class PlaceHolder(AbstractTensor):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
-        print(261, 'ph.create_from', tensor)
+        print(261, "ph.create_from", tensor)
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
