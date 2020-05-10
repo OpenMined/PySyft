@@ -101,6 +101,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """Request information about the shape to the remote worker"""
         return self.owner.request_remote_tensor_shape(self)
 
+    def preview(self):
+        """Preview of the remote value - only for virtual workers"""
+        return self.location._objects[self.id_at_location]
+
     @property
     def shape(self):
         """ This method returns the shape of the data being pointed to.
