@@ -87,8 +87,6 @@ class PlaceHolder(AbstractTensor):
     @staticmethod
     def convert_to_placeholders(response, template_placeholder):
         """ Turn back response to PlaceHolders """
-        print(90, "ph", response)
-        # print(90, "ph", template_placeholder)
         if isinstance(response, (tuple, list)):
 
             placeholders = tuple(
@@ -107,8 +105,6 @@ class PlaceHolder(AbstractTensor):
                 role=template_placeholder.role,
                 tracing=template_placeholder.tracing,
             )
-        print(108, "ph", response, "end")
-        print(108, "ph", placeholders, "end")
 
         return placeholders
 
@@ -137,7 +133,6 @@ class PlaceHolder(AbstractTensor):
         else:
             self.child = tensor
 
-        print(135, "ph", tensor)
         if hasattr(self.child, "shape"):
             self.expected_shape = tuple(self.child.shape)
 
@@ -168,6 +163,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def move(self, *args, **kwargs):
+        """
+        calls move on a pointer tensor
+        """
         response = self.child.move(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("move", self, args, kwargs)
@@ -177,6 +175,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor via pointer tensor
+        """
         response = self.child.share(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("share", self, args, kwargs)
@@ -186,6 +187,9 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def fix_prec(self, *args, **kwargs):
+        """
+        sends command to remote worker to transform a tensor to fix_precision via pointer tensor
+        """
         response = self.child.fix_prec(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("fix_prec", self, args, kwargs)
@@ -231,8 +235,8 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     def get(self, *args, **kwargs):
+        """Requests the tensor/chain being pointed to, be serialized and return via pointer tensor"""
         response = self.child.get(*args, **kwargs)
-        print(168, "ph.get", response)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("get", self, args, kwargs)
         self.role.register_action(
@@ -266,7 +270,6 @@ class PlaceHolder(AbstractTensor):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
-        print(261, "ph.create_from", tensor)
         return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod

@@ -26,16 +26,13 @@ def test_trace_communication_actions_get(workers):
     @sy.func2protocol(args_shape=[(1,)])
     def protocol(tensor):
         ptr = tensor.send(bob)
-        print(29, type(ptr))
         res = ptr.get()
-        print(31, "test", res)
         return res
 
     traced_actions = protocol.roles["me"].actions
 
     assert protocol.is_built
     assert len(traced_actions) == 2
-    print([action.name for action in traced_actions])
     assert "get" in [action.name for action in traced_actions]
 
 
@@ -45,12 +42,10 @@ def test_trace_communication_actions_send(workers):
     @sy.func2protocol(args_shape=[(1,)])
     def protocol(tensor):
         ptr = tensor.send(bob)
-        print(45, ptr)
         res = ptr.send(alice)
         return res
 
     traced_actions = protocol.roles["me"].actions
-    print([action.name for action in traced_actions])
 
     assert protocol.is_built
     assert len(traced_actions) == 2
@@ -86,7 +81,6 @@ def test_trace_communication_actions_share(workers):
     traced_actions = protocol.roles["me"].actions
 
     assert protocol.is_built
-    print([action.name for action in traced_actions])
     assert len(traced_actions) == 3
     assert "share" in [action.name for action in traced_actions]
 
@@ -105,7 +99,6 @@ def test_trace_communication_actions_share_(workers):
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    print([action.name for action in traced_actions])
     assert "share_" in [action.name for action in traced_actions]
 
 
@@ -154,5 +147,4 @@ def test_trace_communication_actions_remote_get(workers):
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    print([action.name for action in traced_actions])
     assert "remote_get" in [action.name for action in traced_actions]
