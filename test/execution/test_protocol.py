@@ -20,22 +20,23 @@ def test_trace_communication_actions(workers):
     assert "send" in [action.name for action in traced_actions]
 
 
-# def test_trace_communication_actions_get(workers):
-#     alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_get(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-#     @sy.func2protocol(args_shape=[(1,)])
-#     def protocol(tensor):
-#         ptr = tensor.send(bob)
-#         print(29, type(ptr))
-#         res = ptr.get()
-#         print(31, "test", res)
-#         return res
+    @sy.func2protocol(args_shape=[(1,)])
+    def protocol(tensor):
+        ptr = tensor.send(bob)
+        print(29, type(ptr))
+        res = ptr.get()
+        print(31, "test", res)
+        return res
 
-#     traced_actions = protocol.roles["me"].actions
+    traced_actions = protocol.roles["me"].actions
 
-#     assert protocol.is_built
-#     assert len(traced_actions) == 2
-#     assert "get" in [action.name for action in traced_actions]
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    print([action.name for action in traced_actions])
+    assert "get" in [action.name for action in traced_actions]
 
 
 def test_trace_communication_actions_send(workers):
@@ -152,4 +153,5 @@ def test_trace_communication_actions_mid_get(workers):
 
 #     assert protocol.is_built
 #     assert len(traced_actions) == 2
+#     print([action.name for action in traced_actions])
 #     assert "remote_get" in [action.name for action in traced_actions]

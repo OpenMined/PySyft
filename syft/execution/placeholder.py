@@ -88,7 +88,7 @@ class PlaceHolder(AbstractTensor):
     def convert_to_placeholders(response, template_placeholder):
         """ Turn back response to PlaceHolders """
         print(90, "ph", response)
-        print(90, "ph", template_placeholder)
+        # print(90, "ph", template_placeholder)
         if isinstance(response, (tuple, list)):
 
             placeholders = tuple(
@@ -108,7 +108,6 @@ class PlaceHolder(AbstractTensor):
                 tracing=template_placeholder.tracing,
             )
         print(108, "ph", response, "end")
-        print(108, "ph", template_placeholder, "end")
         print(108, "ph", placeholders, "end")
 
         return placeholders
@@ -197,7 +196,7 @@ class PlaceHolder(AbstractTensor):
 
     def remote_get(self, *args, **kwargs):
         response = self.child.remote_get(*args, **kwargs)
-        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("remote_get", self, args, kwargs)
         self.role.register_action(
             (command, placeholder), syft.execution.communication.CommunicationAction
@@ -224,8 +223,8 @@ class PlaceHolder(AbstractTensor):
 
     def get(self, *args, **kwargs):
         response = self.child.get(*args, **kwargs)
-        print(167, "ph.get", self.child, response)
-        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        print(168, "ph.get", response)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
         command = ("get", self, args, kwargs)
         self.role.register_action(
             (command, placeholder), syft.execution.communication.CommunicationAction
