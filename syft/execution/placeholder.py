@@ -420,6 +420,10 @@ class PlaceHolder(AbstractTensor):
 
         return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=expected_shape)
 
+    @staticmethod
+    def get_protobuf_schema() -> PlaceholderPB:
+        return PlaceholderPB
+
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(PlaceHolder)

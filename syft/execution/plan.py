@@ -687,6 +687,10 @@ class Plan(AbstractObject):
 
         return out
 
+    @staticmethod
+    def get_protobuf_schema() -> PlanPB:
+        return PlanPB
+
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)

@@ -15,9 +15,10 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class Role:
+class Role(SyftSerializable):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
@@ -447,3 +448,7 @@ class Role:
         role.state = state
 
         return role
+
+    @staticmethod
+    def get_protobuf_schema() -> RolePB:
+        return RolePB

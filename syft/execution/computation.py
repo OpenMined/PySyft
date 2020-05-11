@@ -104,3 +104,7 @@ class ComputationAction(Action):
         attrs = Action.unbufferize(worker, protobuf_obj)
 
         return ComputationAction(*attrs)
+
+    @staticmethod
+    def get_protobuf_schema() -> ComputationActionPB:
+        return ComputationActionPB
