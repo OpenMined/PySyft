@@ -14,7 +14,7 @@ class FederatedClient:
         self.datasets = datasets if datasets is not None else dict()
         self.optimizer = None
         self.train_config = None
-        self.object_store = ObjectStorage()
+        self.object_store = ObjectStorage(owner=self)
 
     def add_dataset(self, dataset, key: str):
         if key not in self.datasets:

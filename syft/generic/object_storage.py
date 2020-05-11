@@ -16,7 +16,9 @@ class ObjectStorage:
     are stored using their IDs as keys.
     """
 
-    def __init__(self):
+    def __init__(self, owner: AbstractWorker):
+        self._owner = owner
+
         # This is the collection of objects being stored.
         self._objects = {}
         # This is an index to retrieve objects from their tags in an efficient way
