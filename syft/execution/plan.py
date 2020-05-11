@@ -14,6 +14,8 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
+from syft.execution.tracing import trace
+from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
@@ -115,6 +117,7 @@ class Plan(AbstractObject):
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
+        input_types: list = None,
         description: str = None,
     ):
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
@@ -133,6 +136,7 @@ class Plan(AbstractObject):
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.input_types = input_types
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
@@ -179,30 +183,45 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
+        # Reset previous build
+        self.role.reset()
+
+        def build_nested_arg(arg, leaf_function):
+            if isinstance(arg, list):
+                return [build_nested_arg(obj, leaf_function) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
+            elif isinstance(arg, dict):
+                return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
+            else:
+                return leaf_function(arg)
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
 
+        # typecheck
+        self.input_types = NestedTypeWrapper(args)
+
+        # Run once to build the plan
         if trace_autograd:
             # Wrap arguments that require gradients with AutogradTensor,
             # to be able to trace autograd operations
-            args = tuple(
-                AutogradTensor().on(arg, wrap=False)
-                if isinstance(arg, FrameworkTensor) and arg.requires_grad
-                else arg
-                for arg in args
+            args = build_nested_arg(
+                args,
+                lambda x: AutogradTensor().on(x, wrap=False)
+                if isinstance(x, FrameworkTensor) and x.requires_grad
+                else x,
             )
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
-            args_placeholders = tuple(
-                PlaceHolder.insert(arg, AutogradTensor, role=self.role, tracing=True)
-                for arg in args
+            args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
             )
         else:
             # Add Placeholder on top of each arg
-            args = args_placeholders = tuple(
-                PlaceHolder.create_from(arg, role=self.role, tracing=True) for arg in args
+            args = args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
             )
 
         # Add state to args if needed
@@ -261,6 +280,7 @@ class Plan(AbstractObject):
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
+            input_types=self.input_types,
             description=self.description,
         )
 
@@ -320,6 +340,7 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
+            self.input_types.input_check(self, args)
             self.role.instantiate_inputs(args)
             result = self.role.execute()
             if len(result) == 1:
@@ -555,6 +576,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_types),
         )
 
     @staticmethod
@@ -566,7 +588,7 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript) = plan_tuple
+        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -574,6 +596,7 @@ class Plan(AbstractObject):
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
+        input_types = sy.serde.msgpack.serde._detail(worker, input_types)
 
         plan = sy.Plan(
             role=role,
@@ -584,6 +607,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            input_types=input_types,
         )
 
         plan.torchscript = torchscript
@@ -619,6 +643,10 @@ class Plan(AbstractObject):
         if plan.torchscript:
             protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
+        if plan.input_types:
+            input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
+            protobuf_plan.input_types.CopyFrom(input_types)
+
         return protobuf_plan
 
     @staticmethod
@@ -637,6 +665,7 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
+        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
 
         plan = Plan(
             role=role,
@@ -647,6 +676,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            input_types=input_types,
         )
 
         if protobuf_plan.torchscript:
