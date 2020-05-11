@@ -885,6 +885,37 @@ def test_argmax(workers, protocol):
     assert (ids.long() == torch.argmax(t, dim=1)).all()
 
 
+@pytest.mark.parametrize("protocol", ["fss"])
+def test_maxpool2d(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+
+    if protocol == "fss":
+        me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=500)
+        me.crypto_store.provide_primitives(
+            ["beaver"],
+            [alice, bob],
+            n_instances=2,
+            beaver={"op_shapes": [("mul", torch.Size([3, 9, 4]), torch.Size([3, 9, 4]))]},
+        )
+
+    m = 6
+    x = torch.tensor(list(range(m * m * 3))).float().reshape(3, 1, m, m)
+    expected = F.max_pool2d(x, kernel_size=2)
+
+    x = x.fix_prec().share(*args, **kwargs)
+    result = F.max_pool2d(x, kernel_size=2).get().float_prec()
+
+    assert (result == expected).all()
+
+
 def test_mod(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 

@@ -217,9 +217,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         res = torch.cat(res, dim=2)
         raise NotImplementedError
     else:
-        print("mat>>>")
         res_fp = im_reshaped.matmul(weight_reshaped)
-        print("<<<mul")
         res = res_fp.child
 
     res_shares = {}
@@ -232,6 +230,132 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         res_shares[location.id] = res_share
 
     result_fp = sy.FixedPrecisionTensor(**res_fp.get_class_attributes()).on(
+        sy.AdditiveSharingTensor(res_shares, **res.get_class_attributes()), wrap=False
+    )
+    return result_fp
+
+
+@allow_command
+def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
+    assert len(input.shape) == 4
+
+    # Change to tuple if not one
+    stride = torch.nn.modules.utils._pair(stride)
+    padding = torch.nn.modules.utils._pair(padding)
+    dilation = torch.nn.modules.utils._pair(dilation)
+
+    # Extract a few useful values
+    batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
+    nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = (
+        nb_channels_in,
+        nb_channels_in,
+        kernel_size,
+        kernel_size,
+    )
+
+    # Check if inputs are coherent
+    assert nb_channels_in == nb_channels_kernel * groups
+    assert nb_channels_in % groups == 0
+    assert nb_channels_out % groups == 0
+
+    # Compute output shape
+    nb_rows_out = int(
+        ((nb_rows_in + 2 * padding[0] - dilation[0] * (nb_rows_kernel - 1) - 1) / stride[0]) + 1
+    )
+    nb_cols_out = int(
+        ((nb_cols_in + 2 * padding[1] - dilation[1] * (nb_cols_kernel - 1) - 1) / stride[1]) + 1
+    )
+
+    # Apply padding to the input
+    if padding != (0, 0):
+        padding_mode = "constant"
+        input = torch.nn.functional.pad(
+            input, (padding[1], padding[1], padding[0], padding[0]), padding_mode
+        )
+        # Update shape after padding
+        nb_rows_in += 2 * padding[0]
+        nb_cols_in += 2 * padding[1]
+
+    # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+    # It basically is the position of the values used for the top left convolution.
+    pattern_ind = []
+    for ch in range(nb_channels_in):
+        for r in range(nb_rows_kernel):
+            for c in range(nb_cols_kernel):
+                pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
+                pattern_ind.append(pixel + ch * nb_rows_in * nb_cols_in)
+
+    # The image tensor is reshaped for the matrix multiplication:
+    # on each row of the new tensor will be the input values used for each filter convolution
+    # We will get a matrix [[in values to compute out value 0],
+    #                       [in values to compute out value 1],
+    #                       ...
+    #                       [in values to compute out value nb_rows_out*nb_cols_out]]
+    im_flat = input.view(batch_size, -1)
+    im_reshaped = []
+    for cur_row_out in range(nb_rows_out):
+        for cur_col_out in range(nb_cols_out):
+            # For each new output value, we just need to shift the receptive field
+            offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
+            tmp = [ind + offset for ind in pattern_ind]
+            im_reshaped.append(im_flat[:, tmp])
+    im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
+
+    return (
+        im_reshaped,
+        torch.tensor(batch_size),
+        torch.tensor(nb_channels_out),
+        torch.tensor(nb_rows_out),
+        torch.tensor(nb_cols_out),
+    )
+
+
+@allow_command
+def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
+    batch_size, nb_channels_out, nb_rows_out, nb_cols_out = (
+        batch_size.item(),
+        nb_channels_out.item(),
+        nb_rows_out.item(),
+        nb_cols_out.item(),
+    )
+
+    # ... And reshape it back to an image
+    res = res.view(  # .permute(0, 2, 1)
+        batch_size, nb_channels_out, nb_rows_out, nb_cols_out
+    ).contiguous()
+
+    return res
+
+
+def maxpool2d(input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=1):
+    input_fp = input
+    input = input.child
+
+    locations = input.locations
+
+    im_reshaped_shares = {}
+    params = {}
+    for location in locations:
+        input_share = input.child[location.id]
+        r = remote(_pre_pool, location=location)(
+            input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=5,
+        )
+        (im_reshaped_share, batch_size, nb_channels_out, nb_rows_out, nb_cols_out,) = r
+        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
+
+        im_reshaped_shares[location.id] = im_reshaped_share
+
+    im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
+
+    res = im_reshaped.max(dim=-1)
+
+    res_shares = {}
+    for location in locations:
+        res_share = res.child[location.id]
+        res_share = remote(_post_pool, location=location)(res_share, *params[location.id])
+        res_shares[location.id] = res_share
+
+    result_fp = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
         sy.AdditiveSharingTensor(res_shares, **res.get_class_attributes()), wrap=False
     )
     return result_fp
@@ -287,8 +411,8 @@ def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     return result
 
 
-def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2):
-    return pool2d(tensor, kernel_size, stride)
+# def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2):
+#     return pool2d(tensor, kernel_size, stride)
 
 
 def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2):
