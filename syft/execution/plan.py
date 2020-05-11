@@ -14,7 +14,6 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
-from syft.execution.tracing import trace
 from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
