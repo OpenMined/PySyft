@@ -17,7 +17,7 @@ class ObjectStorage:
     """
 
     def __init__(self, owner: AbstractWorker):
-        self._owner = owner
+        self.owner = owner
 
         # This is the collection of objects being stored.
         self._objects = {}
@@ -88,7 +88,7 @@ class ObjectStorage:
         Args:
             obj: A torch or syft tensor with an id.
         """
-        obj.owner = self
+        obj.owner = self.owner
         self._objects[obj.id] = obj
         # Add entry in the tag index
         if obj.tags:

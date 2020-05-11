@@ -575,7 +575,7 @@ class BaseWorker(AbstractWorker):
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                self.rm_obj(action.target.id)
+                self.object_store.rm_obj(action.target.id)
             return response
 
     def execute_worker_command(self, message: tuple):
