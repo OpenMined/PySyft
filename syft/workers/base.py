@@ -111,9 +111,6 @@ class BaseWorker(AbstractWorker):
 
         self.object_store = ObjectStorage(owner=self)
 
-        # This is hack for backwards compatibility
-        # self._objects = self.object_store._objects
-
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
