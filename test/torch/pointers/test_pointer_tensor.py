@@ -491,7 +491,7 @@ def test_share_get(workers):
     ptr = tensor.send(bob)
 
     ptr = ptr.share(charlie, alice)
-    remote_tensor = bob._objects[ptr.id_at_location]
+    remote_tensor = bob.object_store._objects[ptr.id_at_location]
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor.child, AdditiveSharingTensor)
