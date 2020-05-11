@@ -2,11 +2,12 @@ from typing import Union
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft.serde.syft_serializable import SyftSerializable
 from syft_proto.execution.v1.type_wrapper_pb2 import NestedTypeWrapper as NestedTypeWrapperPB
 from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as InputTypeDescriptorPB
 
 
-class NestedTypeWrapper:
+class NestedTypeWrapper(SyftSerializable):
     """
         Class for input type serialization and type checking for nested structures.
     """
@@ -340,3 +341,7 @@ class NestedTypeWrapper:
         wrapper = NestedTypeWrapper()
         wrapper.nested_input_types = result
         return wrapper
+
+    @staticmethod
+    def get_protobuf_schema():
+        return NestedTypeWrapperPB

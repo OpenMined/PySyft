@@ -321,3 +321,7 @@ class Protocol(AbstractObject):
             tags=tags,
             description=description,
         )
+
+    @staticmethod
+    def get_protobuf_schema() -> ProtocolPB:
+        return ProtocolPB
