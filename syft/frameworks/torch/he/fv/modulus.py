@@ -21,35 +21,6 @@ class SeqLevelType(Enum):
 
 
 class CoeffModulus:
-    def max_bit_count(self, poly_modulus_degree, seq_level=SeqLevelType.TC128):
-        """Returns the largest bit-length of the coefficient modulus, i.e., bit-length
-        of the product of the primes in the coefficient modulus, that guarantees
-        a given security level when using a given poly_modulus_degree, according
-        to the HomomorphicEncryption.org security standard.
-
-        Args:
-            poly_modulus_degree: The value of the poly_modulus_degree
-            encryption parameter
-            seq_level: (optional) The desired standard security level
-
-        Returns:
-            A integer denoting the largest allowed bit counts for coeff_modulus.
-
-        Raises:
-            ValueError: seq_level does not match with any standard security level.
-        """
-
-        if seq_level == SeqLevelType.TC128:
-            return FV_STD_PARMS_128_TC(poly_modulus_degree)
-
-        if seq_level == SeqLevelType.TC192:
-            return FV_STD_PARMS_192_TC(poly_modulus_degree)
-
-        if seq_level == SeqLevelType.TC256:
-            return FV_STD_PARMS_256_TC(poly_modulus_degree)
-
-        raise ValueError(f"{seq_level} is not a valid standard security level")
-
     def bfv_default(self, poly_modulus_degree, seq_level=SeqLevelType.TC128):
         """Returns a default coefficient modulus for the BFV scheme that guarantees
         a given security level when using a given poly_modulus_degree, according
