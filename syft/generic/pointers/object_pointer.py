@@ -208,8 +208,10 @@ class ObjectPointer(AbstractObject, SyftSerializable):
         owner = pointer.owner
         location = pointer.location
 
+        cmd, _, args_, kwargs_ = command
+
         # Send the command
-        response = owner.send_command(location, command)
+        response = owner.send_command(location, cmd_name=cmd, args_=args_, kwargs_=kwargs_)
 
         return response
 
@@ -364,7 +366,11 @@ class ObjectPointer(AbstractObject, SyftSerializable):
 
     def setattr(self, name, value):
         self.owner.send_command(
-            message=("__setattr__", self, (name, value), {}), recipient=self.location
+            cmd_name="__setattr__",
+            target=self,
+            args_=(name, value),
+            kwargs_={},
+            recipient=self.location,
         )
 
     @staticmethod

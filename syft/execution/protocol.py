@@ -52,7 +52,6 @@ class func2protocol(object):
         # TODO We can always build automatically, can't we? Except if workers doesn't have
         # tensors yet in store. Do we handle that?
         if self.args_shape:
-            # args_ = tuple(sy.framework.hook.create_zeros(shape) for shape in self.args_shape)
             try:
                 protocol.build()
             except TypeError as e:
@@ -134,8 +133,8 @@ class Protocol(AbstractObject):
             args: Input arguments to run the protocol
         """
         # Reset previous build
-        # TODO add a reset method on Role
-        self.roles = {role_id: Role() for role_id in self.roles.keys()}
+        for role in self.roles.values():
+            role.reset()
 
         # Enable tracing
         self.toggle_tracing(True)
@@ -146,6 +145,9 @@ class Protocol(AbstractObject):
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
+
+        if not isinstance(results, (tuple, list)):
+            results = (results,)
 
         # Register outputs in roles
         for result in results:

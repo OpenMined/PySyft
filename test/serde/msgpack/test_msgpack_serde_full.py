@@ -24,6 +24,7 @@ samples[slice] = make_slice
 samples[str] = make_str
 samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
+samples[type] = make_type
 
 # Numpy
 samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
@@ -51,6 +52,7 @@ samples[syft.execution.communication.CommunicationAction] = make_communication_a
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role

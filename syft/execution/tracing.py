@@ -24,6 +24,7 @@ class FrameworkWrapper:
                 return package_attr
 
         def trace_wrapper(*args, **kwargs):
+            """creates placeholders and registers ComputationAction to role"""
             cmd_name = ".".join((self.package.__name__, attr_name))
             command = (cmd_name, None, args, kwargs)
 

@@ -67,26 +67,37 @@ class PlaceHolder(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Find first placeholder in args
-        ph_arg = None
+        template_placeholder = None
         for arg in args:
             if isinstance(arg, PlaceHolder):
-                ph_arg = arg
+                template_placeholder = arg
 
+        placeholders = PlaceHolder.convert_to_placeholders(response, template_placeholder)
+
+        if template_placeholder.tracing:
+            template_placeholder.role.register_action(
+                (command, placeholders), syft.execution.computation.ComputationAction
+            )
+
+        return placeholders
+
+    @staticmethod
+    def convert_to_placeholders(response, template_placeholder):
+        """ Turn back response to PlaceHolders """
         if isinstance(response, (tuple, list)):
-            # Turn back response to PlaceHolders
-            response = tuple(
-                PlaceHolder.create_from(r, role=ph_arg.role, tracing=ph_arg.tracing)
+
+            placeholders = tuple(
+                PlaceHolder.create_from(
+                    r, role=template_placeholder.role, tracing=template_placeholder.tracing
+                )
                 for r in response
             )
         else:
-            response = PlaceHolder.create_from(response, role=ph_arg.role, tracing=ph_arg.tracing)
-
-        if ph_arg.tracing:
-            ph_arg.role.register_action(
-                (command, response), syft.execution.computation.ComputationAction
+            placeholders = PlaceHolder.create_from(
+                response, role=template_placeholder.role, tracing=template_placeholder.tracing
             )
 
-        return response
+        return placeholders
 
     def __getattribute__(self, name):
         """Try to find the attribute in the current object
@@ -132,6 +143,109 @@ class PlaceHolder(AbstractTensor):
         return out
 
     __repr__ = __str__
+
+    def send(self, *args, **kwargs):
+        """
+        calls move on child & register_action to role
+        """
+        response = self.child.send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def move(self, *args, **kwargs):
+        """
+        calls move on a pointer tensor & register_action to role
+        """
+        response = self.child.move(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("move", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor via pointer tensor
+        """
+        response = self.child.share(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def fix_prec(self, *args, **kwargs):
+        """
+        sends command to remote worker to transform a tensor to fix_precision via pointer tensor
+        """
+        response = self.child.fix_prec(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("fix_prec", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.computation.ComputationAction
+        )
+        return placeholder
+
+    def mid_get(self, *args, **kwargs):
+        response = self.child.mid_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        command = ("mid_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_get(self, *args, **kwargs):
+        """
+        calls remote_get on child & register_action to role
+        """
+        response = self.child.remote_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("remote_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_send(self, *args, **kwargs):
+        """
+        calls remote_send on child & register_action to role
+        """
+        response = self.child.remote_send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("remote_send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share_(self, *args, **kwargs):
+        """
+        calls share_ on child & register_action to role
+        """
+        response = self.child.share_(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share_", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def get(self, *args, **kwargs):
+        """Requests the tensor/chain being pointed to, be serialized and return via child"""
+        response = self.child.get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
 
     def copy(self):
         """

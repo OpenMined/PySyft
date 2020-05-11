@@ -75,7 +75,6 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # in https://github.com/OpenMined/proto
 OBJ_SIMPLIFIER_AND_DETAILERS = None
 
-
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto

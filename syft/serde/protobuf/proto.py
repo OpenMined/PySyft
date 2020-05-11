@@ -9,6 +9,7 @@ a dependency in setup.py.
 import torch
 
 from google.protobuf.empty_pb2 import Empty
+
 from syft_proto.types.torch.v1.device_pb2 import Device as DevicePB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
@@ -20,6 +21,7 @@ from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclass
 
 MAP_PYTHON_TO_PROTOBUF_CLASSES = {
     type(None): Empty,
+    type: InputTypeDescriptorPB,
     # Torch types
     torch.Tensor: TorchTensorPB,
     torch.device: DevicePB,
