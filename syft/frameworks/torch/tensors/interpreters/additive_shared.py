@@ -946,9 +946,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __ge__(self, other):
-        if isinstance(other, int):
-            other = self - self + other
-        return other <= self
+        return fss.le(other, self)
 
     def lt(self, other):
         return (other - self - 1).positive()

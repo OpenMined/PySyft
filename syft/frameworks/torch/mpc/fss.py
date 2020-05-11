@@ -66,14 +66,28 @@ def fss_op(x1, x2, type_op="eq"):
     #     100_000: [1.50, 0.95]
     # }
 
-    locations = x1.locations
+    if isinstance(x1, sy.AdditiveSharingTensor):
+        locations = x1.locations
+        numel = x1.child[locations[0].id].numel()
+        class_attributes = x1.get_class_attributes()
+    else:
+        locations = x2.locations
+        numel = x2.child[locations[0].id].numel()
+        class_attributes = x2.get_class_attributes()
 
     asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
-    numel = x1.child[locations[0].id].numel()
-
     workers_args = [
-        (x1.child[location.id], x2.child[location.id], type_op) for location in locations
+        (
+            x1.child[location.id]
+            if isinstance(x1, sy.AdditiveSharingTensor)
+            else (x1 if i == 0 else 0),
+            x2.child[location.id]
+            if isinstance(x2, sy.AdditiveSharingTensor)
+            else (x2 if i == 0 else 0),
+            type_op,
+        )
+        for i, location in enumerate(locations)
     ]
 
     shares = []
@@ -125,18 +139,24 @@ def fss_op(x1, x2, type_op="eq"):
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 
-    response = sy.AdditiveSharingTensor(shares, **x1.get_class_attributes())
+    response = sy.AdditiveSharingTensor(shares, **class_attributes)
     return response
 
 
 # share level
 @allow_command
 def mask_builder(x1, x2, type_op):
+    if not isinstance(x1, int):
+        worker = x1.owner
+        numel = x1.numel()
+    else:
+        worker = x2.owner
+        numel = x2.numel()
     x = x1 - x2
     # Keep the primitive in store as we use it after
     # you actually get a share of alpha
-    alpha, s_0, *CW = x1.owner.crypto_store.get_keys(
-        f"fss_{type_op}", n_instances=x1.numel(), remove=False
+    alpha, s_0, *CW = worker.crypto_store.get_keys(
+        f"fss_{type_op}", n_instances=numel, remove=False
     )
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r

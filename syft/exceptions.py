@@ -366,8 +366,9 @@ class EmptyCryptoPrimitiveStoreError(Exception):
             f"'{crypto_type}' ({n_instances} were requested while only {available_instances}"
             f" are available). Use your crypto_provider to `provide_primitives` to your "
             f"worker."
-            ", ".join([f"{k}:{v}" for k, v in kwargs.items()])
         )
+        if len(kwargs) > 0:
+            message += ", ".join([f"{k}:{v}" for k, v in kwargs.items()])
         super().__init__(message)
 
 
