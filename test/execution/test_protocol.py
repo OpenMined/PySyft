@@ -2,201 +2,254 @@ import pytest
 import torch as th
 
 import syft as sy
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.pointers.pointer_protocol import PointerProtocol
-from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
-def _create_inc_protocol():
-    @sy.func2plan(args_shape=[(1,)])
-    def inc1(x):
-        return x + 1
+def test_trace_communication_actions(workers):
+    bob = workers["bob"]
 
-    @sy.func2plan(args_shape=[(1,)])
-    def inc2(x):
-        return x + 1
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    @sy.func2plan(args_shape=[(1,)])
-    def inc3(x):
-        return x + 1
+        tensor.send(bob)
+        return tensor
 
-    protocol = sy.Protocol([("worker1", inc1), ("worker2", inc2), ("worker3", inc3)])
-    return protocol
+    traced_actions = protocol.roles["alice"].actions
 
-
-def test_deploy(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
-
-    protocol = _create_inc_protocol()
-
-    workers = alice, bob, charlie
-
-    protocol.deploy(*workers)
-
-    assert protocol.workers_resolved
-
-    protocol._assert_is_resolved()
-
-    # Assert the plan were sent to a consistent worker
-    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
-
-    # Assert the order of the worker was preserved
-    assert all(
-        plan_ptr.location.id == worker.id for (_, plan_ptr), worker in zip(protocol.plans, workers)
-    )
+    assert protocol.is_built
+    assert len(traced_actions) == 1
+    assert "send" in [action.name for action in traced_actions]
 
 
-def test_deploy_with_resolver(workers):
-    """
-    Like test_deploy, but now two of the three plans should be given to the same
-    worker
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
+def test_trace_communication_actions_get(workers):
+    bob = workers["bob"]
 
-    protocol = _create_inc_protocol()
-    worker3_plan = protocol.plans[2][1]
-    protocol.plans[2] = ("worker1", worker3_plan)
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    workers = alice, bob
+        ptr = tensor.send(bob)
+        res = ptr.get()
+        return res
 
-    protocol.deploy(*workers)
+    traced_actions = protocol.roles["alice"].actions
 
-    assert protocol.workers_resolved
-
-    # Assert the plan were sent to a consistent worker
-    assert all(plan_ptr.location.id == worker.id for worker, plan_ptr in protocol.plans)
-
-    # Now test the error case
-    protocol = _create_inc_protocol()
-
-    with pytest.raises(RuntimeError):
-        protocol.deploy(alice, bob)
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    assert "get" in [action.name for action in traced_actions]
 
 
-def test_synchronous_run(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    A runs the protocol
-    """
-    alice, bob, charlie = workers["alice"], workers["bob"], workers["charlie"]
+def test_trace_communication_actions_send(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol = _create_inc_protocol()
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    protocol.deploy(alice, bob, charlie)
+        ptr = tensor.send(bob)
+        res = ptr.send(alice)
+        return res
 
-    x = th.tensor([1.0])
-    ptr = protocol.run(x)
+    traced_actions = protocol.roles["alice"].actions
 
-    assert ptr.location == charlie
-
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
-
-    assert ptr.get() == th.tensor([4.0])
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    assert "send" in [action.name for action in traced_actions]
 
 
-def test_synchronous_remote_run(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol
-    A deploys it on workers D, E and F
-    A sends the protocol to the cloud C
-    A asks a remote run on C
-    """
-    alice, bob, charlie, james = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-    )
+def test_trace_communication_actions_move(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol = _create_inc_protocol()
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    protocol.deploy(alice, bob, charlie)
+        ptr = tensor.send(bob)
+        res = ptr.move(alice)
+        return res
 
-    protocol.send(james)
+    traced_actions = protocol.roles["alice"].actions
 
-    x = th.tensor([1.0]).send(james)
-    ptr = protocol.run(x)
-
-    assert ptr.location == james
-    assert isinstance(ptr, FrameworkTensor) and ptr.is_wrapper
-
-    ptr = ptr.get()
-
-    assert ptr.location == charlie
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
-
-    res = ptr.get()
-
-    assert res == th.tensor([4.0])
-
-    # BONUS: Error case when data is not correctly located
-
-    x = th.tensor([1.0])
-    with pytest.raises(RuntimeError):
-        protocol.run(x)
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    assert "move" in [action.name for action in traced_actions]
 
 
-def test_search_and_deploy(workers):
-    """
-    This test validates the following scenario:
-    A creates a protocol (which is not deployed)
-    A sends it to the cloud C
-    B search C for a protocol and get it back
-    B deploys the protocol on workers D, E and F
-    B runs the protocol
-    """
-    alice, bob, charlie, james, me = (
-        workers["alice"],
-        workers["bob"],
-        workers["charlie"],
-        workers["james"],
-        workers["me"],
-    )
+def test_trace_communication_actions_share(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol = _create_inc_protocol()
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    protocol.send(james)
+        ptr = tensor.send(bob)
+        ptr = ptr.fix_prec()
+        res = ptr.share(alice, bob)
+        return res
 
-    ptr_protocol = me.request_search([protocol.id], location=james)[0]
+    traced_actions = protocol.roles["alice"].actions
 
-    assert isinstance(ptr_protocol, PointerProtocol)
+    assert protocol.is_built
+    assert len(traced_actions) == 3
+    assert "share" in [action.name for action in traced_actions]
 
-    protocol_back = ptr_protocol.get()
 
-    protocol_back.deploy(alice, bob, charlie)
+def test_trace_communication_actions_share_(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    x = th.tensor([1.0])
-    ptr = protocol_back.run(x)
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
 
-    assert ptr.location == charlie
-    assert (
-        isinstance(ptr, FrameworkTensor) and ptr.is_wrapper and isinstance(ptr.child, PointerTensor)
-    )
+        ptr = tensor.send(bob)
+        ptr = ptr.fix_prec()
+        res = ptr.share_(alice, bob)
+        return res
 
-    res = ptr.get()
+    traced_actions = protocol.roles["alice"].actions
 
-    assert res == th.tensor([4.0])
+    assert protocol.is_built
+    assert len(traced_actions) == 3
+    assert "share_" in [action.name for action in traced_actions]
 
-    # BONUS: Re-send to cloud and run remotely
 
-    james.clear_objects()
-    protocol = protocol_back
+def test_trace_communication_actions_remote_send(workers):
+    alice, bob = workers["alice"], workers["bob"]
 
-    protocol.send(james)
-    ptr_protocol = me.request_search([protocol.id], location=james)[0]
-    x = th.tensor([1.0]).send(james)
-    ptr = ptr_protocol.run(x)
-    res = ptr.get().get()
-    assert res == th.tensor([4.0])
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
+
+        ptr = tensor.send(bob)
+        res = ptr.remote_send(alice)
+        return res
+
+    traced_actions = protocol.roles["alice"].actions
+
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    assert "remote_send" in [action.name for action in traced_actions]
+
+
+def test_trace_communication_actions_mid_get(workers):
+    bob = workers["bob"]
+
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
+
+        ptr = tensor.send(bob)
+        res = ptr.mid_get()
+        return res
+
+    traced_actions = protocol.roles["alice"].actions
+
+    assert protocol.is_built
+    assert len(traced_actions) == 2
+    assert "mid_get" in [action.name for action in traced_actions]
+
+
+def test_trace_communication_actions_remote_get(workers):
+    alice, bob = workers["alice"], workers["bob"]
+
+    @sy.func2protocol(args_shape={"alice": ((1,),)})
+    def protocol(roles):
+        tensor = roles["alice"].fetch(th.tensor([1]))
+
+        ptr = tensor.send(bob).send(alice)
+        res = ptr.remote_get()
+        return res
+
+    traced_actions = protocol.roles["alice"].actions
+
+    assert protocol.is_built
+    assert len(traced_actions) == 3
+    assert "remote_get" in [action.name for action in traced_actions]
+
+
+def test_create_roles_from_decorator(workers):
+
+    roles_args_shape = {"alice": ((1,),), "bob": ((1,),)}
+
+    @sy.func2protocol(args_shape=roles_args_shape)
+    def protocol(roles):
+        # fetch tensors from stores
+        tensor1 = roles["alice"].fetch(th.tensor([1]))
+        tensor2 = roles["bob"].fetch(th.tensor([1]))
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    assert len(protocol.roles) == 2
+    assert "alice" in protocol.roles
+    assert "bob" in protocol.roles
+
+
+def test_multi_role_tracing(workers):
+    @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(roles):
+        # fetch tensors from stores
+        tensor1 = roles["alice"].fetch(th.tensor([1]))
+        tensor2 = roles["bob"].fetch(th.tensor([1]))
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    protocol.build()
+
+    assert protocol.is_built
+
+    assert len(protocol.roles) == 2
+    assert len(protocol.roles["alice"].actions) == 1
+    assert len(protocol.roles["bob"].actions) == 1
+
+
+def test_multi_role_execution(workers):
+    @sy.func2protocol(args_shape={"alice": ((1,), (1,)), "bob": ((1,),)})
+    def protocol(roles):
+        tensor1 = roles["alice"].fetch(th.tensor([1]))
+        tensor2 = roles["bob"].fetch(th.tensor([2]))
+        tensor3 = roles["alice"].fetch(th.tensor([3]))
+
+        res1 = tensor2
+        res2 = tensor1 + tensor3
+        res3 = tensor2 * 3
+
+        return res1, res2, res3
+
+    protocol.build()
+    protocol.forward = None
+
+    dict_res = protocol()
+
+    assert (dict_res["bob"][0] == th.tensor([2])).all()
+    assert (dict_res["bob"][1] == th.tensor([6])).all()
+    assert (dict_res["alice"][0] == th.tensor([4])).all()
+
+
+def test_copy(workers):
+    @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(roles):
+        # fetch tensors from stores
+        tensor1 = roles["alice"].fetch(th.tensor([1]))
+        tensor2 = roles["bob"].fetch(th.tensor([1]))
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    protocol.build()
+    copy = protocol.copy()
+
+    assert copy.name == protocol.name
+    assert copy.roles.keys() == protocol.roles.keys()
+    assert [
+        len(copy_role.actions) == len(role.actions)
+        for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
+    ]
+    assert copy.is_built == protocol.is_built

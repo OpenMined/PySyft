@@ -286,7 +286,10 @@ class TorchHook(FrameworkHook):
         @wraps(attr)
         def overloaded_attr(self_torch, *args, **kwargs):
             ptr = hook_self.local_worker.send_command(
-                recipient=self_torch.worker(), message=(f"{'torch'}.{attr}", None, args, kwargs)
+                recipient=self_torch.worker(),
+                cmd_name=f"{'torch'}.{attr}",
+                args_=args,
+                kwargs_=kwargs,
             )
 
             return ptr.wrap()
@@ -624,7 +627,7 @@ class TorchHook(FrameworkHook):
 
             params = list(nn_self.parameters())
             for p in params:
-                p.move(destination)
+                p.move_(destination)
 
         self.torch.nn.Module.move = module_move_
 

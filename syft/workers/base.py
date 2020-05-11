@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft import codes
 from syft.execution.plan import Plan
+from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook import hook_args
@@ -20,9 +21,9 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
 from syft.generic.object_storage import ObjectStorage
 from syft.generic.object import AbstractObject
-from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.tensor import AbstractTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
@@ -164,9 +165,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 # self is the to-be-created local worker
                 self.add_worker(self)
 
-        # Used to keep track of a building plan
-        self.init_plan = None
-
         if hook is None:
             self.framework = None
         else:
@@ -180,6 +178,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
+
+        # storage object for crypto primitives
+        self.crypto_store = PrimitiveStorage(owner=self)
+        # declare the plans used for crypto computations
+        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -305,13 +308,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A binary message response.
         """
-
-        # Step -1: save message if log_msgs ==  True
-        if self.log_msgs:
-            self.msg_history.append(bin_message)
-
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self)
+
+        # Step 1: save message and/or log it out
+        if self.log_msgs:
+            self.msg_history.append(msg)
 
         if self.verbose:
             print(
@@ -320,10 +322,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 else f"worker {self} received {type(msg).__name__}"
             )
 
-        # Step 1: route message to appropriate function
+        # Step 2: route message to appropriate function
         response = self._message_router[type(msg)](msg)
 
-        # Step 2: Serialize the message to simple python objects
+        # Step 3: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
 
         return bin_response
@@ -434,7 +436,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
 
-        # def receive_object(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:
         """Receive an object from a another worker
 
         Args:
@@ -474,7 +475,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Args:
             message: A tuple specifying the command and the args.
         Returns:
-            A pointer to the result.
+            The result or None if return_value is False.
         """
 
         op_name = action.name
@@ -482,6 +483,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         args_ = action.args
         kwargs_ = action.kwargs
         return_ids = action.return_ids
+        return_value = action.return_value
 
         # Handle methods
         if _self is not None:
@@ -489,8 +491,15 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
-            if type(_self) == str and _self == "self":
-                _self = self
+            elif isinstance(_self, str):
+                if _self == "self":
+                    _self = self
+                else:
+                    res: list = self.search(_self)
+                    assert (
+                        len(res) == 1
+                    ), f"Searching for {_self} on {self.id}. /!\\ {len(res)} found"
+                    _self = res[0]
             if sy.framework.is_inplace_method(op_name):
                 # TODO[jvmancuso]: figure out a good way to generalize the
                 # above check (#2530)
@@ -526,7 +535,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
-                return response
+                # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                if return_value or isinstance(response, (int, float, bool, str)):
+                    return response
+                else:
+                    return None
             except ResponseSignatureError:
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)
@@ -536,23 +549,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
-        obj_id = action.obj_id
-        source = action.source
-        destinations = action.destinations
+        owner = action.target.owner
+        destinations = [self.get_worker(id_) for id_ in action.args]
         kwargs_ = action.kwargs
-        source_worker = self.get_worker(source)
-        if source_worker != self:
+
+        if owner != self:
             return None
         else:
-            obj = self.get_obj(obj_id)
-            response = source_worker.send(obj, *destinations, **kwargs_)
+            obj = self.get_obj(action.target.id)
+            response = owner.send(obj, *destinations, **kwargs_)
+            response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                response.garbage_collect_data = False
-                self.rm_obj(obj_id)
+                self.rm_obj(action.target.id)
             return response
 
     def execute_worker_command(self, message: tuple):
@@ -595,14 +607,24 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return command(*args_)
 
     def send_command(
-        self, recipient: "BaseWorker", message: tuple, return_ids: str = None
+        self,
+        recipient: "BaseWorker",
+        cmd_name: str,
+        target: PointerTensor = None,
+        args_: tuple = (),
+        kwargs_: dict = {},
+        return_ids: str = None,
+        return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to a recipient worker.
 
         Args:
             recipient: A recipient worker.
-            message: A tuple representing the message being sent.
+            cmd_name: Command number.
+            target: Target pointer Tensor.
+            args_: additional args for command execution.
+            kwargs_: additional kwargs for command execution.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -612,10 +634,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        name, target, args_, kwargs_ = message
-
         try:
-            message = TensorCommandMessage.computation(name, target, args_, kwargs_, return_ids)
+            message = TensorCommandMessage.computation(
+                cmd_name, target, args_, kwargs_, return_ids, return_value
+            )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
@@ -1058,6 +1080,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 results = results.intersection(results_by_tag)
             else:
                 results = results_by_tag
+
         if results is not None:
             return list(results)
         else:
@@ -1120,7 +1143,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
 
-        return sy.serde.deserialize(self.msg_history[index], worker=self)
+        return self.msg_history[index]
 
     @property
     def message_pending_time(self):
@@ -1162,6 +1185,21 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = []
         return WorkerCommandMessage(command_name, (args, kwargs, return_ids))
+
+    def feed_crypto_primitive_store(self, types_primitives: dict):
+        self.crypto_store.add_primitives(types_primitives)
+
+    def list_tensors(self):
+        return str(self._tensors)
+
+    def tensors_count(self):
+        return len(self._tensors)
+
+    def list_objects(self):
+        return str(self._objects)
+
+    def objects_count(self):
+        return len(self._objects)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

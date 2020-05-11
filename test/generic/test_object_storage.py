@@ -45,3 +45,19 @@ def test_clear_objects_return_None():
     objs = obj_storage.current_objects()
     assert len(objs) == 0
     assert ret_val is None
+
+
+def test_set_obj_takes_ownership(workers):
+    me = workers["me"]
+    bob = workers["bob"]
+
+    x = torch.tensor(1)
+
+    x.owner = bob
+
+    me.set_obj(x)
+
+    objs = me._objects
+
+    assert objs[x.id] == x
+    assert objs[x.id].owner == workers["me"]

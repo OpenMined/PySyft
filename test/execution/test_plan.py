@@ -14,6 +14,7 @@ from syft.execution.plan import Plan
 from syft.serde.msgpack import serde
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 
 
 def test_plan_built_automatically():
@@ -22,7 +23,7 @@ def test_plan_built_automatically():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
     assert plan_abs.is_built
 
 
@@ -32,12 +33,27 @@ def test_plan_build():
         return data.abs()
 
     assert not plan_abs.is_built
-    assert not len(plan_abs.readable_plan)
+    assert not len(plan_abs.actions)
 
     plan_abs.build(th.tensor([-1]))
 
-    assert len(plan_abs.readable_plan)
+    assert len(plan_abs.actions)
     assert plan_abs.is_built
+
+
+def test_tracing_torch():
+    @sy.func2plan()
+    def plan_torch(x, torch=th):
+        a = torch.rand([2])
+        x = torch.mul(a, x)
+        return torch.split(x, 2)
+
+    plan_torch.build(th.tensor([1, 2]))
+    plan_torch.forward = None
+    res = plan_torch(th.tensor([1, 2]))
+
+    assert len(plan_torch.actions) == 3
+    assert len(res) == 2
 
 
 def test_plan_built_automatically_with_any_dimension():
@@ -46,7 +62,7 @@ def test_plan_built_automatically_with_any_dimension():
         return data.abs()
 
     assert isinstance(plan_abs.__str__(), str)
-    assert len(plan_abs.readable_plan) > 0
+    assert len(plan_abs.actions) > 0
 
 
 def test_raise_exception_for_invalid_shape():
@@ -602,84 +618,6 @@ def test_cached_multiple_location_plan_send(workers):
     assert len(pointers) == 2
 
 
-def test_plan_nested_no_build_inner(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return 2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    # Run plan remote
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_before(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan(args_shape=[(1,)])
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-
-    # Run plan locally
-    assert plan_abs(x) == expected_res
-
-    x_ptr = x.send(alice)
-    plan_abs_ptr = plan_abs.send(alice)
-    res = plan_abs_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
-def test_plan_nested_build_inner_plan_after(workers):
-    alice = workers["alice"]
-    expected_res = th.tensor(200)
-
-    @sy.func2plan()
-    def plan_double(data):
-        return -2 * data
-
-    @sy.func2plan()
-    def plan_abs(data):
-        return plan_double(data).abs()
-
-    x = th.tensor(100)
-    plan_abs.build(x)
-    plan_double.build(x)
-
-    # Test locally
-    assert plan_abs(x) == expected_res
-
-    # Test remote
-    x_ptr = x.send(alice)
-    plan_double_ptr = plan_abs.send(alice)
-    res = plan_double_ptr(x_ptr)
-
-    assert res.get() == expected_res
-
-
 def test_plan_input_usage(hook):
     x11 = th.tensor([-1, 2.0]).tag("input_data")
     x12 = th.tensor([1, -2.0]).tag("input_data2")
@@ -708,3 +646,28 @@ def test_plan_input_usage(hook):
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
     assert (result == x12).all
+
+
+def test_backward_autograd_can_be_traced(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)], trace_autograd=True)
+    def autograd_test(X):
+        y = X * 5
+        y = -y.log() / 2
+        y = y.sum()
+        y.backward()
+        return X.grad
+
+    X = th.ones(5, 5, requires_grad=True)
+
+    # Result of torch autograd
+    torch_grads = autograd_test(X)
+
+    # Result of traced backprop
+    autograd_test.forward = None
+    plan_grads = autograd_test(X)
+
+    # (debug out)
+    print("Traced Plan:\n", autograd_test.code)
+
+    # Test all results are equal
+    assert torch_grads.eq(plan_grads).all()
