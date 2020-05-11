@@ -141,11 +141,6 @@ class Plan(AbstractObject):
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
 
-        """
-        When we use methods defined in a framework (like: torch.randn) we have a framework
-        wrapper that helps as register and keep track of what methods are called
-        With the below lines, we "register" what frameworks we have support to handle
-        """
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
         # List of available translations
@@ -397,6 +392,15 @@ class Plan(AbstractObject):
 
     @staticmethod
     def register_framework(f_name, f_package):
+        """
+        When we use methods defined in a framework (like: torch.randn) we have a framework
+        wrapper that helps as register and keep track of what methods are called
+        With the below lines, we "register" what frameworks we have support to handle
+        Args:
+            f_name (String): framework name (eg. torch, crypten)
+            f_package (imported module): imported library
+        """
+
         def call_wrapped_framework(role, owner):
             return FrameworkWrapper(f_package, role, owner)
 
