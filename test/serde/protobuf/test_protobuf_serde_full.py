@@ -15,6 +15,7 @@ samples = OrderedDict()
 
 # Native
 samples[type(None)] = make_none
+samples[type] = make_type
 
 # PyTorch
 samples[torch.device] = make_torch_device
@@ -37,6 +38,7 @@ samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages

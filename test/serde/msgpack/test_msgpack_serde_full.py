@@ -24,6 +24,7 @@ samples[slice] = make_slice
 samples[str] = make_str
 samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
+samples[type] = make_type
 
 # Numpy
 samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
@@ -88,6 +89,7 @@ samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.workers.base.BaseWorker] = make_baseworker
 
 
