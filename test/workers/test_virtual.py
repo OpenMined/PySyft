@@ -209,7 +209,7 @@ def test_obj_not_found(workers):
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    bob.object_store._objects = {}
+    bob.object_store.clear_objects()
 
     with pytest.raises(ObjectNotFoundError):
         y = x + x
