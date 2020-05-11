@@ -57,7 +57,7 @@ def test_set_obj_takes_ownership(workers):
 
     me.set_obj(x)
 
-    objs = me._objects
+    objs = me.object_store._objects
 
     assert objs[x.id] == x
     assert objs[x.id].owner == workers["me"]

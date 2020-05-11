@@ -16,7 +16,7 @@ class ObjectStorage:
     are stored using their IDs as keys.
     """
 
-    def __init__(self, owner: AbstractWorker):
+    def __init__(self, owner: AbstractWorker = None):
         self.owner = owner
 
         # This is the collection of objects being stored.
