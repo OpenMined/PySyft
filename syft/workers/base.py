@@ -576,24 +576,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
-        owner = action.target.owner
         destinations = [self.get_worker(id_) for id_ in action.args]
         kwargs_ = action.kwargs
 
-        if owner != self:
-            return None
-        else:
-            action.target.garbage_collect_data = False
-            obj = self.get_obj(action.target.id_at_location)
-            response = owner.send(obj, *destinations, **kwargs_)
-            response.garbage_collect_data = False
-            if kwargs_.get("requires_grad", False):
-                response = hook_args.register_response(
-                    "send", response, [sy.ID_PROVIDER.pop()], self
-                )
-            else:
-                self.rm_obj(action.target.id)
-            return response
+        obj = self.get_obj(action.target)
+        response = self.send(obj, *destinations, **kwargs_)
+        response.garbage_collect_data = False
+        if kwargs_.get("requires_grad", False):
+            response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
+        # TODO when do we want to remove the local version?
+        # else:
+        #     self.rm_obj(action.target)
+        return response
 
     def execute_worker_command(self, message: tuple):
         """Executes commands received from other workers.

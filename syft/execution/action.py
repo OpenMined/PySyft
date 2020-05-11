@@ -245,10 +245,14 @@ class Action(ABC):
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         command = protobuf_obj.command
-        protobuf_target = protobuf_obj.WhichOneof("target")
-        if protobuf_target:
+
+        target_field = protobuf_obj.WhichOneof("target")
+
+        if target_field == "target_id":
+            target = sy.serde.protobuf.proto.get_protobuf_id(protobuf_obj.target_id)
+        elif target_field:
             target = sy.serde.protobuf.serde._unbufferize(
-                worker, getattr(protobuf_obj, protobuf_obj.WhichOneof("target"))
+                worker, getattr(protobuf_obj, target_field)
             )
         else:
             target = None

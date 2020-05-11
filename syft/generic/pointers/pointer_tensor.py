@@ -295,13 +295,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            "remote_send", self, (destination.id,), kwargs_, (self.id,)
+            "remote_send", self.id_at_location, (destination.id,), kwargs_, (self.id,)
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
-        self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
+        self.owner.send_command(
+            cmd_name="mid_get", target=self.id_at_location, recipient=self.location
+        )
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -415,7 +417,15 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         )
 
     def __eq__(self, other):
-        return self.eq(other)
+        if isinstance(other, PointerTensor):
+            return (
+                self.location == other.location
+                and self.id_at_location == other.id_at_location
+                and self.id == other.id
+                and self.point_to_attr == other.point_to_attr
+            )
+        else:
+            return self.eq(other)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "PointerTensor") -> tuple:
