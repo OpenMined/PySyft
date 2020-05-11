@@ -79,8 +79,8 @@ class FederatedClient:
         if dataset_key not in self.datasets:
             raise ValueError(f"Dataset {dataset_key} unknown.")
 
-        model = self.get_obj(self.train_config._model_id).obj
-        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
+        model = self.object_store.get_obj(self.train_config._model_id).obj
+        loss_fn = self.object_store.get_obj(self.train_config._loss_fn_id).obj
 
         self._build_optimizer(
             self.train_config.optimizer, model, optimizer_args=self.train_config.optimizer_args
@@ -162,8 +162,8 @@ class FederatedClient:
             raise ValueError(f"Dataset {dataset_key} unknown.")
 
         eval_result = dict()
-        model = self.get_obj(self.train_config._model_id).obj
-        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
+        model = self.object_store.get_obj(self.train_config._model_id).obj
+        loss_fn = self.object_store.get_obj(self.train_config._loss_fn_id).obj
         model.eval()
         device = "cuda" if device == "cuda" else "cpu"
         data_loader = self._create_data_loader(dataset_key=dataset_key, shuffle=False)
