@@ -808,12 +808,20 @@ def test_max(workers, protocol):
 
     args = (alice, bob)
     if protocol == "fss":
-        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], args, n_instances=6)
+        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], args, n_instances=50)
         me.crypto_store.provide_primitives(
             ["beaver"],
             args,
             n_instances=6,
-            beaver={"op_shapes": [("mul", (), (1,)), ("mul", (), ())]},
+            beaver={
+                "op_shapes": [
+                    ("mul", (), (1,)),
+                    ("mul", (), ()),
+                    ("mul", (4,), (4,)),
+                    ("mul", (3,), (3,)),
+                    ("mul", (2,), (2,)),
+                ]
+            },
         )
 
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
