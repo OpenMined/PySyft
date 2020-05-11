@@ -127,7 +127,6 @@ class ObjectStorage:
     def clear_objects(self):
         """Removes all objects from the object storage."""
         self._objects.clear()
-        return self
 
     def current_objects(self):
         """Returns a copy of the objects in the object storage."""
@@ -154,3 +153,11 @@ class ObjectStorage:
                     results.append(obj)
             return results
         return []
+
+    def register_tags(self, obj):
+        # NOTE: this is a fix to correct faulty registration that can sometimes happen
+        if obj.id not in self._objects:
+            self.owner.register_obj(self)
+
+        for tag in obj.tags:
+            self._tag_to_object_ids[tag].add(obj.id)
