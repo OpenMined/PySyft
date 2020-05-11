@@ -59,6 +59,8 @@ from syft.execution.protocol import Protocol
 from syft.execution.state import State
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
+from syft.execution.protocol import Protocol
+from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -116,6 +118,7 @@ OBJ_SIMPLIFIER_AND_DETAILERS = [
     Role,
     ObjectPointer,
     Plan,
+    NestedTypeWrapper,
     Protocol,
     State,
     ComputationAction,

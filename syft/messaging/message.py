@@ -115,11 +115,11 @@ class TensorCommandMessage(Message):
         return TensorCommandMessage(action)
 
     @staticmethod
-    def communication(obj_id, name, source, destinations, kwargs_):
+    def communication(name, target, args_, kwargs_, return_ids):
         """ Helper function to build a TensorCommandMessage containing a CommunicationAction
         directly from the action arguments.
         """
-        action = CommunicationAction(obj_id, name, source, destinations, kwargs_)
+        action = CommunicationAction(name, target, args_, kwargs_, return_ids)
         return TensorCommandMessage(action)
 
     @staticmethod
