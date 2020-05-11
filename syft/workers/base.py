@@ -1022,7 +1022,7 @@ class BaseWorker(AbstractWorker):
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
         if plan_id in self.object_store._objects:
-            candidate = self.object_store._objects[plan_id]
+            candidate = self.object_store.get_obj(plan_id)
             if isinstance(candidate, sy.Plan):
                 if copy:
                     return candidate.copy()
@@ -1057,7 +1057,7 @@ class BaseWorker(AbstractWorker):
         """
         if protocol_id in self.object_store._objects:
 
-            candidate = self.object_store._objects[protocol_id]
+            candidate = self.object_store.get_obj(protocol_id)
             if isinstance(candidate, sy.Protocol):
                 return candidate
 
@@ -1305,6 +1305,6 @@ class BaseWorker(AbstractWorker):
         # make sure they weren't accidentally double registered
         for _, obj in _objects.items():
             if obj.id in worker.object_store._objects:
-                del worker.object_store._objects[obj.id]
+                worker.object_store.rm_obj(obj.id)
 
         return result

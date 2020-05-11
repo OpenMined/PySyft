@@ -975,9 +975,9 @@ def test_dtype(workers):
         x.child.dtype == "long"
         and x.child.field == 2 ** 64
         and isinstance(
-            x.child.child["alice"].location.object_store._objects[
+            x.child.child["alice"].location.object_store.get_obj(
                 x.child.child["alice"].id_at_location
-            ],
+            ),
             torch.LongTensor,
         )
         and (x.get() == torch.LongTensor([1, 2, 3])).all()
@@ -988,9 +988,9 @@ def test_dtype(workers):
         x.child.dtype == "int"
         and x.child.field == 2 ** 32
         and isinstance(
-            x.child.child["alice"].location.object_store._objects[
+            x.child.child["alice"].location.object_store.get_obj(
                 x.child.child["alice"].id_at_location
-            ],
+            ),
             torch.IntTensor,
         )
         and (x.get() == torch.IntTensor([4, 5, 6])).all()
@@ -1002,9 +1002,9 @@ def test_dtype(workers):
         x.child.dtype == "custom"
         and x.child.field == 67
         and isinstance(
-            x.child.child["alice"].location.object_store._objects[
+            x.child.child["alice"].location.object_store.get_obj(
                 x.child.child["alice"].id_at_location
-            ],
+            ),
             torch.IntTensor,
         )
         and (x.get() == torch.IntTensor([1, 2, 3])).all()
@@ -1016,9 +1016,9 @@ def test_dtype(workers):
         x.child.child.dtype == "long"
         and x.child.child.field == 2 ** 64
         and isinstance(
-            x.child.child.child["alice"].location.object_store._objects[
+            x.child.child.child["alice"].location.object_store.get_obj(
                 x.child.child.child["alice"].id_at_location
-            ],
+            ),
             torch.LongTensor,
         )
         and (x.get().float_prec() == torch.tensor([1.1, 2.2, 3.3])).all()
@@ -1029,9 +1029,9 @@ def test_dtype(workers):
         x.child.child.dtype == "int"
         and x.child.child.field == 2 ** 32
         and isinstance(
-            x.child.child.child["alice"].location.object_store._objects[
+            x.child.child.child["alice"].location.object_store.get_obj(
                 x.child.child.child["alice"].id_at_location
-            ],
+            ),
             torch.IntTensor,
         )
         and (x.get().float_prec() == torch.tensor([4.1, 5.2, 6.3])).all()

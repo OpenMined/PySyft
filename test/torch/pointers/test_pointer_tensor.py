@@ -183,7 +183,7 @@ def test_remote_autograd(workers):
     y.backward()
 
     # check that remote gradient is correct
-    x_grad = bob.object_store._objects[x.id_at_location].grad
+    x_grad = bob.object_store.get_obj(x.id_at_location).grad
     x_grad_target = torch.ones(4).float() + 1
     assert (x_grad == x_grad_target).all()
 
@@ -199,7 +199,7 @@ def test_remote_autograd(workers):
     y.backward()
 
     # get the gradient created from backpropagation manually
-    x_grad = bob.object_store._objects[x.id_at_location].grad
+    x_grad = bob.object_store.get_obj(x.id_at_location).grad
 
     # get the entire x tensor (should bring the grad too)
     x = x.get()
@@ -276,7 +276,7 @@ def test_grad_pointer(workers):
     y = (x + x).sum()
     y.backward()
 
-    assert (bob.object_store._objects[x.id_at_location].grad == torch.tensor([2, 2, 2.0])).all()
+    assert (bob.object_store.get_obj(x.id_at_location).grad == torch.tensor([2, 2, 2.0])).all()
 
 
 def test_move(workers):
@@ -313,7 +313,7 @@ def test_move(workers):
 
     james.clear_objects()
     x = th.tensor([1.0]).send(james)
-    remote_x = james.object_store._objects[x.id_at_location]
+    remote_x = james.object_store.get_obj(x.id_at_location)
     remote_ptr = remote_x.send(bob)
     assert remote_ptr.id in james.object_store._objects.keys()
     remote_ptr2 = remote_ptr.move(alice)
@@ -411,8 +411,8 @@ def test_fix_prec_on_pointer_tensor(workers):
 
     ptr_fp = ptr.fix_precision()
 
-    remote_tensor = bob.object_store._objects[ptr.id_at_location]
-    remote_fp_tensor = bob.object_store._objects[ptr_fp.id_at_location]
+    remote_tensor = bob.object_store.get_obj(ptr.id_at_location)
+    remote_fp_tensor = bob.object_store.get_obj(ptr_fp.id_at_location)
 
     # check that fix_precision is not inplace
     assert (remote_tensor == tensor).all()
@@ -434,8 +434,8 @@ def test_fix_prec_on_pointer_of_pointer(workers):
 
     ptr = ptr.fix_precision()
 
-    alice_tensor = alice.object_store._objects[ptr.id_at_location]
-    remote_tensor = bob.object_store._objects[alice_tensor.id_at_location]
+    alice_tensor = alice.object_store.get_obj(ptr.id_at_location)
+    remote_tensor = bob.object_store.get_obj(alice_tensor.id_at_location)
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor.child, FixedPrecisionTensor)
@@ -452,7 +452,7 @@ def test_float_prec_on_pointer_tensor(workers):
     ptr = ptr.fix_precision()
 
     ptr = ptr.float_precision()
-    remote_tensor = bob.object_store._objects[ptr.id_at_location]
+    remote_tensor = bob.object_store.get_obj(ptr.id_at_location)
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
@@ -472,8 +472,8 @@ def test_float_prec_on_pointer_of_pointer(workers):
 
     ptr = ptr.float_precision()
 
-    alice_tensor = alice.object_store._objects[ptr.id_at_location]
-    remote_tensor = bob.object_store._objects[alice_tensor.id_at_location]
+    alice_tensor = alice.object_store.get_obj(ptr.id_at_location)
+    remote_tensor = bob.object_store.get_obj(alice_tensor.id_at_location)
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
@@ -491,7 +491,7 @@ def test_share_get(workers):
     ptr = tensor.send(bob)
 
     ptr = ptr.share(charlie, alice)
-    remote_tensor = bob.object_store._objects[ptr.id_at_location]
+    remote_tensor = bob.object_store.get_obj(ptr.id_at_location)
 
     assert isinstance(ptr.child, PointerTensor)
     assert isinstance(remote_tensor.child, AdditiveSharingTensor)

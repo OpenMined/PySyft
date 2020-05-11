@@ -82,7 +82,7 @@ def test_set_obj_other():
     fed_client.set_obj(dummy_data)
 
     assert len(fed_client.object_store._objects) == 1
-    assert fed_client.object_store._objects[dummy_data.id] == dummy_data
+    assert fed_client.object_store.get_obj(dummy_data.id) == dummy_data
 
 
 def evaluate_model(fed_client, model_id, loss_fn, data, target):  # pragma: no cover
