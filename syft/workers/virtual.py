@@ -17,3 +17,12 @@ class VirtualWorker(BaseWorker, FederatedClient):
     def _recv_msg(self, message: bin) -> bin:
         """receive message"""
         return self.recv_msg(message)
+
+    # For backwards compatibility with Udacity course
+    @property
+    def _objects(self):
+        return self.object_store._objects
+
+    @property
+    def _tensors(self):
+        return self.object_store._tensors

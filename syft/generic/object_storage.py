@@ -124,20 +124,10 @@ class ObjectStorage:
     def force_rm_obj(self, remote_key: Union[str, int]):
         self.rm_obj(remote_key, force=True)
 
-    def clear_objects(self, return_self: bool = True):
-        """Removes all objects from the object storage.
-
-        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
-
-        Args:
-            return_self: flag, whether to return self as return value
-
-        Returns:
-            self, if return_self if True, else None
-
-        """
+    def clear_objects(self):
+        """Removes all objects from the object storage."""
         self._objects.clear()
-        return self if return_self else None
+        return self
 
     def current_objects(self):
         """Returns a copy of the objects in the object storage."""

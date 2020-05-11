@@ -235,7 +235,19 @@ class BaseWorker(AbstractWorker):
         self.object_store.register_obj(self, obj)
 
     def clear_objects(self, return_self: bool = True):
-        self.object_store.clear_objects(return_self)
+        """Removes all objects from the object storage.
+
+        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
+
+        Args:
+            return_self: flag, whether to return self as return value
+
+        Returns:
+            self, if return_self if True, else None
+
+        """
+        self.object_store.clear_objects()
+        return self if return_self else None
 
     @contextmanager
     def registration_enabled(self):
