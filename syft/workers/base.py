@@ -109,7 +109,7 @@ class BaseWorker(AbstractWorker):
         super().__init__()
         self.hook = hook
 
-        self.object_store = ObjectStorage(owner=self)
+        self.object_store = ObjectStorage()
 
         # This is hack for backwards compatibility
         # self._objects = self.object_store._objects
