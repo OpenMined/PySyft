@@ -157,7 +157,7 @@ class ObjectStorage:
     def register_tags(self, obj):
         # NOTE: this is a fix to correct faulty registration that can sometimes happen
         if obj.id not in self._objects:
-            self.owner.register_obj(self)
+            self.owner.register_obj(obj)
 
         for tag in obj.tags:
             self._tag_to_object_ids[tag].add(obj.id)
