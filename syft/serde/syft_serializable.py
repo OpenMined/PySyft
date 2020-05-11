@@ -16,6 +16,15 @@ def get_protobuf_subclasses(cls):
     """
 
     def check_implementation(s):
+        """
+            Check if a class has:
+                1. bufferize implemented.
+                2. unbufferize implemented.
+                3. get_protobuf_schema implemented.
+                4. no abstact methods.
+
+            To be sure that it can be used with protobufers.
+        """
         not_abstract = not inspect.isabstract(s)
         bufferize_implemented = s.bufferize.__qualname__.startswith(s.__name__)
         unbufferize_implemented = s.unbufferize.__qualname__.startswith(s.__name__)
@@ -51,6 +60,13 @@ def get_msgpack_subclasses(cls):
     """
 
     def check_implementation(s):
+        """
+            Check if a class has:
+                1. serialize implemented.
+                2. detail implemented.
+
+            To be sure that it can be used with msgpack.
+        """
         not_abstract = not inspect.isabstract(s)
         bufferize_implemented = s.simplify.__qualname__.startswith(s.__name__)
         unbufferize_implemented = s.detail.__qualname__.startswith(s.__name__)
@@ -79,26 +95,79 @@ class SyftSerializable:
             1. simplify
             2. detail
 
-        Note: the interface can be inherited from parent class, but each class has to write it's own explicit methods,
-        even if they are the ones from the parent class.
+        Note: the interface can be inherited from parent class, but each class
+        has to write it's own explicit methods, even if they are the ones from the parent class.
+
+        TODO: move to ABCs.
     """
 
     @staticmethod
     def simplify(worker, obj):
+        """
+            Serialization method for msgpack.
+
+            Parameters:
+                worker: the worker on which the serialization is being made.
+                obj: the object to be serialized, an instantiated type of
+                the class that implements SyftSerializable.
+
+            Returns:
+                Serialized object using msgpack.
+        """
         raise NotImplementedError
 
     @staticmethod
     def detail(worker, obj):
+        """
+            Deserialization method for msgpack.
+
+            Parameters:
+                worker: the worker on which the serialization is being made.
+                obj: the object to be deserialized, a serialized object of
+                the class that implements SyftSerializable.
+
+            Returns:
+                Serialized object using msgpack.
+        """
         raise NotImplementedError
 
     @staticmethod
     def bufferize(worker, obj):
+        """
+            Serialization method for protobuf.
+
+            Parameters:
+                worker: the worker on which the bufferize is being made.
+                obj: the object to be bufferized using protobufers, an instantiated type
+                of the class that implements SyftSerializable.
+
+            Returns:
+                Protobuf class for the current type.
+        """
+
         raise NotImplementedError
 
     @staticmethod
     def unbufferize(worker, obj):
+        """
+            Deserialization method for protobuf.
+
+            Parameters:
+                worker: the worker on which the unbufferize is being made.
+                obj: the object to be unbufferized using protobufers, an instantiated type
+                of the class that implements SyftSerializable.
+
+            Returns:
+                Protobuf class for the current type.
+        """
         raise NotImplementedError
 
     @staticmethod
     def get_protobuf_schema():
+        """
+            Return the protobuf schema used for this type.
+
+            Returns:
+                Protobuf type.
+        """
         raise NotImplementedError
