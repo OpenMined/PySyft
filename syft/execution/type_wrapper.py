@@ -340,6 +340,3 @@ class NestedTypeWrapper:
         wrapper = NestedTypeWrapper()
         wrapper.nested_input_types = result
         return wrapper
-
-    def __iter__(self):
-        return iter(self.nested_input_types)
