@@ -5,6 +5,10 @@ def multiply_mod(operand1, operand2, modulus):
     return (operand1 * operand2) % modulus
 
 
+def add_mod(operand1, operand2, modulus):
+    return (operand1 + operand2) % modulus
+
+
 def exponentiate_mod(operand, exponent, modulus):
     if exponent == 0:
         return 1
@@ -106,20 +110,19 @@ def try_invert_int_mod(value, modulus):
 
 def multiply_add_plain_with_scaling_variant(pue, message, context):
     # here pue = pk * u * e
-    param = context.param
-    coeff_modulus = param.coeff_modulus
+    coeff_modulus = context.param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
-    coeff_count = param.poly_modulus_degree
+    coeff_count = context.param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
     delta = context.coeff_div_plain_modulus
-    plaintext = message.data
+    message = message.data
     pue_0, pue_1 = pue.data
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
         for j in range(coeff_mod_size):
-            temp = (delta[j] * plaintext[i]) % coeff_modulus[j]
+            temp = round(delta[j] * message[i]) % coeff_modulus[j]
             pue_0[i + j * coeff_count] = (pue_0[i + j * coeff_count] + temp) % coeff_modulus[j]
 
     return CipherText([pue_0, pue_1])  # p0 * u * e1 + delta * m

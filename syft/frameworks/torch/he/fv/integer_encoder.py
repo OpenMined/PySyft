@@ -22,8 +22,7 @@ class IntegerEncoder:
     would be stored as a polynomial coefficient plain_modulus-1."""
 
     def __init__(self, context):
-        self.param = context.param
-        self.plain_modulus = self.param.plain_modulus
+        self.plain_modulus = context.param.plain_modulus
 
         if self.plain_modulus <= 1:
             raise ValueError("plain_modulus must be at least 2")

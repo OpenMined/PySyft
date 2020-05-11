@@ -44,12 +44,11 @@ def test_is_prime(num, status):
     [(128, 2, [30, 40, 50]), (1024, 64, [30, 60, 60]), (64, 64, [30])],
 )
 def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
-    params = EncryptionParams()
-    params.poly_modulus_degree = poly_modulus_degree
-    params.plain_modulus = plain_modulus
-    cm = CoeffModulus()
-    params.coeff_modulus = cm.create(poly_modulus_degree, coeff_bit_sizes)
-
+    params = EncryptionParams(
+        poly_modulus_degree,
+        CoeffModulus().create(poly_modulus_degree, coeff_bit_sizes),
+        plain_modulus,
+    )
     for i in range(len(coeff_bit_sizes)):
         assert is_prime(params.coeff_modulus[i])
 
@@ -60,11 +59,11 @@ def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
 )
 def test_EncryptionParams_exceptions(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
     with pytest.raises(ValueError):
-        params = EncryptionParams()
-        params.poly_modulus_degree = poly_modulus_degree
-        params.plain_modulus = plain_modulus
-        cm = CoeffModulus()
-        params.coeff_modulus = cm.create(poly_modulus_degree, coeff_bit_sizes)
+        params = EncryptionParams(
+            poly_modulus_degree,
+            CoeffModulus().create(poly_modulus_degree, coeff_bit_sizes),
+            plain_modulus,
+        )
 
         for i in range(len(coeff_bit_sizes)):
             assert is_prime(params.coeff_modulus[i])
@@ -157,11 +156,9 @@ def test_get_significant_count(ptr, result):
     ],
 )
 def test_integer_encoder(plain_modulus, value):
-    # TODO For creating IntegerEncoder we should not need to create coeff_modulus so need to change the way we pass ctx object in IntegerEncoder class.
-    # due to which currently we have to create coeff modulus of very big size and it slows down these tests.
-    enc_param = EncryptionParams()
-    enc_param.plain_modulus = plain_modulus
-    enc_param.coeff_modulus = CoeffModulus().create(plain_modulus, [100, 100, 100])
+    enc_param = EncryptionParams(
+        16, CoeffModulus().create(plain_modulus, [100, 100, 100]), plain_modulus
+    )
     ctx = Context(enc_param)
     encoder = IntegerEncoder(ctx)
     poly = encoder.encode(value)
@@ -232,29 +229,29 @@ def test_fast_convert_array(ibase, obase, input, output):
     "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
     [
         (64, 64, [40], 0x12345678),
-        (64, 64, [40], 0),
-        (64, 64, [40], 1),
+        (4096, 64, [40], 0),
+        (1024, 64, [40], 1),
         (64, 64, [40], 2),
         (64, 64, [40], 0x7FFFFFFFFFFFFFFD),
-        (64, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (4096, 64, [40], 0x7FFFFFFFFFFFFFFE),
         (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
-        (64, 64, [40], 314159265),
+        (4096, 64, [40], 314159265),
         (128, 128, [40, 40], 0x12345678),
-        (128, 128, [40, 40], 0),
-        (128, 128, [40, 40], 1),
-        (128, 128, [40, 40], 2),
+        (2048, 128, [40, 40], 0),
+        (1024, 128, [40, 40], 1),
+        (2048, 128, [40, 40], 2),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
-        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (4096, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
         (128, 128, [40, 40], 314159265),
         (256, 256, [40, 40, 40], 0x12345678),
-        (256, 256, [40, 40, 40], 0),
+        (1024, 256, [40, 40, 40], 0),
         (256, 256, [40, 40, 40], 1),
         (256, 256, [40, 40, 40], 2),
-        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
-        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
+        (4096, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (1024, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
         (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
-        (256, 256, [40, 40, 40], 314159265),
+        (4096, 256, [40, 40, 40], 314159265),
     ],
 )
 def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
@@ -274,29 +271,29 @@ def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_b
     "poly_modulus, plain_modulus, coeff_bit_sizes, integer",
     [
         (64, 64, [40], 0x12345678),
-        (64, 64, [40], 0),
-        (64, 64, [40], 1),
+        (4096, 64, [40], 0),
+        (1024, 64, [40], 1),
         (64, 64, [40], 2),
-        (64, 64, [40], 0x7FFFFFFFFFFFFFFD),
-        (64, 64, [40], 0x7FFFFFFFFFFFFFFE),
+        (1024, 64, [40], 0x7FFFFFFFFFFFFFFD),
+        (4096, 64, [40], 0x7FFFFFFFFFFFFFFE),
         (64, 64, [40], 0x7FFFFFFFFFFFFFFF),
-        (64, 64, [40], 314159265),
-        (128, 128, [40, 40], 0x12345678),
-        (128, 128, [40, 40], 0),
-        (128, 128, [40, 40], 1),
-        (128, 128, [40, 40], 2),
-        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
+        (4096, 64, [40], 314159265),
+        (1024, 128, [40, 40], 0x12345678),
+        (2048, 128, [40, 40], 0),
+        (1024, 128, [40, 40], 1),
+        (2048, 128, [40, 40], 2),
+        (1024, 128, [40, 40], 0x7FFFFFFFFFFFFFFD),
         (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFE),
-        (128, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
+        (4096, 128, [40, 40], 0x7FFFFFFFFFFFFFFF),
         (128, 128, [40, 40], 314159265),
-        (256, 256, [40, 40, 40], 0x12345678),
-        (256, 256, [40, 40, 40], 0),
+        (4096, 256, [40, 40, 40], 0x12345678),
+        (1024, 256, [40, 40, 40], 0),
         (256, 256, [40, 40, 40], 1),
         (256, 256, [40, 40, 40], 2),
-        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
-        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
-        (256, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
-        (256, 256, [40, 40, 40], 314159265),
+        (4096, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFD),
+        (1024, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFE),
+        (64, 256, [40, 40, 40], 0x7FFFFFFFFFFFFFFF),
+        (4096, 256, [40, 40, 40], 314159265),
     ],
 )
 def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bit_sizes, integer):
@@ -309,4 +306,48 @@ def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bi
     encoder = IntegerEncoder(ctx)
     encrypter = Encrypter(ctx, keys[0])  # keys[0] = secret_key
     decrypter = Decrypter(ctx, keys[0])
+    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
+
+
+@pytest.mark.parametrize(
+    "poly_modulus, plain_modulus, seq_level, integer",
+    [
+        (1024, 1024, SeqLevelType.TC128, 0x12345678),
+        (16384, 1024, SeqLevelType.TC192, 0),
+        (32768, 1024, SeqLevelType.TC256, 1),
+        (1024, 1024, SeqLevelType.TC128, 2),
+        (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFD),
+        (16384, 1024, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
+        (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
+        (32768, 1024, SeqLevelType.TC128, 314159265),
+        (32768, 2048, SeqLevelType.TC256, 0x12345678),
+        (4096, 2048, SeqLevelType.TC192, 0),
+        (32768, 2048, SeqLevelType.TC128, 1),
+        (4096, 2048, SeqLevelType.TC128, 2),
+        (16384, 2048, SeqLevelType.TC256, 0x7FFFFFFFFFFFFFFD),
+        (2048, 2048, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFE),
+        (8192, 2048, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFF),
+        (2048, 2048, SeqLevelType.TC256, 314159265),
+        (4096, 4096, SeqLevelType.TC192, 0x12345678),
+        (4096, 4096, SeqLevelType.TC128, 0),
+        (4096, 4096, SeqLevelType.TC192, 1),
+        (8192, 8192, SeqLevelType.TC128, 2),
+        (8192, 8192, SeqLevelType.TC256, 0x7FFFFFFFFFFFFFFD),
+        (8192, 8192, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
+        (16384, 16384, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
+        (32768, 32768, SeqLevelType.TC256, 314159265),
+    ],
+)
+def test_fv_encryption_decrption_standard_seq_level(
+    poly_modulus, plain_modulus, seq_level, integer
+):
+    ctx = Context(
+        EncryptionParams(
+            poly_modulus, CoeffModulus().bfv_default(poly_modulus, seq_level), plain_modulus
+        )
+    )
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encrypter = Encrypter(ctx, keys[1])  # keys[1] = public_key
+    decrypter = Decrypter(ctx, keys[0])  # keys[0] = secret_key
     assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))

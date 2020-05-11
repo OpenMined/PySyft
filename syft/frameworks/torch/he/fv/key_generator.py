@@ -47,5 +47,6 @@ class KeyGenerator:
         if not self._sk_generated:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 
-        public_key = encrypt_zero_symmetric(self._context, self._secret_key)
+        public_key = encrypt_zero_symmetric(self._context, self._secret_key.data)
         self._public_key = PublicKey(public_key.data)
+        self._pk_generated = True

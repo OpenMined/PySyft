@@ -11,14 +11,6 @@ class PlainText:
         self._data = data
         self._coeff_count = len(data)
 
-    def resize(self, coeff_count):
-        self.data = th.zeros(coeff_count, dtype=th.int64)
-
-    def set_zero(self):
-        """Sets the plaintext polynomial to zero."""
-        self._data = [0] * self._coeff_count
-        self.data = th.zeros(self._coeff_count, dtype=th.int64)
-
     def significant_coeff_count(self):
         """Returns the significant coefficient count of the current plaintext polynomial."""
         return get_significant_count(self._data, self._coeff_count)
@@ -27,14 +19,6 @@ class PlainText:
     def data(self):
         return self._data
 
-    @data.setter
-    def data(self, data):
-        self._data = data
-
     @property
     def coeff_count(self):
         return self._coeff_count
-
-    @coeff_count.setter
-    def coeff_count(self, coeff_count):
-        self._coeff_count = coeff_count

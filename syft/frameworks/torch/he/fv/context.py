@@ -15,12 +15,10 @@ class Context:
 
     def __init__(self, encryption_param):
         self._param = encryption_param
-        self._poly_modulus_degree = self._param.poly_modulus_degree
-        self._coeff_modulus = self._param.coeff_modulus
-        self._plain_modulus = encryption_param.plain_modulus
-        self._coeff_div_plain_modulus = [x // self._plain_modulus for x in self._coeff_modulus]
+        self._plain_modulus = self._param.plain_modulus
+        self._coeff_div_plain_modulus = [x / self._plain_modulus for x in self._param.coeff_modulus]
         self._rns_tool = RNSTool(
-            self._poly_modulus_degree, self._coeff_modulus, self._plain_modulus
+            self._param.poly_modulus_degree, self._param.coeff_modulus, self._plain_modulus
         )
 
     @property

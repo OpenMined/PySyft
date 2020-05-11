@@ -11,11 +11,8 @@ class Decrypter:
     def __init__(self, context, secret_key):
         self._context = context
         self._coeff_modulus = context.param.coeff_modulus
-        self._coeff_mod_size = len(self._coeff_modulus)
         self._coeff_count = context.param.poly_modulus_degree
         self._secret_key = secret_key.data
-        self._plain_modulus = context.plain_modulus
-        self._rns_tools = context.rns_tool
 
     def decrypt(self, encrypted):
         temp_product_modq = self.dot_product_ct_sk_array(encrypted)
@@ -27,10 +24,10 @@ class Decrypter:
         return PlainText(result[:plain_coeff_count])
 
     def dot_product_ct_sk_array(self, encrypted):
-        product = [0] * self._coeff_count * self._coeff_mod_size
+        product = [0] * self._coeff_count * len(self._coeff_modulus)
         c_0, c_1 = encrypted.data
 
-        for j in range(self._coeff_mod_size):
+        for j in range(len(self._coeff_modulus)):
             for i in range(self._coeff_count):
                 product[i + j * self._coeff_count] = (
                     (c_1[i + j * self._coeff_count] * self._secret_key[i + j * self._coeff_count])
@@ -38,5 +35,4 @@ class Decrypter:
                     + c_0[i + j * self._coeff_count]
                 ) % self._coeff_modulus[j]
 
-        # product  = c_0 + c_1 * sk
         return product

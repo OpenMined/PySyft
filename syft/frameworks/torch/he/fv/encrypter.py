@@ -1,6 +1,5 @@
 import torch as th
 
-from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
 from syft.frameworks.torch.he.fv.public_key import PublicKey
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_zero_symmetric
@@ -19,21 +18,23 @@ class Encrypter:
         self._context = context
         self._key = key
 
-    def encrypt_internal(self, message, is_asymmetric):
-        result = None
-        if is_asymmetric:
-            result = encrypt_zero_asymmetric(self._context, self._key)
-        else:
-            result = encrypt_zero_symmetric(self._context, self._key)
-
-        return multiply_add_plain_with_scaling_variant(result, message, self._context)
-
     def encrypt(self, message):
-        if isinstance(self._key, SecretKey):
-            # Secret key used for encryption
-            return self.encrypt_internal(message, False)
-        elif isinstance(self._key, PublicKey):
-            # Public key used for encryption
-            return self.encrypt_internal(message, True)
+
+        if isinstance(self._key, PublicKey):
+            return self._encrypt(message, True)  # Public key used for encryption
+
+        elif isinstance(self._key, SecretKey):
+            return self._encrypt(message, False)  # Secret key used for encryption
+
         else:
             raise ValueError("key for encryption is not valid")
+
+    def _encrypt(self, message, is_asymmetric):
+        result = None
+        if is_asymmetric:
+            result = encrypt_zero_asymmetric(self._context, self._key.data)
+
+        else:
+            result = encrypt_zero_symmetric(self._context, self._key.data)
+
+        return multiply_add_plain_with_scaling_variant(result, message, self._context)

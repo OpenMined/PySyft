@@ -4,6 +4,8 @@ from secrets import randbits
 from torch.distributions import Normal
 
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
+from syft.frameworks.torch.he.fv.util.operations import add_mod
+from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVIATION
 
 
@@ -19,8 +21,7 @@ def sample_poly_ternary(parms):
 
     result = [0] * coeff_count * coeff_mod_size
     for i in range(coeff_count):
-        r = SystemRandom()
-        rand_index = r.choice([-1, 0, 1])
+        rand_index = SystemRandom().choice([-1, 0, 1])
         if rand_index == 1:
             for j in range(coeff_mod_size):
                 result[i + j * coeff_count] = 1
@@ -81,24 +82,16 @@ def encrypt_zero_asymmetric(context, public_key):
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
-    public_key = public_key.data
     encrypted_size = 2
 
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
 
-    # c[j] = u * public_key[j]
     c_0 = [0] * coeff_count * coeff_mod_size
     c_1 = [0] * coeff_count * coeff_mod_size
     result = [c_0, c_1]
 
-    for k in range(encrypted_size):
-        for j in range(coeff_mod_size):
-            for i in range(coeff_count):
-                result[k][i + j * coeff_count] = (
-                    u[i + j * coeff_count] * public_key[k][i + j * coeff_count]
-                ) % coeff_modulus[j]
-
+    # c[j] = u * public_key[j]
     # Generate e_j <-- chi
     # c[j] = public_key[j] * u + e[j]
     for k in range(encrypted_size):
@@ -106,7 +99,8 @@ def encrypt_zero_asymmetric(context, public_key):
         for j in range(coeff_mod_size):
             for i in range(coeff_count):
                 result[k][i + j * coeff_count] = (
-                    result[k][i + j * coeff_count] + e[i + j * coeff_count]
+                    (u[i + j * coeff_count] * public_key[k][i + j * coeff_count]) % coeff_modulus[j]
+                    + e[i + j * coeff_count]
                 ) % coeff_modulus[j]
 
     return CipherText(result)  # result = public_key[j] * u + e[j]
@@ -117,7 +111,6 @@ def encrypt_zero_symmetric(context, secret_key):
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
-    secret_key = secret_key.data
 
     # (a) Sample a uniformly at random
     c1 = sample_poly_uniform(param)
@@ -129,11 +122,15 @@ def encrypt_zero_symmetric(context, secret_key):
     c0 = [0] * coeff_count * coeff_mod_size
     for j in range(coeff_mod_size):
         for i in range(coeff_count):
-            c0[i + j * coeff_count] = (
-                (c1[i + j * coeff_count] * secret_key[i + j * coeff_count]) % coeff_modulus[j]
-                + e[i + j * coeff_count]
-            ) % coeff_modulus[j]
+            c0[i + j * coeff_count] = add_mod(
+                multiply_mod(
+                    c1[i + j * coeff_count], secret_key[i + j * coeff_count], coeff_modulus[j]
+                ),
+                e[i + j * coeff_count],
+                coeff_modulus[j],
+            )
 
+    # negate: c0 = -c0
     for j in range(coeff_mod_size):
         for i in range(coeff_count):
             non_zero = c0[i + j * coeff_count] != 0
