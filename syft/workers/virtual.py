@@ -26,7 +26,14 @@ class VirtualWorker(BaseWorker, FederatedClient):
 
     @staticmethod
     def detail(worker: AbstractWorker, worker_tuple: tuple) -> Union["VirtualWorker", int, str]:
-        return BaseWorker.detail(worker, worker_tuple)
+        detailed = BaseWorker.detail(worker, worker_tuple)
+
+        if isinstance(detailed, int):
+            result = VirtualWorker(id=detailed, hook=worker.hook)
+        else:
+            result = detailed
+
+        return result
 
     @staticmethod
     def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:

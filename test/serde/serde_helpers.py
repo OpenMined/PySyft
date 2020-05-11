@@ -1212,7 +1212,11 @@ def make_trainconfig(**kwargs):
 
 # syft.workers.virtual.VirtualWorker
 def make_virtual_worker(**kwargs):
-    worker = VirtualWorker(hook=kwargs["workers"]["serde_worker"].hook)
+    worker = VirtualWorker(
+        id=f"serde-worker-{cls.__name__}",
+        hook=kwargs["workers"]["serde_worker"].hook,
+        auto_add=False,
+    )
 
     t = torch.rand(3, 3)
     with worker.registration_enabled():
@@ -1228,7 +1232,7 @@ def make_virtual_worker(**kwargs):
             "value": worker,
             "simplified": (
                 CODE[syft.workers.virtual.VirtualWorker],
-                ((CODE[str], (b"serde-worker-BaseWorker",)),),  # id (str)
+                ((CODE[str], (b"serde-worker-VirtualWorker",)),),  # id (str)
             ),
             "cmp_detailed": compare,
         },
@@ -1239,7 +1243,7 @@ def make_virtual_worker(**kwargs):
             "simplified": (
                 FORCED_CODE[syft.workers.virtual.VirtualWorker],
                 (
-                    (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
+                    (CODE[str], (b"serde-worker-VirtualWorker",)),  # id (str)
                     msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
                     worker.auto_add,  # (bool) auto_add
                 ),
