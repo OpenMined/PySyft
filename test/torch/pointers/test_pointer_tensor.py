@@ -289,7 +289,7 @@ def test_move(workers):
 
     p = x.move(alice)
 
-    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in bob._objects
     assert x.id_at_location in alice._objects
 
     x = torch.tensor([1.0, 2, 3, 4, 5], requires_grad=True).send(bob)
@@ -299,7 +299,7 @@ def test_move(workers):
 
     p = x.move(alice)
 
-    assert x.id_at_location not in bob._objects
+    assert x.id_at_location in bob._objects
     assert x.id_at_location in alice._objects
 
     alice.clear_objects()
@@ -568,4 +568,4 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    assert len(alice._objects) == 8
+    assert len(alice._objects) == 2

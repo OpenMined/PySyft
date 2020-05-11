@@ -182,7 +182,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
         # declare the plans used for crypto computations
-        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
+        # sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -443,6 +443,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         obj = obj_msg.object
 
+        # If we received pointer to an object on self, no need to do anything
+        if (
+            isinstance(obj, ObjectPointer)
+            and obj.location == self
+            and obj.id_at_location in self._objects
+        ):
+            return
+
         self.set_obj(obj)
 
         if isinstance(obj, FrameworkTensor):
@@ -469,6 +477,27 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             return self.execute_communication_action(cmd.action)
 
+    def dereference_pointer_to_self(self, obj):
+        if isinstance(obj, (tuple, list)):
+            return type(obj)(self.dereference_pointer_to_self(el) for el in obj)
+
+        unwrapped = obj.child if getattr(obj, "is_wrapper", False) else obj
+        if isinstance(unwrapped, ObjectPointer) and unwrapped.id_at_location in self._objects:
+            unwrapped.garbage_collect_data = False
+            local_obj = self._objects[unwrapped.id_at_location]
+
+            if unwrapped.point_to_attr:
+                for attr in obj.point_to_attr.split("."):
+                    local_obj = getattr(local_obj, attr)
+
+            if local_obj is not None:
+                if not local_obj.is_wrapper and not isinstance(local_obj, FrameworkTensor):
+                    local_obj = local_obj.wrap()
+
+            return local_obj
+        else:
+            return obj
+
     def execute_computation_action(self, action: ComputationAction) -> PointerTensor:
         """
         Executes commands received from other workers.
@@ -477,17 +506,16 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             The result or None if return_value is False.
         """
-
         op_name = action.name
-        _self = action.target
-        args_ = action.args
-        kwargs_ = action.kwargs
+        _self = self.dereference_pointer_to_self(action.target)
+        args_ = tuple(self.dereference_pointer_to_self(arg) for arg in action.args)
+        kwargs_ = {k: self.dereference_pointer_to_self(v) for k, v in action.kwargs.items()}
         return_ids = action.return_ids
         return_value = action.return_value
 
         # Handle methods
         if _self is not None:
-            if type(_self) == int:
+            if isinstance(_self, int):
                 _self = BaseWorker.get_obj(self, _self)
                 if _self is None:
                     return
@@ -519,7 +547,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # At this point, the command is ALWAYS a path to a
             # function (i.e., torch.nn.functional.relu). Thus,
             # we need to fetch this function and run it.
-
             sy.framework.command_guard(op_name)
 
             paths = op_name.split(".")
@@ -556,7 +583,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if owner != self:
             return None
         else:
-            obj = self.get_obj(action.target.id)
+            action.target.garbage_collect_data = False
+            obj = self.get_obj(action.target.id_at_location)
             response = owner.send(obj, *destinations, **kwargs_)
             response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):

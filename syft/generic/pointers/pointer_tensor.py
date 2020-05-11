@@ -79,7 +79,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 an object, but to point to an attribute of that object such as .child or
                 .grad. Note the string can be a chain (i.e., .child.child.child or
                 .grad.child.child). Defaults to None, which means don't point to any attr,
-                just point to then object corresponding to the id_at_location.
+                just point to the object corresponding to the id_at_location.
             tags: an optional set of strings corresponding to this tensor
                 which this tensor should be searchable for.
             description: an optional string describing the purpose of the tensor.
@@ -489,59 +489,21 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if shape is not None:
             shape = syft.hook.create_shape(syft.serde.msgpack.serde._detail(worker, shape))
 
-        # If the pointer received is pointing at the current worker, we load the tensor instead
-        if worker_id == worker.id:
-            tensor = worker.get_obj(id_at_location)
+        location = syft.hook.local_worker.get_worker(worker_id)
 
-            if point_to_attr is not None and tensor is not None:
+        ptr = PointerTensor(
+            location=location,
+            id_at_location=id_at_location,
+            point_to_attr=point_to_attr,
+            owner=worker,
+            id=obj_id,
+            shape=shape,
+            garbage_collect_data=garbage_collect_data,
+            tags=tags,
+            description=description,
+        )
 
-                point_to_attrs = point_to_attr.split(".")
-                for attr in point_to_attrs:
-                    if len(attr) > 0:
-                        tensor = getattr(tensor, attr)
-
-                if tensor is not None:
-
-                    if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
-                        # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
-                        # then it doesn't need to be wrapped.
-                        # if the tensor is not a wrapper BUT it's also not a torch tensor,
-                        # then it needs to be wrapped or else it won't be able to be used
-                        # by other interfaces
-                        tensor = tensor.wrap()
-
-            return tensor
-        # Else we keep the same Pointer
-        else:
-
-            location = syft.hook.local_worker.get_worker(worker_id)
-
-            ptr = PointerTensor(
-                location=location,
-                id_at_location=id_at_location,
-                owner=worker,
-                id=obj_id,
-                shape=shape,
-                garbage_collect_data=garbage_collect_data,
-                tags=tags,
-                description=description,
-            )
-
-            return ptr
-
-        # a more general but slower/more verbose option
-
-        # new_data = {}
-        # for k, v in data.items():
-        #     key = k.decode()
-        #     if type(v) is bytes:
-        #         val_str = v.decode()
-        #         val = syft.local_worker.get_worker(val_str)
-        #     else:
-        #         val = v
-        #     new_data[key] = val
-        # return PointerTensor(**new_data)
+        return ptr
 
     @staticmethod
     def bufferize(worker: AbstractWorker, ptr: "PointerTensor") -> PointerTensorPB:
