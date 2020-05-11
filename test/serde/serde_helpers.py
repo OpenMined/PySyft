@@ -907,7 +907,7 @@ def make_nested_type_wrapper(**kwargs):
     )
 
     wrapper = syft.execution.plan.NestedTypeWrapper()
-    wrapper.serialized_nested_type = reference_serialized_input
+    wrapper.nested_input_types = reference_serialized_input
 
     def compare(detailed, original):
         assert detailed.nested_input_types == original.nested_input_types
