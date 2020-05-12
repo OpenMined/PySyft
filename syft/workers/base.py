@@ -529,13 +529,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # so we need to check for that here.
         if response is not None:
             # Register response and create pointers for tensor elements
+            if isinstance(self, torch.Tensor) and _self.is_wrapper:
+                is_identity_operation = torch.equal(_self, response)
+            else:
+                is_identity_operation = False
+
             try:
                 response = hook_args.register_response(
                     op_name,
                     response,
                     list(return_ids),
                     self,
-                    is_identity_operation=torch.equal(_self, response),
+                    is_identity_operation=is_identity_operation,
                 )
                 # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 if return_value or isinstance(response, (int, float, bool, str)):
@@ -546,7 +551,14 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 return_id_provider = sy.ID_PROVIDER
                 return_id_provider.set_next_ids(return_ids, check_ids=False)
                 return_id_provider.start_recording_ids()
-                response = hook_args.register_response(op_name, response, return_id_provider, self)
+
+                response = hook_args.register_response(
+                    op_name,
+                    response,
+                    return_id_provider,
+                    self,
+                    is_identity_operation=is_identity_operation,
+                )
                 new_ids = return_id_provider.get_recorded_ids()
                 raise ResponseSignatureError(new_ids)
 
