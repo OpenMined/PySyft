@@ -484,7 +484,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         unwrapped = obj.child if getattr(obj, "is_wrapper", False) else obj
         if isinstance(unwrapped, ObjectPointer) and unwrapped.id_at_location in self._objects:
             unwrapped.garbage_collect_data = False
-            local_obj = self._objects[unwrapped.id_at_location]
+            local_obj = self.get_obj(unwrapped.id_at_location)
 
             if unwrapped.point_to_attr:
                 for attr in obj.point_to_attr.split("."):
