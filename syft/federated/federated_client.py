@@ -1,6 +1,7 @@
+import numpy as np
 import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
-import numpy as np
+from typing import Union
 
 from syft.generic.object_storage import ObjectStore
 from syft.federated.train_config import TrainConfig
@@ -25,6 +26,19 @@ class FederatedClient:
     def remove_dataset(self, key: str):
         if key in self.datasets:
             del self.datasets[key]
+
+    def get_obj(self, obj_id: Union[str, int]) -> object:
+        """Returns the object from registry.
+
+        Look up an object from the registry using its ID.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+
+        Returns:
+            Object with id equals to `obj_id`.
+        """
+        return self.object_store.get_obj(obj_id)
 
     def set_obj(self, obj: object):
         """Registers objects checking if which objects it should cache.
