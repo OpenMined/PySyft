@@ -20,6 +20,15 @@ class VirtualWorker(BaseWorker, FederatedClient):
         """receive message"""
         return self.recv_msg(message)
 
+    # For backwards compatibility with Udacity course
+    @property
+    def _objects(self):
+        return self.object_store._objects
+
+    @property
+    def _tensors(self):
+        return self.object_store._tensors
+
     @staticmethod
     def simplify(_worker: AbstractWorker, worker: "VirtualWorker") -> tuple:
         return BaseWorker.simplify(_worker, worker)
