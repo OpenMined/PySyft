@@ -3,10 +3,13 @@ import multiprocessing
 import threading
 import os
 
+import torch as th
 import syft as sy
-from syft.messaging.message import CryptenInit
+from syft.messaging.message import CryptenInitPlan, CryptenInitJail
+from syft.frameworks.crypten import jail, utils
 
 import crypten
+from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_building
 from crypten.communicator import DistributedCommunicator
 
 
@@ -25,9 +28,10 @@ def _launch(
         os.environ[key] = str(val)
 
     crypten.init()
-    return_value = func(*func_args, **func_kwargs).tolist()
+    return_value = func(*func_args, **func_kwargs)
     crypten.uninit()
 
+    return_value = utils.pack_values(return_value)
     queue.put(return_value)
 
 
@@ -71,7 +75,7 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     return res
 
 
-def _send_party_info(worker, rank, msg, return_values):
+def _send_party_info(worker, rank, msg, return_values, model=None):
     """Send message to worker with necessary information to run a crypten party.
     Add response to return_values dictionary.
 
@@ -80,13 +84,16 @@ def _send_party_info(worker, rank, msg, return_values):
         rank (int): rank of the crypten party.
         msg (CryptenInitMessage): message containing the rank, world_size, master_addr and master_port.
         return_values (dict): dictionnary holding return values of workers.
+        model: crypten model to unpack parameters to (if received).
     """
 
     response = worker.send_msg(msg, worker)
-    return_values[rank] = response.object
+    return_values[rank] = utils.unpack_values(response.object, model)
 
 
-def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
+def run_multiworkers(
+    workers: list, master_addr: str, master_port: int = 15463, model=None, dummy_input=None
+):
     """Defines decorator to run function across multiple workers.
 
     Args:
@@ -95,27 +102,58 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
         master_port (int, str): port of the master party (party with rank 0), default is 15987.
     """
 
-    def decorator(plan):
-        @functools.wraps(plan)
+    def decorator(func):
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # TODO:
             # - check if workers are reachable / they can handle the computation
             # - check return code of processes for possible failure
 
+            if model is not None:
+                if not isinstance(model, th.nn.Module):
+                    raise TypeError("model must be a torch.nn.Module")
+                if dummy_input is None:
+                    raise ValueError("must provide dummy_input when model is set")
+                if not isinstance(dummy_input, th.Tensor):
+                    raise TypeError("dummy_input must be a torch.Tensor")
+                onnx_model = utils.pytorch_to_onnx(model, dummy_input)
+            else:
+                onnx_model = None
+
+            crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
+
             world_size = len(workers) + 1
             return_values = {rank: None for rank in range(world_size)}
+     
+            if isinstance(func, sy.Plan):
+                using_plan = True
+                plan = func
 
-            was_initialized = DistributedCommunicator.is_initialized()
-            if not was_initialized:
-                crypten.init()
+                # This is needed because at building we use a set of methods defined in syft (ex: load)
+                hook_plan_building()
+                was_initialized = DistributedCommunicator.is_initialized()
+                if not was_initialized:
+                  crypten.init()               
+                plan.build()
+                
+                if not was_initialized:
+                  crypten.uninit()
+                unhook_plan_building()
 
-            plan.build()
+                # Mark the plan so the other workers will use that tag to retrieve the plan
+                plan.tags = ["crypten_plan"]
 
-            if not was_initialized:
-                crypten.uninit()
+                for worker in workers:
+                    plan.send(worker)
 
-            # Mark the plan so the other workers will use that tag to retrieve the plan
-            plan.tags = ["crypten_plan"]
+                jail_or_plan = plan
+
+            else:  # func
+                using_plan = False
+                jail_runner = jail.JailRunner(func=func, model=crypten_model)
+                ser_jail_runner = jail.JailRunner.simplify(jail_runner)
+
+                jail_or_plan = jail_runner
 
             rank_to_worker_id = dict(
                 zip(range(1, len(workers) + 1), [worker.id for worker in workers])
@@ -123,11 +161,10 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
 
             sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
 
-            for worker in workers:
-                plan.send(worker)
-
             # Start local party
-            process, queue = _new_party(plan, 0, world_size, master_addr, master_port, (), {})
+            process, queue = _new_party(
+                jail_or_plan, 0, world_size, master_addr, master_port, (), {}
+            )
 
             was_initialized = DistributedCommunicator.is_initialized()
             if was_initialized:
@@ -152,7 +189,14 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
             threads = []
             for i in range(len(workers)):
                 rank = i + 1
-                msg = CryptenInit((rank_to_worker_id, world_size, master_addr, master_port))
+                if using_plan:
+                    msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
+                else:  # jail
+                    msg = CryptenInitJail(
+                        (rank_to_worker_id, world_size, master_addr, master_port),
+                        ser_jail_runner,
+                        onnx_model,
+                    )
                 thread = threading.Thread(
                     target=_send_party_info, args=(workers[i], rank, msg, return_values)
                 )
@@ -160,8 +204,11 @@ def run_multiworkers(workers: list, master_addr: str, master_port: int = 15463):
                 threads.append(thread)
 
             # Wait for local party and sender threads
-            process.join()
-            return_values[0] = queue.get()
+            # Joining the process blocks! But queue.get() can also wait for the party
+            # and it works fine.
+            # process.join() -> blocks
+            local_party_result = queue.get()
+            return_values[0] = utils.unpack_values(local_party_result, crypten_model)
             for thread in threads:
                 thread.join()
             if was_initialized:

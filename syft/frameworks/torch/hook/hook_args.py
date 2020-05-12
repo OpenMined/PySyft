@@ -1,5 +1,6 @@
 import torch
 
+from syft import dependency_check
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
@@ -44,6 +45,16 @@ backward_func = {
     LoggingTensor: lambda i, **kwargs: LoggingTensor().on(i, wrap=False),
     PaillierTensor: lambda i, **kwargs: PaillierTensor().on(i, wrap=False),
 }
+
+if dependency_check.crypten_available:
+    import crypten
+
+    type_rule[crypten.mpc.MPCTensor] = one
+    forward_func[crypten.mpc.MPCTensor] = (
+        lambda i: i.child if hasattr(i, "child") else ().throw(PureFrameworkTensorFoundError)
+    )
+    backward_func[crypten.mpc.MPCTensor] = lambda i, **kwargs: i.wrap(**kwargs)
+
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because
 # they have an arbitrary number of tensors in args which can trigger unexpected behaviour

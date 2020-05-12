@@ -95,19 +95,6 @@ class PlaceHolder(AbstractTensor):
 
         return response
 
-    def __getattribute__(self, name):
-        """Try to find the attribute in the current object
-        and in case we can not then we forward it to the child
-
-        """
-        try:
-            response = object.__getattribute__(self, name)
-        except AttributeError:
-            child = object.__getattribute__(self, "child")
-            response = getattr(child, name)
-
-        return response
-
     def instantiate(self, tensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
