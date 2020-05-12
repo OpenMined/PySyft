@@ -529,9 +529,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # so we need to check for that here.
         if response is not None:
             # Register response and create pointers for tensor elements
-            if isinstance(self, torch.Tensor) and _self.is_wrapper:
+            try:
                 is_identity_operation = torch.equal(_self, response)
-            else:
+            except (RuntimeError, TypeError):
                 is_identity_operation = False
 
             try:
