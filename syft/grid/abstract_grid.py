@@ -1,4 +1,5 @@
 import torch
+from syft.workers.node_client import NodeClient
 
 from typing import Union
 from typing import List
