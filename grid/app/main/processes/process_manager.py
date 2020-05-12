@@ -137,7 +137,7 @@ class ProcessManager:
             Returns:
                 process : FLProcess Instance or None if it wasn't found.
             Raises:
-                ProcessNotFound (PyGridError) : If Process not found. 
+                ProcessNotFound (PyGridError) : If Process not found.
         """
         _process = self._processes.query(**kwargs)
 
@@ -153,7 +153,7 @@ class ProcessManager:
             Returns:
                 process : FLProcess Instance or None if it wasn't found.
             Raises:
-                ProcessNotFound (PyGridError) : If Process not found. 
+                ProcessNotFound (PyGridError) : If Process not found.
         """
         _process = self._processes.first(**kwargs)
 
@@ -169,7 +169,7 @@ class ProcessManager:
             Returns:
                 process : FLProcess Instance or None if it wasn't found.
             Raises:
-                ProcessNotFound (PyGridError) : If Process not found. 
+                ProcessNotFound (PyGridError) : If Process not found.
         """
         _process = self._processes.last(**kwargs)
 

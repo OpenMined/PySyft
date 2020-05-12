@@ -113,7 +113,7 @@ class CycleManager:
 
     def assign(self, worker, cycle, hash_key: str):
         _worker_cycle = self._worker_cycles.register(
-            worker=worker, cycle=cycle, request_key=hash_key,
+            worker=worker, cycle=cycle, request_key=hash_key
         )
 
         return _worker_cycle

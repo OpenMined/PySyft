@@ -60,7 +60,7 @@ class PlanManager:
             Returns:
                 plan : Plan list or None if it wasn't found.
             Raises:
-                PlanNotFound (PyGridError) : If Plan not found. 
+                PlanNotFound (PyGridError) : If Plan not found.
         """
         _plans = self._plans.query(**kwargs)
 
@@ -76,7 +76,7 @@ class PlanManager:
             Returns:
                 plan : Plan Instance or None if it wasn't found.
             Raises:
-                PlanNotFound (PyGridError) : If Plan not found. 
+                PlanNotFound (PyGridError) : If Plan not found.
         """
         _plan = self._plans.first(**kwargs)
 

@@ -25,7 +25,7 @@ class Warehouse:
     def query(self, **kwargs):
         """ Query db objects filtering by parameters
             Args:
-                parameters : List of parameters used to filter. 
+                parameters : List of parameters used to filter.
         """
         objects = self._schema.query.filter_by(**kwargs).all()
         return objects

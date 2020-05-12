@@ -3,7 +3,7 @@ from .. import db
 
 class GridNodes(db.Model):
     """ Grid Nodes table that represents connected grid nodes.
-    
+
         Columns:
             id (primary_key) : node id, used to recover stored grid nodes (UNIQUE).
             address: Address of grid node.

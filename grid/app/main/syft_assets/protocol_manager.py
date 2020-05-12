@@ -22,7 +22,7 @@ class ProtocolManager:
             Returns:
                 plan : Protocol Instance or None if it wasn't found.
             Raises:
-                ProtocolNotFound (PyGridError) : If Protocol not found. 
+                ProtocolNotFound (PyGridError) : If Protocol not found.
         """
         _protocol = self._protocols.query(**kwargs)
 

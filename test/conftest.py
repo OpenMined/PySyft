@@ -46,7 +46,7 @@ def init_gateway():
 
     def setUpGateway(port):
         os.environ["SECRET_KEY"] = "Secretkeyhere"
-        from app import create_app
+        from grid.app import create_app
 
         db_path = "sqlite:///" + BASEDIR + "/databaseGateway.db"
         app = create_app(

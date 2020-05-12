@@ -40,7 +40,7 @@ class NetworkManager:
         """ Retrieve all grid nodes connected on grid network.
 
             Returns:
-                nodes_dict (Dictionary) : Dictionary{node_id:node_address} with connected grid nodes. 
+                nodes_dict (Dictionary) : Dictionary{node_id:node_address} with connected grid nodes.
         """
         nodes = GridNodes.query.all()
         nodes_dict = {}
