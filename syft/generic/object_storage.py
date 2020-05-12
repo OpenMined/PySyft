@@ -9,7 +9,7 @@ from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 
-class ObjectStorage:
+class ObjectStore:
     """A storage of objects identifiable by their id.
 
     A wrapper object to a collection of objects where all objects

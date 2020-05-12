@@ -19,7 +19,7 @@ from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
-from syft.generic.object_storage import ObjectStorage
+from syft.generic.object_storage import ObjectStore
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -109,7 +109,7 @@ class BaseWorker(AbstractWorker):
         super().__init__()
         self.hook = hook
 
-        self.object_store = ObjectStorage(owner=self)
+        self.object_store = ObjectStore(owner=self)
 
         self.id = id
         self.is_client_worker = is_client_worker
@@ -449,7 +449,7 @@ class BaseWorker(AbstractWorker):
         return pointer
 
     def handle_object_msg(self, obj_msg: ObjectMessage):
-        # This should be a good seam for separating Workers from ObjectStorage (someday),
+        # This should be a good seam for separating Workers from ObjectStore (someday),
         # so that Workers have ObjectStores instead of being ObjectStores. That would open
         # up the possibility of having a separate ObjectStore for each user, or for each
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,

@@ -2,7 +2,7 @@ import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
 import numpy as np
 
-from syft.generic.object_storage import ObjectStorage
+from syft.generic.object_storage import ObjectStore
 from syft.federated.train_config import TrainConfig
 
 
@@ -14,7 +14,7 @@ class FederatedClient:
         self.datasets = datasets if datasets is not None else dict()
         self.optimizer = None
         self.train_config = None
-        self.object_store = ObjectStorage(owner=self)
+        self.object_store = ObjectStore(owner=self)
 
     def add_dataset(self, dataset, key: str):
         if key not in self.datasets:
