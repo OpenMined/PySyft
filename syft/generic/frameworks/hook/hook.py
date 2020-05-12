@@ -13,7 +13,7 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.string import String
 from syft.generic.pointers.string_pointer import StringPointer
-from syft.generic.tensor import _apply_args
+from syft.generic.object import _apply_args
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import route_method_exception

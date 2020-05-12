@@ -4,9 +4,10 @@ from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractObject(ABC):
+class AbstractObject(ABC, SyftSerializable):
     """
     This is a generic object abstraction.
     """

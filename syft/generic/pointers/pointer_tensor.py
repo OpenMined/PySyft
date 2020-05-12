@@ -581,6 +581,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
             return ptr
 
+    @staticmethod
+    def get_protobuf_schema() -> PointerTensorPB:
+        return PointerTensorPB
+
 
 ### Register the tensor with hook_args.py ###
 register_type_rule({PointerTensor: one})

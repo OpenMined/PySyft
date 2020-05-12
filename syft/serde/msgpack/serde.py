@@ -31,7 +31,6 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-from typing import Callable
 
 import inspect
 import msgpack as msgpack_lib
@@ -39,47 +38,15 @@ import msgpack as msgpack_lib
 import syft
 from syft import dependency_check
 
-from syft.federated.train_config import TrainConfig
-from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
-from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
-from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
-from syft.execution.placeholder import PlaceHolder
-from syft.execution.placeholder_id import PlaceholderId
-from syft.execution.role import Role
-from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.pointers.object_pointer import ObjectPointer
-from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.generic.pointers.object_wrapper import ObjectWrapper
-from syft.generic.string import String
-from syft.execution.plan import Plan
-from syft.execution.protocol import Protocol
-from syft.execution.state import State
-from syft.execution.computation import ComputationAction
-from syft.execution.communication import CommunicationAction
-from syft.messaging.message import TensorCommandMessage
-from syft.messaging.message import ObjectMessage
-from syft.messaging.message import ObjectRequestMessage
-from syft.messaging.message import IsNoneMessage
-from syft.messaging.message import GetShapeMessage
-from syft.messaging.message import ForceObjectDeleteMessage
-from syft.messaging.message import SearchMessage
-from syft.messaging.message import PlanCommandMessage
-from syft.messaging.message import WorkerCommandMessage
 from syft.serde import compression
 from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
-from syft.frameworks.torch.fl import BaseDataset
-from syft.generic.pointers.pointer_dataset import PointerDataset
+from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ResponseSignatureError
-
-from syft.frameworks.torch.tensors.interpreters.gradients_core import GradFunc
 
 if dependency_check.torch_available:
     from syft.serde.msgpack.torch_serde import MAP_TORCH_SIMPLIFIERS_AND_DETAILERS
@@ -92,6 +59,7 @@ else:
     MAP_TF_SIMPLIFIERS_AND_DETAILERS = {}
 
 from syft.serde.msgpack.proto import proto_type_info
+from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
 # Maps a type to a tuple containing its simplifier and detailer function
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
@@ -105,46 +73,12 @@ MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
 # If an object implements its own simplify and detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
-OBJ_SIMPLIFIER_AND_DETAILERS = [
-    AdditiveSharingTensor,
-    FixedPrecisionTensor,
-    PrivateTensor,
-    LoggingTensor,
-    MultiPointerTensor,
-    PlaceHolder,
-    PlaceholderId,
-    Role,
-    ObjectPointer,
-    Plan,
-    Protocol,
-    State,
-    ComputationAction,
-    CommunicationAction,
-    PointerTensor,
-    PointerPlan,
-    ObjectWrapper,
-    TrainConfig,
-    BaseWorker,
-    AutogradTensor,
-    TensorCommandMessage,
-    ObjectMessage,
-    ObjectRequestMessage,
-    IsNoneMessage,
-    GetShapeMessage,
-    ForceObjectDeleteMessage,
-    SearchMessage,
-    PlanCommandMessage,
-    WorkerCommandMessage,
-    GradFunc,
-    String,
-    BaseDataset,
-    PointerDataset,
-]
+OBJ_SIMPLIFIER_AND_DETAILERS = None
 
 # If an object implements its own force_simplify and force_detail functions it should be stored in this list
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
 # in https://github.com/OpenMined/proto
-OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker]
+OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker, VirtualWorker]
 
 # For registering syft objects with custom simplify and detail methods
 # NOTE: serialization constants for these objects need to be defined in `proto.json` file
@@ -154,6 +88,25 @@ EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureErr
 # cached value
 field = 2 ** 64
 strField = str(2 ** 64)
+
+
+def get_simplifiers():
+    """
+        Function to retrieve the simplifiers, so that no other function uses directly de global elements.
+    """
+    init_global_vars_msgpack()
+    return simplifiers.items()
+
+
+def init_global_vars_msgpack():
+    """
+          Function to initialise at the first usage all the global elements used in msgpack/serde.py
+    """
+    global OBJ_SIMPLIFIER_AND_DETAILERS, simplifiers, forced_full_simplifiers, detailers
+    if OBJ_SIMPLIFIER_AND_DETAILERS is None:
+        OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
+        simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+
 
 ## SECTION: High Level Simplification Router
 def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
@@ -167,6 +120,9 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     Returns:
         The simplified object.
     """
+
+    init_global_vars_msgpack()
+
     # check to see if there is a full simplifier
     # for this type. If there is, return the full simplified object.
     current_type = type(obj)
@@ -251,7 +207,7 @@ def _generate_simplifiers_and_detailers():
     return simplifiers, forced_full_simplifiers, detailers
 
 
-simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
+simplifiers, forced_full_simplifiers, detailers = None, None, None
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_simplifiers_found, no_full_simplifiers_found = set(), set()
@@ -266,6 +222,9 @@ def _serialize_msgpack_simple(
     simplified: bool = False,
     force_full_simplification: bool = False,
 ) -> bin:
+
+    init_global_vars_msgpack()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -334,6 +293,9 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+
+    init_global_vars_msgpack()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -417,6 +379,8 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         characters.
     """
 
+    init_global_vars_msgpack()
+
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
     # breakpoint()
@@ -495,6 +459,9 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
+
+    init_global_vars_msgpack()
+
     if type(obj) in (list, tuple):
         val = detailers[obj[0]](worker, obj[1], **kwargs)
         return _detail_field(obj[0], val)
