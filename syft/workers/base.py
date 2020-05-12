@@ -481,6 +481,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if isinstance(obj, (tuple, list)):
             return type(obj)(self.dereference_pointer_to_self(el) for el in obj)
 
+        if isinstance(obj, dict):
+            return {k: self.dereference_pointer_to_self(v) for k, v in obj.items()}
+
         unwrapped = obj.child if getattr(obj, "is_wrapper", False) else obj
         if isinstance(unwrapped, ObjectPointer) and unwrapped.id_at_location in self._objects:
             unwrapped.garbage_collect_data = False

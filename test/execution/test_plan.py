@@ -762,9 +762,11 @@ def test_plan_tuple(hook):
     assert (result.get() == th.tensor([0, 3])).all()
 
 
-def test_plan_dict(hook):
+def test_plan_dict(workers):
+    bob = workers["bob"]
     x11 = th.tensor([-1, 2.0])
     x12 = th.tensor([1, -2.0])
+    x2 = th.tensor([1, 1])
 
     @sy.func2plan()
     def plan_dict(data, x):
@@ -772,13 +774,15 @@ def test_plan_dict(hook):
         z = data["input1"] + x
         return y + z
 
-    device_1 = sy.VirtualWorker(hook, id="test_plan_dict", data=(x11, x12))
     plan_dict.build({"input1": th.tensor([1, 2]), "input2": th.tensor([2, 3])}, th.tensor([0, 0]))
-    pointer_to_plan = plan_dict.send(device_1)
-    pointer_to_data_1 = x11.send(device_1)
-    pointer_to_data_2 = x12.send(device_1)
+
+    pointer_to_plan = plan_dict.send(bob)
+    pointer_to_data_11 = x11.send(bob)
+    pointer_to_data_12 = x12.send(bob)
+    pointer_to_data_2 = x2.send(bob)
+
     result = pointer_to_plan(
-        {"input1": pointer_to_data_1, "input2": pointer_to_data_2}, th.tensor([1, 1])
+        {"input1": pointer_to_data_11, "input2": pointer_to_data_12}, pointer_to_data_2
     )
     assert (result.get() == th.tensor([0, 3])).all()
 
@@ -841,10 +845,7 @@ def test_plan_type_error(hook):
         return dic["k1"]["kk2"]
 
     dummy_build = {
-        "k1": {
-            "kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]],
-            "kk2": th.tensor([0, 0]),
-        },
+        "k1": {"kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]], "kk2": th.tensor([0, 0])},
         "k2": [th.tensor([-1, 2]), "dummy_str"],
     }
 
@@ -855,7 +856,7 @@ def test_plan_type_error(hook):
     pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
-        "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn"},
         "k2": [pointer_to_data_1, pointer_to_data_2],
     }
 
@@ -956,10 +957,7 @@ def test_plan_key_error(hook):
         return dic["k1"]["kk2"]
 
     dummy_build = {
-        "k1": {
-            "kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]],
-            "kk2": th.tensor([0, 0]),
-        },
+        "k1": {"kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]], "kk2": th.tensor([0, 0])},
         "k2": [th.tensor([-1, 2]), "dummy_str"],
     }
 
@@ -970,7 +968,7 @@ def test_plan_key_error(hook):
     pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
-        "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn"},
         "k2": [pointer_to_data_1, pointer_to_data_2],
     }
 
