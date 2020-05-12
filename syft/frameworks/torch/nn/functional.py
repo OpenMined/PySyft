@@ -248,13 +248,13 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     batch_size, nb_channels_in, nb_rows_in, nb_cols_in = input.shape
     nb_channels_out, nb_channels_kernel, nb_rows_kernel, nb_cols_kernel = (
         nb_channels_in,
-        nb_channels_in,
+        1,
         kernel_size,
         kernel_size,
     )
 
     # Check if inputs are coherent
-    assert nb_channels_in == nb_channels_kernel * groups
+    # assert nb_channels_in == nb_channels_kernel * groups
     assert nb_channels_in % groups == 0
     assert nb_channels_out % groups == 0
 
@@ -279,11 +279,10 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     # We want to get relative positions of values in the input tensor that are used by one filter convolution.
     # It basically is the position of the values used for the top left convolution.
     pattern_ind = []
-    for ch in range(nb_channels_in):
-        for r in range(nb_rows_kernel):
-            for c in range(nb_cols_kernel):
-                pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
-                pattern_ind.append(pixel + ch * nb_rows_in * nb_cols_in)
+    for r in range(nb_rows_kernel):
+        for c in range(nb_cols_kernel):
+            pixel = r * nb_cols_in * dilation[0] + c * dilation[1]
+            pattern_ind.append(pixel)
 
     # The image tensor is reshaped for the matrix multiplication:
     # on each row of the new tensor will be the input values used for each filter convolution
@@ -291,15 +290,15 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     #                       [in values to compute out value 1],
     #                       ...
     #                       [in values to compute out value nb_rows_out*nb_cols_out]]
-    im_flat = input.view(batch_size, -1)
+    im_flat = input.view(batch_size, nb_channels_in, -1)
     im_reshaped = []
     for cur_row_out in range(nb_rows_out):
         for cur_col_out in range(nb_cols_out):
             # For each new output value, we just need to shift the receptive field
             offset = cur_row_out * stride[0] * nb_cols_in + cur_col_out * stride[1]
             tmp = [ind + offset for ind in pattern_ind]
-            im_reshaped.append(im_flat[:, tmp])
-    im_reshaped = torch.stack(im_reshaped).permute(1, 0, 2)
+            im_reshaped.append(im_flat[:, :, tmp])
+    im_reshaped = torch.stack(im_reshaped).permute(1, 2, 0, 3)
 
     return (
         im_reshaped,

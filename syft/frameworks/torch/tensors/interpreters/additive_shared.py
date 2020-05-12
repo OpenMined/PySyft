@@ -1107,7 +1107,7 @@ class AdditiveSharingTensor(AbstractTensor):
             max_result = self.mul(argmax_result).sum()
             return max_result
         else:
-            argmax_result = (self.argmax(dim=dim, one_hot=True, algorithm=algorithm),)
+            argmax_result = self.argmax(dim=dim, one_hot=True, algorithm=algorithm)
             max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
             if keepdim:
                 max_result = (
