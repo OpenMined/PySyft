@@ -234,7 +234,8 @@ class BaseWorker(AbstractWorker):
     def clear_objects(self, return_self: bool = True):
         """Removes all objects from the object storage.
 
-        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
+        Note: the "return self" statement is kept for backward compatibility
+        with the Udacity Secure and Private ML course.
 
         Args:
             return_self: flag, whether to return self as return value
@@ -244,6 +245,8 @@ class BaseWorker(AbstractWorker):
 
         """
         self.object_store.clear_objects()
+
+        # return based on `return_self` flag is required by Udacity course
         return self if return_self else None
 
     @contextmanager
