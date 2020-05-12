@@ -14,6 +14,7 @@ from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft.serde.syft_serializable import SyftSerializable
 
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
@@ -24,7 +25,7 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 
 
-class Message(ABC):
+class Message(ABC, SyftSerializable):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
@@ -115,11 +116,11 @@ class TensorCommandMessage(Message):
         return TensorCommandMessage(action)
 
     @staticmethod
-    def communication(obj_id, name, source, destinations, kwargs_):
+    def communication(name, target, args_, kwargs_, return_ids):
         """ Helper function to build a TensorCommandMessage containing a CommunicationAction
         directly from the action arguments.
         """
-        action = CommunicationAction(obj_id, name, source, destinations, kwargs_)
+        action = CommunicationAction(name, target, args_, kwargs_, return_ids)
         return TensorCommandMessage(action)
 
     @staticmethod
@@ -205,6 +206,10 @@ class TensorCommandMessage(Message):
         detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
         return TensorCommandMessage(detailed_action)
 
+    @staticmethod
+    def get_protobuf_schema() -> CommandMessagePB:
+        return CommandMessagePB
+
 
 class ObjectMessage(Message):
     """Send an object to another worker using this message type.
@@ -279,6 +284,10 @@ class ObjectMessage(Message):
         object_msg = ObjectMessage(object_)
 
         return object_msg
+
+    @staticmethod
+    def get_protobuf_schema() -> ObjectMessagePB:
+        return ObjectMessagePB
 
 
 class ObjectRequestMessage(Message):

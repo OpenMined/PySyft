@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 import syft as sy
 from syft.generic.pointers.callable_pointer import create_callable_pointer
 from syft.workers.abstract import AbstractWorker
-
+from syft.serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
 
-class ObjectWrapper:
+class ObjectWrapper(SyftSerializable):
     """A class that wraps an arbitrary object and provides it with an id, tags, and description
 
     """

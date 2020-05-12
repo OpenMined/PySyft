@@ -24,6 +24,7 @@ samples[slice] = make_slice
 samples[str] = make_str
 samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
+samples[type] = make_type
 
 # Numpy
 samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
@@ -51,6 +52,7 @@ samples[syft.execution.communication.CommunicationAction] = make_communication_a
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
@@ -65,6 +67,7 @@ samples[
 ] = make_additivesharingtensor
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
+samples[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor] = make_paillier
 samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
@@ -85,10 +88,10 @@ samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
-samples[syft.messaging.message.TensorCommandMessage] = make_command_message
+samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
-samples[syft.workers.base.BaseWorker] = make_baseworker
+samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
 
 def test_serde_coverage():

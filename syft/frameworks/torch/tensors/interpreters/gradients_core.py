@@ -2,6 +2,7 @@
 
 import syft
 from syft.workers.abstract import AbstractWorker
+from syft.serde.syft_serializable import SyftSerializable
 
 from . import gradients
 
@@ -24,7 +25,7 @@ def forward_grad(tensor):
         return grad_fn
 
 
-class GradFunc:
+class GradFunc(SyftSerializable):
     def __init__(self, *args):
         # This part builds our graph. It takes grad functions (if they exist)
         # from the input arguments and builds a tuple pointing to them. This way
