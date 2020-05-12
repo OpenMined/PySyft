@@ -1,5 +1,5 @@
 """To test the implementation of gcloud.py"""
-import gcloud
+from syft.grid.autoscale import gcloud
 
 
 NEW = gcloud.GoogleCloud(
