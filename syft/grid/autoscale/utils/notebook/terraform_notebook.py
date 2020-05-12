@@ -27,7 +27,7 @@ def init():
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
         if inp == "INP":
-            inp = bytearray(input("") + "\n", sys.stdin.encoding) # nosec
+            inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
             proc.stdin.flush()
@@ -57,7 +57,7 @@ def apply():
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
         if inp == "INP":
-            inp = bytearray(input("") + "\n", sys.stdin.encoding) # nosec
+            inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
             proc.stdin.flush()
@@ -87,7 +87,7 @@ def destroy():
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
         if inp == "INP":
-            inp = bytearray(input("") + "\n", sys.stdin.encoding) # nosec
+            inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
             proc.stdin.flush()
