@@ -58,15 +58,12 @@ class AbstractObject(ABC, SyftSerializable):
         return self
 
     def tag(self, *tags: str) -> "AbstractObject":
-        if self.owner is not None:
-            self.tags = self.tags or set()
+        self.tags = self.tags or set()
 
-            for tag in tags:
-                self.tags.add(tag)
+        for tag in tags:
+            self.tags.add(tag)
 
-            self.owner.object_store.register_tags(self)
-        else:
-            raise RuntimeError("Can't tag a tensor which doesn't have an owner")
+        self.owner.object_store.register_tags(self)
 
         return self
 
