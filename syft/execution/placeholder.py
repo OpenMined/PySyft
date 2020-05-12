@@ -10,7 +10,6 @@ class PlaceHolder(AbstractTensor):
         self,
         role=None,
         tracing=False,
-        owner=None,
         id=None,
         tags: set = None,
         description: str = None,
@@ -23,11 +22,9 @@ class PlaceHolder(AbstractTensor):
         When you send a PlaceHolder, you don't sent the instantiated tensors.
 
         Args:
-            owner: An optional BaseWorker object to specify the worker on which
-                the tensor is located.
             id: An optional string or integer id of the PlaceHolder.
         """
-        super().__init__(id=id, owner=owner, tags=tags, description=description)
+        super().__init__(id=id, tags=tags, description=description)
 
         if not isinstance(self.id, syft.execution.placeholder_id.PlaceholderId):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
@@ -41,7 +38,7 @@ class PlaceHolder(AbstractTensor):
         """
         Specify all the attributes need to build a wrapper correctly when returning a response.
         """
-        return {"role": self.role, "tracing": self.tracing, "owner": self.owner}
+        return {"role": self.role, "tracing": self.tracing}
 
     @classmethod
     def handle_func_command(cls, command):
@@ -70,30 +67,37 @@ class PlaceHolder(AbstractTensor):
         response = new_type.handle_func_command(new_command)
 
         # Find first placeholder in args
-        ph_arg = None
+        template_placeholder = None
         for arg in args:
             if isinstance(arg, PlaceHolder):
-                ph_arg = arg
+                template_placeholder = arg
 
+        placeholders = PlaceHolder.convert_to_placeholders(response, template_placeholder)
+
+        if template_placeholder.tracing:
+            template_placeholder.role.register_action(
+                (command, placeholders), syft.execution.computation.ComputationAction
+            )
+
+        return placeholders
+
+    @staticmethod
+    def convert_to_placeholders(response, template_placeholder):
+        """ Turn back response to PlaceHolders """
         if isinstance(response, (tuple, list)):
-            # Turn back response to PlaceHolders
-            response = tuple(
+
+            placeholders = tuple(
                 PlaceHolder.create_from(
-                    r, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+                    r, role=template_placeholder.role, tracing=template_placeholder.tracing
                 )
                 for r in response
             )
         else:
-            response = PlaceHolder.create_from(
-                response, owner=ph_arg.owner, role=ph_arg.role, tracing=ph_arg.tracing
+            placeholders = PlaceHolder.create_from(
+                response, role=template_placeholder.role, tracing=template_placeholder.tracing
             )
 
-        if ph_arg.tracing:
-            ph_arg.role.register_action(
-                (command, response), syft.execution.computation.ComputationAction
-            )
-
-        return response
+        return placeholders
 
     def __getattribute__(self, name):
         """Try to find the attribute in the current object
@@ -140,6 +144,109 @@ class PlaceHolder(AbstractTensor):
 
     __repr__ = __str__
 
+    def send(self, *args, **kwargs):
+        """
+        calls move on child & register_action to role
+        """
+        response = self.child.send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def move(self, *args, **kwargs):
+        """
+        calls move on a pointer tensor & register_action to role
+        """
+        response = self.child.move(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("move", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share(self, *args, **kwargs):
+        """
+        Send a command to remote worker to additively share a tensor via pointer tensor
+        """
+        response = self.child.share(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def fix_prec(self, *args, **kwargs):
+        """
+        sends command to remote worker to transform a tensor to fix_precision via pointer tensor
+        """
+        response = self.child.fix_prec(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("fix_prec", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.computation.ComputationAction
+        )
+        return placeholder
+
+    def mid_get(self, *args, **kwargs):
+        response = self.child.mid_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+        command = ("mid_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_get(self, *args, **kwargs):
+        """
+        calls remote_get on child & register_action to role
+        """
+        response = self.child.remote_get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("remote_get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def remote_send(self, *args, **kwargs):
+        """
+        calls remote_send on child & register_action to role
+        """
+        response = self.child.remote_send(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("remote_send", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def share_(self, *args, **kwargs):
+        """
+        calls share_ on child & register_action to role
+        """
+        response = self.child.share_(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("share_", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
+    def get(self, *args, **kwargs):
+        """Requests the tensor/chain being pointed to, be serialized and return via child"""
+        response = self.child.get(*args, **kwargs)
+        placeholder = PlaceHolder.convert_to_placeholders(response, self)
+        command = ("get", self, args, kwargs)
+        self.role.register_action(
+            (command, placeholder), syft.execution.communication.CommunicationAction
+        )
+        return placeholder
+
     def copy(self):
         """
         Copying a placeholder doesn't duplicate the child attribute, because all
@@ -147,11 +254,7 @@ class PlaceHolder(AbstractTensor):
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
         placeholder = PlaceHolder(
-            role=self.role,
-            tracing=self.tracing,
-            tags=self.tags,
-            owner=self.owner,
-            shape=self.expected_shape,
+            role=self.role, tracing=self.tracing, tags=self.tags, shape=self.expected_shape
         )
         placeholder.child = self.child
 
@@ -162,14 +265,14 @@ class PlaceHolder(AbstractTensor):
         return placeholder
 
     @staticmethod
-    def create_from(tensor, owner, role=None, tracing=False):
+    def create_from(tensor, role=None, tracing=False):
         """ Helper method to create a placeholder already
         instantiated with tensor.
         """
-        return PlaceHolder(owner=owner, role=role, tracing=tracing).instantiate(tensor)
+        return PlaceHolder(role=role, tracing=tracing).instantiate(tensor)
 
     @staticmethod
-    def insert(tensor, after, owner, role=None, tracing=False):
+    def insert(tensor, after, role=None, tracing=False):
         """ Helper method to add a placeholder in the specific place of tensor chain. """
         current_level = tensor
         while not isinstance(current_level, after) and current_level is not None:
@@ -186,7 +289,7 @@ class PlaceHolder(AbstractTensor):
                 f"Cannot insert Placeholder, {after.__name__} does not wrap anything."
             )
 
-        placeholder = PlaceHolder.create_from(child, owner, role, tracing)
+        placeholder = PlaceHolder.create_from(child, role, tracing)
         current_level.child = placeholder
         return placeholder
 
@@ -269,9 +372,7 @@ class PlaceHolder(AbstractTensor):
         description = syft.serde.msgpack.serde._detail(worker, description)
         shape = syft.serde.msgpack.serde._detail(worker, shape)
 
-        return PlaceHolder(
-            owner=worker, id=tensor_id, tags=tags, description=description, shape=shape
-        )
+        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=shape)
 
     @staticmethod
     def bufferize(worker: AbstractWorker, placeholder: "PlaceHolder") -> PlaceholderPB:
@@ -317,9 +418,11 @@ class PlaceHolder(AbstractTensor):
 
         expected_shape = tuple(protobuf_placeholder.expected_shape.dims) or None
 
-        return PlaceHolder(
-            owner=worker, id=tensor_id, tags=tags, description=description, shape=expected_shape
-        )
+        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=expected_shape)
+
+    @staticmethod
+    def get_protobuf_schema() -> PlaceholderPB:
+        return PlaceholderPB
 
 
 ### Register the tensor with hook_args.py ###

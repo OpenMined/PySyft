@@ -15,6 +15,7 @@ samples = OrderedDict()
 
 # Native
 samples[type(None)] = make_none
+samples[type] = make_type
 
 # PyTorch
 samples[torch.device] = make_torch_device
@@ -37,16 +38,17 @@ samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.TensorCommandMessage] = make_command_message
+samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in protobuf.serde.bufferizers.items():
+    for cls, _ in protobuf.serde.get_bufferizers():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 

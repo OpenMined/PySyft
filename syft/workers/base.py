@@ -549,23 +549,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
-        obj_id = action.obj_id
-        source = action.source
-        destinations = action.destinations
+        owner = action.target.owner
+        destinations = [self.get_worker(id_) for id_ in action.args]
         kwargs_ = action.kwargs
-        source_worker = self.get_worker(source)
-        if source_worker != self:
+
+        if owner != self:
             return None
         else:
-            obj = self.get_obj(obj_id)
-            response = source_worker.send(obj, *destinations, **kwargs_)
+            obj = self.get_obj(action.target.id)
+            response = owner.send(obj, *destinations, **kwargs_)
             response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                self.rm_obj(obj_id)
+                self.rm_obj(action.target.id)
             return response
 
     def execute_worker_command(self, message: tuple):
@@ -610,7 +609,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def send_command(
         self,
         recipient: "BaseWorker",
-        message: tuple,
+        cmd_name: str,
+        target: PointerTensor = None,
+        args_: tuple = (),
+        kwargs_: dict = {},
         return_ids: str = None,
         return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
@@ -619,7 +621,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             recipient: A recipient worker.
-            message: A tuple representing the message being sent.
+            cmd_name: Command number.
+            target: Target pointer Tensor.
+            args_: additional args for command execution.
+            kwargs_: additional kwargs for command execution.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -629,11 +634,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        name, target, args_, kwargs_ = message
-
         try:
             message = TensorCommandMessage.computation(
-                name, target, args_, kwargs_, return_ids, return_value
+                cmd_name, target, args_, kwargs_, return_ids, return_value
             )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:

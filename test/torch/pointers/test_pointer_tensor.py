@@ -484,11 +484,13 @@ def test_share_get(workers):
     Ensure .share() works as expected.
     """
     bob = workers["bob"]
+    alice = workers["alice"]
+    charlie = workers["charlie"]
 
     tensor = torch.tensor([1, 2, 3])
     ptr = tensor.send(bob)
 
-    ptr = ptr.share()
+    ptr = ptr.share(charlie, alice)
     remote_tensor = bob._objects[ptr.id_at_location]
 
     assert isinstance(ptr.child, PointerTensor)

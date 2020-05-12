@@ -33,22 +33,27 @@ class func2protocol(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None):
+    def __init__(self, args_shape=None):
         self.args_shape = args_shape
 
     def __call__(self, protocol_function):
+        # create the roles present in decorator
+        roles = {role_id: Role() for role_id in self.args_shape.keys()}
+
         protocol = Protocol(
             name=protocol_function.__name__,
             forward_func=protocol_function,
+            roles=roles,
             id=sy.ID_PROVIDER.pop(),
             owner=sy.local_worker,
         )
 
         # Build the protocol automatically
+        # TODO We can always build automatically, can't we? Except if workers doesn't have
+        # tensors yet in store. Do we handle that?
         if self.args_shape:
-            args_ = PlaceHolder.create_placeholders(self.args_shape)
             try:
-                protocol.build(*args_)
+                protocol.build()
             except TypeError as e:
                 raise ValueError(
                     "Automatic build using @func2protocol failed!\nCheck that:\n"
@@ -81,8 +86,6 @@ class Protocol(AbstractObject):
         description: protocol description
     """
 
-    # _build_translators = []
-
     def __init__(
         self,
         name: str = None,
@@ -113,12 +116,7 @@ class Protocol(AbstractObject):
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
-    def get_role_for_owner(self, owner):
-        if owner.id not in self.roles:
-            self.roles[owner.id] = Role()
-        return self.roles[owner.id]
-
-    def build(self, *args):
+    def build(self):
         """Builds the protocol.
 
         First, run the function to be converted in a protocol in a context which
@@ -135,34 +133,26 @@ class Protocol(AbstractObject):
             args: Input arguments to run the protocol
         """
         # Reset previous build
-        self.roles = {}
+        for role in self.roles.values():
+            role.reset()
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
 
-        # Run once to build the protocol
-        ph_args = tuple()
-        for arg in args:
-            arg_role = self.get_role_for_owner(arg.owner)
-
-            ph_arg = PlaceHolder.create_from(arg, owner=arg.owner, role=arg_role, tracing=True)
-            # Register inputs in role
-            arg_role.register_input(ph_arg)
-
-            ph_args += (ph_arg,)
-
-        results = self.forward(*ph_args)
+        results = self.forward(self.roles)
 
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
 
+        if not isinstance(results, (tuple, list)):
+            results = (results,)
+
         # Register outputs in roles
         for result in results:
             if isinstance(result, PlaceHolder):
-                result_role = self.get_role_for_owner(result.owner)
-                result_role.register_output(result)
+                result.role.register_output(result)
 
         self.is_built = True
 
@@ -172,6 +162,7 @@ class Protocol(AbstractObject):
         self.tracing = value if value is not None else not self.tracing
         # self.state.tracing = self.tracing
         for role in self.roles.values():
+            role.tracing = value or not self.tracing
             for ph in role.placeholders.values():
                 ph.tracing = self.tracing
 
@@ -191,14 +182,13 @@ class Protocol(AbstractObject):
 
         return protocol_copy
 
-    def __call__(self, *args):
+    def __call__(self):
         """
         Run actions on the workers provided for each Role from the Role's tape of actions.
         """
         results_per_role = {}
         for role_id, role in self.roles.items():
-            args_for_role = [arg for arg in args if arg.owner == role_id]
-            results_per_role[role_id] = role.execute(args_for_role)
+            results_per_role[role_id] = role.execute()
 
         return results_per_role
 
@@ -331,3 +321,7 @@ class Protocol(AbstractObject):
             tags=tags,
             description=description,
         )
+
+    @staticmethod
+    def get_protobuf_schema() -> ProtocolPB:
+        return ProtocolPB

@@ -86,6 +86,7 @@ class ObjectStorage:
         Args:
             obj: A torch or syft tensor with an id.
         """
+        obj.owner = self
         self._objects[obj.id] = obj
         # Add entry in the tag index
         if obj.tags:
