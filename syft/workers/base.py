@@ -1,6 +1,7 @@
 import logging
 from abc import abstractmethod
 from contextlib import contextmanager
+from pprint import pformat
 from typing import List
 from typing import TYPE_CHECKING
 from typing import Union
@@ -531,7 +532,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 is_identity_operation = torch.equal(_self, response)
-            except (RuntimeError, TypeError):
+            except (RuntimeError, TypeError, sy.exceptions.PureFrameworkTensorFoundError):
                 is_identity_operation = False
 
             try:
@@ -1204,13 +1205,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         self.crypto_store.add_primitives(types_primitives)
 
     def list_tensors(self):
-        return str(self._tensors)
+        return f"\n{pformat(self._tensors)}"
 
     def tensors_count(self):
         return len(self._tensors)
 
     def list_objects(self):
-        return str(self._objects)
+        return f"\n{pformat(self._objects)}"
 
     def objects_count(self):
         return len(self._objects)
