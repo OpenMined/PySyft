@@ -196,7 +196,7 @@ def test_fit(fit_dataset_key, epochs, device):
             )
             loss_after = evaluate_model(fed_client, model_id, loss_fn, data, target)
 
-        assert loss_after < loss_before
+        assert loss_after <= loss_before
 
 
 def test_evaluate():  # pragma: no cover
