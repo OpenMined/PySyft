@@ -32,7 +32,7 @@ def test_framework_methods_traced_by_role():
         assert len(role.actions) == 1
         assert "torch.rand" in [action.name for action in role.actions]
 
-
+        
 def test_trace_communication_actions_send():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
     def protocol(alice, bob):
@@ -219,7 +219,7 @@ def test_multi_role_execution():
     def protocol(alice, bob):
         tensor1 = alice.torch.tensor([1])
         tensor2 = bob.torch.tensor([2])
-        tensor3 = alice.fetch(th.tensor([3]))
+        tensor3 = alice.torch.tensor([3])
 
         res1 = tensor2
         res2 = tensor1 + tensor3

@@ -36,6 +36,7 @@ class Role(SyftSerializable):
     ):
         self.id = id or sy.ID_PROVIDER.pop()
         self.worker = worker or sy.local_worker
+
         self.actions = actions or []
 
         # All placeholders
