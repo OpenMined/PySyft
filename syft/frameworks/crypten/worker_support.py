@@ -33,6 +33,7 @@ def run_crypten_party_plan(worker: BaseWorker, message: tuple) -> ObjectMessage:
     """
 
     worker.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
+    sy.local_worker.rank_to_worker_id = worker.rank_to_worker_id
 
     plans = worker.search("crypten_plan")
     assert len(plans) == 1
