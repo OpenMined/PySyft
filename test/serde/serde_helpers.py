@@ -1959,30 +1959,35 @@ def make_gradfn(**kwargs):
 def make_crypteninitplan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.CryptenInitPlan
-        assert detailed.contents == original.contents
+        assert detailed.crypten_context == original.crypten_context
+
         return True
 
+    rank_to_worker_id = {0: "alice", 1: "bob"}
     return [
         {
-            "value": syft.messaging.message.CryptenInitPlan([0, 2, "127.0.0.1", 8080]),
+            "value": syft.messaging.message.CryptenInitPlan(
+                (rank_to_worker_id, 2, "127.0.0.1", 8080),
+            ),
             "simplified": (
                 CODE[syft.messaging.message.CryptenInitPlan],
                 (
-                    (CODE[list], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),
+                    (
+                        CODE[tuple],
+                        (  # rank to worker id
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
+                            2,  # world size
+                            (CODE[str], (b"127.0.0.1",)),  # address
+                            8080,  # port
+                        ),
+                    ),
                 ),  # (Any) simplified content
             ),
             "cmp_detailed": compare,
-        },
-        {
-            "value": syft.messaging.message.CryptenInitPlan((0, 2, "127.0.0.1", 8080)),
-            "simplified": (
-                CODE[syft.messaging.message.CryptenInitPlan],
-                (
-                    (CODE[tuple], (0, 2, (CODE[str], (b"127.0.0.1",)), 8080)),
-                ),  # (Any) simplified content
-            ),
-            "cmp_detailed": compare,
-        },
+        }
     ]
 
 
@@ -1990,7 +1995,10 @@ def make_crypteninitplan(**kwargs):
 def make_crypteninitjail(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.CryptenInitJail
-        assert detailed.contents == original.contents
+        assert detailed.crypten_context == original.crypten_context
+        assert detailed.jail_runner == original.jail_runner
+        assert detailed.model == original.model
+
         return True
 
     jail_runner = ("test = 5", ["crypten",])
@@ -2000,18 +2008,29 @@ def make_crypteninitjail(**kwargs):
     )
     model = b"test binary model"
     model_simplified = model
+    rank_to_worker_id = {0: "alice", 1: "bob"}
 
     return [
         {
             "value": syft.messaging.message.CryptenInitJail(
-                (0, 2, "127.0.0.1", 8080), jail_runner, model
+                (rank_to_worker_id, 2, "127.0.0.1", 8080), jail_runner, model
             ),
             "simplified": (
                 CODE[syft.messaging.message.CryptenInitJail],
                 (
                     (
                         CODE[tuple],
-                        (0, 2, (CODE[str], (b"127.0.0.1",)), 8080, jr_simplified, model_simplified),
+                        (  # rank to worker id
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
+                            2,  # world size
+                            (CODE[str], (b"127.0.0.1",)),  # address
+                            8080,  # port
+                            jr_simplified,  # serialized code
+                            model_simplified,  # serialized model
+                        ),
                     ),
                 ),  # (Any) simplified content
             ),

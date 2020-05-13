@@ -693,11 +693,6 @@ class CryptenInitPlan(Message):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {self.crypten_context})"
 
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.crypten_context,)
-
     @staticmethod
     def simplify(worker: AbstractWorker, message: "CryptenInitPlan") -> tuple:
         """
@@ -750,11 +745,6 @@ class CryptenInitJail(Message):
     def __str__(self):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {self.crypten_context}, {self.jail_runner})"
-
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.crypten_context, self.jail_runner, self.model)
 
     @staticmethod
     def simplify(worker: AbstractWorker, message: "CryptenInitJail") -> tuple:
