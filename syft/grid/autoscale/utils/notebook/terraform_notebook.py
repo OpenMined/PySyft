@@ -26,7 +26,7 @@ def init():
     i = 0
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
-        if inp == "INP":
+        if inp == "INPUT":
             inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
@@ -52,11 +52,11 @@ def apply():
 
     threading.Thread(target=outloop).start()
 
-    commands = [b"terraform apply\n", "INP", b"exit\n"]
+    commands = [b"terraform apply\n", "INPUT", b"exit\n"]
     i = 0
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
-        if inp == "INP":
+        if inp == "INPUT":
             inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
@@ -82,11 +82,11 @@ def destroy():
 
     threading.Thread(target=outloop).start()
 
-    commands = [b"terraform destroy\n", "INP", b"exit\n"]
+    commands = [b"terraform destroy\n", "INPUT", b"exit\n"]
     i = 0
     while proc.poll() is None and i < len(commands):
         inp = commands[i]
-        if inp == "INP":
+        if inp == "INPUT":
             inp = bytearray(input("") + "\n", sys.stdin.encoding)  # nosec
         if proc.poll() is None:
             proc.stdin.write(inp)
