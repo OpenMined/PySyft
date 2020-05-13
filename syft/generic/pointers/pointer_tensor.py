@@ -284,8 +284,48 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
+    def remote_copy_and_point(self, destination: AbstractWorker, requires_grad: bool = False):
+        """ Request the worker where the tensor being pointed to belongs to copy it to destination.
+        For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_copy_to(B),
+        C will hold a pointer to a pointer on A which points to the tensor on B.
+        Args:
+            destination: where the remote value should be sent
+            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
+                a message to update the gradient of the value on A.
+        """
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad}
+        message = TensorCommandMessage.communication(
+            "move_and_point", self.id_at_location, (destination.id,), kwargs_, (self.id,)
+        )
+        self.owner.send_msg(message=message, location=self.location)
+
+        # point to moved object
+        self.location = destination
+
+        return self
+
+    def move_and_point(self, destination: AbstractWorker, requires_grad: bool = False):
+        """ Request the worker where the tensor being pointed to belongs to move it to destination.
+        For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_copy_to(B),
+        C will hold a pointer to a pointer on A which points to the tensor on B.
+        Args:
+            destination: where the remote value should be sent
+            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
+                a message to update the gradient of the value on A.
+        """
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad, "delete_original": True}
+        message = TensorCommandMessage.communication(
+            "move_and_point", self.id_at_location, (destination.id,), kwargs_, (self.id,)
+        )
+        self.owner.send_msg(message=message, location=self.location)
+
+        # point to moved object
+        self.location = destination
+
+        return self
+
     def remote_copy_to(self, destination: AbstractWorker, requires_grad: bool = False):
-        """ Request the worker where the tensor being pointed to belongs to send it to destination.
+        """ Request the worker where the tensor being pointed to belongs to copy it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_copy_to(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
         Args:

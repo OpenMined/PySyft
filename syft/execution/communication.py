@@ -15,6 +15,8 @@ COMMUNICATION_METHODS = [
     "move",
     "remote_get",
     "remote_copy_to",
+    "move_and_point",
+    "remote_copy_and_point",
     "send",
     "share",
     "share_",

@@ -9,9 +9,13 @@ import syft.frameworks.torch.nn as syft_nn
 
 def test_nn_linear(workers):
     torch.manual_seed(121)  # Truncation might not always work so we set the random seed
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    bob = workers["bob"]
+    alice = workers["alice"]
+    james = workers["james"]
+
     t = torch.tensor([[1.0, 2]])
     x = t.fix_prec().share(bob, alice, crypto_provider=james)
+
     model = nn.Linear(2, 1)
     model.weight = nn.Parameter(torch.tensor([[-1.0, 2]]))
     model.bias = nn.Parameter(torch.tensor([[-1.0]]))
@@ -19,6 +23,7 @@ def test_nn_linear(workers):
 
     y = model(x)
 
+    # TODO +6 for the initial FSS plans which need to be removed
     assert len(alice._objects) == 10  # x, y, weight, bias
     assert len(bob._objects) == 10
     assert y.get().float_prec() == torch.tensor([[2.0]])

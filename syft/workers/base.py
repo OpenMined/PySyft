@@ -485,7 +485,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             return {k: self.dereference_pointer_to_self(v) for k, v in obj.items()}
 
         unwrapped = obj.child if getattr(obj, "is_wrapper", False) else obj
-        if isinstance(unwrapped, ObjectPointer) and unwrapped.id_at_location in self._objects:
+        if (
+            isinstance(unwrapped, ObjectPointer)
+            and unwrapped.location == self
+            and unwrapped.id_at_location in self._objects
+        ):
             unwrapped.garbage_collect_data = False
             local_obj = self.get_obj(unwrapped.id_at_location)
 
@@ -587,9 +591,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         response.garbage_collect_data = False
         if kwargs_.get("requires_grad", False):
             response = hook_args.register_response("send", response, [sy.ID_PROVIDER.pop()], self)
-        # TODO when do we want to remove the local version?
-        # else:
-        #     self.rm_obj(action.target)
+        elif kwargs_.get("delete_original", False):
+            self.rm_obj(action.target)
         return response
 
     def execute_worker_command(self, message: tuple):

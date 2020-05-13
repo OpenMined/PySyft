@@ -729,6 +729,12 @@ class TorchTensor(AbstractTensor):
     def remote_copy_to(self, location):
         return self.child.remote_copy_to(location).wrap()
 
+    def move_and_point(self, location):
+        return self.child.move_and_point(location).wrap()
+
+    def remote_copy_and_point(self, location):
+        return self.child.remote_copy_and_point(location).wrap()
+
     def attr(self, attr_name):
         """"""
 

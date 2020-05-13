@@ -330,6 +330,16 @@ def test_move(workers):
     assert (z == t).all()
 
 
+def test_garbage_collect_move(workers):
+    bob, alice, me = workers["bob"], workers["alice"], workers["me"]
+    a = torch.ones(1, 5).send(alice)
+    print(a)
+    b = a.copy().move_and_point(bob)
+
+    assert len(alice._objects) == 7
+    assert len(bob._objects) == 7
+
+
 def test_combine_pointers(workers):
     """
     Ensure that the sy.combine_pointers works as expected

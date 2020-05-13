@@ -1042,15 +1042,6 @@ def test_garbage_collect_reconstruct(workers):
     assert len(bob._objects) == 8
 
 
-def test_garbage_collect_move(workers):
-    bob, alice, me = (workers["bob"], workers["alice"], workers["me"])
-    a = torch.ones(1, 5).send(alice)
-    b = a.copy().move(bob)
-
-    assert len(alice._objects) == 7
-    assert len(bob._objects) == 7
-
-
 def test_garbage_collect_mul(workers):
     bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
     a = torch.ones(1, 5)
