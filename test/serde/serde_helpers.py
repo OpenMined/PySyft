@@ -1975,7 +1975,10 @@ def make_crypteninitplan(**kwargs):
                     (
                         CODE[tuple],
                         (  # rank to worker id
-                            (CODE[dict], ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",))))),
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
                             2,  # world size
                             (CODE[str], (b"127.0.0.1",)),  # address
                             8080,  # port
@@ -2020,7 +2023,10 @@ def make_crypteninitjail(**kwargs):
                     (
                         CODE[tuple],
                         (  # rank to worker id
-                            (CODE[dict], ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",))))),
+                            (
+                                CODE[dict],
+                                ((0, (CODE[str], (b"alice",))), (1, (CODE[str], (b"bob",)))),
+                            ),
                             2,  # world size
                             (CODE[str], (b"127.0.0.1",)),  # address
                             8080,  # port
