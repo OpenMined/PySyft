@@ -4,7 +4,7 @@ import torch as th
 import syft as sy
 
 
-def test_trace_communication_actions(workers):
+def test_trace_communication_actions_send(workers):
     bob = workers["bob"]
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
@@ -39,7 +39,7 @@ def test_trace_communication_actions_get(workers):
     assert "get" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_send(workers):
+def test_trace_communication_actions_ptr_send(workers):
     alice, bob = workers["alice"], workers["bob"]
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
