@@ -48,19 +48,16 @@ class func2protocol(object):
             owner=sy.local_worker,
         )
 
-        # Build the protocol automatically
-        # TODO We can always build automatically, can't we? Except if workers doesn't have
-        # tensors yet in store. Do we handle that?
-        if self.args_shape:
-            try:
-                protocol.build()
-            except TypeError as e:
-                raise ValueError(
-                    "Automatic build using @func2protocol failed!\nCheck that:\n"
-                    " - you have provided the correct number of shapes in args_shape\n"
-                    " - you have no simple numbers like int or float as args. If you do "
-                    "so, please consider using a tensor instead."
-                )
+        try:
+            protocol.build()
+        except TypeError as e:
+            raise ValueError(
+                "Automatic build using @func2protocol failed!\nCheck that:\n"
+                " - you have provided the correct number of shapes in args_shape\n"
+                " - you have no simple numbers like int or float as args. If you do "
+                "so, please consider using a tensor instead."
+            )
+
         return protocol
 
 
