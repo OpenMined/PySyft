@@ -49,7 +49,9 @@ class Role(SyftSerializable):
         self.state = state or State()
         self.tracing = False
 
-        self.torch = FrameworkWrapper(package=self.worker.torch, role=self, owner=self.worker)
+        for name, package in framework_packages.items():
+            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            setattr(self, name, tracing_wrapper)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
