@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from contextlib import contextmanager
 
 import logging
