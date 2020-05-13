@@ -19,6 +19,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.workers.abstract import AbstractWorker
+from syft.workers.virtual import VirtualWorker
 
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
@@ -38,7 +39,10 @@ class func2protocol(object):
 
     def __call__(self, protocol_function):
         # create the roles present in decorator
-        roles = {role_id: Role() for role_id in self.role_names}
+        roles = {
+            role_id: Role(worker=VirtualWorker(id=role_id, hook=sy.local_worker.hook))
+            for role_id in self.role_names
+        }
 
         protocol = Protocol(
             name=protocol_function.__name__,
