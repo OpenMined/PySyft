@@ -9,7 +9,7 @@ def test_trace_communication_actions(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         tensor.send(bob)
         return tensor
@@ -26,7 +26,7 @@ def test_trace_communication_actions_get(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         res = ptr.get()
@@ -44,7 +44,7 @@ def test_trace_communication_actions_send(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         res = ptr.send(alice)
@@ -62,7 +62,7 @@ def test_trace_communication_actions_move(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         res = ptr.move(alice)
@@ -80,7 +80,7 @@ def test_trace_communication_actions_share(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         ptr = ptr.fix_prec()
@@ -99,7 +99,7 @@ def test_trace_communication_actions_share_(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         ptr = ptr.fix_prec()
@@ -118,7 +118,7 @@ def test_trace_communication_actions_remote_send(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         res = ptr.remote_send(alice)
@@ -136,7 +136,7 @@ def test_trace_communication_actions_mid_get(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob)
         res = ptr.mid_get()
@@ -154,7 +154,7 @@ def test_trace_communication_actions_remote_get(workers):
 
     @sy.func2protocol(args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        tensor = roles["alice"].load(th.tensor([1]))
 
         ptr = tensor.send(bob).send(alice)
         res = ptr.remote_get()
@@ -174,8 +174,8 @@ def test_create_roles_from_decorator(workers):
     @sy.func2protocol(args_shape=roles_args_shape)
     def protocol(roles):
         # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+        tensor1 = roles["alice"].load(th.tensor([1]))
+        tensor2 = roles["bob"].load(th.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -191,8 +191,8 @@ def test_multi_role_tracing(workers):
     @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(roles):
         # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+        tensor1 = roles["alice"].load(th.tensor([1]))
+        tensor2 = roles["bob"].load(th.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -211,9 +211,9 @@ def test_multi_role_tracing(workers):
 def test_multi_role_execution(workers):
     @sy.func2protocol(args_shape={"alice": ((1,), (1,)), "bob": ((1,),)})
     def protocol(roles):
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([2]))
-        tensor3 = roles["alice"].fetch(th.tensor([3]))
+        tensor1 = roles["alice"].load(th.tensor([1]))
+        tensor2 = roles["bob"].load(th.tensor([2]))
+        tensor3 = roles["alice"].load(th.tensor([3]))
 
         res1 = tensor2
         res2 = tensor1 + tensor3
@@ -240,8 +240,8 @@ def test_stateful_protocol(workers):
         # fetch tensors from stores
         # TODO will we fetch tensors that come from states this way?
         # With tags?
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+        tensor1 = roles["alice"].load(th.tensor([1]))
+        tensor2 = roles["bob"].load(th.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -257,8 +257,8 @@ def test_copy(workers):
     @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(roles):
         # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+        tensor1 = roles["alice"].load(th.tensor([1]))
+        tensor2 = roles["bob"].load(th.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1

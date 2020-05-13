@@ -129,10 +129,10 @@ class Role:
 
         return tuple(p.child for p in output_placeholders)
 
-    def fetch(self, tensor):
-        """ Fetch tensors used in a protocol from worker's local store
+    def load(self, tensor):
+        """ Load tensors used in a protocol from worker's local store
         """
-        # TODO mock for now, fetch will use worker's store in a future work
+        # TODO mock for now, load will use worker's store in a future work
         if self.tracing:
             return PlaceHolder.create_from(tensor, role=self, tracing=True)
         else:

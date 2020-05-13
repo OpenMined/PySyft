@@ -923,8 +923,8 @@ def make_protocol(**kwargs):
     def protocol(roles):
         # fetch tensors from stores
         # TODO fix fetch once we have the real implementation of it
-        tensor1 = roles["alice"].fetch(torch.tensor([1]))
-        tensor2 = roles["bob"].fetch(torch.tensor([1]))
+        tensor1 = roles["alice"].load(torch.tensor([1]))
+        tensor2 = roles["bob"].load(torch.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
