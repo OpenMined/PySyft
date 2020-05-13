@@ -1995,8 +1995,6 @@ def make_crypteninitplan(**kwargs):
 def make_crypteninitjail(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.CryptenInitJail
-        print(detailed.crypten_context)
-        print(original.crypten_context)
         assert detailed.crypten_context == original.crypten_context
         assert detailed.jail_runner == original.jail_runner
         assert detailed.model == original.model
