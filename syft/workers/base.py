@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from contextlib import contextmanager
 
 import logging
@@ -185,48 +184,6 @@ class BaseWorker(AbstractWorker):
         self.crypto_store = PrimitiveStorage(owner=self)
         # declare the plans used for crypto computations
         sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
-
-    # SECTION: Methods which MUST be overridden by subclasses
-    @abstractmethod
-    def _send_msg(self, message: bin, location: "BaseWorker"):
-        """Sends message from one worker to another.
-
-        As BaseWorker implies, you should never instantiate this class by
-        itself. Instead, you should extend BaseWorker in a new class which
-        instantiates _send_msg and _recv_msg, each of which should specify the
-        exact way in which two workers communicate with each other. The easiest
-        example to study is VirtualWorker.
-
-        Args:
-            message: A binary message to be sent from one worker
-                to another.
-            location: A BaseWorker instance that lets you provide the
-                destination to send the message.
-
-        Raises:
-            NotImplementedError: Method not implemented error.
-        """
-
-        raise NotImplementedError  # pragma: no cover
-
-    @abstractmethod
-    def _recv_msg(self, message: bin):
-        """Receives the message.
-
-        As BaseWorker implies, you should never instantiate this class by
-        itself. Instead, you should extend BaseWorker in a new class which
-        instantiates _send_msg and _recv_msg, each of which should specify the
-        exact way in which two workers communicate with each other. The easiest
-        example to study is VirtualWorker.
-
-        Args:
-            message: The binary message being received.
-
-        Raises:
-            NotImplementedError: Method not implemented error.
-
-        """
-        raise NotImplementedError  # pragma: no cover
 
     def register_obj(self, obj):
         self.object_store.register_obj(self, obj)
