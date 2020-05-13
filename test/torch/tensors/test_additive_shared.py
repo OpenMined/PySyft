@@ -1039,13 +1039,13 @@ def test_dtype(workers):
 
 
 def test_garbage_collect_reconstruct(workers):
-    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    bob, alice, james, me = workers["bob"], workers["alice"], workers["james"], workers["me"]
     a = torch.ones(1, 5)
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
 
-    assert len(alice.object_store._objects) == 8
-    assert len(bob.object_store._objects) == 8
+    assert len(alice.object_store._objects) == 7
+    assert len(bob.object_store._objects) == 7
 
 
 def test_garbage_collect_mul(workers):

@@ -236,11 +236,9 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = list()
 
         for share in self.child.values():
-            if isinstance(share, sy.PointerTensor):
-                shares.append(share.get())
-            else:
-                shares.append(share)
-                self.owner.de_register_obj(share)
+            shares.append(share.get())
+            if share.location == self.owner:
+                self.owner.object_store.rm_obj(share.id_at_location)
 
         # For dtype values long and int modulo is automatically handled by native torch tensors
         result = self.modulo(sum(shares))
