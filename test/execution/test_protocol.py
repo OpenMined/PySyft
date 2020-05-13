@@ -2,6 +2,23 @@ import pytest
 import torch as th
 
 import syft as sy
+from syft.execution.role import Role
+
+
+def test_func2protocol_creates_roles():
+    @sy.func2protocol(roles=["alice", "bob"])
+    def protocol(roles):
+        alice = roles["alice"]
+        bob = roles["bob"]
+
+        tensor = alice.fetch(th.tensor([1]))
+
+        return tensor
+
+    assert protocol.is_built
+    assert len(protocol.roles) == 2
+    assert isinstance(protocol.roles["alice"], Role)
+    assert isinstance(protocol.roles["bob"], Role)
 
 
 def test_trace_communication_actions_send(workers):
