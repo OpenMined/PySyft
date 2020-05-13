@@ -8,6 +8,8 @@ from typing import Dict
 
 from abc import ABC, abstractmethod
 
+from syft.workers.node_client import NodeClient
+
 
 class AbstractGrid(ABC):
     def __init__(self):
