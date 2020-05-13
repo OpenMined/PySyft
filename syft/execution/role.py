@@ -11,6 +11,7 @@ from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
+from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
@@ -34,7 +35,8 @@ class Role(SyftSerializable):
         output_placeholder_ids: Tuple[int, str] = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
-        self.worker = worker
+        self.worker = worker or sy.local_worker
+
         self.actions = actions or []
 
         # All placeholders
@@ -46,6 +48,10 @@ class Role(SyftSerializable):
 
         self.state = state or State()
         self.tracing = False
+
+        for name, package in framework_packages.items():
+            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            setattr(self, name, tracing_wrapper)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
