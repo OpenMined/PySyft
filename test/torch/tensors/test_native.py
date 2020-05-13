@@ -118,7 +118,7 @@ def test_remote_send(hook, workers):
 
     x = torch.tensor([1, 2, 3, 4, 5])
     # Note: behavior has been changed to point to the last pointer
-    ptr_ptr_x = x.send(bob).remote_send(alice)
+    ptr_ptr_x = x.send(bob).remote_copy_to(alice)
 
     assert ptr_ptr_x.owner == me
     assert ptr_ptr_x.location == bob

@@ -1428,7 +1428,7 @@ def make_communication_action(**kwargs):
     bob.log_msgs = True
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
-    x.remote_send(alice)
+    x.remote_copy_to(alice)
     com = bob._get_msg(-1).action
 
     bob.log_msgs = False
@@ -1577,7 +1577,7 @@ def make_tensor_command_message(**kwargs):
     cmd2 = bob._get_msg(-1)
 
     x = torch.tensor([1, 2, 3, 4]).send(bob)
-    x.remote_send(alice)
+    x.remote_copy_to(alice)
     cmd3 = bob._get_msg(-1)
 
     bob.log_msgs = False

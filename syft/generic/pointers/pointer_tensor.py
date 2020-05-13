@@ -274,7 +274,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
-        ptr = self.remote_send(destination, requires_grad=requires_grad)
+        ptr = self.remote_copy_to(destination, requires_grad=requires_grad)
 
         # We make the pointer point at the remote value. As the id doesn't change,
         # we don't update ptr.id_at_location. See issue #3217 about this.
@@ -284,9 +284,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
+    def remote_copy_to(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
-        For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
+        For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_copy_to(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
         Args:
             destination: where the remote value should be sent
@@ -295,7 +295,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            "remote_send", self.id_at_location, (destination.id,), kwargs_, (self.id,)
+            "remote_copy_to", self.id_at_location, (destination.id,), kwargs_, (self.id,)
         )
         self.owner.send_msg(message=message, location=self.location)
         return self

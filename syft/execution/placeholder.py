@@ -213,13 +213,13 @@ class PlaceHolder(AbstractTensor):
         )
         return placeholder
 
-    def remote_send(self, *args, **kwargs):
+    def remote_copy_to(self, *args, **kwargs):
         """
-        calls remote_send on child & register_action to role
+        calls remote_copy_to on child & register_action to role
         """
-        response = self.child.remote_send(*args, **kwargs)
+        response = self.child.remote_copy_to(*args, **kwargs)
         placeholder = PlaceHolder.convert_to_placeholders(response, self)
-        command = ("remote_send", self, args, kwargs)
+        command = ("remote_copy_to", self, args, kwargs)
         self.role.register_action(
             (command, placeholder), syft.execution.communication.CommunicationAction
         )

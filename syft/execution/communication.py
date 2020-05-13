@@ -14,7 +14,7 @@ COMMUNICATION_METHODS = [
     "mid_get",
     "move",
     "remote_get",
-    "remote_send",
+    "remote_copy_to",
     "send",
     "share",
     "share_",

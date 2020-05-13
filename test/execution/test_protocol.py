@@ -121,14 +121,14 @@ def test_trace_communication_actions_remote_send(workers):
         tensor = roles["alice"].fetch(th.tensor([1]))
 
         ptr = tensor.send(bob)
-        res = ptr.remote_send(alice)
+        res = ptr.remote_copy_to(alice)
         return res
 
     traced_actions = protocol.roles["alice"].actions
 
     assert protocol.is_built
     assert len(traced_actions) == 2
-    assert "remote_send" in [action.name for action in traced_actions]
+    assert "remote_copy_to" in [action.name for action in traced_actions]
 
 
 def test_trace_communication_actions_mid_get(workers):

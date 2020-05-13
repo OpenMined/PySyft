@@ -726,8 +726,8 @@ class TorchTensor(AbstractTensor):
         self.child = new_ptr
         return self
 
-    def remote_send(self, location):
-        return self.child.remote_send(location).wrap()
+    def remote_copy_to(self, location):
+        return self.child.remote_copy_to(location).wrap()
 
     def attr(self, attr_name):
         """"""
