@@ -182,6 +182,8 @@ class BaseWorker(AbstractWorker):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
+        # declare the plans used for crypto computations
+        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
     def register_obj(self, obj):
         self.object_store.register_obj(self, obj)
