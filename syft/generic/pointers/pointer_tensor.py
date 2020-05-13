@@ -274,6 +274,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if self.owner.id == destination.id:
             return self.get()
 
+        if self.location.id == destination.id:
+            return self
+
         ptr = self.remote_copy_to(destination, requires_grad=requires_grad)
 
         # We make the pointer point at the remote value. As the id doesn't change,

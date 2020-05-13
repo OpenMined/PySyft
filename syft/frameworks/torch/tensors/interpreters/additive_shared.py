@@ -253,7 +253,7 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = list()
 
         for v in self.child.values():
-            share = v.location._objects[v.id_at_location]
+            share = v.location.object_store.get_obj(v.id_at_location)
             shares.append(share)
 
         result = self.modulo(sum(shares))
