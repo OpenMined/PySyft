@@ -2,16 +2,28 @@ import pytest
 import torch as th
 
 import syft as sy
+from syft.execution.role import Role
 
 
-def test_trace_communication_actions(workers):
-    bob = workers["bob"]
+def test_func2protocol_creates_roles():
+    @sy.func2protocol(roles=["alice", "bob"])
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        return tensor
 
-        tensor.send(bob)
+    assert protocol.is_built
+    assert len(protocol.roles) == 2
+    assert isinstance(protocol.roles["alice"], Role)
+    assert isinstance(protocol.roles["bob"], Role)
+
+
+def test_trace_communication_actions_send():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
+
+        tensor.send(bob.worker)
         return tensor
 
     traced_actions = protocol.roles["alice"].actions
@@ -21,14 +33,12 @@ def test_trace_communication_actions(workers):
     assert "send" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_get(workers):
-    bob = workers["bob"]
+def test_trace_communication_actions_get():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
+        ptr = tensor.send(bob.worker)
         res = ptr.get()
         return res
 
@@ -39,15 +49,13 @@ def test_trace_communication_actions_get(workers):
     assert "get" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_send(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_ptr_send():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
-        res = ptr.send(alice)
+        ptr = tensor.send(bob.worker)
+        res = ptr.send(alice.worker)
         return res
 
     traced_actions = protocol.roles["alice"].actions
@@ -57,15 +65,13 @@ def test_trace_communication_actions_send(workers):
     assert "send" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_move(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_move():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
-        res = ptr.move(alice)
+        ptr = tensor.send(bob.worker)
+        res = ptr.move(alice.worker)
         return res
 
     traced_actions = protocol.roles["alice"].actions
@@ -75,16 +81,14 @@ def test_trace_communication_actions_move(workers):
     assert "move" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_share(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_share():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
+        ptr = tensor.send(bob.worker)
         ptr = ptr.fix_prec()
-        res = ptr.share(alice, bob)
+        res = ptr.share(alice.worker, bob.worker)
         return res
 
     traced_actions = protocol.roles["alice"].actions
@@ -94,16 +98,14 @@ def test_trace_communication_actions_share(workers):
     assert "share" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_share_(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_share_():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
+        ptr = tensor.send(bob.worker)
         ptr = ptr.fix_prec()
-        res = ptr.share_(alice, bob)
+        res = ptr.share_(alice.worker, bob.worker)
         return res
 
     traced_actions = protocol.roles["alice"].actions
@@ -113,15 +115,13 @@ def test_trace_communication_actions_share_(workers):
     assert "share_" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_remote_send(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_remote_send():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
-        res = ptr.remote_send(alice)
+        ptr = tensor.send(bob.worker)
+        res = ptr.remote_send(alice.worker)
         return res
 
     traced_actions = protocol.roles["alice"].actions
@@ -131,14 +131,12 @@ def test_trace_communication_actions_remote_send(workers):
     assert "remote_send" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_mid_get(workers):
-    bob = workers["bob"]
+def test_trace_communication_actions_mid_get():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob)
+        ptr = tensor.send(bob.worker)
         res = ptr.mid_get()
         return res
 
@@ -149,14 +147,12 @@ def test_trace_communication_actions_mid_get(workers):
     assert "mid_get" in [action.name for action in traced_actions]
 
 
-def test_trace_communication_actions_remote_get(workers):
-    alice, bob = workers["alice"], workers["bob"]
+def test_trace_communication_actions_remote_get():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+    def protocol(alice, bob):
+        tensor = alice.fetch(th.tensor([1]))
 
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
-
-        ptr = tensor.send(bob).send(alice)
+        ptr = tensor.send(bob.worker).send(alice.worker)
         res = ptr.remote_get()
         return res
 
@@ -167,15 +163,11 @@ def test_trace_communication_actions_remote_get(workers):
     assert "remote_get" in [action.name for action in traced_actions]
 
 
-def test_create_roles_from_decorator(workers):
-
-    roles_args_shape = {"alice": ((1,),), "bob": ((1,),)}
-
-    @sy.func2protocol(args_shape=roles_args_shape)
-    def protocol(roles):
-        # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+def test_create_roles_from_decorator():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.fetch(th.tensor([1]))
+        tensor2 = bob.fetch(th.tensor([2]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -187,12 +179,11 @@ def test_create_roles_from_decorator(workers):
     assert "bob" in protocol.roles
 
 
-def test_multi_role_tracing(workers):
-    @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+def test_multi_role_tracing():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.fetch(th.tensor([1]))
+        tensor2 = bob.fetch(th.tensor([2]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -208,12 +199,12 @@ def test_multi_role_tracing(workers):
     assert len(protocol.roles["bob"].actions) == 1
 
 
-def test_multi_role_execution(workers):
-    @sy.func2protocol(args_shape={"alice": ((1,), (1,)), "bob": ((1,),)})
-    def protocol(roles):
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([2]))
-        tensor3 = roles["alice"].fetch(th.tensor([3]))
+def test_multi_role_execution():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,), (1,)), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.fetch(th.tensor([1]))
+        tensor2 = bob.fetch(th.tensor([2]))
+        tensor3 = alice.fetch(th.tensor([3]))
 
         res1 = tensor2
         res2 = tensor1 + tensor3
@@ -231,12 +222,11 @@ def test_multi_role_execution(workers):
     assert (dict_res["alice"][0] == th.tensor([4])).all()
 
 
-def test_copy(workers):
-    @sy.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        # fetch tensors from stores
-        tensor1 = roles["alice"].fetch(th.tensor([1]))
-        tensor2 = roles["bob"].fetch(th.tensor([1]))
+def test_copy():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.fetch(th.tensor([1]))
+        tensor2 = bob.fetch(th.tensor([2]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
