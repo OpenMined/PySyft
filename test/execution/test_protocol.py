@@ -32,7 +32,7 @@ def test_framework_methods_traced_by_role():
         assert len(role.actions) == 1
         assert "torch.rand" in [action.name for action in role.actions]
 
-        
+
 def test_trace_communication_actions_send():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
     def protocol(alice, bob):
