@@ -152,6 +152,7 @@ def run_multiworkers(
                 zip(range(1, len(workers) + 1), [worker.id for worker in workers])
             )
 
+            sy.local_worker.add_crypten_support()
             sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
 
             # Start local party

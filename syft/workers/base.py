@@ -28,8 +28,6 @@ from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import IsNoneMessage
-from syft.messaging.message import CryptenInitPlan
-from syft.messaging.message import CryptenInitJail
 from syft.messaging.message import Message
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
@@ -37,7 +35,6 @@ from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
 
-from syft.frameworks.crypten import run_party
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ObjectNotFoundError
@@ -132,8 +129,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
-            CryptenInitPlan: self.run_crypten_party_plan,
-            CryptenInitJail: self.run_crypten_party_jail,
         }
 
         self._plan_command_router = {
@@ -183,8 +178,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             elif hasattr(hook, "tensorflow"):
                 self.tensorflow = self.framework
                 self.remote = Remote(self, "tensorflow")
-
-        self.rank_to_worker_id = None
 
     # SECTION: Methods which MUST be overridden by subclasses
     @abstractmethod
@@ -430,63 +423,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             pointer = obj
 
         return pointer
-
-    def run_crypten_party_plan(self, message: CryptenInitPlan):
-        """Run crypten party according to the information received.
-
-        Args:
-            message (CryptenInitPlan): should contain the rank, world_size, master_addr and master_port.
-
-        Returns:
-            An ObjectMessage containing the return value of the crypten function computed.
-        """
-
-        self.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
-
-        plans = self.search("crypten_plan")
-        assert len(plans) == 1
-
-        plan = plans[0].get()
-
-        rank = None
-        for r, worker_id in self.rank_to_worker_id.items():
-            if worker_id == self.id:
-                rank = r
-                break
-
-        assert rank is not None
-
-        return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
-        return ObjectMessage(return_value)
-
-    def run_crypten_party_jail(self, message: CryptenInitJail):
-        """Run crypten party according to the information received.
-
-        Args:
-            message (CryptenInitJail): should contain the rank, world_size, master_addr and master_port.
-
-        Returns:
-            An ObjectMessage containing the return value of the crypten function computed.
-        """
-        from syft.frameworks.crypten.jail import JailRunner
-        from syft.frameworks.crypten import utils
-
-        self.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
-        ser_func = message.jail_runner
-        onnx_model = message.model
-        crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
-        jail_runner = JailRunner.detail(ser_func, model=crypten_model)
-
-        rank = None
-        for r, worker_id in self.rank_to_worker_id.items():
-            if worker_id == self.id:
-                rank = r
-                break
-
-        assert rank is not None
-
-        return_value = run_party(jail_runner, rank, world_size, master_addr, master_port, (), {})
-        return ObjectMessage(return_value)
 
     def handle_object_msg(self, obj_msg: ObjectMessage):
         # This should be a good seam for separating Workers from ObjectStorage (someday),
@@ -847,12 +783,6 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         else:
             return self._get_worker(id_or_worker)
 
-    def get_worker_from_rank(self, rank: int):
-        return self._get_worker_based_on_id(self.rank_to_worker_id[rank])
-
-    def _set_rank_to_worker_id(self, rank_to_worker_id):
-        self.rank_to_worker_id = rank_to_worker_id
-
     def _get_worker(self, worker: AbstractWorker):
         if worker.id not in self._known_workers:
             self.add_worker(worker)
@@ -1189,6 +1119,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
 
         return sy.serde.deserialize(self.msg_history[index], worker=self)
+
+    def add_crypten_support(self):
+        from syft.workers.worker_support import add_support
+
+        """Add CrypTen specific methods"""
+        add_support(self, "crypten")
+
+    def remove_crypten_support(self):
+        from syft.workers.worker_support import remove_support
+
+        """Remove CrypTen specifc methods"""
+        remove_support(self, "crypten")
 
     @property
     def message_pending_time(self):
