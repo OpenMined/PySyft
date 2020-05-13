@@ -7,9 +7,7 @@ from syft.execution.role import Role
 
 def test_func2protocol_creates_roles():
     @sy.func2protocol(roles=["alice", "bob"])
-    def protocol(roles):
-        alice = roles["alice"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         return tensor
@@ -22,10 +20,7 @@ def test_func2protocol_creates_roles():
 
 def test_trace_communication_actions_send():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         tensor.send(bob.worker)
@@ -40,10 +35,7 @@ def test_trace_communication_actions_send():
 
 def test_trace_communication_actions_get():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -59,10 +51,7 @@ def test_trace_communication_actions_get():
 
 def test_trace_communication_actions_ptr_send():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -78,10 +67,7 @@ def test_trace_communication_actions_ptr_send():
 
 def test_trace_communication_actions_move():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -97,10 +83,7 @@ def test_trace_communication_actions_move():
 
 def test_trace_communication_actions_share():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -117,10 +100,7 @@ def test_trace_communication_actions_share():
 
 def test_trace_communication_actions_share_():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -137,10 +117,7 @@ def test_trace_communication_actions_share_():
 
 def test_trace_communication_actions_remote_send():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -156,10 +133,7 @@ def test_trace_communication_actions_remote_send():
 
 def test_trace_communication_actions_mid_get():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker)
@@ -175,10 +149,7 @@ def test_trace_communication_actions_mid_get():
 
 def test_trace_communication_actions_remote_get():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor = alice.fetch(th.tensor([1]))
 
         ptr = tensor.send(bob.worker).send(alice.worker)
@@ -194,10 +165,7 @@ def test_trace_communication_actions_remote_get():
 
 def test_create_roles_from_decorator():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor1 = alice.fetch(th.tensor([1]))
         tensor2 = bob.fetch(th.tensor([2]))
 
@@ -213,10 +181,7 @@ def test_create_roles_from_decorator():
 
 def test_multi_role_tracing():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor1 = alice.fetch(th.tensor([1]))
         tensor2 = bob.fetch(th.tensor([2]))
 
@@ -236,10 +201,7 @@ def test_multi_role_tracing():
 
 def test_multi_role_execution():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,), (1,)), "bob": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor1 = alice.fetch(th.tensor([1]))
         tensor2 = bob.fetch(th.tensor([2]))
         tensor3 = alice.fetch(th.tensor([3]))
@@ -262,10 +224,7 @@ def test_multi_role_execution():
 
 def test_copy():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        alice = roles["alice"]
-        bob = roles["bob"]
-
+    def protocol(alice, bob):
         tensor1 = alice.fetch(th.tensor([1]))
         tensor2 = bob.fetch(th.tensor([2]))
 

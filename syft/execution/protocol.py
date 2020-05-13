@@ -141,7 +141,8 @@ class Protocol(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        results = self.forward(self.roles)
+        sorted_roles = [self.roles[name] for name in sorted(self.roles.keys())]
+        results = self.forward(*sorted_roles)
 
         # Disable tracing
         self.toggle_tracing(False)
