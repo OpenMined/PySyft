@@ -32,12 +32,13 @@ class func2protocol(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None):
+    def __init__(self, roles: list = [], args_shape: dict = {}):
         self.args_shape = args_shape
+        self.role_names = roles
 
     def __call__(self, protocol_function):
         # create the roles present in decorator
-        roles = {role_id: Role() for role_id in self.args_shape.keys()}
+        roles = {role_id: Role() for role_id in self.role_names}
 
         protocol = Protocol(
             name=protocol_function.__name__,
