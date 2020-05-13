@@ -2,19 +2,27 @@ import pytest
 import torch as th
 import crypten
 from syft.frameworks.crypten import utils
-from syft.frameworks import crypten as syft_crypten
 
 
-@pytest.mark.parametrize(
-    "tensors",
-    [
-        # return tensor
-        th.tensor([1, 2, 3, 4]),
-        # return tensor1, tensor2, tensor3
-        (th.tensor([1, 2, 4, 5]), th.tensor([1.0, 2.0, 3.0,]), th.tensor([5, 6, 7, 8])),
-    ],
-)
-def test_pack_tensors(tensors):
+class ExampleNet(th.nn.Module):
+    def __init__(self):
+        super(ExampleNet, self).__init__()
+        self.fc = th.nn.Linear(28 * 28, 2)
+
+    def forward(self, x):
+        out = self.fc(x)
+        return out
+
+
+@pytest.mark.parametrize("value_type", ("single", "tuple"))
+def test_pack_tensors(value_type):
+    tensors_to_pack = {
+        "single": th.tensor([1, 2, 3, 4]),
+        "tuple": (th.tensor([1, 2, 4]), th.tensor([1.0, 2.0, 3.0,]), th.tensor([5, 6, 7])),
+    }
+
+    tensors = tensors_to_pack[value_type]
+
     packed = utils.pack_values(tensors)
     unpacked = utils.unpack_values(packed)
 
@@ -28,15 +36,6 @@ def test_pack_tensors(tensors):
 
 
 def test_pack_crypten_model():
-    class ExampleNet(th.nn.Module):
-        def __init__(self):
-            super(ExampleNet, self).__init__()
-            self.fc = th.nn.Linear(28 * 28, 2)
-
-        def forward(self, x):
-            out = self.fc(x)
-            return out
-
     dummy_input = th.rand(1, 28 * 28)
     expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
     expected_out = expected_crypten_model(dummy_input)
@@ -55,28 +54,42 @@ def test_pack_crypten_model():
     assert th.all(expected_out == out)
 
 
-def test_serialize_models():
-    class ExampleNet(th.nn.Module):
-        def __init__(self):
-            super(ExampleNet, self).__init__()
-            self.fc1 = th.nn.Linear(1024, 100)
-            self.fc2 = th.nn.Linear(
-                100, 2
-            )  # For binary classification, final layer needs only 2 outputs
+def test_pack_crypten_model_assert():
+    dummy_input = th.rand(1, 28 * 28)
+    expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
 
-        def forward(self, x):
-            out = self.fc1(x)
-            out = th.nn.functional.relu(out)
-            out = self.fc2(out)
-            return out
+    # Set as encrypted
+    expected_crypten_model.encrypted = True
 
-    dummy_input = th.ones(1, 1024)
-    example_net = ExampleNet()
+    with pytest.raises(TypeError):
+        utils.pack_values(expected_crypten_model)
 
-    expected_output = example_net(dummy_input)
 
-    onnx_bytes = utils.pytorch_to_onnx(example_net, dummy_input)
-    crypten_model = utils.onnx_to_crypten(onnx_bytes)
-    output = crypten_model(dummy_input)
+def test_unpack_crypten_model_assert():
+    dummy_input = th.rand(1, 28 * 28)
+    expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
 
-    assert th.allclose(expected_output, output)
+    packed = utils.pack_values(expected_crypten_model)
+
+    with pytest.raises(TypeError):
+        utils.unpack_values(packed)
+
+
+@pytest.mark.parametrize("value_type", ("int", "string", "float", "dict", "tuple", "list"))
+def test_pack_value_other(value_type):
+    values_to_pack = {
+        "int": 10,
+        "string": "pysyft + crypten",
+        "float": 10.42,
+        "dict": {"test1": 10, "test2": 10.32},
+        "tuple": (10, 42),
+        "list": [10, 42],
+    }
+
+    value = values_to_pack[value_type]
+
+    packed = utils._pack_value(value)
+    assert packed == (utils.PACK_OTHER, value)
+
+    unpacked = utils._unpack_value(packed)
+    assert unpacked == value

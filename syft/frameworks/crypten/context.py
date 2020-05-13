@@ -13,7 +13,9 @@ from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_bu
 from crypten.communicator import DistributedCommunicator
 
 
-def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs):
+def _launch(
+    func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
+):  # pragma: no cover
     communicator_args = {
         "RANK": rank,
         "WORLD_SIZE": world_size,
@@ -33,7 +35,9 @@ def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, 
     queue.put(return_value)
 
 
-def _new_party(func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
+def _new_party(
+    func, rank, world_size, master_addr, master_port, func_args, func_kwargs
+):  # pragma: no cover
     queue = multiprocessing.Queue()
     process = multiprocessing.Process(
         target=_launch,
@@ -42,7 +46,9 @@ def _new_party(func, rank, world_size, master_addr, master_port, func_args, func
     return process, queue
 
 
-def run_party(func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
+def run_party(
+    func, rank, world_size, master_addr, master_port, func_args, func_kwargs
+):  # pragma: no cover
     """Start crypten party localy and run computation.
 
     Args:
