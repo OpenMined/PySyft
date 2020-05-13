@@ -1,6 +1,7 @@
 from typing import Dict
 import types
 
+import syft as sy
 from syft.workers.base import BaseWorker
 
 from syft.messaging.message import ObjectMessage
@@ -65,6 +66,8 @@ def run_crypten_party_jail(worker: BaseWorker, message: CryptenInitJail):
     from syft.frameworks.crypten import utils
 
     worker.rank_to_worker_id, world_size, master_addr, master_port = message.crypten_context
+    sy.local_worker.rank_to_worker_id = worker.rank_to_worker_id
+
     ser_func = message.jail_runner
     onnx_model = message.model
     crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
