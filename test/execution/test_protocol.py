@@ -21,12 +21,13 @@ def test_func2protocol_creates_roles():
     assert isinstance(protocol.roles["bob"], Role)
 
 
-def test_trace_communication_actions_send(workers):
-    bob = workers["bob"]
-
-    @sy.func2protocol(args_shape={"alice": ((1,),)})
+def test_trace_communication_actions_send():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
     def protocol(roles):
-        tensor = roles["alice"].fetch(th.tensor([1]))
+        alice = roles["alice"]
+        bob = roles["bob"]
+
+        tensor = alice.fetch(th.tensor([1]))
 
         tensor.send(bob)
         return tensor
