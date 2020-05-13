@@ -8,10 +8,11 @@ import io
 
 import syft
 from syft.serde import msgpack
+from syft.workers.virtual import VirtualWorker
 
 # Make dict of type codes
 CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.simplifiers.items():
+for cls, simplifier in msgpack.serde.get_simplifiers():
     CODE[cls] = simplifier[0]
 FORCED_CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
@@ -802,13 +803,13 @@ def make_plan(**kwargs):
                     plan.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.role),
                     plan.include_state,
-                    plan.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.tags),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.description),
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,
@@ -821,7 +822,6 @@ def make_plan(**kwargs):
                     model_plan.id,  # (int or str) id
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.role),
                     model_plan.include_state,
-                    model_plan.is_built,
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.name),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.tags),
                     msgpack.serde._simplify(
@@ -830,6 +830,9 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.input_types
+                    ),
                 ),
             ),
             "cmp_detailed": compare,
@@ -867,6 +870,54 @@ def make_role(**kwargs):
                     role.output_placeholder_ids,
                 ),
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_type(**kwargs):
+    serialized_type = type("test")
+
+    def compare(detailed, original):
+        assert type(detailed) == type(original)
+        assert detailed == original
+        return True
+
+    return [
+        {
+            "value": serialized_type,
+            "simplified": (msgpack.serde._simplify(syft.hook.local_worker, serialized_type)),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_nested_type_wrapper(**kwargs):
+    reference_serialized_input = (
+        (type(torch.tensor([1.0, -2.0])), type(torch.tensor([1, 2]))),
+        {
+            "k1": [type(5), (type(True), type(False))],
+            "k2": {
+                "kk1": [type(torch.tensor([5, 7])), type(torch.tensor([5, 7]))],
+                "kk2": [type(True), (type(torch.tensor([9, 10])),)],
+            },
+            "k3": type(torch.tensor([8])),
+        },
+        type(torch.tensor([11, 12])),
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
+    )
+
+    wrapper = syft.execution.plan.NestedTypeWrapper()
+    wrapper.nested_input_types = reference_serialized_input
+
+    def compare(detailed, original):
+        assert detailed.nested_input_types == original.nested_input_types
+        return True
+
+    return [
+        {
+            "value": wrapper,
+            "simplified": syft.serde.msgpack.serde._simplify(syft.hook.local_worker, wrapper),
             "cmp_detailed": compare,
         }
     ]
@@ -918,32 +969,36 @@ def make_state(**kwargs):
 
 # Protocol
 def make_protocol(**kwargs):
-    worker = kwargs["workers"]["serde_worker"]
+    alice = kwargs["workers"]["alice"]
+    bob = kwargs["workers"]["bob"]
 
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
+    @syft.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(roles):
+        # fetch tensors from stores
+        # TODO fix fetch once we have the real implementation of it
+        tensor1 = roles["alice"].fetch(torch.tensor([1]))
+        tensor2 = roles["bob"].fetch(torch.tensor([1]))
 
-    with worker.registration_enabled():
-        worker.register_obj(plan)
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
 
-    plan.owner = worker
-    protocol = syft.execution.protocol.Protocol(
-        [("serde-worker-Protocol", plan), ("serde-worker-Protocol", plan)], owner=worker
-    )
+        return t1plus, t2plus
+
+    protocol.build()
+
+    # plan.owner = worker
     protocol.tag("aaa")
     protocol.describe("desc")
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.protocol.Protocol
         assert detailed.id == original.id
+        assert detailed.name == original.name
+        assert detailed.roles.keys() == original.roles.keys()
+        for k, v in detailed.roles.items():
+            assert compare_roles(original.roles[k], v)
         assert detailed.tags == original.tags
         assert detailed.description == original.description
-        assert detailed.plans == original.plans
-        assert detailed.owner == original.owner
-        assert detailed.workers_resolved == original.workers_resolved
         return True
 
     return [
@@ -952,18 +1007,13 @@ def make_protocol(**kwargs):
             "simplified": (
                 CODE[syft.execution.protocol.Protocol],
                 (
-                    protocol.id,  # (int)
-                    (CODE[set], ((CODE[str], (b"aaa",)),)),  # (set of strings) tags
-                    (CODE[str], (b"desc",)),  # (str) description
-                    (
-                        CODE[list],  # (list) plans reference
-                        (
-                            # (tuple) reference: worker_id (int/str), plan_id (int/str)
-                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-                            (CODE[tuple], ((CODE[str], (b"serde-worker-Protocol",)), plan.id)),
-                        ),
+                    protocol.id,  # (int or str) id
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.roles),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], protocol.description
                     ),
-                    False,  # (bool) workers_resolved
                 ),
             ),
             "cmp_detailed": compare,
@@ -1044,47 +1094,6 @@ def make_pointerplan(**kwargs):
                     ptr.id_at_location,  # (int) id_at_location
                     (CODE[str], (b"alice",)),  # (str) worker_id
                     (CODE[set], ()),  # (set or None) tags
-                    False,  # (bool) garbage_collect_data
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
-# syft.generic.pointers.pointer_protocol.PointerProtocol
-def make_pointerprotocol(**kwargs):
-    alice, me = kwargs["workers"]["alice"], kwargs["workers"]["me"]
-
-    @syft.func2plan([torch.Size((1, 3))])
-    def plan(x):
-        x = x + x
-        x = torch.abs(x)
-        return x
-
-    protocol = syft.execution.protocol.Protocol(
-        [("worker1", plan), ("worker2", plan)], tags=["aaa", "bbb"], description="desc"
-    )
-    protocol.send(alice)
-    ptr = me.request_search([protocol.id], location=alice)[0]
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.generic.pointers.pointer_protocol.PointerProtocol
-        assert detailed.id == original.id
-        assert detailed.id_at_location == original.id_at_location
-        assert detailed.location == original.location
-        assert detailed.garbage_collect_data == original.garbage_collect_data
-        return True
-
-    return [
-        {
-            "value": ptr,
-            "simplified": (
-                CODE[syft.generic.pointers.pointer_protocol.PointerProtocol],
-                (
-                    ptr.id,  # (int or str) id
-                    ptr.id_at_location,  # (int) id_at_location
-                    (CODE[str], (b"alice",)),  # (str) location.id
                     False,  # (bool) garbage_collect_data
                 ),
             ),
@@ -1253,16 +1262,20 @@ def make_trainconfig(**kwargs):
     ]
 
 
-# syft.workers.base.BaseWorker
-def make_baseworker(**kwargs):
-    worker = kwargs["workers"]["serde_worker"]
+# syft.workers.virtual.VirtualWorker
+def make_virtual_worker(**kwargs):
+    worker = VirtualWorker(
+        id=f"serde-worker-{cls.__name__}",
+        hook=kwargs["workers"]["serde_worker"].hook,
+        auto_add=False,
+    )
 
     t = torch.rand(3, 3)
     with worker.registration_enabled():
         worker.register_obj(t)
 
     def compare(detailed, original):
-        assert isinstance(detailed, syft.workers.base.BaseWorker)
+        assert isinstance(detailed, syft.workers.virtual.VirtualWorker)
         assert detailed.id == original.id
         return True
 
@@ -1270,8 +1283,8 @@ def make_baseworker(**kwargs):
         {
             "value": worker,
             "simplified": (
-                CODE[syft.workers.base.BaseWorker],
-                ((CODE[str], (b"serde-worker-BaseWorker",)),),  # id (str)
+                CODE[syft.workers.virtual.VirtualWorker],
+                ((CODE[str], (b"serde-worker-VirtualWorker",)),),  # id (str)
             ),
             "cmp_detailed": compare,
         },
@@ -1280,10 +1293,12 @@ def make_baseworker(**kwargs):
             "forced": True,
             "value": worker,
             "simplified": (
-                FORCED_CODE[syft.workers.base.BaseWorker],
+                FORCED_CODE[syft.workers.virtual.VirtualWorker],
                 (
-                    (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
-                    msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
+                    (CODE[str], (b"serde-worker-VirtualWorker",)),  # id (str)
+                    msgpack.serde._simplify(
+                        worker, worker.object_store._objects
+                    ),  # (dict) _objects
                     worker.auto_add,  # (bool) auto_add
                 ),
             ),
@@ -1421,26 +1436,34 @@ def make_communication_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
+        assert type(detailed) == syft.messaging.message.CommunicationAction
+
         detailed_msg = (
-            detailed.obj_id,
             detailed.name,
-            detailed.source,
-            detailed.destinations,
+            detailed.target,
+            detailed.args,
             detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
         )
         original_msg = (
-            original.obj_id,
             original.name,
-            original.source,
-            original.destinations,
+            original.target,
+            original.args,
             original.kwargs,
+            original.return_ids,
+            original.return_value,
         )
-        assert type(detailed) == syft.messaging.message.CommunicationAction
-        for i in range(len(original_msg)):
-            assert detailed_msg[i] == original_msg[i]
-        return True
 
-    msg = (com.obj_id, com.name, com.source, com.destinations, com.kwargs)
+        for i in range(len(original_msg)):
+            if type(original_msg[i]) != torch.Tensor:
+                assert detailed_msg[i] == original_msg[i], f"{detailed_msg[i]} != {original_msg[i]}"
+            else:
+                assert detailed_msg[i].equal(
+                    original_msg[i]
+                ), f"{detailed_msg[i]} != {original_msg[i]}"
+
+        return True
 
     return [
         {
@@ -1448,11 +1471,12 @@ def make_communication_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.communication.CommunicationAction],
                 (
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.obj_id),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.name),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.source),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.destinations),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.args),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], com.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1476,19 +1500,35 @@ def make_computation_action(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-        original_msg = (original.name, original.target, original.args, original.kwargs)
         assert type(detailed) == syft.execution.computation.ComputationAction
+
+        detailed_msg = (
+            detailed.name,
+            detailed.target,
+            detailed.args,
+            detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
+        )
+
+        original_msg = (
+            original.name,
+            original.target,
+            original.args,
+            original.kwargs,
+            original.return_ids,
+            original.return_value,
+        )
+
         for i in range(len(original_msg)):
             if type(original_msg[i]) != torch.Tensor:
-                assert detailed_msg[i] == original_msg[i]
+                assert detailed_msg[i] == original_msg[i], f"{detailed_msg[i]} != {original_msg[i]}"
             else:
-                assert detailed_msg[i].equal(original_msg[i])
-        assert detailed.return_ids == original.return_ids
-        return True
+                assert detailed_msg[i].equal(
+                    original_msg[i]
+                ), f"{detailed_msg[i]} != {original_msg[i]}"
 
-    message1 = (op1.name, op1.target, op1.args, op1.kwargs)
-    message2 = (op2.name, op2.target, op2.args, op2.kwargs)
+        return True
 
     return [
         {
@@ -1496,10 +1536,12 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], message1
-                    ),  # (Any) message
-                    (CODE[tuple], (op1.return_ids[0],)),  # (tuple) return_ids
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op1.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1509,10 +1551,12 @@ def make_computation_action(**kwargs):
             "simplified": (
                 CODE[syft.execution.computation.ComputationAction],
                 (
-                    msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], message2
-                    ),  # (Any) message
-                    (CODE[tuple], (op2.return_ids[0],)),  # (tuple) return_ids
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1521,7 +1565,7 @@ def make_computation_action(**kwargs):
 
 
 # syft.messaging.message.TensorCommandMessage
-def make_command_message(**kwargs):
+def make_tensor_command_message(**kwargs):
     bob = kwargs["workers"]["bob"]
     alice = kwargs["workers"]["alice"]
     bob.log_msgs = True
@@ -1541,23 +1585,34 @@ def make_command_message(**kwargs):
     bob.log_msgs = False
 
     def compare(detailed, original):
-        if isinstance(detailed.action, syft.execution.computation.ComputationAction):
-            detailed = detailed.action
-            original = original.action
+        detailed_action = detailed.action
+        original_action = original.action
 
-            detailed_msg = (detailed.name, detailed.target, detailed.args, detailed.kwargs)
-            original_msg = (original.name, original.target, original.args, original.kwargs)
-            for i in range(len(original_msg)):
-                if type(original_msg[i]) != torch.Tensor:
-                    assert detailed_msg[i] == original_msg[i]
-                else:
-                    assert detailed_msg[i].equal(original_msg[i])
-            assert detailed.return_ids == original.return_ids
-            return True
+        detailed_action = (
+            detailed.name,
+            detailed.target,
+            detailed.args,
+            detailed.kwargs,
+            detailed.return_ids,
+            detailed.return_value,
+        )
 
-        elif isinstance(detailed.action, syft.execution.communication.CommunicationAction):
-            assert detailed.action == original.action
-            return True
+        original_action = (
+            original.name,
+            original.target,
+            original.args,
+            original.kwargs,
+            original.return_ids,
+            original.return_value,
+        )
+
+        for i in range(len(original_action)):
+            if type(original_action[i]) != torch.Tensor:
+                assert detailed_action[i] == original_action[i]
+            else:
+                assert detailed_action[i].equal(original_action[i])
+
+        return True
 
     return [
         {
@@ -1805,7 +1860,7 @@ def make_workercommandmessage(**kwargs):
     )
 
     remote_proxy._log_msgs_remote(value=True)
-    nr_objects = remote_proxy.objects_count_remote()
+    nr_objects = remote_proxy.tensors_count_remote()
     assert nr_objects == 0
 
     objects_count_msg = remote_proxy._get_msg_remote(
@@ -1817,7 +1872,6 @@ def make_workercommandmessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.WorkerCommandMessage
-        assert detailed.contents == original.contents
         return True
 
     return [
@@ -1826,7 +1880,7 @@ def make_workercommandmessage(**kwargs):
             "simplified": (
                 CODE[syft.messaging.message.WorkerCommandMessage],
                 (
-                    (CODE[str], (b"objects_count",)),  # (str) command
+                    (CODE[str], (b"tensors_count",)),  # (str) command
                     (CODE[tuple], ((CODE[tuple], ()), (CODE[dict], ()), (CODE[list], ()))),
                 ),
             ),
@@ -2036,4 +2090,25 @@ def make_crypteninitjail(**kwargs):
             ),
             "cmp_detailed": compare,
         },
+
+def make_paillier(**kwargs):
+    # TODO: Add proper testing for paillier tensor
+
+    def compare(original, detailed):
+        return True
+
+    tensor = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor()
+    simplfied = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor.simplify(
+        kwargs["workers"]["serde_worker"], tensor
+    )
+
+    return [
+        {
+            "value": tensor,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
+                simplfied,
+            ),
+            "cmp_detailed": compare,
+        }
     ]

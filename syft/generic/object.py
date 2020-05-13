@@ -4,9 +4,10 @@ from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractObject(ABC):
+class AbstractObject(ABC, SyftSerializable):
     """
     This is a generic object abstraction.
     """
@@ -57,20 +58,13 @@ class AbstractObject(ABC):
         return self
 
     def tag(self, *tags: str) -> "AbstractObject":
-        if self.tags is None:
-            self.tags = set()
+        self.tags = self.tags or set()
 
-        # Update the owner tag index
         for tag in tags:
             self.tags.add(tag)
-            if self.owner is not None:
-                # NOTE: this is a fix to correct faulty registration that can sometimes happen
-                if self.id not in self.owner._objects:
-                    self.owner.register_obj(self)
-                # note: this is a defaultdict(set)
-                self.owner._tag_to_object_ids[tag].add(self.id)
-            else:
-                raise RuntimeError("Can't tag a tensor which doesn't have an owner")
+
+        self.owner.object_store.register_tags(self)
+
         return self
 
     def serialize(self):  # check serde.py to see how to provide compression schemes

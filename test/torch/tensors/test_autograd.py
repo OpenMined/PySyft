@@ -802,7 +802,7 @@ def test_garbage_collection(workers):
         alice, bob, crypto_provider=crypto_provider, requires_grad=True
     )
     opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
-    num_objs = 11
+    num_objs = 17
     prev_loss = float("inf")
     for i in range(3):
         preds = classifier(a)
@@ -813,8 +813,8 @@ def test_garbage_collection(workers):
         opt.step()
         loss = loss.get().float_prec()
 
-        assert len(alice._objects) == num_objs
-        assert len(bob._objects) == num_objs
+        assert len(alice.object_store._objects) == num_objs
+        assert len(bob.object_store._objects) == num_objs
         assert loss < prev_loss
 
         prev_loss = loss

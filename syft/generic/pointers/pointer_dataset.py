@@ -32,14 +32,16 @@ class PointerDataset(ObjectPointer):
 
     @property
     def data(self):
-        command = ("get_data", self.id_at_location, [], {})
-        ptr = self.owner.send_command(message=command, recipient=self.location).wrap()
+        ptr = self.owner.send_command(
+            cmd_name="get_data", target=self.id_at_location, recipient=self.location
+        ).wrap()
         return ptr
 
     @property
     def targets(self):
-        command = ("get_targets", self.id_at_location, [], {})
-        ptr = self.owner.send_command(message=command, recipient=self.location).wrap()
+        ptr = self.owner.send_command(
+            cmd_name="get_targets", target=self.id_at_location, recipient=self.location
+        ).wrap()
         return ptr
 
     def wrap(self):
@@ -83,13 +85,19 @@ class PointerDataset(ObjectPointer):
         return out
 
     def __len__(self):
-        command = ("__len__", self.id_at_location, [], {})
-        len = self.owner.send_command(message=command, recipient=self.location)
+        len = self.owner.send_command(
+            cmd_name="__len__", target=self.id_at_location, recipient=self.location
+        )
         return len
 
     def __getitem__(self, index):
-        command = ("__getitem__", self.id_at_location, [index], {})
-        data_elem, target_elem = self.owner.send_command(message=command, recipient=self.location)
+        args = [index]
+        data_elem, target_elem = self.owner.send_command(
+            cmd_name="__getitem__",
+            target=self.id_at_location,
+            args_=tuple(args),
+            recipient=self.location,
+        )
         return data_elem.wrap(), target_elem.wrap()
 
     @staticmethod

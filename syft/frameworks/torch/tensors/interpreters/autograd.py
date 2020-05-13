@@ -99,6 +99,9 @@ class AutogradTensor(AbstractTensor):
             other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.mul(other)
 
+    def __neg__(self):
+        return self.neg()
+
     def __matmul__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
             other = AutogradTensor(requires_grad=False).on(other, wrap=False)
@@ -177,6 +180,16 @@ class AutogradTensor(AbstractTensor):
             return self.mul(other)
 
         module.mul = mul
+
+        def neg(self):
+            return self.neg()
+
+        module.neg = neg
+
+        def log(self):
+            return self.log()
+
+        module.log = log
 
         def matmul(self, other):
             return self.matmul(other)
