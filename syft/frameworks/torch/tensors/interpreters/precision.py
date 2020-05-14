@@ -793,7 +793,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         return response
 
-    def share(self, *owners, field=None, dtype=None, crypto_provider=None):
+    def share(self, *owners, protocol=None, field=None, dtype=None, crypto_provider=None):
         """
         Forward the .share() command to the child tensor, and reconstruct a new
         FixedPrecisionTensor since the command is not inplace and should return
@@ -801,6 +801,7 @@ class FixedPrecisionTensor(AbstractTensor):
 
         Args:
             *owners: the owners of the shares of the resulting AdditiveSharingTensor
+            protocol: the crypto protocol used to perform the computations ('snn' or 'fss')
             field: the field size in which the share values live
             dtype: the dtype in which the share values live
             crypto_provider: the worker used to provide the crypto primitives used
@@ -820,7 +821,7 @@ class FixedPrecisionTensor(AbstractTensor):
         tensor = FixedPrecisionTensor(owner=self.owner, **self.get_class_attributes())
 
         tensor.child = self.child.share(
-            *owners, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
+            *owners, protocol=protocol, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
         )
         return tensor
 

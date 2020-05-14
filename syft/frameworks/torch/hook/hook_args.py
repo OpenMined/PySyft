@@ -64,13 +64,15 @@ ambiguous_methods = {
     "_getitem_public",
     "add_",
     "backward",
+    "cat",
     "chunk",
     "new",
     "permute",
     "reshape",
+    "split",
+    "stack",
     "sub_",
     "view",
-    "split",
 }
 
 ambiguous_functions = {

@@ -44,7 +44,7 @@ def test_send_msg():
     me.message_pending_time = 0
 
     # ensure that object is now on bob's machine
-    assert obj_id in bob._objects
+    assert obj_id in bob.object_store._objects
     # ensure that object was sent 0.1 secs later
     assert elapsed_time > 0.1
 
@@ -70,7 +70,7 @@ def test_send_msg_using_tensor_api():
     _ = obj.send(bob)
 
     # ensure tensor made it to Bob
-    assert obj_id in bob._objects
+    assert obj_id in bob.object_store._objects
 
 
 def test_recv_msg():
@@ -98,7 +98,7 @@ def test_recv_msg():
     alice.recv_msg(bin_msg)
 
     # ensure that object is now in alice's registry
-    assert obj.id in alice._objects
+    assert obj.id in alice.object_store._objects
 
     # Test 2: get tensor back from alice
 
@@ -209,7 +209,7 @@ def test_obj_not_found(workers):
 
     x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
-    bob._objects = {}
+    bob.object_store.clear_objects()
 
     with pytest.raises(ObjectNotFoundError):
         y = x + x

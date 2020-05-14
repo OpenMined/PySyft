@@ -279,4 +279,4 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         return self._return_bool_result(response)
 
     def __str__(self) -> str:
-        return "Federated Worker < id: " + self.id + " >"
+        return f"<Federated Worker id:{self.id}>"

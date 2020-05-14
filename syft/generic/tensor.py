@@ -6,9 +6,10 @@ import syft as sy
 from syft.generic.object import _apply_args
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractTensor(AbstractObject):
+class AbstractTensor(AbstractObject, SyftSerializable):
     def __init__(
         self,
         id: int = None,
