@@ -35,7 +35,6 @@ class Role:
         output_placeholder_ids: Tuple[int, str] = None,
         # General kwargs
         id: Union[str, int] = None,
-        operations: Dict[str, List[Action]] = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
 
@@ -49,7 +48,6 @@ class Role:
         self.output_placeholder_ids = output_placeholder_ids or ()
 
         self.state = state or State()
-        self.operations = operations or {}
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]

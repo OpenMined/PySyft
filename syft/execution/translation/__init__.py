@@ -5,6 +5,7 @@ class TranslationTarget(Enum):
     PYTORCH = "torch"
     TENSORFLOW = "tf"
     TENSORFLOW_JS = "tfjs"
+    TORCHSCRIPT = "torchscript"
 
     @staticmethod
     def list():

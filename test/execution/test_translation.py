@@ -44,6 +44,7 @@ def test_plan_can_be_jit_traced(hook, workers):
 
 def test_func_plan_can_be_translated_to_tfjs(hook, workers):
     Plan._build_translators = []
+
     @sy.func2plan(args_shape=[(3, 3)])
     def plan(x):
         x = x * 2
@@ -52,25 +53,29 @@ def test_func_plan_can_be_translated_to_tfjs(hook, workers):
 
     orig_plan = plan.copy()
 
-    plan_js = plan.add_translation(PlanTranslatorTfjs)
-    assert plan_js.role.actions[0].name == 'tf.mul'
+    plan_js = plan.copy()
+    plan_js.add_translation(PlanTranslatorTfjs)
+    plan_js.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert plan_js.role.actions[0].name == "tf.mul"
     assert len(plan_js.role.actions[0].args) == 2
 
     # check that translation can be done after serde
     serde_plan = deserialize(serialize(orig_plan))
-    serde_plan = serde_plan.add_translation(PlanTranslatorTfjs)
-    assert serde_plan.role.actions[0].name == 'tf.mul'
+    serde_plan.add_translation(PlanTranslatorTfjs)
+    serde_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert serde_plan.role.actions[0].name == "tf.mul"
     assert len(serde_plan.role.actions[0].args) == 2
 
     # check that translation is not lost after serde
     serde_plan_full = deserialize(serialize(plan_js))
-    assert serde_plan_full.role.actions[0].name == 'tf.mul'
+    assert serde_plan_full.role.actions[0].name == "tf.mul"
     assert len(serde_plan_full.role.actions[0].args) == 2
 
 
 @pytest.mark.skip(reason="Missing translation for torch.nn.functional.linear")
 def test_cls_plan_can_be_translated_to_tfjs(hook, workers):
     Plan._build_translators = []
+
     class Net(sy.Plan):
         def __init__(self):
             super(Net, self).__init__()

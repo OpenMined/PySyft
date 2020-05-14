@@ -1,5 +1,7 @@
+3p0~=0.0.8
 flask_socketio~=4.2.1
 Flask~=1.1.1
+importlib-resources~=1.5.0
 lz4~=3.0.2
 msgpack~=1.0.0
 numpy~=1.18.1

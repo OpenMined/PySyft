@@ -142,7 +142,8 @@ class Plan(AbstractObject):
         self.torchscript = None
         self.input_types = input_types
         self.tracing = False
-        self.base_framework = base_framework
+        self._base_framework = base_framework
+        self.roles = {base_framework: self.role}
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -162,6 +163,21 @@ class Plan(AbstractObject):
     @property
     def actions(self):
         return self.role.actions
+
+    @property
+    def base_framework(self):
+        return self._base_framework
+
+    @base_framework.setter
+    def base_framework(self, val):
+        if val in self.roles:
+            self._base_framework = val
+            self.role = self.roles[self._base_framework]
+            return
+        raise ValueError(
+            "Value given does not match any available Roles."
+            " Please check to see if the proper translations have been added to Plan."
+        )
 
     def parameters(self):
         """
@@ -433,7 +449,9 @@ class Plan(AbstractObject):
         Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
-        return plan_translator(self).translate()
+        role = plan_translator(self).translate()
+        self.roles[plan_translator.framework] = role
+        return role
 
     def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
         plan_translator(self).remove()
