@@ -776,7 +776,7 @@ def test_max(workers, protocol):
     )
 
     if protocol == "fss":
-        for worker in workers:
+        for worker in workers.values():
             syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
