@@ -15,7 +15,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
-from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensorType, framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
 from syft.generic.object_storage import ObjectStore
@@ -1273,3 +1273,12 @@ class BaseWorker(AbstractWorker):
                 worker.object_store.rm_obj(obj.id)
 
         return result
+
+    @classmethod
+    def is_framework_supported(cls, framework: str) -> bool:
+        """
+        Returns True if framework is supported, else returns False.
+        :param framework: string
+        :return: True/False
+        """
+        return framework.lower() in framework_packages
