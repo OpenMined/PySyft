@@ -118,7 +118,7 @@ class BaseWorker(AbstractWorker):
         else:
             self.verbose = verbose
 
-        if isinstance(hook, sy.TorchHook):  # and hasattr(hook, "_virtual_workers"):
+        if isinstance(hook, sy.TorchHook) and hasattr(hook, "_virtual_workers"):
             hook._virtual_workers.add(self)
 
         self.auto_add = auto_add
