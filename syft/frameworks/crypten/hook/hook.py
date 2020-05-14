@@ -7,6 +7,19 @@ import torch as th
 
 
 class CrypTenPlanBuild(object):
+    """
+    TODO: When the problem converting Onnx serialized models to PyTorch is solved
+    we can have serialized models on a SINGLE worker.
+
+    Those model will be known by a single party and when the party will call
+    the crypten.load function it will deserialize the model to a Torch one
+    and share it with the other parties.
+
+    In this scenario, the worker that started the computation will not know about the
+    instrinsics of the architecture and ONLY ONE worker can have knowledge about the
+    model
+    """
+
     @staticmethod
     def f_return_none(*args, **kwargs):
         return None
@@ -16,15 +29,11 @@ class CrypTenPlanBuild(object):
         return crypten.cryptensor(th.zeros([]))
 
     @staticmethod
-    def f_return_model_or_cryptensor(*args, **kwargs):
-        """
-        # TODO: When we solve the problem converting OnnxModels to PyTorch we can
-        have serialized models on workers that we can load without having the party
-        that started the computation know about the instrinsics of the architecture
-        if args[0] == "crypten_model":
-            return crypten.nn.Module()
-        else:
-        """
+    def f_return_model(*args, **kwargs):
+        return crypten.nn.Module()
+
+    @staticmethod
+    def f_return_cryptensor(*args, **kwargs):
         return crypten.cryptensor(th.zeros([]))
 
 
@@ -67,7 +76,10 @@ on the "shell" CrypTensor (in our case is a CrypTensor that has only values of 0
 will not require to overwrite another function
 """
 crypten_plan_hook = {
-    crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor},
+    crypten: {
+        "load": CrypTenPlanBuild.f_return_cryptensor,
+        "load_model": CrypTenPlanBuild.f_return_model,
+    },
     crypten.nn.Module: {
         "encrypt": CrypTenPlanBuild.f_return_none,
         "decrypt": CrypTenPlanBuild.f_return_none,
@@ -104,9 +116,10 @@ def unhook_plan_building():
 
 def hook_crypten():
     """Hook the load function from crypten"""
-    from syft.frameworks.crypten import load as crypten_load
+    from syft.frameworks.crypten import load, load_model
 
-    setattr(crypten, "load", crypten_load)
+    setattr(crypten, "load", load)
+    setattr(crypten, "load_model", load_model)
 
 
 def hook_crypten_module():
