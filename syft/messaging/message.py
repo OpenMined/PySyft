@@ -21,6 +21,7 @@ from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.execution.placeholder import PlaceHolder
 
+from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 
@@ -402,6 +403,32 @@ class IsNoneMessage(Message):
             message = detail(sy.local_worker, msg_tuple)
         """
         return IsNoneMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+
+    @staticmethod
+    def get_protobuf_schema() -> IsNoneMessagePB:
+        return IsNoneMessagePB
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, message: "IsNoneMessage") -> "IsNoneMessagePB":
+        """
+        This function takes the attributes of an IsNoneMessage and saves them in a Protobuf object
+        Args:
+            message (IsNoneMessage): an IsNoneMessage
+        Returns:
+            protobuf: a protobuf object holding the unique attributes of the message
+        Examples:
+            data = bufferize(message)
+        """
+
+        protobuf_msg = IsNoneMessagePB()
+        sy.serde.protobuf.proto.set_protobuf_id(protobuf_msg.object_id, message.object_id)
+        return protobuf_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_msg: "IsNoneMessagePB") -> "IsNoneMessage":
+        id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_msg.object_id)
+        message = IsNoneMessage(id_)
+        return message
 
 
 class GetShapeMessage(Message):
