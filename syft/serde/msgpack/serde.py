@@ -64,6 +64,7 @@ else:
 from syft.serde.msgpack.proto import proto_type_info
 from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
+
 class MetaMsgpackGlobalState(type):
     @staticmethod
     def wrapper(wrapped_func):
@@ -71,6 +72,7 @@ class MetaMsgpackGlobalState(type):
         def wrapper(self):
             self = self.update()
             return wrapped_func.__get__(self, type(self))
+
         return wrapper
 
     def __new__(meta, classname, bases, class_dict):
@@ -78,6 +80,7 @@ class MetaMsgpackGlobalState(type):
             if isinstance(attr_body, property):
                 class_dict[attr_name] = MetaMsgpackGlobalState.wrapper(attr_body)
         return type.__new__(meta, classname, bases, class_dict)
+
 
 @dataclass
 class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
@@ -173,7 +176,9 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
             _add_simplifier_and_detailer(curr_type, simplifier, detailer)
 
         # # Register syft objects with custom simplify and detail methods
-        for syft_type in self._OBJ_SIMPLIFIER_AND_DETAILERS + self._EXCEPTION_SIMPLIFIER_AND_DETAILERS:
+        for syft_type in (
+            self._OBJ_SIMPLIFIER_AND_DETAILERS + self._EXCEPTION_SIMPLIFIER_AND_DETAILERS
+        ):
             simplifier, detailer = syft_type.simplify, syft_type.detail
             _add_simplifier_and_detailer(syft_type, simplifier, detailer)
         #
@@ -182,6 +187,7 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
             force_simplifier, force_detailer = syft_type.force_simplify, syft_type.force_detail
             _add_simplifier_and_detailer(syft_type, force_simplifier, force_detailer, forced=True)
         return self
+
 
 # cached value
 field = 2 ** 64
@@ -226,7 +232,9 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
             if inheritance_type in msgpack_global_state.forced_full_simplifiers:
                 # Store the inheritance_type in forced_full_simplifiers so next
                 # time we see this type serde will be faster.
-                msgpack_global_state.forced_full_simplifiers[current_type] = msgpack_global_state.forced_full_simplifiers[inheritance_type]
+                msgpack_global_state.forced_full_simplifiers[
+                    current_type
+                ] = msgpack_global_state.forced_full_simplifiers[inheritance_type]
                 result = (
                     msgpack_global_state.forced_full_simplifiers[current_type][0],
                     msgpack_global_state.forced_full_simplifiers[current_type][1](worker, obj),
@@ -408,12 +416,17 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
     current_type, obj = _simplify_field(obj)
 
     if current_type in msgpack_global_state.simplifiers:
-        result = (msgpack_global_state.simplifiers[current_type][0], msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs))
+        result = (
+            msgpack_global_state.simplifiers[current_type][0],
+            msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs),
+        )
         return result
     elif current_type in msgpack_global_state.inherited_simplifiers_found:
         result = (
             msgpack_global_state.inherited_simplifiers_found[current_type][0],
-            msgpack_global_state.inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
+            msgpack_global_state.inherited_simplifiers_found[current_type][1](
+                worker, obj, **kwargs
+            ),
         )
         return result
 
@@ -435,10 +448,14 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
             if inheritance_type in msgpack_global_state.simplifiers:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
-                msgpack_global_state.inherited_simplifiers_found[current_type] = msgpack_global_state.simplifiers[inheritance_type]
+                msgpack_global_state.inherited_simplifiers_found[
+                    current_type
+                ] = msgpack_global_state.simplifiers[inheritance_type]
                 result = (
                     msgpack_global_state.inherited_simplifiers_found[current_type][0],
-                    msgpack_global_state.inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
+                    msgpack_global_state.inherited_simplifiers_found[current_type][1](
+                        worker, obj, **kwargs
+                    ),
                 )
                 return result
 
@@ -447,8 +464,10 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         # the framework
         msgpack_global_state.stale_state = True
         if current_type in msgpack_global_state.simplifiers:
-            result = (msgpack_global_state.simplifiers[current_type][0],
-                      msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs))
+            result = (
+                msgpack_global_state.simplifiers[current_type][0],
+                msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs),
+            )
             return result
 
         # if there is not a simplifier for this

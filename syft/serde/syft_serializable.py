@@ -1,5 +1,6 @@
 import inspect
 
+
 def get_protobuf_subclasses(cls):
     """
         Function to retrieve all classes that implement the protobuf methods from the SyftSerializable class:
@@ -81,7 +82,7 @@ def get_msgpack_subclasses(cls):
     return original_subclasses.union(sub_sets)
 
 
-class SyftSerializable():
+class SyftSerializable:
     """
         Interface for the communication protocols in syft.
 
@@ -170,6 +171,7 @@ class SyftSerializable():
                 Protobuf type.
         """
         raise NotImplementedError
+
 
 class SyftSerializableWrapper:
     @staticmethod

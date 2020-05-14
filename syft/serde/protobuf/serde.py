@@ -23,6 +23,7 @@ class MetaProtobufGlobalState(type):
         def wrapper(self):
             self = self.update()
             return wrapped_func.__get__(self, type(self))
+
         return wrapper
 
     def __new__(meta, classname, bases, class_dict):
@@ -30,6 +31,7 @@ class MetaProtobufGlobalState(type):
             if isinstance(attr_body, property):
                 class_dict[attr_name] = MetaProtobufGlobalState.wrapper(attr_body)
         return type.__new__(meta, classname, bases, class_dict)
+
 
 @dataclass
 class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
@@ -91,18 +93,24 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
         if not self.stale_state:
             return self
 
-        self._MAP_TO_PROTOBUF_TRANSLATORS = {wrapper_type.get_original_class() : (wrapper_type.bufferize, wrapper_type.unbufferize) for wrapper_type in get_protobuf_subclasses(SyftSerializableWrapper)}
+        self._MAP_TO_PROTOBUF_TRANSLATORS = {
+            wrapper_type.get_original_class(): (wrapper_type.bufferize, wrapper_type.unbufferize)
+            for wrapper_type in get_protobuf_subclasses(SyftSerializableWrapper)
+        }
 
         self._OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
 
         for proto_class in self._OBJ_PROTOBUF_TRANSLATORS:
             self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
 
-        for proto_class, proto_schema in [(wrapper_type.get_original_class(), wrapper_type.get_protobuf_schema()) for wrapper_type in get_protobuf_subclasses((SyftSerializableWrapper))]:
+        for proto_class, proto_schema in [
+            (wrapper_type.get_original_class(), wrapper_type.get_protobuf_schema())
+            for wrapper_type in get_protobuf_subclasses((SyftSerializableWrapper))
+        ]:
             self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_schema
 
         def _add_bufferizer_and_unbufferizer(
-                curr_type, proto_type, bufferizer, unbufferizer, forced=False
+            curr_type, proto_type, bufferizer, unbufferizer, forced=False
         ):
 
             if forced:
@@ -176,7 +184,9 @@ def _force_full_bufferize(worker: AbstractWorker, obj: object) -> object:
             if inheritance_type in protobuf_global_state.forced_full_bufferizers:
                 # Store the inheritance_type in forced_full_bufferizers so next
                 # time we see this type serde will be faster.
-                protobuf_global_state.forced_full_bufferizers[current_type] = protobuf_global_state.forced_full_bufferizers[inheritance_type]
+                protobuf_global_state.forced_full_bufferizers[
+                    current_type
+                ] = protobuf_global_state.forced_full_bufferizers[inheritance_type]
                 result = (
                     protobuf_global_state.forced_full_bufferizers[current_type][0],
                     protobuf_global_state.forced_full_bufferizers[current_type][1](worker, obj),
@@ -341,7 +351,9 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     elif current_type in protobuf_global_state.inherited_bufferizers_found:
         result = (
             protobuf_global_state.inherited_bufferizers_found[current_type][0],
-            protobuf_global_state.inherited_bufferizers_found[current_type][1](worker, obj, **kwargs),
+            protobuf_global_state.inherited_bufferizers_found[current_type][1](
+                worker, obj, **kwargs
+            ),
         )
         return result
     # If we already tried to find a bufferizer for this type but failed, we should
@@ -368,8 +380,12 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
             if inheritance_type in protobuf_global_state.bufferizers:
                 # Store the inheritance_type in bufferizers so next time we see this type
                 # serde will be faster.
-                protobuf_global_state.inherited_bufferizers_found[current_type] = protobuf_global_state.bufferizers[inheritance_type]
-                result = protobuf_global_state.inherited_bufferizers_found[current_type](worker, obj, **kwargs)
+                protobuf_global_state.inherited_bufferizers_found[
+                    current_type
+                ] = protobuf_global_state.bufferizers[inheritance_type]
+                result = protobuf_global_state.inherited_bufferizers_found[current_type](
+                    worker, obj, **kwargs
+                )
                 return result
 
         protobuf_global_state.no_bufferizers_found.add(current_type)
@@ -439,5 +455,6 @@ def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
 
 def _camel2snake(string: str):
     return string[0].lower() + re.sub(r"(?!^)[A-Z]", lambda x: "_" + x.group(0).lower(), string[1:])
+
 
 protobuf_global_state = ProtobufGlobalState()

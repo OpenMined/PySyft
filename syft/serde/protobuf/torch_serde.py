@@ -40,6 +40,7 @@ SERIALIZERS_SYFT_TO_PROTOBUF = {
 }
 SERIALIZERS_PROTOBUF_TO_SYFT = {value: key for key, value in SERIALIZERS_SYFT_TO_PROTOBUF.items()}
 
+
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
     """Serialize the tensor using as default Torch serialization strategy
     This function can be overridden to provide different tensor serialization strategies
@@ -88,6 +89,7 @@ def _deserialize_tensor(worker: AbstractWorker, serializer: str, tensor_bin) -> 
     deserializer = deserializers[serializer]
     return deserializer(worker, tensor_bin)
 
+
 def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> TensorDataPB:
     """Strategy to serialize a tensor using Protobuf"""
     dtype = TORCH_DTYPE_STR[tensor.dtype]
@@ -130,6 +132,7 @@ def protobuf_tensor_deserializer(
 
 
 # Bufferize/Unbufferize Torch Tensors
+
 
 class TorchTensorWrapper(SyftSerializableWrapper):
     @staticmethod
@@ -217,7 +220,12 @@ class TorchTensorWrapper(SyftSerializableWrapper):
             tensor.grad = TorchTensorWrapper.unbufferize(worker, grad_chain)
 
         initialize_tensor(
-            hook=syft.torch.hook, obj=tensor, owner=worker, id=tensor_id, init_args=[], init_kwargs={}
+            hook=syft.torch.hook,
+            obj=tensor,
+            owner=worker,
+            id=tensor_id,
+            init_args=[],
+            init_kwargs={},
         )
 
         if protobuf_tensor.HasField("chain"):
@@ -239,6 +247,7 @@ class TorchTensorWrapper(SyftSerializableWrapper):
     def get_protobuf_schema():
         return TorchTensorPB
 
+
 class TorchDeviceWrapper(SyftSerializableWrapper):
     @staticmethod
     def bufferize(worker: AbstractWorker, device: torch.device) -> DevicePB:
@@ -259,6 +268,7 @@ class TorchDeviceWrapper(SyftSerializableWrapper):
     def get_protobuf_schema():
         return DevicePB
 
+
 class ParameterWrapper(SyftSerializableWrapper):
     @staticmethod
     def bufferize(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
@@ -271,9 +281,7 @@ class ParameterWrapper(SyftSerializableWrapper):
         return protobuf_param
 
     @staticmethod
-    def unbufferize(
-        worker: AbstractWorker, protobuf_param: ParameterPB
-    ) -> torch.nn.Parameter:
+    def unbufferize(worker: AbstractWorker, protobuf_param: ParameterPB) -> torch.nn.Parameter:
         data = syft.serde.protobuf.serde._unbufferize(worker, protobuf_param.tensor)
         param = torch.nn.Parameter(data, requires_grad=protobuf_param.requires_grad)
         param.id = get_protobuf_id(protobuf_param.id)
@@ -289,11 +297,10 @@ class ParameterWrapper(SyftSerializableWrapper):
     def get_protobuf_schema():
         return ParameterPB
 
+
 class ScriptModuleWrapper(SyftSerializableWrapper):
     @staticmethod
-    def bufferize(
-        worker: AbstractWorker, script_module: torch.jit.ScriptModule
-    ) -> ScriptModulePB:
+    def bufferize(worker: AbstractWorker, script_module: torch.jit.ScriptModule) -> ScriptModulePB:
         protobuf_script = ScriptModulePB()
         protobuf_script.obj = script_module.save_to_buffer()
         return protobuf_script
@@ -313,6 +320,7 @@ class ScriptModuleWrapper(SyftSerializableWrapper):
     @staticmethod
     def get_original_class():
         return torch.jit.ScriptModule
+
 
 class ScriptFunctionWrapper(SyftSerializableWrapper):
     @staticmethod
@@ -339,6 +347,7 @@ class ScriptFunctionWrapper(SyftSerializableWrapper):
     def get_protobuf_schema():
         return ScriptFunctionPB
 
+
 class TopLevelTracedModuleWrapper(SyftSerializableWrapper):
     @staticmethod
     def bufferize(
@@ -363,6 +372,7 @@ class TopLevelTracedModuleWrapper(SyftSerializableWrapper):
     @staticmethod
     def get_original_class():
         return torch.jit.TopLevelTracedModule
+
 
 class TorchSizeWrapper(SyftSerializableWrapper):
     @staticmethod

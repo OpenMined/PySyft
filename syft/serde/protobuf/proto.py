@@ -7,6 +7,7 @@ https://github.com/OpenMined/syft-proto (`syft_proto` module) is included as
 a dependency in setup.py.
 """
 
+
 def set_protobuf_id(field, id):
     if type(id) == type("str"):
         field.id_str = id
