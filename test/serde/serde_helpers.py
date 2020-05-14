@@ -8,10 +8,11 @@ import io
 
 import syft
 from syft.serde import msgpack
+from syft.workers.virtual import VirtualWorker
 
 # Make dict of type codes
 CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.simplifiers.items():
+for cls, simplifier in msgpack.serde.get_simplifiers():
     CODE[cls] = simplifier[0]
 FORCED_CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
@@ -808,6 +809,7 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.input_types),
                 ),
             ),
             "cmp_detailed": compare,
@@ -828,6 +830,9 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.torchscript
                     ),  # Torchscript
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan.input_types
+                    ),
                 ),
             ),
             "cmp_detailed": compare,
@@ -865,6 +870,54 @@ def make_role(**kwargs):
                     role.output_placeholder_ids,
                 ),
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_type(**kwargs):
+    serialized_type = type("test")
+
+    def compare(detailed, original):
+        assert type(detailed) == type(original)
+        assert detailed == original
+        return True
+
+    return [
+        {
+            "value": serialized_type,
+            "simplified": (msgpack.serde._simplify(syft.hook.local_worker, serialized_type)),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_nested_type_wrapper(**kwargs):
+    reference_serialized_input = (
+        (type(torch.tensor([1.0, -2.0])), type(torch.tensor([1, 2]))),
+        {
+            "k1": [type(5), (type(True), type(False))],
+            "k2": {
+                "kk1": [type(torch.tensor([5, 7])), type(torch.tensor([5, 7]))],
+                "kk2": [type(True), (type(torch.tensor([9, 10])),)],
+            },
+            "k3": type(torch.tensor([8])),
+        },
+        type(torch.tensor([11, 12])),
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
+    )
+
+    wrapper = syft.execution.plan.NestedTypeWrapper()
+    wrapper.nested_input_types = reference_serialized_input
+
+    def compare(detailed, original):
+        assert detailed.nested_input_types == original.nested_input_types
+        return True
+
+    return [
+        {
+            "value": wrapper,
+            "simplified": syft.serde.msgpack.serde._simplify(syft.hook.local_worker, wrapper),
             "cmp_detailed": compare,
         }
     ]
@@ -919,12 +972,10 @@ def make_protocol(**kwargs):
     alice = kwargs["workers"]["alice"]
     bob = kwargs["workers"]["bob"]
 
-    @syft.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        # fetch tensors from stores
-        # TODO fix fetch once we have the real implementation of it
-        tensor1 = roles["alice"].load(torch.tensor([1]))
-        tensor2 = roles["bob"].load(torch.tensor([1]))
+    @syft.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.fetch(torch.tensor([1]))
+        tensor2 = bob.fetch(torch.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -1209,16 +1260,20 @@ def make_trainconfig(**kwargs):
     ]
 
 
-# syft.workers.base.BaseWorker
-def make_baseworker(**kwargs):
-    worker = kwargs["workers"]["serde_worker"]
+# syft.workers.virtual.VirtualWorker
+def make_virtual_worker(**kwargs):
+    worker = VirtualWorker(
+        id=f"serde-worker-{cls.__name__}",
+        hook=kwargs["workers"]["serde_worker"].hook,
+        auto_add=False,
+    )
 
     t = torch.rand(3, 3)
     with worker.registration_enabled():
         worker.register_obj(t)
 
     def compare(detailed, original):
-        assert isinstance(detailed, syft.workers.base.BaseWorker)
+        assert isinstance(detailed, syft.workers.virtual.VirtualWorker)
         assert detailed.id == original.id
         return True
 
@@ -1226,8 +1281,8 @@ def make_baseworker(**kwargs):
         {
             "value": worker,
             "simplified": (
-                CODE[syft.workers.base.BaseWorker],
-                ((CODE[str], (b"serde-worker-BaseWorker",)),),  # id (str)
+                CODE[syft.workers.virtual.VirtualWorker],
+                ((CODE[str], (b"serde-worker-VirtualWorker",)),),  # id (str)
             ),
             "cmp_detailed": compare,
         },
@@ -1236,10 +1291,12 @@ def make_baseworker(**kwargs):
             "forced": True,
             "value": worker,
             "simplified": (
-                FORCED_CODE[syft.workers.base.BaseWorker],
+                FORCED_CODE[syft.workers.virtual.VirtualWorker],
                 (
-                    (CODE[str], (b"serde-worker-BaseWorker",)),  # id (str)
-                    msgpack.serde._simplify(worker, worker._objects),  # (dict) _objects
+                    (CODE[str], (b"serde-worker-VirtualWorker",)),  # id (str)
+                    msgpack.serde._simplify(
+                        worker, worker.object_store._objects
+                    ),  # (dict) _objects
                     worker.auto_add,  # (bool) auto_add
                 ),
             ),
@@ -1944,6 +2001,29 @@ def make_gradfn(**kwargs):
                         msgpack.serde._simplify(kwargs["workers"]["serde_worker"], y_share.child),
                     ),
                 ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_paillier(**kwargs):
+    # TODO: Add proper testing for paillier tensor
+
+    def compare(original, detailed):
+        return True
+
+    tensor = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor()
+    simplfied = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor.simplify(
+        kwargs["workers"]["serde_worker"], tensor
+    )
+
+    return [
+        {
+            "value": tensor,
+            "simplified": (
+                CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
+                simplfied,
             ),
             "cmp_detailed": compare,
         }

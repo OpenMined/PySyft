@@ -14,6 +14,7 @@ from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft.serde.syft_serializable import SyftSerializable
 
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
@@ -24,7 +25,7 @@ from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 
 
-class Message(ABC):
+class Message(ABC, SyftSerializable):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
@@ -56,7 +57,7 @@ class TensorCommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
-    objects contained in the worker._objects registry (or whatever the official object store is
+    objects contained in the worker.object_store registry (or whatever the official object store is
     backed with in the case that it's been overridden). Semantically, one could view all Messages
     as a kind of action, but when we say action this is what we mean. For example, telling a
     worker to take two tensors and add them together is an action. However, sending an object
@@ -205,6 +206,10 @@ class TensorCommandMessage(Message):
         detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
         return TensorCommandMessage(detailed_action)
 
+    @staticmethod
+    def get_protobuf_schema() -> CommandMessagePB:
+        return CommandMessagePB
+
 
 class ObjectMessage(Message):
     """Send an object to another worker using this message type.
@@ -279,6 +284,10 @@ class ObjectMessage(Message):
         object_msg = ObjectMessage(object_)
 
         return object_msg
+
+    @staticmethod
+    def get_protobuf_schema() -> ObjectMessagePB:
+        return ObjectMessagePB
 
 
 class ObjectRequestMessage(Message):

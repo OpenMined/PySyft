@@ -7,9 +7,10 @@ import syft as sy
 from syft.generic.pointers.object_wrapper import ObjectWrapper
 from syft.workers.abstract import AbstractWorker
 from syft.workers.base import BaseWorker
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class TrainConfig:
+class TrainConfig(SyftSerializable):
     """TrainConfig abstraction.
 
     A wrapper object that contains all that is needed to run a training loop

@@ -200,7 +200,7 @@ class PrivateGridNetwork(AbstractGrid):
             # Check every state used by this plan
             for state_id in model.state.state_ids:
                 hook = host.hook
-                obj = hook.local_worker._objects.get(state_id)
+                obj = hook.local_worker.object_store.get_obj(state_id)
 
                 # Decrease in Tensor Hierarchy.
                 # (we want be a AdditiveSharingTensor to recover workers/crypto_provider addresses)

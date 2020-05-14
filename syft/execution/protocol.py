@@ -13,13 +13,13 @@ import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
 
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.workers.abstract import AbstractWorker
+from syft.workers.virtual import VirtualWorker
 
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
@@ -33,13 +33,17 @@ class func2protocol(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, states={}):
+    def __init__(self, roles: list = [], args_shape: dict = {}, states={}):
+        self.role_names = roles
         self.args_shape = args_shape
         self.states = states
 
     def __call__(self, protocol_function):
         # create the roles present in decorator
-        roles = {role_id: Role() for role_id in self.args_shape.keys()}
+        roles = {
+            role_id: Role(worker=VirtualWorker(id=role_id, hook=sy.local_worker.hook))
+            for role_id in self.role_names
+        }
         for role_id, state_tensors in self.states.items():
             for tensor in state_tensors:
                 roles[role_id].register_state_tensor(tensor)
@@ -52,19 +56,16 @@ class func2protocol(object):
             owner=sy.local_worker,
         )
 
-        # Build the protocol automatically
-        # TODO We can always build automatically, can't we? Except if workers doesn't have
-        # tensors yet in store. Do we handle that?
-        if self.args_shape:
-            try:
-                protocol.build()
-            except TypeError as e:
-                raise ValueError(
-                    "Automatic build using @func2protocol failed!\nCheck that:\n"
-                    " - you have provided the correct number of shapes in args_shape\n"
-                    " - you have no simple numbers like int or float as args. If you do "
-                    "so, please consider using a tensor instead."
-                )
+        try:
+            protocol.build()
+        except TypeError as e:
+            raise ValueError(
+                "Automatic build using @func2protocol failed!\nCheck that:\n"
+                " - you have provided the correct number of shapes in args_shape\n"
+                " - you have no simple numbers like int or float as args. If you do "
+                "so, please consider using a tensor instead."
+            )
+
         return protocol
 
 
@@ -143,7 +144,7 @@ class Protocol(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        results = self.forward(self.roles)
+        results = self.forward(*self.roles.values())
 
         # Disable tracing
         self.toggle_tracing(False)
@@ -324,3 +325,7 @@ class Protocol(AbstractObject):
             tags=tags,
             description=description,
         )
+
+    @staticmethod
+    def get_protobuf_schema() -> ProtocolPB:
+        return ProtocolPB
