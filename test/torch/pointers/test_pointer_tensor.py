@@ -574,7 +574,7 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    assert len(alice.object_store._objects) == 8
+    assert len(alice.object_store._objects) == 2
 
 
 def test_inplace_ops_on_remote_long_tensor(workers):

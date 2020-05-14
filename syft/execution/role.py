@@ -171,14 +171,19 @@ class Role(SyftSerializable):
 
         return tuple(p.child for p in output_placeholders)
 
-    def fetch(self, tensor):
-        """ Fetch tensors used in a protocol from worker's local store
+    def load(self, tensor):
+        """ Load tensors used in a protocol from worker's local store
         """
-        # TODO mock for now, fetch will use worker's store in a future work
+        # TODO mock for now, load will use worker's store in a future work
         if self.tracing:
             return PlaceHolder.create_from(tensor, role=self, tracing=True)
         else:
             return tensor
+
+    def load_state(self):
+        """ Load tensors used in a protocol from worker's local store
+        """
+        return self.state.read()
 
     def instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
