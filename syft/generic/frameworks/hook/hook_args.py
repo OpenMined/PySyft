@@ -675,9 +675,14 @@ def register_response(
         # Load the utility function to register the response and transform tensors with pointers
         register_response_function = register_response_functions[attr_id]
         # Try running it
-        new_response = register_response_function(response, response_ids=response_ids, owner=owner)
+        new_response = register_response_function(
+            response,
+            response_ids=response_ids,
+            owner=owner,
+            de_register_obj=not is_identity_operation,
+        )
 
-    except (IndexError, KeyError, AssertionError):  # Update the function in cas of an error
+    except (IndexError, KeyError, AssertionError):  # Update the function in case of an error
         register_response_function = build_register_response_function(response)
         # Store this utility function in the registry
         register_response_functions[attr_id] = register_response_function
