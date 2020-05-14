@@ -219,9 +219,7 @@ class DPF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = np.random.randint(
-            0, 2 ** n, size=(n_values,), dtype=np.uint64
-        )  # this is IID in int32
+        alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
         beta = np.array([1])
         α = bit_decomposition(alpha)
         s, t, CW = (
@@ -275,9 +273,7 @@ class DIF:
 
     @staticmethod
     def keygen(n_values=1):
-        alpha = np.random.randint(
-            0, 2 ** n, size=(n_values,), dtype=np.uint64
-        )  # this is IID in int32
+        alpha = np.random.randint(0, 2 ** n, size=(n_values,), dtype=np.uint64)
         α = bit_decomposition(alpha)
         s, σ, t, τ, CW, CW_leaf = (
             Array(n + 1, 2, λs, n_values),
@@ -364,7 +360,7 @@ def bit_decomposition(x):
     x = x.reshape(n_values, 4, 1)
     x = x >> np.arange(8, dtype=np.uint8)
     x = x & 0b1
-    x = np.flip(x.reshape(n_values, -1), axis=1).T
+    x = np.flip(x.reshape(n_values, -1)[:, :n], axis=1).T
     return x
 
 
