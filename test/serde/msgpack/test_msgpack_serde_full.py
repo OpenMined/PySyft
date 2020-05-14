@@ -58,8 +58,6 @@ samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
 
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
-
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
 samples[

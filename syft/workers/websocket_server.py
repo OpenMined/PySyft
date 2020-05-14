@@ -12,7 +12,6 @@ import torch
 import websockets
 
 import syft as sy
-from syft.federated.federated_client import FederatedClient
 from syft.generic.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
@@ -22,7 +21,7 @@ from syft.exceptions import ResponseSignatureError
 tblib.pickling_support.install()
 
 
-class WebsocketServerWorker(VirtualWorker, FederatedClient):
+class WebsocketServerWorker(VirtualWorker):
     def __init__(
         self,
         hook,

@@ -1198,68 +1198,6 @@ def make_string(**kwargs):
     ]
 
 
-# syft.federated.train_config.TrainConfig
-def make_trainconfig(**kwargs):
-    class Model(torch.jit.ScriptModule):
-        def __init__(self):
-            super(Model, self).__init__()
-            self.w1 = torch.nn.Parameter(torch.randn(10, 1), requires_grad=True)
-            self.b1 = torch.nn.Parameter(torch.randn(1), requires_grad=True)
-
-        @torch.jit.script_method
-        def forward(self, x):  # pragma: no cover
-            x = x @ self.w1 + self.b1
-            return x
-
-    class Loss(torch.jit.ScriptModule):
-        def __init__(self):
-            super(Loss, self).__init__()
-
-        @torch.jit.script_method
-        def forward(self, pred, target):  # pragma: no cover
-            return ((target.view(pred.shape).float() - pred.float()) ** 2).mean()
-
-    loss = Loss()
-    model = Model()
-    conf = syft.federated.train_config.TrainConfig(
-        model=model, loss_fn=loss, batch_size=2, optimizer="SGD", optimizer_args={"lr": 0.1}
-    )
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.federated.train_config.TrainConfig
-        assert detailed.id == original.id
-        assert detailed._model_id == original._model_id
-        assert detailed._loss_fn_id == original._loss_fn_id
-        assert detailed.batch_size == original.batch_size
-        assert detailed.epochs == original.epochs
-        assert detailed.optimizer == original.optimizer
-        assert detailed.optimizer_args == original.optimizer_args
-        assert detailed.max_nr_batches == original.max_nr_batches
-        assert detailed.shuffle == original.shuffle
-        return True
-
-    return [
-        {
-            "value": conf,
-            "simplified": (
-                CODE[syft.federated.train_config.TrainConfig],
-                (
-                    None,  # (int) _model_id
-                    None,  # (int) _loss_fn_id
-                    2,  # (int) batch_size
-                    1,  # (int) epochs
-                    (CODE[str], (b"SGD",)),  # (str) optimizer
-                    (CODE[dict], (((CODE[str], (b"lr",)), 0.1),)),  # (dict) optimizer_args
-                    conf.id,  # (int or str)
-                    -1,  # (int) max_nr_batches
-                    True,  # (bool) shuffle
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
-
-
 # syft.workers.virtual.VirtualWorker
 def make_virtual_worker(**kwargs):
     worker = VirtualWorker(
