@@ -44,7 +44,7 @@ samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
-
+samples[syft.syft.messaging.message.IsNoneMessage] = make_isnonemessage
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
