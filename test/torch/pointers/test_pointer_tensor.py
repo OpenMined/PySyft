@@ -339,7 +339,7 @@ def test_move(workers):
 def test_garbage_collect_move(workers):
     bob, alice, me = (workers["bob"], workers["alice"], workers["me"])
     a = torch.ones(1, 5).send(alice)
-    b = a.copy().move(bob)
+    b = a.move(bob)
 
     assert len(alice.object_store._objects) == 7
     assert len(bob.object_store._objects) == 7
