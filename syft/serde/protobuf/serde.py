@@ -2,71 +2,140 @@ from collections import OrderedDict
 
 import inspect
 import re
+from dataclasses import dataclass
+
 import syft
-from syft import dependency_check
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
 from syft.serde import compression
-from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
 from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
-
-if dependency_check.torch_available:
-    from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
-else:
-    MAP_TORCH_PROTOBUF_TRANSLATORS = {}
-
-# if dependency_check.tensorflow_available:
-#     from syft_tensorflow.serde import MAP_TF_PROTOBUF_TRANSLATORS
-# else:
-#     MAP_TF_PROTOBUF_TRANSLATORS = {}
-
-from syft.serde.protobuf.proto import MAP_PYTHON_TO_PROTOBUF_CLASSES
-
-# Maps a type to its bufferizer and unbufferizer functions
-MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
-    list(MAP_NATIVE_PROTOBUF_TRANSLATORS.items())
-    + list(MAP_TORCH_PROTOBUF_TRANSLATORS.items())
-    # + list(MAP_TF_PROTOBUF_TRANSLATORS.items())
-)
-
-# If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = None
-
-# If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
-# OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
-OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
-
-# For registering syft objects with custom bufferize and unbufferize methods
-# EXCEPTION_PROTOBUF_TRANSLATORS = [GetNotPermittedError, ResponseSignatureError]
-EXCEPTION_PROTOBUF_TRANSLATORS = []
+from syft.serde.syft_serializable import SyftSerializableWrapper
 
 
-def get_bufferizers():
-    """
-        Function to retrieve the bufferizers, so that no other function uses directly de global elements.
-    """
-    init_global_vars()
-    return bufferizers.items()
+class MetaProtobufGlobalState(type):
+    @staticmethod
+    def wrapper(wrapped_func):
+        @property
+        def wrapper(self):
+            self = self.update()
+            return wrapped_func.__get__(self, type(self))
+        return wrapper
 
+    def __new__(meta, classname, bases, class_dict):
+        for attr_name, attr_body in class_dict.items():
+            if isinstance(attr_body, property):
+                class_dict[attr_name] = MetaProtobufGlobalState.wrapper(attr_body)
+        return type.__new__(meta, classname, bases, class_dict)
 
-def init_global_vars():
-    """
-        Function to initialise at the first usage all the global elements used in protobuf/serde.py and protobuf/proto.py.
-    """
-    global OBJ_PROTOBUF_TRANSLATORS, bufferizers, forced_full_bufferizers, unbufferizers, MAP_PYTHON_TO_PROTOBUF_CLASSES
-    if OBJ_PROTOBUF_TRANSLATORS is None:
-        OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
-        for proto_class in OBJ_PROTOBUF_TRANSLATORS:
-            MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
-        (
-            bufferizers,
-            forced_full_bufferizers,
-            unbufferizers,
-        ) = _generate_bufferizers_and_unbufferizers()
+@dataclass
+class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
+    _MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict()
+    _OBJ_PROTOBUF_TRANSLATORS = []
+    _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
+    _EXCEPTION_PROTOBUF_TRANSLATORS = []
+    _MAP_PYTHON_TO_PROTOBUF_CLASSES = {}
+    _bufferizers = OrderedDict()
+    _forced_full_bufferizers = OrderedDict()
+    _unbufferizers = OrderedDict()
+    _no_bufferizers_found = set()
+    _no_full_bufferizers_found = set()
+    _inherited_bufferizers_found = OrderedDict()
+
+    stale_state = True
+
+    @property
+    def map_to_protobuf_translators(self):
+        return self._MAP_TO_PROTOBUF_TRANSLATORS
+
+    @property
+    def obj_protobuf_translators(self):
+        return self._OBJ_PROTOBUF_TRANSLATORS
+
+    @property
+    def obj_force_full_protobuf_translators(self):
+        return self._OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS
+
+    @property
+    def exception_protobuf_translators(self):
+        return self._EXCEPTION_PROTOBUF_TRANSLATORS
+
+    @property
+    def forced_full_bufferizers(self):
+        return self._forced_full_bufferizers
+
+    @property
+    def bufferizers(self):
+        return self._bufferizers
+
+    @property
+    def unbufferizers(self):
+        return self._unbufferizers
+
+    @property
+    def no_bufferizers_found(self):
+        return self._no_bufferizers_found
+
+    @property
+    def no_full_bufferizers_found(self):
+        return self._no_full_bufferizers_found
+
+    @property
+    def inherited_bufferizers_found(self):
+        return self._inherited_bufferizers_found
+
+    def update(self):
+        if not self.stale_state:
+            return self
+
+        self._MAP_TO_PROTOBUF_TRANSLATORS = {wrapper_type.get_original_class() : (wrapper_type.bufferize, wrapper_type.unbufferize) for wrapper_type in get_protobuf_subclasses(SyftSerializableWrapper)}
+
+        self._OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+
+        for proto_class in self._OBJ_PROTOBUF_TRANSLATORS:
+            self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
+
+        for proto_class, proto_schema in [(wrapper_type.get_original_class(), wrapper_type.get_protobuf_schema()) for wrapper_type in get_protobuf_subclasses((SyftSerializableWrapper))]:
+            self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_schema
+
+        def _add_bufferizer_and_unbufferizer(
+                curr_type, proto_type, bufferizer, unbufferizer, forced=False
+        ):
+
+            if forced:
+                self._forced_full_bufferizers[curr_type] = bufferizer
+                self._unbufferizers[proto_type] = unbufferizer
+            else:
+                self._bufferizers[curr_type] = bufferizer
+                self._unbufferizers[proto_type] = unbufferizer
+
+        # Register native and torch types
+        for curr_type in self._MAP_TO_PROTOBUF_TRANSLATORS:
+            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[curr_type]
+            bufferizer, unbufferizer = self._MAP_TO_PROTOBUF_TRANSLATORS[curr_type]
+            _add_bufferizer_and_unbufferizer(curr_type, proto_type, bufferizer, unbufferizer)
+
+        # Register syft objects with custom bufferize and unbufferize methods
+        for syft_type in self._OBJ_PROTOBUF_TRANSLATORS + self._EXCEPTION_PROTOBUF_TRANSLATORS:
+            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
+            bufferizer, unbufferizer = syft_type.bufferize, syft_type.unbufferize
+            _add_bufferizer_and_unbufferizer(syft_type, proto_type, bufferizer, unbufferizer)
+
+        # Register syft objects with custom force_bufferize and force_unbufferize methods
+        for syft_type in self._OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS:
+            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
+            force_bufferizer, force_unbufferizer = (
+                syft_type.force_bufferize,
+                syft_type.force_unbufferize,
+            )
+            _add_bufferizer_and_unbufferizer(
+                syft_type, proto_type, force_bufferizer, force_unbufferizer, forced=True
+            )
+        self.stale_state = False
+        return self
 
 
 ## SECTION: High Level Translation Router
@@ -84,15 +153,15 @@ def _force_full_bufferize(worker: AbstractWorker, obj: object) -> object:
     # check to see if there is a full bufferize converter
     # for this type. If there is, return the full converted object.
     current_type = type(obj)
-    if current_type in forced_full_bufferizers:
+    if current_type in protobuf_global_state.forced_full_bufferizers:
         result = (
-            forced_full_bufferizers[current_type][0],
-            forced_full_bufferizers[current_type][1](worker, obj),
+            protobuf_global_state.forced_full_bufferizers[current_type][0],
+            protobuf_global_state.forced_full_bufferizers[current_type][1](worker, obj),
         )
         return result
     # If we already tried to find a full bufferizer for this type but failed, we should
     # bufferize it instead.
-    elif current_type in no_full_bufferizers_found:
+    elif current_type in protobuf_global_state.no_full_bufferizers_found:
         return _bufferize(worker, obj)
     else:
         # If the object type is not in forced_full_bufferizers,
@@ -104,87 +173,22 @@ def _force_full_bufferize(worker: AbstractWorker, obj: object) -> object:
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
-            if inheritance_type in forced_full_bufferizers:
+            if inheritance_type in protobuf_global_state.forced_full_bufferizers:
                 # Store the inheritance_type in forced_full_bufferizers so next
                 # time we see this type serde will be faster.
-                forced_full_bufferizers[current_type] = forced_full_bufferizers[inheritance_type]
+                protobuf_global_state.forced_full_bufferizers[current_type] = protobuf_global_state.forced_full_bufferizers[inheritance_type]
                 result = (
-                    forced_full_bufferizers[current_type][0],
-                    forced_full_bufferizers[current_type][1](worker, obj),
+                    protobuf_global_state.forced_full_bufferizers[current_type][0],
+                    protobuf_global_state.forced_full_bufferizers[current_type][1](worker, obj),
                 )
                 return result
 
         # If there is not a full_bufferizer for this
         # object, then we bufferize it.
-        no_full_bufferizers_found.add(current_type)
+        protobuf_global_state.no_full_bufferizers_found.add(current_type)
         return _bufferize(worker, obj)
 
 
-## SECTION: dinamically generate bufferizers and unbufferizers
-def _generate_bufferizers_and_unbufferizers():
-    """Generate bufferizers, forced full bufferizers and unbufferizers,
-    by registering native and torch types, syft objects with custom
-    bufferize and unbufferize methods, or syft objects with custom
-    force_bufferize and force_unbufferize methods.
-
-    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
-    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
-    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
-    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
-    Returns:
-        The bufferizers, forced_full_bufferizers, unbufferizers
-    """
-    bufferizers = OrderedDict()
-    forced_full_bufferizers = OrderedDict()
-    unbufferizers = OrderedDict()
-
-    def _add_bufferizer_and_unbufferizer(
-        curr_type, proto_type, bufferizer, unbufferizer, forced=False
-    ):
-
-        if forced:
-            forced_full_bufferizers[curr_type] = bufferizer
-            unbufferizers[proto_type] = unbufferizer
-        else:
-            bufferizers[curr_type] = bufferizer
-            unbufferizers[proto_type] = unbufferizer
-
-    # Register native and torch types
-    for curr_type in MAP_TO_PROTOBUF_TRANSLATORS:
-        proto_type = MAP_PYTHON_TO_PROTOBUF_CLASSES[curr_type]
-        bufferizer, unbufferizer = MAP_TO_PROTOBUF_TRANSLATORS[curr_type]
-        _add_bufferizer_and_unbufferizer(curr_type, proto_type, bufferizer, unbufferizer)
-
-    # Register syft objects with custom bufferize and unbufferize methods
-    for syft_type in OBJ_PROTOBUF_TRANSLATORS + EXCEPTION_PROTOBUF_TRANSLATORS:
-        proto_type = MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
-        bufferizer, unbufferizer = syft_type.bufferize, syft_type.unbufferize
-        _add_bufferizer_and_unbufferizer(syft_type, proto_type, bufferizer, unbufferizer)
-
-    # Register syft objects with custom force_bufferize and force_unbufferize methods
-    for syft_type in OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS:
-        proto_type = MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
-        force_bufferizer, force_unbufferizer = (
-            syft_type.force_bufferize,
-            syft_type.force_unbufferize,
-        )
-        _add_bufferizer_and_unbufferizer(
-            syft_type, proto_type, force_bufferizer, force_unbufferizer, forced=True
-        )
-
-    return bufferizers, forced_full_bufferizers, unbufferizers
-
-
-bufferizers, forced_full_bufferizers, unbufferizers = None, None, None
-# Store types that are not simplifiable (int, float, None) so we
-# can ignore them during serialization.
-no_bufferizers_found, no_full_bufferizers_found = set(), set()
-# Store types that use simplifiers from their ancestors so we
-# can look them up quickly during serialization.
-inherited_bufferizers_found = OrderedDict()
-
-
-## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,
     worker: AbstractWorker = None,
@@ -222,8 +226,6 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
-
-    init_global_vars()
 
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
@@ -294,8 +296,6 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
         object: the deserialized form of the binary input.
     """
 
-    init_global_vars()
-
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -334,24 +334,28 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # Check to see if there is a bufferizer
     # for this type. If there is, return the bufferized object.
     # breakpoint()
-    init_global_vars()
     current_type = type(obj)
-    if current_type in bufferizers:
-        result = bufferizers[current_type](worker, obj, **kwargs)
+    if current_type in protobuf_global_state.bufferizers:
+        result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
         return result
-    elif current_type in inherited_bufferizers_found:
+    elif current_type in protobuf_global_state.inherited_bufferizers_found:
         result = (
-            inherited_bufferizers_found[current_type][0],
-            inherited_bufferizers_found[current_type][1](worker, obj, **kwargs),
+            protobuf_global_state.inherited_bufferizers_found[current_type][0],
+            protobuf_global_state.inherited_bufferizers_found[current_type][1](worker, obj, **kwargs),
         )
         return result
-
     # If we already tried to find a bufferizer for this type but failed, we should
     # just return the object as it is.
-    elif current_type in no_bufferizers_found:
+    elif current_type in protobuf_global_state.no_bufferizers_found:
         raise Exception(f"No corresponding Protobuf message found for {current_type}")
 
     else:
+
+        protobuf_global_state.stale_state = True
+        if current_type in protobuf_global_state.bufferizers:
+            result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
+            return result
+
         # If the object type is not in bufferizers,
         # we check the classes that this object inherits from.
         # `inspect.getmro` give us all types this object inherits
@@ -361,14 +365,14 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
-            if inheritance_type in bufferizers:
+            if inheritance_type in protobuf_global_state.bufferizers:
                 # Store the inheritance_type in bufferizers so next time we see this type
                 # serde will be faster.
-                inherited_bufferizers_found[current_type] = bufferizers[inheritance_type]
-                result = inherited_bufferizers_found[current_type](worker, obj, **kwargs)
+                protobuf_global_state.inherited_bufferizers_found[current_type] = protobuf_global_state.bufferizers[inheritance_type]
+                result = protobuf_global_state.inherited_bufferizers_found[current_type](worker, obj, **kwargs)
                 return result
 
-        no_bufferizers_found.add(current_type)
+        protobuf_global_state.no_bufferizers_found.add(current_type)
         raise Exception(f"No corresponding Protobuf message found for {current_type}")
 
 
@@ -388,13 +392,15 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
-
-    init_global_vars()
-
     current_type = type(obj)
-    if current_type in unbufferizers:
-        return unbufferizers[current_type](worker, obj, **kwargs)
+    if current_type in protobuf_global_state.unbufferizers:
+        return protobuf_global_state.unbufferizers[current_type](worker, obj, **kwargs)
     else:
+        protobuf_global_state.stale_state = True
+        print(current_type)
+        if current_type in protobuf_global_state.unbufferizers:
+            result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
+            return result
         raise Exception(f"No unbufferizer found for {current_type}")
 
 
@@ -433,3 +439,5 @@ def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
 
 def _camel2snake(string: str):
     return string[0].lower() + re.sub(r"(?!^)[A-Z]", lambda x: "_" + x.group(0).lower(), string[1:])
+
+protobuf_global_state = ProtobufGlobalState()

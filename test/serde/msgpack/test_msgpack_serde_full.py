@@ -96,7 +96,7 @@ samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in msgpack.serde.simplifiers.items():
+    for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 
@@ -165,3 +165,8 @@ def test_serde_simplify(cls, workers, hook, start_remote_worker):
             assert sample.get("cmp_simplified")(simplified_obj, expected_simplified_obj) is True
         else:
             assert simplified_obj == expected_simplified_obj
+
+    print("===")
+    print(msgpack.serde.msgpack_global_state.no_simplifiers_found)
+    print(msgpack.serde.msgpack_global_state.no_full_simplifiers_found)
+    print("===")

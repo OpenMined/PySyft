@@ -12,10 +12,10 @@ from syft.workers.virtual import VirtualWorker
 
 # Make dict of type codes
 CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.get_simplifiers():
+for cls, simplifier in msgpack.serde.msgpack_global_state.simplifiers.items():
     CODE[cls] = simplifier[0]
 FORCED_CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
+for cls, simplifier in msgpack.serde.msgpack_global_state.forced_full_simplifiers.items():
     FORCED_CODE[cls] = simplifier[0]
 
 ########################################################################
