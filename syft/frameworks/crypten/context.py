@@ -49,7 +49,6 @@ def _new_party(cid, func, rank, world_size, master_addr, master_port, func_args,
 
 def run_party(cid, func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
     """Start crypten party localy and run computation.
-
     Args:
         cid (int): CrypTen computation id.
         func (function): computation to be done.
@@ -59,7 +58,6 @@ def run_party(cid, func, rank, world_size, master_addr, master_port, func_args, 
         master_port (int or str): port of the master party (party with rank 0).
         func_args (list): arguments to be passed to func.
         func_kwargs (dict): keyword arguments to be passed to func.
-
     Returns:
         The return value of func.
     """
@@ -81,7 +79,6 @@ def run_party(cid, func, rank, world_size, master_addr, master_port, func_args, 
 def _send_party_info(worker, rank, msg, return_values, model=None):  # pragma: no cover
     """Send message to worker with necessary information to run a crypten party.
     Add response to return_values dictionary.
-
     Args:
         worker (BaseWorker): worker to send the message to.
         rank (int): rank of the crypten party.
@@ -99,7 +96,6 @@ def run_multiworkers(
     workers: list, master_addr: str, master_port: int = 15463, model=None, dummy_input=None
 ):
     """Defines decorator to run function across multiple workers.
-
     Args:
         workers (list): workers (parties) to be involved in the computation.
         master_addr (str): IP address of the master party (party with rank 0).

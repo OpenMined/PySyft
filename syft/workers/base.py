@@ -551,7 +551,11 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+        self,
+        obj_id: Union[str, int],
+        location: "BaseWorker",
+        user=None,
+        reason: str = ""
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -782,12 +786,9 @@ class BaseWorker(AbstractWorker):
         self, protocol_id: Union[str, int], location: "BaseWorker", copy: bool = False
     ) -> "Plan":  # noqa: F821
         """Fetch a copy of a the protocol with the given `protocol_id` from the worker registry.
-
         This method is executed for local execution.
-
         Args:
             protocol_id: A string indicating the protocol id.
-
         Returns:
             A protocol if a protocol with the given `protocol_id` exists. Returns None otherwise.
         """

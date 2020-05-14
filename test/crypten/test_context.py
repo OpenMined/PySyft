@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import syft as sy
 
 from syft.frameworks.crypten.context import run_multiworkers, run_party
+from syft.frameworks.crypten.model import OnnxModel
 from syft.frameworks.crypten import utils
 
 
@@ -204,3 +205,38 @@ def test_duplicate_ids(workers):
 
     with pytest.raises(RuntimeError):
         return_values = jail_func()
+
+
+def test_plan_model_inference(workers):
+    # alice and bob
+    n_workers = 2
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    bob._objects.clear()
+    alice._objects.clear()
+
+    dummy_input = th.empty(1, 1, 28, 28)
+    x_bob = th.rand(10, 1, 28, 28).tag("crypten_data").send(bob)
+    dummy_model = (
+        OnnxModel(utils.pytorch_to_onnx(ExampleNet(), dummy_input)).tag("crypten_model").send(alice)
+    )
+
+    @run_multiworkers([alice, bob], master_addr="127.0.0.1")
+    @sy.func2plan()
+    def plan_func_model(crypten=crypten):
+        x_bob_enc = crypten.load("crypten_data", 1)
+        model = crypten.load("crypten_model", 0)
+        model.encrypt()
+
+        y = model(x_bob_enc)
+        return y.get_plain_text()
+
+    return_values = plan_func_model()
+
+    ref_value = return_values[0]
+
+    for rank in range(n_workers):
+        assert return_values[rank].shape == th.Size([10, 2])
+        assert th.all(return_values[rank] == ref_value)

@@ -89,6 +89,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
         owner: "AbstractWorker" = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
+        **kwargs,
     ) -> "ObjectPointer":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -248,8 +249,6 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
         Returns:
             An AbstractObject object which is the tensor (or chain) that this
             object used to point to on a location.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
         """
 
         if self.point_to_attr is not None:

@@ -5,29 +5,60 @@ from syft.execution.plan import Plan
 import crypten
 import torch as th
 
-methods_to_hook = ["load"]
+
+class CrypTenPlanBuild(object):
+
+    @staticmethod
+    def f_return_none(*args, **kwargs):
+        return None
+
+    @staticmethod
+    def f_return_cryptensor(*args, **kwargs):
+        return crypten.cryptensor(th.zeros([]))
+
+    @staticmethod
+    def f_return_model_or_cryptensor(*args, **kwargs):
+        if args[0] == "crypten_model":
+            return crypten.nn.Module()
+        else:
+            return crypten.cryptensor(th.zeros([]))
+
+
+crypten_plan_hook = {
+    crypten : {
+        "load": CrypTenPlanBuild.f_return_model_or_cryptensor,
+    },
+    crypten.nn.Module: {
+        "encrypt": CrypTenPlanBuild.f_return_none,
+        "__call__": CrypTenPlanBuild.f_return_cryptensor,
+    }
+}
 
 
 def hook_plan_building():
-    """When builing the plan we should not call directly specific
+    """
+    When builing the plan we should not call directly specific
     methods from CrypTen and as such we return here some "dummy" responses
     only to build the plan.
     """
 
-    f = lambda *args, **kwargs: crypten.cryptensor(th.zeros([]))
-    for method_name in methods_to_hook:
-        method = getattr(crypten, method_name)
-        setattr(crypten, f"native_{method_name}", method)
-        setattr(crypten, method_name, f)
+    for module, replace_dict in crypten_plan_hook.items():
+        for method_name, f_replace in replace_dict.items():
+            method = getattr(module, method_name)
+            setattr(module, f"native_{method_name}", method)
+            setattr(module, method_name, f_replace)
 
 
 def unhook_plan_building():
-    """After building the plan we unhook the methods such that
+    """
+    After building the plan we unhook the methods such that
     we call the "real" methods in the actual workers
     """
-    for method_name in methods_to_hook:
-        method = getattr(crypten, f"native_{method_name}")
-        setattr(crypten, method_name, method)
+
+    for module, replace_dict in crypten_plan_hook.items():
+        for method_name in replace_dict:
+            method = getattr(module, f"native_{method_name}")
+            setattr(module, method_name, method)
 
 
 def hook_crypten():

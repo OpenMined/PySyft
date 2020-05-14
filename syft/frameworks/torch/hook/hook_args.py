@@ -40,7 +40,11 @@ if dependency_check.crypten_available:
     forward_func[crypten.mpc.MPCTensor] = (
         lambda i: i.child if hasattr(i, "child") else ().throw(PureFrameworkTensorFoundError)
     )
-    backward_func[crypten.mpc.MPCTensor] = lambda i, **kwargs: i.wrap(**kwargs)
+
+    type_rule[crypten.nn.Module] = one
+    forward_func[crypten.nn.Module] = (
+        lambda i: i.child if hasattr(i, "child") else ().throw(PureFrameworkTensorFoundError)
+    )
 
 
 # Methods or functions whose signature changes a lot and that we don't want to "cache", because

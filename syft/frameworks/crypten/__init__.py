@@ -1,9 +1,12 @@
 import syft
 
+from syft.frameworks.crypten import utils
+
 import crypten.communicator as comm
 import crypten
 
 from syft.workers.base import BaseWorker
+from syft.generic.pointers.object_pointer import ObjectPointer
 
 
 RANK_TO_WORKER_ID = {
@@ -39,18 +42,29 @@ def get_worker_from_rank(rank: int, cid: int = None) -> BaseWorker:
 
 
 def load(tag: str, src: int, **kwargs):
+    if tag.startswith("crypten_model"):
+        worker = get_worker_from_rank(src)
+        results = worker.search(tag)
+        assert len(results) == 1
+
+        result = results[0]
+
+        if isinstance(result, ObjectPointer):
+            model = result.clone().get()
+        else:
+            model = result
+
+        return utils.onnx_to_crypten(model.serialized_model)
+
     if src == comm.get().get_rank():
         if CID is None:
             raise RuntimeError("CrypTen computation id is not set.")
 
         worker = get_worker_from_rank(src)
         results = worker.search(tag)
-
-        # Make sure there is only one result
         assert len(results) == 1
 
-        result = results[0]
-        result = crypten.load_from_party(preloaded=result, src=src, **kwargs)
+        result = crypten.load_from_party(preloaded=results[0], src=src, **kwargs)
 
     else:
         result = crypten.load_from_party(preloaded=-1, src=src, **kwargs)
