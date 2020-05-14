@@ -423,7 +423,7 @@ class BaseWorker(AbstractWorker):
         """
         obj = obj_msg.object
 
-        self.set_obj(obj)
+        self.object_store.set_obj(obj)
 
         if isinstance(obj, FrameworkTensor):
             tensor = obj
