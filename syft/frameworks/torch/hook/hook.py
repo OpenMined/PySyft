@@ -137,7 +137,7 @@ class TorchHook(FrameworkHook):
         else:
             self.local_worker.hook = self
 
-        self._virtual_workers = {self.local_worker}
+        self._syft_workers = {self.local_worker}
 
         self.to_auto_overload = {}
 
@@ -846,5 +846,5 @@ class TorchHook(FrameworkHook):
         self.torch.nn.utils.clip_grad_norm_ = clip_grad_norm_remote_
 
     def set_verbose(self, flag):
-        for workers in self._virtual_workers:
+        for workers in self._syft_workers:
             workers.verbose = flag

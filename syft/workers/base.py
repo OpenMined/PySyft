@@ -118,8 +118,8 @@ class BaseWorker(AbstractWorker):
         else:
             self.verbose = verbose
 
-        if isinstance(hook, sy.TorchHook) and hasattr(hook, "_virtual_workers"):
-            hook._virtual_workers.add(self)
+        if isinstance(hook, sy.TorchHook) and hasattr(hook, "_syft_workers"):
+            hook._syft_workers.add(self)
 
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
