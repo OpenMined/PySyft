@@ -180,7 +180,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         tensor,
         location: Union[AbstractWorker, str] = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
         owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
@@ -208,18 +207,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 something different than self.id, but again this is very rare
                 and most of the time, setting this means that you are probably
                 doing something you shouldn't.
-            register: A boolean parameter (default False) that determines
-                whether to register the new pointer that gets created. This is
-                set to false by default because most of the time a pointer is
-                initialized in this way so that it can be sent to someone else
-                (i.e., "Oh you need to point to my tensor? let me create a
-                pointer and send it to you" ). Thus, when a pointer gets
-                created, we want to skip being registered on the local worker
-                because the pointer is about to be sent elsewhere. However, if
-                you are initializing a pointer you intend to keep, then it is
-                probably a good idea to register it, especially if there is any
-                chance that someone else will initialize a pointer to your
-                pointer.
             owner: A AbstractWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
