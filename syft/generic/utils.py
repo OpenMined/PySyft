@@ -23,7 +23,6 @@ class memorize(dict):
 
 def allow_command(func):
     func_name = f"{func.__module__}.{func.__name__}"
-    print("++++", func_name)
     allowed_commands.update({func_name})
     return func
 

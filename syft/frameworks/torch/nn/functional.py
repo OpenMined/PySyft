@@ -346,7 +346,16 @@ def maxpool2d(input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=
 
     im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
-    res = im_reshaped.max(dim=-1)
+    # Optim
+    if im_reshaped.shape[-1] == 4:
+        print("Optim pool")
+        ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
+        max1 = ab + (cd >= ab) * (cd - ab)
+        e, f = max1[:, :, :, 0], max1[:, :, :, 1]
+        max2 = e + (f >= e) * (f - e)
+        res = max2
+    else:
+        res = im_reshaped.max(dim=-1)
 
     res_shares = {}
     for location in locations:
