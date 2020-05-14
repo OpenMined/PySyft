@@ -104,7 +104,7 @@ class TorchHook(FrameworkHook):
         self.torch = torch
         self.framework = self.torch
         if seed is not None:
-            syft.manual_seed(seed)
+            syft.ID_PROVIDER.seed(seed)
         self.verbose = verbose
 
         # Save the local worker as an attribute

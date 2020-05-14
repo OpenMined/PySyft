@@ -132,6 +132,3 @@ if "ID_PROVIDER" not in globals():
 
     ID_PROVIDER = IdProvider()
 
-
-def manual_seed(seed=0):
-    syft.ID_PROVIDER.seed(seed)
