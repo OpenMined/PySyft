@@ -12,7 +12,11 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
-from syft.serde.syft_serializable import SyftSerializable, get_protobuf_classes, get_protobuf_wrappers
+from syft.serde.syft_serializable import (
+    SyftSerializable,
+    get_protobuf_classes,
+    get_protobuf_wrappers,
+)
 
 
 class MetaProtobufGlobalState(type):
@@ -171,9 +175,12 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
         return result
     elif current_type in protobuf_global_state.inherited_bufferizers_found:
-        return (protobuf_global_state.inherited_bufferizers_found[current_type][0],
-                protobuf_global_state.inherited_bufferizers_found[current_type][1](
-                worker, obj, **kwargs))
+        return (
+            protobuf_global_state.inherited_bufferizers_found[current_type][0],
+            protobuf_global_state.inherited_bufferizers_found[current_type][1](
+                worker, obj, **kwargs
+            ),
+        )
     # If we already tried to find a bufferizer for this type but failed, we should
     # just return the object as it is.
     elif current_type in protobuf_global_state.no_bufferizers_found:
@@ -385,6 +392,7 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
     python_obj = _unbufferize(worker, getattr(msg_wrapper, message_type))
     return python_obj
 
+
 def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """Reverses the functionality of _bufferize.
     Where applicable, it converts simple objects into more complex objects such
@@ -406,7 +414,6 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         return protobuf_global_state.unbufferizers[current_type](worker, obj, **kwargs)
     else:
         protobuf_global_state.stale_state = True
-        print(current_type)
         if current_type in protobuf_global_state.unbufferizers:
             result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
             return result

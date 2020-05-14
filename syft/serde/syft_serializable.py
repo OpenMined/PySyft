@@ -1,5 +1,6 @@
 import inspect
 
+
 def get_from_inheritance_chain(cls, condition):
     original_subclasses = {s for s in cls.__subclasses__() if condition(s)}
     sub_sets = {
@@ -10,6 +11,7 @@ def get_from_inheritance_chain(cls, condition):
     }
     return original_subclasses.union(sub_sets)
 
+
 def get_protobuf_wrappers(cls):
     def check_implementation(s):
         not_abstract = not inspect.isabstract(s)
@@ -18,13 +20,15 @@ def get_protobuf_wrappers(cls):
         get_protobuf_schema_implemented = s.get_protobuf_schema.__qualname__.startswith(s.__name__)
         get_original_class = s.get_original_class.__qualname__.startswith(s.__name__)
         return (
-                not_abstract
-                and bufferize_implemented
-                and unbufferize_implemented
-                and get_protobuf_schema_implemented
-                and get_original_class
+            not_abstract
+            and bufferize_implemented
+            and unbufferize_implemented
+            and get_protobuf_schema_implemented
+            and get_original_class
         )
+
     return get_from_inheritance_chain(cls, check_implementation)
+
 
 def get_protobuf_classes(cls):
     """
