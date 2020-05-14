@@ -26,11 +26,6 @@ def pytest_runtest_makereport(item, call):  # pragma: no cover
         item.session.failed_tests.add(item.originalname)
 
 
-def pytest_runtest_setup(item):  # pragma: no cover
-    if item.originalname in item.session.failed_tests:
-        pytest.skip("previous test failed (%s)" % item.name)
-
-
 def _start_proc(participant, dataset: str = None, **kwargs):  # pragma: no cover
     """Helper function for spinning up a websocket participant."""
 
