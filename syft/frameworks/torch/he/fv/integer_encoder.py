@@ -1,20 +1,13 @@
 from collections import defaultdict
 
-from syft.frameworks.torch.he.fv.modulus import PlainModulus
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 
 
 class IntegerEncoder:
-    """Encodes integers into plaintext polynomials that Encryptor can encrypt. An instance of
+    """Encodes integers into plaintext polynomials that Encryptor class can encrypt. An instance of
     the IntegerEncoder class converts an integer into a plaintext polynomial by placing its
     binary digits as the coefficients of the polynomial. Decoding the integer amounts to
     evaluating the plaintext polynomial at x=2.
-
-    Addition and multiplication on the integer side translate into addition and multiplication
-    on the encoded plaintext polynomial side, provided that the length of the polynomial
-    never grows to be of the size of the polynomial modulus (poly_modulus), and that the
-    coefficients of the plaintext polynomials appearing throughout the computations never
-    experience coefficients larger than the plaintext modulus (plain_modulus).
 
     Negative integers are represented by using -1 instead of 1 in the binary representation,
     and the negative coefficients are stored in the plaintext polynomials as unsigned integers

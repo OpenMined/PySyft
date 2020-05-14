@@ -4,9 +4,7 @@ from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 class Decrypter:
     """Decrypts Ciphertext objects into Plaintext objects. Constructing a Decryptor
-    requires a Context object with valid encryption parameters, and the secret key.
-    The Decryptor is also used to compute the invariant noise budget in a given
-    ciphertext."""
+    requires a Context object with valid encryption parameters, and the secret key."""
 
     def __init__(self, context, secret_key):
         self._context = context
@@ -15,24 +13,33 @@ class Decrypter:
         self._secret_key = secret_key.data
 
     def decrypt(self, encrypted):
-        temp_product_modq = self.dot_product_ct_sk_array(encrypted)
+        """Decrypts the encrypted ciphertext objects and return plaintext object
+
+        Args:
+            encrypted: A ciphertext object which has to be decrypted.
+        """
+
+        # Calculate [c0 + c1 * sk]_q
+        temp_product_modq = self.dot_product_ct_sk(encrypted)
 
         # Divide scaling variant using BEHZ FullRNS techniques
         result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)
 
-        plain_coeff_count = get_significant_count(result, self._coeff_count)
+        # removing leading zeroes in plaintext representation.
+        plain_coeff_count = get_significant_count(result)
         return PlainText(result[:plain_coeff_count])
 
-    def dot_product_ct_sk_array(self, encrypted):
-        product = [0] * self._coeff_count * len(self._coeff_modulus)
+    def dot_product_ct_sk(self, encrypted):
+        # calculate and return the value of [c0 + c1 * sk]_q
+        phase = [0] * self._coeff_count * len(self._coeff_modulus)
         c_0, c_1 = encrypted.data
 
         for j in range(len(self._coeff_modulus)):
             for i in range(self._coeff_count):
-                product[i + j * self._coeff_count] = (
+                phase[i + j * self._coeff_count] = (
                     (c_1[i + j * self._coeff_count] * self._secret_key[i + j * self._coeff_count])
                     % self._coeff_modulus[j]
                     + c_0[i + j * self._coeff_count]
                 ) % self._coeff_modulus[j]
 
-        return product
+        return phase

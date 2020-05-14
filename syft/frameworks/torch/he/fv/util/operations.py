@@ -9,6 +9,16 @@ def add_mod(operand1, operand2, modulus):
     return (operand1 + operand2) % modulus
 
 
+def negate_mod(operand, modulus):
+    # returns (-1 * operand) % modulus
+    if modulus == 0:
+        raise ValueError("Modulus cannot be 0")
+    if operand >= modulus:
+        raise OverflowError("operand cannot be greater than modulus")
+    non_zero = operand != 0
+    return (modulus - operand) & (-int(non_zero))
+
+
 def exponentiate_mod(operand, exponent, modulus):
     if exponent == 0:
         return 1
@@ -38,7 +48,19 @@ def exponentiate_mod(operand, exponent, modulus):
     return intermediate
 
 
-def get_significant_count(values, count):
+def invert_mod(value, modulus):
+    # calculate inverse modulus for given value and modulus
+    gcd_tuple = xgcd(value, modulus)
+
+    if gcd_tuple[1] < 0:
+        return gcd_tuple[1] + modulus
+    else:
+        return gcd_tuple[1]
+
+
+def get_significant_count(values):
+    # removes all leading zero from the list.
+    count = len(values)
     i = count - 1
     while count and not values[i]:
         i -= 1
@@ -47,6 +69,7 @@ def get_significant_count(values, count):
 
 
 def reverse_bit(value):
+    # calculate the value of the reverse binary representation of the given integer.
     result = 0
     while value:
         result = (result << 1) + (value & 1)
@@ -62,18 +85,9 @@ def multiply_many_except(operands, count, expt):
     return result
 
 
-def negate_int_mod(operand, modulus):
-    if modulus == 0:
-        raise ValueError("Modulus cannot be 0")
-    if operand >= modulus:
-        raise OverflowError("operand cannot be greater than modulus")
-    non_zero = operand != 0
-    return (modulus - operand) & (-int(non_zero))
-
-
 def xgcd(x, y):
     """ Extended GCD:
-        Returns (gcd, x, y) where gcd is the greatest common divisor of a and b.
+        returns (gcd, x, y) where gcd is the greatest common divisor of a and b.
         The numbers x, y are such that gcd = ax + by.
     """
     prev_a = 1
@@ -97,32 +111,30 @@ def xgcd(x, y):
     return [x, prev_a, prev_b]
 
 
-def try_invert_int_mod(value, modulus):
-    if value == 0:
-        return False
-    gcd_tuple = xgcd(value, modulus)
+def multiply_add_plain_with_delta(phase, message, context):
+    """Add message(plaintext) into phase.
 
-    if gcd_tuple[1] < 0:
-        return gcd_tuple[1] + modulus
-    else:
-        return gcd_tuple[1]
+    Args:
+        phase: phase is the result of (public_key * u + e)
+        message: A Plaintext object of integer to be encrypted.
+        context: A Context object for supplying encryption parameters.
 
-
-def multiply_add_plain_with_scaling_variant(pue, message, context):
-    # here pue = pk * u * e
+    Returns:
+        A Ciphertext object with the encrypted result of encryption process.
+    """
     coeff_modulus = context.param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     coeff_count = context.param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
     delta = context.coeff_div_plain_modulus
     message = message.data
-    pue_0, pue_1 = pue.data
+    phase0, phase1 = phase.data  # here phase = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
         for j in range(coeff_mod_size):
             temp = round(delta[j] * message[i]) % coeff_modulus[j]
-            pue_0[i + j * coeff_count] = (pue_0[i + j * coeff_count] + temp) % coeff_modulus[j]
+            phase0[i + j * coeff_count] = (phase0[i + j * coeff_count] + temp) % coeff_modulus[j]
 
-    return CipherText([pue_0, pue_1])  # p0 * u * e1 + delta * m
+    return CipherText([phase0, phase1])  # phase0 = pk0 * u * e + delta * m

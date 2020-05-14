@@ -2,18 +2,14 @@ from collections import defaultdict
 from enum import Enum
 
 from syft.frameworks.torch.he.fv.util.numth import get_primes
-from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_128_TC
-from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_192_TC
-from syft.frameworks.torch.he.fv.util.fv_std_param import FV_STD_PARMS_256_TC
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_128
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_192
 from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODULUS_256
 
 
 class SeqLevelType(Enum):
-    """ Represents a standard security level according to the HomomorphicEncryption.org
-    security standard. The value sec_level_type(none) signals that no standard
-    security level should be imposed."""
+    """ Represents standard security level according to the HomomorphicEncryption.org
+    security standard."""
 
     TC128 = 128
     TC192 = 192
@@ -24,9 +20,7 @@ class CoeffModulus:
     def bfv_default(self, poly_modulus_degree, seq_level=SeqLevelType.TC128):
         """Returns a default coefficient modulus for the BFV scheme that guarantees
         a given security level when using a given poly_modulus_degree, according
-        to the HomomorphicEncryption.org security standard. Note that all security
-        guarantees are lost if the output is used with encryption parameters with
-        a mismatching value for the poly_modulus_degree.
+        to the HomomorphicEncryption.org security standard.
 
         Args:
             poly_modulus_degree: The value of the poly_modulus_degree
@@ -72,31 +66,3 @@ class CoeffModulus:
             prime_table[size].pop()
 
         return result
-
-
-class PlainModulus:
-    """This class contains static methods for creating a plaintext modulus easily."""
-
-    def batching_s(self, poly_modulus_degree, bit_size):
-        """Creates a prime number for use as plain_modulus encryption
-        parameter that supports batching with a given poly_modulus_degree.
-
-        Args:
-            poly_modulus_degree: The value of the poly_modulus_degree
-        encryption parameter
-            bit_size: The bit-length of the prime to be generated
-        """
-        cf = CoeffModulus()
-        return cf.create(poly_modulus_degree, bit_size[0])
-
-    def batching_m(self, poly_modulus_degree, bit_sizes):
-        """Creates several prime number that can be used as plain_modulus encryption parameters,
-        each supporting batching with a given poly_modulus_degree
-
-        Args:
-            poly_modulus_degree: The value of the poly_modulus_degree
-        encryption parameter
-            bit_sizes: (list) The bit-lengths of the primes to be generated
-        """
-        cf = CoeffModulus()
-        return cf.create(poly_modulus_degree, bit_sizes)

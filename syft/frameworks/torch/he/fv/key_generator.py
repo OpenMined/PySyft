@@ -2,15 +2,14 @@ import torch as th
 
 from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.rlwe import sample_poly_ternary
-from syft.frameworks.torch.he.fv.util.rlwe import encrypt_zero_symmetric
+from syft.frameworks.torch.he.fv.util.rlwe import encrypt_symmetric
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
 from syft.frameworks.torch.he.fv.public_key import PublicKey
 
 
 class KeyGenerator:
-    """Generates matching secret key and public key. An existing KeyGenerator can
-    also at any time be used to generate relinearization keys and Galois keys.
-    Constructing a KeyGenerator requires only a context object."""
+    """A class used for generating matching secret key and public key.
+    Constructing a KeyGenerator requires only a Context class instance with valid encryption parameters."""
 
     def __init__(self, context):
         """Creates a KeyGenerator initialized with the specified context params.
@@ -31,7 +30,11 @@ class KeyGenerator:
         self._pk_generated = False
 
     def keygen(self):
-        # Generate the secret and public key
+        """Generate the secret and public key.
+
+        Returns:
+            A list of (size = 2) containing secret_key and public_key in order.
+        """
         self.generate_sk()
         self.generate_pk()
         return [self._secret_key, self._public_key]
@@ -47,6 +50,6 @@ class KeyGenerator:
         if not self._sk_generated:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 
-        public_key = encrypt_zero_symmetric(self._context, self._secret_key.data)
+        public_key = encrypt_symmetric(self._context, self._secret_key.data)
         self._public_key = PublicKey(public_key.data)
         self._pk_generated = True

@@ -11,7 +11,7 @@ from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 from syft.frameworks.torch.he.fv.key_generator import KeyGenerator
 from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
 from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
-from syft.frameworks.torch.he.fv.util.operations import try_invert_int_mod
+from syft.frameworks.torch.he.fv.util.operations import invert_mod
 from syft.frameworks.torch.he.fv.util.operations import xgcd
 from syft.frameworks.torch.he.fv.encrypter import Encrypter
 from syft.frameworks.torch.he.fv.decrypter import Decrypter
@@ -140,7 +140,7 @@ def test_CoeffModulus_bfv_default(poly_modulus_degree, SeqLevelType, result):
     ],
 )
 def test_get_significant_count(ptr, result):
-    assert result == get_significant_count(ptr, 2)
+    assert result == get_significant_count(ptr)
 
 
 @pytest.mark.parametrize(
@@ -205,8 +205,8 @@ def test_xgcd(x, y, result):
 @pytest.mark.parametrize(
     "input, modulus, result", [(1, 2, 1), (3, 2, 1), (0xFFFFFF, 2, 1), (5, 19, 4), (4, 19, 5)]
 )
-def test_try_invert_int_mod(input, modulus, result):
-    assert result == try_invert_int_mod(input, modulus)
+def test_invert_mod(input, modulus, result):
+    assert result == invert_mod(input, modulus)
 
 
 @pytest.mark.parametrize(
@@ -218,9 +218,9 @@ def test_try_invert_int_mod(input, modulus, result):
         ([2, 3], [3, 4, 5], [0, 1, 1, 0, 1, 2], [0, 1, 2, 0, 3, 1, 0, 2, 0]),
     ],
 )
-def test_fast_convert_array(ibase, obase, input, output):
+def test_fast_convert_list(ibase, obase, input, output):
     base_converter = BaseConvertor(RNSBase(ibase), RNSBase(obase))
-    result = base_converter.fast_convert_array(input, 3)
+    result = base_converter.fast_convert_list(input, 3)
     for i in range(len(result)):
         assert result[i] == output[i]
 

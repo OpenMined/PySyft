@@ -6,14 +6,18 @@ from torch.distributions import Normal
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.util.operations import add_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_mod
+from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVIATION
 
 
 def sample_poly_ternary(parms):
-    """Generate a ternary polynomial uniformlly and store in RNS representation.
+    """Generate a ternary polynomial uniformally with elements [-1, 0, 1] where -1 is represented as (modulus - 1)
+    because -1 % modulus == modulus - 1.
+
+    Used for generating secret key using coeff_modulus(list of prime nos) which represents as 'q' in the research paper.
 
     Args:
-        parms: EncryptionParameters used to parametize an RNS polynomial.
+        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
     """
     coeff_modulus = parms.coeff_modulus
     coeff_count = parms.poly_modulus_degree
@@ -35,6 +39,11 @@ def sample_poly_ternary(parms):
 
 
 def sample_poly_normal(param):
+    """Generate a polynomial from normal distribution.
+
+    Args:
+        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
+    """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
@@ -57,6 +66,11 @@ def sample_poly_normal(param):
 
 
 def sample_poly_uniform(param):
+    """Generate a polynomial from uniform distribution.
+
+    Args:
+        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
+    """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
@@ -77,7 +91,13 @@ def sample_poly_uniform(param):
     return result
 
 
-def encrypt_zero_asymmetric(context, public_key):
+def encrypt_asymmetric(context, public_key):
+    """Create encryption of zero values with a public key which can be used in subsequent processes to add a message into it.
+
+    Args:
+        context: A valid EncryptionParam class object required for extracting the encryption parameters.
+        public_key: A PublicKey object generated with same encryption parameters.
+    """
     param = context.param
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
@@ -98,44 +118,48 @@ def encrypt_zero_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         for j in range(coeff_mod_size):
             for i in range(coeff_count):
-                result[k][i + j * coeff_count] = (
-                    (u[i + j * coeff_count] * public_key[k][i + j * coeff_count]) % coeff_modulus[j]
-                    + e[i + j * coeff_count]
-                ) % coeff_modulus[j]
+                result[k][i + j * coeff_count] = add_mod(
+                    multiply_mod(
+                        u[i + j * coeff_count], public_key[k][i + j * coeff_count], coeff_modulus[j]
+                    ),
+                    e[i + j * coeff_count],
+                    coeff_modulus[j],
+                )
 
     return CipherText(result)  # result = public_key[j] * u + e[j]
 
 
-def encrypt_zero_symmetric(context, secret_key):
-    param = context.param
-    coeff_modulus = param.coeff_modulus
-    coeff_mod_size = len(coeff_modulus)
-    coeff_count = param.poly_modulus_degree
+def encrypt_symmetric(context, secret_key):
+    """Create encryption of zero values with a secret key which can be used in subsequent processes to add a message into it.
 
-    # (a) Sample a uniformly at random
-    c1 = sample_poly_uniform(param)
+    Args:
+        context: A valid EncryptionParam class object required for extracting the encryption parameters.
+        secret_key: A SecretKey object generated with same encryption parameters.
+    """
+    coeff_modulus = context.param.coeff_modulus
+    coeff_mod_size = len(coeff_modulus)
+    coeff_count = context.param.poly_modulus_degree
+
+    # Sample uniformly at random
+    c1 = sample_poly_uniform(context.param)
 
     # Sample e <-- chi
-    e = sample_poly_normal(param)
+    e = sample_poly_normal(context.param)
 
     # calculate -(a*s + e) (mod q) and store in c0
     c0 = [0] * coeff_count * coeff_mod_size
-    for j in range(coeff_mod_size):
-        for i in range(coeff_count):
-            c0[i + j * coeff_count] = add_mod(
-                multiply_mod(
-                    c1[i + j * coeff_count], secret_key[i + j * coeff_count], coeff_modulus[j]
-                ),
-                e[i + j * coeff_count],
-                coeff_modulus[j],
-            )
 
-    # negate: c0 = -c0
     for j in range(coeff_mod_size):
         for i in range(coeff_count):
-            non_zero = c0[i + j * coeff_count] != 0
-            c0[i + j * coeff_count] = (coeff_modulus[j] - c0[i + j * coeff_count]) & (
-                -int(non_zero)
+            c0[i + j * coeff_count] = negate_mod(
+                add_mod(
+                    multiply_mod(
+                        c1[i + j * coeff_count], secret_key[i + j * coeff_count], coeff_modulus[j]
+                    ),
+                    e[i + j * coeff_count],
+                    coeff_modulus[j],
+                ),
+                coeff_modulus[j],
             )
 
     return CipherText([c0, c1])

@@ -1,9 +1,6 @@
 class EncryptionParams:
-    """Represents user-customizable encryption scheme settings. The parameters (most
-    importantly poly_modulus, coeff_modulus, plain_modulus) significantly affect
-    the performance, capabilities, and security of the encryption scheme. Once
-    an instance of EncryptionParameters is populated with appropriate parameters,
-    it can be used to create an instance of the Context class.
+    """A class for holding all the encryption parameters at one place and for easy supplying
+    of the encryption params to any component of scheme.
     """
 
     def __init__(self, poly_modulus_degree, coeff_modulus, plain_modulus):

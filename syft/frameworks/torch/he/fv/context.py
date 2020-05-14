@@ -3,31 +3,28 @@ from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 
 
 class Context:
-    """Stores a set of attributes (qualifiers) of a set of encryption parameters.
-    These parameters are mainly used internally in various parts of the library,
-    e.g., to determine which algorithmic optimizations the current support. The
-    qualifiers are automatically created by the FVContext class, silently passed
-    on to classes such as Encryptor, Evaluator, and Decryptor, and the only way to
-    change them is by changing the encryption parameters themselves. In other
-    words, a user will never have to create their own instance of this class, and
-    in most cases never have to worry about it at all.
+    """A class used as for holding and easily supplying of all the general parameters required throughout the implementation.
+
+    Attributes:
+        param: An EncryptionParams object.
+        coeff_div_plain_modulus: A list of float values equal to (q[i]/t), In research papers denoted by delta.
+        rns_tool: A RNSTool class instance.
     """
 
     def __init__(self, encryption_param):
         self._param = encryption_param
-        self._plain_modulus = self._param.plain_modulus
-        self._coeff_div_plain_modulus = [x / self._plain_modulus for x in self._param.coeff_modulus]
+        self._coeff_div_plain_modulus = [
+            x / encryption_param.plain_modulus for x in encryption_param.coeff_modulus
+        ]
         self._rns_tool = RNSTool(
-            self._param.poly_modulus_degree, self._param.coeff_modulus, self._plain_modulus
+            self._param.poly_modulus_degree,
+            encryption_param.coeff_modulus,
+            encryption_param.plain_modulus,
         )
 
     @property
     def param(self):
         return self._param
-
-    @property
-    def plain_modulus(self):
-        return self._plain_modulus
 
     @property
     def coeff_div_plain_modulus(self):

@@ -1,3 +1,19 @@
+"""Attributes:
+    DEFAULT_C0EFF_MODULUS_128: A dictionary that maps degrees of the polynomial modulus to list of Modulus elements
+    so that when used with the default value for the standard deviation of the noise distribution
+    (noise_standard_deviation), the security level is at least 128 bits according to
+    http://HomomorphicEncryption.org. This makes it easy for non-expert users to select secure parameters.
+
+    DEFAULT_C0EFF_MODULUS_192: A dictionary that maps degrees of the polynomial modulus to list of Modulus elements
+    so that when used with the default value for the standard deviation of the noise distribution
+    (noise_standard_deviation), the security level is at least 192 bits according to
+    http://HomomorphicEncryption.org. This makes it easy for non-expert users to select secure parameters.
+
+    DEFAULT_C0EFF_MODULUS_256: A dictionary that maps degrees of the polynomial modulus to list of Modulus elements
+    so that when used with the default value for the standard deviation of the noise distribution
+    (noise_standard_deviation), the security level is at least 256 bits according to
+    http://HomomorphicEncryption.org. This makes it easy for non-expert users to select secure parameters.
+"""
 DEFAULT_C0EFF_MODULUS_128 = {
     # Polynomial modulus: 1x^1024 + 1
     # Modulus count: 1
@@ -51,7 +67,6 @@ DEFAULT_C0EFF_MODULUS_128 = {
         0xFFFFFFFFF70001,
     ],
 }
-
 
 DEFAULT_C0EFF_MODULUS_192 = {
     # Polynomial modulus: 1x^1024 + 1

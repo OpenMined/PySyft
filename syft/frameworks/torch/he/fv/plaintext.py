@@ -3,17 +3,19 @@ from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 
 class PlainText:
-    """Class to store a plaintext element. The data for the plaintext is a polynomial
-    with coefficients modulo the plaintext modulus. The degree of the plaintext
-    polynomial must be one less than the degree of the polynomial modulus."""
+    """A wrapper class for representing plaintext elements.
+
+    Attributes:
+        data: A list of values of plaintext polynomial.
+    """
 
     def __init__(self, data):
         self._data = data
         self._coeff_count = len(data)
 
     def significant_coeff_count(self):
-        """Returns the significant coefficient count of the current plaintext polynomial."""
-        return get_significant_count(self._data, self._coeff_count)
+        """Returns the significant coefficient count of the polynomial (removes leading zeroes)"""
+        return get_significant_count(self._data)
 
     @property
     def data(self):
