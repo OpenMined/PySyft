@@ -465,11 +465,7 @@ class BaseWorker(AbstractWorker):
             return {k: self.dereference_pointer_to_self(v) for k, v in obj.items()}
 
         unwrapped = obj.child if getattr(obj, "is_wrapper", False) else obj
-        if (
-            isinstance(unwrapped, ObjectPointer)
-            and unwrapped.location == self
-            and unwrapped.id_at_location in self._objects
-        ):
+        if isinstance(unwrapped, ObjectPointer) and unwrapped.location == self:
             unwrapped.garbage_collect_data = False
             local_obj = self.get_obj(unwrapped.id_at_location)
 
