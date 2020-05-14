@@ -36,6 +36,8 @@ class PrimitiveStorage:
             "beaver": self.build_triples,
         }
 
+        self.force_preprocessing = False
+
     def get_keys(self, type_op, n_instances=1, remove=True, **kwargs):
         """
         Return FSS keys primitives #TODO
@@ -70,9 +72,27 @@ class PrimitiveStorage:
                             primitive_stack[i] = prim[n_instances:]
                 return keys
             else:
-                raise EmptyCryptoPrimitiveStoreError(
-                    self, type_op, available_instances, n_instances, **kwargs
-                )
+                if not self.force_preprocessing:
+                    print(
+                        f"Autogenerate: "
+                        f'["{type_op}"], '
+                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        f"n_instances={n_instances}, "
+                        'beaver={"op_shape": ['
+                        f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
+                        "]}"
+                    )
+                    sy.local_worker.crypto_store.provide_primitives(
+                        [type_op],
+                        sy.local_worker.clients,
+                        n_instances=n_instances,
+                        beaver={"op_shapes": [op_shapes]},
+                    )
+                    return self.get_keys(type_op, n_instances=n_instances, remove=remove, **kwargs)
+                else:
+                    raise EmptyCryptoPrimitiveStoreError(
+                        self, type_op, available_instances, n_instances, **kwargs
+                    )
         else:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
@@ -98,9 +118,21 @@ class PrimitiveStorage:
 
                 return keys
             else:
-                raise EmptyCryptoPrimitiveStoreError(
-                    self, type_op, available_instances, n_instances
-                )
+                if not self.force_preprocessing:
+                    print(
+                        f"Autogenerate: "
+                        f'["{type_op}"], '
+                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        f"n_instances={n_instances}"
+                    )
+                    sy.local_worker.crypto_store.provide_primitives(
+                        [type_op], sy.local_worker.clients, n_instances=n_instances
+                    )
+                    return self.get_keys(type_op, n_instances=n_instances, remove=remove, **kwargs)
+                else:
+                    raise EmptyCryptoPrimitiveStoreError(
+                        self, type_op, available_instances, n_instances
+                    )
 
     def provide_primitives(
         self,
@@ -152,7 +184,10 @@ class PrimitiveStorage:
             current_primitives = getattr(self, crypto_type)
             if crypto_type == "beaver":
                 for op_shapes, primitive_triple in primitives.items():
-                    if op_shapes not in current_primitives:
+                    if (
+                        op_shapes not in current_primitives
+                        or len(current_primitives[op_shapes]) == 0
+                    ):
                         current_primitives[op_shapes] = primitive_triple
                     else:
                         for i, primitive in enumerate(primitive_triple):
