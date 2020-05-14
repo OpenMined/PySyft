@@ -11,11 +11,12 @@ from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
+from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
+from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
-from syft.serde.syft_serializable import SyftSerializable
 
 
 class Role(SyftSerializable):
@@ -25,15 +26,16 @@ class Role(SyftSerializable):
 
     def __init__(
         self,
+        id: Union[str, int] = None,
+        worker: AbstractWorker = None,
         state: State = None,
         actions: List[Action] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
-        # General kwargs
-        id: Union[str, int] = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
+        self.worker = worker or sy.local_worker
 
         self.actions = actions or []
 
@@ -46,6 +48,10 @@ class Role(SyftSerializable):
 
         self.state = state or State()
         self.tracing = False
+
+        for name, package in framework_packages.items():
+            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            setattr(self, name, tracing_wrapper)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]

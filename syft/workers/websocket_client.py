@@ -177,7 +177,7 @@ class WebsocketClientWorker(BaseWorker):
         return response
 
     async def async_send_command(
-        self, message: tuple, return_ids: str = None, return_value: bool = False,
+        self, message: tuple, return_ids: str = None, return_value: bool = False
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to the server part attached to the client
@@ -338,7 +338,7 @@ class WebsocketClientWorker(BaseWorker):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #tensors local:" + str(len(self._tensors))
+        out += " #tensors local:" + str(len(self.object_store._tensors))
         out += " #tensors remote: " + str(self.tensors_count_remote())
         out += ">"
         return out

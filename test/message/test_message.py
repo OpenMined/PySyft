@@ -88,12 +88,12 @@ def test_force_object_delete_message(workers):
 
     id_on_worker = x.id_at_location
 
-    assert id_on_worker in bob._objects
+    assert id_on_worker in bob.object_store._objects
 
     del x  # this is the test
     assert isinstance(bob._get_msg(-1), message.ForceObjectDeleteMessage)
 
-    assert id_on_worker not in bob._objects
+    assert id_on_worker not in bob.object_store._objects
 
     bob.log_msgs = False
 

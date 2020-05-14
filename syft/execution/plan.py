@@ -13,7 +13,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
+from syft.execution.tracing import FrameworkWrapper
 from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
@@ -102,6 +102,7 @@ class Plan(AbstractObject):
     """
 
     _build_translators = []
+    _wrapped_frameworks = {}
 
     def __init__(
         self,
@@ -226,14 +227,15 @@ class Plan(AbstractObject):
         if self.include_state:
             args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
-            # Look for framework kwargs
-            framework_kwargs = {}
-            forward_args = inspect.getfullargspec(self.forward).args
-            if "torch" in forward_args:
-                framework_kwargs["torch"] = wrapped_torch
+        # Check the plan arguments to see what framework wrappers we might need to send to the plan
+        framework_kwargs = {}
 
-            results = self.forward(*args, **framework_kwargs)
+        forward_args = inspect.getfullargspec(self.forward).args
+        for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
+            if f_name in forward_args:
+                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+
+        results = self.forward(*args, **framework_kwargs)
 
         # Disable tracing
         self.toggle_tracing(False)
@@ -407,6 +409,22 @@ class Plan(AbstractObject):
     @staticmethod
     def register_build_translator(translator: "AbstractPlanTranslator"):
         Plan._build_translators.append(translator)
+
+    @staticmethod
+    def register_framework(f_name, f_package):
+        """
+        When we use methods defined in a framework (like: torch.randn) we have a framework
+        wrapper that helps as register and keep track of what methods are called
+        With the below lines, we "register" what frameworks we have support to handle
+        Args:
+            f_name (String): framework name (eg. torch, crypten)
+            f_package (imported module): imported library
+        """
+
+        def call_wrapped_framework(role, owner):
+            return FrameworkWrapper(f_package, role, owner)
+
+        Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
@@ -694,3 +712,7 @@ class Plan(AbstractObject):
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)
+
+# Auto-register Plan build-time frameworks
+for f_name, f_package in framework_packages.items():
+    Plan.register_framework(f_name, f_package)
