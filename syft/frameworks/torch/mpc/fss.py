@@ -25,6 +25,7 @@ from syft.generic.utils import remote
 n = 32  # 8  # 32  # bit precision
 λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
 assert λs == 2
+N = 10_000  # when to start multi processing
 
 no_wrap = {"no_wrap": True}
 
@@ -109,19 +110,34 @@ def fss_op(x1, x2, type_op="eq"):
 
     workers_args = [(th.IntTensor([i]), mask_value, type_op) for i in range(2)]
     if not asynchronous:
-        if numel > 10_000:
-            print("sync multi")
+        if numel > N:
+            print("sync multi", numel)
             multiprocessing_args = []
             kwargs = dict(return_value=False, multiprocessing=True)
+            original_shape = mask_value.shape
+            mask_value = mask_value.reshape(-1)
             for i, location in enumerate(locations):
-                multiprocessing_args.append((evaluate, location.id, workers_args[i], kwargs))
+                for j in range(math.ceil(numel / N)):
+                    # overwrite workers_args
+                    workers_args = (th.IntTensor([i]), mask_value[j * N : (j + 1) * N], type_op)
+                    multiprocessing_args.append((evaluate, location.id, workers_args, kwargs))
             p = multiprocessing.Pool()
             real_shares = p.starmap(multiprocessing_remote, multiprocessing_args)
             p.close()
             shares = []
             # TODO fix the getting back shares
-            for real_share, location in zip(real_shares, locations):
+            len_loc = len(locations)
+            for i, location in enumerate(locations):
+                real_share = th.cat(
+                    [real_shares[i * len_loc + j] for j in range(math.ceil(numel / N))]
+                )
+                real_share = real_share.reshape(original_shape)
                 shares.append(real_share.send(location))
+
+            assert isinstance(locations[0], sy.VirtualWorker)
+            # Burn the primitives (copies of the workers were sent)
+            for i, location in enumerate(locations):
+                location.crypto_store.get_keys(f"fss_{type_op}", n_instances=numel, remove=True)
         else:
             print("sync")
             shares = []
