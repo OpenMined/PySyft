@@ -2,21 +2,23 @@ from collections import defaultdict
 from typing import List
 from typing import Union
 
+from syft.exceptions import ObjectNotFoundError
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
+from syft.workers.abstract import AbstractWorker
 
-from syft.exceptions import ObjectNotFoundError
 
-
-class ObjectStorage:
+class ObjectStore:
     """A storage of objects identifiable by their id.
 
     A wrapper object to a collection of objects where all objects
     are stored using their IDs as keys.
     """
 
-    def __init__(self):
+    def __init__(self, owner: AbstractWorker = None):
+        self.owner = owner
+
         # This is the collection of objects being stored.
         self._objects = {}
         # This is an index to retrieve objects from their tags in an efficient way
@@ -86,6 +88,7 @@ class ObjectStorage:
         Args:
             obj: A torch or syft tensor with an id.
         """
+        obj.owner = self.owner
         self._objects[obj.id] = obj
         # Add entry in the tag index
         if obj.tags:
@@ -95,18 +98,18 @@ class ObjectStorage:
                 else:
                     self._tag_to_object_ids[tag].add(obj.id)
 
-    def rm_obj(self, remote_key: Union[str, int], force=False):
+    def rm_obj(self, obj_id: Union[str, int], force=False):
         """Removes an object.
 
         Remove the object from the permanent object registry if it exists.
 
         Args:
-            remote_key: A string or integer representing id of the object to be
+            obj_id: A string or integer representing id of the object to be
                 removed.
             force: if true, explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
         """
-        if remote_key in self._objects:
-            obj = self._objects[remote_key]
+        if obj_id in self._objects:
+            obj = self._objects[obj_id]
             # update tag index
             if obj.tags:
                 for tag in obj.tags:
@@ -116,25 +119,14 @@ class ObjectStorage:
             if force and hasattr(obj, "child") and hasattr(obj.child, "garbage_collect_data"):
                 obj.child.garbage_collect_data = True
 
-            del self._objects[remote_key]
+            del self._objects[obj_id]
 
-    def force_rm_obj(self, remote_key: Union[str, int]):
-        self.rm_obj(remote_key, force=True)
+    def force_rm_obj(self, obj_id: Union[str, int]):
+        self.rm_obj(obj_id, force=True)
 
-    def clear_objects(self, return_self: bool = True):
-        """Removes all objects from the object storage.
-
-        Note: the "return self" statement is kept in order to avoid modifying the code shown in the udacity course.
-
-        Args:
-            return_self: flag, whether to return self as return value
-
-        Returns:
-            self, if return_self if True, else None
-
-        """
+    def clear_objects(self):
+        """Removes all objects from the object storage."""
         self._objects.clear()
-        return self if return_self else None
 
     def current_objects(self):
         """Returns a copy of the objects in the object storage."""
@@ -161,3 +153,11 @@ class ObjectStorage:
                     results.append(obj)
             return results
         return []
+
+    def register_tags(self, obj):
+        # NOTE: this is a fix to correct faulty registration that can sometimes happen
+        if obj.id not in self._objects:
+            self.owner.register_obj(obj)
+
+        for tag in obj.tags:
+            self._tag_to_object_ids[tag].add(obj.id)

@@ -13,7 +13,8 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
 from syft.execution.state import State
-from syft.execution.tracing import trace
+from syft.execution.tracing import FrameworkWrapper
+from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
@@ -101,6 +102,7 @@ class Plan(AbstractObject):
     """
 
     _build_translators = []
+    _wrapped_frameworks = {}
 
     def __init__(
         self,
@@ -114,6 +116,7 @@ class Plan(AbstractObject):
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
+        input_types: list = None,
         description: str = None,
     ):
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
@@ -125,13 +128,14 @@ class Plan(AbstractObject):
 
         if role is None:
             for st in state_tensors:
-                self.role.register_state_tensor(st, owner)
+                self.role.register_state_tensor(st)
 
         self.include_state = include_state
         self.is_building = False
         self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
+        self.input_types = input_types
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
@@ -178,47 +182,60 @@ class Plan(AbstractObject):
         Args:
             args: Input arguments to run the plan
         """
+        # Reset previous build
+        self.role.reset()
+
+        def build_nested_arg(arg, leaf_function):
+            if isinstance(arg, list):
+                return [build_nested_arg(obj, leaf_function) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
+            elif isinstance(arg, dict):
+                return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
+            else:
+                return leaf_function(arg)
 
         # Enable tracing
         self.toggle_tracing(True)
         self.is_building = True
 
+        # typecheck
+        self.input_types = NestedTypeWrapper(args)
+
+        # Run once to build the plan
         if trace_autograd:
             # Wrap arguments that require gradients with AutogradTensor,
             # to be able to trace autograd operations
-            args = tuple(
-                AutogradTensor().on(arg, wrap=False)
-                if isinstance(arg, FrameworkTensor) and arg.requires_grad
-                else arg
-                for arg in args
+            args = build_nested_arg(
+                args,
+                lambda x: AutogradTensor().on(x, wrap=False)
+                if isinstance(x, FrameworkTensor) and x.requires_grad
+                else x,
             )
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
-            args_placeholders = tuple(
-                PlaceHolder.insert(
-                    arg, AutogradTensor, owner=sy.local_worker, role=self.role, tracing=True
-                )
-                for arg in args
+            args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
             )
         else:
             # Add Placeholder on top of each arg
-            args = args_placeholders = tuple(
-                PlaceHolder.create_from(arg, owner=sy.local_worker, role=self.role, tracing=True)
-                for arg in args
+            args = args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
             )
 
         # Add state to args if needed
         if self.include_state:
             args += (self.state,)
 
-        with trace(framework_packages["torch"], self.role, self.owner) as wrapped_torch:
-            # Look for framework kwargs
-            framework_kwargs = {}
-            forward_args = inspect.getfullargspec(self.forward).args
-            if "torch" in forward_args:
-                framework_kwargs["torch"] = wrapped_torch
+        # Check the plan arguments to see what framework wrappers we might need to send to the plan
+        framework_kwargs = {}
 
-            results = self.forward(*args, **framework_kwargs)
+        forward_args = inspect.getfullargspec(self.forward).args
+        for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
+            if f_name in forward_args:
+                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+
+        results = self.forward(*args, **framework_kwargs)
 
         # Disable tracing
         self.toggle_tracing(False)
@@ -262,6 +279,7 @@ class Plan(AbstractObject):
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
+            input_types=self.input_types,
             description=self.description,
         )
 
@@ -276,11 +294,11 @@ class Plan(AbstractObject):
         if isinstance(value, torch.jit.ScriptModule):
             object.__setattr__(self, name, value)
         elif isinstance(value, FrameworkTensor):
-            self.role.register_state_tensor(value, self.owner)
+            self.role.register_state_tensor(value)
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param, self.owner)
+                self.role.register_state_tensor(param)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
@@ -321,7 +339,9 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            result = self.role.execute(args)
+            self.input_types.input_check(self, args)
+            self.role.instantiate_inputs(args)
+            result = self.role.execute()
             if len(result) == 1:
                 return result[0]
             return result
@@ -389,6 +409,22 @@ class Plan(AbstractObject):
     @staticmethod
     def register_build_translator(translator: "AbstractPlanTranslator"):
         Plan._build_translators.append(translator)
+
+    @staticmethod
+    def register_framework(f_name, f_package):
+        """
+        When we use methods defined in a framework (like: torch.randn) we have a framework
+        wrapper that helps as register and keep track of what methods are called
+        With the below lines, we "register" what frameworks we have support to handle
+        Args:
+            f_name (String): framework name (eg. torch, crypten)
+            f_package (imported module): imported library
+        """
+
+        def call_wrapped_framework(role, owner):
+            return FrameworkWrapper(f_package, role, owner)
+
+        Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         return plan_translator(self).translate()
@@ -539,6 +575,7 @@ class Plan(AbstractObject):
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_types),
         )
 
     @staticmethod
@@ -550,7 +587,7 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript) = plan_tuple
+        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -558,6 +595,7 @@ class Plan(AbstractObject):
         tags = sy.serde.msgpack.serde._detail(worker, tags)
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
+        input_types = sy.serde.msgpack.serde._detail(worker, input_types)
 
         plan = sy.Plan(
             role=role,
@@ -568,6 +606,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            input_types=input_types,
         )
 
         plan.torchscript = torchscript
@@ -603,6 +642,10 @@ class Plan(AbstractObject):
         if plan.torchscript:
             protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
+        if plan.input_types:
+            input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
+            protobuf_plan.input_types.CopyFrom(input_types)
+
         return protobuf_plan
 
     @staticmethod
@@ -621,6 +664,7 @@ class Plan(AbstractObject):
         name = protobuf_plan.name
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
+        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
 
         plan = Plan(
             role=role,
@@ -631,6 +675,7 @@ class Plan(AbstractObject):
             name=name,
             tags=tags,
             description=description,
+            input_types=input_types,
         )
 
         if protobuf_plan.torchscript:
@@ -660,6 +705,14 @@ class Plan(AbstractObject):
 
         return out
 
+    @staticmethod
+    def get_protobuf_schema() -> PlanPB:
+        return PlanPB
+
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)
+
+# Auto-register Plan build-time frameworks
+for f_name, f_package in framework_packages.items():
+    Plan.register_framework(f_name, f_package)

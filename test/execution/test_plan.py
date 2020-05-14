@@ -618,9 +618,47 @@ def test_cached_multiple_location_plan_send(workers):
     assert len(pointers) == 2
 
 
+def test_plan_input_serialization(hook):
+    @sy.func2plan()
+    def plan_serialized_input_1(x, y, z, t):
+        return x
+
+    plan_serialized_input_1.build(
+        (th.tensor([1.0, -2.0]), th.tensor([1, 2])),
+        {
+            "k1": [5, (True, False)],
+            "k2": {
+                "kk1": [th.tensor([5, 7]), th.tensor([5, 7])],
+                "kk2": [True, (th.tensor([9, 10]),)],
+            },
+            "k3": th.tensor([8]),
+        },
+        th.tensor([11, 12]),
+        (1, (2, (3, (4, [5, 6])))),
+    )
+
+    reference_serialized_input_1 = (
+        (type(th.tensor([1.0, -2.0])), type(th.tensor([1, 2]))),
+        {
+            "k1": [type(5), (type(True), type(False))],
+            "k2": {
+                "kk1": [type(th.tensor([5, 7])), type(th.tensor([5, 7]))],
+                "kk2": [type(True), (type(th.tensor([9, 10])),)],
+            },
+            "k3": type(th.tensor([8])),
+        },
+        type(th.tensor([11, 12])),
+        (type(1), (type(2), (type(3), (type(4), [type(5), type(6)])))),
+    )
+
+    serialized_input_1 = plan_serialized_input_1.input_types.nested_input_types
+
+    assert reference_serialized_input_1 == serialized_input_1
+
+
 def test_plan_input_usage(hook):
-    x11 = th.tensor([-1, 2.0]).tag("input_data")
-    x12 = th.tensor([1, -2.0]).tag("input_data2")
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
 
     device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
 
@@ -632,8 +670,8 @@ def test_plan_input_usage(hook):
     def plan_test_2(x, y):
         return y
 
-    pointer_to_data_1 = device_1.search("input_data")[0]
-    pointer_to_data_2 = device_1.search("input_data2")[0]
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
 
     plan_test_1.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
     pointer_plan = plan_test_1.send(device_1)
@@ -641,11 +679,309 @@ def test_plan_input_usage(hook):
     result = pointer_to_result.get()
     assert (result == x11).all()
 
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+
     plan_test_2.build(th.tensor([1.0, -2.0]), th.tensor([1, 2]))
     pointer_plan = plan_test_2.send(device_1)
     pointer_to_result = pointer_plan(pointer_to_data_1, pointer_to_data_2)
     result = pointer_to_result.get()
-    assert (result == x12).all
+    assert (result == x12).all()
+
+
+def test_plan_wrong_number_of_parameters(hook):
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
+
+    device_1 = sy.VirtualWorker(hook, id="test_dev_1", data=(x11, x12))
+
+    @sy.func2plan()
+    def plan_test(x, y, z, t):
+        return x
+
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+
+    dummy_input_list = [th.tensor([1, -2]), th.tensor([1, 2]), 2, False]
+    input_list = [pointer_to_data_1, pointer_to_data_2, 5, True]
+    corect_number_of_params = 4
+    plan_test.build(*dummy_input_list)
+    pointer_plan = plan_test.send(device_1)
+
+    for i in range(len(input_list) + 1):
+        if i == corect_number_of_params:
+            pointer_plan(*input_list[:i])
+        else:
+            with pytest.raises(TypeError) as e:
+                pointer_plan(*input_list[:i])
+
+            assert f"Plan plan_test requires {len(input_list)} arguments, received {i}." == str(
+                e.value
+            )
+
+
+def test_plan_list(hook):
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_list(data, x):
+        y = data[0] + data[1]
+        z = data[0] + x
+        return y + z
+
+    device_1 = sy.VirtualWorker(hook, id="test_plan_list", data=(x11, x12))
+
+    plan_list.build([th.tensor([1, 2]), th.tensor([2, 3])], th.tensor([0, 0]))
+    pointer_to_plan = plan_list.send(device_1)
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+    result = pointer_to_plan([pointer_to_data_1, pointer_to_data_2], th.tensor([1, 1]))
+    assert (result.get() == th.tensor([0, 3])).all()
+
+
+def test_plan_tuple(hook):
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_tuple(data, x):
+        y = data[0] + data[1]
+        z = data[0] + x
+        return y + z
+
+    device_1 = sy.VirtualWorker(hook, id="test_plan_tuple", data=(x11, x12))
+
+    plan_tuple.build((th.tensor([1, 2]), th.tensor([2, 3])), th.tensor([0, 0]))
+    pointer_to_plan = plan_tuple.send(device_1)
+
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+
+    result = pointer_to_plan((pointer_to_data_1, pointer_to_data_2), th.tensor([1, 1]))
+    assert (result.get() == th.tensor([0, 3])).all()
+
+
+def test_plan_dict(hook):
+    x11 = th.tensor([-1, 2.0])
+    x12 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_dict(data, x):
+        y = data["input1"] + data["input2"]
+        z = data["input1"] + x
+        return y + z
+
+    device_1 = sy.VirtualWorker(hook, id="test_plan_dict", data=(x11, x12))
+    plan_dict.build({"input1": th.tensor([1, 2]), "input2": th.tensor([2, 3])}, th.tensor([0, 0]))
+    pointer_to_plan = plan_dict.send(device_1)
+    pointer_to_data_1 = x11.send(device_1)
+    pointer_to_data_2 = x12.send(device_1)
+    result = pointer_to_plan(
+        {"input1": pointer_to_data_1, "input2": pointer_to_data_2}, th.tensor([1, 1])
+    )
+    assert (result.get() == th.tensor([0, 3])).all()
+
+
+def test_plan_nested_structures(hook):
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+    x3 = th.tensor([2, -1])
+    x4 = th.tensor([2, 1])
+
+    @sy.func2plan()
+    def plan_nested(dict):
+        """
+        dict:
+            "tensors":
+                "test1": [tensor(-1, 2), tensor(1, -2), [tensor(-1, 2), tensor(2, 1)]]
+                "test2": tensor(2, 1)
+            "tensor_list": [tensor(-1, 2), tensor(2, -1)]
+        """
+        x = dict["tensors"]["test1"][0]
+        y = dict["tensors"]["test1"][1]
+        z = dict["tensors"]["test2"]
+        t = dict["tensor_list"][0]
+        return x + y + z + t
+
+    dummy_build = {
+        "tensors": {
+            "test1": [th.tensor([0, 0]), th.tensor([0, 0]), [th.tensor([0, 0]), th.tensor([0, 0])]],
+            "test2": th.tensor([0, 0]),
+        },
+        "tensor_list": [th.tensor([-1, 2]), th.tensor([1, -2])],
+    }
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2, x3, x4))
+    plan_nested.build(dummy_build)
+
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+    pointer_to_data_3 = x3.send(device_1)
+    pointer_to_data_4 = x4.send(device_1)
+
+    call_build = {
+        "tensors": {
+            "test1": [pointer_to_data_1, pointer_to_data_2, [pointer_to_data_1, pointer_to_data_4]],
+            "test2": pointer_to_data_4,
+        },
+        "tensor_list": [pointer_to_data_1, pointer_to_data_3],
+    }
+    pointer_to_plan = plan_nested.send(device_1)
+    result = pointer_to_plan(call_build)
+    assert (result.get() == th.tensor([1, 3])).all()
+
+
+def test_plan_type_error(hook):
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_type_err(dic):
+        return dic["k1"]["kk2"]
+
+    dummy_build = {
+        "k1": {
+            "kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]],
+            "kk2": th.tensor([0, 0]),
+        },
+        "k2": [th.tensor([-1, 2]), "dummy_str"],
+    }
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2))
+    plan_type_err.build(dummy_build)
+
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+
+    call_build = {
+        "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k2": [pointer_to_data_1, pointer_to_data_2],
+    }
+
+    pointer_to_plan = plan_type_err.send(device_1)
+    with pytest.raises(TypeError) as e:
+        _ = pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_type_err element 1 of element 0 of key kk1 of key k1 of element 0 of input has type int, while being built with type float."
+    )
+
+
+def test_plan_missmatch_Err(hook):
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_missmatch_err(lst):
+        return lst[0]
+
+    dummy_build = [[th.tensor([0, 0]), th.tensor([0, 0])], [th.tensor([0, 0]), th.tensor([0, 0])]]
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+    plan_missmatch_err.build(dummy_build)
+
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+
+    call_build = [
+        [pointer_to_data_1, pointer_to_data_1, pointer_to_data_1],
+        [pointer_to_data_2, pointer_to_data_2, pointer_to_data_2],
+    ]
+
+    pointer_to_plan = plan_missmatch_err.send(device_1)
+    with pytest.raises(TypeError) as e:
+        _ = pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_missmatch_err element 0 of element 0 of input has length 3, while being build with length 2."
+    )
+
+
+def test_wrong_type_err(hook):
+    @sy.func2plan()
+    def plan_wrong_type_err(x):
+        return x
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+
+    call_build = [True, 5]
+    dummy_build = ((th.tensor([1, 2, 3]), True),)
+
+    plan_wrong_type_err.build(dummy_build)
+
+    pointer_to_plan = plan_wrong_type_err.send(device_1)
+
+    with pytest.raises(TypeError) as e:
+        pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_wrong_type_err element 0 of input has type tuple, while being built with type list."
+    )
+
+
+def test_wrong_size_dict(hook):
+    @sy.func2plan()
+    def plan_wrong_size_dict(x):
+        return x
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure")
+
+    dummy_build = {"k1": True, "k2": False}
+
+    call_build = {"k1": True, "k2": False, "k3": 1}
+
+    plan_wrong_size_dict.build(dummy_build)
+
+    pointer_to_plan = plan_wrong_size_dict.send(device_1)
+
+    with pytest.raises(TypeError) as e:
+        pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "Plan plan_wrong_size_dict element 0 of input has length 3, while being build with length 2."
+    )
+
+
+def test_plan_key_error(hook):
+    x1 = th.tensor([-1, 2.0])
+    x2 = th.tensor([1, -2.0])
+
+    @sy.func2plan()
+    def plan_type_warn(dic):
+        return dic["k1"]["kk2"]
+
+    dummy_build = {
+        "k1": {
+            "kk1": [(th.tensor([0, 0]), 1), [th.tensor([0, 0]), 2.5]],
+            "kk2": th.tensor([0, 0]),
+        },
+        "k2": [th.tensor([-1, 2]), "dummy_str"],
+    }
+
+    device_1 = sy.VirtualWorker(hook, id="test_nested_structure", data=(x1, x2))
+    plan_type_warn.build(dummy_build)
+
+    pointer_to_data_1 = x1.send(device_1)
+    pointer_to_data_2 = x2.send(device_1)
+
+    call_build = {
+        "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k2": [pointer_to_data_1, pointer_to_data_2],
+    }
+
+    pointer_to_plan = plan_type_warn.send(device_1)
+    with pytest.raises(KeyError) as e:
+        _ = pointer_to_plan(call_build)
+
+    assert (
+        str(e.value)
+        == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, while being build with that key.'"
+    )
 
 
 def test_backward_autograd_can_be_traced(hook, workers):
@@ -666,8 +1002,14 @@ def test_backward_autograd_can_be_traced(hook, workers):
     autograd_test.forward = None
     plan_grads = autograd_test(X)
 
-    # (debug out)
-    print("Traced Plan:\n", autograd_test.code)
-
-    # Test all results are equal
+    autograd_str = (
+        "def autograd_test(arg_1):\n    var_0 = arg_1.mul(5)\n    var_1 = var_0.log()\n    "
+        "var_2 = var_1.neg()\n    var_3 = var_2.div(2)\n    var_4 = var_3.sum()\n    "
+        "var_5 = var_4.mul(0)\n    var_6 = var_5.add(1)\n    var_7 = var_3.mul(0)\n    "
+        "var_8 = var_7.add(1)\n    var_9 = var_8.mul(var_6)\n    var_10 = var_9.div(2)\n    "
+        "var_11 = var_10.mul(-1)\n    var_12 = var_0.__rtruediv__(1)\n    "
+        "var_13 = var_11.mul(var_12)\n    var_14 = var_13.mul(5)\n    var_15 = var_13.mul(arg_1)\n    "
+        "out_1 = var_14.copy()\n    return out_1"
+    )
+    assert autograd_test.code == autograd_str
     assert torch_grads.eq(plan_grads).all()

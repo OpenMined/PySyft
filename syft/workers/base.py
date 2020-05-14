@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from contextlib import contextmanager
 
 import logging
@@ -19,7 +18,7 @@ from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
-from syft.generic.object_storage import ObjectStorage
+from syft.generic.object_storage import ObjectStore
 from syft.generic.object import AbstractObject
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -50,7 +49,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BaseWorker(AbstractWorker, ObjectStorage):
+class BaseWorker(AbstractWorker):
     """Contains functionality to all workers.
 
     Other workers will extend this class to inherit all functionality necessary
@@ -108,6 +107,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """Initializes a BaseWorker."""
         super().__init__()
         self.hook = hook
+
+        self.object_store = ObjectStore(owner=self)
 
         self.id = id
         self.is_client_worker = is_client_worker
@@ -191,47 +192,26 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # declare the plans used for crypto computations
         sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
-    # SECTION: Methods which MUST be overridden by subclasses
-    @abstractmethod
-    def _send_msg(self, message: bin, location: "BaseWorker"):
-        """Sends message from one worker to another.
+    def register_obj(self, obj):
+        self.object_store.register_obj(self, obj)
 
-        As BaseWorker implies, you should never instantiate this class by
-        itself. Instead, you should extend BaseWorker in a new class which
-        instantiates _send_msg and _recv_msg, each of which should specify the
-        exact way in which two workers communicate with each other. The easiest
-        example to study is VirtualWorker.
+    def clear_objects(self, return_self: bool = True):
+        """Removes all objects from the object storage.
+
+        Note: the "return self" statement is kept for backward compatibility
+        with the Udacity Secure and Private ML course.
 
         Args:
-            message: A binary message to be sent from one worker
-                to another.
-            location: A BaseWorker instance that lets you provide the
-                destination to send the message.
+            return_self: flag, whether to return self as return value
 
-        Raises:
-            NotImplementedError: Method not implemented error.
-        """
-
-        raise NotImplementedError  # pragma: no cover
-
-    @abstractmethod
-    def _recv_msg(self, message: bin):
-        """Receives the message.
-
-        As BaseWorker implies, you should never instantiate this class by
-        itself. Instead, you should extend BaseWorker in a new class which
-        instantiates _send_msg and _recv_msg, each of which should specify the
-        exact way in which two workers communicate with each other. The easiest
-        example to study is VirtualWorker.
-
-        Args:
-            message: The binary message being received.
-
-        Raises:
-            NotImplementedError: Method not implemented error.
+        Returns:
+            self, if return_self if True, else None
 
         """
-        raise NotImplementedError  # pragma: no cover
+        self.object_store.clear_objects()
+
+        # return based on `return_self` flag is required by Udacity course
+        return self if return_self else None
 
     @contextmanager
     def registration_enabled(self):
@@ -315,13 +295,12 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A binary message response.
         """
-
-        # Step -1: save message if log_msgs ==  True
-        if self.log_msgs:
-            self.msg_history.append(bin_message)
-
         # Step 0: deserialize message
         msg = sy.serde.deserialize(bin_message, worker=self)
+
+        # Step 1: save message and/or log it out
+        if self.log_msgs:
+            self.msg_history.append(msg)
 
         if self.verbose:
             print(
@@ -330,10 +309,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 else f"worker {self} received {type(msg).__name__}"
             )
 
-        # Step 1: route message to appropriate function
+        # Step 2: route message to appropriate function
         response = self._message_router[type(msg)](msg)
 
-        # Step 2: Serialize the message to simple python objects
+        # Step 3: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
 
         return bin_response
@@ -437,7 +416,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return pointer
 
     def handle_object_msg(self, obj_msg: ObjectMessage):
-        # This should be a good seam for separating Workers from ObjectStorage (someday),
+        # This should be a good seam for separating Workers from ObjectStore (someday),
         # so that Workers have ObjectStores instead of being ObjectStores. That would open
         # up the possibility of having a separate ObjectStore for each user, or for each
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
@@ -466,10 +445,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
-        self.rm_obj(msg.object_id)
+        self.object_store.rm_obj(msg.object_id)
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        self.force_rm_obj(msg.object_id)
+        self.object_store.force_rm_obj(msg.object_id)
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
@@ -543,8 +522,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
+                # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
                 if return_value or isinstance(response, (int, float, bool, str)):
-                    return response  # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                    return response
                 else:
                     return None
             except ResponseSignatureError:
@@ -556,23 +536,22 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 raise ResponseSignatureError(new_ids)
 
     def execute_communication_action(self, action: CommunicationAction) -> PointerTensor:
-        obj_id = action.obj_id
-        source = action.source
-        destinations = action.destinations
+        owner = action.target.owner
+        destinations = [self.get_worker(id_) for id_ in action.args]
         kwargs_ = action.kwargs
-        source_worker = self.get_worker(source)
-        if source_worker != self:
+
+        if owner != self:
             return None
         else:
-            obj = self.get_obj(obj_id)
-            response = source_worker.send(obj, *destinations, **kwargs_)
+            obj = self.get_obj(action.target.id)
+            response = owner.send(obj, *destinations, **kwargs_)
             response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
                     "send", response, [sy.ID_PROVIDER.pop()], self
                 )
             else:
-                self.rm_obj(obj_id)
+                self.object_store.rm_obj(action.target.id)
             return response
 
     def execute_worker_command(self, message: tuple):
@@ -617,7 +596,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def send_command(
         self,
         recipient: "BaseWorker",
-        message: tuple,
+        cmd_name: str,
+        target: PointerTensor = None,
+        args_: tuple = (),
+        kwargs_: dict = {},
         return_ids: str = None,
         return_value: bool = False,
     ) -> Union[List[PointerTensor], PointerTensor]:
@@ -626,7 +608,10 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         Args:
             recipient: A recipient worker.
-            message: A tuple representing the message being sent.
+            cmd_name: Command number.
+            target: Target pointer Tensor.
+            args_: additional args for command execution.
+            kwargs_: additional kwargs for command execution.
             return_ids: A list of strings indicating the ids of the
                 tensors that should be returned as response to the command execution.
 
@@ -636,11 +621,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         if return_ids is None:
             return_ids = tuple([sy.ID_PROVIDER.pop()])
 
-        name, target, args_, kwargs_ = message
-
         try:
             message = TensorCommandMessage.computation(
-                name, target, args_, kwargs_, return_ids, return_value
+                cmd_name, target, args_, kwargs_, return_ids, return_value
             )
             ret_val = self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
@@ -672,7 +655,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Args:
             obj_id: A string or integer id of an object to look up.
         """
-        obj = super().get_obj(obj_id)
+        obj = self.object_store.get_obj(obj_id)
 
         # An object called with get_obj will be "with high probability" serialized
         # and sent back, so it will be GCed but remote data is any shouldn't be
@@ -715,7 +698,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 string uniquely identifying the object.
         """
         if not self.is_client_worker:
-            super().register_obj(obj, obj_id=obj_id)
+            self.object_store.register_obj(obj, obj_id=obj_id)
 
     def de_register_obj(self, obj: object, _recurse_torch_objs: bool = True):
         """
@@ -727,7 +710,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
                 more complex and needs to be explored.
         """
         if not self.is_client_worker:
-            super().de_register_obj(obj, _recurse_torch_objs)
+            self.object_store.de_register_obj(obj, _recurse_torch_objs)
 
     # SECTION: convenience methods for constructing frequently used messages
 
@@ -911,7 +894,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #objects:" + str(len(self._objects))
+        out += " #objects:" + str(len(self.object_store._objects))
         out += ">"
         return out
 
@@ -920,11 +903,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self._objects.get(idx, None)
+        return self.object_store.get_obj(idx, None)
 
     def is_object_none(self, msg):
         obj_id = msg.object_id
-        if obj_id not in self._objects:
+        if obj_id not in self.object_store._objects:
             # If the object is not present on the worker, raise an error
             raise ObjectNotFoundError(obj_id, self)
         obj = self.get_obj(msg.object_id)
@@ -1002,8 +985,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Returns:
             A plan if a plan with the given `plan_id` exists. Returns None otherwise.
         """
-        if plan_id in self._objects:
-            candidate = self._objects[plan_id]
+        if plan_id in self.object_store._objects:
+            candidate = self.object_store.get_obj(plan_id)
             if isinstance(candidate, sy.Plan):
                 if copy:
                     return candidate.copy()
@@ -1036,9 +1019,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         """
         Target function of fetch_protocol, find and return a protocol
         """
-        if protocol_id in self._objects:
+        if protocol_id in self.object_store._objects:
 
-            candidate = self._objects[protocol_id]
+            candidate = self.object_store.get_obj(protocol_id)
             if isinstance(candidate, sy.Protocol):
                 return candidate
 
@@ -1063,7 +1046,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         # Empty query returns all the tagged and registered values
         elif len(query) == 0:
             result_ids = set()
-            for tag, object_ids in self._tag_to_object_ids.items():
+            for tag, object_ids in self.object_store._tag_to_object_ids.items():
                 result_ids = result_ids.union(object_ids)
             return [self.get_obj(result_id) for result_id in result_ids]
 
@@ -1072,13 +1055,13 @@ class BaseWorker(AbstractWorker, ObjectStorage):
             # Search by id is supported but it's not the preferred option
             # It will return a single element and discard tags if the query
             # Mixed an id with tags
-            result_by_id = self.find_by_id(query_item)
+            result_by_id = self.object_store.find_by_id(query_item)
             if result_by_id:
                 results = {result_by_id}
                 break
 
             # results_by_tag can be the empty list
-            results_by_tag = set(self.find_by_tag(query_item))
+            results_by_tag = set(self.object_store.find_by_tag(query_item))
 
             if results:
                 results = results.intersection(results_by_tag)
@@ -1129,7 +1112,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         Allow efficient retrieval: if the tag is know locally, return the local
         element. Else, perform a search on location
         """
-        results = self.find_by_tag(tag)
+        results = self.object_store.find_by_tag(tag)
         if results:
             assert all(result.location.id == location.id for result in results)
             return results
@@ -1147,7 +1130,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         """
 
-        return sy.serde.deserialize(self.msg_history[index], worker=self)
+        return self.msg_history[index]
 
     @property
     def message_pending_time(self):
@@ -1192,6 +1175,18 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def feed_crypto_primitive_store(self, types_primitives: dict):
         self.crypto_store.add_primitives(types_primitives)
+
+    def list_tensors(self):
+        return str(self.object_store._tensors)
+
+    def tensors_count(self):
+        return len(self.object_store._tensors)
+
+    def list_objects(self):
+        return str(self.object_store._objects)
+
+    def objects_count(self):
+        return len(self.object_store._objects)
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
@@ -1258,7 +1253,7 @@ class BaseWorker(AbstractWorker, ObjectStorage):
     def force_simplify(_worker: AbstractWorker, worker: AbstractWorker) -> tuple:
         return (
             sy.serde.msgpack.serde._simplify(_worker, worker.id),
-            sy.serde.msgpack.serde._simplify(_worker, worker._objects),
+            sy.serde.msgpack.serde._simplify(_worker, worker.object_store._objects),
             worker.auto_add,
         )
 
@@ -1269,11 +1264,11 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
         result = sy.VirtualWorker(sy.hook, worker_id, auto_add=auto_add)
         _objects = sy.serde.msgpack.serde._detail(worker, _objects)
-        result._objects = _objects
+        result.object_store._objects = _objects
 
         # make sure they weren't accidentally double registered
         for _, obj in _objects.items():
-            if obj.id in worker._objects:
-                del worker._objects[obj.id]
+            if obj.id in worker.object_store._objects:
+                worker.object_store.rm_obj(obj.id)
 
         return result

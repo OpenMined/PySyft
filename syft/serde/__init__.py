@@ -1,1 +1,1 @@
-from syft.serde.serde import *
+from syft.serde.serde import serialize, deserialize

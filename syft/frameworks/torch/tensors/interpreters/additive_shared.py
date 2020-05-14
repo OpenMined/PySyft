@@ -253,7 +253,7 @@ class AdditiveSharingTensor(AbstractTensor):
         shares = list()
 
         for v in self.child.values():
-            share = v.location._objects[v.id_at_location]
+            share = v.location.object_store.get_obj(v.id_at_location)
             shares.append(share)
 
         result = self.modulo(sum(shares))
@@ -1242,6 +1242,10 @@ class AdditiveSharingTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+    @staticmethod
+    def get_protobuf_schema() -> AdditiveSharingTensorPB:
+        return AdditiveSharingTensorPB
 
 
 ### Register the tensor with hook_args.py ###
