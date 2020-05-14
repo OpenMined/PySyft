@@ -283,17 +283,22 @@ def test_copy():
 def test_trace_secure_aggregation():
     @sy.func2protocol(roles=["alice", "bob", "carol"])
     def secure_aggregation(alice, bob, carol):
+        # This is essentially a crypto "hyper-param"
+        # TBD how this would actually be supplied
         Q = 9973
 
-        # bob does this
+        # inputs: TBD how these will be supplied
         bob_input = bob.torch.tensor([10])
+        carol_input = carol.torch.tensor([15])
+
+        # bob does this
         bob_input = bob_input.fix_prec()
         bob_share1 = bob.torch.randint(-Q // 2, Q // 2, (1,))
         bob_share2 = (bob_input - bob_share1) % Q
         bob_share2.move(carol.worker)
 
         # carol does this
-        carol_input = carol.torch.tensor([15])
+
         carol_input = carol_input.fix_prec()
         carol_share1 = carol.torch.randint(-Q // 2, Q // 2, (1,))
         carol_share2 = (carol_input - carol_share1) % Q
@@ -310,6 +315,7 @@ def test_trace_secure_aggregation():
         # alice does this
         avg = (avg_share1 + avg_share2) % Q
 
+        # TBD how outputs are actually returned
         return avg
 
     assert secure_aggregation.is_built
