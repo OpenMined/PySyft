@@ -14,7 +14,7 @@ class EncryptionParams:
         """
         if poly_modulus_degree >= 2:
             if (poly_modulus_degree & (poly_modulus_degree - 1) == 0) and poly_modulus_degree != 0:
-                self._poly_modulus_degree = poly_modulus_degree
+                self.poly_modulus_degree = poly_modulus_degree
             else:
                 raise ValueError("poly_modulus_degree must be a power of two 2")
         else:
@@ -27,7 +27,7 @@ class EncryptionParams:
             the amount of computation that the scheme can perform (bigger is better),
             and the security level (bigger is worse).
         """
-        self._coeff_modulus = coeff_modulus
+        self.coeff_modulus = coeff_modulus
 
         """
             Sets the plaintext modulus parameter. The plaintext modulus
@@ -35,16 +35,4 @@ class EncryptionParams:
             It also affects the amount of computation that the scheme can perform
             (bigger is worse).
         """
-        self._plain_modulus = plain_modulus
-
-    @property
-    def poly_modulus_degree(self):
-        return self._poly_modulus_degree
-
-    @property
-    def coeff_modulus(self):
-        return self._coeff_modulus
-
-    @property
-    def plain_modulus(self):
-        return self._plain_modulus
+        self.plain_modulus = plain_modulus

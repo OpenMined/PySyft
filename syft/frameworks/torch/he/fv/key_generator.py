@@ -35,18 +35,18 @@ class KeyGenerator:
         Returns:
             A list of (size = 2) containing secret_key and public_key in order.
         """
-        self.generate_sk()
-        self.generate_pk()
+        self._generate_sk()
+        self._generate_pk()
         return [self._secret_key, self._public_key]
 
-    def generate_sk(self, is_initialized=False):
+    def _generate_sk(self, is_initialized=False):
         param = self._context.param
 
         if not is_initialized:
             self._secret_key = SecretKey(sample_poly_ternary(param))
         self._sk_generated = True
 
-    def generate_pk(self):
+    def _generate_pk(self):
         if not self._sk_generated:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 

@@ -49,7 +49,7 @@ def exponentiate_mod(operand, exponent, modulus):
 
 
 def invert_mod(value, modulus):
-    # calculate inverse modulus for given value and modulus
+    """calculate inverse modulus for given value and modulus"""
     gcd_tuple = xgcd(value, modulus)
 
     if gcd_tuple[1] < 0:
@@ -59,7 +59,7 @@ def invert_mod(value, modulus):
 
 
 def get_significant_count(values):
-    # removes all leading zero from the list.
+    """removes all leading zero from the list."""
     count = len(values)
     i = count - 1
     while count and not values[i]:
@@ -69,7 +69,7 @@ def get_significant_count(values):
 
 
 def reverse_bit(value):
-    # calculate the value of the reverse binary representation of the given integer.
+    """calculate the value of the reverse binary representation of the given integer."""
     result = 0
     while value:
         result = (result << 1) + (value & 1)
@@ -123,7 +123,6 @@ def multiply_add_plain_with_delta(phase, message, context):
         A Ciphertext object with the encrypted result of encryption process.
     """
     coeff_modulus = context.param.coeff_modulus
-    coeff_mod_size = len(coeff_modulus)
     coeff_count = context.param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
     delta = context.coeff_div_plain_modulus
@@ -133,7 +132,7 @@ def multiply_add_plain_with_delta(phase, message, context):
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
-        for j in range(coeff_mod_size):
+        for j in range(len(coeff_modulus)):
             temp = round(delta[j] * message[i]) % coeff_modulus[j]
             phase0[i + j * coeff_count] = (phase0[i + j * coeff_count] + temp) % coeff_modulus[j]
 

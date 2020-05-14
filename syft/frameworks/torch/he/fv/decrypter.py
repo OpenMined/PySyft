@@ -30,7 +30,8 @@ class Decrypter:
         return PlainText(result[:plain_coeff_count])
 
     def dot_product_ct_sk(self, encrypted):
-        # calculate and return the value of [c0 + c1 * sk]_q
+        """calculate and return the value of [c0 + c1 * sk]_q
+        where [c0, c1] denotes encrypted ciphertext and sk is secret key."""
         phase = [0] * self._coeff_count * len(self._coeff_modulus)
         c_0, c_1 = encrypted.data
 

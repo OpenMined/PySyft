@@ -16,9 +16,9 @@ class RNSBase:
     """
 
     def __init__(self, base):
-        self._size = len(base)
+        self.size = len(base)
 
-        for i in range(self._size):
+        for i in range(self.size):
             if base[i] == 0:
                 raise ValueError("rns_base is invalid")
 
@@ -27,49 +27,29 @@ class RNSBase:
                 if gcd(base[i], j) != 1:
                     raise ValueError("rns_base is invalid")
 
-        self._base = base
-        self._base_prod = None
-        self._punctured_prod_list = [0] * self._size
-        self._inv_punctured_prod_mod_base_list = [0] * self._size
+        self.base = base
+        self.base_prod = None
+        self.punctured_prod_list = [0] * self.size
+        self.inv_punctured_prod_mod_base_list = [0] * self.size
 
-        if self._size > 1:
+        if self.size > 1:
             # Compute punctured product
-            for i in range(self._size):
-                self._punctured_prod_list[i] = multiply_many_except(self._base, self._size, i)
+            for i in range(self.size):
+                self.punctured_prod_list[i] = multiply_many_except(self.base, self.size, i)
 
             # Compute the full product
-            self._base_prod = self._punctured_prod_list[0] * self._base[0]
+            self.base_prod = self.punctured_prod_list[0] * self.base[0]
 
             # Compute inverses of punctured products mod primes
-            for i in range(self._size):
-                self._inv_punctured_prod_mod_base_list[i] = (
-                    self._punctured_prod_list[i] % self._base[i]
+            for i in range(self.size):
+                self.inv_punctured_prod_mod_base_list[i] = (
+                    self.punctured_prod_list[i] % self.base[i]
                 )
-                self._inv_punctured_prod_mod_base_list[i] = invert_mod(
-                    self._inv_punctured_prod_mod_base_list[i], self._base[i]
+                self.inv_punctured_prod_mod_base_list[i] = invert_mod(
+                    self.inv_punctured_prod_mod_base_list[i], self.base[i]
                 )
 
         else:
-            self._base_prod = self._base[0]
-            self._punctured_prod_list[0] = 1
-            self._inv_punctured_prod_mod_base_list[0] = 1
-
-    @property
-    def base(self):
-        return self._base
-
-    @property
-    def size(self):
-        return self._size
-
-    @property
-    def base_prod(self):
-        return self._base_prod
-
-    @property
-    def punctured_prod_list(self):
-        return self._punctured_prod_list
-
-    @property
-    def inv_punctured_prod_mod_base_list(self):
-        return self._inv_punctured_prod_mod_base_list
+            self.base_prod = self.base[0]
+            self.punctured_prod_list[0] = 1
+            self.inv_punctured_prod_mod_base_list[0] = 1
