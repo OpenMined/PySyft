@@ -12,8 +12,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
-from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
-from syft.serde.syft_serializable import SyftSerializableWrapper
+from syft.serde.syft_serializable import SyftSerializable, get_protobuf_classes, get_protobuf_wrappers
 
 
 class MetaProtobufGlobalState(type):
@@ -95,17 +94,17 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
 
         self._MAP_TO_PROTOBUF_TRANSLATORS = {
             wrapper_type.get_original_class(): (wrapper_type.bufferize, wrapper_type.unbufferize)
-            for wrapper_type in get_protobuf_subclasses(SyftSerializableWrapper)
+            for wrapper_type in get_protobuf_wrappers(SyftSerializable)
         }
 
-        self._OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+        self._OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_classes(SyftSerializable))
 
         for proto_class in self._OBJ_PROTOBUF_TRANSLATORS:
             self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
 
         for proto_class, proto_schema in [
             (wrapper_type.get_original_class(), wrapper_type.get_protobuf_schema())
-            for wrapper_type in get_protobuf_subclasses((SyftSerializableWrapper))
+            for wrapper_type in get_protobuf_wrappers((SyftSerializable))
         ]:
             self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_schema
 
@@ -144,6 +143,70 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
             )
         self.stale_state = False
         return self
+
+
+def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
+    """
+    This function takes an object as input and returns a
+    Protobuf object. The reason we have this function
+    is that some objects are either NOT supported by high level (fast)
+    serializers OR the high level serializers don't support the fastest
+    form of serialization. For example, PyTorch tensors have custom pickle
+    functionality thus its better to pre-serialize PyTorch tensors using
+    pickle and then serialize the binary in with the rest of the message
+    being sent.
+
+    Args:
+        obj: An object which needs to be converted to Protobuf.
+
+    Returns:
+        An Protobuf object which Protobuf can serialize.
+    """
+
+    # Check to see if there is a bufferizer
+    # for this type. If there is, return the bufferized object.
+    # breakpoint()
+    current_type = type(obj)
+    if current_type in protobuf_global_state.bufferizers:
+        result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
+        return result
+    elif current_type in protobuf_global_state.inherited_bufferizers_found:
+        return (protobuf_global_state.inherited_bufferizers_found[current_type][0],
+                protobuf_global_state.inherited_bufferizers_found[current_type][1](
+                worker, obj, **kwargs))
+    # If we already tried to find a bufferizer for this type but failed, we should
+    # just return the object as it is.
+    elif current_type in protobuf_global_state.no_bufferizers_found:
+        raise Exception(f"No corresponding Protobuf message found for {current_type}")
+    else:
+
+        protobuf_global_state.stale_state = True
+        if current_type in protobuf_global_state.bufferizers:
+            result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
+            return result
+
+        # If the object type is not in bufferizers,
+        # we check the classes that this object inherits from.
+        # `inspect.getmro` give us all types this object inherits
+        # from, including `type(obj)`. We can skip the type of the
+        # object because we already tried this in the
+        # previous step.
+        classes_inheritance = inspect.getmro(type(obj))[1:]
+
+        for inheritance_type in classes_inheritance:
+            if inheritance_type in protobuf_global_state.bufferizers:
+                # Store the inheritance_type in bufferizers so next time we see this type
+                # serde will be faster.
+                protobuf_global_state.inherited_bufferizers_found[
+                    current_type
+                ] = protobuf_global_state.bufferizers[inheritance_type]
+                result = protobuf_global_state.inherited_bufferizers_found[current_type](
+                    worker, obj, **kwargs
+                )
+                return result
+
+        protobuf_global_state.no_bufferizers_found.add(current_type)
+        raise Exception(f"No corresponding Protobuf message found for {current_type}")
 
 
 ## SECTION: High Level Translation Router
@@ -321,76 +384,6 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
     message_type = msg_wrapper.WhichOneof("contents")
     python_obj = _unbufferize(worker, getattr(msg_wrapper, message_type))
     return python_obj
-
-
-def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
-    """
-    This function takes an object as input and returns a
-    Protobuf object. The reason we have this function
-    is that some objects are either NOT supported by high level (fast)
-    serializers OR the high level serializers don't support the fastest
-    form of serialization. For example, PyTorch tensors have custom pickle
-    functionality thus its better to pre-serialize PyTorch tensors using
-    pickle and then serialize the binary in with the rest of the message
-    being sent.
-
-    Args:
-        obj: An object which needs to be converted to Protobuf.
-
-    Returns:
-        An Protobuf object which Protobuf can serialize.
-    """
-
-    # Check to see if there is a bufferizer
-    # for this type. If there is, return the bufferized object.
-    # breakpoint()
-    current_type = type(obj)
-    if current_type in protobuf_global_state.bufferizers:
-        result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
-        return result
-    elif current_type in protobuf_global_state.inherited_bufferizers_found:
-        result = (
-            protobuf_global_state.inherited_bufferizers_found[current_type][0],
-            protobuf_global_state.inherited_bufferizers_found[current_type][1](
-                worker, obj, **kwargs
-            ),
-        )
-        return result
-    # If we already tried to find a bufferizer for this type but failed, we should
-    # just return the object as it is.
-    elif current_type in protobuf_global_state.no_bufferizers_found:
-        raise Exception(f"No corresponding Protobuf message found for {current_type}")
-
-    else:
-
-        protobuf_global_state.stale_state = True
-        if current_type in protobuf_global_state.bufferizers:
-            result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
-            return result
-
-        # If the object type is not in bufferizers,
-        # we check the classes that this object inherits from.
-        # `inspect.getmro` give us all types this object inherits
-        # from, including `type(obj)`. We can skip the type of the
-        # object because we already tried this in the
-        # previous step.
-        classes_inheritance = inspect.getmro(type(obj))[1:]
-
-        for inheritance_type in classes_inheritance:
-            if inheritance_type in protobuf_global_state.bufferizers:
-                # Store the inheritance_type in bufferizers so next time we see this type
-                # serde will be faster.
-                protobuf_global_state.inherited_bufferizers_found[
-                    current_type
-                ] = protobuf_global_state.bufferizers[inheritance_type]
-                result = protobuf_global_state.inherited_bufferizers_found[current_type](
-                    worker, obj, **kwargs
-                )
-                return result
-
-        protobuf_global_state.no_bufferizers_found.add(current_type)
-        raise Exception(f"No corresponding Protobuf message found for {current_type}")
-
 
 def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     """Reverses the functionality of _bufferize.

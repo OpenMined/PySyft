@@ -1,7 +1,32 @@
 import inspect
 
+def get_from_inheritance_chain(cls, condition):
+    original_subclasses = {s for s in cls.__subclasses__() if condition(s)}
+    sub_sets = {
+        s
+        for c in cls.__subclasses__()
+        for s in get_from_inheritance_chain(c, condition)
+        if condition(s)
+    }
+    return original_subclasses.union(sub_sets)
 
-def get_protobuf_subclasses(cls):
+def get_protobuf_wrappers(cls):
+    def check_implementation(s):
+        not_abstract = not inspect.isabstract(s)
+        bufferize_implemented = s.bufferize.__qualname__.startswith(s.__name__)
+        unbufferize_implemented = s.unbufferize.__qualname__.startswith(s.__name__)
+        get_protobuf_schema_implemented = s.get_protobuf_schema.__qualname__.startswith(s.__name__)
+        get_original_class = s.get_original_class.__qualname__.startswith(s.__name__)
+        return (
+                not_abstract
+                and bufferize_implemented
+                and unbufferize_implemented
+                and get_protobuf_schema_implemented
+                and get_original_class
+        )
+    return get_from_inheritance_chain(cls, check_implementation)
+
+def get_protobuf_classes(cls):
     """
         Function to retrieve all classes that implement the protobuf methods from the SyftSerializable class:
 
@@ -22,28 +47,23 @@ def get_protobuf_subclasses(cls):
                 2. unbufferize implemented.
                 3. get_protobuf_schema implemented.
                 4. no abstact methods.
-
+                5. no get_original_class methods
             To be sure that it can be used with protobufers.
         """
         not_abstract = not inspect.isabstract(s)
         bufferize_implemented = s.bufferize.__qualname__.startswith(s.__name__)
         unbufferize_implemented = s.unbufferize.__qualname__.startswith(s.__name__)
         get_protobuf_schema_implemented = s.get_protobuf_schema.__qualname__.startswith(s.__name__)
+        get_original_class = not s.get_original_class.__qualname__.startswith(s.__name__)
         return (
             not_abstract
             and bufferize_implemented
             and unbufferize_implemented
             and get_protobuf_schema_implemented
+            and get_original_class
         )
 
-    original_subclasses = {s for s in cls.__subclasses__() if check_implementation(s)}
-    sub_sets = {
-        s
-        for c in cls.__subclasses__()
-        for s in get_protobuf_subclasses(c)
-        if check_implementation(s)
-    }
-    return original_subclasses.union(sub_sets)
+    return get_from_inheritance_chain(cls, check_implementation)
 
 
 def get_msgpack_subclasses(cls):
@@ -172,28 +192,6 @@ class SyftSerializable:
         """
         raise NotImplementedError
 
-
-class SyftSerializableWrapper:
-    @staticmethod
-    def simplify(worker, obj):
-        return NotImplementedError
-
-    @staticmethod
-    def detail(worker, obj):
-        return NotImplementedError
-
-    @staticmethod
-    def bufferize(worker, obj):
-        return NotImplementedError
-
-    @staticmethod
-    def unbufferize(worker, obj):
-        return NotImplementedError
-
     @staticmethod
     def get_original_class():
-        return NotImplementedError
-
-    @staticmethod
-    def get_protobuf_schema():
         return NotImplementedError

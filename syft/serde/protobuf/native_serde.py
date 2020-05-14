@@ -6,15 +6,14 @@ use an existing sub-class of Message or add a new one.
 """
 import pydoc
 import warnings
-from collections import OrderedDict
 
 from google.protobuf.empty_pb2 import Empty
 from syft.workers.abstract import AbstractWorker
-from syft.serde.syft_serializable import SyftSerializableWrapper
+from syft.serde.syft_serializable import SyftSerializable
 from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as InputTypeDescriptorPB
 
 
-class NoneProtoWrapper(SyftSerializableWrapper):
+class NoneProtoWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, obj: "type(None)") -> "Empty":
         """
@@ -50,7 +49,7 @@ class NoneProtoWrapper(SyftSerializableWrapper):
         return type(None)
 
 
-class TypeProtoWrapper(SyftSerializableWrapper):
+class TypeProtoWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, obj) -> InputTypeDescriptorPB:
         """

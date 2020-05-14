@@ -8,7 +8,7 @@ import io
 import torch
 
 import syft
-from syft.serde.syft_serializable import SyftSerializableWrapper
+from syft.serde.syft_serializable import SyftSerializable
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.tensor import initialize_tensor
 from syft.workers.abstract import AbstractWorker
@@ -134,7 +134,7 @@ def protobuf_tensor_deserializer(
 # Bufferize/Unbufferize Torch Tensors
 
 
-class TorchTensorWrapper(SyftSerializableWrapper):
+class TorchTensorWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, tensor: torch.Tensor) -> bin:
         """
@@ -248,7 +248,7 @@ class TorchTensorWrapper(SyftSerializableWrapper):
         return TorchTensorPB
 
 
-class TorchDeviceWrapper(SyftSerializableWrapper):
+class TorchDeviceWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, device: torch.device) -> DevicePB:
         protobuf_device = DevicePB()
@@ -269,7 +269,7 @@ class TorchDeviceWrapper(SyftSerializableWrapper):
         return DevicePB
 
 
-class ParameterWrapper(SyftSerializableWrapper):
+class ParameterWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, param: torch.nn.Parameter) -> ParameterPB:
         protobuf_param = ParameterPB()
@@ -298,7 +298,7 @@ class ParameterWrapper(SyftSerializableWrapper):
         return ParameterPB
 
 
-class ScriptModuleWrapper(SyftSerializableWrapper):
+class ScriptModuleWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, script_module: torch.jit.ScriptModule) -> ScriptModulePB:
         protobuf_script = ScriptModulePB()
@@ -322,7 +322,7 @@ class ScriptModuleWrapper(SyftSerializableWrapper):
         return torch.jit.ScriptModule
 
 
-class ScriptFunctionWrapper(SyftSerializableWrapper):
+class ScriptFunctionWrapper(SyftSerializable):
     @staticmethod
     def bufferize(
         worker: AbstractWorker, script_module: torch.jit.ScriptFunction
@@ -348,7 +348,7 @@ class ScriptFunctionWrapper(SyftSerializableWrapper):
         return ScriptFunctionPB
 
 
-class TopLevelTracedModuleWrapper(SyftSerializableWrapper):
+class TopLevelTracedModuleWrapper(SyftSerializable):
     @staticmethod
     def bufferize(
         worker: AbstractWorker, script_module: torch.jit.TopLevelTracedModule
@@ -374,7 +374,7 @@ class TopLevelTracedModuleWrapper(SyftSerializableWrapper):
         return torch.jit.TopLevelTracedModule
 
 
-class TorchSizeWrapper(SyftSerializableWrapper):
+class TorchSizeWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, size: torch.Size) -> SizePB:
         protobuf_size = SizePB()
