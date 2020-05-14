@@ -278,3 +278,42 @@ def test_copy():
         for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
     ]
     assert copy.is_built == protocol.is_built
+
+
+def test_trace_secure_aggregation():
+    @sy.func2protocol(roles=["alice", "bob", "carol"])
+    def secure_aggregation(alice, bob, carol):
+        Q = 9973
+
+        # bob does this
+        bob_input = bob.torch.tensor([10])
+        bob_input = bob_input.fix_prec()
+        bob_share1 = bob.torch.randint(-Q // 2, Q // 2, (1,))
+        bob_share2 = (bob_input - bob_share1) % Q
+        bob_share2.move(carol.worker)
+
+        # carol does this
+        carol_input = carol.torch.tensor([15])
+        carol_input = carol_input.fix_prec()
+        carol_share1 = carol.torch.randint(-Q // 2, Q // 2, (1,))
+        carol_share2 = (carol_input - carol_share1) % Q
+        carol_share1.move(bob.worker)
+
+        # bob does this
+        avg_share1 = (bob_share1 + carol_share1) / 2
+        avg_share1.move(alice.worker)
+
+        # carol does this
+        avg_share2 = (bob_share2 + carol_share2) / 2
+        avg_share2.move(alice.worker)
+
+        # alice does this
+        avg = (avg_share1 + avg_share2) % Q
+
+        return avg
+
+    assert secure_aggregation.is_built
+
+    assert len(secure_aggregation.roles["alice"].actions) > 0
+    assert len(secure_aggregation.roles["bob"].actions) > 0
+    assert len(secure_aggregation.roles["carol"].actions) > 0
