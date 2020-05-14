@@ -679,7 +679,7 @@ def test_eq(workers, protocol):
     )
 
     if protocol == "fss":
-        for worker in workers:
+        for worker in workers.values():
             syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
 
