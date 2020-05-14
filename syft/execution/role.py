@@ -180,6 +180,11 @@ class Role(SyftSerializable):
         else:
             return tensor
 
+    def load_state(self):
+        """ Load tensors used in a protocol from worker's local store
+        """
+        return self.state.read()
+
     def instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """

@@ -244,8 +244,8 @@ def test_stateful_protocol(workers):
     @sy.func2protocol(roles=["alice", "bob"], args_shape=shapes, states=states)
     def protocol(alice, bob):
         # fetch tensors from states
-        tensor_a1, tensor_a2 = alice.load(th.tensor([1]))
-        tensor_b1 = bob.load(th.tensor([1]))
+        tensor_a1, tensor_a2 = alice.load_state()
+        (tensor_b1,) = bob.load_state()
 
         t1plus = tensor_a1 + tensor_a2
         t2plus = tensor_b1 + 1
