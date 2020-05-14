@@ -4,24 +4,15 @@ import inspect
 import re
 import syft
 from syft import dependency_check
-from syft.execution.computation import ComputationAction
-from syft.execution.communication import CommunicationAction
-from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.execution.placeholder import PlaceHolder
-from syft.execution.placeholder_id import PlaceholderId
-from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import TensorCommandMessage
-from syft.execution.plan import Plan
-from syft.execution.protocol import Protocol
-from syft.execution.role import Role
-from syft.execution.state import State
 from syft.serde import compression
 from syft.serde.protobuf.native_serde import MAP_NATIVE_PROTOBUF_TRANSLATORS
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
+from syft.serde.syft_serializable import SyftSerializable, get_protobuf_subclasses
 
 if dependency_check.torch_available:
     from syft.serde.protobuf.torch_serde import MAP_TORCH_PROTOBUF_TRANSLATORS
@@ -43,20 +34,7 @@ MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict(
 )
 
 # If an object implements its own bufferize and unbufferize functions it should be stored in this list
-OBJ_PROTOBUF_TRANSLATORS = [
-    AdditiveSharingTensor,
-    CommunicationAction,
-    ComputationAction,
-    ObjectMessage,
-    PlaceholderId,
-    PlaceHolder,
-    Plan,
-    PointerTensor,
-    Protocol,
-    Role,
-    State,
-    TensorCommandMessage,
-]
+OBJ_PROTOBUF_TRANSLATORS = None
 
 # If an object implements its own force_bufferize and force_unbufferize functions it should be stored in this list
 # OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = [BaseWorker]
@@ -65,6 +43,30 @@ OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
 # For registering syft objects with custom bufferize and unbufferize methods
 # EXCEPTION_PROTOBUF_TRANSLATORS = [GetNotPermittedError, ResponseSignatureError]
 EXCEPTION_PROTOBUF_TRANSLATORS = []
+
+
+def get_bufferizers():
+    """
+        Function to retrieve the bufferizers, so that no other function uses directly de global elements.
+    """
+    init_global_vars()
+    return bufferizers.items()
+
+
+def init_global_vars():
+    """
+        Function to initialise at the first usage all the global elements used in protobuf/serde.py and protobuf/proto.py.
+    """
+    global OBJ_PROTOBUF_TRANSLATORS, bufferizers, forced_full_bufferizers, unbufferizers, MAP_PYTHON_TO_PROTOBUF_CLASSES
+    if OBJ_PROTOBUF_TRANSLATORS is None:
+        OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_subclasses(SyftSerializable))
+        for proto_class in OBJ_PROTOBUF_TRANSLATORS:
+            MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
+        (
+            bufferizers,
+            forced_full_bufferizers,
+            unbufferizers,
+        ) = _generate_bufferizers_and_unbufferizers()
 
 
 ## SECTION: High Level Translation Router
@@ -139,6 +141,7 @@ def _generate_bufferizers_and_unbufferizers():
     def _add_bufferizer_and_unbufferizer(
         curr_type, proto_type, bufferizer, unbufferizer, forced=False
     ):
+
         if forced:
             forced_full_bufferizers[curr_type] = bufferizer
             unbufferizers[proto_type] = unbufferizer
@@ -172,7 +175,7 @@ def _generate_bufferizers_and_unbufferizers():
     return bufferizers, forced_full_bufferizers, unbufferizers
 
 
-bufferizers, forced_full_bufferizers, unbufferizers = _generate_bufferizers_and_unbufferizers()
+bufferizers, forced_full_bufferizers, unbufferizers = None, None, None
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
 no_bufferizers_found, no_full_bufferizers_found = set(), set()
@@ -219,6 +222,9 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
+
+    init_global_vars()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -287,6 +293,9 @@ def deserialize(binary: bin, worker: AbstractWorker = None, unbufferizes=True) -
     Returns:
         object: the deserialized form of the binary input.
     """
+
+    init_global_vars()
+
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -325,6 +334,7 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
     # Check to see if there is a bufferizer
     # for this type. If there is, return the bufferized object.
     # breakpoint()
+    init_global_vars()
     current_type = type(obj)
     if current_type in bufferizers:
         result = bufferizers[current_type](worker, obj, **kwargs)
@@ -378,6 +388,9 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
+
+    init_global_vars()
+
     current_type = type(obj)
     if current_type in unbufferizers:
         return unbufferizers[current_type](worker, obj, **kwargs)
@@ -386,10 +399,7 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
 
 def bufferize_args(worker: AbstractWorker, args_: list) -> list:
-    protobuf_args = []
-    for arg in args_:
-        protobuf_args.append(bufferize_arg(worker, arg))
-    return protobuf_args
+    return [bufferize_arg(worker, arg) for arg in args_]
 
 
 def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
@@ -401,22 +411,23 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
         setattr(protobuf_arg, attr_name, arg)
     except:
         getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+
     return protobuf_arg
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-    args_ = []
-    for protobuf_arg in protobuf_args:
-        args_.append(unbufferize_arg(worker, protobuf_arg))
-    return args_
+    return tuple([unbufferize_arg(worker, arg) for arg in protobuf_args])
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
-    protobuf_arg_field = getattr(protobuf_arg, protobuf_arg.WhichOneof("arg"))
+    protobuf_field_name = protobuf_arg.WhichOneof("arg")
+
+    protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
     try:
         arg = _unbufferize(worker, protobuf_arg_field)
     except:
         arg = protobuf_arg_field
+
     return arg
 
 

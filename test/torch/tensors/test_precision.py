@@ -461,7 +461,7 @@ def test_torch_exp_approx(prec_frac, tolerance, workers):
     [
         ("chebyshev", 3, 6 / 100),
         ("chebyshev", 4, 1 / 1000),
-        ("exp", 3, 6 / 100),
+        ("exp", 3, 6.5 / 100),
         ("exp", 4, 1 / 100),
         ("maclaurin", 3, 7 / 100),
         ("maclaurin", 4, 15 / 100),

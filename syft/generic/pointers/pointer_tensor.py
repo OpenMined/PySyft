@@ -262,20 +262,20 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
         Will move the remove value from self.location A to destination B
-
         Note a A will keep a copy of his value that he sent to B. This follows the
         .send() paradigm where the local worker keeps a copy of the value he sends.
-
         Args:
             destination: the new location of the remote data
             requires_grad: see send() for details
-
         Returns:
             A pointer to location
         """
         # move to local target is equivalent to doing .get()
         if self.owner.id == destination.id:
             return self.get()
+
+        if self.location.id == destination.id:
+            return self
 
         ptr = self.remote_send(destination, requires_grad=requires_grad)
 
@@ -291,7 +291,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-
         Args:
             destination: where the remote value should be sent
             requires_grad: if true updating the grad of the remote tensor on destination B will trigger
@@ -299,13 +298,13 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
-            self.id_at_location, "remote_send", self.location.id, [destination.id], kwargs_
+            "remote_send", self, (destination.id,), kwargs_, (self.id,)
         )
         self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
-        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -343,7 +342,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if tensor.is_wrapper:
             if isinstance(tensor.child, FrameworkTensor):
                 return tensor.child
-
         return tensor
 
     def attr(self, attr_name):
@@ -367,8 +365,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an FixPrecisionTensor
         """
-        command = ("fix_prec", self, args, kwargs)
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, "fix_prec", self, args, kwargs)
         return response
 
     fix_precision = fix_prec
@@ -380,8 +377,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-        command = ("float_prec", self, args, kwargs)
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, "float_prec", self, args, kwargs)
         return response
 
     float_precision = float_prec
@@ -393,8 +389,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-        command = ("share", self, args, kwargs)
-        response = self.owner.send_command(self.location, command)
+        if len(args) < 2:
+            raise RuntimeError("Error, share must have > 1 arguments all of type syft.workers")
+
+        response = self.owner.send_command(self.location, "share", self, args, kwargs)
         return response
 
     def share_(self, *args, **kwargs):
@@ -404,8 +402,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-        command = ("share_", self, args, kwargs)
-        response = self.owner.send_command(self.location, command)
+        response = self.owner.send_command(self.location, "share_", self, args, kwargs)
         return self
 
     def set_garbage_collect_data(self, value):
@@ -614,6 +611,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             )
 
             return ptr
+
+    @staticmethod
+    def get_protobuf_schema() -> PointerTensorPB:
+        return PointerTensorPB
 
 
 ### Register the tensor with hook_args.py ###
