@@ -39,7 +39,8 @@ def sample_poly_ternary(parms):
 
 
 def sample_poly_normal(param):
-    """Generate a polynomial from normal distribution.
+    """Generate a polynomial from normal distribution where negative values are represented as
+    (modulus - value) a positive value.
 
     Args:
         parms: A valid EncryptionParam class object required for extracting the encryption parameters.

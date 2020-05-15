@@ -4,7 +4,8 @@ from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 class Decrypter:
     """Decrypts Ciphertext objects into Plaintext objects. Constructing a Decryptor
-    requires a Context object with valid encryption parameters, and the secret key."""
+    requires a Context object with valid encryption parameters, and the secret key.
+    """
 
     def __init__(self, context, secret_key):
         self._context = context
@@ -31,7 +32,8 @@ class Decrypter:
 
     def dot_product_ct_sk(self, encrypted):
         """calculate and return the value of [c0 + c1 * sk]_q
-        where [c0, c1] denotes encrypted ciphertext and sk is secret key."""
+        where [c0, c1] denotes encrypted ciphertext and sk is secret key.
+        """
         phase = [0] * self._coeff_count * len(self._coeff_modulus)
         c_0, c_1 = encrypted.data
 

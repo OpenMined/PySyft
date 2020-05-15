@@ -12,7 +12,8 @@ class IntegerEncoder:
     Negative integers are represented by using -1 instead of 1 in the binary representation,
     and the negative coefficients are stored in the plaintext polynomials as unsigned integers
     that represent them modulo the plaintext modulus. Thus, for example, a coefficient of -1
-    would be stored as a polynomial coefficient plain_modulus-1."""
+    would be stored as a polynomial coefficient plain_modulus-1.
+    """
 
     def __init__(self, context):
         self.plain_modulus = context.param.plain_modulus
@@ -32,7 +33,8 @@ class IntegerEncoder:
     def encode(self, value):
         """Encodes a signed integer into a plaintext polynomial.
         Args:
-            value: The signed integer to encode"""
+            value: The signed integer to encode
+        """
 
         coeff_index = 0
         if value < 0:
@@ -62,7 +64,8 @@ class IntegerEncoder:
         Mathematically this amounts to evaluating the input polynomial at x=2.
 
         Args:
-            plain: The plaintext to be decoded"""
+            plain: The plaintext to be decoded
+        """
 
         result = 0
         bit_index = plain.significant_coeff_count()

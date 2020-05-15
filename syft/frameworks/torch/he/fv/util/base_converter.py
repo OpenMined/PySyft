@@ -24,11 +24,11 @@ class BaseConvertor:
                 )
 
     def fast_convert_list(self, input, count):
-        """Converts the plain/base of input list from ibase to obase declared at the time of
+        """Converts the plain/base of input list from input base to output base declared at the time of
         initialization of BaseConvertor class.
 
         Args:
-            input: A list of integers needed to be converted from ibase to obase.
+            input: A list of integers needed to be converted from input base to output base.
             count: An integer denoting the coefficient count of output base.
 
         Returns:

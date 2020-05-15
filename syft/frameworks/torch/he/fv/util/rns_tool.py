@@ -7,7 +7,10 @@ from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 
 
 class RNSTool:
-    """A class performing major operations required in the process of decryption in RNS varient of FV HE Scheme.
+    """A class performing major operations required in the process of decryption in RNS variant of FV HE Scheme.
+
+    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk] we apply the decrypt_scale_and_round
+    method of this class to get the plaintext object.
     """
 
     def __init__(self, poly_modulus_degree, q, t):
