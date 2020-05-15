@@ -85,9 +85,15 @@ class TorchHook(FrameworkHook):
     """
 
     def __init__(
-        self, torch, local_worker: BaseWorker = None, is_client: bool = True, verbose: bool = True
+        self,
+        torch,
+        local_worker: BaseWorker = None,
+        is_client: bool = True,
+        verbose: bool = False,
+        seed=None,
     ):
-        """Initializes the hook.
+        """
+        Initializes the hook.
 
         Initialize the hook and define all the attributes pertaining to the
         torch hook in a special TorchAttibute class, that will be added in the
@@ -97,6 +103,9 @@ class TorchHook(FrameworkHook):
         # Save the provided torch module as an attribute of the hook
         self.torch = torch
         self.framework = self.torch
+        if seed is not None:
+            syft.ID_PROVIDER.seed(seed)
+        self.verbose = verbose
 
         # Save the local worker as an attribute
         self.local_worker = local_worker
@@ -122,9 +131,13 @@ class TorchHook(FrameworkHook):
             # be agnostic to the means by which workers communicate (such as
             # peer-to-peer, sockets, through local ports, or all within the
             # same process)
-            self.local_worker = VirtualWorker(hook=self, is_client_worker=is_client, id="me")
+            self.local_worker = VirtualWorker(
+                hook=self, is_client_worker=is_client, id="me", verbose=verbose
+            )
         else:
             self.local_worker.hook = self
+
+        self._syft_workers = {self.local_worker}
 
         self.to_auto_overload = {}
 
@@ -837,3 +850,7 @@ class TorchHook(FrameworkHook):
             return total_norm
 
         self.torch.nn.utils.clip_grad_norm_ = clip_grad_norm_remote_
+
+    def set_verbose(self, flag):
+        for workers in self._syft_workers:
+            workers.verbose = flag
