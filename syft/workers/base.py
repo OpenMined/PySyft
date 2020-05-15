@@ -100,7 +100,7 @@ class BaseWorker(AbstractWorker):
         data: Union[List, tuple] = None,
         is_client_worker: bool = False,
         log_msgs: bool = False,
-        verbose: bool = False,
+        verbose: bool = None,
         auto_add: bool = True,
         message_pending_time: Union[int, float] = 0,
     ):
@@ -113,7 +113,14 @@ class BaseWorker(AbstractWorker):
         self.id = id
         self.is_client_worker = is_client_worker
         self.log_msgs = log_msgs
-        self.verbose = verbose
+        if verbose is None:
+            self.verbose = hook.verbose if hasattr(hook, "verbose") else False
+        else:
+            self.verbose = verbose
+
+        if isinstance(hook, sy.TorchHook) and hasattr(hook, "_syft_workers"):
+            hook._syft_workers.add(self)
+
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
         self.msg_history = list()
@@ -182,8 +189,6 @@ class BaseWorker(AbstractWorker):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
-        # declare the plans used for crypto computations
-        sy.frameworks.torch.mpc.fss.initialize_crypto_plans(self)
 
     def register_obj(self, obj):
         self.object_store.register_obj(self, obj)

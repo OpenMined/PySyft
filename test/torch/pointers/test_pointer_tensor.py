@@ -583,5 +583,14 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    # TODO +6 for the initial FSS plans that need to be removed
-    assert len(alice.object_store._objects) == 8
+    assert len(alice.object_store._objects) == 2
+
+
+def test_inplace_ops_on_remote_long_tensor(workers):
+    alice = workers["alice"]
+
+    t = torch.LongTensor([2])
+    p = t.send_(alice) * 2
+    p.get_()
+
+    assert p == torch.LongTensor([4])

@@ -237,6 +237,26 @@ def test_multi_role_execution():
     assert (dict_res["alice"][0] == th.tensor([4])).all()
 
 
+def test_stateful_protocol(workers):
+    shapes = {"alice": ((1,),), "bob": ((1,),)}
+    states = {"alice": (th.tensor([1]), th.tensor([3])), "bob": (th.tensor([5]),)}
+
+    @sy.func2protocol(roles=["alice", "bob"], args_shape=shapes, states=states)
+    def protocol(alice, bob):
+        # fetch tensors from states
+        tensor_a1, tensor_a2 = alice.load_state()
+        (tensor_b1,) = bob.load_state()
+
+        t1plus = tensor_a1 + tensor_a2
+        t2plus = tensor_b1 + 1
+
+        return t1plus, t2plus
+
+    assert all(protocol.roles["alice"].state.state_placeholders[0].child == th.tensor([1]))
+    assert all(protocol.roles["alice"].state.state_placeholders[1].child == th.tensor([3]))
+    assert all(protocol.roles["bob"].state.state_placeholders[0].child == th.tensor([5]))
+
+
 def test_copy():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(alice, bob):

@@ -33,9 +33,10 @@ class func2protocol(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, roles: list = [], args_shape: dict = {}):
-        self.args_shape = args_shape
+    def __init__(self, roles: list = [], args_shape: dict = {}, states={}):
         self.role_names = roles
+        self.args_shape = args_shape
+        self.states = states
 
     def __call__(self, protocol_function):
         # create the roles present in decorator
@@ -43,6 +44,9 @@ class func2protocol(object):
             role_id: Role(worker=VirtualWorker(id=role_id, hook=sy.local_worker.hook))
             for role_id in self.role_names
         }
+        for role_id, state_tensors in self.states.items():
+            for tensor in state_tensors:
+                roles[role_id].register_state_tensor(tensor)
 
         protocol = Protocol(
             name=protocol_function.__name__,
@@ -107,7 +111,6 @@ class Protocol(AbstractObject):
         self.roles = roles
 
         self.is_building = False
-        self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
         self.tracing = False
