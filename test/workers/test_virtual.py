@@ -15,7 +15,8 @@ from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ObjectNotFoundError
 
 
-def test_send_msg():
+@pytest.mark.asyncio
+async def test_send_msg():
     """Tests sending a message with a specific ID
 
     This is a simple test to ensure that the BaseWorker interface
@@ -38,7 +39,7 @@ def test_send_msg():
 
     # Send data to bob
     start_time = time()
-    me.send_msg(ObjectMessage(obj), bob)
+    await me.send_msg(ObjectMessage(obj), bob)
     elapsed_time = time() - start_time
 
     me.message_pending_time = 0
@@ -49,7 +50,8 @@ def test_send_msg():
     assert elapsed_time > 0.1
 
 
-def test_send_msg_using_tensor_api():
+@pytest.mark.asyncio
+async def test_send_msg_using_tensor_api():
     """Tests sending a message with a specific ID
 
     This is a simple test to ensure that the high level tensor .send()
@@ -67,13 +69,14 @@ def test_send_msg_using_tensor_api():
     obj_id = obj.id
 
     # send the object to Bob (from local_worker)
-    _ = obj.send(bob)
+    _ = await obj.send(bob)
 
     # ensure tensor made it to Bob
     assert obj_id in bob.object_store._objects
 
 
-def test_recv_msg():
+@pytest.mark.asyncio
+async def test_recv_msg():
     """Tests the recv_msg command with 2 tests
 
     The first test uses recv_msg to send an object to alice.
@@ -95,7 +98,7 @@ def test_recv_msg():
     bin_msg = serde.serialize(message)
 
     # have alice receive message
-    alice.recv_msg(bin_msg)
+    await alice.recv_msg(bin_msg)
 
     # ensure that object is now in alice's registry
     assert obj.id in alice.object_store._objects
@@ -109,7 +112,7 @@ def test_recv_msg():
     bin_msg = serde.serialize(message)
 
     # call receive message on alice
-    resp = alice.recv_msg(bin_msg)
+    resp = await alice.recv_msg(bin_msg)
 
     obj_2 = sy.serde.deserialize(resp)
 
@@ -120,7 +123,8 @@ def test_recv_msg():
     assert obj_2.id == obj.id
 
 
-def tests_worker_convenience_methods():
+@pytest.mark.asyncio
+async def tests_worker_convenience_methods():
     """Tests send and get object methods on BaseWorker
 
     This test comes in two parts. The first uses the simple
@@ -139,10 +143,10 @@ def tests_worker_convenience_methods():
     obj = torch.Tensor([100, 100])
 
     # Send data to alice
-    me.send_obj(obj, alice)
+    await me.send_obj(obj, alice)
 
     # Get data from alice
-    resp_alice = me.request_obj(obj.id, alice)
+    resp_alice = await me.request_obj(obj.id, alice)
 
     assert (resp_alice == obj).all()
 
@@ -157,37 +161,38 @@ def tests_worker_convenience_methods():
     assert (resp_bob_self == obj2).all()
 
     # Get data from bob as alice
-    resp_bob_alice = alice.request_obj(obj2.id, bob)
+    resp_bob_alice = await alice.request_obj(obj2.id, bob)
 
     assert (resp_bob_alice == obj2).all()
 
 
-def test_search():
+@pytest.mark.asyncio
+async def test_search():
     worker_id = sy.ID_PROVIDER.pop()
     bob = VirtualWorker(sy.torch.hook, id=f"bob{worker_id}")
 
-    x = (
+    x = await (
         torch.tensor([1, 2, 3, 4, 5])
         .tag("#fun", "#mnist")
         .describe("The images in the MNIST training dataset.")
         .send(bob)
     )
 
-    y = (
+    y = await (
         torch.tensor([1, 2, 3, 4, 5])
         .tag("#not_fun", "#cifar")
         .describe("The images in the MNIST training dataset.")
         .send(bob)
     )
 
-    z = (
+    z = await (
         torch.tensor([1, 2, 3, 4, 5])
         .tag("#fun", "#boston_housing")
         .describe("The images in the MNIST training dataset.")
         .send(bob)
     )
 
-    a = (
+    a = await (
         torch.tensor([1, 2, 3, 4, 5])
         .tag("#not_fun", "#boston_housing")
         .describe("The images in the MNIST training dataset.")
@@ -201,27 +206,29 @@ def test_search():
     assert len(bob.search(["#not_fun", "#boston_housing"])) == 1
 
 
-def test_obj_not_found(workers):
+@pytest.mark.asyncio
+async def test_obj_not_found(workers):
     """Test for useful error message when trying to call a method on
     a tensor which does not exist on a worker anymore."""
 
     bob = workers["bob"]
 
-    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
+    x = await torch.tensor([1, 2, 3, 4, 5]).send(bob)
 
     bob.object_store.clear_objects()
 
     with pytest.raises(ObjectNotFoundError):
-        y = x + x
+        y = await (x + x)
 
 
-def test_get_not_permitted(workers):
+@pytest.mark.asyncio
+async def test_get_not_permitted(workers):
     bob = workers["bob"]
-    x = torch.tensor([1, 2, 3, 4, 5]).send(bob)
+    x = await torch.tensor([1, 2, 3, 4, 5]).send(bob)
     with patch.object(torch.Tensor, "allow") as mock_allowed_to_get:
         mock_allowed_to_get.return_value = False
         with pytest.raises(GetNotPermittedError):
-            x.get()
+            await x.get()
         mock_allowed_to_get.assert_called_once()
 
 
@@ -238,7 +245,8 @@ def test_spinup_time(hook):
     assert (end_time - start_time) < 1
 
 
-def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
+@pytest.mark.asyncio
+async def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     bob = workers["bob"]
 
     @torch.jit.script
@@ -246,13 +254,14 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
         return x + 2
 
     foo_wrapper = ObjectWrapper(obj=foo, id=99)
-    foo_ptr = hook.local_worker.send(foo_wrapper, bob)
+    foo_ptr = await hook.local_worker.send(foo_wrapper, bob)
 
-    res = foo_ptr(torch.tensor(4))
+    res = await foo_ptr(torch.tensor(4))
     assert res == torch.tensor(6)
 
 
-def test_send_command_whitelist(hook, workers):
+@pytest.mark.asyncio
+async def test_send_command_whitelist(hook, workers):
     bob = workers["bob"]
     whitelisted_methods = {
         "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
@@ -262,10 +271,11 @@ def test_send_command_whitelist(hook, workers):
         attr = getattr(bob.remote, framework)
 
         for method, inp in methods.items():
-            x = getattr(attr, method)(inp)
+            x = await getattr(attr, method)(inp)
+            x_val = await x.get()
 
             if "rand" not in method:
-                assert (x.get() == getattr(torch, method)(inp)).all()
+                assert (x_val == getattr(torch, method)(inp)).all()
 
 
 def test_send_command_not_whitelisted(hook, workers):

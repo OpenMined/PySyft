@@ -715,7 +715,7 @@ class BaseWorker(AbstractWorker):
         """
         return self.send_msg(ObjectMessage(obj), location)
 
-    def request_obj(
+    async def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
     ) -> object:
         """Returns the requested object from specified location.
@@ -729,7 +729,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
+        obj = await self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
         return obj
 
     # SECTION: Manage the workers network

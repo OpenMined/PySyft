@@ -60,10 +60,10 @@ class CallablePointer(ObjectPointer):
             description=description,
         )
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs):
 
         return_ids = (sy.ID_PROVIDER.pop(),)
-        response = self.owner.send_command(
+        response = await self.owner.send_command(
             cmd_name="__call__",
             target=self.id_at_location,
             args_=args,
