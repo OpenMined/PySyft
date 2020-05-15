@@ -469,10 +469,6 @@ class BaseWorker(AbstractWorker):
             unwrapped.garbage_collect_data = False
             local_obj = self.get_obj(unwrapped.id_at_location)
 
-            if unwrapped.point_to_attr:
-                for attr in obj.point_to_attr.split("."):
-                    local_obj = getattr(local_obj, attr)
-
             if local_obj is not None:
                 if not local_obj.is_wrapper and not isinstance(local_obj, FrameworkTensor):
                     local_obj = local_obj.wrap()

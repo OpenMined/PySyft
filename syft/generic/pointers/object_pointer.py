@@ -251,15 +251,6 @@ class ObjectPointer(AbstractObject, SyftSerializable):
 
         TODO: add param get_copy which doesn't destroy remote if true.
         """
-
-        if self.point_to_attr is not None:
-
-            raise exceptions.CannotRequestObjectAttribute(
-                "You called .get() on a pointer to"
-                " a tensor attribute. This is not yet"
-                " supported. Call .clone().get() instead."
-            )
-
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
@@ -277,6 +268,10 @@ class ObjectPointer(AbstractObject, SyftSerializable):
         if self.garbage_collect_data:
             # data already retrieved, do not collect any more.
             self.garbage_collect_data = False
+
+        if self.point_to_attr:
+            for attr in self.point_to_attr.split("."):
+                obj = getattr(obj, attr)
 
         return obj
 
