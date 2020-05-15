@@ -228,7 +228,7 @@ class ObjectPointer(AbstractObject, SyftSerializable):
             pointer = err.pointer
             return pointer
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    async def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
@@ -264,12 +264,12 @@ class ObjectPointer(AbstractObject, SyftSerializable):
         # if the pointer happens to be pointing to a local object,
         # just return that object (this is an edge case)
         if self.location == self.owner:
-            obj = self.owner.get_obj(self.id_at_location)
+            obj = await self.owner.get_obj(self.id_at_location)
             if hasattr(obj, "child"):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+            obj = await self.owner.request_obj(self.id_at_location, self.location, user, reason)
 
         # Remove this pointer by default
         if deregister_ptr:

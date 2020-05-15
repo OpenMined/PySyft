@@ -413,7 +413,7 @@ class TorchTensor(AbstractTensor):
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
 
-    def send(
+    async def send(
         self,
         *location,
         inplace: bool = False,
@@ -471,7 +471,7 @@ class TorchTensor(AbstractTensor):
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
 
-            ptr = self.owner.send(
+            ptr = await self.owner.send(
                 self,
                 location,
                 local_autograd=local_autograd,

@@ -239,7 +239,7 @@ class BaseWorker(AbstractWorker):
                 self.register_obj(tensor)
                 tensor.owner = self
 
-    def send_msg(self, message: Message, location: "BaseWorker") -> object:
+    async def send_msg(self, message: Message, location: "BaseWorker") -> object:
         """Implements the logic to send messages.
 
         The message is serialized and sent to the specified location. The
@@ -265,14 +265,14 @@ class BaseWorker(AbstractWorker):
         bin_message = sy.serde.serialize(message, worker=self)
 
         # Step 2: send the message and wait for a response
-        bin_response = self._send_msg(bin_message, location)
+        bin_response = await self._send_msg(bin_message, location)
 
         # Step 3: deserialize the response
         response = sy.serde.deserialize(bin_response, worker=self)
 
         return response
 
-    def recv_msg(self, bin_message: bin) -> bin:
+    async def recv_msg(self, bin_message: bin) -> bin:
         """Implements the logic to receive messages.
 
         The binary message is deserialized and routed to the appropriate
@@ -310,7 +310,7 @@ class BaseWorker(AbstractWorker):
 
         # SECTION:recv_msg() uses self._message_router to route to these methods
 
-    def send(
+    async def send(
         self,
         obj: Union[FrameworkTensorType, AbstractTensor],
         workers: "BaseWorker",
@@ -374,7 +374,7 @@ class BaseWorker(AbstractWorker):
             obj.id_at_origin = obj.id
 
         # Send the object
-        self.send_obj(obj, worker)
+        await self.send_obj(obj, worker)
 
         if requires_grad:
             obj.origin = None
@@ -584,7 +584,7 @@ class BaseWorker(AbstractWorker):
 
         return command(*args_)
 
-    def send_command(
+    async def send_command(
         self,
         recipient: "BaseWorker",
         cmd_name: str,
@@ -616,7 +616,7 @@ class BaseWorker(AbstractWorker):
             message = TensorCommandMessage.computation(
                 cmd_name, target, args_, kwargs_, return_ids, return_value
             )
-            ret_val = self.send_msg(message, location=recipient)
+            ret_val = await self.send_msg(message, location=recipient)
         except ResponseSignatureError as e:
             ret_val = None
             return_ids = e.ids_generated

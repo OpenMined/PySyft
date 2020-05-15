@@ -287,8 +287,9 @@ class TorchHook(FrameworkHook):
 
     def _get_hooked_base_worker_method(hook_self, attr):
         @wraps(attr)
-        def overloaded_attr(self_torch, *args, **kwargs):
-            ptr = hook_self.local_worker.send_command(
+        async def overloaded_attr(self_torch, *args, **kwargs):
+            # TODO: See if we can avoid sending a command here
+            ptr = await hook_self.local_worker.send_command(
                 recipient=self_torch.worker(),
                 cmd_name=f"{'torch'}.{attr}",
                 args_=args,
