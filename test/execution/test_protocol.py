@@ -179,6 +179,29 @@ def test_trace_communication_actions_remote_get():
     assert "remote_get" in [action.name for action in traced_actions]
 
 
+def test_trace_store_load():
+    @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        t = th.Tensor([101])
+        stored = bob.store(t)
+        stored_id = stored.id
+        tensor1 = alice.load(th.tensor([1]))
+        bob.store(th.Tensor([102]), storage_id=stored_id)
+        tensor2 = bob.load(stored_id)
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+        return t1plus, t2plus
+
+    assert len(protocol.roles) == 2
+    assert "alice" in protocol.roles
+    assert "bob" in protocol.roles
+
+    # TODO add asserts for trace / traced_actions
+    bob_traced_actions = protocol.roles["bob"].actions
+    assert "store" in [action.name for action in bob_traced_actions]
+    assert "load" in [action.name for action in bob_traced_actions]
+
+
 def test_create_roles_from_decorator():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(alice, bob):

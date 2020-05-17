@@ -7,6 +7,7 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft.execution.placeholder_id import PlaceholderId
 
 
 class ObjectStore:
@@ -71,15 +72,21 @@ class ObjectStore:
         Returns:
             Object with id equals to `obj_id`.
         """
-
+        obj = None
         try:
-            obj = self._objects[obj_id]
-        except KeyError as e:
-            if obj_id not in self._objects:
-                raise ObjectNotFoundError(obj_id, self)
-            else:
-                raise e
-
+            # if object is a tesor
+            obj = self._objects.get(obj_id, None)
+            if obj is None:
+                # check for placeholder_ids
+                found = (self._objects[x] for x in self._objects if x.value == obj_id)
+                try:
+                    obj = next(found)
+                except StopIteration as e:
+                    # the object was not found using key look up or looking for placeholder_ids
+                    raise ObjectNotFoundError(obj_id, self)
+        except Exception as e:
+            # catch other exceptions
+            raise e
         return obj
 
     def set_obj(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:

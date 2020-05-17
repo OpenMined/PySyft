@@ -1,3 +1,4 @@
+import torch as th
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -171,14 +172,39 @@ class Role(SyftSerializable):
 
         return tuple(p.child for p in output_placeholders)
 
+    def store(self, tensor, storage_id=None):
+        """ store tensors used in a protocol to worker's local store
+        """
+        # HACK to get rid of import error... "module 'syft.execution' has no attribute 'worker_actions"
+        from syft.execution import worker_actions
+        from importlib import reload  # reload
+
+        reload(worker_actions)
+        if storage_id:
+            # over write / update value
+            tensor.id = storage_id
+        if self.tracing:
+            self.worker.object_store.set_obj(tensor)
+            command = ("store", self, (), {})
+            self.register_action((command, tensor), sy.execution.worker_actions.WorkerAction)
+        return tensor
+
     def load(self, tensor):
         """ Load tensors used in a protocol from worker's local store
         """
-        # TODO mock for now, load will use worker's store in a future work
-        if self.tracing:
-            return PlaceHolder.create_from(tensor, role=self, tracing=True)
-        else:
-            return tensor
+        # load will use worker's store
+        if isinstance(tensor, (str, int)):
+            tensor = self.worker.object_store.get_obj(tensor)
+            placeholder = PlaceHolder.create_from(tensor, role=self, tracing=True)
+            command = ("load", self, (), {})
+            self.register_action((command, placeholder), sy.execution.worker_actions.WorkerAction)
+            return placeholder
+        # mock for testing
+        if isinstance(tensor, th.Tensor):
+            if self.tracing:
+                return PlaceHolder.create_from(tensor, role=self, tracing=True)
+            else:
+                return tensor
 
     def load_state(self):
         """ Load tensors used in a protocol from worker's local store
