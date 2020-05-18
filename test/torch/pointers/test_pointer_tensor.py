@@ -7,7 +7,6 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
-
 def test_init(workers):
     alice, me = workers["alice"], workers["me"]
     pointer = PointerTensor(id=1000, location=alice, owner=me)
@@ -84,7 +83,6 @@ def test_send_disable_gc(workers):
     assert x_ptr.gc == False, "property GC is not in sync"
     assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
 
-
 def test_send_get(workers):
     """Test several send get usages"""
     bob = workers["bob"]
@@ -96,20 +94,22 @@ def test_send_get(workers):
     x_back = x_ptr.get()
     assert (x == x_back).all()
 
+    workers['me'].clear_objects()
+
     # send with variable overwriting
     x = torch.Tensor([1, 2])
     x = x.send(bob)
     x_back = x.get()
     assert (torch.Tensor([1, 2]) == x_back).all()
 
-    # double send
-    # import pdb
+    workers['me'].clear_objects()
 
-    # pdb.set_trace()
+    # double send
     x = torch.Tensor([1, 2])
     x_ptr = x.send(bob)
     x_ptr_ptr = x_ptr.send(alice)
     x_ptr_back = x_ptr_ptr.get()
+    #x_ptr_back = x_ptr_ptr.move(workers['me'])
     x_back_back = x_ptr_back.get()
     assert (x == x_back_back).all()
 
@@ -126,7 +126,6 @@ def test_send_get(workers):
     x = x.send(bob).send(alice)
     x_back = x.get().get()
     assert (torch.Tensor([1, 2]) == x_back).all()
-
 
 def test_inplace_send_get(workers):
     bob = workers["bob"]
@@ -318,17 +317,33 @@ def test_move(workers):
     # Test .move on remote objects
 
     james.clear_objects()
-    x = th.tensor([1.0]).send(james)
-    remote_x = james.object_store.get_obj(x.id_at_location)
-    remote_ptr = remote_x.send(bob)
-    assert remote_ptr.id in james.object_store._objects.keys()
-    remote_ptr2 = remote_ptr.move(alice)
-    assert remote_ptr2.id in james.object_store._objects.keys()
+    alice.clear_objects()
+    bob.clear_objects()
+    me.clear_objects()
+
+    x = th.tensor([1.0])
+
+    # x_ptr -> tensor([1.0]) (at james)
+    x_ptr = x.send(james)
+
+    # x_ptr_ptr -> x_ptr (at bob) -> tensor([1.0]) (at james)
+    x_ptr_ptr = x_ptr.send(bob)
+
+    # x_ptr_ptr move to alice --> me should have a pointer to alice that
+    # points to james tensor([1.0])
+    remote_ptr = x_ptr_ptr.move(alice)
+    assert remote_ptr.id_at_location in alice.object_store._objects.keys()
+
+    # alice ptr to james tensor([1.0])
+    alice_ptr = alice.object_store._objects[remote_ptr.id_at_location]
+    assert alice_ptr.id_at_location in james.object_store._objects.keys()
 
     # Test .move back to myself
 
     alice.clear_objects()
     bob.clear_objects()
+    me.clear_objects()
+    james.clear_objects()
     x = torch.tensor([1.0, 2, 3, 4, 5])
 
     x_ptr = x.send(bob)
@@ -452,8 +467,8 @@ def test_fix_prec_on_pointer_of_pointer(workers):
     alice_tensor = alice.object_store.get_obj(ptr.id_at_location)
     remote_tensor = bob.object_store.get_obj(alice_tensor.id_at_location)
 
-    assert isinstance(ptr.child, PointerTensor)
-    assert isinstance(remote_tensor.child, FixedPrecisionTensor)
+    assert isinstance(ptr, PointerTensor)
+    assert isinstance(remote_tensor, FixedPrecisionTensor)
 
 
 def test_float_prec_on_pointer_tensor(workers):
@@ -490,7 +505,7 @@ def test_float_prec_on_pointer_of_pointer(workers):
     alice_tensor = alice.object_store.get_obj(ptr.id_at_location)
     remote_tensor = bob.object_store.get_obj(alice_tensor.id_at_location)
 
-    assert isinstance(ptr.child, PointerTensor)
+    assert isinstance(ptr, PointerTensor)
     assert isinstance(remote_tensor, torch.Tensor)
 
 
@@ -524,7 +539,8 @@ def test_registration_of_action_on_pointer_of_pointer(workers):
     ptr = ptr.send(alice)
     ptr_action = ptr + ptr
 
-    assert len(alice.object_store._tensors) == 2
+    # TODO - PointerTensor should count as a tensor?
+    assert len(alice.object_store._objects) == 2
     assert len(bob.object_store._tensors) == 2
 
 

@@ -816,7 +816,6 @@ class TorchTensor(AbstractTensor):
         dtype: Union[str, None] = None,
         crypto_provider: Union[BaseWorker, None] = None,
         requires_grad: bool = False,
-        no_wrap: bool = False,
     ):
         """This is a pass through method which calls .share on the child.
 
@@ -861,9 +860,6 @@ class TorchTensor(AbstractTensor):
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
-
-        if not no_wrap:
-            shared_tensor = shared_tensor.wrap()
 
         return shared_tensor
 

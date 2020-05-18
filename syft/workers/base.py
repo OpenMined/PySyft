@@ -675,13 +675,16 @@ class BaseWorker(AbstractWorker):
         obj_id = msg.object_id
         user = msg.user
         reason = msg.reason
+        get_copy = msg.get_copy
 
         obj = self.get_obj(obj_id)
         if hasattr(obj, "allow") and not obj.allow(user):
             raise GetNotPermittedError()
-        else:
+
+        if not get_copy:
             self.de_register_obj(obj)
-            return obj
+
+        return obj
 
     def register_obj(self, obj: object, obj_id: Union[str, int] = None):
         """Registers the specified object with the current worker node.
@@ -723,7 +726,7 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = "", get_copy: bool = False
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -736,7 +739,7 @@ class BaseWorker(AbstractWorker):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason, get_copy), location)
         return obj
 
     # SECTION: Manage the workers network

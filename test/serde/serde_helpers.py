@@ -1626,6 +1626,8 @@ def make_objectrequestmessage(**kwargs):
         assert detailed.object_id == original.object_id
         assert detailed.user == original.user
         assert detailed.reason == original.reason
+        assert detailed.get_copy == original.get_copy
+
         return True
 
     return [
@@ -1637,6 +1639,7 @@ def make_objectrequestmessage(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.object_id),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.user),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.reason),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.get_copy),
                 ),
             ),
             "cmp_detailed": compare,

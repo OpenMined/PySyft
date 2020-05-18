@@ -300,16 +300,17 @@ class ObjectRequestMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, obj_id, user, reason):
+    def __init__(self, obj_id, user, reason, get_copy):
         """Initialize the message."""
 
         self.object_id = obj_id
         self.user = user
         self.reason = reason
+        self.get_copy = get_copy
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.object_id, self.user, self.reason})"
+        return f"({type(self).__name__} {self.object_id, self.user, self.reason, self.get_copy})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
@@ -328,6 +329,7 @@ class ObjectRequestMessage(Message):
             sy.serde.msgpack.serde._simplify(worker, msg.object_id),
             sy.serde.msgpack.serde._simplify(worker, msg.user),
             sy.serde.msgpack.serde._simplify(worker, msg.reason),
+            sy.serde.msgpack.serde._simplify(worker, msg.get_copy)
         )
 
     @staticmethod
@@ -349,6 +351,7 @@ class ObjectRequestMessage(Message):
             sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[3]),
         )
 
 

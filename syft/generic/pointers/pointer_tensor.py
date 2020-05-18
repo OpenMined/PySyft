@@ -9,12 +9,15 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
-from syft.messaging.message import TensorCommandMessage
+
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
 
 from syft.exceptions import RemoteObjectFoundError
+
+from syft.messaging.message import TensorCommandMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 
 
 class PointerTensor(ObjectPointer, AbstractTensor):
@@ -182,8 +185,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         id_at_location: (str or int) = None,
         owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
-        garbage_collect_data=None,
+        garbage_collect_data: bool=None,
         shape=None,
+        register=False,
+        inplace=False
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -229,20 +234,16 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         owner = tensor.owner.get_worker(owner)
         location = tensor.owner.get_worker(location)
 
-        # previous_pointer = owner.get_pointer_to(location, id_at_location)
-        previous_pointer = None
-
-        if previous_pointer is None:
-            ptr = PointerTensor(
-                location=location,
-                id_at_location=id_at_location,
-                owner=owner,
-                id=ptr_id,
-                garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
-                shape=shape,
-                tags=tensor.tags,
-                description=tensor.description,
-            )
+        ptr = PointerTensor(
+            location=location,
+            id_at_location=id_at_location,
+            owner=owner,
+            id=ptr_id,
+            garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
+            shape=shape,
+            tags=tensor.tags,
+            description=tensor.description,
+        )
 
         return ptr
 
@@ -278,15 +279,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         return ptr
 
     def send(self, destination: AbstractWorker):
-        """ Sends a pointer tensor from one worker to another
-        For instance, if C hold a pointer, ptr, to a tensor on A and calls ptr.send(B),
-        C will hold a pointer to a pointer on B which points to a tensor on A.
-        """
+        self.garbage_collect_data = False
+        ptr = self.owner.send(self, workers = destination)
+        return ptr
 
-        # import pdb
-
-        # pdb.set_trace()
-        return self.owner.send(obj=self, workers=destination)
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
@@ -308,7 +304,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason=''):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -325,19 +321,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Args:
             user (obj, optional): user credentials to perform authentication process.
             reason (str, optional): a description of why the data scientist wants to see it.
-            deregister_ptr (bool, optional): this determines whether to
-                deregister this pointer from the pointer's owner during this
-                method. This defaults to True because the main reason people use
-                this method is to move the tensor from the remote machine to the
-                local one, at which time the pointer has no use.
 
         Returns:
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
 
-        return tensor
+        obj = ObjectPointer.get(self, user=user, reason=reason)
+        return obj
 
     def attr(self, attr_name):
         attr_ptr = PointerTensor(
