@@ -185,10 +185,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         id_at_location: (str or int) = None,
         owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
-        garbage_collect_data: bool=None,
+        garbage_collect_data: bool = None,
         shape=None,
         register=False,
-        inplace=False
+        inplace=False,
     ) -> "PointerTensor":
         """Creates a pointer to the "self" FrameworkTensor object.
 
@@ -280,9 +280,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
     def send(self, destination: AbstractWorker):
         self.garbage_collect_data = False
-        ptr = self.owner.send(self, workers = destination)
+        ptr = self.owner.send(self, workers=destination)
         return ptr
-
 
     def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
@@ -304,7 +303,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
-    def get(self, user=None, reason=''):
+    def get(self, user=None, reason=""):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain

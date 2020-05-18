@@ -329,7 +329,7 @@ class ObjectRequestMessage(Message):
             sy.serde.msgpack.serde._simplify(worker, msg.object_id),
             sy.serde.msgpack.serde._simplify(worker, msg.user),
             sy.serde.msgpack.serde._simplify(worker, msg.reason),
-            sy.serde.msgpack.serde._simplify(worker, msg.get_copy)
+            sy.serde.msgpack.serde._simplify(worker, msg.get_copy),
         )
 
     @staticmethod

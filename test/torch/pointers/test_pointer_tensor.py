@@ -7,6 +7,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionT
 from syft.generic.pointers.pointer_tensor import PointerTensor
 import pytest
 
+
 def test_init(workers):
     alice, me = workers["alice"], workers["me"]
     pointer = PointerTensor(id=1000, location=alice, owner=me)
@@ -83,6 +84,7 @@ def test_send_disable_gc(workers):
     assert x_ptr.gc == False, "property GC is not in sync"
     assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
 
+
 def test_send_get(workers):
     """Test several send get usages"""
     bob = workers["bob"]
@@ -94,7 +96,7 @@ def test_send_get(workers):
     x_back = x_ptr.get()
     assert (x == x_back).all()
 
-    workers['me'].clear_objects()
+    workers["me"].clear_objects()
 
     # send with variable overwriting
     x = torch.Tensor([1, 2])
@@ -102,14 +104,14 @@ def test_send_get(workers):
     x_back = x.get()
     assert (torch.Tensor([1, 2]) == x_back).all()
 
-    workers['me'].clear_objects()
+    workers["me"].clear_objects()
 
     # double send
     x = torch.Tensor([1, 2])
     x_ptr = x.send(bob)
     x_ptr_ptr = x_ptr.send(alice)
     x_ptr_back = x_ptr_ptr.get()
-    #x_ptr_back = x_ptr_ptr.move(workers['me'])
+    # x_ptr_back = x_ptr_ptr.move(workers['me'])
     x_back_back = x_ptr_back.get()
     assert (x == x_back_back).all()
 
@@ -126,6 +128,7 @@ def test_send_get(workers):
     x = x.send(bob).send(alice)
     x_back = x.get().get()
     assert (torch.Tensor([1, 2]) == x_back).all()
+
 
 def test_inplace_send_get(workers):
     bob = workers["bob"]
