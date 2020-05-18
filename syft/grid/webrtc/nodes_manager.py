@@ -1,6 +1,6 @@
 from webrtc_connections import WebRTCConnection
 from syft.workers.base import BaseWorker
-
+import asyncio
 
 class WebRTCManager(BaseWorker):
     """ Class used to manage multiple webrtc peer connections in different threads. """
