@@ -6,7 +6,10 @@ class PlainText:
     """A wrapper class for representing plaintext elements.
 
     Attributes:
-        data: A list of values of plaintext polynomial.
+        data: A list of coefficient values of plaintext polynomial.
+
+    Typical format:
+    [c0, c1, c2...] where ci represents the coefficient of the polynomial.
     """
 
     def __init__(self, data):

@@ -7,7 +7,7 @@ from syft.frameworks.torch.he.fv.util.rlwe import encrypt_asymmetric
 from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_delta
 
 
-class Encrypter:
+class Encryptor:
     """Encrypts Plaintext objects into Ciphertext objects. Constructing an Encryptor
     requires a Context with valid encryption parameters, the public key or the secret
     key. If an Encrytor is given a secret key, it supports symmetric-key encryption.

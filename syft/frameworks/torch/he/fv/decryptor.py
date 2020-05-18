@@ -2,7 +2,7 @@ from syft.frameworks.torch.he.fv.plaintext import PlainText
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 
-class Decrypter:
+class Decryptor:
     """Decrypts Ciphertext objects into Plaintext objects. Constructing a Decryptor
     requires a Context object with valid encryption parameters, and the secret key.
     """

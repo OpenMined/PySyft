@@ -13,8 +13,8 @@ from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
 from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 from syft.frameworks.torch.he.fv.util.operations import invert_mod
 from syft.frameworks.torch.he.fv.util.operations import xgcd
-from syft.frameworks.torch.he.fv.encrypter import Encrypter
-from syft.frameworks.torch.he.fv.decrypter import Decrypter
+from syft.frameworks.torch.he.fv.encryptor import Encryptor
+from syft.frameworks.torch.he.fv.decryptor import Decryptor
 
 
 @pytest.mark.parametrize(
@@ -262,9 +262,9 @@ def test_fv_encryption_decrption_asymmetric(poly_modulus, plain_modulus, coeff_b
     )
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
-    encrypter = Encrypter(ctx, keys[1])  # keys[1] = public_key
-    decrypter = Decrypter(ctx, keys[0])  # keys[0] = secret_key
-    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    assert integer == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(integer))))
 
 
 @pytest.mark.parametrize(
@@ -304,9 +304,9 @@ def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bi
     )
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
-    encrypter = Encrypter(ctx, keys[0])  # keys[0] = secret_key
-    decrypter = Decrypter(ctx, keys[0])
-    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
+    encryptor = Encryptor(ctx, keys[0])  # keys[0] = secret_key
+    decryptor = Decryptor(ctx, keys[0])
+    assert integer == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(integer))))
 
 
 @pytest.mark.parametrize(
@@ -348,6 +348,6 @@ def test_fv_encryption_decrption_standard_seq_level(
     )
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
-    encrypter = Encrypter(ctx, keys[1])  # keys[1] = public_key
-    decrypter = Decrypter(ctx, keys[0])  # keys[0] = secret_key
-    assert integer == encoder.decode(decrypter.decrypt(encrypter.encrypt(encoder.encode(integer))))
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    assert integer == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(integer))))

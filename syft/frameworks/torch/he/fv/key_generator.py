@@ -25,10 +25,6 @@ class KeyGenerator:
         self._secret_key = None
         self._context = context
 
-        # Secret key and public key have not been generated
-        self._sk_generated = False
-        self._pk_generated = False
-
     def keygen(self):
         """Generate the secret and public key.
 
@@ -44,10 +40,9 @@ class KeyGenerator:
 
         if not is_initialized:
             self._secret_key = SecretKey(sample_poly_ternary(param))
-        self._sk_generated = True
 
     def _generate_pk(self):
-        if not self._sk_generated:
+        if self._secret_key is None:
             raise RuntimeError("cannot generate public key for unspecified secret key")
 
         public_key = encrypt_symmetric(self._context, self._secret_key.data)
