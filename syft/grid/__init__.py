@@ -1,6 +1,6 @@
 from .webrtc.network import Network
 
-DEFAULT_NETWORK_URL = "ws://34.89.48.186:80"
+DEFAULT_NETWORK_URL = "ec2-13-59-45-128.us-east-2.compute.amazonaws.com"
 
 
 def register(node_id: str, **kwargs):
