@@ -65,10 +65,10 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     if was_initialized:
         crypten.uninit()
     process.start()
-    process.join()
+    # wait for response
+    res = queue.get()
     if was_initialized:
         crypten.init()
-    res = queue.get()
     return res
 
 
@@ -119,7 +119,7 @@ def run_multiworkers(
 
             crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
 
-            world_size = len(workers) + 1
+            world_size = len(workers)
             return_values = {rank: None for rank in range(world_size)}
 
             if isinstance(func, sy.Plan):
@@ -139,31 +139,15 @@ def run_multiworkers(
                 for worker in workers:
                     plan.send(worker)
 
-                jail_or_plan = plan
-
             else:  # func
                 using_plan = False
-                jail_runner = jail.JailRunner(func=func, model=crypten_model)
+                jail_runner = jail.JailRunner(func=func)
                 ser_jail_runner = jail.JailRunner.simplify(jail_runner)
 
-                jail_or_plan = jail_runner
-
-            rank_to_worker_id = dict(
-                zip(range(1, len(workers) + 1), [worker.id for worker in workers])
-            )
+            rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
 
             sy.local_worker.add_crypten_support()
             sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
-
-            # Start local party
-            process, queue = _new_party(
-                jail_or_plan, 0, world_size, master_addr, master_port, (), {}
-            )
-
-            was_initialized = DistributedCommunicator.is_initialized()
-            if was_initialized:
-                crypten.uninit()
-            process.start()
 
             # Run TTP if required
             # TODO: run ttp in a specified worker
@@ -182,7 +166,7 @@ def run_multiworkers(
             # Send messages to other workers so they start their parties
             threads = []
             for i in range(len(workers)):
-                rank = i + 1
+                rank = i
                 if using_plan:
                     msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
                 else:  # jail
@@ -192,21 +176,15 @@ def run_multiworkers(
                         onnx_model,
                     )
                 thread = threading.Thread(
-                    target=_send_party_info, args=(workers[i], rank, msg, return_values)
+                    target=_send_party_info,
+                    args=(workers[i], rank, msg, return_values, crypten_model),
                 )
                 thread.start()
                 threads.append(thread)
 
-            # Wait for local party and sender threads
-            # Joining the process blocks! But queue.get() can also wait for the party
-            # and it works fine.
-            # process.join() -> blocks
-            local_party_result = queue.get()
-            return_values[0] = utils.unpack_values(local_party_result, crypten_model)
+            # wait for workers running the parties return a response
             for thread in threads:
                 thread.join()
-            if was_initialized:
-                crypten.init()
 
             return return_values
 
