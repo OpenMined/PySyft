@@ -1,4 +1,4 @@
-from webrtc_connections import WebRTCConnection
+from syft.grid.webrtc.webrtc_connection import WebRTCConnection
 from syft.workers.base import BaseWorker
 import asyncio
 
@@ -19,6 +19,10 @@ class WebRTCManager(BaseWorker):
     def _send_msg(self, message: bin, location):
         """ Forward a local syft request to the proper destination. """
         return asyncio.run(self._connection[location.id].send(message))
+
+    def _recv_msg(self, message):
+        """ Overwrite BaseWorker's abstract method. But it's not used. """
+        raise NotImplementedError
 
     def get(self, node_id: str):
         """ Return a peer connection reference by its ID. """
