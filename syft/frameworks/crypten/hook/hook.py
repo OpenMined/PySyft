@@ -33,6 +33,7 @@ def unhook_plan_building():
 
 
 def hook_crypten():
+    """Hook the load function from crypten"""
     from syft.frameworks.crypten import load as crypten_load
 
     setattr(crypten, "load", crypten_load)
@@ -47,6 +48,7 @@ def hook_crypten_module():
     import crypten
 
     def _check_encrypted(model):
+        """Raise an exception if the model is encrypted"""
         if model.encrypted:
             raise RuntimeError("Crypten model must be unencrypted to run PySyft operations")
 
@@ -87,6 +89,7 @@ def hook_crypten_module():
     crypten.nn.Module.send_ = module_send_
 
     def module_move_(nn_self, destination):
+        """Overloads crypten.nn instances so that they could be moved to other workers"""
         nn_self._check_encrypted()
         params = list(nn_self.parameters())
         for p in params:
@@ -163,6 +166,7 @@ def hook_crypten_module():
 
     @property
     def owner(nn_self):
+        """Return the owner of the module"""
         nn_self._check_encrypted()
         for p in nn_self.parameters():
             return p.owner
@@ -171,6 +175,7 @@ def hook_crypten_module():
 
     @property
     def location(nn_self):
+        """Get the location of the module"""
         nn_self._check_encrypted()
         try:
             for p in nn_self.parameters():

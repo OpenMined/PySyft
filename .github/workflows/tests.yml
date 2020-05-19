@@ -34,7 +34,7 @@ jobs:
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
-    - name: Install dependencies
+    - name: Install PySyft dependencies
       run: |
         sudo apt-get update
         python -m pip install --upgrade pip
@@ -44,15 +44,18 @@ jobs:
         pip3 install -r pip-dep/requirements_udacity.txt
         pip3 install -r pip-dep/requirements_notebooks.txt
         python setup.py install
-    - name: Lint, format, and type-check
+    - name: Install build tools
       run: |
         pip3 install flake8
         #- pip3 install flake8-docstrings
         pip3 install flake8-comprehensions
         pip3 install pep8-naming
+        pip3 install codecov     
+    - name: Lint, format, and type-check
+      run: |
         # stop the build if there are Python syntax errors or undefined names
         flake8 --config=.flake8 .
-        black --check --verbose .
+        black --check .
         # exit-zero treats all errors as warnings.
         # diverting from the standard 79 character line length in
         # accordance with this:
@@ -61,12 +64,12 @@ jobs:
         # Run type checker in CI such that type errors can be identified and gradually addressed.
         # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
         mypy syft || echo "Type errors found, continuing build..."
+    - name: Check docstring coverage
+      run: |
+        interrogate -mvp syft/ -f 52.5
     - name: Scan for security issues
       run: |
             bandit -r syft -ll
-    - name: Install codecov
-      run: |
-        pip3 install codecov
     - name: Run tests
       run: |
         coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
