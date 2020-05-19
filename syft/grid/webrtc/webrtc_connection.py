@@ -3,7 +3,7 @@ import json
 
 import syft as sy
 import torch as th
-from codes import MSG_FIELD, GRID_EVENTS, NODE_EVENTS
+from syft.codes import MSG_FIELD, GRID_EVENTS, NODE_EVENTS
 from aiortc import RTCIceCandidate, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.signaling import (
     BYE,
@@ -17,8 +17,6 @@ import time
 from syft.workers.base import BaseWorker
 from syft.messaging.message import SearchMessage
 from syft.exceptions import GetNotPermittedError
-
-hook = sy.TorchHook(th)
 
 
 class WebRTCConnection(threading.Thread, BaseWorker):
@@ -39,7 +37,7 @@ class WebRTCConnection(threading.Thread, BaseWorker):
                 conn_type: Connection responsabilities this peer should provide. (offer, answer)
         """
         threading.Thread.__init__(self)
-        BaseWorker.__init__(self, hook=hook, id=destination)
+        BaseWorker.__init__(self, hook=sy.hook, id=destination)
         self._conn_type = conn_type
         self._origin = worker.id
         self._worker = worker
