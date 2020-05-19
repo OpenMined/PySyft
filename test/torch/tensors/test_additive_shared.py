@@ -898,20 +898,33 @@ def test_maxpool2d(workers, protocol):
     kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=3200)
+        me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=2000)
         me.crypto_store.provide_primitives(
             ["beaver"],
             [alice, bob],
             n_instances=2,
-            beaver={"op_shapes": [("mul", torch.Size([3, 7, 9, 4]), torch.Size([3, 7, 9, 4]))]},
+            beaver={
+                "op_shapes": [
+                    ("mul", torch.Size([3, 7, 4, 2]), torch.Size([3, 7, 4, 2])),
+                    ("mul", torch.Size([3, 7, 4]), torch.Size([3, 7, 4])),
+                    ("mul", torch.Size([3, 7, 1, 9]), torch.Size([3, 7, 1, 9])),
+                ]
+            },
         )
 
-    m = 6
-    x = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
-    expected = F.max_pool2d(x, kernel_size=2)
+    m = 4
+    t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
+    x = t.fix_prec().share(*args, **kwargs)
 
-    x = x.fix_prec().share(*args, **kwargs)
+    # using maxpool optimization for kernel_size=2
+    expected = F.max_pool2d(t, kernel_size=2)
     result = F.max_pool2d(x, kernel_size=2).get().float_prec()
+
+    assert (result == expected).all()
+
+    # without
+    expected = F.max_pool2d(t, kernel_size=3)
+    result = F.max_pool2d(x, kernel_size=3).get().float_prec()
 
     assert (result == expected).all()
 

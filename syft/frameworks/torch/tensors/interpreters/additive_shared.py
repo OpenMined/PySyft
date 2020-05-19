@@ -1056,7 +1056,7 @@ class AdditiveSharingTensor(AbstractTensor):
             return result.sum(dim, keepdim=keepdim)
 
     def argmax(
-        self, dim=None, keepdim=False, one_hot=True, algorithm="pairwise", _return_max=False
+        self, dim=None, keepdim=False, one_hot=False, algorithm="pairwise", _return_max=False
     ):
         """
         Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
