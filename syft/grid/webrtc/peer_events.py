@@ -28,7 +28,7 @@ def _monitor(message: dict, conn_handler):
         return True
 
     response[MSG_FIELD.DATASETS] = list(
-        filter(std_tags, conn_handler.worker._tag_to_object_ids.keys())
+        filter(std_tags, conn_handler.worker.object_store._tag_to_object_ids.keys())
     )
     return response
 
