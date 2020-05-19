@@ -2,8 +2,8 @@ import threading
 import websocket
 import json
 from syft.codes import NODE_EVENTS, GRID_EVENTS, MSG_FIELD
-from nodes_manager import WebRTCManager
-from grid_routes import (
+from syft.grid.webrtc.nodes_manager import WebRTCManager
+from syft.grid.webrtc.peer_events import (
     _monitor,
     _create_webrtc_scope,
     _accept_offer,
@@ -15,7 +15,7 @@ import torch as th
 import time
 
 
-class GridNetwork(threading.Thread):
+class Network(threading.Thread):
     """ Grid Network class to operate in background processing grid requests
         and handling multiple peer connections with different nodes.
     
@@ -37,7 +37,7 @@ class GridNetwork(threading.Thread):
         """
         threading.Thread.__init__(self)
         self._connect(**kwargs)
-        self._worker = self._update_node_infos(node_id, sy.hook)
+        self._worker = self._update_node_infos(node_id)
         self._worker.models = {}
         self._connection_handler = WebRTCManager(self._ws, self._worker)
         self.available = False
@@ -85,8 +85,8 @@ class GridNetwork(threading.Thread):
                 message : message to be processed.
         """
         msg_type = message.get(MSG_FIELD.TYPE, None)
-        if msg_type in GridNetwork.EVENTS:
-            return GridNetwork.EVENTS[msg_type](message, self._connection_handler)
+        if msg_type in Network.EVENTS:
+            return Network.EVENTS[msg_type](message, self._connection_handler)
 
     def _connect(self, **kwargs):
         """ Create a websocket connection between this peer and the grid network. """
@@ -155,3 +155,12 @@ class GridNetwork(threading.Thread):
         response = json.loads(self._ws.recv())
         self.available = True
         return response
+
+    def __repr__(self):
+        """Default String representation"""
+        return "< Peer ID : {}, hosted datasets: {}, hosted_models: {}, connected_nodes: {}>".format(
+            self.id,
+            list(self._worker.object_store._tag_to_object_ids.keys()),
+            list(self._worker.models.keys()),
+            list(self._connection_handler.nodes),
+        )
