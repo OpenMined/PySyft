@@ -42,6 +42,9 @@ class SubBackward(GradFunc):
 
 
 class SumBackward(GradFunc):
+    """Tensor Sum backward gradient class
+    """
+
     def __init__(self, self_, **kwargs):
         super().__init__(self, self_)
         self.self_ = self_
@@ -63,6 +66,9 @@ class AsinBackward(GradFunc):
 
 
 class LogBackward(GradFunc):
+    """Log backward gradient class
+    """
+
     def __init__(self, self_):
         super().__init__(self, self_)
         self.self_ = self_
@@ -73,6 +79,9 @@ class LogBackward(GradFunc):
 
 
 class ExpBackward(GradFunc):
+    """Exp backward gradient class
+    """
+
     def __init__(self, self_):
         super().__init__(self, self_)
         self.self_ = self_
