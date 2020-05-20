@@ -59,6 +59,13 @@ def test_func_plan_can_be_translated_to_tfjs(hook, workers):
     assert plan_js.role.actions[0].name == "tf.mul"
     assert len(plan_js.role.actions[0].args) == 2
 
+    # Test plan caching
+    plan_js2 = plan_js.copy()
+    plan_js2.add_translation(PlanTranslatorTfjs)
+    plan_js2.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert plan_js2.role.actions[0].name == "tf.mul"
+    assert len(plan_js2.role.actions[0].args) == 2
+
     # check that translation can be done after serde
     serde_plan = deserialize(serialize(orig_plan))
     serde_plan.add_translation(PlanTranslatorTfjs)

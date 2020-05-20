@@ -1,3 +1,4 @@
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -101,7 +102,7 @@ class Plan(AbstractObject):
         owner: plan owner
         tags: plan tags
         description: plan description
-        base_framework: The underlying framework (pytoch, tensorflow) which the plan is to be executed in
+        base_framework: The underlying framework (pytorch, tensorflow) which the plan is to be executed in
         frameworks: A list of frameworks which the plan will also support
     """
 
@@ -122,6 +123,7 @@ class Plan(AbstractObject):
         tags: List[str] = None,
         input_types: list = None,
         description: str = None,
+        roles: Dict[str, Role] = None,
         base_framework: str = TranslationTarget.PYTORCH.value,
     ):
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
@@ -143,7 +145,7 @@ class Plan(AbstractObject):
         self.input_types = input_types
         self.tracing = False
         self._base_framework = base_framework
-        self.roles = {base_framework: self.role}
+        self.roles = roles or {base_framework: self.role}
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
@@ -221,7 +223,7 @@ class Plan(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        # typecheck
+        # check the types
         self.input_types = NestedTypeWrapper(args)
 
         # Run once to build the plan
@@ -237,12 +239,12 @@ class Plan(AbstractObject):
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
             args_placeholders = build_nested_arg(
-                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
+                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True)
             )
         else:
             # Add Placeholder on top of each arg
             args = args_placeholders = build_nested_arg(
-                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True)
             )
 
         # Add state to args if needed
@@ -303,6 +305,7 @@ class Plan(AbstractObject):
             tags=self.tags,
             input_types=self.input_types,
             description=self.description,
+            roles=self.roles,
         )
 
         plan_copy.torchscript = self.torchscript
@@ -611,7 +614,7 @@ class Plan(AbstractObject):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
+        (id_, role, include_state, name, tags, description, torchscript, input_types) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
