@@ -2,8 +2,8 @@ import threading
 import websocket
 import json
 from syft.codes import NODE_EVENTS, GRID_EVENTS, MSG_FIELD
-from syft.grid.webrtc.nodes_manager import WebRTCManager
-from syft.grid.webrtc.peer_events import (
+from syft.grid.nodes_manager import WebRTCManager
+from syft.grid.peer_events import (
     _monitor,
     _create_webrtc_scope,
     _accept_offer,
