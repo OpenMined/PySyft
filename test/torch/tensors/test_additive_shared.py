@@ -360,6 +360,12 @@ def test_mul(workers, protocol):
     z = x * y
     assert (z.get().float_prec() == torch.tensor([-1, -4, 9, 16.0])).all()
 
+    # different shapes
+    x = torch.tensor([2.0]).fix_prec().share(*args, **kwargs)
+    y = torch.tensor([2.0, -3.0, 1]).fix_prec().share(*args, **kwargs)
+    z = x * y
+    assert (z.get().float_prec() == torch.tensor([4.0, -6, 2])).all()
+
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_public_mul(workers, protocol):

@@ -533,7 +533,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         assert isinstance(other, AdditiveSharingTensor)
 
-        assert len(self.child) == len(other.child)
+        # assert len(self.child) == len(other.child)
 
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
@@ -549,8 +549,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
-    @overloaded.method
-    def _public_mul(self, shares, other, equation):
+    def _public_mul(self, other, equation):
         """Multiplies an AdditiveSharingTensor with a non-private value
         (int, torch tensor, MultiPointerTensor, etc.)
 
@@ -567,6 +566,7 @@ class AdditiveSharingTensor(AbstractTensor):
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
+        shares = self.child
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
@@ -574,12 +574,11 @@ class AdditiveSharingTensor(AbstractTensor):
                 worker: (self.modulo(cmd(share, other[worker]))) for worker, share in shares.items()
             }
         else:
-            other_is_zero = False
-            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-                if (other == 0).any():
-                    other_is_zero = True
-            elif other == 0:
-                other_is_zero = True
+            if isinstance(other, sy.FixedPrecisionTensor):
+                other = other.child
+            other_is_zero = other == 0
+            if not isinstance(other_is_zero, bool):
+                other_is_zero = other_is_zero.any()
 
             if other_is_zero:
                 res = {}
@@ -591,11 +590,23 @@ class AdditiveSharingTensor(AbstractTensor):
                         first_it = False
                         zero_shares = self.zero(cmd_res.shape).child
                     res[worker] = self.modulo(cmd(share, other) + zero_shares[worker])
-                return res
+
+                result = hook_args.hook_response(
+                    "_public_mul", res, wrap_type=type(self), wrap_args=self.get_class_attributes()
+                )
+                return result
             else:
-                return {
-                    worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()
+                result = {
+                    worker: (self.modulo(cmd(share, other).long()))
+                    for worker, share in shares.items()
                 }
+                result = hook_args.hook_response(
+                    "_public_mul",
+                    result,
+                    wrap_type=type(self),
+                    wrap_args=self.get_class_attributes(),
+                )
+                return result
 
     def mul(self, other):
         """Multiplies two tensors together
@@ -675,8 +686,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def _private_div(self, divisor):
         return securenn.division(self, divisor)
 
-    @overloaded.method
-    def _public_div(self, shares: dict, divisor):
+    def _public_div(self, divisor):
+        shares = self.child
         # TODO: how to correctly handle division in Zq?
         divided_shares = {}
         for i_worker, (location, pointer) in enumerate(shares.items()):
@@ -685,7 +696,14 @@ class AdditiveSharingTensor(AbstractTensor):
             # For now, the solution works in most cases when the tensor is shared between 2 workers
             divided_shares[location] = pointer / divisor
 
-        return divided_shares
+        result = hook_args.hook_response(
+            "_public_div",
+            divided_shares,
+            wrap_type=type(self),
+            wrap_args=self.get_class_attributes(),
+        )
+
+        return result
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):
@@ -1059,12 +1077,12 @@ class AdditiveSharingTensor(AbstractTensor):
             result = self.flatten()
             key = list(result.child.keys())[0]
             n_elem = result.child[key].nelement()
-            result = result * torch.tensor(list(range(n_elem))).long().wrap()
+            result = result * torch.tensor(list(range(n_elem))).long()
             return result.sum()
         else:
             size = [1] * self.dim()
             size[dim] = self.shape[dim]
-            result = self * torch.tensor(list(range(self.shape[dim]))).view(size).long().wrap()
+            result = self * torch.tensor(list(range(self.shape[dim]))).view(size).long()
             return result.sum(dim, keepdim=keepdim)
 
     def argmax(
