@@ -730,6 +730,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return results
 
+    @overloaded.method
+    def mean(self, shares, **kwargs):
+        result = {}
+        m = 0
+        for worker, share in shares.items():
+            sum_value = share.sum(**kwargs)
+            if m == 0:
+                m += share.numel() // sum_value.numel()
+            result[worker] = sum_value / m
+
+        return result
+
     @staticmethod
     @overloaded.module
     def torch(module):
