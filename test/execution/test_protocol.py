@@ -2,6 +2,7 @@ import pytest
 import torch as th
 
 import syft as sy
+from syft.execution.role_assignments import RoleAssignments
 from syft.execution.role import Role
 
 
@@ -299,3 +300,9 @@ def test_role_assignments(workers):
 
     assert protocol.role_assignments.assignments["role1"] == [alice]
     assert protocol.role_assignments.assignments["role2"] == [bob]
+
+    protocol.role_assignments = RoleAssignments(["role1", "role2"])
+    protocol.assign_roles({"role1": bob, "role2": alice})
+
+    assert protocol.role_assignments.assignments["role1"] == [bob]
+    assert protocol.role_assignments.assignments["role2"] == [alice]

@@ -14,7 +14,11 @@ class RoleAssignments:
                 f"role_id {role_id} not present in RoleAssignments "
                 f"with roles {', '.join(self.assignments.keys())}"
             )
-        self.assignments[role_id].append(worker)
+
+        if isinstance(worker, list):
+            self.assignments[role_id].extend(worker)
+        else:
+            self.assignments[role_id].append(worker)
 
     def unassign(self, role_id, worker):
         if role_id not in self.assignments:

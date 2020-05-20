@@ -214,6 +214,12 @@ class Protocol(AbstractObject):
         """
         self.role_assignments.assign(role_id, worker)
 
+    def assign_roles(self, worker_dict):
+        """ Assign worker values to correspondent key role.
+        """
+        for role_id, worker in worker_dict.items():
+            self.role_assignments.assign(role_id, worker)
+
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
         # Replace non-instanciated placeholders from protocol.placeholders by instanciated placeholders
