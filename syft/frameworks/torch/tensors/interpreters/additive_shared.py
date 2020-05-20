@@ -533,7 +533,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         if self.crypto_provider is None:
             raise CryptoProviderNotFoundError(
-                "For multiplication or comparing, a crypto_provider must be passed."
+                "For multiplication or comparison, a crypto_provider must be passed."
             )
 
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
