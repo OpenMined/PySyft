@@ -120,7 +120,8 @@ def run_multiworkers(
             crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
 
             world_size = len(workers)
-            return_values = {rank: None for rank in range(world_size)}
+            manager = multiprocessing.Manager()
+            return_values = manager.dict({rank: None for rank in range(world_size)})
 
             if isinstance(func, sy.Plan):
                 using_plan = True
@@ -175,7 +176,7 @@ def run_multiworkers(
                         ser_jail_runner,
                         onnx_model,
                     )
-                thread = threading.Thread(
+                thread = multiprocessing.Process(
                     target=_send_party_info,
                     args=(workers[i], rank, msg, return_values, crypten_model),
                 )
