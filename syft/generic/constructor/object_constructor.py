@@ -1,4 +1,5 @@
 import inspect
+from types import ModuleType
 
 from syft.generic.constructor.utils import get_original_constructor_name
 from syft.generic.constructor.utils import copy_static_methods
@@ -76,11 +77,14 @@ class ObjectConstructor(object):
 
     # This represents the location in which our tensor constructor is stored within the library. If
     # original_constructor is 'torch.Tensor', then constructor_location is 'torch'.
-    constructor_location = None  # some python module on which the constructor lives
+    constructor_location: ModuleType = None  # some python module on which the constructor lives
 
     # OPTIONAL: if constructor_name is actually a function which isn't init, meaning that the
     # constructor produces an object with a different name, deposit that object type here
-    constructor_produces_type = None
+    constructor_produces_type: type = None
+
+    # Allows us to check that the original constructor has been overridden
+    syft = True
 
     def install_inside_library(self):
         """Installs this custom constructor by replacing the library constructor with itself"""
