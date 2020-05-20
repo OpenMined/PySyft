@@ -278,3 +278,24 @@ def test_copy():
         for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
     ]
     assert copy.is_built == protocol.is_built
+
+
+def test_role_assignments(workers):
+    @sy.func2protocol(roles=["role1", "role2"], args_shape={"role1": ((1,),), "role2": ((1,),)})
+    def protocol(role1, role2):
+        tensor1 = role1.torch.tensor([1])
+        tensor2 = role2.torch.tensor([2])
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    protocol.assign("role1", alice)
+    protocol.assign("role2", bob)
+
+    assert protocol.role_assignments.assignments["role1"] == [alice]
+    assert protocol.role_assignments.assignments["role2"] == [bob]
