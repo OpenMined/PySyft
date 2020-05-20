@@ -267,16 +267,18 @@ class AutogradTensor(AbstractTensor):
             return cmd(*args_, **kwargs_)
 
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
+        new_command = (cmd_name, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
 
         # Put back AutogradTensor on the tensors found in the response
-        response = hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd_name, response, wrap_type=cls)
 
         return response
 
