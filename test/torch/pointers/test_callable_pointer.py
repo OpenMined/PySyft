@@ -4,9 +4,12 @@ from syft.generic.pointers.object_wrapper import ObjectWrapper
 
 
 def test_create_callable_pointer(workers):
+    """
+    Asserts that a callable pointer is correctly created.
+    """
     alice = workers["alice"]
     bob = workers["bob"]
-    callable_pointer.create_callable_pointer(
+    p = callable_pointer.create_callable_pointer(
         id=500,
         id_at_location=2,
         location=alice,
@@ -16,10 +19,10 @@ def test_create_callable_pointer(workers):
         register_pointer=True,
     )
 
-    assert len(alice._objects) == 0
-    assert len(bob._objects) == 1
+    assert len(alice.object_store._tensors) == 0
+    assert isinstance(bob.object_store.get_obj(500), callable_pointer.CallablePointer)
 
-    callable_pointer.create_callable_pointer(
+    p = callable_pointer.create_callable_pointer(
         id=501,
         id_at_location=2,
         location=alice,
@@ -29,11 +32,16 @@ def test_create_callable_pointer(workers):
         register_pointer=False,
     )
 
-    assert len(alice._objects) == 0
-    assert len(bob._objects) == 1
+    assert len(alice.object_store._tensors) == 0
+    assert isinstance(bob.object_store.get_obj(500), callable_pointer.CallablePointer)
+    assert 501 not in bob.object_store._objects
 
 
 def test_get_obj_callable_pointer(workers):
+    """
+    Asserts that correct object values are returned when
+    `callable_pointer` is called.
+    """
     alice = workers["alice"]
     bob = workers["bob"]
 
@@ -50,18 +58,25 @@ def test_get_obj_callable_pointer(workers):
         register_pointer=True,
     )
 
-    assert len(alice._objects) == 1
-    assert len(bob._objects) == 1
+    assert len(alice.object_store._tensors) == 1
+    assert isinstance(bob.object_store.get_obj(1), callable_pointer.CallablePointer)
 
     x_get = obj_ptr.get()
 
-    assert len(alice._objects) == 0
-    assert len(bob._objects) == 0
+    assert len(alice.object_store._tensors) == 0
+    assert len(bob.object_store._tensors) == 0
+    assert 1 not in bob.object_store._objects
     assert x_get == x
 
 
 def test_call_callable_pointer(workers):
+    """
+    Tests that the correct result after an operation is
+    returned when `callable_pointer` is called.
+    """
+
     def foo(x):
+        """ Adds 2 to a given input `x`."""
         return x + 2
 
     alice = workers["alice"]

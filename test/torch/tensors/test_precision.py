@@ -1,7 +1,6 @@
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 
@@ -46,9 +45,6 @@ def test_inplace_encode_decode(workers):
     x.float_prec_()
 
     assert (x == torch.tensor([0.1, 0.2, 0.3])).all()
-
-    x = torch.tensor([3.0]).fix_precision()
-    assert x.float_prec_().is_wrapper is False
 
 
 def test_fix_prec_inplace_registration(hook):
@@ -111,13 +107,6 @@ def test_torch_add(workers):
 
     assert (z == torch.tensor([0.3, -0.7, -0.3])).all()
 
-    # When overflow occurs
-    x = torch.tensor([10.0, 20.0, 30.0]).fix_prec(field=1e4, precision_fractional=2)
-    y = torch.add(x, x)
-    y = torch.add(y, y).float_prec()
-
-    assert (y == torch.tensor([40.0, -20.0, 20.0])).all()
-
     # with AdditiveSharingTensor
     t = torch.tensor([1.0, -2.0, 3.0])
     x = t.fix_prec()
@@ -150,6 +139,13 @@ def test_torch_add(workers):
 
     z = (c + x).float_prec()
     assert ((z - (c + t)) < 10e-3).all()
+
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x + y
+    assert (z.float_prec() == torch.tensor([1.1, 2.2, 3.3])).all()
 
 
 def test_torch_add_():
@@ -219,6 +215,13 @@ def test_torch_sub(workers):
 
     z = (c - x).float_prec()
     assert ((z - (c - t)) < 10e-3).all()
+
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x - y
+    assert (z.float_prec() == torch.tensor([0.9, 1.8, 2.7])).all()
 
 
 def test_torch_sub_():
@@ -294,6 +297,13 @@ def test_torch_mul(workers):
 
     assert (z == torch.mul(t, u)).all()
 
+    # with dtype int
+    x = torch.tensor([1.0, 2.0, 3.0]).fix_prec(dtype="int")
+    y = torch.tensor([0.1, 0.2, 0.3]).fix_prec(dtype="int")
+
+    z = x * y
+    assert (z.float_prec() == torch.tensor([0.1, 0.4, 0.9])).all()
+
 
 def test_torch_div(workers):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
@@ -321,6 +331,13 @@ def test_torch_div(workers):
     z = torch.div(x, y).get().float_prec()
 
     assert (z == torch.tensor([[3.0, 4.1], [1.0, 0.0]])).all()
+
+    # With dtype int
+    x = torch.tensor([[-9.0, 25.42], [-3.3, 0.0]]).fix_prec(dtype="int")
+    y = torch.tensor([[3.0, -6.2], [-3.3, 4.7]]).fix_prec(dtype="int")
+
+    z = torch.div(x, y)
+    assert (z.float_prec() == torch.tensor([[-3.0, -4.1], [1.0, 0.0]])).all()
 
 
 def test_inplace_operations():
@@ -414,149 +431,110 @@ def test_torch_inverse_approx(workers):
             assert (diff / (tolerance * norm)) < 1
 
 
-def test_torch_exp_approx(workers):
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 20 / 100), (4, 5 / 100), (5, 4 / 100)])
+def test_torch_exp_approx(prec_frac, tolerance, workers):
     """
     Test the approximate exponential with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    fix_prec_tolerance = {3: 20 / 100, 4: 5 / 100, 5: 5 / 100}
+    cumsum = torch.zeros(5)
+    for i in range(10):
+        t = torch.tensor([0.0, 1, 2, 3, 4])
+        t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+            alice, bob, crypto_provider=james
+        )
+        r_sh = t_sh.exp()
+        r = r_sh.get().float_prec()
+        t = t.exp()
+        diff = (r - t).abs()
+        norm = (r + t) / 2
+        cumsum += diff / (tolerance * norm)
 
-    for prec_frac, tolerance in fix_prec_tolerance.items():
-        cumsum = torch.zeros(5)
-        for i in range(10):
-            t = torch.tensor([0.0, 1, 2, 3, 4])
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.exp()
-            r = r_sh.get().float_prec()
-            t = t.exp()
-            diff = (r - t).abs()
-            norm = (r + t) / 2
-            cumsum += diff / (tolerance * norm)
-
-        cumsum /= 10
-        assert (cumsum < 1).all()
+    cumsum /= 10
+    assert (cumsum < 1).all()
 
 
-def test_torch_sigmoid_approx(workers):
+@pytest.mark.parametrize(
+    "method, prec_frac, tolerance",
+    [
+        ("chebyshev", 3, 6 / 100),
+        ("chebyshev", 4, 1 / 1000),
+        ("exp", 3, 6.5 / 100),
+        ("exp", 4, 1 / 100),
+        ("maclaurin", 3, 7 / 100),
+        ("maclaurin", 4, 15 / 100),
+    ],
+)
+def test_torch_sigmoid_approx(method, prec_frac, tolerance, workers):
     """
     Test the approximate sigmoid with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
-    fix_prec_tolerance_by_method = {
-        "exp": {3: 6 / 100, 4: 1 / 100, 5: 1 / 100},
-        "maclaurin": {3: 7 / 100, 4: 15 / 100, 5: 15 / 100},
-    }
+    t = torch.tensor(range(-10, 10)) * 0.5
+    t_sh = t.fix_precision(precision_fractional=prec_frac).share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.sigmoid(method=method)
+    r = r_sh.get().float_prec()
+    t = t.sigmoid()
+    diff = (r - t).abs().max()
+    norm = (r + t).abs().max() / 2
 
-    for method, fix_prec_tolerance in fix_prec_tolerance_by_method.items():
-        for prec_frac, tolerance in fix_prec_tolerance.items():
-            t = torch.tensor(range(-10, 10)) * 0.5
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.sigmoid(method=method)
-            r = r_sh.get().float_prec()
-            t = t.sigmoid()
-            diff = (r - t).abs().max()
-            norm = (r + t).abs().max() / 2
-
-            assert (diff / (tolerance * norm)) < 1
+    assert (diff / (tolerance * norm)) < 1
 
 
-def test_torch_log_approx(workers):
+@pytest.mark.parametrize(
+    "method, prec_frac, tolerance",
+    [
+        ("chebyshev", 3, 3 / 100),
+        ("chebyshev", 4, 2 / 100),
+        ("sigmoid", 3, 10 / 100),
+        ("sigmoid", 4, 5 / 100),
+    ],
+)
+def test_torch_tanh_approx(method, prec_frac, tolerance, workers):
+    """
+    Test the approximate tanh with different tolerance depending on
+    the precision_fractional considered
+    """
+    alice, bob, james = workers["alice"], workers["bob"], workers["james"]
+
+    t = torch.tensor(range(-10, 10)) * 0.5
+    t_sh = t.fix_precision(precision_fractional=prec_frac).share(alice, bob, crypto_provider=james)
+    r_sh = t_sh.tanh(method)
+    r = r_sh.get().float_prec()
+    t = t.tanh()
+    diff = (r - t).abs().max()
+    norm = (r + t).abs().max() / 2
+
+    assert (diff / (tolerance * norm)) < 1
+
+
+@pytest.mark.parametrize("prec_frac, tolerance", [(3, 100 / 100), (4, 3 / 100)])
+def test_torch_log_approx(prec_frac, tolerance, workers):
     """
     Test the approximate logarithm with different tolerance depending on
     the precision_fractional considered
     """
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
-    fix_prec_tolerance = {3: 100 / 100, 4: 3 / 100, 5: 2 / 100}
 
-    for prec_frac, tolerance in fix_prec_tolerance.items():
-        cumsum = torch.zeros(9)
-        for i in range(10):
-            t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
-            t_sh = t.fix_precision(precision_fractional=prec_frac).share(
-                alice, bob, crypto_provider=james
-            )
-            r_sh = t_sh.log()
-            r = r_sh.get().float_prec()
-            t = t.log()
-            diff = (r - t).abs()
-            norm = (r + t) / 2
-            cumsum += diff / (tolerance * norm)
+    cumsum = torch.zeros(9)
+    for i in range(10):
+        t = torch.tensor([0.1, 0.5, 2, 5, 10, 20, 50, 100, 250])
+        t_sh = t.fix_precision(precision_fractional=prec_frac).share(
+            alice, bob, crypto_provider=james
+        )
+        r_sh = t_sh.log()
+        r = r_sh.get().float_prec()
+        t = t.log()
+        diff = (r - t).abs()
+        norm = (r + t) / 2
+        cumsum += diff / (tolerance * norm)
 
-        cumsum /= 10
-        assert (cumsum.abs() < 1).all()
-
-
-def test_torch_conv2d(workers):
-    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
-    im = torch.Tensor(
-        [
-            [
-                [[0.5, 1.0, 2.0], [3.5, 4.0, 5.0], [6.0, 7.5, 8.0]],
-                [[10.0, 11.0, 12.0], [13.0, 14.5, 15.0], [16.0, 17.5, 18.0]],
-            ]
-        ]
-    )
-    w = torch.Tensor(
-        [
-            [[[0.0, 3.0], [1.5, 1.0]], [[2.0, 2.0], [2.5, 2.0]]],
-            [[[-0.5, -1.0], [-2.0, -1.5]], [[0.0, 0.0], [0.0, 0.5]]],
-        ]
-    )
-    bias = torch.Tensor([-1.3, 15.0])
-
-    im_fp = im.fix_precision()
-    w_fp = w.fix_precision()
-    bias_fp = bias.fix_precision()
-
-    res0 = torch.conv2d(im_fp, w_fp, bias=bias_fp, stride=1).float_precision()
-    res1 = torch.conv2d(
-        im_fp, w_fp[:, 0:1].contiguous(), bias=bias_fp, stride=2, padding=3, dilation=2, groups=2
-    ).float_precision()
-
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
-    expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
-    )
-
-    assert (res0 == expected0).all()
-    assert (res1 == expected1).all()
-
-
-def test_torch_nn_functional_linear():
-    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
-
-    assert (result == expected).all()
-
-    tensor = nn.Parameter(torch.tensor([[1.0, -2], [3, 4]])).fix_prec()
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec()
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[-3.0, -5], [11.0, 25.0]])
-
-    assert (result == expected).all()
-
-    tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
-    weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]])).fix_prec(precision_fractional=2)
-
-    result = F.linear(tensor, weight).float_prec()
-
-    expected = torch.tensor([[5.0, 11.0], [11.0, 25.0]])
-
-    assert (result == expected).all()
+    cumsum /= 10
+    assert (cumsum.abs() < 1).all()
 
 
 def test_operate_with_integer_constants():
@@ -628,3 +606,42 @@ def test_comp():
     assert (x <= y).float_prec()
     assert not (x > y).float_prec()
     assert (x < y).float_prec()
+
+    # with dtype int
+    x = torch.tensor([2.1]).fix_prec(dtype="int")
+    y = torch.tensor([3.1]).fix_prec(dtype="int")
+
+    assert not (x >= y).float_prec()
+    assert (x <= y).float_prec()
+    assert not (x > y).float_prec()
+    assert (x < y).float_prec()
+
+
+def test_dtype():
+    x = torch.tensor([3.1]).fix_prec()
+    assert (
+        x.child.dtype == "long"
+        and x.child.field == 2 ** 64
+        and isinstance(x.child.child, torch.LongTensor)
+    )
+
+    x = torch.tensor([2.1]).fix_prec(dtype="int")
+    assert (
+        x.child.dtype == "int"
+        and x.child.field == 2 ** 32
+        and isinstance(x.child.child, torch.IntTensor)
+    )
+
+    x = torch.tensor([2.1]).fix_prec(dtype=None, field=2 ** 16)
+    assert (
+        x.child.dtype == "int"
+        and x.child.field == 2 ** 32
+        and isinstance(x.child.child, torch.IntTensor)
+    )
+
+    x = torch.tensor([3.1]).fix_prec(dtype=None, field=2 ** 62)
+    assert (
+        x.child.dtype == "long"
+        and x.child.field == 2 ** 64
+        and isinstance(x.child.child, torch.LongTensor)
+    )

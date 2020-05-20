@@ -3,9 +3,9 @@ import torch
 from torch import nn
 from torch.nn import init
 
-import syft
-from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
+
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.frameworks.torch.tensors.interpreters import precision
 from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
@@ -44,7 +44,7 @@ class RNNCellBase(nn.Module):
         h = torch.zeros(input.shape[0], self.hidden_size, dtype=input.dtype, device=input.device)
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
@@ -68,7 +68,7 @@ class RNNCell(RNNCellBase):
         elif nonlinearity == "relu":
             self.nonlinearity = torch.relu
         else:
-            raise ValueError("Unknown nonlinearity: {}".format(nonlinearity))
+            raise ValueError(f"Unknown nonlinearity: {nonlinearity}")
 
     def forward(self, x, h=None):
 
@@ -184,106 +184,87 @@ class RNNBase(nn.Module):
         # TODO: implement a nn.Dropout class for PySyft
         # Link to issue: https://github.com/OpenMined/PySyft/issues/2500
 
-        # Build RNN layers
-        self.rnn_forward = nn.ModuleList()
-        for layer in range(self.num_layers):
-            if layer == 0:
-                self.rnn_forward.append(base_cell(input_size, hidden_size, bias, nonlinearity))
-            else:
-                self.rnn_forward.append(base_cell(hidden_size, hidden_size, bias, nonlinearity))
+        # Build RNN forward layers
+        sizes = [input_size, *(hidden_size for _ in range(self.num_layers - 1))]
+        self.rnn_forward = nn.ModuleList(
+            (base_cell(sz, hidden_size, bias, nonlinearity) for sz in sizes)
+        )
 
+        # Build RNN backward layers, if needed
         if self.bidirectional:
-            self.rnn_backward = nn.ModuleList()
-            for layer in range(self.num_layers):
-                if layer == 0:
-                    self.rnn_backward.append(base_cell(input_size, hidden_size, bias, nonlinearity))
-                else:
-                    self.rnn_backward.append(
-                        base_cell(hidden_size, hidden_size, bias, nonlinearity)
-                    )
+            self.rnn_backward = nn.ModuleList(
+                (base_cell(sz, hidden_size, bias, nonlinearity) for sz in sizes)
+            )
 
-    def forward(self, x, h=None):
-        # If batch_first == True, swap axis with seq_len
-        # At the end of the process we swap it back to the original structure
+    def forward(self, x, hc=None):
+        # If batch_first == True, swap batch with seq_len
+        # At the end of the procedure we swap it back to the original structure
         if self.batch_first:
-            x, h = self._swap_axis(x, h)
+            x = x.transpose(0, 1)
 
-        # If it is LSTM, get hidden and cell states
-        if h is not None and self.is_lstm:
-            h, c = h
+        # If hc is not None, hc is either a Tensor (RNNCell or GRUCell hidden state),
+        #   or a 2-tuple of Tensors (LSTMCell hidden and cell states).
+        # For convenience, we make hc always listy so that:
+        #   hc[0] is the hidden state
+        #   hc[1] if it exists, is the cell state
+        # At the end of the procedure, we swap it back to the original structure
+        if hc is None:
+            # Initialize hc
+            hc = [self._init_hidden(x) for _ in range(2 if self.is_lstm else 1)]
+        else:
+            # Standardize hc per comment above
+            if not self.is_lstm:
+                hc = [hc]
+
+            # As we did to x above, we swap back at the end of the procedure
+            if self.batch_first:
+                hc = [item.transpose(0, 1) for item in hc]
 
         batch_size = x.shape[1]
         seq_len = x.shape[0]
 
-        # Initiate states if needed
-        if h is None:
-            h = self._init_hidden(x)
-            c = self._init_hidden(x) if self.is_lstm else None
-
-        # If bidirectional==True, split states in two, each one for each direction
+        # If bidirectional==True, split states in two, one for each direction
         if self.bidirectional:
-            h = h.contiguous().view(self.num_layers, 2, batch_size, self.hidden_size)
-            h_for = h[:, 0, :, :]
-            h_back = h[:, 1, :, :]
-            if self.is_lstm:
-                c = c.contiguous().view(self.num_layers, 2, batch_size, self.hidden_size)
-                c_for = c[:, 0, :, :]
-                c_back = c[:, 1, :, :]
-            else:
-                c_for = c_back = None
-
+            hc = [
+                item.contiguous().view(self.num_layers, 2, batch_size, self.hidden_size)
+                for item in hc
+            ]
+            hc_fwd = [item[:, 0, :, :] for item in hc]
+            hc_back = [item[:, 1, :, :] for item in hc]
         else:
-            h_for = h
-            c_for = c if self.is_lstm else None
+            hc_fwd = hc
 
         # Run through rnn in the forward direction
         output = x.new(seq_len, batch_size, self.hidden_size).zero_()
         for t in range(seq_len):
-            h_for, c_for = self._apply_time_step(x, h_for, c_for, t)
-            output[t, :, :] = h_for[-1, :, :]
-
-        hidden = h_for
-        cell = c_for  # None if it is not an LSTM
+            hc_fwd = self._apply_time_step(x, hc_fwd, t)
+            output[t, :, :] = hc_fwd[0][-1, :, :]
 
         # Run through rnn in the backward direction if bidirectional==True
         if self.bidirectional:
             output_back = x.new(seq_len, batch_size, self.hidden_size).zero_()
             for t in range(seq_len - 1, -1, -1):
-                h_back, c_back = self._apply_time_step(x, h_back, c_back, t, reverse_direction=True)
-                output_back[t, :, :] = h_back[-1, :, :]
+                hc_back = self._apply_time_step(x, hc_back, t, reverse_direction=True)
+                output_back[t, :, :] = hc_back[0][-1, :, :]
 
             # Concatenate both directions
             output = torch.cat((output, output_back), dim=-1)
-            hidden = torch.cat((hidden, h_back), dim=0)
-            if self.is_lstm:
-                cell = torch.cat((cell, c_back), dim=0)
+            hidden = [
+                torch.cat((hid_item, back_item), dim=0)
+                for hid_item, back_item in zip(hc_fwd, hc_back)
+            ]
+        else:
+            hidden = hc_fwd
 
         # If batch_first == True, swap axis back to get original structure
         if self.batch_first:
-            output = torch.transpose(output, 0, 1)
-            hidden = torch.transpose(hidden, 0, 1)
-            if self.is_lstm:
-                cell = torch.transpose(cell, 0, 1)
+            output = output.transpose(0, 1)
+            hidden = [item.transpose(0, 1) for item in hidden]
 
-        hidden = (hidden, cell) if self.is_lstm else hidden
+        # Reshape hidden to the original shape of hc
+        hidden = tuple(hidden) if self.is_lstm else hidden[0]
 
         return output, hidden
-
-    def _swap_axis(self, x, h):
-        """
-        This method swap the axes for batch_size and seq_len. It is used when
-        batch_first==True.
-        """
-        x = torch.transpose(x, 0, 1)
-        if h is not None:
-            if self.is_lstm:
-                h, c = h
-                h = torch.transpose(h, 0, 1)
-                c = torch.transpose(c, 0, 1)
-                h = (h, c)
-            else:
-                h = torch.transpose(h, 0, 1)
-        return x, h
 
     def _init_hidden(self, input):
         """
@@ -300,7 +281,7 @@ class RNNBase(nn.Module):
         )
         if input.has_child() and isinstance(input.child, PointerTensor):
             h = h.send(input.child.location)
-        if input.has_child() and isinstance(input.child, FixedPrecisionTensor):
+        if input.has_child() and isinstance(input.child, precision.FixedPrecisionTensor):
             h = h.fix_precision()
             child = input.child
             if isinstance(child.child, AdditiveSharingTensor):
@@ -309,34 +290,24 @@ class RNNBase(nn.Module):
                 h = h.share(*owners, crypto_provider=crypto_provider)
         return h
 
-    def _apply_time_step(self, x, h, c, t, reverse_direction=False):
+    def _apply_time_step(self, x, hc, t, reverse_direction=False):
         """
         Apply RNN layers at time t, given input and previous hidden states
         """
         rnn_layers = self.rnn_backward if reverse_direction else self.rnn_forward
 
-        h_next = h.new(h.shape).zero_()
-        c_next = c.new(c.shape).zero_() if self.is_lstm else None
+        hc = torch.stack([*hc])
+        hc_next = torch.zeros_like(hc)
 
         for layer in range(self.num_layers):
-            if layer == 0:
-                if self.is_lstm:
-                    h_next[layer, :, :], c_next[layer, :, :] = rnn_layers[layer](
-                        x[t, :, :], (h[layer, :, :], c[layer, :, :])
-                    )
-                else:
-                    h_next[layer, :, :] = rnn_layers[layer](x[t, :, :], h[layer, :, :])
-            else:
-                if self.is_lstm:
-                    h_next[layer, :, :], c_next[layer, :, :] = rnn_layers[layer](
-                        h_next[layer - 1, :, :].clone(), (h[layer, :, :], c[layer, :, :])
-                    )
-                else:
-                    h_next[layer, :, :] = rnn_layers[layer](
-                        h_next[layer - 1, :, :].clone(), h[layer, :, :]
-                    )
+            inp = x[t, :, :] if layer == 0 else hc_next[0][layer - 1, :, :].clone()
 
-        return h_next, c_next
+            if self.is_lstm:
+                hc_next[:, layer, :, :] = torch.stack(rnn_layers[layer](inp, hc[:, layer, :, :]))
+            else:
+                hc_next[0][layer, :, :] = rnn_layers[layer](inp, hc[0][layer, :, :])
+
+        return hc_next
 
 
 class RNN(RNNBase):

@@ -1,12 +1,13 @@
+import numpy as np
 import torch as th
 from torch.utils.data import BatchSampler, RandomSampler, SequentialSampler
-import numpy as np
+from typing import Union
 
-from syft.generic.object_storage import ObjectStorage
+from syft.generic.object_storage import ObjectStore
 from syft.federated.train_config import TrainConfig
 
 
-class FederatedClient(ObjectStorage):
+class FederatedClient:
     """A Client able to execute federated learning in local datasets."""
 
     def __init__(self, datasets=None):
@@ -14,6 +15,7 @@ class FederatedClient(ObjectStorage):
         self.datasets = datasets if datasets is not None else dict()
         self.optimizer = None
         self.train_config = None
+        self.object_store = ObjectStore(owner=self)
 
     def add_dataset(self, dataset, key: str):
         if key not in self.datasets:
@@ -25,6 +27,19 @@ class FederatedClient(ObjectStorage):
         if key in self.datasets:
             del self.datasets[key]
 
+    def get_obj(self, obj_id: Union[str, int]) -> object:
+        """Returns the object from registry.
+
+        Look up an object from the registry using its ID.
+
+        Args:
+            obj_id: A string or integer id of an object to look up.
+
+        Returns:
+            Object with id equals to `obj_id`.
+        """
+        return self.object_store.get_obj(obj_id)
+
     def set_obj(self, obj: object):
         """Registers objects checking if which objects it should cache.
 
@@ -35,7 +50,7 @@ class FederatedClient(ObjectStorage):
             self.train_config = obj
             self.optimizer = None
         else:
-            super().set_obj(obj)
+            self.object_store.set_obj(obj)
 
     def _check_train_config(self):
         if self.train_config is None:
@@ -57,9 +72,10 @@ class FederatedClient(ObjectStorage):
 
         if optimizer_name in dir(th.optim):
             optimizer = getattr(th.optim, optimizer_name)
-            self.optimizer = optimizer(model.parameters(), **optimizer_args)
+            optimizer_args.setdefault("params", model.parameters())
+            self.optimizer = optimizer(**optimizer_args)
         else:
-            raise ValueError("Unknown optimizer: {}".format(optimizer_name))
+            raise ValueError(f"Unknown optimizer: {optimizer_name}")
         return self.optimizer
 
     def fit(self, dataset_key: str, device: str = "cpu", **kwargs):
@@ -75,10 +91,10 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
-        model = self.get_obj(self.train_config._model_id).obj
-        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
+        model = self.object_store.get_obj(self.train_config._model_id).obj
+        loss_fn = self.object_store.get_obj(self.train_config._loss_fn_id).obj
 
         self._build_optimizer(
             self.train_config.optimizer, model, optimizer_args=self.train_config.optimizer_args
@@ -144,6 +160,7 @@ class FederatedClient(ObjectStorage):
             nr_bins: Used together with calculate_histograms. Provide the number of classes/bins.
             return_loss: If True, loss is calculated additionally.
             return_raw_accuracy: If True, return nr_correct_predictions and nr_predictions
+            device: "cuda" or "cpu"
 
         Returns:
             Dictionary containing depending on the provided flags:
@@ -156,11 +173,11 @@ class FederatedClient(ObjectStorage):
         self._check_train_config()
 
         if dataset_key not in self.datasets:
-            raise ValueError("Dataset {} unknown.".format(dataset_key))
+            raise ValueError(f"Dataset {dataset_key} unknown.")
 
         eval_result = dict()
-        model = self.get_obj(self.train_config._model_id).obj
-        loss_fn = self.get_obj(self.train_config._loss_fn_id).obj
+        model = self.object_store.get_obj(self.train_config._model_id).obj
+        loss_fn = self.object_store.get_obj(self.train_config._loss_fn_id).obj
         model.eval()
         device = "cuda" if device == "cuda" else "cpu"
         data_loader = self._create_data_loader(dataset_key=dataset_key, shuffle=False)
@@ -198,3 +215,6 @@ class FederatedClient(ObjectStorage):
             eval_result["histogram_target"] = hist_target
 
         return eval_result
+
+    def _log_msgs(self, value):
+        self.log_msgs = value

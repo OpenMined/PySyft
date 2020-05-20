@@ -99,6 +99,9 @@ class AutogradTensor(AbstractTensor):
             other = AutogradTensor(requires_grad=False).on(other, wrap=False)
         return self.mul(other)
 
+    def __neg__(self):
+        return self.neg()
+
     def __matmul__(self, other):
         if isinstance(self, AutogradTensor) and not isinstance(other, AutogradTensor):
             other = AutogradTensor(requires_grad=False).on(other, wrap=False)
@@ -153,7 +156,6 @@ class AutogradTensor(AbstractTensor):
                 # Put back SyftTensor on the tensors found in the response
                 result = hook_args.hook_response(name, result, wrap_type=type(self))
                 result.grad_fn = grad_fn(self, *args, **kwargs)
-                result.grad_fn.result = result
 
                 return result
 
@@ -178,6 +180,16 @@ class AutogradTensor(AbstractTensor):
             return self.mul(other)
 
         module.mul = mul
+
+        def neg(self):
+            return self.neg()
+
+        module.neg = neg
+
+        def log(self):
+            return self.log()
+
+        module.log = log
 
         def matmul(self, other):
             return self.matmul(other)
@@ -237,22 +249,22 @@ class AutogradTensor(AbstractTensor):
         response and replace a AutogradTensor on top of all tensors found in
         the response.
         :param command: instruction of a function command: (command name,
-        <no self>, arguments[, kwargs])
+        <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
 
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)
@@ -309,7 +321,6 @@ class AutogradTensor(AbstractTensor):
         )
 
         return (
-            tensor.owner,
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
             chain,
             tensor.requires_grad,
@@ -333,7 +344,6 @@ class AutogradTensor(AbstractTensor):
                 shared_tensor = detail(data)
             """
         (
-            owner,
             tensor_id,
             chain,
             requires_grad,
@@ -347,7 +357,7 @@ class AutogradTensor(AbstractTensor):
             chain = syft.serde.msgpack.serde._detail(worker, chain)
 
         tensor = AutogradTensor(
-            owner=owner,
+            owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
             requires_grad=requires_grad,  # ADDED!
             preinitialize_grad=preinitialize_grad,

@@ -176,9 +176,3 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
             asyncio.get_event_loop().run_forever()
         except KeyboardInterrupt:
             logging.info("Websocket server stopped.")
-
-    def list_objects(self, *args):
-        return str(self._objects)
-
-    def objects_count(self, *args):
-        return len(self._objects)

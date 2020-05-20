@@ -8,14 +8,12 @@ from typing import List, Tuple
 
 import syft
 from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.hook.trace import tracer
-from syft.generic.object import initialize_object
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.string import String
 from syft.generic.pointers.string_pointer import StringPointer
-from syft.generic.tensor import _apply_args
+from syft.generic.object import _apply_args
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import route_method_exception
@@ -26,6 +24,8 @@ class FrameworkHook(ABC):
     @abstractmethod
     def __init__(self, framework_module, local_worker: BaseWorker = None, is_client: bool = True):
         pass
+
+    boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
 
     ### Public API: framework-specific factory methods ###
     @classmethod
@@ -187,9 +187,7 @@ class FrameworkHook(ABC):
             A list of methods to be overloaded.
         """
 
-        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
-
-        to_overload = boolean_comparators
+        to_overload = self.boolean_comparators.copy()
 
         native_pattern = re.compile("native*")
 
@@ -231,11 +229,33 @@ class FrameworkHook(ABC):
                 new_method = self._get_hooked_syft_method(attr)
                 setattr(syft_type, attr, new_method)
 
+    def _hook_syft_placeholder_methods(self, tensor_type: type, syft_type: type):
+        """
+        Slight variant of _hook_syft_tensor_methods, which adds the boolean
+        comparators to the hooking
+        """
+
+        def create_tracing_method(base_method, name):
+            def tracing_method(self, *args, **kwargs):
+                response = base_method(self, *args, **kwargs)
+                command = (name, self, args, kwargs), response
+                if self.tracing:
+                    self.role.register_action(command, syft.execution.computation.ComputationAction)
+                return response
+
+            return tracing_method
+
+        # Use a pre-defined list to select the methods to overload
+        for attr in self.to_auto_overload[tensor_type]:
+            if attr not in dir(syft_type) or attr in self.boolean_comparators:
+                new_method = create_tracing_method(self._get_hooked_syft_method(attr), attr)
+                setattr(syft_type, attr, new_method)
+
     def _hook_private_tensor_methods(self, tensor_type: type, syft_type: type):
         """
         Add hooked version of all methods of the tensor_type to the
         Private Tensor: It'll add references to its parents and save
-        command/operations history.
+        command/actions history.
         """
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
@@ -251,11 +271,9 @@ class FrameworkHook(ABC):
         is pointing at.
         """
 
-        boolean_comparators = ["__gt__", "__ge__", "__lt__", "__le__"]
-
         # Use a pre-defined list to select the methods to overload
         for attr in self.to_auto_overload[tensor_type]:
-            if attr not in dir(PointerTensor) or attr in boolean_comparators:
+            if attr not in dir(PointerTensor) or attr in self.boolean_comparators:
                 new_method = self._get_hooked_pointer_method(attr)
                 setattr(PointerTensor, attr, new_method)
 
@@ -312,34 +330,6 @@ class FrameworkHook(ABC):
 
                 # Add the hooked method
                 setattr(StringPointer, attr, new_method)
-
-    def _add_registration_to___init__(hook_self, tensor_type: type, is_tensor: bool = False):
-        """Adds several attributes to the tensor.
-
-        Overload tensor_type.__init__ to add several attributes to the tensor
-        as well as (optionally) registering the tensor automatically.
-        TODO: auto-registration is disabled at the moment, this might be bad.
-
-        Args:
-            tensor_type: The class of the tensor being hooked
-            torch_tensor: An optional boolean parameter (default False) to
-                specify whether to skip running the native initialization
-                logic. TODO: this flag might never get used.
-        """
-        if "native___init__" not in dir(tensor_type):
-            tensor_type.native___init__ = tensor_type.__init__
-
-        def new___init__(self, *args, owner=None, id=None, register=True, **kwargs):
-            initialize_object(
-                hook=hook_self,
-                obj=self,
-                id=id,
-                reinitialize=not is_tensor,
-                init_args=args,
-                init_kwargs=kwargs,
-            )
-
-        tensor_type.__init__ = new___init__
 
     @classmethod
     def _perform_function_overloading(cls, parent_module_name, parent_module, func_name):
@@ -406,7 +396,6 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
-        @tracer(method_name=method_name)
         @wraps(getattr(tensor_type, method_name))
         def overloaded_native_method(self, *args, **kwargs):
             """
@@ -480,14 +469,13 @@ class FrameworkHook(ABC):
                 if syft.framework.is_inplace_method(method_name):
                     return self
 
-                # if object is a pointer of pointer, set register to False
-                if isinstance(self.child, PointerTensor):
-                    wrap_args = {"register": False}
-                else:
-                    wrap_args = {}
                 # Put back the wrappers where needed
                 response = hook_args.hook_response(
-                    method_name, response, wrap_type=type(self), new_self=self, wrap_args=wrap_args
+                    method_name,
+                    response,
+                    wrap_type=type(self),
+                    new_self=self,
+                    wrap_args=self.get_class_attributes(),
                 )
 
             return response
@@ -581,7 +569,6 @@ class FrameworkHook(ABC):
 
         cmd_name = f"{public_module_name}.{func_api_name}"
 
-        @tracer(func_name=cmd_name)
         @wraps(func)
         def overloaded_func(*args, **kwargs):
             """
@@ -635,9 +622,7 @@ class FrameworkHook(ABC):
                         raise TensorsNotCollocatedException(pointer, args[0], attr)
 
             # Send the command
-            command = (attr, self, args, kwargs)
-
-            response = owner.send_command(location, command)
+            response = owner.send_command(location, attr, self, args, kwargs)
 
             # For inplace methods, just directly return self
             if syft.framework.is_inplace_method(attr):
@@ -658,8 +643,8 @@ class FrameworkHook(ABC):
             the hooked method
         """
 
-        def dispatch(args, k):
-            return map(lambda x: x[k] if isinstance(x, dict) else x, args)
+        def dispatch(args_, k):
+            return map(lambda x: x[k] if isinstance(x, dict) else x, args_)
 
         @wraps(attr)
         def overloaded_attr(self, *args, **kwargs):
@@ -686,10 +671,10 @@ class FrameworkHook(ABC):
         return overloaded_attr
 
     @classmethod
-    def _string_input_args_adaptor(cls, args: Tuple[object]):
+    def _string_input_args_adaptor(cls, args_: Tuple[object]):
         """
            This method is used when hooking String methods.
-           
+
            Some 'String' methods which are overriden from 'str'
            such as the magic '__add__' method
            expects an object of type 'str' as its first
@@ -697,22 +682,22 @@ class FrameworkHook(ABC):
            here is hooked to a String type, it will receive
            arguments of type 'String' not 'str' in some cases.
            This won't worker for the underlying hooked method
-           '__add__' of the 'str' type. 
+           '__add__' of the 'str' type.
            That is why the 'String' argument to '__add__' should
            be peeled down to 'str'
-        
+
            Args:
-               args: A tuple or positional arguments of the method
+               args_: A tuple or positional arguments of the method
                      being hooked to the String class.
 
            Return:
                A list of adapted positional arguments.
-           
+
         """
 
         new_args = []
 
-        for arg in args:
+        for arg in args_:
 
             # If 'arg' is an object of type String
             # replace it by and 'str' object
@@ -739,7 +724,7 @@ class FrameworkHook(ABC):
     @classmethod
     def _get_hooked_string_method(cls, attr):
         """
-           Hook a `str` method to a corresponding method  of 
+           Hook a `str` method to a corresponding method  of
           `String` with the same name.
 
            Args:
@@ -772,7 +757,7 @@ class FrameworkHook(ABC):
     @classmethod
     def _get_hooked_string_pointer_method(cls, attr):
         """
-           Hook a `String` method to a corresponding method  of 
+           Hook a `String` method to a corresponding method  of
           `StringPointer` with the same name.
 
            Args:
@@ -795,10 +780,9 @@ class FrameworkHook(ABC):
             # Create a 'command' variable  that is understood by
             # the send_command() method of a worker.
             # command = (attr, id_at_location, args, kwargs)
-            command = (attr, _self, args, kwargs)
 
             # send the command
-            response = owner.send_command(location, command)
+            response = owner.send_command(location, attr, _self, args, kwargs)
 
             return response
 

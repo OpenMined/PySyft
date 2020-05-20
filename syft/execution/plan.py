@@ -1,24 +1,32 @@
-import re
-from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
 
+import copy
+import inspect
+import io
 import torch
+import warnings
 
 import syft as sy
+from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
+from syft.execution.role import Role
+from syft.execution.state import State
+from syft.execution.tracing import FrameworkWrapper
+from syft.execution.type_wrapper import NestedTypeWrapper
+from syft.execution.translation.abstract import AbstractPlanTranslator
+from syft.execution.translation.default import PlanTranslatorDefault
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
-from syft.generic.object_storage import ObjectStorage
 from syft.generic.pointers.pointer_plan import PointerPlan
-from syft.messaging.message import OperationMessage
-from syft.execution.state import State
 from syft.workers.abstract import AbstractWorker
-from syft.frameworks.torch.tensors.interpreters.placeholder import PlaceHolder
+from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
-from syft_proto.messaging.v1.message_pb2 import OperationMessage as OperationMessagePB
 
 
 class func2plan(object):
@@ -30,7 +38,7 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False):
         self.args_shape = args_shape
         self.state_tensors = state or tuple()
         # include_state is used to distinguish if the initial plan is a function or a class:
@@ -38,6 +46,7 @@ class func2plan(object):
         # will be true. And to know if it was indeed a function, we just need to see if a
         # "manual" state was provided.
         self.include_state = state is not None
+        self.trace_autograd = trace_autograd
 
     def __call__(self, plan_function):
         plan = Plan(
@@ -51,24 +60,26 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args = Plan._create_placeholders(self.args_shape)
-            plan.build(*args)
+            args_ = PlaceHolder.create_placeholders(self.args_shape)
+            try:
+                plan.build(*args_, trace_autograd=self.trace_autograd)
+            except TypeError as e:
+                raise ValueError(
+                    "Automatic build using @func2plan failed!\nCheck that:\n"
+                    " - you have provided the correct number of shapes in args_shape\n"
+                    " - you have no simple numbers like int or float as args. If you do "
+                    "so, please consider using a tensor instead."
+                )
         return plan
 
 
-def method2plan(*args, **kwargs):
-    raise SyntaxError(
-        "method2plan is not supported anymore. Consider instead subclassing your object from sy.Plan."
-    )
-
-
-class Plan(AbstractObject, ObjectStorage):
+class Plan(AbstractObject):
     """
-    A Plan stores a sequence of torch operations, just like a function.
+    A Plan stores a sequence of actions, just like a function.
 
-    A Plan is intended to store a sequence of torch operations, just like a function,
-    but it allows to send this sequence of operations to remote workers and to keep a
-    reference to it. This way, to compute remotely this sequence of operations on some remote
+    A Plan is intended to store a sequence of actions, just like a function,
+    but it allows to send this sequence of actions to remote workers and to keep a
+    reference to it. This way, to compute remotely this sequence of actions on some remote
     input referenced through pointers, instead of sending multiple messages you need now to send a
     single message with the references of the plan and the pointers.
 
@@ -81,7 +92,7 @@ class Plan(AbstractObject, ObjectStorage):
             state is re-integrated in the args to be accessed within the function
         is_built: state if the plan has already been built.
         placeholders: dict of placeholders used in the plan
-        operations: list of commands (called operations)
+        actions: list of commands (called actions)
         forward_func: the function to be transformed into a plan
         state_tensors: a tuple of state elements. It can be used to populate a state
         id: plan id
@@ -90,328 +101,263 @@ class Plan(AbstractObject, ObjectStorage):
         description: plan description
     """
 
+    _build_translators = []
+    _wrapped_frameworks = {}
+
     def __init__(
         self,
         name: str = None,
-        state: State = None,
         include_state: bool = False,
         is_built: bool = False,
-        operations: List[OperationMessage] = None,
-        placeholders: Dict[Union[str, int], PlaceHolder] = None,
         forward_func=None,
-        state_tensors=None,
+        state_tensors=[],
+        role: Role = None,
         # General kwargs
         id: Union[str, int] = None,
         owner: "sy.workers.BaseWorker" = None,
         tags: List[str] = None,
+        input_types: list = None,
         description: str = None,
     ):
-        owner = owner or sy.local_worker
         AbstractObject.__init__(self, id, owner, tags, description, child=None)
-        ObjectStorage.__init__(self)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
-        self.owner = owner
 
-        self.operations = operations or []
+        self.role = role or Role()
 
-        # Keep a local reference to all placeholders, stored by id
-        self.placeholders = placeholders or {}
-        # Incremental value to tag all placeholders with different tags
-        self.var_count = 0
-
-        self.state = state or State(owner=owner)
-        # state_tensors are provided when plans are created using func2plan
-        if state_tensors is not None:
-            # we want to make sure in that case that the state is empty
-            assert state is None
-            for tensor in state_tensors:
-                placeholder = sy.PlaceHolder(
-                    tags={"#state", f"#{self.var_count + 1}"}, id=tensor.id
-                )
-                self.var_count += 1
-                placeholder.instantiate(tensor)
-                self.state.state_placeholders.append(placeholder)
-                self.placeholders[tensor.id] = placeholder
+        if role is None:
+            for st in state_tensors:
+                self.role.register_state_tensor(st)
 
         self.include_state = include_state
+        self.is_building = False
+        self.state_attributes = {}
         self.is_built = is_built
+        self.torchscript = None
+        self.input_types = input_types
+        self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = dict()
 
-        if forward_func is not None:
-            self.forward = forward_func
-        elif self.is_built:
-            self.forward = None
+        if not hasattr(self, "forward"):
+            self.forward = forward_func or None
 
         self.__name__ = self.__repr__()  # For PyTorch jit tracing compatibility
 
-    @staticmethod
-    def _create_placeholders(args_shape):
-        # In order to support -1 value in shape to indicate any dimension
-        # we map -1 to 1 for shape dimensions.
-        # TODO: A more complex strategy could be used
-        mapped_shapes = []
-        for shape in args_shape:
-            if list(filter(lambda x: x < -1, shape)):
-                raise ValueError("Invalid shape {}".format(shape))
-            mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
-
-        return [sy.framework.hook.create_zeros(shape) for shape in mapped_shapes]
+        # List of available translations
+        self.translations = []
 
     @property
-    def _known_workers(self):
-        return self.owner._known_workers
+    def state(self):
+        return self.role.state
 
     @property
-    def location(self):
-        raise AttributeError("Plan has no attribute location")
-
-    # For backward compatibility
-    @property
-    def readable_plan(self):
-        return self.operations
+    def actions(self):
+        return self.role.actions
 
     def parameters(self):
         """
         This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
         """
-        return self.state.tensors()
-
-    def send_msg(self, *args, **kwargs):
-        return self.owner.send_msg(*args, **kwargs)
-
-    def request_obj(self, *args, **kwargs):
-        return self.owner.request_obj(*args, **kwargs)
-
-    def respond_to_obj_req(self, obj_id: Union[str, int]):
-        """Returns the deregistered object from registry.
-
-        Args:
-            obj_id: A string or integer id of an object to look up.
-        """
-
-        obj = self.get_obj(obj_id)
-        self.de_register_obj(obj)
-        return obj
-
-    def add_placeholder(self, tensor, node_type=None):
-        """
-        Create and register a new placeholder if not already existing (else return
-        the existing one).
-
-        The placeholder is tagged by a unique and incremental index for a given plan.
-
-        Args:
-            tensor: the tensor to replace with a placeholder
-            node_type: Should be "input" or "output", used to tag like this: #<type>-*
-        """
-        if tensor.id not in self.placeholders.keys():
-            placeholder = sy.PlaceHolder(tags={f"#{self.var_count + 1}"}, id=tensor.id)
-            self.placeholders[tensor.id] = placeholder
-
-            if node_type == "input":
-                placeholder.tags.add(f"#input-{self._tmp_args_ids.index(tensor.id)}")
-            elif node_type == "output":
-                if tensor.id in self._tmp_result_ids:
-                    placeholder.tags.add(f"#output-{self._tmp_result_ids.index(tensor.id)}")
-            else:
-                raise ValueError("node_type should be 'input' or 'output'.")
-
-            self.var_count += 1
-
-        return self.placeholders[tensor.id]
-
-    def replace_with_placeholders(self, obj, **kw):
-        """
-        Replace in an object all FrameworkTensors with Placeholders
-        """
-        if isinstance(obj, (tuple, list)):
-            r = [self.replace_with_placeholders(o, **kw) for o in obj]
-            return type(obj)(r)
-        elif isinstance(obj, dict):
-            return {key: self.replace_with_placeholders(value, **kw) for key, value in obj.items()}
-        elif isinstance(obj, FrameworkTensor):
-            return self.add_placeholder(obj, **kw)
-        elif isinstance(obj, (int, float, str, bool)):
-            return obj
-        elif obj is None:
-            return None
+        if self.state is not None:
+            return self.state.tensors()
         else:
-            raise TypeError(f"Type {type(obj)} not supported in plans args/kwargs")
+            return []
 
-    def find_placeholders(self, *search_tags):
-        """
-        Search method to retrieve placeholders used in the Plan using tag search.
-        Retrieve all placeholders which have a tag containing at least one search_tag.
-
-        Args:
-            *search_tags: tuple of tags
-
-        Returns:
-            A list of placeholders found
-        """
-        results = []
-        for placeholder in self.placeholders.values():
-            for search_tag in search_tags:
-                for tag in placeholder.tags:
-                    match = re.search(f".*{search_tag}.*", tag)
-                    if match is not None:
-                        results.append(placeholder)
-
-        return results
-
-    def build(self, *args):
+    def build(self, *args, trace_autograd=False):
         """Builds the plan.
 
         First, run the function to be converted in a plan in a context which
-        activates the tracing and record the operations in trace.logs
+        activates the tracing and record the actions in trace.logs
 
         Second, store the result ids temporarily to helper ordering the output
         placeholders at return time
 
         Third, loop through the trace logs and replace the tensors found in the
-        operations logged by PlaceHolders. Record those operations in
-        plan.operations
+        actions logged by PlaceHolders. Record those actions in
+        plan.actions
 
         Args:
             args: Input arguments to run the plan
         """
+        # Reset previous build
+        self.role.reset()
 
-        self.owner.init_plan = self
-
-        self._tmp_args_ids = [t.id for t in args if isinstance(t, FrameworkTensor)]
-
-        with sy.hook.trace.enabled():
-            # We usually have include_state==True for functions converted to plan
-            # using @func2plan and we need therefore to add the state manually
-            if self.include_state:
-                results = self.forward(*args, self.state)
+        def build_nested_arg(arg, leaf_function):
+            if isinstance(arg, list):
+                return [build_nested_arg(obj, leaf_function) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
+            elif isinstance(arg, dict):
+                return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
             else:
-                results = self.forward(*args)
+                return leaf_function(arg)
 
-        results = (results,) if not isinstance(results, tuple) else results
-        self._tmp_result_ids = [t.id for t in results if isinstance(t, FrameworkTensor)]
+        # Enable tracing
+        self.toggle_tracing(True)
+        self.is_building = True
 
-        for log in sy.hook.trace.logs:
-            command, response = log
-            command_placeholders, return_placeholders = (
-                self.replace_with_placeholders(command, node_type="input"),
-                self.replace_with_placeholders(response, node_type="output"),
+        # typecheck
+        self.input_types = NestedTypeWrapper(args)
+
+        # Run once to build the plan
+        if trace_autograd:
+            # Wrap arguments that require gradients with AutogradTensor,
+            # to be able to trace autograd operations
+            args = build_nested_arg(
+                args,
+                lambda x: AutogradTensor().on(x, wrap=False)
+                if isinstance(x, FrameworkTensor) and x.requires_grad
+                else x,
             )
-            # We're cheating a bit here because we put placeholders instead of return_ids
-            operation = OperationMessage(*command_placeholders, return_ids=return_placeholders)
-            self.operations.append(operation)
+            # Add Placeholder after AutogradTensor in the chain
+            # so that all operations that happen inside AutogradTensor are recorded by Placeholder
+            args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
+            )
+        else:
+            # Add Placeholder on top of each arg
+            args = args_placeholders = build_nested_arg(
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
+            )
 
-        sy.hook.trace.clear()
-        del self._tmp_result_ids
-        del self._tmp_args_ids
+        # Add state to args if needed
+        if self.include_state:
+            args += (self.state,)
+
+        # Check the plan arguments to see what framework wrappers we might need to send to the plan
+        framework_kwargs = {}
+
+        forward_args = inspect.getfullargspec(self.forward).args
+        for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
+            if f_name in forward_args:
+                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+
+        results = self.forward(*args, **framework_kwargs)
+
+        # Disable tracing
+        self.toggle_tracing(False)
+        self.is_building = False
+
+        # Register inputs in role
+        self.role.register_inputs(args_placeholders)
+
+        # Register outputs in role
+        if isinstance(results, (tuple, list)):
+            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
+        else:
+            results_placeholders = PlaceHolder.extract(results)
+        self.role.register_outputs(results_placeholders)
 
         self.is_built = True
-        self.owner.init_plan = None
+
+        # Build registered translations
+        for translator in Plan._build_translators:
+            try:
+                self.add_translation(translator)
+                self.translations.append(translator)
+            except:
+                warnings.warn(f"Failed to translate Plan with {translator.__name__}")
+
+        return results
+
+    def toggle_tracing(self, value=None):
+        self.tracing = value if value is not None else not self.tracing
+        self.state.tracing = self.tracing
+        for ph in self.role.placeholders.values():
+            ph.tracing = self.tracing
 
     def copy(self):
         """Creates a copy of a plan."""
-        plan = Plan(
+        plan_copy = Plan(
             name=self.name,
-            state=self.state.copy(),
+            role=self.role.copy(),
             include_state=self.include_state,
             is_built=self.is_built,
-            operations=self.operations,
-            placeholders=self.placeholders,
             id=sy.ID_PROVIDER.pop(),
             owner=self.owner,
             tags=self.tags,
+            input_types=self.input_types,
             description=self.description,
         )
 
-        plan.state.plan = plan
+        plan_copy.torchscript = self.torchscript
 
-        return plan
+        return plan_copy
 
     def __setattr__(self, name, value):
         """Add new tensors or parameter attributes to the state and register them
         in the owner's registry
         """
-        object.__setattr__(self, name, value)
+        if isinstance(value, torch.jit.ScriptModule):
+            object.__setattr__(self, name, value)
+        elif isinstance(value, FrameworkTensor):
+            self.role.register_state_tensor(value)
+            self.state_attributes[name] = value
+        elif isinstance(value, FrameworkLayerModule):
+            for param in value.parameters():
+                self.role.register_state_tensor(param)
+            self.state_attributes[name] = value
+        else:
+            object.__setattr__(self, name, value)
+
+    def __getattr__(self, name):
+        if name not in self.state_attributes:
+            raise AttributeError("State attribute not found.")
+
+        value = self.state_attributes[name]
+        if not self.is_building:
+            return value
 
         if isinstance(value, FrameworkTensor):
-            placeholder = sy.PlaceHolder(tags={"#state", f"#{self.var_count + 1}"}, id=value.id)
-            self.var_count += 1
-            placeholder.instantiate(value)
-            self.state.state_placeholders.append(placeholder)
-            self.placeholders[value.id] = placeholder
+            return self.role.placeholders[value.id]
         elif isinstance(value, FrameworkLayerModule):
-            for tensor_name, tensor in value.named_tensors():
-                self.__setattr__(f"{name}_{tensor_name}", tensor)
+            # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
+            copied_layer = copy.deepcopy(value)
+            for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
+                (copied_name, _) = copied_param
+                copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
 
-    def __call__(self, *args, **kwargs):
+            return copied_layer
+
+    def __call__(self, *args):
         """
         Calls a plan execution with some arguments.
 
         When possible, run the original function to improve efficiency. When
         it's not, for example if you fetched the plan from a remote worker,
-        then run it from the tape of operations:
+        then run it from the tape of actions:
         - Instantiate input placeholders
-        - for each recorded operation, run the operation on the placeholders
+        - for each recorded action, run the action on the placeholders
           and use the result(s) to instantiate to appropriate placeholder.
         - Return the instantiation of all the output placeholders.
         """
-        if self.forward is not None:  # if not self.is_built:
+        if self.forward is not None:
             if self.include_state:
                 args = (*args, self.state)
             return self.forward(*args)
-
         else:
-            # Instantiate all the input placeholders in the correct order
+            self.input_types.input_check(self, args)
+            self.role.instantiate_inputs(args)
+            result = self.role.execute()
+            if len(result) == 1:
+                return result[0]
+            return result
 
-            input_placeholders = sorted(self.find_placeholders("#input"), key=tag_sort("input"))
-            for placeholder, arg in zip(input_placeholders, args):
-                placeholder.instantiate(arg)
-
-            for i, op in enumerate(self.operations):
-                cmd, _self, args, kwargs, return_placeholder = (
-                    op.cmd_name,
-                    op.cmd_owner,  # cmd_owner is equivalent to the "self" in a method
-                    op.cmd_args,
-                    op.cmd_kwargs,
-                    op.return_ids,
-                )
-                if _self is None:
-                    response = eval(cmd)(*args, **kwargs)  # nosec
-                else:
-                    response = getattr(_self, cmd)(*args, **kwargs)
-                return_placeholder.instantiate(response.child)
-
-            # This ensures that we return the output placeholder in the correct order
-            output_placeholders = sorted(self.find_placeholders("#output"), key=tag_sort("output"))
-            response = [p.child for p in output_placeholders]
-
-            if len(response) == 1:
-                return response[0]
-            else:
-                return tuple(response)
-
-    def run(self, args: Tuple, result_ids: List[Union[str, int]]):
+    def run(self, args_: Tuple, result_ids: List[Union[str, int]]):
         """Controls local or remote plan execution.
         If the plan doesn't have the plan built, first build it using the original function.
 
         Args:
-            args: Arguments used to run plan.
+            args_: Arguments used to run plan.
             result_ids: List of ids where the results will be stored.
         """
         # TODO: can we reuse result_ids?
+        return self.__call__(*args_)
 
-        # We build the plan only if needed
-        if not self.is_built:
-            self.build(args)
-
-        result = self.__call__(*args)
-        return result
-
-    def send(self, *locations: AbstractWorker, force=False) -> PointerPlan:
+    def send(self, *locations: AbstractWorker) -> PointerPlan:
         """Send plan to locations.
 
         If the plan was not built locally it will raise an exception.
@@ -419,9 +365,9 @@ class Plan(AbstractObject, ObjectStorage):
 
         Args:
             locations: List of workers.
-            force: A boolean indicating if this operation should be forced.
+            force: A boolean indicating if this action should be forced.
         """
-        if not self.is_built and not force:
+        if not self.is_built:
             raise RuntimeError("A plan needs to be built before being sent to a worker.")
 
         if len(locations) == 1:
@@ -453,6 +399,40 @@ class Plan(AbstractObject, ObjectStorage):
 
         return pointer
 
+    def get_args_shape(self):
+        """Returns input tensors shapes"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    @staticmethod
+    def register_build_translator(translator: "AbstractPlanTranslator"):
+        Plan._build_translators.append(translator)
+
+    @staticmethod
+    def register_framework(f_name, f_package):
+        """
+        When we use methods defined in a framework (like: torch.randn) we have a framework
+        wrapper that helps as register and keep track of what methods are called
+        With the below lines, we "register" what frameworks we have support to handle
+        Args:
+            f_name (String): framework name (eg. torch, crypten)
+            f_package (imported module): imported library
+        """
+
+        def call_wrapped_framework(role, owner):
+            return FrameworkWrapper(f_package, role, owner)
+
+        Plan._wrapped_frameworks[f_name] = call_wrapped_framework
+
+    def add_translation(self, plan_translator: "AbstractPlanTranslator"):
+        return plan_translator(self).translate()
+
+    def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
+        plan_translator(self).remove()
+        return self
+
     def get_(self):
         self.state.get_()
         return self
@@ -481,13 +461,27 @@ class Plan(AbstractObject, ObjectStorage):
     share = share_
 
     def create_pointer(
-        self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
+        self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
     ):
+        """
+        Create a pointer to the plan
+
+        Args:
+            owner: the owner of the pointer
+            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+            location: the location of the pointer
+            id_at_location: the remote id at location
+            tags: the tags inherited from the Plan
+
+        Returns:
+            PointerPlan: pointer to the plan
+        """
         return PointerPlan(
             owner=owner,
             location=location or self.owner,
             id_at_location=id_at_location or self.id,
             garbage_collect_data=garbage_collect_data,
+            tags=tags,
         )
 
     def __str__(self):
@@ -507,11 +501,57 @@ class Plan(AbstractObject, ObjectStorage):
             out += " built"
 
         out += ">"
+        out += "\n"
+        _self = self
+
+        # out += f"def {self.name}("
+        # out += ", ".join(f"arg_{extract_tag(p)}" for p in self.find_placeholders("input"))
+        # out += "):\n"
+        # for action in self.actions:
+        #     line = "    "
+        #     if action.return_ids is not None:
+        #         if isinstance(action.return_ids, PlaceHolder):
+        #             tag = extract_tag(action.return_ids)
+        #             line += f"_{tag} = "
+        #         elif isinstance(action.return_ids, tuple):
+        #             line += (
+        #                 ", ".join(
+        #                     f"_{extract_tag(o)}" if isinstance(o, PlaceHolder) else str(o)
+        #                     for o in action.return_ids
+        #                 )
+        #                 + " = "
+        #             )
+        #         else:
+        #             line += str(action.return_ids) + " = "
+        #     if action.target is not None:
+        #         line += f"_{extract_tag(self.placeholders[action.target.value])}."
+        #     line += action.name + "("
+        #     line += ", ".join(
+        #         f"_{extract_tag(arg)}" if isinstance(arg, PlaceHolder) else str(arg)
+        #         for arg in action.args
+        #     )
+        #     if action.kwargs:
+        #         line += ", " + ", ".join(f"{k}={w}" for k, w in action.kwargs.items())
+        #     line += ")\n"
+        #     out += line
+
+        # out += "    return "
+        # out += ", ".join(f"_{extract_tag(p)}" for p in self.find_placeholders("output"))
 
         return out
 
     def __repr__(self):
         return self.__str__()
+
+    @staticmethod
+    def replace_non_instanciated_placeholders(plan: "Plan") -> "Plan":
+        # Replace non-instanciated placeholders from plan.placeholders by instanciated placeholders
+        # from state.state_placeholders
+        # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
+        state_placeholders = {ph.id.value: ph for ph in plan.state.state_placeholders}
+        plan.placeholders = {**plan.placeholders, **state_placeholders}
+
+        return plan
 
     @staticmethod
     def simplify(worker: AbstractWorker, plan: "Plan") -> tuple:
@@ -524,16 +564,18 @@ class Plan(AbstractObject, ObjectStorage):
             tuple: a tuple holding the unique attributes of the Plan object
 
         """
+        if not plan.is_built:
+            raise RuntimeError("A Plan needs to be built before being serialized.")
+
         return (
             sy.serde.msgpack.serde._simplify(worker, plan.id),
-            sy.serde.msgpack.serde._simplify(worker, plan.operations),
-            sy.serde.msgpack.serde._simplify(worker, plan.state),
+            sy.serde.msgpack.serde._simplify(worker, plan.role),
             sy.serde.msgpack.serde._simplify(worker, plan.include_state),
-            sy.serde.msgpack.serde._simplify(worker, plan.is_built),
             sy.serde.msgpack.serde._simplify(worker, plan.name),
             sy.serde.msgpack.serde._simplify(worker, plan.tags),
             sy.serde.msgpack.serde._simplify(worker, plan.description),
-            sy.serde.msgpack.serde._simplify(worker, plan.placeholders),
+            sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
+            sy.serde.msgpack.serde._simplify(worker, plan.input_types),
         )
 
     @staticmethod
@@ -545,41 +587,29 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             plan: a Plan object
         """
+        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
 
-        (
-            id,
-            operations,
-            state,
-            include_state,
-            is_built,
-            name,
-            tags,
-            description,
-            placeholders,
-        ) = plan_tuple
-
-        worker._tmp_placeholders = {}
-        id = sy.serde.msgpack.serde._detail(worker, id)
-        operations = sy.serde.msgpack.serde._detail(worker, operations)
-        state = sy.serde.msgpack.serde._detail(worker, state)
-        placeholders = sy.serde.msgpack.serde._detail(worker, placeholders)
+        id_ = sy.serde.msgpack.serde._detail(worker, id_)
+        role = sy.serde.msgpack.serde._detail(worker, role)
+        name = sy.serde.msgpack.serde._detail(worker, name)
+        tags = sy.serde.msgpack.serde._detail(worker, tags)
+        description = sy.serde.msgpack.serde._detail(worker, description)
+        torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
+        input_types = sy.serde.msgpack.serde._detail(worker, input_types)
 
         plan = sy.Plan(
+            role=role,
             include_state=include_state,
-            is_built=is_built,
-            operations=operations,
-            placeholders=placeholders,
-            id=id,
+            is_built=True,
+            id=id_,
             owner=worker,
+            name=name,
+            tags=tags,
+            description=description,
+            input_types=input_types,
         )
-        del worker._tmp_placeholders
 
-        plan.state = state
-        state.plan = plan
-
-        plan.name = sy.serde.msgpack.serde._detail(worker, name)
-        plan.tags = sy.serde.msgpack.serde._detail(worker, tags)
-        plan.description = sy.serde.msgpack.serde._detail(worker, description)
+        plan.torchscript = torchscript
 
         return plan
 
@@ -592,37 +622,29 @@ class Plan(AbstractObject, ObjectStorage):
             plan (Plan): a Plan object
         Returns:
             PlanPB: a Protobuf message holding the unique attributes of the Plan object
-
         """
+        if not plan.is_built:
+            raise RuntimeError("A Plan needs to be built before being serialized.")
+
         protobuf_plan = PlanPB()
 
         sy.serde.protobuf.proto.set_protobuf_id(protobuf_plan.id, plan.id)
 
-        protobuf_operations = [
-            sy.serde.protobuf.serde._bufferize(worker, operation).operation
-            for operation in plan.operations
-        ]
-        protobuf_plan.operations.extend(protobuf_operations)
-
-        protobuf_plan.state.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.state))
+        protobuf_plan.role.CopyFrom(sy.serde.protobuf.serde._bufferize(worker, plan.role))
 
         protobuf_plan.include_state = plan.include_state
-        protobuf_plan.is_built = plan.is_built
         protobuf_plan.name = plan.name
         protobuf_plan.tags.extend(plan.tags)
 
         if protobuf_plan.description:
             protobuf_plan.description = plan.description
 
-        if type(plan.placeholders) == type(dict()):
-            placeholders = plan.placeholders.values()
-        else:
-            placeholders = plan.placeholders
+        if plan.torchscript:
+            protobuf_plan.torchscript = plan.torchscript.save_to_buffer()
 
-        protobuf_placeholders = [
-            sy.serde.protobuf.serde._bufferize(worker, placeholder) for placeholder in placeholders
-        ]
-        protobuf_plan.placeholders.extend(protobuf_placeholders)
+        if plan.input_types:
+            input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
+            protobuf_plan.input_types.CopyFrom(input_types)
 
         return protobuf_plan
 
@@ -635,59 +657,62 @@ class Plan(AbstractObject, ObjectStorage):
         Returns:
             plan: a Plan object
         """
+        id_ = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
 
-        worker._tmp_placeholders = {}
-        id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_plan.id)
+        role = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.role)
 
-        operations = []
-        for operation in protobuf_plan.operations:
-            op_msg = OperationMessagePB()
-            op_msg.operation.CopyFrom(operation)
-            operations.append(op_msg)
+        name = protobuf_plan.name
+        tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
+        description = protobuf_plan.description if protobuf_plan.description else None
+        input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
 
-        operations = [
-            sy.serde.protobuf.serde._unbufferize(worker, operation) for operation in operations
-        ]
-        state = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.state)
-
-        placeholders = [
-            sy.serde.protobuf.serde._unbufferize(worker, placeholder)
-            for placeholder in protobuf_plan.placeholders
-        ]
-        placeholders = dict([(placeholder.id, placeholder) for placeholder in placeholders])
-
-        plan = sy.Plan(
+        plan = Plan(
+            role=role,
             include_state=protobuf_plan.include_state,
-            is_built=protobuf_plan.is_built,
-            operations=operations,
-            placeholders=placeholders,
-            id=id,
+            is_built=True,
+            id=id_,
             owner=worker,
+            name=name,
+            tags=tags,
+            description=description,
+            input_types=input_types,
         )
-        del worker._tmp_placeholders
 
-        plan.state = state
-        state.plan = plan
-
-        plan.name = protobuf_plan.name
-        if protobuf_plan.tags:
-            plan.tags = set(protobuf_plan.tags)
-        if protobuf_plan.description:
-            plan.description = protobuf_plan.description
+        if protobuf_plan.torchscript:
+            torchscript = io.BytesIO(protobuf_plan.torchscript)
+            plan.torchscript = torch.jit.load(torchscript)
 
         return plan
 
+    @property
+    def code(self) -> str:
+        """Returns string representation of Plan actions"""
+        input_names = {id: f"arg_{i + 1}" for i, id in enumerate(self.role.input_placeholder_ids)}
+        output_names = {id: f"out_{i + 1}" for i, id in enumerate(self.role.output_placeholder_ids)}
+        state_names = {
+            id: f"state_{i + 1}" for i, id in enumerate(self.role.state.state_placeholders)
+        }
+        var_names = {**input_names, **output_names, **state_names}
 
-def tag_sort(keyword):
-    """
-    Utility function to sort tensors by their (unique) tag including "keyword"
-    """
-    # TODO is only works up to 9 return values, because comparison is done on str and '7' > '16'
-    def extract_key(placeholder):
-        for tag in placeholder.tags:
-            if keyword in tag:
-                return tag
+        out = f"def {self.name}("
+        out += ", ".join([var_names[id] for id in self.role.input_placeholder_ids])
+        out += "):\n"
+        for action in self.role.actions:
+            out += f"    {action.code(var_names)}\n"
 
-        return TypeError(f"Tag '{keyword}' not found in placeholder tags:", placeholder.tags)
+        out += "    return "
+        out += ", ".join([var_names[id] for id in self.role.output_placeholder_ids])
 
-    return extract_key
+        return out
+
+    @staticmethod
+    def get_protobuf_schema() -> PlanPB:
+        return PlanPB
+
+
+# Auto-register Plan build-time translations
+Plan.register_build_translator(PlanTranslatorTorchscript)
+
+# Auto-register Plan build-time frameworks
+for f_name, f_package in framework_packages.items():
+    Plan.register_framework(f_name, f_package)

@@ -57,7 +57,7 @@ class IdProvider:
         if check_ids:
             intersect = self.generated.intersection(set(given_ids))
             if len(intersect) > 0:
-                message = "Provided IDs {} are contained in already generated IDs".format(intersect)
+                message = f"Provided IDs {intersect} are contained in already generated IDs"
                 raise exceptions.IdNotUniqueError(message)
 
         self.given_ids += given_ids
@@ -82,3 +82,7 @@ class IdProvider:
             self.record_ids = False
             self.recorded_ids = list()
         return ret_val
+
+    @staticmethod
+    def seed(seed=0):
+        random.seed(seed)
