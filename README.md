@@ -15,7 +15,7 @@ and Encrypted Computation (like
 [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
 and  [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
 within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
-[Slack](http://slack.openmined.org/).
+[Slack](https://join.slack.com/t/openmined/shared_invite/zt-egilzqit-Ap8akPmZBArTdyL3OmWt8Q).
 
 ## PySyft in Detail
 
@@ -142,7 +142,7 @@ federated learning and differential privacy using PySyft.
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/tree/master/CONTRIBUTING.md). It covers all that you need to know to start contributing code to PySyft in an easy way.
 
-Also join the rapidly growing community of 7000+ on [Slack](http://slack.openmined.org). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+Also join the rapidly growing community of 7000+ on [Slack](https://join.slack.com/t/openmined/shared_invite/zt-egilzqit-Ap8akPmZBArTdyL3OmWt8Q). The slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
 
 ## Troubleshooting
 
