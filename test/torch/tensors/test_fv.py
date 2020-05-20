@@ -212,17 +212,18 @@ def test_invert_mod(input, modulus, result):
 @pytest.mark.parametrize(
     "ibase, obase, input, output",
     [
-        ([3], [2], [0, 1, 2], [0, 1, 0]),
-        ([2, 3], [2], [0, 1, 0, 0, 1, 2], [0, 1, 0]),
-        ([2, 3], [2, 3], [1, 1, 0, 1, 2, 2], [1, 1, 0, 1, 2, 2]),
-        ([2, 3], [3, 4, 5], [0, 1, 1, 0, 1, 2], [0, 1, 2, 0, 3, 1, 0, 2, 0]),
+        ([3], [2], [[0, 1, 2]], [[0, 1, 0]]),
+        ([2, 3], [2], [[0, 1, 0], [0, 1, 2]], [[0, 1, 0]]),
+        ([2, 3], [2, 3], [[1, 1, 0], [1, 2, 2]], [[1, 1, 0], [1, 2, 2]]),
+        ([2, 3], [3, 4, 5], [[0, 1, 1], [0, 1, 2]], [[0, 1, 2], [0, 3, 1], [0, 2, 0]]),
     ],
 )
 def test_fast_convert_list(ibase, obase, input, output):
     base_converter = BaseConvertor(RNSBase(ibase), RNSBase(obase))
     result = base_converter.fast_convert_list(input, 3)
     for i in range(len(result)):
-        assert result[i] == output[i]
+        for j in range(len(result[0])):
+            assert result[i][j] == output[i][j]
 
 
 @pytest.mark.parametrize(
