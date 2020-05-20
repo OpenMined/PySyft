@@ -38,14 +38,14 @@ class RNSTool:
         result = [0] * self._coeff_count
 
         # Computing |gamma * t|_qi * ct(s)
-        temp = [0] * self._coeff_count * self.base_q_size
+        temp = [0] * self.base_q_size
+        for i in range(self.base_q_size):
+            temp[i] = [0] * self._coeff_count
 
         for j in range(self.base_q_size):
             for i in range(self._coeff_count):
-                temp[i + j * self._coeff_count] = multiply_mod(
-                    input[i + j * self._coeff_count],
-                    self.prod_t_gamma_mod_q[j],
-                    self.base_q.base[j],
+                temp[j][i] = multiply_mod(
+                    input[j][i], self.prod_t_gamma_mod_q[j], self.base_q.base[j]
                 )
 
         # Base conversion: convert from q to {t, gamma}
@@ -55,10 +55,8 @@ class RNSTool:
         # Multiply by -prod(q)^(-1) mod {t, gamma}
         for j in range(self._base_t_gamma_size):
             for i in range(self._coeff_count):
-                temp_t_gamma[i + j * self._coeff_count] = multiply_mod(
-                    temp_t_gamma[i + j * self._coeff_count],
-                    self.neg_inv_q_mod_t_gamma[j],
-                    self._base_t_gamma.base[j],
+                temp_t_gamma[j][i] = multiply_mod(
+                    temp_t_gamma[j][i], self.neg_inv_q_mod_t_gamma[j], self._base_t_gamma.base[j]
                 )
 
         # Need to correct values in temp_t_gamma (gamma component only) which are larger than floor(gamma/2)
@@ -67,15 +65,13 @@ class RNSTool:
         # Now compute the subtraction to remove error and perform final multiplication by gamma inverse mod t
         for i in range(self._coeff_count):
             # Need correction because of centered mod
-            if temp_t_gamma[i + self._coeff_count] > gamma_div_2:
+            if temp_t_gamma[1][i] > gamma_div_2:
 
                 # Compute -(gamma - a) instead of (a - gamma)
-                result[i] = (
-                    temp_t_gamma[i] + (gamma - temp_t_gamma[i + self._coeff_count]) % self._t
-                ) % self._t
+                result[i] = (temp_t_gamma[0][i] + (gamma - temp_t_gamma[1][i]) % self._t) % self._t
             else:
                 # No correction needed
-                result[i] = (temp_t_gamma[i] - temp_t_gamma[i + self._coeff_count]) % self._t
+                result[i] = (temp_t_gamma[0][i] - temp_t_gamma[1][i]) % self._t
 
             # If this coefficient was non-zero, multiply by t^(-1)
             if 0 != result[i]:

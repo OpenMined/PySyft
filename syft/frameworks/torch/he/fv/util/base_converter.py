@@ -35,17 +35,20 @@ class BaseConvertor:
             A list of integers converted from input base plain to output base plain.
         """
 
-        output = [0] * count * self._obase.size
+        output = [0] * self._obase.size
+        for i in range(self._obase.size):
+            output[i] = [0] * count
 
-        temp = [0] * count * self._ibase.size
+        temp = [0] * self._ibase.size
+        for i in range(self._ibase.size):
+            temp[i] = [0] * count
+
         for i in range(self._ibase.size):
             inv_punctured_prod_mod_ibase = self._ibase.inv_punctured_prod_mod_base_list[i]
             ibase = self._ibase.base[i]
 
             for k in range(count):
-                temp[i + k * self._ibase.size] = multiply_mod(
-                    input[k + i * count], inv_punctured_prod_mod_ibase, ibase
-                )
+                temp[i][k] = multiply_mod(input[i][k], inv_punctured_prod_mod_ibase, ibase)
 
         for j in range(self._obase.size):
             obase = self._obase.base[j]
@@ -54,9 +57,7 @@ class BaseConvertor:
                 dot_product = 0
 
                 for tt in range(self._ibase.size):
-                    dot_product += multiply_mod(
-                        temp[tt + k * self._ibase.size], self._base_change_matrix[j][tt], obase
-                    )
-                output[k + j * count] = dot_product % obase
+                    dot_product += multiply_mod(temp[tt][k], self._base_change_matrix[j][tt], obase)
+                output[j][k] = dot_product % obase
 
         return output

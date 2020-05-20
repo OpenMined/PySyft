@@ -35,14 +35,17 @@ class Decryptor:
         where [c0, c1] denotes encrypted ciphertext and sk is secret key.
         """
         phase = [0] * self._coeff_count * len(self._coeff_modulus)
+
+        phase = [0] * len(self._coeff_modulus)
+        for i in range(len(self._coeff_modulus)):
+            phase[i] = [0] * self._coeff_count
+
         c_0, c_1 = encrypted.data
 
         for j in range(len(self._coeff_modulus)):
             for i in range(self._coeff_count):
-                phase[i + j * self._coeff_count] = (
-                    (c_1[i + j * self._coeff_count] * self._secret_key[i + j * self._coeff_count])
-                    % self._coeff_modulus[j]
-                    + c_0[i + j * self._coeff_count]
+                phase[j][i] = (
+                    (c_1[j][i] * self._secret_key[j][i]) % self._coeff_modulus[j] + c_0[j][i]
                 ) % self._coeff_modulus[j]
 
         return phase

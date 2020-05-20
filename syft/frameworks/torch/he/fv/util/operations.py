@@ -134,6 +134,14 @@ def multiply_add_plain_with_delta(phase, message, context):
     for i in range(plain_coeff_count):
         for j in range(len(coeff_modulus)):
             temp = round(delta[j] * message[i]) % coeff_modulus[j]
-            phase0[i + j * coeff_count] = (phase0[i + j * coeff_count] + temp) % coeff_modulus[j]
+            phase0[j][i] = (phase0[j][i] + temp) % coeff_modulus[j]
 
     return CipherText([phase0, phase1])  # phase0 = pk0 * u * e + delta * m
+
+
+def poly_mul(operand1, operand2, modulus):
+    pass
+
+
+def poly_add(operand1, operand2, modulus):
+    pass

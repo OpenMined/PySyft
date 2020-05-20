@@ -23,18 +23,21 @@ def sample_poly_ternary(parms):
     coeff_count = parms.poly_modulus_degree
     coeff_mod_size = len(coeff_modulus)
 
-    result = [0] * coeff_count * coeff_mod_size
+    result = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        result[i] = [0] * coeff_count
+
     for i in range(coeff_count):
         rand_index = SystemRandom().choice([-1, 0, 1])
         if rand_index == 1:
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = 1
+                result[j][i] = 1
         elif rand_index == -1:
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = coeff_modulus[j] - 1
+                result[j][i] = coeff_modulus[j] - 1
         else:
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = 0
+                result[j][i] = 0
     return result
 
 
@@ -49,20 +52,23 @@ def sample_poly_normal(param):
     coeff_mod_size = len(coeff_modulus)
     coeff_count = param.poly_modulus_degree
 
-    result = [0] * coeff_count * coeff_mod_size
+    result = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        result[i] = [0] * coeff_count
+
     for i in range(coeff_count):
         noise = Normal(th.tensor([0.0]), th.tensor(NOISE_STANDARD_DEVIATION))
         noise = int(noise.sample().item())
         if noise > 0:
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = noise
+                result[j][i] = noise
         elif noise < 0:
             noise = -noise
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = coeff_modulus[j] - noise
+                result[j][i] = coeff_modulus[j] - noise
         else:
             for j in range(coeff_mod_size):
-                result[i + j * coeff_count] = 0
+                result[j][i] = 0
     return result
 
 
@@ -77,7 +83,9 @@ def sample_poly_uniform(param):
     coeff_count = param.poly_modulus_degree
 
     max_random = 0x7FFFFFFFFFFFFFFF
-    result = [0] * coeff_count * coeff_mod_size
+    result = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        result[i] = [0] * coeff_count
 
     for j in range(coeff_mod_size):
         modulus = coeff_modulus[j]
@@ -88,7 +96,7 @@ def sample_poly_uniform(param):
                 rand = randbits(32) << 31 | randbits(32) >> 1
                 if rand < max_multiple:
                     break
-            result[i + j * coeff_count] = rand % modulus
+            result[j][i] = rand % modulus
     return result
 
 
@@ -108,8 +116,13 @@ def encrypt_asymmetric(context, public_key):
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
 
-    c_0 = [0] * coeff_count * coeff_mod_size
-    c_1 = [0] * coeff_count * coeff_mod_size
+    c_0 = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        c_0[i] = [0] * coeff_count
+
+    c_1 = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        c_1[i] = [0] * coeff_count
     result = [c_0, c_1]
 
     # c[j] = u * public_key[j]
@@ -119,11 +132,9 @@ def encrypt_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         for j in range(coeff_mod_size):
             for i in range(coeff_count):
-                result[k][i + j * coeff_count] = add_mod(
-                    multiply_mod(
-                        u[i + j * coeff_count], public_key[k][i + j * coeff_count], coeff_modulus[j]
-                    ),
-                    e[i + j * coeff_count],
+                result[k][j][i] = add_mod(
+                    multiply_mod(u[j][i], public_key[k][j][i], coeff_modulus[j]),
+                    e[j][i],
                     coeff_modulus[j],
                 )
 
@@ -148,16 +159,17 @@ def encrypt_symmetric(context, secret_key):
     e = sample_poly_normal(context.param)
 
     # calculate -(a*s + e) (mod q) and store in c0
-    c0 = [0] * coeff_count * coeff_mod_size
+
+    c0 = [0] * coeff_mod_size
+    for i in range(coeff_mod_size):
+        c0[i] = [0] * coeff_count  # c0 = [[0] * coeff_count] * coeff_mod_size
 
     for j in range(coeff_mod_size):
         for i in range(coeff_count):
-            c0[i + j * coeff_count] = negate_mod(
+            c0[j][i] = negate_mod(
                 add_mod(
-                    multiply_mod(
-                        c1[i + j * coeff_count], secret_key[i + j * coeff_count], coeff_modulus[j]
-                    ),
-                    e[i + j * coeff_count],
+                    multiply_mod(c1[j][i], secret_key[j][i], coeff_modulus[j]),
+                    e[j][i],
                     coeff_modulus[j],
                 ),
                 coeff_modulus[j],
