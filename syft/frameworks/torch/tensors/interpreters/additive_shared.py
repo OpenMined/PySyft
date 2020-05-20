@@ -3,6 +3,7 @@ import torch
 import warnings
 
 import syft as sy
+from syft.exceptions import CryptoProviderNotFoundError
 from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
@@ -531,7 +532,9 @@ class AdditiveSharingTensor(AbstractTensor):
         assert len(self.child) == len(other.child)
 
         if self.crypto_provider is None:
-            raise AttributeError("For multiplication a crypto_provider must be passed.")
+            raise CryptoProviderNotFoundError(
+                "For multiplication or comparing, a crypto_provider must be passed."
+            )
 
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
 

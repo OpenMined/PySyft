@@ -369,6 +369,12 @@ class EmptyCryptoPrimitiveStoreError(Exception):
         super().__init__(message)
 
 
+class CryptoProviderNotFoundError(Exception):
+    """Raised when trying to multiply or equate shared tensors without crypto provider."""
+
+    pass
+
+
 def route_method_exception(exception, self, args_, kwargs_):
     try:
         if self.is_wrapper:
