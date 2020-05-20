@@ -42,13 +42,14 @@ class SubBackward(GradFunc):
 
 
 class SumBackward(GradFunc):
-    def __init__(self, self_):
+    def __init__(self, self_, **kwargs):
         super().__init__(self, self_)
         self.self_ = self_
+        self.kwargs = kwargs
 
     def gradient(self, grad):
-        return ((self.self_ * 0 + 1) * grad,)
-        # return (torch.ones(self.self_.shape) * grad, )
+        self_grad = self.self_ * 0 + 1
+        return (self_grad * grad,)
 
 
 class AsinBackward(GradFunc):
@@ -68,6 +69,16 @@ class LogBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self_ = grad * (1 / self.self_)
+        return (grad_self_,)
+
+
+class ExpBackward(GradFunc):
+    def __init__(self, self_):
+        super().__init__(self, self_)
+        self.self_ = self_
+
+    def gradient(self, grad):
+        grad_self_ = grad * self.self_.exp()
         return (grad_self_,)
 
 
@@ -100,7 +111,7 @@ class DivBackward(GradFunc):
         self.other = other
 
     def gradient(self, grad):
-        assert isinstance(self.other, int)
+        # assert isinstance(self.other, int)
         grad_self_ = grad / self.other
         return (grad_self_,)
 

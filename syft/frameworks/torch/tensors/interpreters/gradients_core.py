@@ -114,7 +114,7 @@ class Accumulate:
 
     def __call__(self, grad):
         if self.tensor.grad is not None:
-            self.tensor.grad += grad.child
+            self.tensor.grad.add_(grad.child)
         else:
             self.tensor.grad = grad.child.copy()
         return ()

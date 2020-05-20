@@ -214,6 +214,14 @@ class Role(SyftSerializable):
         kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
         return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
 
+        # We can only instantiate placeholders, filter them
+        true_placeholders = []
+
+        def save_placeholders(ph):
+            true_placeholders.append(ph)
+
+        Role.nested_object_traversal(return_placeholder, save_placeholders, PlaceHolder)
+
         if _self is None:
             method = self._fetch_package_method(cmd)
             response = method(*args_, **kwargs_)
@@ -223,7 +231,7 @@ class Role(SyftSerializable):
         if not isinstance(response, (tuple, list)):
             response = (response,)
 
-        PlaceHolder.instantiate_placeholders(return_placeholder, response)
+        PlaceHolder.instantiate_placeholders(true_placeholders, response)
 
     def _fetch_package_method(self, cmd):
         cmd_path = cmd.split(".")
