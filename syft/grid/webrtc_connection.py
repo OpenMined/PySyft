@@ -51,7 +51,7 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         self.available = True
         self.connections = connections
 
-    async def _send_msg(self, message: bin, location=None):
+    def _send_msg(self, message: bin, location=None):
         """ Add a new syft operation on the request_pool to be processed asynchronously.
             
             Args:
@@ -66,7 +66,7 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         # Wait
         # PySyft is a sync library and should wait for this response.
         while self._response_pool.empty():
-            await asyncio.sleep(0)
+            time.sleep(0)
         return self._response_pool.get()
 
     def _recv_msg(self, message: bin):
@@ -80,7 +80,7 @@ class WebRTCConnection(threading.Thread, BaseWorker):
                 response_message : Binary syft response message.
         """
         if self.available:
-            return asyncio.run(self._send_msg(message))
+            return self._send_msg(message)
         else:  # PySyft's GC delete commands
             return self._worker._recv_msg(message)
 
@@ -126,7 +126,7 @@ class WebRTCConnection(threading.Thread, BaseWorker):
         """
         message = SearchMessage(query)
         serialized_message = sy.serde.serialize(message)
-        response = asyncio.run(self._send_msg(serialized_message))
+        response = self._send_msg(serialized_message)
         return sy.serde.deserialize(response)
 
     # Main
