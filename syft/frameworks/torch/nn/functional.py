@@ -38,6 +38,37 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
+def batch_norm(input, _a, _b, weight, bias, _c, _d, eps):
+
+    input = input.permute(1, 0, 2, 3)
+    input_shape = input.shape
+    input = input.reshape(input_shape[0], -1)
+    input = input.t()
+
+    mean = input.mean(dim=0)
+    var = input.var(dim=0) + eps
+
+    x = None
+
+    for i in range(3):
+        if x is not None:
+            y = 3 - var * (x * x)
+            x = y * x / 2
+        else:
+            y = 3 - var
+            x = y / 2
+
+    inv_var = x
+
+    normalized = inv_var * (input - mean)
+    result = normalized * weight + bias
+
+    result = result.t()
+    result = result.reshape(*input_shape)
+    result = result.permute(1, 0, 2, 3)
+    return result
+
+
 @allow_command
 def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     assert len(input.shape) == 4
