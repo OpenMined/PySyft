@@ -972,12 +972,10 @@ def make_protocol(**kwargs):
     alice = kwargs["workers"]["alice"]
     bob = kwargs["workers"]["bob"]
 
-    @syft.func2protocol(args_shape={"alice": ((1,),), "bob": ((1,),)})
-    def protocol(roles):
-        # fetch tensors from stores
-        # TODO fix fetch once we have the real implementation of it
-        tensor1 = roles["alice"].fetch(torch.tensor([1]))
-        tensor2 = roles["bob"].fetch(torch.tensor([1]))
+    @syft.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
+    def protocol(alice, bob):
+        tensor1 = alice.load(torch.tensor([1]))
+        tensor2 = bob.load(torch.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1

@@ -82,3 +82,7 @@ class IdProvider:
             self.record_ids = False
             self.recorded_ids = list()
         return ret_val
+
+    @staticmethod
+    def seed(seed=0):
+        random.seed(seed)

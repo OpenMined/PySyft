@@ -679,6 +679,8 @@ def test_eq(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
 
     args = (alice, bob)
@@ -710,6 +712,8 @@ def test_comp(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
         )
@@ -772,6 +776,8 @@ def test_max(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
         )
@@ -805,6 +811,8 @@ def test_argmax(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
         )
@@ -1044,8 +1052,8 @@ def test_garbage_collect_reconstruct(workers):
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
 
-    assert len(alice.object_store._objects) == 8
-    assert len(bob.object_store._objects) == 8
+    assert len(alice.object_store._objects) == 2
+    assert len(bob.object_store._objects) == 2
 
 
 def test_garbage_collect_move(workers):
@@ -1053,8 +1061,8 @@ def test_garbage_collect_move(workers):
     a = torch.ones(1, 5).send(alice)
     b = a.copy().move(bob)
 
-    assert len(alice.object_store._objects) == 7
-    assert len(bob.object_store._objects) == 7
+    assert len(alice.object_store._objects) == 1
+    assert len(bob.object_store._objects) == 1
 
 
 def test_garbage_collect_mul(workers):
@@ -1068,5 +1076,5 @@ def test_garbage_collect_mul(workers):
     for _ in range(3):
         c = a * b
 
-    assert len(alice.object_store._objects) == 9
-    assert len(bob.object_store._objects) == 9
+    assert len(alice.object_store._objects) == 3
+    assert len(bob.object_store._objects) == 3
