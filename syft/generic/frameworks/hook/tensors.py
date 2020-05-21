@@ -9,6 +9,8 @@ import syft
 
 
 class TensorHook(ABC):
+    """Hook for ALL THE TENSOR THINGS that must be overloaded and/or modified"""
+
     @abstractmethod
     def _hook_native_tensor(self, tensor_type: type, syft_type: type):
         """Add PySyft-specific tensor functionality to the given tensor type.

@@ -7,6 +7,8 @@ from syft.generic.string import String
 
 
 class StringHook(ABC):
+    """Hook for ALL THE STRING THINGS that must be overloaded and/or modified"""
+
     def _hook_string_methods(self, owner):
 
         # Set the default owner

@@ -22,6 +22,8 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
+    """Composite hook for ALL THE FRAMEWORK THINGS that must be overloaded and/or modified"""
+
     @abstractmethod
     def __init__(self, framework_module, local_worker: BaseWorker = None, is_client: bool = True):
         pass

@@ -11,6 +11,8 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 class PointerHook(ABC):
+    """Hook for ALL THE POINTER THINGS that must be overloaded and/or modified"""
+
     def _hook_pointer_tensor_methods(self, tensor_type):
         """
         Add hooked version of all methods of the tensor_type to the
