@@ -18,25 +18,13 @@ def register(**kwargs):
 
     peer_id = str(uuid.uuid4())
     sys.stdout.write(
-        "Connecting to OpenGrid (" + "\033[94m" + DEFAULT_NETWORK_URL + "\033[0m" + ") ... \r"
+        "Connecting to OpenGrid (" + "\033[94m" + DEFAULT_NETWORK_URL + "\033[0m" + ") ... "
     )
     peer = Network(peer_id, **args)
-    sys.stdout.flush()
-    sys.stdout.write(
-        "Connecting to OpenGrid ("
-        + "\033[94m"
-        + DEFAULT_NETWORK_URL
-        + "\033[0m"
-        + ") ... "
-        + "\033[92m"
-        + "OK"
-        + "\033[0m"
-        + "\nPeer ID: "
-        + peer_id
-        + "\n"
-    )
 
-    sys.stdout.flush()
+    sys.stdout.write("\033[92m" + "OK" + "\033[0m" + "\n")
+    sys.stdout.write("Peer ID: " + peer_id + "\n")
+
     sys.stdout.write(
         "\033[93m" + "DISCLAIMER" + "\033[0m"
         ":"
@@ -44,8 +32,16 @@ def register(**kwargs):
         + " OpenGrid is an experimental feature currently in alpha. Do not use this to protect real-world data.\n"
         + "\033[0m"
     )
+
+    sys.stdout.write("Where to get help: \n")
     sys.stdout.write(
-        "Where to get help: \n - Join our slack  (https://slack.openmined.org) and ask for help in the #lib_syft channel.\n - File a Github Issue: https://github.com/OpenMined/PySyft and add the string '#opengrid' in the issue title.\n - Want to join in our development team? Apply here: https://forms.gle/wcH1vxzvPyDSbSVW6"
+        " - Join our slack  (https://slack.openmined.org) and ask for help in the #lib_syft channel.\n"
+    )
+    sys.stdout.write(
+        " - File a Github Issue: https://github.com/OpenMined/PySyft and add the string '#opengrid' in the issue title.\n"
+    )
+    sys.stdout.write(
+        " - Want to join in our development team? Apply here: https://forms.gle/wcH1vxzvPyDSbSVW6\n"
     )
     peer.start()
 
