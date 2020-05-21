@@ -14,10 +14,14 @@ from syft_proto.execution.v1.type_wrapper_pb2 import InputTypeDescriptor as Inpu
 
 
 class NoneProtoWrapper(SyftSerializable):
+    """
+    Wrapper that serializes None using protobuffers.
+    """
+
     @staticmethod
-    def bufferize(worker: AbstractWorker, obj: "type(None)") -> "Empty":
+    def bufferize(worker: AbstractWorker, obj: type(None)) -> Empty:
         """
-        This function converts None into an empty Protobuf message.
+        This method converts None into an empty Protobuf message.
 
         Args:
             obj (None): makes signature match other bufferize methods
@@ -28,9 +32,9 @@ class NoneProtoWrapper(SyftSerializable):
         return Empty()
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, obj: "Empty") -> "type(None)":
+    def unbufferize(worker: AbstractWorker, obj: Empty) -> type(None):
         """
-        This function converts an empty Protobuf message back into None.
+        This method converts an empty Protobuf message back into None.
 
         Args:
             obj (Empty): Empty Protobuf message
@@ -41,19 +45,29 @@ class NoneProtoWrapper(SyftSerializable):
         return None
 
     @staticmethod
-    def get_protobuf_schema():
+    def get_protobuf_schema() -> Empty:
+        """
+        Method that returns the protobuf schema for the current wrapped type.
+        """
         return Empty
 
     @staticmethod
-    def get_original_class():
+    def get_original_class() -> type(None):
+        """
+        Method that returns the type wrapped by the current class.
+        """
         return type(None)
 
 
 class TypeProtoWrapper(SyftSerializable):
+    """
+    Wrapper that serializes the type class.
+    """
+
     @staticmethod
     def bufferize(worker: AbstractWorker, obj) -> InputTypeDescriptorPB:
         """
-        This function gets the type object and returns the ClassType Protobuf message containing the string with the path
+        This method gets the type object and returns the ClassType Protobuf message containing the string with the path
         of that that and the actual type..
 
         Args:
@@ -78,7 +92,7 @@ class TypeProtoWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, class_type_msg: InputTypeDescriptorPB):
         """
-        This function receives the ClassType Protobuf message containing the string with the path + type, decodes the string
+        This method receives the ClassType Protobuf message containing the string with the path + type, decodes the string
         and locates the type in a module, returning the type object.
 
         Args:
@@ -104,9 +118,15 @@ class TypeProtoWrapper(SyftSerializable):
         return result
 
     @staticmethod
-    def get_protobuf_schema():
+    def get_protobuf_schema() -> InputTypeDescriptorPB:
+        """
+        Method that returns the protobuf schema for the current wrapped type.
+        """
         return InputTypeDescriptorPB
 
     @staticmethod
-    def get_original_class():
+    def get_original_class() -> type:
+        """
+        Method that returns the type wrapped by the current class.
+        """
         return type

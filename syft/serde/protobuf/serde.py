@@ -20,16 +20,36 @@ from syft.serde.syft_serializable import (
 
 
 class MetaProtobufGlobalState(type):
+    """
+    Metaclass that wraps all properties in ProtobufGlobalState to be updated when the global state is marked as stale.
+    """
+
     @staticmethod
-    def wrapper(wrapped_func):
+    def wrapper(wrapped_func: property) -> property:
+        """
+        Method to generate the new property.
+
+        Args:
+            wrapped_func (Property): property of the generated type.
+
+        Returns:
+             Property: new property that is wrapped to get updated when the global state is marked as stale.
+        """
+
         @property
         def wrapper(self):
+            """
+            Generated new property that forces updates if the global state is marked as stale.
+            """
             self = self.update()
             return wrapped_func.__get__(self, type(self))
 
         return wrapper
 
     def __new__(meta, classname, bases, class_dict):
+        """
+        Method to generate the new type, wrapping all properties in the given type.
+        """
         for attr_name, attr_body in class_dict.items():
             if isinstance(attr_body, property):
                 class_dict[attr_name] = MetaProtobufGlobalState.wrapper(attr_body)
@@ -38,11 +58,37 @@ class MetaProtobufGlobalState(type):
 
 @dataclass
 class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
-    _MAP_TO_PROTOBUF_TRANSLATORS = OrderedDict()
-    _OBJ_PROTOBUF_TRANSLATORS = []
+    """
+        Class to generate a global state of the protobufers in a lazy way. All attributes should be used by their
+        properties, not by their hidden value.
+
+        The global state can be marked as stale by setting stale_state to False, forcing the next usage of the
+        to be updated, enabling dynamic types in serde.
+
+        All types should be enrolled in proto.json in syft-serde (soon to be deprecated, when msgpack is removed).
+
+        Attributes:
+
+            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own force_bufferize and force_unbufferize functions,
+            it should be stored in this list. This will become deprecated soon.
+
+            _bufferizers (OrderedDict): The mapping from a type to its own bufferizer.
+
+            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced bufferizer.
+
+            _unbufferizers (OrderedDict): The mapping from a type to its own unbufferizer.
+
+            _no_bufferizers_found (set): In this set we store the primitives that we cannot bufferize anymore.
+
+            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot force bufferize anymore.
+
+            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited bufferizer that a type can use. This might
+            become deprecated
+
+            stale_state (Bool): Marks the global state to be stale or not.
+    """
+
     _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS = []
-    _EXCEPTION_PROTOBUF_TRANSLATORS = []
-    _MAP_PYTHON_TO_PROTOBUF_CLASSES = {}
     _bufferizers = OrderedDict()
     _forced_full_bufferizers = OrderedDict()
     _unbufferizers = OrderedDict()
@@ -53,20 +99,8 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
     stale_state = True
 
     @property
-    def map_to_protobuf_translators(self):
-        return self._MAP_TO_PROTOBUF_TRANSLATORS
-
-    @property
-    def obj_protobuf_translators(self):
-        return self._OBJ_PROTOBUF_TRANSLATORS
-
-    @property
     def obj_force_full_protobuf_translators(self):
         return self._OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS
-
-    @property
-    def exception_protobuf_translators(self):
-        return self._EXCEPTION_PROTOBUF_TRANSLATORS
 
     @property
     def forced_full_bufferizers(self):
@@ -93,24 +127,14 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
         return self._inherited_bufferizers_found
 
     def update(self):
+        """
+            Updates the global state of protobuf.
+        """
         if not self.stale_state:
             return self
 
-        self._MAP_TO_PROTOBUF_TRANSLATORS = {
-            wrapper_type.get_original_class(): (wrapper_type.bufferize, wrapper_type.unbufferize)
-            for wrapper_type in get_protobuf_wrappers(SyftSerializable)
-        }
-
-        self._OBJ_PROTOBUF_TRANSLATORS = list(get_protobuf_classes(SyftSerializable))
-
-        for proto_class in self._OBJ_PROTOBUF_TRANSLATORS:
-            self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_class.get_protobuf_schema()
-
-        for proto_class, proto_schema in [
-            (wrapper_type.get_original_class(), wrapper_type.get_protobuf_schema())
-            for wrapper_type in get_protobuf_wrappers((SyftSerializable))
-        ]:
-            self._MAP_PYTHON_TO_PROTOBUF_CLASSES[proto_class] = proto_schema
+        obj_protobuf_translators = list(get_protobuf_classes(SyftSerializable))
+        obj_protobuf_wrappers = list(get_protobuf_wrappers(SyftSerializable))
 
         def _add_bufferizer_and_unbufferizer(
             curr_type, proto_type, bufferizer, unbufferizer, forced=False
@@ -123,21 +147,24 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
                 self._bufferizers[curr_type] = bufferizer
                 self._unbufferizers[proto_type] = unbufferizer
 
-        # Register native and torch types
-        for curr_type in self._MAP_TO_PROTOBUF_TRANSLATORS:
-            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[curr_type]
-            bufferizer, unbufferizer = self._MAP_TO_PROTOBUF_TRANSLATORS[curr_type]
-            _add_bufferizer_and_unbufferizer(curr_type, proto_type, bufferizer, unbufferizer)
+        for curr_type in obj_protobuf_translators:
+            _add_bufferizer_and_unbufferizer(
+                curr_type,
+                curr_type.get_protobuf_schema(),
+                curr_type.bufferize,
+                curr_type.unbufferize,
+            )
 
-        # Register syft objects with custom bufferize and unbufferize methods
-        for syft_type in self._OBJ_PROTOBUF_TRANSLATORS + self._EXCEPTION_PROTOBUF_TRANSLATORS:
-            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
-            bufferizer, unbufferizer = syft_type.bufferize, syft_type.unbufferize
-            _add_bufferizer_and_unbufferizer(syft_type, proto_type, bufferizer, unbufferizer)
+        for curr_type in obj_protobuf_wrappers:
+            _add_bufferizer_and_unbufferizer(
+                curr_type.get_original_class(),
+                curr_type.get_protobuf_schema(),
+                curr_type.bufferize,
+                curr_type.unbufferize,
+            )
 
-        # Register syft objects with custom force_bufferize and force_unbufferize methods
         for syft_type in self._OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS:
-            proto_type = self._MAP_PYTHON_TO_PROTOBUF_CLASSES[syft_type]
+            proto_type = syft_type.get_protobuf_schema()
             force_bufferizer, force_unbufferizer = (
                 syft_type.force_bufferize,
                 syft_type.force_unbufferize,
@@ -145,6 +172,7 @@ class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
             _add_bufferizer_and_unbufferizer(
                 syft_type, proto_type, force_bufferizer, force_unbufferizer, forced=True
             )
+
         self.stale_state = False
         return self
 
