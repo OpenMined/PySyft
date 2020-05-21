@@ -1,7 +1,12 @@
 import inspect
+from typing import Callable
 
 
-def get_from_inheritance_chain(cls, condition):
+def get_from_inheritance_chain(cls: type, condition: Callable) -> set:
+    """
+        Generic function that extracts all nodes from the inheritance tree that respects
+        a first order logic condition.
+    """
     original_subclasses = {s for s in cls.__subclasses__() if condition(s)}
     sub_sets = {
         s
@@ -12,8 +17,30 @@ def get_from_inheritance_chain(cls, condition):
     return original_subclasses.union(sub_sets)
 
 
-def get_protobuf_wrappers(cls):
+def get_protobuf_wrappers(cls: type) -> set:
+    """
+        Function to retrieve all wrappers that implement the protobuf methods from the SyftSerializable class:
+
+        A type that wants to implement to wrap another type (eg. torch.Tensor) for the protobuf interface and to use it with syft-proto has
+        to inherit SyftSerializable (directly or from the parent class) and to implement
+        (cannot inherit from parent class):
+            1. bufferize
+            2. unbufferize
+            3. get_protobuf_schema
+            4. get_original_class
+        If these methods are not implemented, the class won't be enrolled in the types that are wrappers can't use syft-proto.
+    """
+
     def check_implementation(s):
+        """
+            Check if a class has:
+                1. bufferize implemented.
+                2. unbufferize implemented.
+                3. get_protobuf_schema implemented.
+                4. no abstact methods.
+                5. get_original_class method
+            To be sure that it can be used with protobufers.
+        """
         not_abstract = not inspect.isabstract(s)
         bufferize_implemented = s.bufferize.__qualname__.startswith(s.__name__)
         unbufferize_implemented = s.unbufferize.__qualname__.startswith(s.__name__)
@@ -30,7 +57,7 @@ def get_protobuf_wrappers(cls):
     return get_from_inheritance_chain(cls, check_implementation)
 
 
-def get_protobuf_classes(cls):
+def get_protobuf_classes(cls: type) -> set:
     """
         Function to retrieve all classes that implement the protobuf methods from the SyftSerializable class:
 
@@ -121,8 +148,6 @@ class SyftSerializable:
 
         Note: the interface can be inherited from parent class, but each class
         has to write it's own explicit methods, even if they are the ones from the parent class.
-
-        TODO: move to ABCs.
     """
 
     @staticmethod
@@ -189,7 +214,7 @@ class SyftSerializable:
     @staticmethod
     def get_protobuf_schema():
         """
-            Return the protobuf schema used for this type.
+            Returns the protobuf schema used for this type.
 
             Returns:
                 Protobuf type.
@@ -198,4 +223,10 @@ class SyftSerializable:
 
     @staticmethod
     def get_original_class():
+        """
+            Returns the original type, only used in wrappers.
+
+            Returns:
+                Wrapped type.
+        """
         return NotImplementedError

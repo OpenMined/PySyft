@@ -120,13 +120,13 @@ class TypeProtoWrapper(SyftSerializable):
     @staticmethod
     def get_protobuf_schema() -> InputTypeDescriptorPB:
         """
-        Method that returns the protobuf schema for the current wrapped type.
+        This method returns the protobuf schema for the current wrapped type.
         """
         return InputTypeDescriptorPB
 
     @staticmethod
     def get_original_class() -> type:
         """
-        Method that returns the type wrapped by the current class.
+        This method returns the type wrapped by the current class.
         """
         return type

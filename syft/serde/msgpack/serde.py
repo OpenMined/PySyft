@@ -31,21 +31,17 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-
 import inspect
 from dataclasses import dataclass
-from functools import wraps
-
-import msgpack as msgpack_lib
 
 import syft
+import msgpack as msgpack_lib
 from syft import dependency_check
 
 from syft.serde import compression
 from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -84,6 +80,10 @@ class MetaMsgpackGlobalState(type):
 
 @dataclass
 class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
+    """
+        Global msgpack state. This should become deprecated soon.
+    """
+
     _OBJ_SIMPLIFIER_AND_DETAILERS = []
     _MAP_TO_SIMPLFIERS_AND_DETAILERS = OrderedDict()
     _OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = []
@@ -131,7 +131,7 @@ class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
 
     @property
     def no_simplifiers_found(self):
-        return self._no_full_simplifiers_found
+        return self._no_simplifiers_found
 
     @property
     def no_full_simplifiers_found(self):
@@ -432,7 +432,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
     # If we already tried to find a simplifier for this type but failed, we should
     # just return the object as it is.
-    elif current_type in msgpack_global_state.no_full_simplifiers_found:
+    elif current_type in msgpack_global_state.no_simplifiers_found:
         return obj
 
     else:
@@ -474,7 +474,7 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         # object, then the object is already a
         # simple python object and we can just
         # return it.
-        msgpack_global_state.no_full_simplifiers_found.add(current_type)
+        msgpack_global_state.no_simplifiers_found.add(current_type)
         return obj
 
 
