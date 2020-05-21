@@ -45,7 +45,7 @@ def register(**kwargs):
         + "\033[0m"
     )
     sys.stdout.write(
-        "Where to get help: \n - Join our slack  (https://slack.openmined.org) and ask for help in the #lib_syft channel.\n - File a Github Issue: https://github.com/OpenMined/PySyft and add the string '#opengrid' in the issue title.\n - Want to join in our development team? Apply here: https://google.form.com"
+        "Where to get help: \n - Join our slack  (https://slack.openmined.org) and ask for help in the #lib_syft channel.\n - File a Github Issue: https://github.com/OpenMined/PySyft and add the string '#opengrid' in the issue title.\n - Want to join in our development team? Apply here: https://forms.gle/wcH1vxzvPyDSbSVW6"
     )
     peer.start()
 
