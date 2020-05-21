@@ -428,7 +428,7 @@ class BaseWorker(AbstractWorker):
         """
         obj = obj_msg.object
 
-        self.set_obj(obj)
+        self.object_store.set_obj(obj)
 
         if isinstance(obj, FrameworkTensor):
             tensor = obj
@@ -1185,6 +1185,9 @@ class BaseWorker(AbstractWorker):
 
     def objects_count(self):
         return len(self.object_store._objects)
+
+    def _log_msgs(self, value):
+        self.log_msgs = value
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:

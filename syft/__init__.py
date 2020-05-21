@@ -48,7 +48,6 @@ from syft.sandbox import create_sandbox, make_hook
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import FederatedDataset, FederatedDataLoader, BaseDataset
-from syft.federated.train_config import TrainConfig
 
 # Import messaging objects
 from syft.execution.protocol import Protocol
@@ -119,7 +118,6 @@ __all__.extend(
         "FederatedDataset",
         "FederatedDataLoader",
         "BaseDataset",
-        "TrainConfig",
     ]
 )
 

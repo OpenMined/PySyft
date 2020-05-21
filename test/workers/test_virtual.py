@@ -149,7 +149,7 @@ def tests_worker_convenience_methods():
     obj2 = torch.Tensor([200, 200])
 
     # Set data on self
-    bob.set_obj(obj2)
+    bob.object_store.set_obj(obj2)
 
     # Get data from self
     resp_bob_self = bob.get_obj(obj2.id)
