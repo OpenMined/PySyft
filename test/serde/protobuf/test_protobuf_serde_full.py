@@ -25,6 +25,7 @@ samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
+samples[torch.memory_format] = make_torch_memoryformat
 samples[torch.dtype] = make_torch_dtype
 # PySyft
 samples[
