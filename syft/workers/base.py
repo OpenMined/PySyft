@@ -1181,6 +1181,9 @@ class BaseWorker(AbstractWorker):
     def objects_count(self):
         return len(self.object_store._objects)
 
+    def _log_msgs(self, value):
+        self.log_msgs = value
+
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
         """
