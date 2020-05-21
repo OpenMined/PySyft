@@ -35,7 +35,7 @@ class WebRTCManager(BaseWorker):
     def process_offer(self, destination: str, content: str):
         """ Create a thread to process a webrtc offer connection. """
         self._connections[destination] = WebRTCConnection(
-            self._grid, self.worker, destination, self._connections, WebRTCConnection.ANSWER,
+            self._grid, self.worker, destination, self._connections, WebRTCConnection.ANSWER
         )
         self._connections[destination].set_msg(content)
         self._connections[destination].start()
@@ -43,6 +43,17 @@ class WebRTCManager(BaseWorker):
     def start_offer(self, destination: str):
         """ Create a new thread to offer a webrtc connection. """
         self._connections[destination] = WebRTCConnection(
-            self._grid, self.worker, destination, self._connections, WebRTCConnection.OFFER,
+            self._grid, self.worker, destination, self._connections, WebRTCConnection.OFFER
         )
         self._connections[destination].start()
+
+    def __getitem__(self, key):
+        """
+        Args:
+            key: Node ID
+
+        Returns:
+            Return a peer connection reference by its ID.
+        """
+
+        return self.get(key)

@@ -159,11 +159,9 @@ class Network(threading.Thread):
             list(self._connection_handler.nodes),
         )
 
-    def peers(self, key):
+    @property
+    def peers(self):
         """
-        Get selected node from WebRTCManager connections
-
-        Args:
-            key: Node ID
+        Get WebRTCManager object
         """
-        return self._connection_handler.get(key)
+        return self._connection_handler
