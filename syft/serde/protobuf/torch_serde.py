@@ -616,6 +616,7 @@ class TorchDTypeWrapper(SyftSerializable):
     """
     Wrapper that serializes torch.dtype using protobuffers.
     """
+
     @staticmethod
     def bufferize(worker: AbstractWorker, torch_dtype: torch.dtype) -> TorchDTypePB:
         """
