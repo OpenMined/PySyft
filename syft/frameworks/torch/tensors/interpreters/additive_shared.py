@@ -122,9 +122,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 "You haven't provided crypto_provider. You won't be able to perform certain operations like multiplication"
             )
 
-        self.crypto_provider = (
-            crypto_provider if crypto_provider is not None else sy.hook.local_worker
-        )
+        self.crypto_provider = crypto_provider
 
         self.protocol = protocol
 
