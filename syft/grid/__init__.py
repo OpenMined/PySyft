@@ -24,6 +24,6 @@ def register(**kwargs):
         _registered_peer = Network(peer_id, **args)
         _registered_peer.start()
     else:
-        raise UserWarning(f"You're already a registered peer {_registered_peer}.")
+        raise UserWarning(f"You're already a registered peer {_registered_peer}")
 
     return _registered_peer
