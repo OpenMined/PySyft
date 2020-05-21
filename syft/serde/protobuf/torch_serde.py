@@ -5,6 +5,7 @@ for all tensors (Torch and Numpy).
 import io
 
 import torch
+import pydoc
 
 import syft
 from syft.serde.syft_serializable import SyftSerializable
@@ -30,7 +31,7 @@ from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-
+from syft_proto.types.torch.v1.dtype_pb2 import TorchDType as TorchDTypePB
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
     TENSOR_SERIALIZATION.TORCH: TorchTensorPB.Serializer.SERIALIZER_TORCH,
@@ -609,3 +610,57 @@ class TorchSizeWrapper(SyftSerializable):
                 Protobuf schema for torch.Size.
         """
         return SizePB
+
+
+class TorchDTypeWrapper(SyftSerializable):
+    """
+    Wrapper that serializes torch.dtype using protobuffers.
+    """
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, torch_dtype: torch.dtype) -> TorchDTypePB:
+        """
+            This method serializes torch.dtype into TorchDTypePB.
+
+            Args:
+                torch_dtype (torch.dtype): input torch.dtype to be serialized.
+
+            Returns:
+                protobuf_size: serialized torch.dtype
+        """
+        protobuf_msg = TorchDTypePB()
+        protobuf_msg.torch_type = str(torch_dtype)
+        return protobuf_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_dtype: TorchDTypePB) -> torch.dtype:
+        """
+            This method deserializes TorchDTypePB into torch.dtype.
+
+            Args:
+                protobuf_dtype (TorchDTypePB): input TorchDTypePB to be deserialized.
+
+            Returns:
+                torch.Size: deserialized TorchDTypePB
+        """
+        return pydoc.locate(protobuf_dtype.torch_type)
+
+    @staticmethod
+    def get_original_class() -> type(torch.dtype):
+        """
+            This method returns the wrapped type.
+
+            Returns:
+                Wrapped type.
+        """
+        return torch.dtype
+
+    @staticmethod
+    def get_protobuf_schema() -> type(TorchDTypePB):
+        """
+            Returns the protobuf schema used for torch.dtype.
+
+            Returns:
+                Protobuf schema for torch.dtype.
+        """
+        return TorchDTypePB
