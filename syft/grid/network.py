@@ -164,3 +164,11 @@ class Network(threading.Thread):
             list(self._worker.models.keys()),
             list(self._connection_handler.nodes),
         )
+
+    def peers(self, key):
+        """
+        Get selected node from WebRTCManager connections
+        Args:
+            key: Node ID
+        """
+        return self._connection_handler.get(key)
