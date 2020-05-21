@@ -58,6 +58,39 @@ def invert_mod(value, modulus):
         return gcd_tuple[1]
 
 
+def poly_add(op1, op2, modulus):
+    coeff_count = len(op1)  # assumption coefficient count is equal in op1, op2
+
+    result = [0] * coeff_count
+    for i in range(coeff_count):
+        result[i] = (op1[i] + op2[i]) % modulus
+    return result
+
+
+def poly_mul(op1, op2, modulus):
+    coeff_count = len(op1)  # assumption coefficient count is equal in op1, op2
+
+    result = [0] * coeff_count
+    for i in range(coeff_count):
+        result[i] = (op1[i] * op2[i]) % modulus
+    return result
+
+
+def poly_negate(op, modulus):
+
+    coeff_count = len(op)
+
+    result = [0] * coeff_count
+    for i in range(coeff_count):
+        if modulus == 0:
+            raise ValueError("Modulus cannot be 0")
+        if op[i] >= modulus:
+            raise OverflowError("operand cannot be greater than modulus")
+        non_zero = op[i] != 0
+        result[i] = (modulus - op[i]) & (-int(non_zero))
+    return result
+
+
 def get_significant_count(values):
     """removes all leading zero from the list."""
     count = len(values)
@@ -123,7 +156,6 @@ def multiply_add_plain_with_delta(phase, message, context):
         A Ciphertext object with the encrypted result of encryption process.
     """
     coeff_modulus = context.param.coeff_modulus
-    coeff_count = context.param.poly_modulus_degree
     plain_coeff_count = message.coeff_count
     delta = context.coeff_div_plain_modulus
     message = message.data
@@ -137,11 +169,3 @@ def multiply_add_plain_with_delta(phase, message, context):
             phase0[j][i] = (phase0[j][i] + temp) % coeff_modulus[j]
 
     return CipherText([phase0, phase1])  # phase0 = pk0 * u * e + delta * m
-
-
-def poly_mul(operand1, operand2, modulus):
-    pass
-
-
-def poly_add(operand1, operand2, modulus):
-    pass
