@@ -1,12 +1,13 @@
 from abc import ABC
 import functools
-from typing import List
+from typing import Set
 
 import syft as sy
 from syft.generic.frameworks.hook import hook_args
+from syft.serde.syft_serializable import SyftSerializable
 
 
-class AbstractObject(ABC):
+class AbstractObject(ABC, SyftSerializable):
     """
     This is a generic object abstraction.
     """
@@ -17,7 +18,7 @@ class AbstractObject(ABC):
         self,
         id: int = None,
         owner: "sy.workers.AbstractWorker" = None,
-        tags: List[str] = None,
+        tags: Set[str] = None,
         description: str = None,
         child=None,
     ):
@@ -34,9 +35,9 @@ class AbstractObject(ABC):
             child: an optional tensor to put in the .child attribute to build
                 a chain of tensors
         """
-        self.owner = owner
+        self.owner = owner or sy.local_worker
         self.id = id or sy.ID_PROVIDER.pop()
-        self.tags = tags
+        self.tags = tags or set()
         self.description = description
         self.child = child
 
@@ -56,12 +57,14 @@ class AbstractObject(ABC):
         self.description = description
         return self
 
-    def tag(self, *_tags: str) -> "AbstractObject":
-        if self.tags is None:
-            self.tags = set()
+    def tag(self, *tags: str) -> "AbstractObject":
+        self.tags = self.tags or set()
 
-        for new_tag in _tags:
-            self.tags.add(new_tag)
+        for tag in tags:
+            self.tags.add(tag)
+
+        self.owner.object_store.register_tags(self)
+
         return self
 
     def serialize(self):  # check serde.py to see how to provide compression schemes
@@ -126,7 +129,7 @@ class AbstractObject(ABC):
     def handle_func_command(cls, command):
         """
         Receive an instruction for a function to be applied on a Syft Tensor,
-        Replace in the args all the LogTensors with
+        Replace in the args_ all the LogTensors with
         their child attribute, forward the command instruction to the
         handle_function_command of the type of the child attributes, get the
         response and replace a Syft Tensor on top of all tensors found in
@@ -134,23 +137,23 @@ class AbstractObject(ABC):
 
         Args:
             command: instruction of a function command: (command name,
-            <no self>, arguments[, kwargs])
+            <no self>, arguments[, kwargs_])
 
         Returns:
             the response of the function command
         """
-        cmd, _, args, kwargs = command
+        cmd, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
             cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args, **kwargs)
+            return cmd(*args_, **kwargs_)
         except AttributeError:
             pass
 
         # Replace all LoggingTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
 
         # build the new command
         new_command = (cmd, None, new_args, new_kwargs)

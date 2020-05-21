@@ -16,6 +16,7 @@ from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
+from syft.serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractObject):
+class ObjectPointer(AbstractObject, SyftSerializable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
@@ -199,7 +200,7 @@ class ObjectPointer(AbstractObject):
         Get the remote location to send the command, send it and get a
         pointer to the response, return.
         :param command: instruction of a function command: (command name,
-        None, arguments[, kwargs])
+        None, arguments[, kwargs_])
         :return: the response of the function command
         """
         pointer = cls.find_a_pointer(command)
@@ -207,20 +208,22 @@ class ObjectPointer(AbstractObject):
         owner = pointer.owner
         location = pointer.location
 
+        cmd, _, args_, kwargs_ = command
+
         # Send the command
-        response = owner.send_command(location, command)
+        response = owner.send_command(location, cmd_name=cmd, args_=args_, kwargs_=kwargs_)
 
         return response
 
     @classmethod
     def find_a_pointer(cls, command):
         """
-        Find and return the first pointer in the args object, using a trick
+        Find and return the first pointer in the args_ object, using a trick
         with the raising error RemoteObjectFoundError
         """
         try:
-            cmd, _, args, kwargs = command
-            _ = hook_args.unwrap_args_from_function(cmd, args, kwargs)
+            cmd, _, args_, kwargs_ = command
+            _ = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
         except exceptions.RemoteObjectFoundError as err:
             pointer = err.pointer
             return pointer
@@ -345,7 +348,7 @@ class ObjectPointer(AbstractObject):
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:
-            point_to_attr = "{}.{}".format(self.point_to_attr, attr_name)
+            point_to_attr = f"{self.point_to_attr}.{attr_name}"
         else:
             point_to_attr = attr_name
         return point_to_attr
@@ -363,7 +366,11 @@ class ObjectPointer(AbstractObject):
 
     def setattr(self, name, value):
         self.owner.send_command(
-            message=("__setattr__", self, (name, value), {}), recipient=self.location
+            cmd_name="__setattr__",
+            target=self,
+            args_=(name, value),
+            kwargs_={},
+            recipient=self.location,
         )
 
     @staticmethod

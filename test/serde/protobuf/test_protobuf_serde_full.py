@@ -15,6 +15,7 @@ samples = OrderedDict()
 
 # Native
 samples[type(None)] = make_none
+samples[type] = make_type
 
 # PyTorch
 samples[torch.device] = make_torch_device
@@ -29,26 +30,35 @@ samples[torch.Size] = make_torch_size
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
+samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
+samples[syft.execution.computation.ComputationAction] = make_computation_action
+samples[syft.execution.communication.CommunicationAction] = make_communication_action
+samples[syft.execution.plan.Plan] = make_plan
+samples[syft.execution.protocol.Protocol] = make_protocol
+samples[syft.execution.role.Role] = make_role
+samples[syft.execution.state.State] = make_state
+samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
-samples[syft.messaging.protocol.Protocol] = make_protocol
 
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
-samples[syft.messaging.message.Operation] = make_operation
+samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in protobuf.serde.bufferizers.items():
+    for cls, _ in protobuf.serde.get_bufferizers():
         has_sample = cls in samples
-        assert has_sample is True, "Serde for %s is not tested" % cls
+        assert has_sample, f"Serde for {cls} is not tested"
 
 
 @pytest.mark.parametrize("cls", samples)
-def test_serde_roundtrip_protobuf(cls, workers):
+def test_serde_roundtrip_protobuf(cls, workers, hook):
     """Checks that values passed through serialization-deserialization stay same"""
-    serde_worker = syft.hook.local_worker
+    serde_worker = syft.VirtualWorker(id=f"serde-worker-{cls.__name__}", hook=hook, auto_add=False)
     original_framework = serde_worker.framework
+    workers["serde_worker"] = serde_worker
     _samples = samples[cls](workers=workers)
     for sample in _samples:
         _to_protobuf = (
@@ -67,7 +77,7 @@ def test_serde_roundtrip_protobuf(cls, workers):
 
         if sample.get("cmp_detailed", None):
             # Custom detailed objects comparison function.
-            assert sample.get("cmp_detailed")(roundtrip_obj, obj) is True
+            assert sample.get("cmp_detailed")(roundtrip_obj, obj)
         else:
             assert type(roundtrip_obj) == type(obj)
             assert roundtrip_obj == obj

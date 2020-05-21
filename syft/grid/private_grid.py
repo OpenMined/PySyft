@@ -7,9 +7,11 @@ from typing import Dict
 from typing import Union
 
 # Syft imports
+
+import syft
 from syft.grid.abstract_grid import AbstractGrid
 from syft.workers.node_client import NodeClient
-from syft.messaging.plan.plan import Plan
+from syft.execution.plan import Plan
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
 
@@ -31,7 +33,7 @@ class PrivateGridNetwork(AbstractGrid):
         results = {}
 
         for worker in self.workers:
-            worker_results = worker.search(query)
+            worker_results = syft.local_worker.request_search(query, location=worker)
 
             if len(worker_results) > 0:
                 results[worker.id] = worker_results
@@ -198,7 +200,7 @@ class PrivateGridNetwork(AbstractGrid):
             # Check every state used by this plan
             for state_id in model.state.state_ids:
                 hook = host.hook
-                obj = hook.local_worker._objects.get(state_id)
+                obj = hook.local_worker.object_store.get_obj(state_id)
 
                 # Decrease in Tensor Hierarchy.
                 # (we want be a AdditiveSharingTensor to recover workers/crypto_provider addresses)

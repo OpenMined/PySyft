@@ -19,3 +19,13 @@ repos:
     rev: v1.1.0
     hooks:
     -   id: python-use-type-annotations
+-   repo: local
+    hooks:
+    -   id: flynt
+        name: flynt
+        entry: flynt
+        args: [--fail-on-change]
+        types: [python]
+        language: python
+        additional_dependencies:
+        -   flynt

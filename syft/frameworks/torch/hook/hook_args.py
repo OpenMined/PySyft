@@ -53,10 +53,13 @@ ambiguous_methods = {
     "_getitem_public",
     "add_",
     "backward",
+    "cat",
     "chunk",
     "new",
     "permute",
     "reshape",
+    "split",
+    "stack",
     "sub_",
     "view",
 }
@@ -73,6 +76,7 @@ ambiguous_functions = {
     "torch.chunk",
     "chunk",
     "torch.functional.split",
+    "torch.split",
     "split",
     "backward",
 }

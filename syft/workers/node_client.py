@@ -5,7 +5,8 @@ from urllib.parse import urlparse
 
 # Syft imports
 from syft.serde import serialize
-from syft.messaging.plan import Plan
+from syft.version import __version__
+from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
@@ -66,7 +67,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         )
 
         # Update Node reference using node's Id given by the remote node
-        self._update_node_reference(self._get_node_id())
+        self._update_node_reference(self._get_node_infos())
 
         if self.credential:
             self._authenticate()
@@ -135,13 +136,22 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         secure = True if url.scheme == "wss" else False
         return (secure, url.hostname, url.port)
 
-    def _get_node_id(self) -> str:
+    def _get_node_infos(self) -> str:
         """ Get Node ID from remote node worker
             Returns:
                 node_id (str) : node id used by remote worker.
         """
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.GET_ID}
         response = self._forward_json_to_websocket_server_worker(message)
+        node_version = response.get(RESPONSE_MSG.SYFT_VERSION, None)
+        if node_version != __version__:
+            raise RuntimeError(
+                "Library version mismatch, The PySyft version of your environment is "
+                + __version__
+                + " the Grid Node Syft version is "
+                + node_version
+            )
+
         return response.get(RESPONSE_MSG.NODE_ID, None)
 
     def _forward_json_to_websocket_server_worker(self, message: dict) -> dict:
@@ -212,7 +222,7 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
         # If the model is a Plan we send the model
         # and host the plan version created after
-        # the send operation
+        # the send action
         if isinstance(model, Plan):
             # We need to use the same id in the model
             # as in the POST request.
@@ -269,4 +279,4 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         return self._return_bool_result(response)
 
     def __str__(self) -> str:
-        return "Federated Worker < id: " + self.id + " >"
+        return f"<Federated Worker id:{self.id}>"

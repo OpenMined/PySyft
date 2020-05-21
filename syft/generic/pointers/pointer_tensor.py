@@ -1,5 +1,4 @@
-from typing import List
-from typing import Union
+from typing import List, Union
 
 import syft
 from syft.generic.frameworks.hook.hook_args import one
@@ -10,6 +9,7 @@ from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
+from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.generic.pointers.v1.pointer_tensor_pb2 import PointerTensor as PointerTensorPB
@@ -20,11 +20,11 @@ from syft.exceptions import RemoteObjectFoundError
 class PointerTensor(ObjectPointer, AbstractTensor):
     """A pointer to another tensor.
 
-    A PointerTensor forwards all API calls to the remote.PointerTensor objects
-    point to tensors (as their name implies). They exist to mimic the entire
-    API of a normal tensor, but instead of computing a tensor function locally
-    (such as addition, subtraction, etc.) they forward the computation to a
-    remote machine as specified by self.location. Specifically, every
+    A PointerTensor forwards all API calls to the remote tensor. PointerTensor
+    objects point to tensors (as their name implies). They exist to mimic the
+    entire API of a normal tensor, but instead of computing a tensor function
+    locally (such as addition, subtraction, etc.) they forward the computation
+    to a remote machine as specified by self.location. Specifically, every
     PointerTensor has a tensor located somewhere that it points to (they should
     never exist by themselves). Note that PointerTensor objects can point to
     both FrameworkTensor objects AND to other PointerTensor objects. Furthermore,
@@ -154,7 +154,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def clone(self):
         """
         Clone should keep ids unchanged, contrary to copy.
-        We make the choice that a clone operation is local, and can't affect
+        We make the choice that a clone action is local, and can't affect
         the remote tensors, so garbage_collect_data is always False, both
         for the tensor cloned and the clone.
         """
@@ -178,10 +178,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     @staticmethod
     def create_pointer(
         tensor,
-        location: AbstractWorker = None,
+        location: Union[AbstractWorker, str] = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
-        owner: AbstractWorker = None,
+        owner: Union[AbstractWorker, str] = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
@@ -208,18 +207,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
                 something different than self.id, but again this is very rare
                 and most of the time, setting this means that you are probably
                 doing something you shouldn't.
-            register: A boolean parameter (default False) that determines
-                whether to register the new pointer that gets created. This is
-                set to false by default because most of the time a pointer is
-                initialized in this way so that it can be sent to someone else
-                (i.e., "Oh you need to point to my tensor? let me create a
-                pointer and send it to you" ). Thus, when a pointer gets
-                created, we want to skip being registered on the local worker
-                because the pointer is about to be sent elsewhere. However, if
-                you are initializing a pointer you intend to keep, then it is
-                probably a good idea to register it, especially if there is any
-                chance that someone else will initialize a pointer to your
-                pointer.
             owner: A AbstractWorker parameter to specify the worker on which the
                 pointer is located. It is also where the pointer is registered
                 if register is set to True.
@@ -259,32 +246,52 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
         return ptr
 
-    def move(self, location):
-        ptr = self.owner.send(self, location)
-        ptr.remote_get()
-        # don't want it to accidentally delete the remote object
-        # when this pointer is deleted
-        ptr.garbage_collect_data = False
+    def move(self, destination: AbstractWorker, requires_grad: bool = False):
+        """
+        Will move the remove value from self.location A to destination B
+        Note a A will keep a copy of his value that he sent to B. This follows the
+        .send() paradigm where the local worker keeps a copy of the value he sends.
+        Args:
+            destination: the new location of the remote data
+            requires_grad: see send() for details
+        Returns:
+            A pointer to location
+        """
+        # move to local target is equivalent to doing .get()
+        if self.owner.id == destination.id:
+            return self.get()
+
+        if self.location.id == destination.id:
+            return self
+
+        ptr = self.remote_send(destination, requires_grad=requires_grad)
+
+        # We make the pointer point at the remote value. As the id doesn't change,
+        # we don't update ptr.id_at_location. See issue #3217 about this.
+        # Note that you have now 2 pointers on different locations pointing to the
+        # same tensor.
+        ptr.location = destination
+
         return ptr
 
-    def remote_send(self, destination, change_location=False):
+    def remote_send(self, destination: AbstractWorker, requires_grad: bool = False):
         """ Request the worker where the tensor being pointed to belongs to send it to destination.
         For instance, if C holds a pointer, ptr, to a tensor on A and calls ptr.remote_send(B),
         C will hold a pointer to a pointer on A which points to the tensor on B.
-        If change_location is set to True, the original pointer will point to the moved object.
-        Considering the same example as before with ptr.remote_send(B, change_location=True):
-        C will hold a pointer to the tensor on B. We may need to be careful here because this pointer
-        will have 2 references pointing to it.
+        Args:
+            destination: where the remote value should be sent
+            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
+                a message to update the gradient of the value on A.
         """
-        args = (destination,)
-        kwargs = {"inplace": True}
-        self.owner.send_command(message=("send", self, args, kwargs), recipient=self.location)
-        if change_location:
-            self.location = destination
+        kwargs_ = {"inplace": False, "requires_grad": requires_grad}
+        message = TensorCommandMessage.communication(
+            "remote_send", self, (destination.id,), kwargs_, (self.id,)
+        )
+        self.owner.send_msg(message=message, location=self.location)
         return self
 
     def remote_get(self):
-        self.owner.send_command(message=("mid_get", self, (), {}), recipient=self.location)
+        self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
     def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
@@ -322,7 +329,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if tensor.is_wrapper:
             if isinstance(tensor.child, FrameworkTensor):
                 return tensor.child
-
         return tensor
 
     def attr(self, attr_name):
@@ -346,12 +352,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an FixPrecisionTensor
         """
-
-        # Send the command
-        command = ("fix_prec", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "fix_prec", self, args, kwargs)
         return response
 
     fix_precision = fix_prec
@@ -363,12 +364,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to a Tensor
         """
-
-        # Send the command
-        command = ("float_prec", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "float_prec", self, args, kwargs)
         return response
 
     float_precision = float_prec
@@ -380,40 +376,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
+        if len(args) < 2:
+            raise RuntimeError("Error, share must have > 1 arguments all of type syft.workers")
 
-        # Send the command
-        command = ("share", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def keep(self, *args, **kwargs):
-        """
-        Send a command to remote worker to keep a promise
-
-        Returns:
-            A pointer to a Tensor
-        """
-
-        # Send the command
-        command = ("keep", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
-        return response
-
-    def value(self, *args, **kwargs):
-        """
-        Send a command to remote worker to get the result generated by a promise.
-
-        Returns:
-            A pointer to a Tensor
-        """
-        command = ("value", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "share", self, args, kwargs)
         return response
 
     def share_(self, *args, **kwargs):
@@ -423,12 +389,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         Returns:
             A pointer to an AdditiveSharingTensor
         """
-
-        # Send the command
-        command = ("share_", self, args, kwargs)
-
-        response = self.owner.send_command(self.location, command)
-
+        response = self.owner.send_command(self.location, "share_", self, args, kwargs)
         return self
 
     def set_garbage_collect_data(self, value):
@@ -533,7 +494,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
@@ -545,14 +506,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         else:
 
             location = syft.hook.local_worker.get_worker(worker_id)
-
-            if tags:  # Tag != None
-                # Decode binary tags
-                tags = tuple(map(lambda x: x, tags))
-
-            if description:  # Description != None
-                # Decode binary description
-                description = description
 
             ptr = PointerTensor(
                 location=location,
@@ -623,7 +576,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
 
                     if not tensor.is_wrapper and not isinstance(tensor, FrameworkTensor):
                         # if the tensor is a wrapper then it doesn't need to be wrapped
-                        # i the tensor isn't a wrapper, BUT it's just a plain torch tensor,
+                        # if the tensor isn't a wrapper, BUT it's just a plain torch tensor,
                         # then it doesn't need to be wrapped.
                         # if the tensor is not a wrapper BUT it's also not a torch tensor,
                         # then it needs to be wrapped or else it won't be able to be used
@@ -645,6 +598,10 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             )
 
             return ptr
+
+    @staticmethod
+    def get_protobuf_schema() -> PointerTensorPB:
+        return PointerTensorPB
 
 
 ### Register the tensor with hook_args.py ###

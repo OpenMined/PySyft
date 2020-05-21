@@ -1,18 +1,38 @@
 """Tests relative to verifying the hook process behaves properly."""
+import re
+
 import pytest
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 import syft
-from syft.generic.pointers.pointer_tensor import PointerTensor
-
 from syft.exceptions import RemoteObjectFoundError
+from syft.generic.pointers.pointer_tensor import PointerTensor
 
 
 def test___init__(hook):
     assert torch.torch_hooked
     assert hook.torch.__version__ == torch.__version__
+
+
+def test_torch_inplace_method():
+    positives = ["__iadd__", "__imul__", "__idiv__", "share_", "get_", "encrypt_"]
+    negatives = [
+        "__add__",
+        "__init__",
+        "__str__",
+        "share",
+        "get",
+        "encrypt",
+        "__foo",
+        "_bar",
+        "baz__",
+    ]
+    for pos in positives:
+        assert re.search(syft.framework._inplace_pattern, pos)
+    for neg in negatives:
+        assert not re.search(syft.framework._inplace_pattern, neg)
 
 
 def test_torch_attributes():
@@ -357,7 +377,7 @@ def test_local_remote_gradient_clipping(workers):
 
     # Is the output of the remote gradient clipping version equal to
     # the output of the local gradient clipping version?
-    assert total_norm_remote == total_norm_local
+    assert torch.isclose(total_norm_remote.get(), total_norm_local, atol=1e-4)
 
 
 # Input: None
