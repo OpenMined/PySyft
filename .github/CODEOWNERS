@@ -55,6 +55,9 @@
 /syft/torch/tensors/interpreters/paillier.py @OpenMined/crypto-team
 /syft/torch/tensors/interpreters/precision.py @OpenMined/crypto-team
 
+# Grid Tream
+/syft/grid/ @OpenMined/pygrid-team
+
 # NLP Team
 /syft/generic/string.py @OpenMined/nlp-team
 /syft/generic/pointers/string_pointer.py @OpenMined/nlp-team

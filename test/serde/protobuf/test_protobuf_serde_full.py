@@ -25,7 +25,7 @@ samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
-
+samples[torch.dtype] = make_torch_dtype
 # PySyft
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
@@ -48,7 +48,7 @@ samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_messa
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in protobuf.serde.get_bufferizers():
+    for cls, _ in protobuf.serde.protobuf_global_state.bufferizers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 
