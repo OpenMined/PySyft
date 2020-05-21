@@ -130,7 +130,6 @@ def protobuf_tensor_deserializer(
         return torch.tensor(data, dtype=dtype).reshape(size)
 
 
-
 class TorchTensorWrapper(SyftSerializable):
     """
     Wrapper that serializes torch.Tensor using protobuffers.
