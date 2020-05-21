@@ -18,5 +18,5 @@ def register(**kwargs):
     peer_id = str(uuid.uuid4())
     peer = Network(peer_id, **args)
     peer.start()
-    
+
     return peer
