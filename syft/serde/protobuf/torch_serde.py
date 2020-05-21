@@ -653,14 +653,15 @@ class TorchMemFormatWrapper(SyftSerializable):
         return torch.memory_format
 
     @staticmethod
-    def get_protobuf_schema() -> type(TorchDTypePB):
+    def get_protobuf_schema() -> type(MemoryFormatPB):
         """
-            Returns the protobuf schema used for torch.dtype.
+            Returns the protobuf schema used for torch.memory_format.
 
             Returns:
-                Protobuf schema for torch.dtype.
+                Protobuf schema for torch.memory_format.
         """
-        return TorchDTypePB
+        return MemoryFormatPB
+
 
 class TorchDTypeWrapper(SyftSerializable):
     """
@@ -706,11 +707,11 @@ class TorchDTypeWrapper(SyftSerializable):
         return torch.dtype
 
     @staticmethod
-    def get_protobuf_schema() -> type(MemoryFormatPB):
+    def get_protobuf_schema() -> type(TorchDTypePB):
         """
-            Returns the protobuf schema used for torch.memory_format.
+            Returns the protobuf schema used for torch.dtype.
 
             Returns:
-                Protobuf schema for torch.memory_format.
+                Protobuf schema for torch.dtype.
         """
-        return MemoryFormatPB
+        return TorchDTypePB
