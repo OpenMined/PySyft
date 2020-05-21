@@ -18,7 +18,7 @@ import time
 class Network(threading.Thread):
     """ Grid Network class to operate in background processing grid requests
         and handling multiple peer connections with different nodes.
-    
+
     """
 
     # Events called by the grid monitor to health checking and signaling webrtc connections.
@@ -31,7 +31,7 @@ class Network(threading.Thread):
 
     def __init__(self, node_id: str, **kwargs):
         """ Create a new thread to send/receive messages from the grid service.
-        
+
             Args:
                 node_id: ID used to identify this peer.
         """
@@ -59,8 +59,8 @@ class Network(threading.Thread):
         self._ws.shutdown()
 
     def _update_node_infos(self, node_id: str):
-        """ Create a new virtual worker to store/compute datasets owned by this peer. 
-            
+        """ Create a new virtual worker to store/compute datasets owned by this peer.
+
             Args:
                 node_id: ID used to identify this peer.
         """
@@ -79,8 +79,8 @@ class Network(threading.Thread):
                 self._ws.send(json.dumps(response))
 
     def _handle_messages(self, message):
-        """ Route and process the messages received from the websocket connection. 
-            
+        """ Route and process the messages received from the websocket connection.
+
             Args:
                 message : message to be processed.
         """
@@ -99,14 +99,11 @@ class Network(threading.Thread):
     def connect(self, destination_id: str):
         """ Create a webrtc connection between this peer and the destination peer by using the grid network
             to forward the webrtc connection request protocol.
-            
+
             Args:
                 destination_id : Id used to identify the peer to be connected.
         """
-        webrtc_request = {
-            MSG_FIELD.TYPE: NODE_EVENTS.WEBRTC_SCOPE,
-            MSG_FIELD.FROM: self.id,
-        }
+        webrtc_request = {MSG_FIELD.TYPE: NODE_EVENTS.WEBRTC_SCOPE, MSG_FIELD.FROM: self.id}
 
         forward_payload = {
             MSG_FIELD.TYPE: GRID_EVENTS.FORWARD,
@@ -121,8 +118,8 @@ class Network(threading.Thread):
         return self._connection_handler.get(destination_id)
 
     def disconnect(self, destination_id: str):
-        """ Disconnect with some peer connected previously. 
-            
+        """ Disconnect with some peer connected previously.
+
             Args:
                 destination_id: Id used to identify the peer to be disconnected.
         """
@@ -132,7 +129,7 @@ class Network(threading.Thread):
 
     def host_dataset(self, dataset):
         """ Host dataset using the virtual worker defined previously.
-            
+
             Args:
                 dataset: Dataset to be hosted.
         """
@@ -147,10 +144,7 @@ class Network(threading.Thread):
     def _join(self):
         """ Send a join requet to register this peer on the grid network. """
         # Join into the network
-        join_payload = {
-            MSG_FIELD.TYPE: GRID_EVENTS.JOIN,
-            MSG_FIELD.NODE_ID: self._worker.id,
-        }
+        join_payload = {MSG_FIELD.TYPE: GRID_EVENTS.JOIN, MSG_FIELD.NODE_ID: self._worker.id}
         self._ws.send(json.dumps(join_payload))
         response = json.loads(self._ws.recv())
         self.available = True
@@ -164,3 +158,10 @@ class Network(threading.Thread):
             list(self._worker.models.keys()),
             list(self._connection_handler.nodes),
         )
+
+    @property
+    def peers(self):
+        """
+        Get WebRTCManager object
+        """
+        return self._connection_handler
