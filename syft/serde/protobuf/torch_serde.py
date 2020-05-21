@@ -30,7 +30,7 @@ from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-
+from syft_proto.types.torch.v1.memory_format_pb2 import MemoryFormat as MemoryFormatPB
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
     TENSOR_SERIALIZATION.TORCH: TorchTensorPB.Serializer.SERIALIZER_TORCH,
@@ -609,3 +609,59 @@ class TorchSizeWrapper(SyftSerializable):
                 Protobuf schema for torch.Size.
         """
         return SizePB
+
+
+class TorchMemFormatWrapper(SyftSerializable):
+    """
+    Wrapper that serializes torch.memory_format.
+    """
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, mem_format: torch.memory_format) -> MemoryFormatPB:
+        """
+        This method serializes torch.memory_format into MemoryFormatPB.
+
+         Args:
+            size (torch.memory_format): input torch.memory_format to be serialized.
+
+         Returns:
+            message (MemoryFormatPB): serialized torch.memory_format
+        """
+        message = MemoryFormatPB()
+        message.memory_format_type = str(mem_format).split(".")[-1]
+        return message
+
+    @staticmethod
+    def unbufferize(
+        worker: AbstractWorker, protobuf_mem_format: MemoryFormatPB
+    ) -> torch.memory_format:
+        """
+            This method deserializes MemoryFormatPB into torch.memory_format.
+
+            Args:
+                protobuf_size (MemoryFormatPB): input MemoryFormatPB to be deserialized.
+
+            Returns:
+                torch.memory_format: deserialized MemoryFormatPB
+        """
+        return getattr(torch, protobuf_mem_format.memory_format_type)
+
+    @staticmethod
+    def get_original_class() -> type(torch.memory_format):
+        """
+            This method returns the wrapped type.
+
+            Returns:
+                Wrapped type.
+        """
+        return torch.memory_format
+
+    @staticmethod
+    def get_protobuf_schema() -> type(MemoryFormatPB):
+        """
+            Returns the protobuf schema used for torch.memory_format.
+
+            Returns:
+                Protobuf schema for torch.memory_format.
+        """
+        return MemoryFormatPB
