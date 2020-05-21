@@ -96,7 +96,7 @@ samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in msgpack.serde.simplifiers.items():
+    for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 

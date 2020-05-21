@@ -48,7 +48,7 @@ samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_messa
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in protobuf.serde.get_bufferizers():
+    for cls, _ in protobuf.serde.protobuf_global_state.bufferizers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 
