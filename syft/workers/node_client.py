@@ -8,12 +8,11 @@ from syft.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
-from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.grid.authentication.credential import AbstractCredential
 
 
-class NodeClient(WebsocketClientWorker, FederatedClient):
+class NodeClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(

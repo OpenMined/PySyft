@@ -197,7 +197,7 @@ def _bufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
 
     # Check to see if there is a bufferizer
     # for this type. If there is, return the bufferized object.
-    # breakpoint()
+
     current_type = type(obj)
     if current_type in protobuf_global_state.bufferizers:
         result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
