@@ -892,7 +892,7 @@ def test_argmax(workers, protocol):
 
 
 @pytest.mark.parametrize("protocol", ["fss"])
-def test_maxpool2d(workers, protocol):
+def test_max_pool2d(workers, protocol):
     me, alice, bob, crypto_provider = (
         workers["me"],
         workers["alice"],
@@ -931,6 +931,35 @@ def test_maxpool2d(workers, protocol):
     # without
     expected = F.max_pool2d(t, kernel_size=3)
     result = F.max_pool2d(x, kernel_size=3).get().float_prec()
+
+    assert (result == expected).all()
+
+
+@pytest.mark.parametrize("protocol", ["fss"])
+def test_avg_pool2d(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+
+    m = 4
+    t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
+    x = t.fix_prec().share(*args, **kwargs)
+
+    # using maxpool optimization for kernel_size=2
+    expected = F.avg_pool2d(t, kernel_size=2)
+    result = F.avg_pool2d(x, kernel_size=2).get().float_prec()
+
+    assert (result == expected).all()
+
+    # without
+    expected = F.avg_pool2d(t, kernel_size=3)
+    result = F.avg_pool2d(x, kernel_size=3).get().float_prec()
 
     assert (result == expected).all()
 

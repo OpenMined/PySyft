@@ -135,7 +135,7 @@ class AutogradTensor(AbstractTensor):
         return _self.eq(other)
 
     @overloaded.method
-    def relu(self, self_):
+    def relu(self, self_, **kw):
         return self_.relu()
 
     def __getattribute__(self, name):
@@ -228,7 +228,7 @@ class AutogradTensor(AbstractTensor):
 
                 module.linear = linear
 
-                def relu(tensor):
+                def relu(tensor, **kw):
                     return tensor.relu()
 
                 module.relu = relu

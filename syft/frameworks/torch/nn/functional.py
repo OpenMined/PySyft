@@ -357,7 +357,58 @@ def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
     return res
 
 
-def maxpool2d(input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=1):
+def max_pool2d(
+    input,
+    kernel_size: int = 2,
+    stride: int = 2,
+    padding=0,
+    dilation=1,
+    ceil_mode=None,
+    return_indices=None,
+):
+    return _pool2d(
+        input,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        ceil_mode=ceil_mode,
+        mode="max",
+    )
+
+
+def avg_pool2d(
+    input,
+    kernel_size: int = 2,
+    stride: int = 2,
+    padding=0,
+    ceil_mode=False,
+    count_include_pad=True,
+    divisor_override=None,
+):
+    return _pool2d(
+        input,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=1,
+        ceil_mode=ceil_mode,
+        mode="avg",
+    )
+
+
+def _pool2d(
+    input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=1, ceil_mode=None, mode="avg"
+):
+    if isinstance(kernel_size, tuple):
+        assert kernel_size[0] == kernel_size[1]
+        kernel_size = kernel_size[0]
+    if isinstance(stride, tuple):
+        assert stride[0] == stride[1]
+        stride = stride[0]
+
+    print(f"{mode}_pool2d", kernel_size, stride, padding, dilation)
+
     input_fp = input
     input = input.child
 
@@ -377,16 +428,21 @@ def maxpool2d(input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=
 
     im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
-    # Optim
-    if im_reshaped.shape[-1] == 4:
-        print("Optim pool")
-        ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
-        max1 = ab + (cd >= ab) * (cd - ab)
-        e, f = max1[:, :, :, 0], max1[:, :, :, 1]
-        max2 = e + (f >= e) * (f - e)
-        res = max2
+    if mode == "max":
+        # Optim
+        if im_reshaped.shape[-1] == 4:
+            print("Optim pool")
+            ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
+            max1 = ab + (cd >= ab) * (cd - ab)
+            e, f = max1[:, :, :, 0], max1[:, :, :, 1]
+            max2 = e + (f >= e) * (f - e)
+            res = max2
+        else:
+            res = im_reshaped.max(dim=-1)
+    elif mode == "avg":
+        res = im_reshaped.mean(dim=-1)
     else:
-        res = im_reshaped.max(dim=-1)
+        raise ValueError(f"In pool2d, mode should be avg or max, not {mode}.")
 
     res_shares = {}
     for location in locations:
@@ -400,59 +456,14 @@ def maxpool2d(input, kernel_size: int = 2, stride: int = 2, padding=0, dilation=
     return result_fp
 
 
-def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
-    output_shape = (
-        (tensor.shape[0] - kernel_size) // stride + 1,
-        (tensor.shape[1] - kernel_size) // stride + 1,
-    )
-    kernel_size = (kernel_size, kernel_size)
-    b = torch.ones(tensor.shape)  # when torch.Tensor.stride() is supported: replace with A.stride()
-    a_strides = b.stride()
-    a_w = torch.as_strided(
-        tensor,
-        size=output_shape + kernel_size,
-        stride=(stride * a_strides[0], stride * a_strides[1]) + a_strides,
-    )
-    a_w = a_w.reshape(-1, *kernel_size)
-    result = []
-    if mode is "max":
-        for channel in range(a_w.shape[0]):
-            result.append(a_w[channel].max())
-    elif mode is "mean":
-        for channel in range(a_w.shape[0]):
-            result.append(torch.mean(a_w[channel]))
-    else:
-        raise ValueError("unknown pooling mode")
-
-    result = torch.stack(result).reshape(output_shape)
-    return result
-
-
-def pool2d(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
-    assert len(tensor.shape) < 5
-    if len(tensor.shape) == 2:
-        return _pool(tensor, kernel_size, stride, mode)
-    if len(tensor.shape) == 3:
-        return torch.squeeze(pool2d(torch.unsqueeze(tensor, dim=0), kernel_size, stride, mode))
-    batches = tensor.shape[0]
-    channels = tensor.shape[1]
-    out_shape = (
-        batches,
-        channels,
-        (tensor.shape[2] - kernel_size) // stride + 1,
-        (tensor.shape[3] - kernel_size) // stride + 1,
-    )
-    result = []
-    for batch in range(batches):
-        for channel in range(channels):
-            result.append(_pool(tensor[batch][channel], kernel_size, stride, mode))
-    result = torch.stack(result).reshape(out_shape)
-    return result
-
-
-# def maxpool2d(tensor, kernel_size: int = 2, stride: int = 2):
-#     return pool2d(tensor, kernel_size, stride)
-
-
-def avgpool2d(tensor, kernel_size: int = 2, stride: int = 2):
-    return pool2d(tensor, kernel_size, stride, mode="mean")
+def adaptive_avg_pool2d(tensor, output_size):
+    if isinstance(output_size, tuple):
+        assert output_size[0] == output_size[1]
+        output_size = output_size[0]
+    assert tensor.shape[2] == tensor.shape[3]
+    input_size = tensor.shape[2]
+    assert input_size >= output_size
+    stride = input_size // output_size
+    kernel_size = input_size - (output_size - 1) * stride
+    padding = 0
+    return avg_pool2d(tensor, kernel_size, stride, padding)
