@@ -1,13 +1,12 @@
 from .network import Network
+import uuid
 
 DEFAULT_NETWORK_URL = "ws://ec2-13-59-45-128.us-east-2.compute.amazonaws.com"
 
 
-def register(node_id: str, **kwargs):
+def register(**kwargs):
     """ Add this process as a new peer registering it in the grid network.
         
-        Args:
-            node_id: Id used to identify this node.
         Returns:
             peer: Peer Network instance.
     """
@@ -16,6 +15,8 @@ def register(node_id: str, **kwargs):
     else:
         args = kwargs
 
-    peer = Network(node_id, **args)
+    peer_id = str(uuid.uuid4())
+    peer = Network(peer_id, **args)
     peer.start()
+    
     return peer
