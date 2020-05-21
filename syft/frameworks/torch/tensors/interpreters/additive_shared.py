@@ -117,6 +117,11 @@ class AdditiveSharingTensor(AbstractTensor):
         # max value for shares in field
         self._max_value = None
 
+        if crypto_provider is None:
+            warnings.warn(
+                "You haven't provided crypto_provider. You won't be able to perform certain operations like multiplication"
+            )
+
         self.crypto_provider = (
             crypto_provider if crypto_provider is not None else sy.hook.local_worker
         )
