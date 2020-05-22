@@ -6,6 +6,7 @@ from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.abstract import AbstractWorker
 from syft_proto.generic.pointers.v1.pointer_dataset_pb2 import PointerDataset as PointerDatasetPB
 
+
 class PointerDataset(ObjectPointer):
     def __init__(
         self,
@@ -175,7 +176,6 @@ class PointerDataset(ObjectPointer):
         if worker_id == worker.id:
             dataset = worker.get_obj(id_at_location)
             return dataset
-
 
         location = sy.hook.local_worker.get_worker(worker_id)
 
