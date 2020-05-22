@@ -58,8 +58,6 @@ exclusion_list_notebooks = [
     # This notebook is excluded as it needs library code modification which I might add later on
     "Build your own tensor type (advanced).ipynb",
     "Federated Recurrent Neural Network.ipynb",
-    # Outdated training method
-    "Introduction to TrainConfig.ipynb",
     # Outdated websocket client code
     "Federated learning with websockets and federated averaging.ipynb",
 ]
@@ -157,23 +155,6 @@ def test_notebooks_advanced(isolated_filesystem, notebook):
     tested_notebooks.append(str(list_name))
     res = pm.execute_notebook(notebook, "/dev/null", parameters={"epochs": 1}, timeout=300)
     assert isinstance(res, nbformat.notebooknode.NotebookNode)
-
-
-def test_fl_with_trainconfig(isolated_filesystem, start_remote_server_worker_only, hook):
-    os.chdir("advanced/federated_learning_with_trainconfig")
-    notebook = "Introduction to TrainConfig.ipynb"
-    p_name = Path("examples/tutorials/advanced/federated_learning_with_trainconfig/")
-    tested_notebooks.append(str(p_name / notebook))
-    hook.local_worker.remove_worker_from_registry("alice")
-    kwargs = {"id": "alice", "host": "localhost", "port": 8777, "hook": hook}
-    data = torch.tensor([[0.0, 1.0], [1.0, 0.0], [1.0, 1.0], [0.0, 0.0]], requires_grad=True)
-    target = torch.tensor([[1.0], [1.0], [0.0], [0.0]], requires_grad=False)
-    dataset = sy.BaseDataset(data, target)
-    process_remote_worker = start_remote_server_worker_only(dataset=(dataset, "xor"), **kwargs)
-    res = pm.execute_notebook(notebook, "/dev/null", timeout=300)
-    assert isinstance(res, nbformat.notebooknode.NotebookNode)
-    process_remote_worker.terminate()
-    sy.VirtualWorker(id="alice", hook=hook, is_client_worker=False)
 
 
 @pytest.mark.skip

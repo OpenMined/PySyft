@@ -31,18 +31,17 @@ By default, we serialize using msgpack and compress using lz4.
 If different compressions are required, the worker can override the function apply_compress_scheme
 """
 from collections import OrderedDict
-
 import inspect
-import msgpack as msgpack_lib
+from dataclasses import dataclass
 
 import syft
+import msgpack as msgpack_lib
 from syft import dependency_check
 
 from syft.serde import compression
 from syft.serde import msgpack
 from syft.serde.msgpack.native_serde import MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS
 from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -61,51 +60,138 @@ else:
 from syft.serde.msgpack.proto import proto_type_info
 from syft.serde.syft_serializable import SyftSerializable, get_msgpack_subclasses
 
-# Maps a type to a tuple containing its simplifier and detailer function
-# NOTE: serialization constants for these objects need to be defined in `proto.json` file
-# in https://github.com/OpenMined/proto
-MAP_TO_SIMPLIFIERS_AND_DETAILERS = OrderedDict(
-    list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
-    + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
-    + list(MAP_TF_SIMPLIFIERS_AND_DETAILERS.items())
-)
 
-# If an object implements its own simplify and detail functions it should be stored in this list
-# NOTE: serialization constants for these objects need to be defined in `proto.json` file
-# in https://github.com/OpenMined/proto
-OBJ_SIMPLIFIER_AND_DETAILERS = None
+class MetaMsgpackGlobalState(type):
+    @staticmethod
+    def wrapper(wrapped_func):
+        @property
+        def wrapper(self):
+            self = self.update()
+            return wrapped_func.__get__(self, type(self))
 
-# If an object implements its own force_simplify and force_detail functions it should be stored in this list
-# NOTE: serialization constants for these objects need to be defined in `proto.json` file
-# in https://github.com/OpenMined/proto
-OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [BaseWorker, VirtualWorker]
+        return wrapper
 
-# For registering syft objects with custom simplify and detail methods
-# NOTE: serialization constants for these objects need to be defined in `proto.json` file
-# in https://github.com/OpenMined/proto
-EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+    def __new__(meta, classname, bases, class_dict):
+        for attr_name, attr_body in class_dict.items():
+            if isinstance(attr_body, property):
+                class_dict[attr_name] = MetaMsgpackGlobalState.wrapper(attr_body)
+        return type.__new__(meta, classname, bases, class_dict)
+
+
+@dataclass
+class MsgpackGlobalState(metaclass=MetaMsgpackGlobalState):
+    """
+        Global msgpack state. This should become deprecated soon.
+    """
+
+    _OBJ_SIMPLIFIER_AND_DETAILERS = []
+    _MAP_TO_SIMPLFIERS_AND_DETAILERS = OrderedDict()
+    _OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = []
+    _EXCEPTION_SIMPLIFIER_AND_DETAILERS = []
+    _simplifiers = OrderedDict()
+    _forced_full_simplifiers = OrderedDict()
+    _detailers = OrderedDict()
+    _inherited_simplifiers_found = OrderedDict()
+    _no_simplifiers_found = set()
+    _no_full_simplifiers_found = set()
+
+    stale_state = True
+
+    @property
+    def obj_simplifier_and_detailers(self):
+        return self._OBJ_SIMPLIFIER_AND_DETAILERS
+
+    @property
+    def map_to_simplifiers_and_detailers(self):
+        return self._MAP_TO_SIMPLFIERS_AND_DETAILERS
+
+    @property
+    def obj_force_full_simplifiser_and_detailer(self):
+        return self._OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS
+
+    @property
+    def exception_simplifier_and_detailer(self):
+        return self._EXCEPTION_SIMPLIFIER_AND_DETAILERS
+
+    @property
+    def simplifiers(self):
+        return self._simplifiers
+
+    @property
+    def detailers(self):
+        return self._detailers
+
+    @property
+    def forced_full_simplifiers(self):
+        return self._forced_full_simplifiers
+
+    @property
+    def inherited_simplifiers_found(self):
+        return self._inherited_simplifiers_found
+
+    @property
+    def no_simplifiers_found(self):
+        return self._no_simplifiers_found
+
+    @property
+    def no_full_simplifiers_found(self):
+        return self._no_full_simplifiers_found
+
+    def update(self):
+        if not self.stale_state:
+            return self
+
+        # If an object implements its own simplify and detail functions it should be stored in this list
+        # NOTE: serialization constants for these objects need to be defined in `proto.json` file
+        # in https://github.com/OpenMined/proto
+
+        self._OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
+
+        # Maps a type to a tuple containing its simplifier and detailer function
+        # NOTE: serialization constants for these objects need to be defined in `proto.json` file
+        # in https://github.com/OpenMined/proto
+
+        self._MAP_TO_SIMPLFIERS_AND_DETAILERS = OrderedDict(
+            list(MAP_NATIVE_SIMPLIFIERS_AND_DETAILERS.items())
+            + list(MAP_TORCH_SIMPLIFIERS_AND_DETAILERS.items())
+            + list(MAP_TF_SIMPLIFIERS_AND_DETAILERS.items())
+        )
+
+        self._OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS = [VirtualWorker]
+        self._EXCEPTION_SIMPLIFIER_AND_DETAILERS = [GetNotPermittedError, ResponseSignatureError]
+
+        self.stale_state = False
+
+        def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
+            type_info = proto_type_info(curr_type)
+            if forced:
+                self._forced_full_simplifiers[curr_type] = (type_info.forced_code, simplifier)
+                self._detailers[type_info.forced_code] = detailer
+            else:
+                self._simplifiers[curr_type] = (type_info.code, simplifier)
+                self._detailers[type_info.code] = detailer
+
+        # Register native and torch types
+        for curr_type, (simplifier, detailer) in self._MAP_TO_SIMPLFIERS_AND_DETAILERS.items():
+            _add_simplifier_and_detailer(curr_type, simplifier, detailer)
+
+        # # Register syft objects with custom simplify and detail methods
+        for syft_type in (
+            self._OBJ_SIMPLIFIER_AND_DETAILERS + self._EXCEPTION_SIMPLIFIER_AND_DETAILERS
+        ):
+            simplifier, detailer = syft_type.simplify, syft_type.detail
+            _add_simplifier_and_detailer(syft_type, simplifier, detailer)
+        #
+        # # Register syft objects with custom force_simplify and force_detail methods
+        for syft_type in self._OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS:
+            force_simplifier, force_detailer = syft_type.force_simplify, syft_type.force_detail
+            _add_simplifier_and_detailer(syft_type, force_simplifier, force_detailer, forced=True)
+        return self
+
 
 # cached value
 field = 2 ** 64
 strField = str(2 ** 64)
-
-
-def get_simplifiers():
-    """
-        Function to retrieve the simplifiers, so that no other function uses directly de global elements.
-    """
-    init_global_vars_msgpack()
-    return simplifiers.items()
-
-
-def init_global_vars_msgpack():
-    """
-          Function to initialise at the first usage all the global elements used in msgpack/serde.py
-    """
-    global OBJ_SIMPLIFIER_AND_DETAILERS, simplifiers, forced_full_simplifiers, detailers
-    if OBJ_SIMPLIFIER_AND_DETAILERS is None:
-        OBJ_SIMPLIFIER_AND_DETAILERS = list(get_msgpack_subclasses(SyftSerializable))
-        simplifiers, forced_full_simplifiers, detailers = _generate_simplifiers_and_detailers()
 
 
 ## SECTION: High Level Simplification Router
@@ -120,21 +206,18 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
     Returns:
         The simplified object.
     """
-
-    init_global_vars_msgpack()
-
     # check to see if there is a full simplifier
     # for this type. If there is, return the full simplified object.
     current_type = type(obj)
-    if current_type in forced_full_simplifiers:
+    if current_type in msgpack_global_state.forced_full_simplifiers:
         result = (
-            forced_full_simplifiers[current_type][0],
-            forced_full_simplifiers[current_type][1](worker, obj),
+            msgpack_global_state.forced_full_simplifiers[current_type][0],
+            msgpack_global_state.forced_full_simplifiers[current_type][1](worker, obj),
         )
         return result
     # If we already tried to find a full simplifier for this type but failed, we should
     # simplify it instead.
-    elif current_type in no_full_simplifiers_found:
+    elif current_type in msgpack_global_state.no_full_simplifiers_found:
         return _simplify(worker, obj)
     else:
         # If the object type is not in forced_full_simplifiers,
@@ -146,74 +229,28 @@ def _force_full_simplify(worker: AbstractWorker, obj: object) -> object:
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
-            if inheritance_type in forced_full_simplifiers:
+            if inheritance_type in msgpack_global_state.forced_full_simplifiers:
                 # Store the inheritance_type in forced_full_simplifiers so next
                 # time we see this type serde will be faster.
-                forced_full_simplifiers[current_type] = forced_full_simplifiers[inheritance_type]
+                msgpack_global_state.forced_full_simplifiers[
+                    current_type
+                ] = msgpack_global_state.forced_full_simplifiers[inheritance_type]
                 result = (
-                    forced_full_simplifiers[current_type][0],
-                    forced_full_simplifiers[current_type][1](worker, obj),
+                    msgpack_global_state.forced_full_simplifiers[current_type][0],
+                    msgpack_global_state.forced_full_simplifiers[current_type][1](worker, obj),
                 )
                 return result
 
         # If there is not a full_simplifier for this
         # object, then we simplify it.
-        no_full_simplifiers_found.add(current_type)
+        msgpack_global_state.no_full_simplifiers_found.add(current_type)
         return _simplify(worker, obj)
 
 
-## SECTION: dynamically generate simplifiers and detailers
-def _generate_simplifiers_and_detailers():
-    """Generate simplifiers, forced full simplifiers and detailers,
-    by registering native and torch types, syft objects with custom
-    simplify and detail methods, or syft objects with custom
-    force_simplify and force_detail methods.
-
-    NOTE: this function uses `proto_type_info` that translates python class into Serde constant defined in
-    https://github.com/OpenMined/proto. If the class used in `MAP_TO_SIMPLIFIERS_AND_DETAILERS`,
-    `OBJ_SIMPLIFIER_AND_DETAILERS`, `EXCEPTION_SIMPLIFIER_AND_DETAILERS`, `OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS`
-    is not defined in `proto.json` file in https://github.com/OpenMined/proto, this function will error.
-    Returns:
-        The simplifiers, forced_full_simplifiers, detailers
-    """
-    simplifiers = OrderedDict()
-    forced_full_simplifiers = OrderedDict()
-    detailers = OrderedDict()
-
-    def _add_simplifier_and_detailer(curr_type, simplifier, detailer, forced=False):
-        type_info = proto_type_info(curr_type)
-        if forced:
-            forced_full_simplifiers[curr_type] = (type_info.forced_code, simplifier)
-            detailers[type_info.forced_code] = detailer
-        else:
-            simplifiers[curr_type] = (type_info.code, simplifier)
-            detailers[type_info.code] = detailer
-
-    # Register native and torch types
-    for curr_type in MAP_TO_SIMPLIFIERS_AND_DETAILERS:
-        simplifier, detailer = MAP_TO_SIMPLIFIERS_AND_DETAILERS[curr_type]
-        _add_simplifier_and_detailer(curr_type, simplifier, detailer)
-
-    # Register syft objects with custom simplify and detail methods
-    for syft_type in OBJ_SIMPLIFIER_AND_DETAILERS + EXCEPTION_SIMPLIFIER_AND_DETAILERS:
-        simplifier, detailer = syft_type.simplify, syft_type.detail
-        _add_simplifier_and_detailer(syft_type, simplifier, detailer)
-
-    # Register syft objects with custom force_simplify and force_detail methods
-    for syft_type in OBJ_FORCE_FULL_SIMPLIFIER_AND_DETAILERS:
-        force_simplifier, force_detailer = syft_type.force_simplify, syft_type.force_detail
-        _add_simplifier_and_detailer(syft_type, force_simplifier, force_detailer, forced=True)
-
-    return simplifiers, forced_full_simplifiers, detailers
-
-
-simplifiers, forced_full_simplifiers, detailers = None, None, None
 # Store types that are not simplifiable (int, float, None) so we
 # can ignore them during serialization.
-no_simplifiers_found, no_full_simplifiers_found = set(), set()
 # Store types that use simplifiers from their ancestors so we
 # can look them up quickly during serialization.
-inherited_simplifiers_found = OrderedDict()
 
 
 def _serialize_msgpack_simple(
@@ -222,8 +259,6 @@ def _serialize_msgpack_simple(
     simplified: bool = False,
     force_full_simplification: bool = False,
 ) -> bin:
-
-    init_global_vars_msgpack()
 
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
@@ -293,9 +328,6 @@ def serialize(
     Returns:
         binary: the serialized form of the object.
     """
-
-    init_global_vars_msgpack()
-
     if worker is None:
         # TODO[jvmancuso]: This might be worth a standalone function.
         worker = syft.framework.hook.local_worker
@@ -378,29 +410,29 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         ValueError: if `move_this` or `in_front_of_that` are not both single ASCII
         characters.
     """
-
-    init_global_vars_msgpack()
-
     # Check to see if there is a simplifier
     # for this type. If there is, return the simplified object.
-    # breakpoint()
-    # current_type = type(obj)
+
     current_type, obj = _simplify_field(obj)
 
-    # print(current_type, current_type in simplifiers)
-    if current_type in simplifiers:
-        result = (simplifiers[current_type][0], simplifiers[current_type][1](worker, obj, **kwargs))
-        return result
-    elif current_type in inherited_simplifiers_found:
+    if current_type in msgpack_global_state.simplifiers:
         result = (
-            inherited_simplifiers_found[current_type][0],
-            inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
+            msgpack_global_state.simplifiers[current_type][0],
+            msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs),
+        )
+        return result
+    elif current_type in msgpack_global_state.inherited_simplifiers_found:
+        result = (
+            msgpack_global_state.inherited_simplifiers_found[current_type][0],
+            msgpack_global_state.inherited_simplifiers_found[current_type][1](
+                worker, obj, **kwargs
+            ),
         )
         return result
 
     # If we already tried to find a simplifier for this type but failed, we should
     # just return the object as it is.
-    elif current_type in no_simplifiers_found:
+    elif current_type in msgpack_global_state.no_simplifiers_found:
         return obj
 
     else:
@@ -413,21 +445,36 @@ def _simplify(worker: AbstractWorker, obj: object, **kwargs) -> object:
         classes_inheritance = inspect.getmro(type(obj))[1:]
 
         for inheritance_type in classes_inheritance:
-            if inheritance_type in simplifiers:
+            if inheritance_type in msgpack_global_state.simplifiers:
                 # Store the inheritance_type in simplifiers so next time we see this type
                 # serde will be faster.
-                inherited_simplifiers_found[current_type] = simplifiers[inheritance_type]
+                msgpack_global_state.inherited_simplifiers_found[
+                    current_type
+                ] = msgpack_global_state.simplifiers[inheritance_type]
                 result = (
-                    inherited_simplifiers_found[current_type][0],
-                    inherited_simplifiers_found[current_type][1](worker, obj, **kwargs),
+                    msgpack_global_state.inherited_simplifiers_found[current_type][0],
+                    msgpack_global_state.inherited_simplifiers_found[current_type][1](
+                        worker, obj, **kwargs
+                    ),
                 )
                 return result
+
+        # if there is not a simplifier for this
+        # object, then it might be one external to
+        # the framework
+        msgpack_global_state.stale_state = True
+        if current_type in msgpack_global_state.simplifiers:
+            result = (
+                msgpack_global_state.simplifiers[current_type][0],
+                msgpack_global_state.simplifiers[current_type][1](worker, obj, **kwargs),
+            )
+            return result
 
         # if there is not a simplifier for this
         # object, then the object is already a
         # simple python object and we can just
         # return it.
-        no_simplifiers_found.add(current_type)
+        msgpack_global_state.no_simplifiers_found.add(current_type)
         return obj
 
 
@@ -459,11 +506,11 @@ def _detail(worker: AbstractWorker, obj: object, **kwargs) -> object:
         obj: a more complex Python object which msgpack would have had trouble
             deserializing directly.
     """
-
-    init_global_vars_msgpack()
-
     if type(obj) in (list, tuple):
-        val = detailers[obj[0]](worker, obj[1], **kwargs)
+        val = msgpack_global_state.detailers[obj[0]](worker, obj[1], **kwargs)
         return _detail_field(obj[0], val)
     else:
         return obj
+
+
+msgpack_global_state = MsgpackGlobalState()
