@@ -1294,7 +1294,7 @@ def make_autogradtensor(**kwargs):
 # syft.frameworks.torch.tensors.interpreters.private.PrivateTensor
 def make_privatetensor(**kwargs):
     t = torch.tensor([1, 2, 3])
-    pt = t.private_tensor(allowed_users=("test",))
+    pt = t.private_tensor(allowed_users=["test"])
     pt.tag("tag1")
     pt.describe("private")
     pt = pt.child

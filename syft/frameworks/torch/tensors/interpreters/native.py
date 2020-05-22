@@ -786,13 +786,13 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def private_tensor(self, *args, allowed_users: Tuple[str], no_wrap: bool = False, **kwargs):
+    def private_tensor(self, *args, allowed_users: List[str], no_wrap: bool = False, **kwargs):
         """
         Convert a tensor or syft tensor to private tensor
 
         Args:
             *args (tuple): args to transmit to the private tensor.
-            allowed_users (tuple): Tuple of allowed users.
+            allowed_users (list): List of allowed users.
             no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
             **kwargs (dict): kwargs to transmit to the private tensor
         """
@@ -804,7 +804,7 @@ class TorchTensor(AbstractTensor):
             self.child = (
                 syft.PrivateTensor(*args, **kwargs)
                 .on(self.child, wrap=False)
-                .register_credentials(allowed_users)
+                .register_credentials(tuple(allowed_users))
             )
             if no_wrap:
                 return self.child
@@ -814,7 +814,7 @@ class TorchTensor(AbstractTensor):
         private_tensor = (
             syft.PrivateTensor(*args, **kwargs)
             .on(self, wrap=False)
-            .register_credentials(allowed_users)
+            .register_credentials(tuple(allowed_users))
         )
         if not no_wrap:
             private_tensor = private_tensor.wrap()
