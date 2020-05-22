@@ -202,7 +202,7 @@ class Role(SyftSerializable):
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """
-        cmd, _self, args_, kwargs_, return_placeholder = (
+        cmd, _self, args_, kwargs_, return_values = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method
             action.args,
@@ -212,15 +212,11 @@ class Role(SyftSerializable):
         _self = self._fetch_placeholders_from_ids(_self)
         args_ = self._fetch_placeholders_from_ids(args_)
         kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
-        return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
+        return_values = self._fetch_placeholders_from_ids(return_values)
 
         # We can only instantiate placeholders, filter them
-        true_placeholders = []
-
-        def save_placeholders(ph):
-            true_placeholders.append(ph)
-
-        Role.nested_object_traversal(return_placeholder, save_placeholders, PlaceHolder)
+        return_placeholders = []
+        Role.nested_object_traversal(return_values, lambda ph: return_placeholders.append(ph), PlaceHolder)
 
         if _self is None:
             method = self._fetch_package_method(cmd)
@@ -231,7 +227,7 @@ class Role(SyftSerializable):
         if not isinstance(response, (tuple, list)):
             response = (response,)
 
-        PlaceHolder.instantiate_placeholders(true_placeholders, response)
+        PlaceHolder.instantiate_placeholders(return_placeholders, response)
 
     def _fetch_package_method(self, cmd):
         cmd_path = cmd.split(".")
