@@ -57,9 +57,11 @@ def register(**kwargs):
         sys.stdout.write(
             " - Want to join in our development team? Apply here: https://forms.gle/wcH1vxzvPyDSbSVW6\n"
         )
+
         _registered_peer.start()
 
         return _registered_peer
+      
     except Exception as e:
         sys.stdout.write("\033[91m" + "FAIL" + "\033[0m" + "\n")
         sys.stdout.write("You were not able to register your node.\n")
