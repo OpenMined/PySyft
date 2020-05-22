@@ -38,10 +38,9 @@ def worker_cycle_request():
     try:
         body = json.loads(request.data)
         response_body = cycle_request({MSG_FIELD.DATA: body}, None)
-    except PyGridError or json.decoder.JSONDecodeError as e:
+    except (PyGridError, json.decoder.JSONDecodeError) as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
-        response_body = json.dumps(response_body)
     except Exception as e:
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
@@ -102,10 +101,9 @@ def report_diff():
     try:
         body = json.loads(request.data)
         response_body = report({MSG_FIELD.DATA: body}, None)
-    except PyGridError or json.decoder.JSONDecodeError as e:
+    except (PyGridError, json.decoder.JSONDecodeError) as e:
         status_code = 400  # Bad Request
         response_body[RESPONSE_MSG.ERROR] = str(e)
-        response_body = json.dumps(response_body)
     except Exception as e:
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)

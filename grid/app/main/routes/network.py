@@ -38,9 +38,12 @@ def join_grid_node():
             status_code = 409
 
     # JSON format not valid.
-    except ValueError or KeyError as e:
+    except (ValueError, KeyError) as e:
         response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
         status_code = 400
+    except Exception as e:
+        response_body["message"] = str(e)
+        status_code = 500  # Internal Server Error
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -59,7 +62,7 @@ def get_connected_nodes():
 
 
 @main.route("/delete-node", methods=["DELETE"])
-def delete_grid_note():
+def delete_grid_node():
     """ Delete a grid node at grid network"""
 
     response_body = {"message": None}
@@ -77,9 +80,12 @@ def delete_grid_note():
             status_code = 409
 
     # JSON format not valid.
-    except ValueError or KeyError as e:
+    except (ValueError, KeyError) as e:
         response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
         status_code = 400
+    except Exception as e:
+        response_body["message"] = str(e)
+        status_code = 500  # Internal Server Error
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -162,9 +168,12 @@ def search_encrypted_model():
             status_code = 200
 
     # JSON format not valid.
-    except ValueError or KeyError as e:
+    except (ValueError, KeyError) as e:
         response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
         status_code = 400
+    except Exception as e:
+        response_body["message"] = str(e)
+        status_code = 500  # Internal Server Error
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -188,9 +197,12 @@ def search_model():
         response_body = match_nodes
         status_code = 200
 
-    except ValueError or KeyError:
+    except (ValueError, KeyError):
         response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
         status_code = 400
+    except Exception as e:
+        response_body["message"] = str(e)
+        status_code = 500  # Internal Server Error
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"
@@ -261,11 +273,16 @@ def search_dataset_tags():
         response_body = match_grid_nodes
         status_code = 200
 
-    except ValueError or KeyError as e:
+    except (ValueError, KeyError) as e:
         response_body["message"] = INVALID_JSON_FORMAT_MESSAGE
         status_code = 400
+    except Exception as e:
+        response_body["message"] = str(e)
+        status_code = 500  # Internal Server Error
 
-    return Response(json.dumps(response_body), status=200, mimetype="application/json")
+    return Response(
+        json.dumps(response_body), status=status_code, mimetype="application/json"
+    )
 
 
 def _get_model_hosting_nodes(model_id):
