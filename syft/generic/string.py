@@ -9,6 +9,7 @@ from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook import hook_args
 from syft_proto.generic.string_pb2 import String as StringPB
 
+
 class String(AbstractObject):
     """
        This is a class that wraps the Python built-in `str` class. In addition to
@@ -341,6 +342,7 @@ class String(AbstractObject):
     @staticmethod
     def get_protobuf_schema():
         return StringPB
+
 
 ### Register the String object with hook_args.py ###
 hook_args.default_register_tensor(String)
