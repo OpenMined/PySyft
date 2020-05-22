@@ -7,8 +7,7 @@ from syft.workers.base import BaseWorker
 from syft.generic.object import AbstractObject
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook import hook_args
-import abc
-
+from syft_proto.generic.string_pb2 import String as StringPB
 
 class String(AbstractObject):
     """
@@ -324,6 +323,24 @@ class String(AbstractObject):
 
         return String(object=child, id=id, owner=worker, tags=tags, description=description)
 
+    @staticmethod
+    def bufferize(worker: "AbstractWorker", str_object) -> StringPB:
+        proto_string = StringPB()
+        proto_string.child = str_object.child
+        for tag in str_object.tags:
+            proto_string.tags.append(tag)
+        if str_object.description:
+            proto_string.description = str_object.description
+
+        return proto_string
+
+    @staticmethod
+    def unbufferize(worker, obj: StringPB):
+        return String(object=obj.child, tags=obj.tags, description=obj.description)
+
+    @staticmethod
+    def get_protobuf_schema():
+        return StringPB
 
 ### Register the String object with hook_args.py ###
 hook_args.default_register_tensor(String)
