@@ -12,6 +12,7 @@ import warnings
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
+from syft.execution.role_assignments import RoleAssignments
 from syft.execution.state import State
 
 from syft.generic.frameworks import framework_packages
@@ -109,6 +110,7 @@ class Protocol(AbstractObject):
         self.name = name or self.__class__.__name__
 
         self.roles = roles
+        self.role_assignments = RoleAssignments(roles.keys())
 
         self.is_building = False
         self.is_built = is_built
@@ -206,6 +208,17 @@ class Protocol(AbstractObject):
         """
         # TODO: can we reuse result_ids?
         return self.__call__(*args_)
+
+    def assign(self, role_id, worker):
+        """ Assign a worker to the specified role.
+        """
+        self.role_assignments.assign(role_id, worker)
+
+    def assign_roles(self, worker_dict):
+        """ Assign worker values to correspondent key role.
+        """
+        for role_id, worker in worker_dict.items():
+            self.role_assignments.assign(role_id, worker)
 
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
