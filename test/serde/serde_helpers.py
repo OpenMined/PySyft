@@ -1019,6 +1019,36 @@ def make_protocol(**kwargs):
     ]
 
 
+# Protocol
+def make_role_assignments(**kwargs):
+    alice = kwargs["workers"]["alice"]
+    bob = kwargs["workers"]["bob"]
+
+    role_assignments = syft.execution.role_assignments.RoleAssignments(
+        {"role1": alice, "role2": bob}
+    )
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.role_assignments.RoleAssignments
+        assert detailed.assignments == original.assignments
+        return True
+
+    return [
+        {
+            "value": role_assignments,
+            "simplified": (
+                CODE[syft.execution.role_assignments.RoleAssignments],
+                (
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], role_assignments.assignments
+                    ),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.generic.pointers.pointer_tensor.PointerTensor
 def make_pointertensor(**kwargs):
     alice = kwargs["workers"]["alice"]

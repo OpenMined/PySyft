@@ -1,7 +1,13 @@
+from typing import Dict
+from typing import List
+
+import syft as sy
+
+from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 
-class RoleAssignments:
+class RoleAssignments(SyftSerializable):
     """ This object is basically a map from role ids to workers.
 
     It is used in Protocol execution.
@@ -10,13 +16,20 @@ class RoleAssignments:
     which other parties are participating and communicate with them if needed.
     """
 
-    def __init__(self, role_ids):
+    def __init__(self, role_ids: list = [], assignments: dict = {}):
         """
         Args:
             role_ids: an iterable containing values that indentify the roles of
                 the Protocol to which the RoleAssignments is associated.
         """
-        self.assignments = {role_id: [] for role_id in role_ids}
+        if assignments:
+            self.assignments = assignments
+        elif role_ids:
+            self.assignments = {role_id: [] for role_id in role_ids}
+        else:
+            raise ValueError(
+                "You need to provide role_ids or assignments in RoleAssignments' constructor"
+            )
 
     def assign(self, role_id, worker):
         """ Assign a specific worker to the specified role.
@@ -51,10 +64,11 @@ class RoleAssignments:
     def simplify(worker: AbstractWorker, assignments: "RoleAssignments") -> tuple:
         """ Simplify a RoleAssignments object.
         """
-        pass
+        return (sy.serde.msgpack.serde._simplify(worker, assignments.assignments),)
 
     @staticmethod
     def detail(worker: AbstractWorker, simplified_assignments: tuple) -> "RoleAssignments":
         """ Detail a simplified RoleAssignments.
         """
-        pass
+        (assignments,) = simplified_assignments
+        return RoleAssignments(assignments=sy.serde.msgpack.serde._detail(worker, assignments))
