@@ -740,6 +740,7 @@ class Plan(AbstractObject):
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)
 Plan.register_build_translator(PlanTranslatorTfjs)
+
 # Auto-register Plan build-time frameworks
 for f_name, f_package in framework_packages.items():
     Plan.register_framework(f_name, f_package)

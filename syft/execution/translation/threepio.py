@@ -34,7 +34,7 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
         plan = self.plan.copy()
         # Check to see if plan has been translated to this framework yet
         if plan.roles.get(to_framework, None) is not None:
-            plan.default_frameourcork = to_framework
+            plan.default_framework = to_framework
             return plan
 
         new_actions = []
