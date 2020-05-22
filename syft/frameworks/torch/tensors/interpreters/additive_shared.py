@@ -8,6 +8,9 @@ from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.frameworks.torch.tensors.decorators.crypto_provider_required import (
+    crypto_provider_required,
+)
 from syft.generic.utils import memorize
 
 from syft.generic.tensor import AbstractTensor
@@ -517,6 +520,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def __rsub__(self, other):
         return (self - other) * -1
 
+    @crypto_provider_required("multiplication")
     def _private_mul(self, other, equation: str):
         """Abstractly Multiplies two tensors
 
@@ -533,11 +537,6 @@ class AdditiveSharingTensor(AbstractTensor):
         assert isinstance(other, AdditiveSharingTensor)
 
         assert len(self.child) == len(other.child)
-
-        if self.crypto_provider is None:
-            raise CryptoProviderNotFoundError(
-                "For multiplication or comparison, a crypto_provider must be passed."
-            )
 
         shares = spdz.spdz_mul(cmd, self, other, self.crypto_provider, self.field, self.dtype)
 
@@ -960,6 +959,7 @@ class AdditiveSharingTensor(AbstractTensor):
         return fss.le(self, other)
 
     @crypto_protocol("snn")
+    @crypto_provider_required("comparison")
     def eq(self, other):
         diff = self - other
         diff2 = diff * diff
