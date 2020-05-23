@@ -1039,8 +1039,6 @@ class TorchTensor(AbstractTensor):
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
             **kwargs:
                 With Respect to MPC accepts:
                     None
