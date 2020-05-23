@@ -2,6 +2,7 @@ import threading
 import websocket
 import json
 from syft.codes import NODE_EVENTS, GRID_EVENTS, MSG_FIELD
+from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.grid.nodes_manager import WebRTCManager
 from syft.grid.peer_events import (
     _monitor,
@@ -146,7 +147,13 @@ class Network(threading.Thread):
             Args:
                 dataset: Dataset to be hosted.
         """
-        return dataset.send(self._worker)
+        allowed_users = None
+
+        # By default the peer should be allowed to access its own private tensors.
+        if dataset.is_wrapper and type(dataset.child) == PrivateTensor:
+            dataset.child.register_credentials([self._worker.id])
+
+        return dataset.send(self._worker, user=self._worker.id)
 
     def host_model(self, model):
         """ Host model using the virtual worker defined previously. """

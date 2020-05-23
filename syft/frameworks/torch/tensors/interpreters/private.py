@@ -57,16 +57,16 @@ class PrivateTensor(AbstractTensor):
         """
         return user in self.allowed_users
 
-    def register_credentials(self, users: Tuple[str]) -> "PrivateTensor":
+    def register_credentials(self, users: List[str]) -> "PrivateTensor":
         """ Register a new user credential(s) into the list of allowed users to get this tensor.
 
             Args:
-                users (tuple): Credential(s) to be registered.
+                users (list): Credential(s) to be registered.
         """
         if not hasattr(self, "allowed_users"):
             self.allowed_users = tuple()
 
-        self.allowed_users = self.allowed_users + users
+        self.allowed_users = self.allowed_users + tuple(users)
 
         return self
 
