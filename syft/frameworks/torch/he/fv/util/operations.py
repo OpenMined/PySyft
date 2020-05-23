@@ -1,3 +1,6 @@
+import numpy as np
+from numpy.polynomial import polynomial as poly
+
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 
 
@@ -59,21 +62,12 @@ def invert_mod(value, modulus):
 
 
 def poly_add(op1, op2, modulus):
-    coeff_count = len(op1)  # assumption coefficient count is equal in op1, op2
-
-    result = [0] * coeff_count
-    for i in range(coeff_count):
-        result[i] = (op1[i] + op2[i]) % modulus
-    return result
+    return np.mod(np.polyadd(op1, op2), modulus).tolist()
 
 
 def poly_mul(op1, op2, modulus):
-    coeff_count = len(op1)  # assumption coefficient count is equal in op1, op2
-
-    result = [0] * coeff_count
-    for i in range(coeff_count):
-        result[i] = (op1[i] * op2[i]) % modulus
-    return result
+    poly_mod = len(op1)
+    return np.int64(np.round(poly.polydiv(poly.polymul(op1, op2) % modulus, poly_mod)[1] % modulus))
 
 
 def poly_negate(op, modulus):

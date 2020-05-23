@@ -112,7 +112,7 @@ def encrypt_asymmetric(context, public_key):
     param = context.param
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
-    encrypted_size = 2
+    encrypted_size = len(public_key)
 
     # Generate u <-- R_3
     u = sample_poly_ternary(param)
@@ -129,10 +129,9 @@ def encrypt_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         for i in range(coeff_mod_size):
             result[j][i] = poly_add(
-                poly_mul(u[i], public_key[j][i], coeff_modulus[i]), e[i], coeff_modulus[i]
+                poly_mul(public_key[j][i], u[i], coeff_modulus[i]), e[i], coeff_modulus[i]
             )
-
-    return CipherText(result)  # result = public_key[j] * u + e[j]
+    return CipherText(result)
 
 
 def encrypt_symmetric(context, secret_key):
