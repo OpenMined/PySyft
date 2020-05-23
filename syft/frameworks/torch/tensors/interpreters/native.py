@@ -1033,7 +1033,7 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation"
             )
 
-    def decrypt(self, protocol="mpc", **kwargs):
+    def decrypt(self, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
@@ -1056,12 +1056,16 @@ class TorchTensor(AbstractTensor):
 
         """
 
-        if protocol.lower() == "mpc":
+        protocol = kwargs.get("protocol", None)
+        if protocol:
+            warnings.warn("protocol should no longer be used in decrypt")
+
+        if isinstance(self.child, syft.FixedPrecisionTensor):
             x_encrypted = self.copy()
             x_decrypted = x_encrypted.get().float_prec()
             return x_decrypted
 
-        elif protocol.lower() == "paillier":
+        elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)
