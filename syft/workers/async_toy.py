@@ -21,7 +21,7 @@ class ToyMessage:
         return ToyAction(dependencies=[], command=self.command, value=self.value)
 
 
-class AbstractToyWorker:
+class ToyWorker:
     counter = 0
 
     def __init__(self, name: str, actions: list = [], all_workers: dict = {}):
@@ -34,7 +34,7 @@ class AbstractToyWorker:
 
     @property
     def _name_counter(self):
-        return str(self.name) + str(AbstractToyWorker.counter)
+        return str(self.name) + str(ToyWorker.counter)
 
     def receive_msg(self, message: ToyMessage):
         self._execute_action(message.to_action())
@@ -75,7 +75,7 @@ class AbstractToyWorker:
             raise ValueError("action.command value not supported.")
 
         # Increment the global counter of actions executed
-        AbstractToyWorker.counter += 1
+        ToyWorker.counter += 1
 
         return None
 
@@ -99,11 +99,11 @@ class AbstractToyWorker:
             worker.known_workers = workers
 
 
-class SynchronousWorker(AbstractToyWorker):
+class SynchronousWorker(ToyWorker):
     pass
 
 
-class AsynchronousWorker(AbstractToyWorker):
+class AsynchronousWorker(ToyWorker):
     async def receive_msg(self, message: ToyMessage):
         await self._execute_action(message.to_action())
         # Try to execute anything that is now unlocked by received values
