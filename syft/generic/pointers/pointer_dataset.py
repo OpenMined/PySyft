@@ -146,6 +146,15 @@ class PointerDataset(ObjectPointer):
 
     @staticmethod
     def bufferize(worker, pointer_obj):
+        """
+        This method serializes a PointerDataset into a PointerDatasetPB.
+
+        Args:
+            pointer_obj (PointerDataset): input PointerDataset to be serialized.
+
+        Returns:
+            protobuf_script (PointerDatasetPB): serialized PointerDataset.
+        """
         proto_pointer = PointerDatasetPB()
         sy.serde.protobuf.proto.set_protobuf_id(proto_pointer.object_id, pointer_obj.id)
         sy.serde.protobuf.proto.set_protobuf_id(proto_pointer.location_id, pointer_obj.location.id)
@@ -162,6 +171,15 @@ class PointerDataset(ObjectPointer):
 
     @staticmethod
     def unbufferize(worker, proto_pointer_obj: PointerDatasetPB):
+        """
+        This method deserializes PointerDatasetPB into a PointerDataset.
+
+        Args:
+            protobuf_script (PointerDatasetPB): input serialized PointerDatasetPB.
+
+        Returns:
+            loaded_module (PointerDataset): deserialized PointerDatasetPB.
+        """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_pointer_obj.object_id)
         id_at_location = sy.serde.protobuf.proto.get_protobuf_id(
             proto_pointer_obj.object_id_at_location
@@ -191,4 +209,10 @@ class PointerDataset(ObjectPointer):
 
     @staticmethod
     def get_protobuf_schema():
+        """
+        This method returns the protobuf schema used for PointerDataset.
+
+        Returns:
+           Protobuf schema for PointerDataset.
+       """
         return PointerDatasetPB
