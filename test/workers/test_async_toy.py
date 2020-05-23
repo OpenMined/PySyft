@@ -2,8 +2,8 @@ import pytest
 import asyncio
 
 from syft.workers.async_toy import AbstractToyWorker
-from syft.workers.async_toy import SingleThreadedSynchronousWorker
-from syft.workers.async_toy import SingleThreadedAsynchronousWorker
+from syft.workers.async_toy import SynchronousWorker
+from syft.workers.async_toy import AsynchronousWorker
 from syft.workers.async_toy import ToyAction
 from syft.workers.async_toy import ToyMessage
 
@@ -90,8 +90,8 @@ def test_action_counter():
 def test_single_threaded_synchronous_comms():
     AbstractToyWorker.reset_counter()
 
-    alice = SingleThreadedSynchronousWorker(name="alice")
-    bob = SingleThreadedSynchronousWorker(name="bob")
+    alice = SynchronousWorker(name="alice")
+    bob = SynchronousWorker(name="bob")
     AbstractToyWorker.introduce(alice, bob)
 
     # Create a potential deadlock
@@ -117,8 +117,8 @@ def test_single_threaded_synchronous_comms():
 async def test_single_threaded_async_comms():
     AbstractToyWorker.reset_counter()
 
-    alice = SingleThreadedAsynchronousWorker(name="alice")
-    bob = SingleThreadedAsynchronousWorker(name="bob")
+    alice = AsynchronousWorker(name="alice")
+    bob = AsynchronousWorker(name="bob")
     AbstractToyWorker.introduce(alice, bob)
 
     # Create a potential deadlock
@@ -144,8 +144,8 @@ async def test_single_threaded_async_comms():
 async def test_single_threaded_async_comms_concurrent():
     AbstractToyWorker.reset_counter()
 
-    alice = SingleThreadedAsynchronousWorker(name="alice")
-    bob = SingleThreadedAsynchronousWorker(name="bob")
+    alice = AsynchronousWorker(name="alice")
+    bob = AsynchronousWorker(name="bob")
     AbstractToyWorker.introduce(alice, bob)
 
     # Create a potential deadlock

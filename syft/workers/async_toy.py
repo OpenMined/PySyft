@@ -99,11 +99,11 @@ class AbstractToyWorker:
             worker.known_workers = workers
 
 
-class SingleThreadedSynchronousWorker(AbstractToyWorker):
+class SynchronousWorker(AbstractToyWorker):
     pass
 
 
-class SingleThreadedAsynchronousWorker(AbstractToyWorker):
+class AsynchronousWorker(AbstractToyWorker):
     async def receive_msg(self, message: ToyMessage):
         await self._execute_action(message.to_action())
         # Try to execute anything that is now unlocked by received values
