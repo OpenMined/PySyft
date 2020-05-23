@@ -42,6 +42,7 @@ samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
 samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
+samples[syft.generic.string.String] = make_string
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
