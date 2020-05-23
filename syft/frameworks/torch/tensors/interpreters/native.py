@@ -1047,7 +1047,7 @@ class TorchTensor(AbstractTensor):
                     private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
         Returns:
-            An decrypted version of the Tensor following the protocol specified
+            An decrypted version of the Tensor following the protocol guessed from its type
 
         Raises:
             NotImplementedError: If protocols other than the ones mentioned above are queried
