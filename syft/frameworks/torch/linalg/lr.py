@@ -461,7 +461,7 @@ class DASH:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = {}
+        workers = set()
         for ptr in ptrs:
             workers.add(ptr.child.location)
         return tuple(workers)
