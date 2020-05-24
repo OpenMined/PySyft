@@ -201,7 +201,7 @@ class Plan(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        # typecheck
+        # Check the types
         self.input_types = NestedTypeWrapper(args)
 
         # Run once to build the plan
@@ -421,7 +421,7 @@ class Plan(AbstractObject):
             if isinstance(arg, list):
                 return [traverse_nested_types(obj, leaf_function) for obj in arg]
             elif isinstance(arg, tuple):
-                return tuple([traverse_nested_types(obj, leaf_function) for obj in arg])
+                return tuple(traverse_nested_types(obj, leaf_function) for obj in arg)
             elif isinstance(arg, dict):
                 return {k: traverse_nested_types(v, leaf_function) for k, v in arg.items()}
             else:
