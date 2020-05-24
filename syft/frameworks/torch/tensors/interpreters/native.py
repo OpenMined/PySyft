@@ -802,7 +802,7 @@ class TorchTensor(AbstractTensor):
 
         if self.is_wrapper:
             self.child = (
-                syft.PrivateTensor(*args, **kwargs)
+                syft.PrivateTensor(tags=self.tags, *args, **kwargs)
                 .on(self.child, wrap=False)
                 .register_credentials(tuple(allowed_users))
             )
@@ -812,7 +812,7 @@ class TorchTensor(AbstractTensor):
                 return self
 
         private_tensor = (
-            syft.PrivateTensor(*args, **kwargs)
+            syft.PrivateTensor(tags=self.tags, *args, **kwargs)
             .on(self, wrap=False)
             .register_credentials(tuple(allowed_users))
         )

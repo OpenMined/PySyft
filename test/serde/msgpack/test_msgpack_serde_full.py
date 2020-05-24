@@ -1,16 +1,5 @@
-from collections import OrderedDict
-import pytest
-import numpy
-import torch
-from functools import partial
-import traceback
-import io
-
-import syft
-from syft.serde import msgpack
 from test.serde.serde_helpers import *
 
-# Dictionary containing test samples functions
 samples = OrderedDict()
 
 # Native

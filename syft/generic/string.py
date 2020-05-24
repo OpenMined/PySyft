@@ -7,7 +7,7 @@ from syft.workers.base import BaseWorker
 from syft.generic.object import AbstractObject
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook import hook_args
-import abc
+from syft_proto.generic.string_pb2 import String as StringPB
 
 
 class String(AbstractObject):
@@ -323,6 +323,49 @@ class String(AbstractObject):
         child = sy.serde.msgpack.serde._detail(worker, simple_child)
 
         return String(object=child, id=id, owner=worker, tags=tags, description=description)
+
+    @staticmethod
+    def bufferize(worker, str_object):
+        """
+        This method serializes a String into a StringPB.
+
+            Args:
+                str_object (String): input String to be serialized.
+
+            Returns:
+                proto_string (StringPB): serialized String.
+        """
+        proto_string = StringPB()
+        proto_string.child = str_object.child
+        for tag in str_object.tags:
+            proto_string.tags.append(tag)
+        if str_object.description:
+            proto_string.description = str_object.description
+
+        return proto_string
+
+    @staticmethod
+    def unbufferize(worker, obj):
+        """
+        This method deserializes StringPB into a String.
+
+        Args:
+            obj (StringPB): input serialized StringPB.
+
+        Returns:
+            String: deserialized ScriptFunctionPB.
+        """
+        return String(object=obj.child, tags=obj.tags, description=obj.description)
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+        This method returns the protobuf schema used for String.
+
+        Returns:
+           Protobuf schema for String.
+       """
+        return StringPB
 
 
 ### Register the String object with hook_args.py ###
