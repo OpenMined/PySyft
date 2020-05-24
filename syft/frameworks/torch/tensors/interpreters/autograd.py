@@ -51,6 +51,7 @@ class AutogradTensor(AbstractTensor):
 
     @property
     def data(self):
+        # TODO why is that? Normally .data is detached from autograd
         return self
 
     @data.setter
@@ -186,9 +187,30 @@ class AutogradTensor(AbstractTensor):
         module.neg = neg
 
         def log(self):
+            """Overriding torch's log method.
+            """
             return self.log()
 
         module.log = log
+
+        def exp(self):
+            """Overriding torch's exp function.
+            """
+            return self.exp()
+
+        module.exp = exp
+
+        def sum(self, **kwargs):
+            """Overriding torch's sum function.
+            """
+            return self.sum(**kwargs)
+
+        module.sum = sum
+
+        def mean(self, **kwargs):
+            return self.mean(**kwargs)
+
+        module.mean = mean
 
         def matmul(self, other):
             return self.matmul(other)

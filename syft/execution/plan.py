@@ -134,6 +134,7 @@ class Plan(AbstractObject):
         self.is_built = is_built
         self.torchscript = None
         self.input_types = input_types
+        self.validate_input_types = True
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
@@ -210,13 +211,16 @@ class Plan(AbstractObject):
             args = build_nested_arg(
                 args,
                 lambda x: AutogradTensor().on(x, wrap=False)
-                if isinstance(x, FrameworkTensor) and x.requires_grad
-                else x,
+                if isinstance(x, FrameworkTensor)
+                else PlaceHolder.create_from(x, role=self.role, tracing=True),
             )
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
             args_placeholders = build_nested_arg(
-                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
+                args,
+                lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True)
+                if not isinstance(x, PlaceHolder)
+                else x,
             )
         else:
             # Add Placeholder on top of each arg
@@ -238,10 +242,6 @@ class Plan(AbstractObject):
 
         results = self.forward(*args, **framework_kwargs)
 
-        # Disable tracing
-        self.toggle_tracing(False)
-        self.is_building = False
-
         # Register inputs in role
         self.role.register_inputs(args_placeholders)
 
@@ -252,6 +252,9 @@ class Plan(AbstractObject):
             results_placeholders = PlaceHolder.extract(results)
         self.role.register_outputs(results_placeholders)
 
+        # Disable tracing
+        self.toggle_tracing(False)
+        self.is_building = False
         self.is_built = True
 
         # Build registered translations
@@ -341,7 +344,8 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            self.input_types.input_check(self, args)
+            if self.validate_input_types:
+                self.input_types.input_check(self, args)
             self.role.instantiate_inputs(args)
             result = self.role.execute()
             if len(result) == 1:
@@ -407,6 +411,36 @@ class Plan(AbstractObject):
             raise RuntimeError("A plan needs to be built before input shapes can be known.")
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
+
+    def create_dummy_args(self):
+        """Returns dummy arguments matching built Plan arguments' types"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        def traverse_nested_types(arg, leaf_function):
+            if isinstance(arg, list):
+                return [traverse_nested_types(obj, leaf_function) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple([traverse_nested_types(obj, leaf_function) for obj in arg])
+            elif isinstance(arg, dict):
+                return {k: traverse_nested_types(v, leaf_function) for k, v in arg.items()}
+            else:
+                return leaf_function(arg)
+
+        input_placeholders = (ph for ph in self.role.input_placeholders())
+
+        def create_dummy(input_type, input_placeholder):
+            if issubclass(input_type, FrameworkTensor):
+                return input_type(
+                    PlaceHolder.create_placeholders([input_placeholder.expected_shape])[0]
+                )
+            else:
+                return input_type()
+
+        return traverse_nested_types(
+            self.input_types.nested_input_types,
+            lambda input_type: create_dummy(input_type, input_placeholders.__next__()),
+        )
 
     @staticmethod
     def register_build_translator(translator: "AbstractPlanTranslator"):
@@ -693,7 +727,7 @@ class Plan(AbstractObject):
         input_names = {id: f"arg_{i + 1}" for i, id in enumerate(self.role.input_placeholder_ids)}
         output_names = {id: f"out_{i + 1}" for i, id in enumerate(self.role.output_placeholder_ids)}
         state_names = {
-            id: f"state_{i + 1}" for i, id in enumerate(self.role.state.state_placeholders)
+            ph.id.value: f"state_{i + 1}" for i, ph in enumerate(self.role.state.state_placeholders)
         }
         var_names = {**input_names, **output_names, **state_names}
 

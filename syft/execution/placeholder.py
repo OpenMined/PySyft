@@ -316,7 +316,7 @@ class PlaceHolder(AbstractTensor):
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [
-            syft.framework.hook.create_zeros(shape, requires_grad=True) for shape in mapped_shapes
+            syft.framework.hook.create_zeros(shape, requires_grad=False) for shape in mapped_shapes
         ]
 
     @staticmethod
