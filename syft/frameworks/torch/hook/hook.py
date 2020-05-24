@@ -16,7 +16,6 @@ from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.frameworks.torch.tensors.interpreters.hook import HookedTensor
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
-from syft.frameworks.torch.tensors.interpreters.fv import FVTensor
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -165,10 +164,6 @@ class TorchHook(FrameworkHook):
         # Add all hooked tensor methods to Paillier tensor but change behaviour to just forward
         # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
         self._hook_syft_tensor_methods(PaillierTensor)
-
-        # Add all hooked tensor methods to FV tensor but change behaviour to just forward
-        # the cmd to the next child (behaviour can be changed in the SyftTensor class file)
-        self._hook_syft_tensor_methods(FVTensor)
 
         # Add all hooked tensor methods to FixedPrecisionTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the
