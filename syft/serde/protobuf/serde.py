@@ -21,7 +21,8 @@ from syft.serde.syft_serializable import (
 
 class MetaProtobufGlobalState(type):
     """
-    Metaclass that wraps all properties in ProtobufGlobalState to be updated when the global state is marked as stale.
+    Metaclass that wraps all properties in ProtobufGlobalState to be updated
+    when the global state is marked as stale.
     """
 
     @staticmethod
@@ -33,7 +34,8 @@ class MetaProtobufGlobalState(type):
             wrapped_func (Property): property of the generated type.
 
         Returns:
-             Property: new property that is wrapped to get updated when the global state is marked as stale.
+             Property: new property that is wrapped to get updated when the global state
+             is marked as stale.
         """
 
         @property
@@ -59,31 +61,36 @@ class MetaProtobufGlobalState(type):
 @dataclass
 class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
     """
-        Class to generate a global state of the protobufers in a lazy way. All attributes should be used by their
-        properties, not by their hidden value.
+        Class to generate a global state of the protobufers in a lazy way. All attributes
+        should be used by their properties, not by their hidden value.
 
-        The global state can be marked as stale by setting stale_state to False, forcing the next usage of the
-        to be updated, enabling dynamic types in serde.
+        The global state can be marked as stale by setting stale_state to False, forcing
+        the next usage of the to be updated, enabling dynamic types in serde.
 
-        All types should be enrolled in proto.json in syft-serde (soon to be deprecated, when msgpack is removed).
+        All types should be enrolled in proto.json in syft-serde (soon to be deprecated,
+        when msgpack is removed).
 
         Attributes:
 
-            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own force_bufferize and force_unbufferize functions,
-            it should be stored in this list. This will become deprecated soon.
+            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own
+            force_bufferize and force_unbufferize functions, it should be stored in this list.
+            This will become deprecated soon.
 
             _bufferizers (OrderedDict): The mapping from a type to its own bufferizer.
 
-            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced bufferizer.
+            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced
+            bufferizer.
 
             _unbufferizers (OrderedDict): The mapping from a type to its own unbufferizer.
 
-            _no_bufferizers_found (set): In this set we store the primitives that we cannot bufferize anymore.
+            _no_bufferizers_found (set): In this set we store the primitives that we cannot
+            bufferize anymore.
 
-            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot force bufferize anymore.
+            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot
+            force bufferize anymore.
 
-            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited bufferizer that a type can use. This might
-            become deprecated
+            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited
+            bufferizer that a type can use. This might become deprecated
 
             stale_state (Bool): Marks the global state to be stale or not.
     """
@@ -358,7 +365,7 @@ def serialize(
     protobuf_obj = _bufferize(worker, obj)
 
     obj_type = type(obj)
-    if obj_type == type(None):
+    if isinstance(obj_type, None):
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
@@ -466,7 +473,7 @@ def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-    return tuple([unbufferize_arg(worker, arg) for arg in protobuf_args])
+    return tuple((unbufferize_arg(worker, arg) for arg in protobuf_args))
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:

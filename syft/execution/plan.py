@@ -10,9 +10,7 @@ import warnings
 
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
-from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
-from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
 from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
@@ -40,7 +38,7 @@ class func2plan(object):
 
     def __init__(self, args_shape=None, state=None, trace_autograd=False):
         self.args_shape = args_shape
-        self.state_tensors = state or tuple()
+        self.state_tensors = state or ()
         # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
         # will be true. And to know if it was indeed a function, we just need to see if a
@@ -139,7 +137,7 @@ class Plan(AbstractObject):
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
-        self.pointers = dict()
+        self.pointers = {}
 
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
@@ -159,7 +157,10 @@ class Plan(AbstractObject):
 
     def parameters(self):
         """
-        This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
+        This is defined to match the torch api of nn.Module where .parameters()
+
+        Returns:
+            The model tensors / parameters
         """
         if self.state is not None:
             return self.state.tensors()
@@ -189,7 +190,7 @@ class Plan(AbstractObject):
             if isinstance(arg, list):
                 return [build_nested_arg(obj, leaf_function) for obj in arg]
             elif isinstance(arg, tuple):
-                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
+                return tuple(build_nested_arg(obj, leaf_function) for obj in arg)
             elif isinstance(arg, dict):
                 return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
             else:
@@ -314,7 +315,8 @@ class Plan(AbstractObject):
         if isinstance(value, FrameworkTensor):
             return self.role.placeholders[value.id]
         elif isinstance(value, FrameworkLayerModule):
-            # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
+            # We need to deepcopy here otherwise the real layer is modified when the
+            # Plan is being built
             copied_layer = copy.deepcopy(value)
             for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
                 (copied_name, _) = copied_param
@@ -468,7 +470,8 @@ class Plan(AbstractObject):
 
         Args:
             owner: the owner of the pointer
-            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+            garbage_collect_data: if true, when the pointer is deleted, the remote target
+                        is garbaged collected
             location: the location of the pointer
             id_at_location: the remote id at location
             tags: the tags inherited from the Plan

@@ -1,9 +1,5 @@
-import torch
-import syft
 from .gradients_core import GradFunc
 from .gradients_core import apply_dim_transformations
-
-from syft.workers.abstract import AbstractWorker
 
 
 class AddBackward(GradFunc):
@@ -14,7 +10,7 @@ class AddBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self = grad.copy()
-        grad_other = grad.copy() if type(self.self_) == type(self.other) else None
+        grad_other = grad.copy() if isinstance(self.self_, type(self.other)) else None
 
         if self.self_.shape != self.other.shape:
             grad_self, grad_other = apply_dim_transformations(
@@ -32,7 +28,7 @@ class SubBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self = grad.copy()
-        grad_other = grad * -1 if type(self.self_) == type(self.other) else None
+        grad_other = grad * -1 if isinstance(self.self_, type(self.other)) else None
 
         if self.self_.shape != self.other.shape:
             grad_self, grad_other = apply_dim_transformations(
@@ -79,7 +75,7 @@ class MulBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self_ = grad * self.other
-        grad_other = grad * self.self_ if type(self.self_) == type(self.other) else None
+        grad_other = grad * self.self_ if isinstance(self.self_, type(self.other)) else None
         return (grad_self_, grad_other)
 
 
@@ -124,7 +120,7 @@ class MatmulBackward(GradFunc):
 
     def gradient(self, grad):
         grad_self_ = grad @ self.other.t()
-        grad_other = self.self_.t() @ grad if type(self.self_) == type(self.other) else None
+        grad_other = self.self_.t() @ grad if isinstance(self.self_, type(self.other)) else None
         return (grad_self_, grad_other)
 
 
@@ -173,7 +169,8 @@ class SinhBackward(GradFunc):
 #         self.self_ = self_
 #
 #     def gradient(self, grad):
-#         grad_self_ = grad / (2 * self.result) TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
+#         TODO: Broken as of Garbage Collection for `AutoGradTensor` (#3387)
+#         grad_self_ = grad / (2 * self.result)
 #         return (grad_self_,)
 
 

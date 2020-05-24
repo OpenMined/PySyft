@@ -1,7 +1,6 @@
 import glob
 import os
 import sys
-import time
 import urllib.request
 from pathlib import Path
 from zipfile import ZipFile
@@ -9,24 +8,19 @@ import codecs
 
 import pytest
 import nbformat
-import numpy as np
-import pandas as pd
 import papermill as pm
-import torch
 
 import syft as sy
-from syft import TorchHook
-from syft.workers.websocket_server import WebsocketServerWorker
 
 # lets start by finding all notebooks currently available in examples and subfolders
-all_notebooks = [n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True)]
-basic_notebooks = [n for n in glob.glob("examples/tutorials/*.ipynb")]
-advanced_notebooks = [
+all_notebooks = (n for n in glob.glob("examples/tutorials/**/*.ipynb", recursive=True))
+basic_notebooks = (n for n in glob.glob("examples/tutorials/*.ipynb"))
+advanced_notebooks = (
     n for n in glob.glob("examples/tutorials/advanced/**/*.ipynb", recursive=True)
-]
-translated_notebooks = [
+)
+translated_notebooks = (
     n for n in glob.glob("examples/tutorials/translations/**/*.ipynb", recursive=True)
-]
+)
 # Exclude all translated basic tutorials that are also
 # excluded in their original version.
 excluded_translated_notebooks = [
@@ -70,11 +64,13 @@ exclusion_list_folders = [
     "examples/tutorials/advanced/monitor_network_traffic",
     "examples/tutorials/advanced/privacy_attacks",
     "examples/tutorials/advanced/websockets_mnist_parallel",
-    # To run these notebooks, we need to run grid nodes / grid gateway previously (they aren't  in this repository)
+    # To run these notebooks, we need to run grid nodes / grid gateway
+    # previously (they aren't  in this repository)
     "examples/tutorials/grid",
     "examples/tutorials/grid/federated_learning/spam_prediction",
     "examples/tutorials/grid/federated_learning/mnist",
-    # This notebook is skipped because it fails in github actions and we do not know why for the moment
+    # This notebook is skipped because it fails in github actions and we
+    # do not know why for the moment
     "examples/tutorials/advanced/federated_sms_spam_prediction",
 ]
 

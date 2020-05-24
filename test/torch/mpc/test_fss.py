@@ -1,5 +1,4 @@
 import pytest
-import syft
 import torch as th
 
 from syft.frameworks.torch.mpc.fss import DPF, DIF, n

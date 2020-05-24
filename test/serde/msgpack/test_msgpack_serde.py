@@ -20,8 +20,6 @@ from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
 
-from syft.exceptions import CompressionNotFoundException
-
 
 def test_tuple_simplify(workers):
     """This tests our ability to simplify tuple types.
@@ -61,7 +59,7 @@ def test_set_simplify(workers):
     for sets so that the detailer knows how to interpret it."""
 
     me = workers["me"]
-    input = set(["hello", "world"])
+    input = {"hello", "world"}
     set_detail_code = msgpack.proto_type_info(set).code
     str_detail_code = msgpack.proto_type_info(str).code
     target = (set_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
@@ -567,14 +565,14 @@ def test_set(compress):
         compression._apply_compress_scheme = compression.apply_no_compression
 
     # Test with integers
-    _set = set([1, 2])
+    _set = {1, 2}
     set_serialized = syft.serde.serialize(_set)
 
     set_serialized_deserialized = syft.serde.deserialize(set_serialized)
     assert _set == set_serialized_deserialized
 
     # Test with strings
-    _set = set(["hello", "world"])
+    _set = {"hello", "world"}
     set_serialized = syft.serde.serialize(_set)
     set_serialized_deserialized = syft.serde.deserialize(set_serialized)
     assert _set == set_serialized_deserialized

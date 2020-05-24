@@ -12,14 +12,12 @@ from syft.grid.peer_events import (
 )
 
 import syft as sy
-import torch as th
 import time
 
 
 class Network(threading.Thread):
     """ Grid Network class to operate in background processing grid requests
         and handling multiple peer connections with different nodes.
-
     """
 
     # Events called by the grid monitor to health checking and signaling webrtc connections.
@@ -44,7 +42,9 @@ class Network(threading.Thread):
         self.available = False
 
     def run(self):
-        """ Run the thread sending a request to join into the grid network and listening the grid network requests. """
+        """ Run the thread sending a request to join into the grid network and listening
+        the grid network requests.
+        """
 
         # Join
         self._join()
@@ -71,7 +71,9 @@ class Network(threading.Thread):
         return worker
 
     def _listen(self):
-        """ Listen the sockets waiting for grid network health checks and webrtc connection requests."""
+        """ Listen the sockets waiting for grid network health checks and webrtc
+        connection requests.
+        """
         while self.available:
             message = self._ws.recv()
             msg = json.loads(message)
@@ -109,7 +111,8 @@ class Network(threading.Thread):
         # Should be removed after solving #3572
         if len(self._connection_handler) >= 1:
             print(
-                "Due to some jupyter notebook async constraints, we do not recommend handling multiple connection peers at the same time."
+                "Due to some jupyter notebook async constraints, we do not recommend handling "
+                "multiple connection peers at the same time."
             )
             print("This issue is in WIP status and may be solved soon.")
             print(
@@ -172,11 +175,11 @@ class Network(threading.Thread):
 
     def __repr__(self):
         """Default String representation"""
-        return "< Peer ID : {}, hosted datasets: {}, hosted_models: {}, connected_nodes: {}>".format(
-            self.id,
-            list(self._worker.object_store._tag_to_object_ids.keys()),
-            list(self._worker.models.keys()),
-            list(self._connection_handler.nodes),
+        repr_str = (
+            f"< Peer ID: {self.id}, "
+            f"hosted datasets: {list(self._worker.object_store._tag_to_object_ids.keys())}, "
+            f"hosted_models: {list(self._worker.models.keys())}, "
+            f"connected_nodes: {list(self._connection_handler.nodes)}"
         )
 
     @property

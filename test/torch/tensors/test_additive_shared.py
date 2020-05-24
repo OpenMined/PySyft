@@ -1,9 +1,6 @@
-import copy
 import pytest
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -519,8 +516,8 @@ def test_chunk(workers):
     expected0 = [torch.tensor([[1, 2, 3, 4]]), torch.tensor([[5, 6, 7, 8]])]
     expected1 = [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])]
 
-    assert all([(res0[i].get() == expected0[i]).all() for i in range(2)])
-    assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
+    assert all(((res0[i].get() == expected0[i]).all() for i in range(2)))
+    assert all(((res1[i].get() == expected1[i]).all() for i in range(2)))
 
 
 def test_roll(workers):
@@ -684,7 +681,7 @@ def test_eq(workers, protocol):
         me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
     y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
@@ -719,7 +716,7 @@ def test_comp(workers, protocol):
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
     y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
@@ -783,7 +780,7 @@ def test_max(workers, protocol):
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(*args, **kwargs)
@@ -818,7 +815,7 @@ def test_argmax(workers, protocol):
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(*args, **kwargs)

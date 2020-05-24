@@ -400,8 +400,9 @@ def produce_tensor_with_grad():
 
 
 def test_remote_gradient_clipping(workers):
-    """ Vanishing gradient test over
-        gradients of a remote tensor
+    """
+    Vanishing gradient test over
+    gradients of a remote tensor
     """
     alice = workers["alice"]
     local_tensor = produce_tensor_with_grad()
@@ -418,8 +419,9 @@ def test_remote_gradient_clipping(workers):
 
 
 def test_local_gradient_clipping():
-    """ Vanishing gradient test over
-        gradients of a local tensor
+    """
+    Vanishing gradient test over
+    gradients of a local tensor
     """
     local_tensor = produce_tensor_with_grad()
     # initially, local_tensor.grad is [4.5, 4.5, 4.5, 4.5]

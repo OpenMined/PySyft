@@ -1,9 +1,7 @@
 import asyncio
 import binascii
 import logging
-import socket
 import ssl
-import sys
 from typing import Union
 from typing import List
 
