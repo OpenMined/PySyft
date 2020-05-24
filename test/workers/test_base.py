@@ -134,6 +134,6 @@ def test_send_command_not_whitelisted(hook, workers):
 
 def test_is_framework_supported(hook):
     worker = sy.VirtualWorker(hook, id="worker")
-    assert worker.is_framework_supported("torch") == True
-    assert sy.VirtualWorker.is_framework_supported("torch") == True
-    assert worker.is_framework_supported("mock_framework") == False
+    assert worker.is_framework_supported("torch") is True
+    assert sy.VirtualWorker.is_framework_supported("torch") is True
+    assert worker.is_framework_supported("mock_framework") is False
