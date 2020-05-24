@@ -216,7 +216,9 @@ class Role(SyftSerializable):
 
         # We can only instantiate placeholders, filter them
         return_placeholders = []
-        Role.nested_object_traversal(return_values, lambda ph: return_placeholders.append(ph), PlaceHolder)
+        Role.nested_object_traversal(
+            return_values, lambda ph: return_placeholders.append(ph), PlaceHolder
+        )
 
         if _self is None:
             method = self._fetch_package_method(cmd)
