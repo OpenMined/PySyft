@@ -1058,7 +1058,7 @@ class TorchTensor(AbstractTensor):
         if protocol:
             warnings.warn("protocol should no longer be used in decrypt")
 
-        if isinstance(self.child, syft.FixedPrecisionTensor):
+        if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
             x_encrypted = self.copy()
             x_decrypted = x_encrypted.get().float_prec()
             return x_decrypted
