@@ -189,6 +189,11 @@ class BaseWorker(AbstractWorker):
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
+        # dict containing all the placeholders of the role assigned to self
+        # TODO should we order them by protocol id/execution id?
+        # ie {exec_id: {**placehohlders}, exec_2: {**other_phs}}
+        self._protocol_placeholders = {}
+
     def register_obj(self, obj):
         self.object_store.register_obj(self, obj)
 
@@ -1188,6 +1193,9 @@ class BaseWorker(AbstractWorker):
 
     def _log_msgs(self, value):
         self.log_msgs = value
+
+    def _add_protocol_placeholders(self, placeholders):
+        self._protocol_placeholders = {**self._protocol_placeholders, **placeholders}
 
     @property
     def serializer(self, workers=None) -> codes.TENSOR_SERIALIZATION:
