@@ -213,3 +213,14 @@ class ReluBackward(GradFunc):
         zero = self.self_ * 0
         gt_zero = self.self_ > zero
         return (gt_zero * grad,)
+
+
+class ViewBackward(GradFunc):
+    def __init__(self, self_, *args, **kwargs):
+        super().__init__(self, self_)
+        self.self_ = self_
+        self.old_view = self_.shape
+
+    def gradient(self, grad):
+        grad_self_ = grad.view(self.old_view)
+        return (grad_self_,)

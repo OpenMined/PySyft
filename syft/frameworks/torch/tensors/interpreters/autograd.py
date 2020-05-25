@@ -229,6 +229,11 @@ class AutogradTensor(AbstractTensor):
 
         module.div = div
 
+        def view(self, **kwargs):
+            """Overriding torch's view function.
+            """
+            return self.view(**kwargs)
+
         def addmm(bias, input_tensor, weight):
             if not isinstance(input_tensor, AutogradTensor):
                 input_tensor = AutogradTensor(requires_grad=False).on(input_tensor, wrap=False)
