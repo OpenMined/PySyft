@@ -1,5 +1,3 @@
-import torch as th
-
 from syft.frameworks.torch.he.fv.context import Context
 from syft.frameworks.torch.he.fv.util.rlwe import sample_poly_ternary
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_symmetric
@@ -9,7 +7,8 @@ from syft.frameworks.torch.he.fv.public_key import PublicKey
 
 class KeyGenerator:
     """A class used for generating matching secret key and public key.
-    Constructing a KeyGenerator requires only a Context class instance with valid encryption parameters."""
+    Constructing a KeyGenerator requires only a Context class instance with valid
+    encryption parameters."""
 
     def __init__(self, context):
         """Creates a KeyGenerator initialized with the specified context params.

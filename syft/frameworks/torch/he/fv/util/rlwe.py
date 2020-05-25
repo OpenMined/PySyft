@@ -4,7 +4,6 @@ from secrets import randbits
 from torch.distributions import Normal
 
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
-from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
@@ -12,13 +11,15 @@ from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVI
 
 
 def sample_poly_ternary(parms):
-    """Generate a ternary polynomial uniformally with elements [-1, 0, 1] where -1 is represented as (modulus - 1)
-    because -1 % modulus == modulus - 1.
+    """Generate a ternary polynomial uniformally with elements [-1, 0, 1]
+    where -1 is represented as (modulus - 1) because -1 % modulus == modulus - 1.
 
-    Used for generating secret key using coeff_modulus(list of prime nos) which represents as 'q' in the research paper.
+    Used for generating secret key using coeff_modulus(list of prime nos) which
+    represents as 'q' in the research paper.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
+        parms: A valid EncryptionParam class object required for extracting the
+        encryption parameters.
     """
     coeff_modulus = parms.coeff_modulus
     coeff_count = parms.poly_modulus_degree
@@ -43,11 +44,12 @@ def sample_poly_ternary(parms):
 
 
 def sample_poly_normal(param):
-    """Generate a polynomial from normal distribution where negative values are represented as
-    (modulus - value) a positive value.
+    """Generate a polynomial from normal distribution where negative values are
+    represented as (modulus - value) a positive value.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
+        parms: A valid EncryptionParam class object required for extracting the
+        encryption parameters.
     """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
@@ -77,7 +79,8 @@ def sample_poly_uniform(param):
     """Generate a polynomial from uniform distribution.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the encryption parameters.
+        parms: A valid EncryptionParam class object required for extracting the
+        encryption parameters.
     """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
@@ -102,10 +105,12 @@ def sample_poly_uniform(param):
 
 
 def encrypt_asymmetric(context, public_key):
-    """Create encryption of zero values with a public key which can be used in subsequent processes to add a message into it.
+    """Create encryption of zero values with a public key which can be used in
+    subsequent processes to add a message into it.
 
     Args:
-        context: A valid Context class object required for extracting the encryption parameters.
+        context: A valid Context object required for extracting the encryption
+        parameters.
         public_key: A PublicKey object generated with same encryption parameters.
     """
     param = context.param
@@ -134,10 +139,11 @@ def encrypt_asymmetric(context, public_key):
 
 
 def encrypt_symmetric(context, secret_key):
-    """Create encryption of zero values with a secret key which can be used in subsequent processes to add a message into it.
+    """Create encryption of zero values with a secret key which can be used in subsequent
+    processes to add a message into it.
 
     Args:
-        context: A valid Context class object required for extracting the encryption parameters.
+        context: A valid Context object required for extracting the encryption parameters.
         secret_key: A SecretKey object generated with same encryption parameters.
     """
     coeff_modulus = context.param.coeff_modulus

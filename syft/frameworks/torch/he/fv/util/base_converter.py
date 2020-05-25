@@ -13,7 +13,8 @@ class BaseConvertor:
         self._ibase = ibase
         self._obase = obase
 
-        # base_change_matrix is helpful for fast conversion as many pre-computation are already done here only once.
+        # base_change_matrix is helpful for fast conversion as many pre-computation
+        # are already done here only once.
         self._base_change_matrix = [[]] * self._obase.size
         for i in range(self._obase.size):
             self._base_change_matrix[i] = [0] * self._ibase.size
@@ -24,8 +25,8 @@ class BaseConvertor:
                 )
 
     def fast_convert_list(self, input, count):
-        """Converts the plain/base of input list from input base to output base declared at the time of
-        initialization of BaseConvertor class.
+        """Converts the plain/base of input list from input base to output base
+        declared at the time of initialization of BaseConvertor class.
 
         Args:
             input: A list of integers needed to be converted from input base to output base.

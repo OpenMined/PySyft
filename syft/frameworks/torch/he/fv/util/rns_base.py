@@ -5,14 +5,19 @@ from syft.frameworks.torch.he.fv.util.operations import invert_mod
 
 
 class RNSBase:
-    """A model class used for creating basic blocks required in RNSTools class with pre-computed attributes.
+    """A model class used for creating basic blocks required in RNSTools class with
+    pre-computed attributes.
 
     Attributes:
         size: The number of base values given.
         base: A list of Base values.
         base_prod: An integer denoting the product of all base values.
-        punctured_prod_list: A list of products of all base values except the base value at that index.
-        inv_punctured_prod_mod_base_list: A list of values equal to modulus inverse of punctured_prod_list values.
+
+        punctured_prod_list: A list of products of all base values except
+        the base value at that index.
+
+        inv_punctured_prod_mod_base_list: A list of values equal to modulus
+        inverse of punctured_prod_list values.
     """
 
     def __init__(self, base):

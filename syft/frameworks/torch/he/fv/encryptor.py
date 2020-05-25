@@ -1,5 +1,3 @@
-import torch as th
-
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
 from syft.frameworks.torch.he.fv.public_key import PublicKey
 from syft.frameworks.torch.he.fv.util.rlwe import encrypt_symmetric

@@ -1,13 +1,14 @@
-import numpy as np
 from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 
 
 class Context:
-    """A class used as for holding and easily supplying of all the general parameters required throughout the implementation.
+    """A class used as for holding and easily supplying of all the general
+    parameters required throughout the implementation.
 
     Attributes:
         param: An EncryptionParams object.
-        coeff_div_plain_modulus: A list of float values equal to (q[i]/t), In research papers denoted by delta.
+        coeff_div_plain_modulus: A list of float values equal to (q[i]/t),
+        In research papers denoted by delta.
         rns_tool: A RNSTool class instance.
     """
 

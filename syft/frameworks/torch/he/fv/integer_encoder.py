@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 
 
@@ -100,7 +98,8 @@ class IntegerEncoder:
                 next_result_was_negative == coeff_is_negative
                 and next_result_was_negative != next_result_is_negative
             ):
-                # Accumulation and coefficient had same signs, but accumulator changed signs after addition, so must be overflow.
+                # Accumulation and coefficient had same signs, but accumulator changed signs
+                # after addition, so must be overflow.
                 raise OverflowError("output out of range")
             result = next_result
         return result

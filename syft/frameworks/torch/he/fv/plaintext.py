@@ -1,4 +1,3 @@
-import torch as th
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 

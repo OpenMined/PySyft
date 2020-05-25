@@ -7,10 +7,11 @@ from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 
 
 class RNSTool:
-    """A class performing major operations required in the process of decryption in RNS variant of FV HE Scheme.
+    """A class performing major operations required in the process of decryption
+    in RNS variant of FV HE Scheme.
 
-    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk] we apply the decrypt_scale_and_round
-    method of this class to get the plaintext object.
+    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk]
+    we apply the decrypt_scale_and_round method of this class to get the plaintext object.
     """
 
     def __init__(self, poly_modulus_degree, q, t):
@@ -59,10 +60,12 @@ class RNSTool:
                     temp_t_gamma[j][i], self.neg_inv_q_mod_t_gamma[j], self._base_t_gamma.base[j]
                 )
 
-        # Need to correct values in temp_t_gamma (gamma component only) which are larger than floor(gamma/2)
+        # Need to correct values in temp_t_gamma (gamma component only) which are larger
+        # than floor(gamma/2)
         gamma_div_2 = gamma >> 1
 
-        # Now compute the subtraction to remove error and perform final multiplication by gamma inverse mod t
+        # Now compute the subtraction to remove error and perform final multiplication by gamma
+        # inverse mod t
         for i in range(self._coeff_count):
             # Need correction because of centered mod
             if temp_t_gamma[1][i] > gamma_div_2:

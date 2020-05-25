@@ -58,13 +58,14 @@ def invert_mod(value, modulus):
 
 
 def poly_add_mod(op1, op2, modulus):
-    """return addition of two polynomials with all coefficients of polynomial %q(coefficient modulus)"""
+    """return addition of two polynomials with all coefficients of
+    polynomial %q(coefficient modulus)"""
     return np.mod(np.polyadd(op1, op2), modulus).tolist()
 
 
 def poly_mul_mod(op1, op2, modulus):
-    """return multiplication of two polynomials with all coefficients of polynomial %q(coefficient modulus)
-    and result polynomial % t(polynomial modulus)"""
+    """return multiplication of two polynomials with all coefficients of
+    polynomial %q(coefficient modulus) and result polynomial % t(polynomial modulus)"""
     poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
     result = (
         poly.polydiv(
