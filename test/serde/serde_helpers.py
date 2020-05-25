@@ -1583,27 +1583,28 @@ def make_tensor_command_message(**kwargs):
 
 # syft.messaging.message.ObjectMessage
 def make_objectmessage(**kwargs):
-    bob = kwargs["workers"]["bob"]
-    bob.log_msgs = True
-    x = torch.tensor([1, 2, 3, 4]).send(bob)
-    obj = bob._get_msg(-1)
-    bob.log_msgs = False
+    msg = syft.messaging.message.ObjectMessage(
+        torch.tensor([1, 2, 3, 4]), syft.execution.placeholder_id.PlaceholderId("ph_id")
+    )
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ObjectMessage
-        # torch tensors
         assert detailed.object.equal(original.object)
+        assert detailed.placeholder_id == original.placeholder_id
         return True
 
     return [
         {
-            "value": obj,
+            "value": msg,
             "simplified": (
                 CODE[syft.messaging.message.ObjectMessage],
                 (
                     msgpack.serde._simplify(
-                        kwargs["workers"]["serde_worker"], obj.object
+                        kwargs["workers"]["serde_worker"], msg.object
                     ),  # (Any) simplified object
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], msg.placeholder_id
+                    ),  # (PlaceholderId)
                 ),
             ),
             "cmp_detailed": compare,
