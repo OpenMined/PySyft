@@ -47,4 +47,3 @@ class KeyGenerator:
 
         public_key = encrypt_symmetric(self._context, self._secret_key.data)
         self._public_key = PublicKey(public_key.data)
-        self._pk_generated = True

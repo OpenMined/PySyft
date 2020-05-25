@@ -6,6 +6,9 @@ from syft.frameworks.torch.he.fv.modulus import CoeffModulus
 from syft.frameworks.torch.he.fv.encryption_params import EncryptionParams
 from syft.frameworks.torch.he.fv.modulus import SeqLevelType
 from syft.frameworks.torch.he.fv.context import Context
+from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 from syft.frameworks.torch.he.fv.key_generator import KeyGenerator
@@ -13,6 +16,7 @@ from syft.frameworks.torch.he.fv.util.base_converter import BaseConvertor
 from syft.frameworks.torch.he.fv.util.rns_base import RNSBase
 from syft.frameworks.torch.he.fv.util.operations import invert_mod
 from syft.frameworks.torch.he.fv.util.operations import xgcd
+from syft.frameworks.torch.he.fv.util.operations import reverse_bit
 from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
 
@@ -40,6 +44,13 @@ def test_is_prime(num, status):
 
 
 @pytest.mark.parametrize(
+    "value, result", [(0, 0), (2, 1), (3, 3), (4, 1), (255, 255), (256, 1), (172, 53)]
+)
+def test_reverse_bit(value, result):
+    assert reverse_bit(value) == result
+
+
+@pytest.mark.parametrize(
     "poly_modulus_degree, plain_modulus, coeff_bit_sizes",
     [(128, 2, [30, 40, 50]), (1024, 64, [30, 60, 60]), (64, 64, [30])],
 )
@@ -51,22 +62,6 @@ def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
     )
     for i in range(len(coeff_bit_sizes)):
         assert is_prime(params.coeff_modulus[i])
-
-
-@pytest.mark.parametrize(
-    "poly_modulus_degree, plain_modulus, coeff_bit_sizes",
-    [(1, 2, [30, 40, 50]), (-64, 64, [30, 60, 60])],
-)
-def test_EncryptionParams_exceptions(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
-    with pytest.raises(ValueError):
-        params = EncryptionParams(
-            poly_modulus_degree,
-            CoeffModulus().create(poly_modulus_degree, coeff_bit_sizes),
-            plain_modulus,
-        )
-
-        for i in range(len(coeff_bit_sizes)):
-            assert is_prime(params.coeff_modulus[i])
 
 
 def test_CoeffModulus_create():
@@ -124,6 +119,32 @@ def test_CoeffModulus_create():
 def test_CoeffModulus_bfv_default(poly_modulus_degree, SeqLevelType, result):
     coeffModulus = CoeffModulus()
     assert len(coeffModulus.bfv_default(poly_modulus_degree, SeqLevelType)) == result
+
+
+# @pytest.mark.parametrize(
+#     "op1, op2, mod, result",
+#     [
+#         ([0, 0], [0, 0], 3, [0, 0]),
+#         ([1, 2, 3, 4], [2, 3, 4, 5], 3, [0, 2, 1, 0]),
+#         ([1, 2, 3, 4], [2, 3, 4, 5], 1, [0, 0, 0, 0]),
+#     ],
+# )
+# def test_poly_add_mod(op1, op2, mod, result):
+#     assert poly_add_mod(op1, op2, mod) == result
+
+
+# @pytest.mark.parametrize(
+#     "op1, op2, mod, result",
+#     [([1, 1], [2, 1], 5, [1, 3]), ([1, 2, 3, 4], [2, 3, 4, 5], 5, [0, 0, 0, 0])],
+# )
+# def test_poly_mul_mod(op1, op2, mod, result):
+#     print("test poly_mul_mod : ", poly_mul_mod(op1, op2, mod))
+#     assert poly_mul_mod(op1, op2, mod) == result
+
+
+# @pytest.mark.parametrize("op1, mod, result", [([2, 3], 7, [5, 4]), ([0, 0], 7, [0, 0])])
+# def test_poly_negate_mod(op1, mod, result):
+#     assert poly_negate_mod(op1, mod) == result
 
 
 @pytest.mark.parametrize(
@@ -314,29 +335,14 @@ def test_fv_encryption_decrption_symmetric(poly_modulus, plain_modulus, coeff_bi
     "poly_modulus, plain_modulus, seq_level, integer",
     [
         (1024, 1024, SeqLevelType.TC128, 0x12345678),
-        (16384, 1024, SeqLevelType.TC192, 0),
-        (32768, 1024, SeqLevelType.TC256, 1),
+        (4096, 1024, SeqLevelType.TC192, 0),
+        (4096, 1024, SeqLevelType.TC256, 1),
         (1024, 1024, SeqLevelType.TC128, 2),
         (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFD),
-        (16384, 1024, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
+        (2048, 1024, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
         (1024, 1024, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
-        (32768, 1024, SeqLevelType.TC128, 314159265),
-        (32768, 2048, SeqLevelType.TC256, 0x12345678),
-        (4096, 2048, SeqLevelType.TC192, 0),
-        (32768, 2048, SeqLevelType.TC128, 1),
-        (4096, 2048, SeqLevelType.TC128, 2),
-        (16384, 2048, SeqLevelType.TC256, 0x7FFFFFFFFFFFFFFD),
-        (2048, 2048, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFE),
-        (8192, 2048, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFF),
-        (2048, 2048, SeqLevelType.TC256, 314159265),
-        (4096, 4096, SeqLevelType.TC192, 0x12345678),
-        (4096, 4096, SeqLevelType.TC128, 0),
-        (4096, 4096, SeqLevelType.TC192, 1),
-        (8192, 8192, SeqLevelType.TC128, 2),
-        (8192, 8192, SeqLevelType.TC256, 0x7FFFFFFFFFFFFFFD),
-        (8192, 8192, SeqLevelType.TC192, 0x7FFFFFFFFFFFFFFE),
-        (16384, 16384, SeqLevelType.TC128, 0x7FFFFFFFFFFFFFFF),
-        (32768, 32768, SeqLevelType.TC256, 314159265),
+        (1024, 512, SeqLevelType.TC128, 314159265),
+        (2048, 2048, SeqLevelType.TC256, 0x12345678),
     ],
 )
 def test_fv_encryption_decrption_standard_seq_level(

@@ -8,12 +8,8 @@ def multiply_mod(operand1, operand2, modulus):
     return (operand1 * operand2) % modulus
 
 
-def add_mod(operand1, operand2, modulus):
-    return (operand1 + operand2) % modulus
-
-
 def negate_mod(operand, modulus):
-    # returns (-1 * operand) % modulus
+    """returns (-1 * operand) % modulus"""
     if modulus == 0:
         raise ValueError("Modulus cannot be 0")
     if operand >= modulus:
@@ -61,21 +57,26 @@ def invert_mod(value, modulus):
         return gcd_tuple[1]
 
 
-def poly_add(op1, op2, modulus):
+def poly_add_mod(op1, op2, modulus):
     """return addition of two polynomials with all coefficients of polynomial %q(coefficient modulus)"""
     return np.mod(np.polyadd(op1, op2), modulus).tolist()
 
 
-def poly_mul(op1, op2, modulus):
+def poly_mul_mod(op1, op2, modulus):
     """return multiplication of two polynomials with all coefficients of polynomial %q(coefficient modulus)
     and result polynomial % t(polynomial modulus)"""
-    poly_mod = len(op1)
-    return np.int64(
-        np.round(poly.polydiv(poly.polymul(op1, op2) % modulus, poly_mod)[1] % modulus)
+    poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
+    result = (
+        poly.polydiv(
+            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")) % modulus,
+            poly_mod,
+        )[1]
+        % modulus
     ).tolist()
+    return [round(x) for x in result]
 
 
-def poly_negate(op, modulus):
+def poly_negate_mod(op, modulus):
     """returns negative of polynomial i.e (-1 * op)"""
     coeff_count = len(op)
 
@@ -91,7 +92,7 @@ def poly_negate(op, modulus):
 
 
 def get_significant_count(values):
-    """removes all leading zero from the list."""
+    """removes leading zero's from the list."""
     count = len(values)
     i = count - 1
     while count and not values[i]:

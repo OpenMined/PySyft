@@ -4,11 +4,10 @@ from secrets import randbits
 from torch.distributions import Normal
 
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
-from syft.frameworks.torch.he.fv.util.operations import add_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_mod
-from syft.frameworks.torch.he.fv.util.operations import poly_add
-from syft.frameworks.torch.he.fv.util.operations import poly_mul
-from syft.frameworks.torch.he.fv.util.operations import poly_negate
+from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
 from syft.frameworks.torch.he.fv.util.global_variable import NOISE_STANDARD_DEVIATION
 
 
@@ -106,7 +105,7 @@ def encrypt_asymmetric(context, public_key):
     """Create encryption of zero values with a public key which can be used in subsequent processes to add a message into it.
 
     Args:
-        context: A valid EncryptionParam class object required for extracting the encryption parameters.
+        context: A valid Context class object required for extracting the encryption parameters.
         public_key: A PublicKey object generated with same encryption parameters.
     """
     param = context.param
@@ -128,8 +127,8 @@ def encrypt_asymmetric(context, public_key):
     for j in range(encrypted_size):
         e = sample_poly_normal(param)
         for i in range(coeff_mod_size):
-            result[j][i] = poly_add(
-                poly_mul(public_key[j][i], u[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+            result[j][i] = poly_add_mod(
+                poly_mul_mod(public_key[j][i], u[i], coeff_modulus[i]), e[i], coeff_modulus[i]
             )
     return CipherText(result)
 
@@ -138,7 +137,7 @@ def encrypt_symmetric(context, secret_key):
     """Create encryption of zero values with a secret key which can be used in subsequent processes to add a message into it.
 
     Args:
-        context: A valid EncryptionParam class object required for extracting the encryption parameters.
+        context: A valid Context class object required for extracting the encryption parameters.
         secret_key: A SecretKey object generated with same encryption parameters.
     """
     coeff_modulus = context.param.coeff_modulus
@@ -155,8 +154,10 @@ def encrypt_symmetric(context, secret_key):
     c0 = [0] * coeff_mod_size
 
     for i in range(coeff_mod_size):
-        c0[i] = poly_negate(
-            poly_add(poly_mul(c1[i], secret_key[i], coeff_modulus[i]), e[i], coeff_modulus[i]),
+        c0[i] = poly_negate_mod(
+            poly_add_mod(
+                poly_mul_mod(c1[i], secret_key[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+            ),
             coeff_modulus[i],
         )
 

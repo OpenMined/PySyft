@@ -3,8 +3,8 @@ from numpy.polynomial import polynomial as poly
 
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
-from syft.frameworks.torch.he.fv.util.operations import poly_mul
-from syft.frameworks.torch.he.fv.util.operations import poly_add
+from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
 
 
 class Decryptor:
@@ -36,7 +36,7 @@ class Decryptor:
         return PlainText(result[:plain_coeff_count])
 
     def mul_ct_sk(self, encrypted):
-        """calculate and return the value of [c0 + c1 * sk]_q
+        """calculate and return the value of [c0 + c1 * sk + c2 * sk^2 ...]_q
         where [c0, c1] denotes encrypted ciphertext and sk is secret key.
         """
         phase = encrypted[0]
@@ -45,8 +45,10 @@ class Decryptor:
 
         for j in range(1, len(encrypted)):
             for i in range(len(self._coeff_modulus)):
-                phase[i] = poly_add(
-                    poly_mul(encrypted[j][i], secret_key_array[j - 1][i], self._coeff_modulus[i]),
+                phase[i] = poly_add_mod(
+                    poly_mul_mod(
+                        encrypted[j][i], secret_key_array[j - 1][i], self._coeff_modulus[i]
+                    ),
                     phase[i],
                     self._coeff_modulus[i],
                 )
