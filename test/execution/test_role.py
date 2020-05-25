@@ -1,8 +1,5 @@
-import pytest
-
 import torch
 
-import syft as sy
 from syft.execution.role import Role
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.computation import ComputationAction

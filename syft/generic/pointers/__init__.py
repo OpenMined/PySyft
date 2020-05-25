@@ -1,1 +1,1 @@
-from .object_wrapper import ObjectWrapper
+from .object_wrapper import ObjectWrapper  # noqa: F401

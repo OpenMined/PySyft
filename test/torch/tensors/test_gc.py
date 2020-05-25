@@ -1,11 +1,7 @@
 """All the tests relative to garbage collection of all kinds of remote or local tensors"""
-import time
-
 import torch
 
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
-from syft.workers.websocket_server import WebsocketServerWorker
-from syft.workers.websocket_client import WebsocketClientWorker
 
 # TESTING POINTERS
 

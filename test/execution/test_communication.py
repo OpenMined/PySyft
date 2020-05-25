@@ -1,7 +1,4 @@
 import pytest
-
-import syft as sy
-
 from syft.execution.communication import CommunicationAction
 
 

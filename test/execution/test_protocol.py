@@ -1,4 +1,3 @@
-import pytest
 import torch as th
 
 import syft as sy
@@ -31,7 +30,7 @@ def test_framework_methods_traced_by_role():
 
     for role in protocol.roles.values():
         assert len(role.actions) == 1
-        assert "torch.rand" in [action.name for action in role.actions]
+        assert "torch.rand" in (action.name for action in role.actions)
 
 
 def test_trace_communication_actions_send():
@@ -46,7 +45,7 @@ def test_trace_communication_actions_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 2
-    assert "send" in [action.name for action in traced_actions]
+    assert "send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_get():
@@ -62,7 +61,7 @@ def test_trace_communication_actions_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "get" in [action.name for action in traced_actions]
+    assert "get" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_ptr_send():
@@ -78,7 +77,7 @@ def test_trace_communication_actions_ptr_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "send" in [action.name for action in traced_actions]
+    assert "send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_move():
@@ -94,7 +93,7 @@ def test_trace_communication_actions_move():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "move" in [action.name for action in traced_actions]
+    assert "move" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_share():
@@ -111,7 +110,7 @@ def test_trace_communication_actions_share():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "share" in [action.name for action in traced_actions]
+    assert "share" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_share_():
@@ -128,7 +127,7 @@ def test_trace_communication_actions_share_():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "share_" in [action.name for action in traced_actions]
+    assert "share_" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_remote_send():
@@ -144,7 +143,7 @@ def test_trace_communication_actions_remote_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "remote_send" in [action.name for action in traced_actions]
+    assert "remote_send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_mid_get():
@@ -160,7 +159,7 @@ def test_trace_communication_actions_mid_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "mid_get" in [action.name for action in traced_actions]
+    assert "mid_get" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_remote_get():
@@ -176,7 +175,7 @@ def test_trace_communication_actions_remote_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "remote_get" in [action.name for action in traced_actions]
+    assert "remote_get" in (action.name for action in traced_actions)
 
 
 def test_trace_store_load():

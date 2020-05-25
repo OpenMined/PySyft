@@ -1,6 +1,3 @@
-import torch
-
-import syft
 from syft.execution.role_assignments import RoleAssignments
 
 

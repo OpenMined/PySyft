@@ -97,9 +97,6 @@ def create_callable_pointer(
         description:
         garbage_collect_data:
         register_pointer:
-
-    Returns:
-
     """
 
     if id is None:

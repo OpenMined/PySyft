@@ -1,8 +1,6 @@
-import pytest
 import torch as th
 import syft as sy
 
-from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 

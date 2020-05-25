@@ -1,6 +1,5 @@
 import torch
 
-import syft as sy
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 
@@ -66,7 +65,7 @@ def _ldl(t):
     return l, d, inv_d
 
 
-def qr(t, mode="reduced", norm_factor=None):
+def qr(t, mode="reduced", norm_factor=None):  # noqa: C901
     """
     This function performs the QR decomposition of a matrix (2-dim tensor). The
     decomposition is performed using Householder Reflection.

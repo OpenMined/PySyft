@@ -9,7 +9,6 @@ _registered_peer = None
 
 def register(**kwargs):
     """ Add this process as a new peer registering it in the grid network.
-
         Returns:
             peer: Peer Network instance.
     """
@@ -43,19 +42,23 @@ def register(**kwargs):
             "\033[93m" + "DISCLAIMER" + "\033[0m"
             ":"
             + "\033[1m"
-            + " OpenGrid is an experimental feature currently in alpha. Do not use this to protect real-world data.\n"
+            + " OpenGrid is an experimental feature currently in alpha."
+            + " Do not use this to protect real-world data.\n"
             + "\033[0m"
         )
 
         sys.stdout.write("Where to get help: \n")
         sys.stdout.write(
-            " - Join our slack  (https://slack.openmined.org) and ask for help in the #lib_syft channel.\n"
+            " - Join our slack  (https://slack.openmined.org) and ask for"
+            + "help in the #lib_syft channel.\n"
         )
         sys.stdout.write(
-            " - File a Github Issue: https://github.com/OpenMined/PySyft and add the string '#opengrid' in the issue title.\n"
+            " - File a Github Issue: https://github.com/OpenMined/PySyft and add the"
+            + " string '#opengrid' in the issue title.\n"
         )
         sys.stdout.write(
-            " - Want to join in our development team? Apply here: https://forms.gle/wcH1vxzvPyDSbSVW6\n"
+            " - Want to join in our development team? Apply here:"
+            + " https://forms.gle/wcH1vxzvPyDSbSVW6\n"
         )
 
         _registered_peer.start()

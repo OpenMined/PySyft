@@ -47,7 +47,8 @@ class WebRTCManager(BaseWorker):
         # Should be removed after solving #3572
         if len(self._connections) >= 1:
             print(
-                "Due to some jupyter notebook async constraints, we do not recommend handling multiple connection peers at the same time."
+                "Due to some jupyter notebook async constraints, we do not recommend handling "
+                "multiple connection peers at the same time."
             )
             print("This issue is in WIP status and may be solved soon.")
             print(

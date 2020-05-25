@@ -225,19 +225,6 @@ def test_get_not_permitted(workers):
         mock_allowed_to_get.assert_called_once()
 
 
-def test_spinup_time(hook):
-    """Tests to ensure that virtual workers intialized with 10000 data points
-    load in under 1 seconds. This is needed to ensure that virtual workers
-    spun up inside web frameworks are created quickly enough to not cause timeout errors"""
-    data = []
-    for i in range(10000):
-        data.append(torch.Tensor(5, 5).random_(100))
-    start_time = time()
-    dummy = sy.VirtualWorker(hook, id="dummy", data=data)
-    end_time = time()
-    assert (end_time - start_time) < 1
-
-
 def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     bob = workers["bob"]
 

@@ -1,1 +1,1 @@
-from . import pate
+from . import pate  # noqa: F401

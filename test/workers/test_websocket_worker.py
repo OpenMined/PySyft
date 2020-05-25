@@ -1,15 +1,8 @@
-import io
-from os.path import exists, join
 import time
-from socket import gethostname
-from OpenSSL import crypto, SSL
+from OpenSSL import crypto
 import pytest
 import torch
-import syft as sy
-from syft.generic.frameworks.hook import hook_args
-from syft.frameworks.torch.fl import utils
 
-from syft.workers.websocket_client import WebsocketClientWorker
 from syft.workers.websocket_server import WebsocketServerWorker
 
 from test.conftest import instantiate_websocket_client_worker
