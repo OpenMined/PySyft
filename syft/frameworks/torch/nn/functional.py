@@ -35,7 +35,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
-def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):  # noqa: C901
     """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
     The idea is to build new tensors from input and weight to compute a
@@ -90,7 +90,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         nb_rows_in += 2 * padding[0]
         nb_cols_in += 2 * padding[1]
 
-    # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+    # We want to get relative positions of values in the input tensor that are used
+    # by one filter convolution.
     # It basically is the position of the values used for the top left convolution.
     pattern_ind = []
     for ch in range(nb_channels_in):
@@ -167,10 +168,10 @@ def _pool(tensor, kernel_size: int = 2, stride: int = 2, mode="max"):
     )
     a_w = a_w.reshape(-1, *kernel_size)
     result = []
-    if mode is "max":
+    if mode == "max":
         for channel in range(a_w.shape[0]):
             result.append(a_w[channel].max())
-    elif mode is "mean":
+    elif mode == "mean":
         for channel in range(a_w.shape[0]):
             result.append(torch.mean(a_w[channel]))
     else:

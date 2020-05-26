@@ -1,18 +1,10 @@
-import unittest.mock as mock
-
 import pytest
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 
 import syft as sy
 from itertools import starmap
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.execution.placeholder import PlaceHolder
-from syft.execution.plan import Plan
-from syft.serde.serde import deserialize
-from syft.serde.serde import serialize
 
 
 def test_stateful_plan_built_automatically(hook):
@@ -220,7 +212,10 @@ def test_fetch_stateful_plan_remote(hook, is_func2plan, start_remote_worker):
 
 
 def test_binding_fix_precision_plan(hook):
-    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_precision"""
+    """
+    Here we make sure the attributes of a plan are still bound to state
+    elements when calling fix_precision
+    """
 
     class Net(sy.Plan):
         def __init__(self):
@@ -241,13 +236,15 @@ def test_binding_fix_precision_plan(hook):
 
 
 def test_binding_encrypted_plan(hook, workers):
-    """Here we make sure the attributes of a plan are still bound to state elements when calling fix_prec + share"""
+    """
+    Here we make sure the attributes of a plan are still bound to state
+    elements when calling fix_prec + share
+    """
 
-    alice, bob, charlie, james = (
+    alice, bob, charlie = (
         workers["alice"],
         workers["bob"],
         workers["charlie"],
-        workers["james"],
     )
 
     class Net(sy.Plan):

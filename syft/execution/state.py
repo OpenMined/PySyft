@@ -1,12 +1,8 @@
 from typing import List
-from typing import Tuple
-from typing import Union
-from typing import Dict
 
 import torch
 
 import syft as sy
-from syft.execution.placeholder_id import PlaceholderId
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
@@ -54,7 +50,7 @@ class State(SyftSerializable):
         currently building.
         """
         if self.tracing:
-            return [ph for ph in self.state_placeholders]
+            return list(self.state_placeholders)
         else:
             return [ph.child for ph in self.state_placeholders]
 

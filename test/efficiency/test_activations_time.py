@@ -1,6 +1,5 @@
 import pytest
 import torch
-import syft as sy
 from test.efficiency.assertions import assert_time
 
 
