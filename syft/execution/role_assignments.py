@@ -1,6 +1,3 @@
-from typing import Dict
-from typing import List
-
 import syft as sy
 
 from syft.serde.syft_serializable import SyftSerializable
