@@ -259,7 +259,7 @@ class PlaceHolder(AbstractTensor):
         placeholder.child = self.child
 
         if self.tracing:
-            command = ("copy", self, tuple(), {}), placeholder
+            command = ("copy", self, (), {}), placeholder
             self.role.register_action(command, syft.execution.computation.ComputationAction)
 
         return placeholder
@@ -316,13 +316,14 @@ class PlaceHolder(AbstractTensor):
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [
-            syft.framework.hook.create_zeros(shape, requires_grad=True) for shape in mapped_shapes
+            syft.framework.hook.create_zeros(shape, requires_grad=False) for shape in mapped_shapes
         ]
 
     @staticmethod
     def instantiate_placeholders(obj, response):
         """
-        Utility function to instantiate recursively an object containing placeholders with a similar object but containing tensors
+        Utility function to instantiate recursively an object containing placeholders
+        with a similar object but containing tensors
         """
         if obj is not None:
             if isinstance(obj, PlaceHolder):
@@ -332,7 +333,8 @@ class PlaceHolder(AbstractTensor):
                     PlaceHolder.instantiate_placeholders(ph, rep)
             else:
                 raise ValueError(
-                    f"Response of type {type(response)} is not supported in Placeholder.instantiate."
+                    f"Response of type {type(response)} is not supported in "
+                    "Placeholder.instantiate."
                 )
 
     @staticmethod
@@ -357,13 +359,13 @@ class PlaceHolder(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PlaceHolder":
         """
-            This function reconstructs a PlaceHolder given it's attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the PlaceHolder
-            Returns:
-                PlaceHolder: a PlaceHolder
-            """
+        This function reconstructs a PlaceHolder given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the PlaceHolder
+        Returns:
+            PlaceHolder: a PlaceHolder
+        """
 
         tensor_id, tags, description, shape = tensor_tuple
 
@@ -401,13 +403,14 @@ class PlaceHolder(AbstractTensor):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_placeholder: PlaceholderPB) -> "PlaceHolder":
         """
-            This function reconstructs a PlaceHolder given it's attributes in form of a Protobuf message.
-            Args:
-                worker: the worker doing the deserialization
-                protobuf_placeholder: a Protobuf message holding the attributes of the PlaceHolder
-            Returns:
-                PlaceHolder: a PlaceHolder
-            """
+        This function reconstructs a PlaceHolder given it's attributes in form of a
+        Protobuf message.
+        Args:
+            worker: the worker doing the deserialization
+            protobuf_placeholder: a Protobuf message holding the attributes of the PlaceHolder
+        Returns:
+            PlaceHolder: a PlaceHolder
+        """
 
         tensor_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_placeholder.id)
         tags = set(protobuf_placeholder.tags)

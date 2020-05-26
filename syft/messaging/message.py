@@ -9,8 +9,6 @@ All Syft message types extend the Message class.
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Union
-from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
@@ -19,7 +17,6 @@ from syft.serde.syft_serializable import SyftSerializable
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
@@ -67,13 +64,14 @@ class TensorCommandMessage(Message):
         """Initialize an action message
 
         Args:
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the action properly.
-            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                action results are set by the client. This allows the client to be able to predict where
-                the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the action has yet executed. It also
-                reduces the size of the response from the action (which is very often empty).
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the action properly.
+            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.),
+                the id of action results are set by the client. This allows the client to be able
+                to predict where the results will be ahead of time. Importantly, this allows the
+                client to pre-initalize the pointers to the future data, regardless of whether
+                the action has yet executed. It also reduces the size of the response from the
+                action (which is very often empty).
 
         """
 
@@ -576,8 +574,8 @@ class PlanCommandMessage(Message):
 
         Args:
             command_name (str): name used to identify the command.
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the command properly.
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the command properly.
         """
 
         self.command_name = command_name
@@ -635,8 +633,8 @@ class WorkerCommandMessage(Message):
 
         Args:
             command_name (str): name used to identify the command.
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the command properly.
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the command properly.
         """
 
         # call the parent constructor - setting the type integer correctly

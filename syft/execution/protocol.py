@@ -3,20 +3,11 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import copy
-import inspect
-import io
-import torch
-import warnings
-
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
-from syft.execution.state import State
+from syft.execution.role_assignments import RoleAssignments
 
-from syft.generic.frameworks import framework_packages
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.frameworks.types import FrameworkLayerModule
 from syft.generic.object import AbstractObject
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
@@ -109,6 +100,7 @@ class Protocol(AbstractObject):
         self.name = name or self.__class__.__name__
 
         self.roles = roles
+        self.role_assignments = RoleAssignments(roles.keys())
 
         self.is_building = False
         self.is_built = is_built
@@ -207,10 +199,21 @@ class Protocol(AbstractObject):
         # TODO: can we reuse result_ids?
         return self.__call__(*args_)
 
+    def assign(self, role_id, worker):
+        """ Assign a worker to the specified role.
+        """
+        self.role_assignments.assign(role_id, worker)
+
+    def assign_roles(self, worker_dict):
+        """ Assign worker values to correspondent key role.
+        """
+        for role_id, worker in worker_dict.items():
+            self.role_assignments.assign(role_id, worker)
+
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
-        # Replace non-instanciated placeholders from protocol.placeholders by instanciated placeholders
-        # from state.state_placeholders
+        # Replace non-instanciated placeholders from protocol.placeholders by
+        # instanciated placeholders from state.state_placeholders
         # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
         state_placeholders = {ph.id.value: ph for ph in protocol.state.state_placeholders}
         protocol.placeholders = {**protocol.placeholders, **state_placeholders}
@@ -298,7 +301,9 @@ class Protocol(AbstractObject):
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_protocol: ProtocolPB) -> "Protocol":
-        """This function reconstructs a Protocol object given its attributes in the form of a Protobuf message
+        """This function reconstructs a Protocol object given its attributes in the form
+        of a Protobuf message
+
         Args:
             worker: the worker doing the deserialization
             protobuf_protocol: a Protobuf message holding the attributes of the Protocol
