@@ -2,7 +2,7 @@ from syft.execution.action import Action
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.worker_action_pb2 import (
-    WorkerAction as CommunicationActionPB,
+    WorkerAction as WorkerActionPB,
     # HACK replace this with the correct syft proto objects and update proto version in reqs
     # and update documentations
 )
@@ -74,7 +74,7 @@ class WorkerAction(Action):
         return WorkerAction(*attrs)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, WorkerAction: "WorkerAction") -> "CommunicationActionPB":
+    def bufferize(worker: AbstractWorker, WorkerAction: "WorkerAction") -> "WorkerActionPB":
         """
         This function takes the attributes of a WorkerAction and saves them in Protobuf
         Args:
@@ -85,14 +85,12 @@ class WorkerAction(Action):
         Examples:
             data = bufferize(sy.local_worker, WorkerAction)
         """
-        protobuf_action = CommunicationActionPB()
+        protobuf_action = WorkerActionPB()
 
         return Action.bufferize(worker, WorkerAction, protobuf_action)
 
     @staticmethod
-    def unbufferize(
-        worker: AbstractWorker, protobuf_obj: "CommunicationActionPB"
-    ) -> "WorkerAction":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "WorkerActionPB") -> "WorkerAction":
         """
         This function takes the Protobuf version of this message and converts
         it into an Action. The bufferize() method runs the inverse of this method.
@@ -100,7 +98,7 @@ class WorkerAction(Action):
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            protobuf_obj (CommunicationActionPB): the Protobuf message
+            protobuf_obj (WorkerActionPB): the Protobuf message
 
         Returns:
             obj (WorkerAction): a WorkerAction
@@ -113,5 +111,5 @@ class WorkerAction(Action):
         return WorkerAction(*attrs)
 
     @staticmethod
-    def get_protobuf_schema() -> CommunicationActionPB:
-        return CommunicationActionPB
+    def get_protobuf_schema() -> WorkerActionPB:
+        return WorkerActionPB
