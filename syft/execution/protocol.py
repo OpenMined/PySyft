@@ -8,7 +8,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.role_assignments import RoleAssignments
 
-from syft.generic.abstract.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
 
@@ -60,7 +60,7 @@ class func2protocol(object):
         return protocol
 
 
-class Protocol(AbstractObject):
+class Protocol(AbstractSendable):
     """
     A Protocol stores a sequence of actions, just like a function.
 
@@ -94,7 +94,7 @@ class Protocol(AbstractObject):
         tags: List[str] = None,
         description: str = None,
     ):
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        super().__init__(id, owner, tags, description, child=None)
 
         # Protocol instance info
         self.name = name or self.__class__.__name__

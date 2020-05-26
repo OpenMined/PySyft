@@ -1,6 +1,6 @@
 import math
 import logging
-from syft.generic.abstract.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_dataset import PointerDataset
 import torch
@@ -10,7 +10,7 @@ import syft
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset(AbstractObject):
+class BaseDataset(AbstractSendable):
     """
     This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
