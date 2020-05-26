@@ -197,8 +197,8 @@ def test_trace_store_load():
 
     # TODO add asserts for trace / traced_actions
     bob_traced_actions = protocol.roles["bob"].actions
-    assert "store" in [action.name for action in bob_traced_actions]
-    assert "load" in [action.name for action in bob_traced_actions]
+    assert "store" in (action.name for action in bob_traced_actions)
+    assert "load" in (action.name for action in bob_traced_actions)
 
 
 def test_create_roles_from_decorator():

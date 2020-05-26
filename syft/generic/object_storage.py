@@ -6,7 +6,6 @@ from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
-from syft.execution.placeholder_id import PlaceholderId
 
 
 class ObjectStore:
