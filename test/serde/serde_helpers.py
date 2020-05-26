@@ -1419,6 +1419,12 @@ def make_communication_action(**kwargs):
     ]
 
 
+# syft.execution.worker_actions.WorkerAction
+def make_worker_action(**kwargs):
+    # @TODO: add test
+    return []
+
+
 # syft.execution.computation.ComputationAction
 def make_computation_action(**kwargs):
     bob = kwargs["workers"]["bob"]
