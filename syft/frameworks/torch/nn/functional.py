@@ -194,8 +194,10 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     Returns:
         the result of the convolution (FixedPrecision Tensor)
     """
-    input_fp, weight_fp, bias_fp = input, weight, bias
-    input, weight, bias = input.child, weight.child, bias.child
+    input_fp, weight_fp = input, weight
+    input, weight = input.child, weight.child
+    if bias is not None:
+        bias = bias.child
 
     locations = input.locations
 
@@ -205,7 +207,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     for location in locations:
         input_share = input.child[location.id]
         weight_share = weight.child[location.id]
-        bias_share = bias.child[location.id]
+        bias_share = bias.child[location.id] if bias is not None else None
         r = remote(_pre_conv, location=location)(
             input_share,
             weight_share,
@@ -253,7 +255,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
     res_shares = {}
     for location in locations:
-        bias_share = bias.child[location.id]
+        bias_share = bias.child[location.id] if bias is not None else None
         res_share = res.child[location.id]
         res_share = remote(_post_conv, location=location)(
             bias_share, res_share, *params[location.id]
