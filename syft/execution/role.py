@@ -16,6 +16,7 @@ from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
+from syft.execution.worker_actions import WorkerAction
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
@@ -176,18 +177,14 @@ class Role(SyftSerializable):
     def store(self, tensor, storage_id=None):
         """ store tensors used in a protocol to worker's local store
         """
-        # HACK to get rid of import error... "module 'syft.execution' has no attribute 'worker_actions"
-        from syft.execution import worker_actions
-        from importlib import reload  # reload
 
-        reload(worker_actions)
         if storage_id:
             # over write / update value
             tensor.id = storage_id
         if self.tracing:
             self.worker.object_store.set_obj(tensor)
             command = ("store", self, (), {})
-            self.register_action((command, tensor), sy.execution.worker_actions.WorkerAction)
+            self.register_action((command, tensor), WorkerAction)
         return tensor
 
     def load(self, tensor):
@@ -198,7 +195,7 @@ class Role(SyftSerializable):
             tensor = self.worker.object_store.get_obj(tensor)
             placeholder = PlaceHolder.create_from(tensor, role=self, tracing=True)
             command = ("load", self, (), {})
-            self.register_action((command, placeholder), sy.execution.worker_actions.WorkerAction)
+            self.register_action((command, placeholder), WorkerAction)
             return placeholder
         # mock for testing
         if isinstance(tensor, th.Tensor):
