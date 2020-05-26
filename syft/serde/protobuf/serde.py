@@ -12,6 +12,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
+from syft_proto.types.syft.v1.arg_pb2 import ArgList as ArgListPB
 from syft.serde.syft_serializable import (
     SyftSerializable,
     get_protobuf_classes,
@@ -452,6 +453,7 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         if current_type in protobuf_global_state.unbufferizers:
             result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
             return result
+
         raise Exception(f"No unbufferizer found for {current_type}")
 
 
@@ -462,12 +464,19 @@ def bufferize_args(worker: AbstractWorker, args_: list) -> list:
 def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
     protobuf_arg = ArgPB()
 
-    attr_name = "arg_" + _camel2snake(type(arg).__name__)
+    if isinstance(arg, list):
+        protobuf_arg_list = ArgListPB()
+        arg_list = [bufferize_arg(worker, i) for i in arg]
+        protobuf_arg_list.args.extend(arg_list)
+        protobuf_arg.arg_list.CopyFrom(protobuf_arg_list)
 
-    try:
-        setattr(protobuf_arg, attr_name, arg)
-    except:
-        getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+    else:
+        attr_name = "arg_" + _camel2snake(type(arg).__name__)
+
+        try:
+            setattr(protobuf_arg, attr_name, arg)
+        except:
+            getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
 
     return protobuf_arg
 
@@ -480,10 +489,14 @@ def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
     protobuf_field_name = protobuf_arg.WhichOneof("arg")
 
     protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
-    try:
-        arg = _unbufferize(worker, protobuf_arg_field)
-    except:
-        arg = protobuf_arg_field
+
+    if protobuf_field_name == "arg_list":
+        arg = [unbufferize_arg(worker, i) for i in protobuf_arg_field.args]
+    else:
+        try:
+            arg = _unbufferize(worker, protobuf_arg_field)
+        except:
+            arg = protobuf_arg_field
 
     return arg
 
