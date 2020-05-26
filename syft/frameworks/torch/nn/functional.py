@@ -409,7 +409,7 @@ def _pool2d(
         assert stride[0] == stride[1]
         stride = stride[0]
 
-    print(f"{mode}_pool2d", kernel_size, stride, padding, dilation)
+    # print(f"{mode}_pool2d", kernel_size, stride, padding, dilation)
 
     input_fp = input
     input = input.child
@@ -433,12 +433,23 @@ def _pool2d(
     if mode == "max":
         # Optim
         if im_reshaped.shape[-1] == 4:
-            print("Optim pool")
+            print("Optim pool k=2")
             ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
             max1 = ab + (cd >= ab) * (cd - ab)
             e, f = max1[:, :, :, 0], max1[:, :, :, 1]
             max2 = e + (f >= e) * (f - e)
             res = max2
+        elif im_reshaped.shape[-1] == 9:
+            print("Optim pool k=3")
+            abcd, efgh = im_reshaped[:, :, :, :4], im_reshaped[:, :, :, 4:8]
+            ABCD = abcd + (efgh >= abcd) * (efgh - abcd)
+            AB, CD = ABCD[:, :, :, :2], ABCD[:, :, :, 2:]
+            _AB = AB + (CD >= AB) * (CD - AB)
+            _A, _B = _AB[:, :, :, 0], _AB[:, :, :, 1]
+            _A_ = _A + (_B >= _A) * (_B - _A)
+            _B_ = im_reshaped[:, :, :, 8]
+            max4 = _A_ + (_B_ >= _A_) * (_B_ - _A_)
+            res = max4
         else:
             res = im_reshaped.max(dim=-1)
     elif mode == "avg":
