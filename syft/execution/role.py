@@ -13,10 +13,10 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
+from syft.execution.worker_actions import WorkerAction
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
-from syft.execution.worker_actions import WorkerAction
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
