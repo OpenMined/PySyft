@@ -4,6 +4,8 @@ import binascii
 import base64
 import websocket
 import requests
+from time import time
+import random
 
 import syft as sy
 from syft.serde import protobuf
@@ -75,13 +77,77 @@ class GridClient:
         if method == "GET":
             res = requests.get(self.http_url + path, params)
         elif method == "POST":
-            res = requests.post(self.http_url + path, body)
+            res = requests.post(self.http_url + path, params=params, data=body)
 
         if not res.ok:
             raise GridError("HTTP response is not OK", res.status_code)
 
         response = res.content
         return response
+    
+    def _yield_chunk_from_request(self, request,chunk_size):
+        for chunk in request.iter_content(chunk_size=chunk_size):
+            yield chunk
+    
+    def _read_n_request_chunks(self, chunk_generator,n):
+        for i in range(n):
+            try:
+                next(chunk_generator)
+            except:
+                return False
+        return True
+
+    def _get_ping(self, worker_id, random_id):
+        params = {
+            "is_ping" : 1,
+            "worker_id" : worker_id,
+            "random" : random_id
+        }
+        start = time() 
+        self._send_http_req("GET","/federated/speed-test",params)
+        ping = (time() - start)*1000 #milliseconds
+        return ping
+    
+    def _get_upload_speed(self, worker_id, random_id):
+        data_sample = b"x" * 67108864 #64 MB
+        params = {
+            "worker_id" : worker_id,
+            "random" : random_id
+        }
+        body = {
+            "upload_data" : data_sample
+        }
+        start = time()
+        self._send_http_req("POST","/federated/speed-test",params,body) 
+        upload_speed = 64*1024/(time()-start()) #speed in KBps
+        return upload_speed
+    
+    def _get_download_speed(self, worker_id, random_id):
+        params = {
+            "worker_id" : worker_id,
+            "random" : random_id
+        }
+        speed_history = []
+        prev_timestamp = time()
+        with requests.get(self.http_url + path, params, stream=True) as r:
+            r.raise_for_status()
+            chunk_generator = self._yield_chunk_from_request(r,CHUNK_SIZE)
+            while self._read_n_request_chunks(chunk_generator, buffer_size//CHUNK_SIZE):
+                time_taken = time() - prev_timestamp
+                if time_taken < 0.5:
+                    buffer_size = min(buffer_size*SPEED_MULT_FACTOR,MAX_BUFFER_SIZE)
+                    continue
+                new_speed = buffer_size / (time_taken*1024)
+                speed_history.append(new_speed)
+                if len(speed_history) == SPEED_BUFFER_SIZE:
+                    avg = sum(speed_history)/len(speed_history)
+                    deviation = avg - min(speed_history)
+                    if deviation < 20 && avg > 0:
+                        break
+                prev_timestamp = time()
+                
+        avg_speed = sum(speed_history)/len(speed_history)
+        return avg_speed
 
     def _serialize(self, obj):
         """Serializes object to protobuf"""
@@ -190,5 +256,8 @@ class GridClient:
         return self._send_msg(params)
 
     def get_connection_speed(self, worker_id):
-        # TODO
-        return {"ping": 5, "download": 100, "upload": 100}
+        random = random.getrandbits(128)
+        ping = self._get_ping(worker_id, random)
+        upload_speed = self._get_upload_speed(worker_id, random)
+        download_speed = self._get_download_speed(worker_id, random)
+        return {"ping": ping, "download": download_speed, "upload": upload_speed}
