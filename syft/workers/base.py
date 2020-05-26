@@ -329,6 +329,7 @@ class BaseWorker(AbstractWorker):
         garbage_collect_data=None,
         requires_grad=False,
         create_pointer=True,
+        placeholder_id: Union[str, int] = None,
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -385,7 +386,7 @@ class BaseWorker(AbstractWorker):
             obj.id_at_origin = obj.id
 
         # Send the object
-        self.send_obj(obj, worker)
+        self.send_obj(obj, worker, placeholder_id)
 
         if requires_grad:
             obj.origin = None
@@ -430,19 +431,19 @@ class BaseWorker(AbstractWorker):
             obj: a Framework Tensor or a subclass of an AbstractTensor with an id
         """
         obj = obj_msg.object
+        placeholder_id = obj_msg.placeholder_id
 
-        self.object_store.set_obj(obj)
+        if isinstance(obj, FrameworkTensor) and (
+            obj.requires_grad and obj.origin is not None and obj.id_at_origin is not None
+        ):
+            obj.register_hook(obj.trigger_origin_backward_hook(obj.origin, obj.id_at_origin))
 
-        if isinstance(obj, FrameworkTensor):
-            tensor = obj
-            if (
-                tensor.requires_grad
-                and tensor.origin is not None
-                and tensor.id_at_origin is not None
-            ):
-                tensor.register_hook(
-                    tensor.trigger_origin_backward_hook(tensor.origin, tensor.id_at_origin)
-                )
+        # Check if we received an object from a protocol run
+        if placeholder_id in self._protocol_placeholders:
+            self._protocol_placeholders[placeholder_id].instantiate(obj)
+        else:
+            # TODO is it really in the else here or do we want to register anyway?
+            self.object_store.set_obj(obj)
 
     def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         # NOTE cannot currently be used because there is no ObjectDeleteMessage
@@ -717,7 +718,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker"):
+    def send_obj(self, obj: object, location: "BaseWorker", placeholder_id: Union[str, int] = None):
         """Send a torch object to a worker.
 
         Args:
@@ -725,7 +726,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(ObjectMessage(obj), location)
+        return self.send_msg(ObjectMessage(obj, placeholder_id), location)
 
     def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""

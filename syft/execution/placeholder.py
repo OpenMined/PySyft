@@ -144,17 +144,31 @@ class PlaceHolder(AbstractTensor):
 
     __repr__ = __str__
 
-    def send(self, *args, **kwargs):
+    def send(self, *locations, **kwargs):
         """
         calls move on child & register_action to role
         """
-        response = self.child.send(*args, **kwargs)
-        placeholder = PlaceHolder.convert_to_placeholders(response, self)
-        command = ("send", self, args, kwargs)
-        self.role.register_action(
-            (command, placeholder), syft.execution.communication.CommunicationAction
-        )
-        return placeholder
+        if len(locations) != 1:
+            raise ValueError("Sending to multiple destinations in Protocols is not yet supported.")
+
+        location = locations[0]
+
+        if self.tracing:
+            receiving_ph = PlaceHolder.create_from(self.child, role=location, tracing=self.tracing)
+            location._store_placeholders(receiving_ph)
+
+            # Add placeholder_id to kwargs
+            kwargs = {**kwargs, "placeholder_id": receiving_ph.id.value}
+
+            command = ("send", self, locations, kwargs)
+            self.role.register_action(
+                (command, None), syft.execution.communication.CommunicationAction
+            )
+
+            return receiving_ph
+
+        else:
+            return self.child.send(location.worker, **kwargs)
 
     def move(self, *args, **kwargs):
         """

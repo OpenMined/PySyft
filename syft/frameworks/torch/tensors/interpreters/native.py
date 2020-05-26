@@ -422,6 +422,7 @@ class TorchTensor(AbstractTensor):
         preinitialize_grad: bool = False,
         no_wrap: bool = False,
         garbage_collect_data: bool = True,
+        placeholder_id: Union[str, int] = None,
     ):
         """Gets the pointer to a new remote object.
 
@@ -477,6 +478,7 @@ class TorchTensor(AbstractTensor):
                 requires_grad=requires_grad,
                 preinitialize_grad=preinitialize_grad,
                 garbage_collect_data=garbage_collect_data,
+                placeholder_id=placeholder_id,
             )
 
             ptr.description = self.description

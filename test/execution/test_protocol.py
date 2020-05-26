@@ -305,3 +305,41 @@ def test_role_assignments(workers):
 
     assert protocol.role_assignments.assignments["role1"] == [bob]
     assert protocol.role_assignments.assignments["role2"] == [alice]
+
+
+def test_execution_with_communications(workers):
+    @sy.func2protocol(roles=["role1", "role2"])
+    def protocol(role1, role2):
+        x = role1.torch.rand([1])
+        y = role1.torch.rand([1])
+
+        z = role2.torch.rand([1])
+
+        # On role1
+        a = x + y
+        b = a.send(role2)
+
+        # On role2
+        res = b + z
+        # d = c.send(role1)
+
+        # # On role1
+        # res = d * 2
+
+        return res
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    protocol.assign("role1", alice)
+    protocol.assign("role2", bob)
+
+    print(protocol.role_assignments.assignments["role1"][0]._protocol_placeholders)
+    print(protocol.role_assignments.assignments["role2"][0]._protocol_placeholders)
+
+    res = protocol()
+    print(res)
+    res = protocol()
+    print(res)
+
+    # assert protocol.role_assignments.assignments["role1"][0]._protocol_placeholders == {}
