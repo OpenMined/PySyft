@@ -4,7 +4,7 @@ from typing import Union
 import syft as sy
 from syft.generic.pointers.string_pointer import StringPointer
 from syft.workers.base import BaseWorker
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.object import AbstractObject
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook import hook_args
 from syft_proto.generic.string_pb2 import String as StringPB

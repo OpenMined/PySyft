@@ -19,7 +19,7 @@ from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.object import AbstractObject
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor

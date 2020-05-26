@@ -1,6 +1,6 @@
 import math
 import logging
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.object import AbstractObject
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_dataset import PointerDataset
 import torch

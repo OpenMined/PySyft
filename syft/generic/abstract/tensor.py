@@ -2,9 +2,9 @@ from typing import List
 import weakref
 
 import syft as sy
-from syft.generic.object import _apply_args  # noqa: F401
-from syft.generic.object import AbstractObject
-from syft.generic.object import initialize_object
+from syft.generic.abstract.object import _apply_args  # noqa: F401
+from syft.generic.abstract.object import AbstractObject
+from syft.generic.abstract.object import initialize_object
 from syft.serde.syft_serializable import SyftSerializable
 
 

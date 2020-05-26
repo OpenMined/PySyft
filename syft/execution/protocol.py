@@ -8,7 +8,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
 from syft.execution.role_assignments import RoleAssignments
 
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.object import AbstractObject
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
 
