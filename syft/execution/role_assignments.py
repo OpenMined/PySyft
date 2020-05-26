@@ -13,15 +13,15 @@ class RoleAssignments(SyftSerializable):
     which other parties are participating and communicate with them if needed.
     """
 
-    def __init__(self, role_ids: list = [], assignments: dict = {}):
+    def __init__(self, role_ids: list = None, assignments: dict = None):
         """
         Args:
             role_ids: an iterable containing values that indentify the roles of
                 the Protocol to which the RoleAssignments is associated.
         """
-        if assignments:
+        if assignments is not None:
             self.assignments = assignments
-        elif role_ids:
+        elif role_ids is not None:
             self.assignments = {role_id: [] for role_id in role_ids}
         else:
             raise ValueError(
