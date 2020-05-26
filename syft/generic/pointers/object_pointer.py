@@ -52,7 +52,6 @@ class ObjectPointer(AbstractObject, SyftSerializable):
         tags: List[str] = None,
         description: str = None,
     ):
-
         """Initializes a ObjectPointer.
 
         Args:

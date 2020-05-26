@@ -1,9 +1,8 @@
-import functools
 from typing import List
 import weakref
 
 import syft as sy
-from syft.generic.object import _apply_args
+from syft.generic.object import _apply_args  # noqa: F401
 from syft.generic.object import AbstractObject
 from syft.generic.object import initialize_object
 from syft.serde.syft_serializable import SyftSerializable
@@ -128,7 +127,7 @@ class AbstractTensor(AbstractObject, SyftSerializable):
             return child_grad.wrap()
 
 
-def initialize_tensor(hook, obj, owner=None, id=None, init_args=tuple(), init_kwargs={}):
+def initialize_tensor(hook, obj, owner=None, id=None, init_args=(), init_kwargs={}):
     """Initializes the tensor.
 
     Args:

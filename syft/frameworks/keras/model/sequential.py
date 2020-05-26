@@ -1,4 +1,3 @@
-from collections import defaultdict, OrderedDict
 import inspect
 
 import tensorflow as tf

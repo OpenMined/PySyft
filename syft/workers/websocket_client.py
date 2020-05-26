@@ -192,7 +192,7 @@ class WebsocketClientWorker(BaseWorker):
         """
 
         if return_ids is None:
-            return_ids = tuple([sy.ID_PROVIDER.pop()])
+            return_ids = (sy.ID_PROVIDER.pop(),)
 
         name, target, args_, kwargs_ = message
 

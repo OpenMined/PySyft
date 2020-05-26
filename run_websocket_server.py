@@ -152,7 +152,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--testing",
         action="store_true",
-        help="if set, websocket server worker will load the test dataset instead of the training dataset",
+        help=(
+            "if set, websocket server worker will load "
+            "the test dataset instead of the training dataset"
+        ),
     )
     parser.add_argument(
         "--verbose",
@@ -164,10 +167,12 @@ if __name__ == "__main__":
         "--notebook",
         type=str,
         default="normal",
-        help="""can run websocket server for websockets examples of mnist/mnist-parallel or
-    pen_testing/steal_data_over_sockets. Type 'mnist' for starting server
-    for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel
-    and 'steal_data' for pen_tesing stealing data over sockets""",
+        help=(
+            "can run websocket server for websockets examples of mnist/mnist-parallel or "
+            "pen_testing/steal_data_over_sockets. Type 'mnist' for starting server "
+            "for websockets-example-MNIST, `mnist-parallel` for websockets-example-MNIST-parallel "
+            "and 'steal_data' for pen_tesing stealing data over sockets"
+        ),
     )
     parser.add_argument("--pytest_testing", action="store_true", help="""Used for pytest testing""")
     args = parser.parse_args()
@@ -191,7 +196,7 @@ if __name__ == "__main__":
         else:
             server = WebsocketServerWorker(**kwargs)
             server.start()
-    elif args.notebook == "mnist-parallel" or args.pytest_testing == True:
+    elif args.notebook == "mnist-parallel" or args.pytest_testing:
         server = start_websocket_server_worker(
             id=args.id,
             host=args.host,
