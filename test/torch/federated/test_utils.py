@@ -130,3 +130,24 @@ def test_accuracy():
     acc = utils.accuracy(pred, target)
 
     assert acc == 1.0 / 3.0
+
+
+def test_federated_avg():
+    class Net(th.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = th.nn.Linear(2, 2)
+
+    net1 = Net()
+    net2 = Net()
+    net3 = Net()
+
+    models = {}
+    models[0] = net1
+    models[1] = net2
+    models[2] = net3
+
+    avg_model = utils.federated_avg(models)
+    assert avg_model != net1
+    assert (avg_model.fc1.weight.data != net1.fc1.weight.data).all()
+    assert (avg_model.fc1.bias.data != net1.fc1.bias.data).all()
