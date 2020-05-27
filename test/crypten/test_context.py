@@ -30,8 +30,8 @@ def test_add_crypten_support(workers):
 
 
 def test_context(workers):
-    # self, alice and bob
-    n_workers = 3
+    # alice and bob
+    n_workers = 2
 
     alice = workers["alice"]
     bob = workers["bob"]
@@ -45,8 +45,8 @@ def test_context(workers):
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
     def plan_func(crypten=crypten):
-        alice_tensor = crypten.load("crypten_data", 1)
-        bob_tensor = crypten.load("crypten_data", 2)
+        alice_tensor = crypten.load("crypten_data", 0)
+        bob_tensor = crypten.load("crypten_data", 1)
 
         crypt = alice_tensor + bob_tensor
         result = crypt.get_plain_text()
