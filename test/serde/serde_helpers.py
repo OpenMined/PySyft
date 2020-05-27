@@ -1450,7 +1450,7 @@ def make_communication_action(**kwargs):
 
 
 # syft.execution.worker_actions.WorkerAction
-def make_worker_action(**kwargs):
+def make_storage_action(**kwargs):
     # @TODO: add test
     return []
 
