@@ -53,6 +53,7 @@ samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
+samples[syft.execution.role_assignments.RoleAssignments] = make_role_assignments
 samples[syft.execution.state.State] = make_state
 
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
