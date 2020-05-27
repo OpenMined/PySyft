@@ -51,14 +51,12 @@ def test_reverse_bit(value, result):
 
 
 @pytest.mark.parametrize(
-    "poly_modulus_degree, plain_modulus, coeff_bit_sizes",
+    "poly_modulus, plain_modulus, coeff_bit_sizes",
     [(128, 2, [30, 40, 50]), (1024, 64, [30, 60, 60]), (64, 64, [30])],
 )
-def test_EncryptionParams(poly_modulus_degree, plain_modulus, coeff_bit_sizes):
+def test_EncryptionParams(poly_modulus, plain_modulus, coeff_bit_sizes):
     params = EncryptionParams(
-        poly_modulus_degree,
-        CoeffModulus().create(poly_modulus_degree, coeff_bit_sizes),
-        plain_modulus,
+        poly_modulus, CoeffModulus().create(poly_modulus, coeff_bit_sizes), plain_modulus
     )
     for i in range(len(coeff_bit_sizes)):
         assert is_prime(params.coeff_modulus[i])
@@ -94,7 +92,7 @@ def test_CoeffModulus_create():
 
 
 @pytest.mark.parametrize(
-    "poly_modulus_degree, SeqLevelType, result",
+    "poly_modulus, SeqLevelType, result",
     [
         (1024, SeqLevelType.TC128, 1),
         (1024, SeqLevelType.TC192, 1),
@@ -116,9 +114,9 @@ def test_CoeffModulus_create():
         (32768, SeqLevelType.TC256, 9),
     ],
 )
-def test_CoeffModulus_bfv_default(poly_modulus_degree, SeqLevelType, result):
+def test_CoeffModulus_bfv_default(poly_modulus, SeqLevelType, result):
     coeffModulus = CoeffModulus()
-    assert len(coeffModulus.bfv_default(poly_modulus_degree, SeqLevelType)) == result
+    assert len(coeffModulus.bfv_default(poly_modulus, SeqLevelType)) == result
 
 
 @pytest.mark.parametrize(

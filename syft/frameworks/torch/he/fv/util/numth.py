@@ -6,6 +6,9 @@ from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 def is_prime(value, num_rounds=40):
     """Check for the integer if it probably prime.
     Not intrested in strictly checking for prime.
+
+    Returns:
+        True if it is sufficiently prime no else False.
     """
     # First check the simplest cases.
     if value < 2:
@@ -69,8 +72,19 @@ def is_prime(value, num_rounds=40):
 
 
 def get_primes(size, bit_size, count):
-    """Generate and return a list of probably prime numbers with at least a constant
+    """Generate a list of probably prime numbers with at least a constant
     factor difference between the numbers.
+
+    Args:
+        size: polynomail modulus value.
+        bit_size: bit lengths of the prime no's to be generated.
+        count: No's of prime numbers required.
+
+    Returns:
+        A list of probably primes numbers.
+
+    Raises:
+        ValueError: if `count <= 0` or `size <= 0`.
     """
     if count <= 0:
         raise ValueError(f"{count} must be positive value.")

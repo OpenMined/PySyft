@@ -8,17 +8,16 @@ class Context:
     Attributes:
         param: An EncryptionParams object.
         coeff_div_plain_modulus: A list of float values equal to (q[i]/t),
-        In research papers denoted by delta.
+            In research papers denoted by delta.
         rns_tool: A RNSTool class instance.
     """
 
     def __init__(self, encryption_param):
+
         self.param = encryption_param
+
         self.coeff_div_plain_modulus = [
             x / encryption_param.plain_modulus for x in encryption_param.coeff_modulus
         ]
-        self.rns_tool = RNSTool(
-            self.param.poly_modulus_degree,
-            encryption_param.coeff_modulus,
-            encryption_param.plain_modulus,
-        )
+
+        self.rns_tool = RNSTool(encryption_param)

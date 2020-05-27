@@ -10,12 +10,19 @@ class RNSTool:
     """A class performing major operations required in the process of decryption
     in RNS variant of FV HE Scheme.
 
-    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk]
+    After the multiplication of secret key with the ciphertext as [ct0 + ct1 * sk + ct2 * sk^2...]
     we apply the decrypt_scale_and_round method of this class to get the plaintext object.
+
+    Args:
+        encryption_param (EncryptionParams): For extracting encryption parameters.
     """
 
-    def __init__(self, poly_modulus_degree, q, t):
-        self._coeff_count = poly_modulus_degree
+    def __init__(self, encryption_param):
+        n = encryption_param.poly_modulus
+        q = encryption_param.coeff_modulus
+        t = encryption_param.plain_modulus
+
+        self._coeff_count = n
         self.base_q = RNSBase(q)
         self.base_q_size = len(q)
         self._t = t
@@ -36,6 +43,15 @@ class RNSTool:
             )
 
     def decrypt_scale_and_round(self, input):
+        """Perform the remaining procedure of decryptions process after getting the result of
+        [c0 + c1 * sk + c2 * sk^2 ...]_q.
+
+        Args:
+            input: Result of [c0 + c1 * sk + c2 * sk^2 ...]_q.
+
+        Returns:
+            A 1-dim list representing plaintext polynomial of the decrypted result.
+        """
         result = [0] * self._coeff_count
 
         # Computing |gamma * t|_qi * ct(s)

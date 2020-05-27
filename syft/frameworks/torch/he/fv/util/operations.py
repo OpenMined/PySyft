@@ -120,9 +120,15 @@ def multiply_many_except(operands, count, expt):
 
 
 def xgcd(x, y):
-    """ Extended GCD:
-        returns (gcd, x, y) where gcd is the greatest common divisor of a and b.
-        The numbers x, y are such that gcd = ax + by.
+    """ Extended GCD
+
+    Args:
+        x (integer)
+        y (integer)
+
+    Returns:
+        (gcd, x, y) where gcd is the greatest common divisor of a and b.
+            The numbers x, y are such that gcd = ax + by.
     """
     prev_a = 1
     a = 0
@@ -146,20 +152,20 @@ def xgcd(x, y):
 
 
 def multiply_add_plain_with_delta(phase, message, context):
-    """Add message(plaintext) into phase.
+    """Add message (PlainText) into phase.
 
     Args:
-        phase: phase is the result of (public_key * u + e)
-        message: A Plaintext object of integer to be encrypted.
-        context: A Context object for supplying encryption parameters.
+        phase: phase is pre-computed carrier polynomial where we can add message data.
+        message (Plaintext): A plaintext representation of integer data to be encrypted.
+        context (Context): Context for extracting encryption parameters.
 
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
     coeff_modulus = context.param.coeff_modulus
-    plain_coeff_count = message.coeff_count
-    delta = context.coeff_div_plain_modulus
     message = message.data
+    plain_coeff_count = len(message)
+    delta = context.coeff_div_plain_modulus
     phase0, phase1 = phase.data  # here phase = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,

@@ -1,11 +1,11 @@
 class PublicKey:
-    """A wrapper class for representing public_key.
+    """A wrapper class for representing public key.
+
+    Typical format of public key data would be [c0, c1, ...] where ci represents
+    a list of polynomials.
 
     Attributes:
-        data: A list of values of the public key.
-
-    Typical format:
-    [c0, c1] : where c0 represents `-(a*s + e)(mod q)` and c1 represents `a`
+        data: A 3-dim list representing public key values.
     """
 
     def __init__(self, data):

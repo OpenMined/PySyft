@@ -18,11 +18,13 @@ def sample_poly_ternary(parms):
     represents as 'q' in the research paper.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the
-        encryption parameters.
+       parms (EncryptionParam): Encryption parameters.
+
+    Returns:
+        A 2-dim list having integer from [-1, 0, 1].
     """
     coeff_modulus = parms.coeff_modulus
-    coeff_count = parms.poly_modulus_degree
+    coeff_count = parms.poly_modulus
     coeff_mod_size = len(coeff_modulus)
 
     result = [0] * coeff_mod_size
@@ -48,12 +50,14 @@ def sample_poly_normal(param):
     represented as (modulus - value) a positive value.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the
-        encryption parameters.
+        parms (EncryptionParam): Encryption parameters.
+
+    Returns:
+        A 2-dim list having integer from normal distributions.
     """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
-    coeff_count = param.poly_modulus_degree
+    coeff_count = param.poly_modulus
 
     result = [0] * coeff_mod_size
     for i in range(coeff_mod_size):
@@ -79,12 +83,13 @@ def sample_poly_uniform(param):
     """Generate a polynomial from uniform distribution.
 
     Args:
-        parms: A valid EncryptionParam class object required for extracting the
-        encryption parameters.
+        parms (EncryptionParam): Encryption parameters.
+    Returns:
+        A 2-dim list having integer from uniform distributions.
     """
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
-    coeff_count = param.poly_modulus_degree
+    coeff_count = param.poly_modulus
 
     max_random = 0x7FFFFFFFFFFFFFFF
     result = [0] * coeff_mod_size
@@ -109,9 +114,12 @@ def encrypt_asymmetric(context, public_key):
     subsequent processes to add a message into it.
 
     Args:
-        context: A valid Context object required for extracting the encryption
-        parameters.
-        public_key: A PublicKey object generated with same encryption parameters.
+        context (Context): A valid context required for extracting the encryption
+            parameters.
+        public_key (PublicKey): A public key generated with same encryption parameters.
+
+    Returns:
+        A ciphertext object containing encryption of zeroes by asymmetric encryption procedure.
     """
     param = context.param
     coeff_modulus = param.coeff_modulus
@@ -143,8 +151,11 @@ def encrypt_symmetric(context, secret_key):
     processes to add a message into it.
 
     Args:
-        context: A valid Context object required for extracting the encryption parameters.
-        secret_key: A SecretKey object generated with same encryption parameters.
+        context (Context): A valid context required for extracting the encryption parameters.
+        secret_key (SecretKey): A secret key generated with same encryption parameters.
+
+    Returns:
+        A ciphertext object containing encryption of zeroes by symmetric encryption procedure.
     """
     coeff_modulus = context.param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)

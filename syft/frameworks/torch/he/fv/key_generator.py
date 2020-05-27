@@ -6,17 +6,15 @@ from syft.frameworks.torch.he.fv.public_key import PublicKey
 
 
 class KeyGenerator:
-    """A class used for generating matching secret key and public key.
+    """It is used for generating matching secret key and public key.
     Constructing a KeyGenerator requires only a Context class instance with valid
-    encryption parameters."""
+    encryption parameters.
+
+    Args:
+           context (Context): Context for extracting encryption parameters.
+    """
 
     def __init__(self, context):
-        """Creates a KeyGenerator initialized with the specified context params.
-
-        Args:
-            context: The Context object.
-        """
-
         if not isinstance(context, Context):
             raise ValueError("invalid context")
 
@@ -25,10 +23,10 @@ class KeyGenerator:
         self._context = context
 
     def keygen(self):
-        """Generate the secret and public key.
+        """Generate the secret key and public key.
 
         Returns:
-            A list of (size = 2) containing secret_key and public_key in order.
+            A list of (size = 2) containing secret_key and public_key in respectively.
         """
         self._generate_sk()
         self._generate_pk()

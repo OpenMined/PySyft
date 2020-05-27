@@ -2,9 +2,10 @@ from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 
 
 class BaseConvertor:
-    """BaseConvertor is responsible for converting plain/base of integer.
+    """BaseConvertor is used for converting plain/base of integer
+    from one set of bases to another set of bases.
 
-    Attributes:
+    Args:
         ibase: A list of integer denoting the input base.
         obase: A list of integer denoting the base of the output required.
     """

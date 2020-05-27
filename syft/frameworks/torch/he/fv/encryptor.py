@@ -10,6 +10,10 @@ class Encryptor:
     requires a Context with valid encryption parameters, the public key or the secret
     key. If an Encrytor is given a secret key, it supports symmetric-key encryption.
     If an Encryptor is given a public key, it supports asymmetric-key encryption.
+
+    Args:
+        context (Context): Context for extracting encryption parameters.
+        key: A public key or secret key that we want to use for encryption.
     """
 
     def __init__(self, context, key):
@@ -17,11 +21,16 @@ class Encryptor:
         self._key = key
 
     def encrypt(self, message):
-        """
-        Encrypts an integer message using the FV HE Scheme.
+        """Encrypts an Plaintext data using the FV HE Scheme.
 
         Args:
-            message: An integer value which has to be encrypted.
+            message (Plaintext): An plaintext which has to be encrypted.
+
+        Retruns:
+            A Ciphertext object containing the encrypted result.
+
+        Raises:
+            ValueError: Key provided for encryption is not a valid key object.
         """
 
         if isinstance(self._key, PublicKey):
@@ -34,9 +43,15 @@ class Encryptor:
             raise ValueError("key for encryption is not valid")
 
     def _encrypt(self, message, is_asymmetric):
-        """encrypt the message according to the key provided while creating an instance of this class.
-        public_key --> asymmetric encryption
-        secret_key --> symmetric encryption
+        """Encrypts the message according to the key provided.
+
+        Args:
+            message (Plaintext): An Plaintext object which has to be encrypted.
+            is_asymmetric (bool): Based on the key provided for encryption select
+                the mode of encryption.
+
+        Returns:
+            A Ciphertext object contating the encrypted result.
         """
 
         result = None

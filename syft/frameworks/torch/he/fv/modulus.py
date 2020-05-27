@@ -8,8 +8,9 @@ from syft.frameworks.torch.he.fv.util.global_variable import DEFAULT_C0EFF_MODUL
 
 
 class SeqLevelType(Enum):
-    """ Represents standard security level according to the HomomorphicEncryption.org
-    security standard."""
+    """Represents standard security level according to the HomomorphicEncryption.org
+    security standard. Can be used to select the suggested secure coefficient modulus.
+    """
 
     TC128 = 128
     TC192 = 192
@@ -18,14 +19,21 @@ class SeqLevelType(Enum):
 
 class CoeffModulus:
     def bfv_default(self, poly_modulus_degree, seq_level=SeqLevelType.TC128):
-        """Returns a default coefficient modulus for the BFV scheme that guarantees
-        a given security level when using a given poly_modulus_degree, according
-        to the HomomorphicEncryption.org security standard.
+        """Provide secure coefficient modulus for BFV scheme that guarantees
+        a given security level when used with a given polynomial modulus,
+        according to the HomomorphicEncryption.org security standard.
 
         Args:
-            poly_modulus_degree: The value of the poly_modulus_degree
-        encryption parameter
-            seq_level: (optional) The desired standard security level
+            poly_modulus_degree: The value of the polynomial modulus.
+            seq_level: (optional) The desired standard security level.
+
+        Returns:
+            A list of coefficient modulus.
+
+        Raises;
+            ValueError: if coefficient modulus are not available for provided
+                polynomial modulus.
+
         """
 
         if seq_level == SeqLevelType.TC128:
@@ -40,13 +48,16 @@ class CoeffModulus:
         raise ValueError(f"{seq_level} is not a valid standard security level")
 
     def create(self, poly_modulus_degree, bit_sizes):
-        """Returns a custom coefficient modulus suitable for use with the specified
-        poly_modulus_degree. The return value will be a list consisting of
+        """Generate coefficient modulus suitable for use with the specified
+        polynomial modulus. The return value will be a list consisting of
         distinct prime numbers of bit-lengths as given in the bit_sizes parameter.
 
         Args:
-            poly_modulus_degree: The value of the poly_modulus_degree encryption parameter
-            bit_sizes: (list) The bit-lengths of the primes to be generated
+            poly_modulus_degree: The value of the polynomial modulus.
+            bit_sizes: (list) The bit-lengths of coefficient modulus value to be generated.
+
+        Returns:
+            A list of coefficient modulus.
         """
 
         count_table = defaultdict(lambda: 0)

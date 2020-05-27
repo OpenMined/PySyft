@@ -1,16 +1,21 @@
 from syft.frameworks.torch.he.fv.plaintext import PlainText
+from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 
 
 class IntegerEncoder:
-    """Encodes integers into plaintext polynomials that Encryptor class can encrypt. An instance of
-    the IntegerEncoder class converts an integer into a plaintext polynomial by placing its
-    binary digits as the coefficients of the polynomial. Decoding the integer amounts to
-    evaluating the plaintext polynomial at x=2.
+    """Encodes integers into plaintext polynomials that Encryptor class can encrypt.
+
+    An instance of the IntegerEncoder class converts an integer into a plaintext polynomial
+    by placing its binary digits as the coefficients of the polynomial. Decoding the integer
+    amounts to evaluating the plaintext polynomial at x=2.
 
     Negative integers are represented by using -1 instead of 1 in the binary representation,
     and the negative coefficients are stored in the plaintext polynomials as unsigned integers
     that represent them modulo the plaintext modulus. Thus, for example, a coefficient of -1
     would be stored as a polynomial coefficient plain_modulus-1.
+
+    Args:
+        context (Context): Context for extracting encryption parameters.
     """
 
     def __init__(self, context):
@@ -31,7 +36,10 @@ class IntegerEncoder:
     def encode(self, value):
         """Encodes a signed integer into a plaintext polynomial.
         Args:
-            value: The signed integer to encode
+            value: The signed integer to be encode.
+
+        Returns:
+            A PlainText object containing the integer value.
         """
 
         coeff_index = 0
@@ -58,15 +66,19 @@ class IntegerEncoder:
         return PlainText(plaintext)
 
     def decode(self, plain):
-        """Decodes a plaintext polynomial and returns the result.
+        """Decodes a plaintext polynomial and returns the integer.
+
         Mathematically this amounts to evaluating the input polynomial at x=2.
 
         Args:
-            plain: The plaintext to be decoded
+            plain: The plaintext to be decoded.
+
+        Returns:
+            An integer value.
         """
 
         result = 0
-        bit_index = plain.significant_coeff_count()
+        bit_index = get_significant_count(plain.data)
         while bit_index > 0:
             bit_index -= 1
             coeff = plain.data[bit_index]
