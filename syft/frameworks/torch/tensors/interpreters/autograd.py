@@ -4,6 +4,13 @@ import syft
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.hook.hook_args import (
+    get_child,
+    register_backward_func,
+    register_forward_func,
+    register_type_rule,
+    one,
+)
 from syft.workers.abstract import AbstractWorker
 from . import gradients
 
@@ -391,3 +398,10 @@ class AutogradTensor(AbstractTensor):
         )
 
         return tensor
+
+
+register_type_rule({AutogradTensor: one})
+register_forward_func({AutogradTensor: get_child})
+register_backward_func(
+    {AutogradTensor: lambda i, **kwargs: AutogradTensor(data=i).on(i, wrap=False)}
+)
