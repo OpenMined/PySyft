@@ -320,11 +320,8 @@ class BaseWorker(AbstractWorker, ObjectStorage):
         msg = sy.serde.deserialize(bin_message, worker=self)
 
         if self.verbose:
-            print(
-                f"worker {self} received {type(msg).__name__} {msg.contents}"
-                if hasattr(msg, "contents")
-                else f"worker {self} received {type(msg).__name__}"
-            )
+            print(f"To {self.id}: ({type(msg).__name__}) {msg}")
+            # time.sleep(0.068)
 
         # Step 1: route message to appropriate function
         response = self._message_router[type(msg)](msg)
@@ -1218,6 +1215,9 @@ class BaseWorker(AbstractWorker, ObjectStorage):
 
     def feed_crypto_primitive_store(self, types_primitives: dict):
         self.crypto_store.add_primitives(types_primitives)
+
+    def load_crypto_primitive(self, crypto_type, filename):
+        self.crypto_store.load_primitives(crypto_type, filename)
 
     def list_tensors(self, *args):
         return str(self._tensors)

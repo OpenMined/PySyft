@@ -25,7 +25,7 @@ from syft.generic.utils import remote
 n = 32  # 8  # 32  # bit precision
 λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
 assert λs == 2
-N = 10_000  # when to start multi processing
+N = 10_000_000  # when to start multi processing
 
 no_wrap = {"no_wrap": True}
 
@@ -139,7 +139,7 @@ def fss_op(x1, x2, type_op="eq"):
             for i, location in enumerate(locations):
                 location.crypto_store.get_keys(f"fss_{type_op}", n_instances=numel, remove=True)
         else:
-            print("sync")
+            # print("sync")
             shares = []
             for i, location in enumerate(locations):
                 share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
