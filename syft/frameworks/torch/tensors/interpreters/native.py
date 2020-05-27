@@ -9,7 +9,7 @@ from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker

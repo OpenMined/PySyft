@@ -2,8 +2,7 @@ import syft as sy
 import numpy as np
 import torch as th
 
-
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook_args import (
     get_child,

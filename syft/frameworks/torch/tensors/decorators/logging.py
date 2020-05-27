@@ -9,8 +9,8 @@ from syft.generic.frameworks.hook.hook_args import (
     register_type_rule,
     one,
 )
-from syft.generic.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
+from syft.generic.abstract.tensor import AbstractTensor
 
 
 class LoggingTensor(AbstractTensor):
