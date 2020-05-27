@@ -197,7 +197,7 @@ class AbstractObject(ABC, SyftSerializable):
 
 
 def initialize_object(
-    hook, obj, owner=None, reinitialize=True, id=None, init_args=tuple(), init_kwargs={}
+    hook, obj, owner=None, reinitialize=True, id=None, init_args=(), init_kwargs={}
 ):
     """Initializes the tensor.
 

@@ -1,7 +1,6 @@
 import random
 from typing import List
 
-import numpy as np
 import torch
 
 from syft.workers.base import BaseWorker
@@ -249,7 +248,7 @@ class EncryptedLinearRegression:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = set([])
+        workers = set()
         for ptr in ptrs:
             workers.add(ptr.child.location)
         return tuple(workers)
@@ -425,7 +424,8 @@ class DASH:
                 map(lambda t: t.has_child() and isinstance(t.child, PointerTensor), (x, c, y))
             ):
                 raise TypeError(
-                    "Some tensors are not pointers or are not wrapped, please provided a wrapped Pointer Tensor"
+                    "Some tensors are not pointers or are not wrapped, please provided a wrapped "
+                    "Pointer Tensor"
                 )
 
             # Check if both are in the same worker
@@ -461,7 +461,7 @@ class DASH:
         """
         Method that returns the pool of workers in a tuple
         """
-        workers = set([])
+        workers = set()
         for ptr in ptrs:
             workers.add(ptr.child.location)
         return tuple(workers)

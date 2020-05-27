@@ -196,7 +196,7 @@ class RNNBase(nn.Module):
                 (base_cell(sz, hidden_size, bias, nonlinearity) for sz in sizes)
             )
 
-    def forward(self, x, hc=None):
+    def forward(self, x, hc=None):  # noqa: C901
         # If batch_first == True, swap batch with seq_len
         # At the end of the procedure we swap it back to the original structure
         if self.batch_first:

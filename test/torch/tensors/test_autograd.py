@@ -665,7 +665,7 @@ def test_train_remote_autograd_tensor(workers):
             loss = ((predictions - target_input) ** 2).sum()
             # check for monotonic decrease of the loss
 
-            if remote == True:
+            if remote:
                 # Remote loss monotonic decrease
                 loss_val_local = loss.copy().get().item()
                 assert loss_val_local < loss_previous

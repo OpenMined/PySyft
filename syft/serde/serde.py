@@ -7,6 +7,7 @@ the function apply_compress_scheme.
 
 from typing import Callable
 
+
 ## SECTION:  High Level Public Functions (these are the ones you use)
 def serialize(
     obj: object,

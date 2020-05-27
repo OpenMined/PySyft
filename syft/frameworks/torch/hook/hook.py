@@ -3,14 +3,11 @@ from functools import wraps
 import logging
 from math import inf
 import torch
-from torch import nn
-import types
 import weakref
 
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.hook.hook import FrameworkHook
-from syft.generic.tensor import AbstractTensor
 from syft.generic.frameworks.remote import Remote
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
@@ -22,15 +19,11 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
-from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import initialize_tensor
-from syft.generic.object import _apply_args
+from syft.generic.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.execution.plan import Plan
-
-from syft.exceptions import route_method_exception
 
 
 class TorchHook(FrameworkHook):
@@ -207,7 +200,8 @@ class TorchHook(FrameworkHook):
         # Hook the Parameter methods to store tensor chains in parameters
         self._hook_parameters()
 
-        # Hook torch functions from modules like torch.add OR torch.nn.functional (containing relu, etc.)
+        # Hook torch functions from modules like torch.add OR
+        # torch.nn.functional (containing relu, etc.)
         self._hook_torch_module()
 
         # Hook torch.nn (containing Linear and Convolution layers)
@@ -574,7 +568,9 @@ class TorchHook(FrameworkHook):
             "__sizeof__",
             "__subclasshook__",
             "_get_type",
-            # "__eq__", # FIXME it now overwritten in native.py to use torch.eq, because of pb between == & __eq__ See #2030
+            # FIXME it now overwritten in native.py to use torch.eq, because
+            # of pb between == & __eq__ See #2030
+            # "__eq__",
             "__gt__",
             "__ge__",
             "__lt__",
@@ -584,9 +580,10 @@ class TorchHook(FrameworkHook):
 
     def _hook_module(self):
         """Overloading torch.nn.Module with PySyft functionality, the primary module
-           responsible for core ML functionality such as Neural network layers and
-           loss functions.
-           It is important to note that all the operations are actually in-place.
+        responsible for core ML functionality such as Neural network layers and
+        loss functions.
+
+        It is important to note that all the operations are actually in-place.
         """
         self.element_iter_dict = {}
 
@@ -665,7 +662,10 @@ class TorchHook(FrameworkHook):
         # self.torch.nn.Module.move = module_move_
 
         def module_get_(nn_self):
-            """overloads torch.nn instances with get method so that parameters could be sent back to owner"""
+            """
+            overloads torch.nn instances with get method so that parameters
+            could be sent back to owner
+            """
             for element_iter in tensor_iterator(nn_self):
                 for p in element_iter():
                     p.get_()
@@ -761,9 +761,10 @@ class TorchHook(FrameworkHook):
 
     def _hook_optim(self):
         """Overloading torch.optim.Optimizer with PySyft functionality. Optimizer
-           hyper-parameters should indeed be converted to fixed precision to interact
-           with fixed precision or additive shared tensors.
-           It is important to note that all the operations are actually in-place.
+        hyper-parameters should indeed be converted to fixed precision to interact
+        with fixed precision or additive shared tensors.
+
+        It is important to note that all the operations are actually in-place.
         """
 
         def optim_fix_precision_(optim_self, *args, **kwargs):
@@ -791,9 +792,9 @@ class TorchHook(FrameworkHook):
 
         self.torch.optim.Optimizer.float_precision = optim_float_precision_
 
-        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible with
-        # PySyft remote tensors, so this method adds support for gradient clipping of remote tensors,
-        # and keeps functionalities from PyTorch to clip local PyTorch tensors.
+        # Modification of torch/nn/utils/clip_grad.py. The plain PyTorch method was not compatible
+        # with PySyft remote tensors, so this method adds support for gradient clipping of remote
+        # tensors, and keeps functionalities from PyTorch to clip local PyTorch tensors.
         def clip_grad_norm_remote_(parameters, max_norm, norm_type=2):
             """Clips gradient norm of an iterable of parameters stored over a remote model
 
@@ -802,7 +803,8 @@ class TorchHook(FrameworkHook):
 
             Arguments:
                 - parameters (Iterable[Tensor] or Tensor): an iterable of PySyft remote
-                Tensors or PyTorch tensor will have gradients normalized or a single PySyfy / PyTorch tensor.
+                Tensors or PyTorch tensor will have gradients normalized or a single
+                PySyfy / PyTorch tensor.
                 - max_norm (float or int): max norm of the gradients
                 - worker: The worker where the parameters are hosted and where the gradient clipping
                 will be performed
@@ -832,7 +834,7 @@ class TorchHook(FrameworkHook):
                 total_norm = max(p.grad.data.abs().max() for p in parameters)
             else:
                 # all parameters are remote
-                if all([param_is_pointer_tensor(param) for param in parameters]):
+                if all(param_is_pointer_tensor(param) for param in parameters):
                     total_norm = torch.zeros(1)
                     # Let's send the total norm over to the remote where the remote tensor is
                     total_norm = total_norm.send(parameters[0].location)

@@ -1,7 +1,6 @@
 import subprocess
 import sys
 from pathlib import Path
-from multiprocessing import Process
 import argparse
 
 if __name__ == "__main__":
@@ -21,7 +20,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--testing",
         action="store_true",
-        help="if set, websocket server worker will load the test dataset instead of the training dataset",
+        help=(
+            "if set, websocket server worker will load the "
+            "test dataset instead of the training dataset",
+        ),
     )
     parser.add_argument(
         "--verbose",

@@ -4,7 +4,6 @@ import sys
 import time
 import os
 import shutil
-from pathlib import Path
 import tempfile
 
 import pytest

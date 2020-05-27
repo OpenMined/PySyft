@@ -17,6 +17,7 @@ from syft.generic.utils import memorize
 p = 67
 no_wrap = {"no_wrap": True}
 
+
 # Cached values
 @memorize
 def Q_BITS(field):
@@ -253,7 +254,8 @@ def private_compare(x_bit_sh, r, beta, L):
     # Send it to another worker
     # We do this because we can't allow the local worker to get and see permuted_mask
     # because otherwise it can inverse the permutation and remove s to get c.
-    # So opening the permuted_mask should be made by a worker which doesn't have access to the randomness
+    # So opening the permuted_mask should be made by a worker which doesn't have access
+    # to the randomness
     remote_mask = permuted_mask.wrap().send(crypto_provider, **no_wrap)
 
     # 15)
@@ -433,7 +435,8 @@ def share_convert(a_sh):
 
     # 4)
     # a_tilde_shares = a_tilde_sh.child
-    # delta = a_tilde_shares[workers[0].id].copy().get() + a_tilde_shares[workers[1].id].copy().get()
+    # delta = a_tilde_shares[workers[0].id].copy().get()
+    #         + a_tilde_shares[workers[1].id].copy().get()
     # Check for both positive and negative overflows
     # delta = ((delta > get_max_val_field(L)) + (delta < get_min_val_field(L))).type(torch_dtype)
     # x = a_tilde_sh.get()

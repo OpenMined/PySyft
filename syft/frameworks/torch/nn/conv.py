@@ -158,7 +158,8 @@ class Conv2d(nn.Module):
 #             kernel_results.append(flattened_model @ flattened_data[n])
 #
 #         pred = th.stack(kernel_results, axis=0).view(
-#             batch_size, self.out_channels, rows - self.kernel_size + 1, cols - self.kernel_size + 1
+#             batch_size, self.out_channels,
+#             rows - self.kernel_size + 1, cols - self.kernel_size + 1
 #         )
 #
 #         if self.has_bias:

@@ -1,8 +1,6 @@
 from collections import OrderedDict
-import pytest
 import numpy
 import torch
-from functools import partial
 import traceback
 import io
 
@@ -69,7 +67,7 @@ def make_dict(**kwargs):
                 ),
             ),
         },
-        {"value": {}, "simplified": (CODE[dict], tuple())},
+        {"value": {}, "simplified": (CODE[dict], ())},
     ]
 
 
@@ -84,8 +82,9 @@ def make_list(**kwargs):
             ),
         },
         {"value": ["hello"], "simplified": (CODE[list], ((CODE[str], (b"hello",)),))},  # item
-        {"value": [], "simplified": (CODE[list], tuple())},
-        # Tests that forced full simplify should return just simplified object if it doesn't have full simplifier
+        {"value": [], "simplified": (CODE[list], ())},
+        # Tests that forced full simplify should return just simplified object
+        # if it doesn't have full simplifier
         {
             "forced": True,
             "value": ["hello"],
@@ -102,7 +101,7 @@ def make_tuple(**kwargs):
             "simplified": (CODE[tuple], ((CODE[str], (b"hello",)), (CODE[str], (b"world",)))),
         },
         {"value": ("hello",), "simplified": (CODE[tuple], ((CODE[str], (b"hello",)),))},
-        {"value": tuple(), "simplified": (CODE[tuple], tuple())},
+        {"value": (), "simplified": (CODE[tuple], ())},
     ]
 
 
@@ -122,7 +121,7 @@ def make_set(**kwargs):
             "cmp_simplified": compare_simplified,
         },
         {"value": {"hello"}, "simplified": (CODE[set], ((CODE[str], (b"hello",)),))},
-        {"value": set([]), "simplified": (CODE[set], tuple())},
+        {"value": set(), "simplified": (CODE[set], ())},
     ]
 
 
@@ -155,7 +154,8 @@ def make_str(**kwargs):
 def make_int(**kwargs):
     return [
         {"value": 5, "simplified": 5},
-        # Tests that forced full simplify should return just simplified object if it doesn't have full simplifier
+        # Tests that forced full simplify should return just simplified
+        # object if it doesn't have full simplifier
         {"forced": True, "value": 5, "simplified": 5},
     ]
 
@@ -312,7 +312,8 @@ def make_torch_memoryformat(**kwargs):
 
 
 # torch.jit.TopLevelTracedModule
-# NOTE: if the model is created inside the function, it will be serialized differently depending on the context
+# NOTE: if the model is created inside the function, it will be serialized differently
+# depending on the context
 class TopLevelTraceModel(torch.nn.Module):
     def __init__(self):
         super(TopLevelTraceModel, self).__init__()
@@ -324,11 +325,8 @@ class TopLevelTraceModel(torch.nn.Module):
         return x
 
 
-topLevelTraceModel = TopLevelTraceModel()
-
-
 def make_torch_topleveltracedmodule(**kwargs):
-    tm = torch.jit.trace(topLevelTraceModel, torch.randn(10, 3))
+    tm = torch.jit.trace(TopLevelTraceModel(), torch.randn(10, 3))
 
     return [
         {
@@ -557,7 +555,8 @@ def make_fixedprecisiontensor(**kwargs):
     fpt = fpt_tensor.child
     fpt.tag("tag1")
     fpt.describe("desc")
-    # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
+    # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors
+    # during simplify
     # This changes tensors' internal state in chain and is required to pass the test
     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], fpt)
 
@@ -1194,12 +1193,12 @@ def make_objectpointer(**kwargs):
 # syft.generic.string.String
 def make_string(**kwargs):
     def compare_simplified(actual, expected):
-        """This is a custom comparison functino.
-           The reason for using this is that when set is that tags are use. Tags are sets.
-           When sets are simplified and converted to tuple, elements order in tuple is random
-           We compare tuples as sets because the set order is undefined.
+        """This is a custom comparison function.
+        The reason for using this is that when set is that tags are use. Tags are sets.
+        When sets are simplified and converted to tuple, elements order in tuple is random
+        We compare tuples as sets because the set order is undefined.
 
-           This function is inspired by the one with the same name defined above in `make_set`.
+        This function is inspired by the one with the same name defined above in `make_set`.
         """
         assert actual[0] == expected[0]
         assert actual[1][0] == expected[1][0]
@@ -1212,7 +1211,7 @@ def make_string(**kwargs):
     return [
         {
             "value": syft.generic.string.String(
-                "Hello World", id=1234, tags=set(["tag1", "tag2"]), description="description"
+                "Hello World", id=1234, tags={"tag1", "tag2"}, description="description"
             ),
             "simplified": (
                 CODE[syft.generic.string.String],
@@ -1324,7 +1323,7 @@ def make_autogradtensor(**kwargs):
 # syft.frameworks.torch.tensors.interpreters.private.PrivateTensor
 def make_privatetensor(**kwargs):
     t = torch.tensor([1, 2, 3])
-    pt = t.private_tensor(allowed_users=("test",))
+    pt = t.private_tensor(allowed_users=["test"])
     pt.tag("tag1")
     pt.describe("private")
     pt = pt.child
@@ -1882,7 +1881,7 @@ def make_getnotpermittederror(**kwargs):
                         "Traceback (most recent call last):\n"
                         + "".join(traceback.format_tb(err.__traceback__)),
                     ),  # (str) traceback
-                    (CODE[dict], tuple()),  # (dict) attributes
+                    (CODE[dict], ()),  # (dict) attributes
                 ),
             ),
             "cmp_detailed": compare,

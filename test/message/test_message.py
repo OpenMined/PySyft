@@ -1,7 +1,5 @@
-import syft as sy
 import torch as th
 
-import syft as sy
 from syft.messaging import message
 
 
