@@ -141,7 +141,6 @@ class TorchHook(FrameworkHook):
 
         if dependency_check.crypten_available:
             self.to_auto_overload[crypten.mpc.MPCTensor] = ["get_plain_text"]
-            self._hook_native_tensor(crypten.mpc.MPCTensor, TorchTensor)
             self._hook_syft_placeholder_methods(crypten.mpc.MPCTensor, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
