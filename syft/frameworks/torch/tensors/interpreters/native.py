@@ -5,7 +5,6 @@ import weakref
 
 import numpy as np
 import torch
-
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -20,6 +19,8 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.exceptions import SendNotPermittedError
+
+from syft.frameworks.torch.nn.functional import batch_norm
 
 
 def _get_maximum_precision():
@@ -287,6 +288,21 @@ class TorchTensor(AbstractTensor):
             return torch.native_roll(tensor, int_shifts, **kwargs)
 
         module.roll = roll
+
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+                module.batch_norm = batch_norm
+
+            module.functional = functional
+
+        module.nn = nn  # Handles all the overloading properly
 
     @classmethod
     def handle_func_command(cls, command):
