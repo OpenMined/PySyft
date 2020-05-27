@@ -4,7 +4,7 @@ from typing import Union
 from syft.exceptions import ObjectNotFoundError
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 

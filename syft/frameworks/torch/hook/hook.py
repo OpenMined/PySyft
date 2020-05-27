@@ -20,7 +20,7 @@ from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.execution.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import _apply_args
+from syft.generic.abstract.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.execution.plan import Plan

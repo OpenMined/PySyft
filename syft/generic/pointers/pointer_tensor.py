@@ -7,7 +7,7 @@ from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
@@ -420,20 +420,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             data = simplify(ptr)
         """
 
-        if ptr.tags:
-            tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
-        else:
-            tags = None
-
         return (
-            # ptr.id,
             syft.serde.msgpack.serde._simplify(worker, ptr.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             syft.serde.msgpack.serde._simplify(worker, ptr.location.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.point_to_attr),
             syft.serde.msgpack.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
-            tags,
+            syft.serde.msgpack.serde._simplify(worker, ptr.tags),
             ptr.description,
         )
 
