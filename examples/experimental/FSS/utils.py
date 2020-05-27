@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
-MODEL_PATH = "/Users/tryffel/code/PySyft/data/models/"
+MODEL_PATH = "/content/PySyft/data/models/"
 
 
 def save(model, name):
