@@ -689,7 +689,6 @@ class FixedPrecisionTensor(AbstractTensor):
     def var(self, **kwargs):
         # Note that this implem is different from pytorch (which divides by m-1)
         mu = self.mean(**kwargs)
-        print("self-mu", self.shape, mu.shape)
         unbiased_self = self - mu
         return (unbiased_self * unbiased_self).mean(**kwargs)
 

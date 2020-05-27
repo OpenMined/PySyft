@@ -1,11 +1,14 @@
 from collections import defaultdict
 from typing import List, Tuple, Union
+import math
 
 import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.abstract import AbstractWorker
+
+import os.path
 
 
 class PrimitiveStorage:
@@ -59,6 +62,7 @@ class PrimitiveStorage:
             op_shapes = (op, *shapes)
             primitive_stack = primitive_stack[op_shapes]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            # print('requires:', n_instances, '\tavailable:', available_instances)
             if available_instances >= n_instances:
                 keys = []
                 for i, prim in enumerate(primitive_stack):
@@ -73,15 +77,19 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    print(
-                        f"Autogenerate: "
-                        f'["{type_op}"], '
-                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                        f"n_instances={n_instances}, "
-                        'beaver={"op_shape": ['
-                        f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
-                        "]}"
-                    )
+                    # print(
+                    #     f"Autogenerate: "
+                    #     f'["{type_op}"], '
+                    #     # f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                    #     f"n_instances={n_instances}, "
+                    #     'beaver={"op_shape": ['
+                    #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
+                    #     "]}"
+                    # )
+                    # print(
+                    #     f"\t\t\t "
+                    #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),'
+                    # )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op],
                         sy.local_worker.clients,
@@ -119,12 +127,12 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    print(
-                        f"Autogenerate: "
-                        f'["{type_op}"], '
-                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                        f"n_instances={n_instances}"
-                    )
+                    # print(
+                    #     f"Autogenerate: "
+                    #     f'["{type_op}"], '
+                    #     f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                    #     f"n_instances={n_instances}"
+                    # )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op], sy.local_worker.clients, n_instances=n_instances
                     )
@@ -135,11 +143,7 @@ class PrimitiveStorage:
                     )
 
     def provide_primitives(
-        self,
-        crypto_types: Union[str, List[str]],
-        workers: List[AbstractWorker],
-        n_instances: int = 10,
-        **kwargs,
+        self, crypto_type: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
     ):
         """
         Build n_instances of crypto primitives of the different crypto_types given and send them to some workers.
@@ -153,23 +157,54 @@ class PrimitiveStorage:
         Returns:
 
         """
-        if isinstance(crypto_types, str):
-            crypto_types = [crypto_types]
+        if isinstance(crypto_type, list):
+            crypto_type = crypto_type[0]
 
-        worker_types_primitives = defaultdict(dict)
-        for crypto_type in crypto_types:
-            builder = self._builders[crypto_type]
+        while n_instances > 0:
+            n_instances_batch = min(500_000, n_instances)
+            if n_instances_batch > 50_000:
+                n_instances_batch = 500_000
+                #n_instances_batch = math.ceil(n_instances_batch/100_000)*100_000
+            # print('| n_instances_batch', n_instances_batch)
+            worker_types_primitives = defaultdict(dict)
 
-            primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
+            path = "/Users/tryffel/code/PySyft/data/primitives"
 
-            for worker_primitives, worker in zip(primitives, workers):
-                worker_types_primitives[worker][crypto_type] = worker_primitives
+            def filename(worker):
+                if "beaver" in crypto_type:
+                    op, *shapes = kwargs["beaver"]["op_shapes"][0]
+                    shapes = [",".join([str(s) for s in shape]) for shape in shapes]
+                    return f"{path}/{crypto_type}-{op}-({shapes[0]})-({shapes[1]})-{n_instances_batch}-{worker.id}.data"
+                else:
+                    return f"{path}/{crypto_type}-{n_instances_batch}-{worker.id}.data"
 
-        for i, worker in enumerate(workers):
-            worker_message = self._owner.create_worker_command_message(
-                "feed_crypto_primitive_store", None, worker_types_primitives[worker]
-            )
-            self._owner.send_msg(worker_message, worker)
+            if os.path.isfile(filename(workers[0]) + ".npy") and "beaver" not in crypto_type:
+                # if "comp" in crypto_type:
+                #     print(f"{n_instances_batch} from file")
+                for i, worker in enumerate(workers):
+                    worker_message = self._owner.create_worker_command_message(
+                        "load_crypto_primitive", None, crypto_type, filename(worker)
+                    )
+                    self._owner.send_msg(worker_message, worker)
+            else:
+                # if "comp" in crypto_type:
+                #     print(f"{n_instances_batch} building")
+                builder = self._builders[crypto_type]
+
+                primitives = builder(n_party=len(workers), n_instances=n_instances_batch, **kwargs)
+
+                for worker_primitives, worker in zip(primitives, workers):
+                    #np.save(filename(worker), worker_primitives)
+                    # print('saved', filename(worker))
+                    worker_types_primitives[worker][crypto_type] = worker_primitives
+
+                for i, worker in enumerate(workers):
+                    worker_message = self._owner.create_worker_command_message(
+                        "feed_crypto_primitive_store", None, worker_types_primitives[worker]
+                    )
+                    self._owner.send_msg(worker_message, worker)
+
+            n_instances -= n_instances_batch
 
     def add_primitives(self, types_primitives: dict):
         """
@@ -207,6 +242,23 @@ class PrimitiveStorage:
                             )
             else:
                 raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
+
+    def load_primitives(self, crypto_type, filename):
+        """
+        Load primitives in the store from file
+
+        Args:
+            types_primitives: dict {crypto_type: str: primitives: list}
+        """
+        primitives = np.load(filename + ".npy", allow_pickle=True)
+        if len(primitives.shape) > 0:
+            primitives = primitives.tolist()
+        else:
+            primitives = primitives.item()
+
+        types_primitives = {crypto_type: primitives}
+
+        self.add_primitives(types_primitives)
 
     def build_fss_keys(self, type_op):
         """
