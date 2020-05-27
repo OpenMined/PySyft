@@ -55,7 +55,7 @@ samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.role_assignments.RoleAssignments] = make_role_assignments
 samples[syft.execution.state.State] = make_state
-samples[syft.execution.worker_actions.WorkerAction] = make_worker_action
+samples[syft.execution.storage_actions.StorageAction] = make_storage_action
 
 
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
