@@ -17,7 +17,7 @@ from syft.serde.syft_serializable import SyftSerializable
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.worker_actions import WorkerAction
+from syft.execution.storage_actions import StorageAction
 
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
@@ -124,11 +124,11 @@ class TensorCommandMessage(Message):
         return TensorCommandMessage(action)
 
     @staticmethod
-    def workerAction(name, target, args_, kwargs_, return_ids):
-        """ Helper function to build a TensorCommandMessage containing a WorkerAction
+    def storage_action(name, target, args_, kwargs_, return_ids):
+        """ Helper function to build a TensorCommandMessage containing a StorageAction
         directly from the action arguments.
         """
-        action = WorkerAction(name, target, args_, kwargs_, return_ids)
+        action = StorageAction(name, target, args_, kwargs_, return_ids)
         return TensorCommandMessage(action)
 
     @staticmethod
@@ -188,8 +188,8 @@ class TensorCommandMessage(Message):
             protobuf_action_msg.computation.CopyFrom(protobuf_action)
         elif isinstance(action_message.action, CommunicationAction):
             protobuf_action_msg.communication.CopyFrom(protobuf_action)
-        elif isinstance(action_message.action, WorkerAction):
-            protobuf_action_msg.workerAction.CopyFrom(protobuf_action)
+        elif isinstance(action_message.action, StorageAction):
+            protobuf_action_msg.StorageAction.CopyFrom(protobuf_action)
 
         return protobuf_action_msg
 

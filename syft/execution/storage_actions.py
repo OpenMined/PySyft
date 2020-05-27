@@ -1,16 +1,16 @@
 from syft.execution.action import Action
 from syft.workers.abstract import AbstractWorker
 
-from syft_proto.execution.v1.worker_action_pb2 import (
-    WorkerAction as WorkerActionPB,
+from syft_proto.execution.v1.storage_action_pb2 import (
+    StorageAction as StorageActionPB,
     # HACK replace this with the correct syft proto objects and update proto version in reqs
     # and update documentations
 )
 
-WORKER_ACTION_METHODS = ["store", "load"]
+STORAGE_ACTION_METHODS = ["store", "load"]
 
 
-class WorkerAction(Action):
+class StorageAction(Action):
     """Describes woker actions related to object storage"""
 
     def __init__(self, name, target, args_, kwargs_, return_ids, return_value=False):
@@ -32,9 +32,9 @@ class WorkerAction(Action):
                 using the return_ids and will need to do .get() later to get the result.
 
         """
-        if name not in WORKER_ACTION_METHODS:
+        if name not in STORAGE_ACTION_METHODS:
             raise ValueError(
-                f"Method `{name}` is not supported by WorkerActions. Consider using \
+                f"Method `{name}` is not supported by StorageActions. Consider using \
                 ComputationAction or CommunicationAction instead."
             )
 
@@ -43,12 +43,12 @@ class WorkerAction(Action):
     @staticmethod
     def simplify(worker: AbstractWorker, action: "Action") -> tuple:
         """
-        This function takes the attributes of a WorkerAction and saves them in a tuple
+        This function takes the attributes of a StorageAction and saves them in a tuple
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            action (WorkerAction): a WorkerAction
+            action (StorageAction): a StorageAction
         Returns:
-            tuple: a tuple holding the unique attributes of the WorkerAction
+            tuple: a tuple holding the unique attributes of the StorageAction
         Examples:
             data = simplify(worker, action)
         """
@@ -58,39 +58,39 @@ class WorkerAction(Action):
     def detail(worker: AbstractWorker, action_tuple: tuple) -> "Action":
         """
         This function takes the simplified tuple version of this message and converts
-        it into a WorkerAction. The simplify() method runs the inverse of this method.
+        it into a StorageAction. The simplify() method runs the inverse of this method.
 
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            WorkerAction_tuple (Tuple): the raw information being detailed.
+            StorageAction_tuple (Tuple): the raw information being detailed.
         Returns:
-            WorkerAction (WorkerAction): a WorkerAction.
+            StorageAction (StorageAction): a StorageAction.
         Examples:
-            WorkerAction = detail(sy.local_worker,WorkerAction_tuple)
+            StorageAction = detail(sy.local_worker,StorageAction_tuple)
         """
         attrs = Action.detail(worker, action_tuple)
 
-        return WorkerAction(*attrs)
+        return StorageAction(*attrs)
 
     @staticmethod
-    def bufferize(worker: AbstractWorker, WorkerAction: "WorkerAction") -> "WorkerActionPB":
+    def bufferize(worker: AbstractWorker, StorageAction: "StorageAction") -> "StorageActionPB":
         """
-        This function takes the attributes of a WorkerAction and saves them in Protobuf
+        This function takes the attributes of a StorageAction and saves them in Protobuf
         Args:
             worker (AbstractWorker): a reference to the worker doing the serialization
-            WorkerAction (WorkerAction): a WorkerAction
+            StorageAction (StorageAction): a StorageAction
         Returns:
-            protobuf_obj: a Protobuf message holding the unique attributes of the WorkerAction
+            protobuf_obj: a Protobuf message holding the unique attributes of the StorageAction
         Examples:
-            data = bufferize(sy.local_worker, WorkerAction)
+            data = bufferize(sy.local_worker, StorageAction)
         """
-        protobuf_action = WorkerActionPB()
+        protobuf_action = StorageActionPB()
 
-        return Action.bufferize(worker, WorkerAction, protobuf_action)
+        return Action.bufferize(worker, StorageAction, protobuf_action)
 
     @staticmethod
-    def unbufferize(worker: AbstractWorker, protobuf_obj: "WorkerActionPB") -> "WorkerAction":
+    def unbufferize(worker: AbstractWorker, protobuf_obj: "StorageActionPB") -> "StorageAction":
         """
         This function takes the Protobuf version of this message and converts
         it into an Action. The bufferize() method runs the inverse of this method.
@@ -98,18 +98,18 @@ class WorkerAction(Action):
         Args:
             worker (AbstractWorker): a reference to the worker necessary for detailing. Read
                 syft/serde/serde.py for more information on why this is necessary.
-            protobuf_obj (WorkerActionPB): the Protobuf message
+            protobuf_obj (StorageActionPB): the Protobuf message
 
         Returns:
-            obj (WorkerAction): a WorkerAction
+            obj (StorageAction): a StorageAction
 
         Examples:
             message = unbufferize(sy.local_worker, protobuf_msg)
         """
         attrs = Action.unbufferize(worker, protobuf_obj)
 
-        return WorkerAction(*attrs)
+        return StorageAction(*attrs)
 
     @staticmethod
-    def get_protobuf_schema() -> WorkerActionPB:
-        return WorkerActionPB
+    def get_protobuf_schema() -> StorageActionPB:
+        return StorageActionPB

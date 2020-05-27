@@ -71,20 +71,16 @@ class ObjectStore:
             Object with id equals to `obj_id`.
         """
         obj = None
-        try:
-            # if object is a tesor
-            obj = self._objects.get(obj_id, None)
-            if obj is None:
-                # check for placeholder_ids
-                found = (self._objects[x] for x in self._objects if x.value == obj_id)
-                try:
-                    obj = next(found)
-                except StopIteration as e:
-                    # the object was not found using key look up or looking for placeholder_ids
-                    raise ObjectNotFoundError(obj_id, self)
-        except Exception as e:
-            # catch other exceptions
-            raise e
+        # if object is a tensor
+        obj = self._objects.get(obj_id, None)
+        if obj is None:
+            # check for placeholder_ids
+            found = (self._objects[x] for x in self._objects if x.value == obj_id)
+            try:
+                obj = next(found)
+            except StopIteration as e:
+                # the object was not found using key look up or looking for placeholder_ids
+                raise ObjectNotFoundError(obj_id, self)
         return obj
 
     def set_obj(self, obj: Union[FrameworkTensorType, AbstractTensor]) -> None:

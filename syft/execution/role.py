@@ -13,7 +13,7 @@ from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
-from syft.execution.worker_actions import WorkerAction
+from syft.execution.storage_actions import StorageAction
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
@@ -184,7 +184,7 @@ class Role(SyftSerializable):
         if self.tracing:
             self.worker.object_store.set_obj(tensor)
             command = ("store", self, (), {})
-            self.register_action((command, tensor), WorkerAction)
+            self.register_action((command, tensor), StorageAction)
         return tensor
 
     def load(self, tensor):
@@ -195,7 +195,7 @@ class Role(SyftSerializable):
             tensor = self.worker.object_store.get_obj(tensor)
             placeholder = PlaceHolder.create_from(tensor, role=self, tracing=True)
             command = ("load", self, (), {})
-            self.register_action((command, placeholder), WorkerAction)
+            self.register_action((command, placeholder), StorageAction)
             return placeholder
         # mock for testing
         if isinstance(tensor, th.Tensor):

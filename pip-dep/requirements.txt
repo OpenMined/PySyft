@@ -1,7 +1,7 @@
 aiortc==0.9.28
 flask_socketio~=4.2.1
 Flask~=1.1.1
-git+git://github.com/OpenMined/syft-proto@update_wokerAction_path#egg=syft-proto # syft-proto~=0.4.5
+git+git://github.com/Prtfw/syft-proto@change_worker_action_to_storage_action#egg=syft-proto # syft-proto~=0.4.5
 lz4~=3.0.2
 msgpack~=1.0.0
 numpy~=1.18.1
