@@ -2,6 +2,7 @@ from typing import List
 import weakref
 
 import syft as sy
+
 from syft.generic.abstract.object import _apply_args  # noqa: F401
 from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.abstract.object import initialize_object
