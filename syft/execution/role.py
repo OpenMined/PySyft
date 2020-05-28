@@ -11,6 +11,7 @@ from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
+from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
@@ -34,7 +35,8 @@ class Role(SyftSerializable):
         output_placeholder_ids: Tuple[int, str] = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
-        self.worker = worker
+        self.worker = worker or sy.local_worker
+
         self.actions = actions or []
 
         # All placeholders
@@ -47,6 +49,10 @@ class Role(SyftSerializable):
         self.state = state or State()
         self.tracing = False
 
+        for name, package in framework_packages.items():
+            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            setattr(self, name, tracing_wrapper)
+
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
 
@@ -56,14 +62,15 @@ class Role(SyftSerializable):
     @staticmethod
     def nested_object_traversal(obj: any, leaf_function: Callable, leaf_type: type):
         """
-        Class method to iterate through a tree-like structure, where the branching is determined by the elements of list,
-        tuples and dicts, returning the same tree-like structure with a function applied to its leafs.
+        Class method to iterate through a tree-like structure, where the branching is determined
+        by the elements of list, tuples and dicts, returning the same tree-like structure with a
+        function applied to its leafs.
 
         Args:
             obj: The tree-like structure, can be only the root as well.
             leaf_function: The function to be applied on the leaf nodes of the tree-like structure.
-            leaf_type: On what type on function to apply the function, if the types won't match, the leaf is returned,
-            to apply on all leafs pass any.
+            leaf_type: On what type on function to apply the function, if the types won't match,
+            the leaf is returned, to apply on all leafs pass any.
 
         Returns:
             Same structure as the obj argument, but with the function applied to the leaf elements.
@@ -165,14 +172,19 @@ class Role(SyftSerializable):
 
         return tuple(p.child for p in output_placeholders)
 
-    def fetch(self, tensor):
-        """ Fetch tensors used in a protocol from worker's local store
+    def load(self, tensor):
+        """ Load tensors used in a protocol from worker's local store
         """
-        # TODO mock for now, fetch will use worker's store in a future work
+        # TODO mock for now, load will use worker's store in a future work
         if self.tracing:
             return PlaceHolder.create_from(tensor, role=self, tracing=True)
         else:
             return tensor
+
+    def load_state(self):
+        """ Load tensors used in a protocol from worker's local store
+        """
+        return self.state.read()
 
     def instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
@@ -191,7 +203,7 @@ class Role(SyftSerializable):
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """
-        cmd, _self, args_, kwargs_, return_placeholder = (
+        cmd, _self, args_, kwargs_, return_values = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method
             action.args,
@@ -201,7 +213,13 @@ class Role(SyftSerializable):
         _self = self._fetch_placeholders_from_ids(_self)
         args_ = self._fetch_placeholders_from_ids(args_)
         kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
-        return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
+        return_values = self._fetch_placeholders_from_ids(return_values)
+
+        # We can only instantiate placeholders, filter them
+        return_placeholders = []
+        Role.nested_object_traversal(
+            return_values, lambda ph: return_placeholders.append(ph), PlaceHolder
+        )
 
         if _self is None:
             method = self._fetch_package_method(cmd)
@@ -212,7 +230,7 @@ class Role(SyftSerializable):
         if not isinstance(response, (tuple, list)):
             response = (response,)
 
-        PlaceHolder.instantiate_placeholders(return_placeholder, response)
+        PlaceHolder.instantiate_placeholders(return_placeholders, response)
 
     def _fetch_package_method(self, cmd):
         cmd_path = cmd.split(".")
@@ -397,7 +415,9 @@ class Role(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_role: RolePB) -> tuple:
         """
-        This function reconstructs a Role object given its attributes in the form of a Protobuf message.
+        This function reconstructs a Role object given its attributes in the form of a
+        Protobuf message.
+
         Args:
             worker: the worker doing the deserialization
             protobuf_role: a Protobuf message holding the attributes of the Role

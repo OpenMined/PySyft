@@ -7,10 +7,6 @@ from syft.execution.placeholder_id import PlaceholderId
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
-from syft_proto.execution.v1.communication_action_pb2 import (
-    CommunicationAction as CommunicationActionPB,
-)
-
 
 class Action(ABC, SyftSerializable):
     """Describes the concrete steps workers can take with objects they own
@@ -31,14 +27,15 @@ class Action(ABC, SyftSerializable):
             target (Tensor): The object to invoke the method on
             args_ (Tuple): The arguments to the method call
             kwargs_ (Dictionary): The keyword arguments to the method call
-            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                action results are set by the client. This allows the client to be able to predict where
-                the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the action has yet executed. It also
-                reduces the size of the response from the action (which is very often empty).
-            return_value (boolean): return the result or not. If true, the result is directly returned,
-                if not, the command sender will create a pointer to the remote result using the return_ids
-                and will need to do .get() later to get the result.
+            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.),
+                the id of action results are set by the client. This allows the client to be able to
+                predict where the results will be ahead of time. Importantly, this allows the
+                client to pre-initalize the pointers to the future data, regardless of whether
+                the action has yet executed. It also reduces the size of the response from the
+                action (which is very often empty).
+            return_value (boolean): return the result or not. If true, the result is directly
+                returned, if not, the command sender will create a pointer to the remote result
+                using the return_ids and will need to do .get() later to get the result.
 
         """
 
@@ -112,9 +109,10 @@ class Action(ABC, SyftSerializable):
 
     def _type_check(self, field_name, expected_type):
         actual_value = getattr(self, field_name)
-        assert actual_value is None or isinstance(
-            actual_value, expected_type
-        ), f"{field_name} must be {expected_type.__name__}, but was {type(actual_value).__name__}: {actual_value}."
+        assert actual_value is None or isinstance(actual_value, expected_type), (
+            f"{field_name} must be {expected_type.__name__}, but was "
+            f"{type(actual_value).__name__}: {actual_value}."
+        )
 
     # These methods must be implemented by child classes in order to return the correct type
     # and to be detected by the serdes as serializable. They are therefore marked as abstract
@@ -260,14 +258,14 @@ class Action(ABC, SyftSerializable):
             kwargs_[key] = sy.serde.protobuf.serde.unbufferize_arg(worker, protobuf_obj.kwargs[key])
 
         return_ids = tuple(
-            [sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids]
+            sy.serde.protobuf.proto.get_protobuf_id(pb_id) for pb_id in protobuf_obj.return_ids
         )
 
         return_placeholder_ids = tuple(
-            [
+            (
                 sy.serde.protobuf.serde._unbufferize(worker, placeholder)
                 for placeholder in protobuf_obj.return_placeholder_ids
-            ]
+            )
         )
 
         if return_placeholder_ids:

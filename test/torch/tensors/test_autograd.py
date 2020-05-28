@@ -665,7 +665,7 @@ def test_train_remote_autograd_tensor(workers):
             loss = ((predictions - target_input) ** 2).sum()
             # check for monotonic decrease of the loss
 
-            if remote == True:
+            if remote:
                 # Remote loss monotonic decrease
                 loss_val_local = loss.copy().get().item()
                 assert loss_val_local < loss_previous
@@ -802,7 +802,7 @@ def test_garbage_collection(workers):
         alice, bob, crypto_provider=crypto_provider, requires_grad=True
     )
     opt = optim.SGD(params=model.parameters(), lr=0.1).fix_precision()
-    num_objs = 17
+    num_objs = 11
     prev_loss = float("inf")
     for i in range(3):
         preds = classifier(a)

@@ -1,7 +1,5 @@
 import importlib
 
-import torch
-
 from syft.frameworks.torch.hook.hook import TorchHook
 from syft.workers.virtual import VirtualWorker
 from syft.grid.private_grid import PrivateGridNetwork
@@ -9,14 +7,14 @@ from syft.grid.private_grid import PrivateGridNetwork
 from syft.exceptions import DependencyError
 
 
-def create_sandbox(gbs, verbose=True, download_data=True):
+def create_sandbox(gbs, verbose=True, download_data=True):  # noqa: C901
     """There's some boilerplate stuff that most people who are
     just playing around would like to have. This will create
     that for you"""
 
     try:
         torch = gbs["torch"]
-    except:
+    except KeyError:
         torch = gbs["th"]
 
     global hook

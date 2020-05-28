@@ -1,4 +1,3 @@
-import syft
 from syft.generic.frameworks.hook import hook_args
 
 

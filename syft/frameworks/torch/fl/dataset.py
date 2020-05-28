@@ -1,6 +1,6 @@
 import math
 import logging
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_dataset import PointerDataset
 import torch
@@ -10,7 +10,7 @@ import syft
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset(AbstractObject):
+class BaseDataset(AbstractSendable):
     """
     This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
@@ -37,7 +37,6 @@ class BaseDataset(AbstractObject):
         return len(self.data)
 
     def __getitem__(self, index):
-
         """
         Args:
 
@@ -56,11 +55,9 @@ class BaseDataset(AbstractObject):
         return data_elem, self.targets[index]
 
     def transform(self, transform):
+        """ Allows a transform to be applied on given dataset.
 
-        """
-         Allows a transform to be applied on given dataset.
-         Args:
-
+        Args:
             transform: The transform to be applied on the data
         """
 
@@ -94,7 +91,7 @@ class BaseDataset(AbstractObject):
 
     def fix_prec(self, *args, **kwargs):
         """
-            Converts data of BaseDataset into fixed precision
+        Converts data of BaseDataset into fixed precision
         """
         self.data.fix_prec_(*args, **kwargs)
         self.targets.fix_prec_(*args, **kwargs)
@@ -104,7 +101,7 @@ class BaseDataset(AbstractObject):
 
     def float_prec(self, *args, **kwargs):
         """
-            Converts data of BaseDataset into float precision
+        Converts data of BaseDataset into float precision
         """
         self.data.float_prec_(*args, **kwargs)
         self.targets.float_prec_(*args, **kwargs)
@@ -114,7 +111,7 @@ class BaseDataset(AbstractObject):
 
     def share(self, *args, **kwargs):
         """
-            Share the data with the respective workers
+        Share the data with the respective workers
         """
         self.data.share_(*args, **kwargs)
         self.targets.share_(*args, **kwargs)
@@ -161,7 +158,7 @@ class BaseDataset(AbstractObject):
     @property
     def location(self):
         """
-            Get location of the data
+        Get location of the data
         """
         return self.data.location
 
@@ -249,7 +246,7 @@ class FederatedDataset:
     @property
     def workers(self):
         """
-           Returns: list of workers
+        Returns: list of workers
         """
 
         return list(self.datasets.keys())
@@ -262,17 +259,18 @@ class FederatedDataset:
 
     def __getitem__(self, worker_id):
         """
-           Args:
-                   worker_id[str,int]: ID of respective worker
+        Args:
+            worker_id[str,int]: ID of respective worker
 
-           Returns: Get Datasets from the respective worker
+        Returns:
+            Get Datasets from the respective worker
         """
 
         return self.datasets[worker_id]
 
     def __len__(self):
 
-        return sum([len(dataset) for w, dataset in self.datasets.items()])
+        return sum(len(dataset) for dataset in self.datasets.values())
 
     def __repr__(self):
 

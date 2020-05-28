@@ -3,21 +3,12 @@ from typing import List
 from typing import Tuple
 from typing import Union
 
-import copy
-import inspect
-import io
-import torch
-import warnings
-
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.role import Role
-from syft.execution.state import State
+from syft.execution.role_assignments import RoleAssignments
 
-from syft.generic.frameworks import framework_packages
-from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.abstract import AbstractWorker
 from syft.workers.virtual import VirtualWorker
 
@@ -33,9 +24,10 @@ class func2protocol(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, roles: list = [], args_shape: dict = {}):
-        self.args_shape = args_shape
+    def __init__(self, roles: list = [], args_shape: dict = {}, states={}):
         self.role_names = roles
+        self.args_shape = args_shape
+        self.states = states
 
     def __call__(self, protocol_function):
         # create the roles present in decorator
@@ -43,6 +35,9 @@ class func2protocol(object):
             role_id: Role(worker=VirtualWorker(id=role_id, hook=sy.local_worker.hook))
             for role_id in self.role_names
         }
+        for role_id, state_tensors in self.states.items():
+            for tensor in state_tensors:
+                roles[role_id].register_state_tensor(tensor)
 
         protocol = Protocol(
             name=protocol_function.__name__,
@@ -65,7 +60,7 @@ class func2protocol(object):
         return protocol
 
 
-class Protocol(AbstractObject):
+class Protocol(AbstractSendable):
     """
     A Protocol stores a sequence of actions, just like a function.
 
@@ -99,15 +94,15 @@ class Protocol(AbstractObject):
         tags: List[str] = None,
         description: str = None,
     ):
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        super().__init__(id, owner, tags, description, child=None)
 
         # Protocol instance info
         self.name = name or self.__class__.__name__
 
         self.roles = roles
+        self.role_assignments = RoleAssignments(roles.keys())
 
         self.is_building = False
-        self.state_attributes = {}
         self.is_built = is_built
         self.torchscript = None
         self.tracing = False
@@ -204,10 +199,21 @@ class Protocol(AbstractObject):
         # TODO: can we reuse result_ids?
         return self.__call__(*args_)
 
+    def assign(self, role_id, worker):
+        """ Assign a worker to the specified role.
+        """
+        self.role_assignments.assign(role_id, worker)
+
+    def assign_roles(self, worker_dict):
+        """ Assign worker values to correspondent key role.
+        """
+        for role_id, worker in worker_dict.items():
+            self.role_assignments.assign(role_id, worker)
+
     @staticmethod
     def replace_non_instanciated_placeholders(protocol: "Protocol") -> "Protocol":
-        # Replace non-instanciated placeholders from protocol.placeholders by instanciated placeholders
-        # from state.state_placeholders
+        # Replace non-instanciated placeholders from protocol.placeholders by
+        # instanciated placeholders from state.state_placeholders
         # NOTE Maybe state shouldn't contain instanciated placeholders but values directly?
         state_placeholders = {ph.id.value: ph for ph in protocol.state.state_placeholders}
         protocol.placeholders = {**protocol.placeholders, **state_placeholders}
@@ -295,7 +301,9 @@ class Protocol(AbstractObject):
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_protocol: ProtocolPB) -> "Protocol":
-        """This function reconstructs a Protocol object given its attributes in the form of a Protobuf message
+        """This function reconstructs a Protocol object given its attributes in the form
+        of a Protobuf message
+
         Args:
             worker: the worker doing the deserialization
             protobuf_protocol: a Protobuf message holding the attributes of the Protocol

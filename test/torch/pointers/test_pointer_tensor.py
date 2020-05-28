@@ -41,7 +41,7 @@ def test_send_garbage_collect_data_false(workers):
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
     x_ptr.garbage_collection = False
-    assert x_ptr.child.garbage_collect_data == False
+    assert x_ptr.child.garbage_collect_data is False
 
 
 def test_send_gc_false(workers):
@@ -53,9 +53,9 @@ def test_send_gc_false(workers):
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
     x_ptr.gc = False
-    assert x_ptr.child.garbage_collect_data == False
-    assert x_ptr.gc == False, "property GC is not in sync"
-    assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
+    assert x_ptr.child.garbage_collect_data is False
+    assert x_ptr.gc is False, "property GC is not in sync"
+    assert x_ptr.garbage_collection is False, "property garbage_collection is not in sync"
 
 
 def test_send_gc_true(workers):
@@ -68,7 +68,7 @@ def test_send_gc_true(workers):
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice)
 
-    assert x_ptr.gc == True
+    assert x_ptr.gc
 
 
 def test_send_disable_gc(workers):
@@ -77,9 +77,9 @@ def test_send_disable_gc(workers):
 
     x = torch.Tensor([-1, 2])
     x_ptr = x.send(alice).disable_gc
-    assert x_ptr.child.garbage_collect_data == False
-    assert x_ptr.gc == False, "property GC is not in sync"
-    assert x_ptr.garbage_collection == False, "property garbage_collection is not in sync"
+    assert x_ptr.child.garbage_collect_data is False
+    assert x_ptr.gc is False, "property GC is not in sync"
+    assert x_ptr.garbage_collection is False, "property garbage_collection is not in sync"
 
 
 def test_send_get(workers):
@@ -574,4 +574,14 @@ def test_iadd(workers):
 
     b_pt += a_pt
 
-    assert len(alice.object_store._objects) == 8
+    assert len(alice.object_store._objects) == 2
+
+
+def test_inplace_ops_on_remote_long_tensor(workers):
+    alice = workers["alice"]
+
+    t = torch.LongTensor([2])
+    p = t.send_(alice) * 2
+    p.get_()
+
+    assert p == torch.LongTensor([4])
