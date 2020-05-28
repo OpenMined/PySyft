@@ -8,6 +8,7 @@ import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
 
+
 # Make dict of type codes
 CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.msgpack_global_state.simplifiers.items():
@@ -1449,9 +1450,8 @@ def make_communication_action(**kwargs):
     ]
 
 
-# syft.execution.worker_actions.WorkerAction
+# syft.execution.storage_actions.StorageAction
 def make_storage_action(**kwargs):
-    # @TODO: add test
     return []
 
 
