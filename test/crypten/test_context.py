@@ -152,11 +152,11 @@ def test_context_jail_with_model(workers):
         rank = crypten.communicator.get().get_rank()
         t = crypten.load("crypten_data", 0)
 
-        model.encrypt()
-        out = model(t)
-        model.decrypt()
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
         out = out.get_plain_text()
-        return model, out
+        return model, out  # noqa: F821
 
     result = run_encrypted_eval()
     # compare out
