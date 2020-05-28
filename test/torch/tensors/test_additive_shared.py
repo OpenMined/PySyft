@@ -964,6 +964,31 @@ def test_avg_pool2d(workers, protocol):
     assert (result == expected).all()
 
 
+def test_batch_norm(workers):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+
+    model = nn.BatchNorm2d(4)
+    x = torch.rand(1, 4, 5, 5)
+    expected = model(x)
+
+    model.fix_prec().share(*args, **kwargs)
+    x = x.fix_prec().share(*args, **kwargs)
+    y = model(x)
+    predicted = y.get().float_prec()
+
+    # print((expected - predicted).abs() )
+    relative_error = 2 * (expected - predicted).abs() / (expected.abs() + predicted.abs())
+    assert relative_error.mean() < 0.1
+
+
 def test_mod(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
