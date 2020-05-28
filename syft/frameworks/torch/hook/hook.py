@@ -20,6 +20,9 @@ from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 from syft.frameworks.torch.tensors.interpreters.precision import FixedPrecisionTensor
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
+from syft.frameworks.torch.tensors.interpreters.functional_encrypted import (
+    FunctionalEncryptedTensor,
+)
 from syft.execution.placeholder import PlaceHolder
 from syft.frameworks.torch.torch_attributes import TorchAttributes
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
@@ -161,6 +164,11 @@ class TorchHook(FrameworkHook):
         # to just forward the cmd to the next child (behaviour can be changed in the
         # SyftTensor class file)
         self._hook_syft_tensor_methods(AutogradTensor)
+
+        # Add all hooked tensor methods to AutogradTensor tensor but change behaviour
+        # to just forward the cmd to the next child (behaviour can be changed in the
+        # SyftTensor class file)
+        self._hook_syft_tensor_methods(FunctionalEncryptedTensor)
 
         # Add all hooked tensor methods to PrivateTensor tensor but change behaviour
         # to just forward the cmd to the next child (behaviour can be changed in the

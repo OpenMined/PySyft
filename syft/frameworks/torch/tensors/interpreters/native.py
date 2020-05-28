@@ -14,6 +14,9 @@ from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.frameworks.torch.tensors.interpreters.functional_encrypted import (
+    FunctionalEncryptedTensor,
+)
 from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker
 
@@ -1019,6 +1022,15 @@ class TorchTensor(AbstractTensor):
             x = self.copy()
             x_encrypted = PaillierTensor().on(x)  # Instantiate the class
             x_encrypted.child.encrypt_(public_key)  # Perform Homomorphic Encryption
+
+            return x_encrypted
+
+        elif protocol.lower() == "fe":
+            scheme = kwargs.get("scheme")
+
+            x = self.copy()
+            x_encrypted = FunctionalEncryptedTensor().on(x)  # Instantiate the class
+            x_encrypted.child.encrypt_(scheme)  # Perform functional encryption
 
             return x_encrypted
 
