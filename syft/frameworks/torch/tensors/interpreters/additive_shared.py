@@ -9,7 +9,7 @@ from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
 from syft.generic.utils import memorize
 
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
@@ -17,7 +17,6 @@ from syft.workers.abstract import AbstractWorker
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
     AdditiveSharingTensor as AdditiveSharingTensorPB,
 )
-from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 
 no_wrap = {"no_wrap": True}
 
@@ -103,7 +102,8 @@ class AdditiveSharingTensor(AbstractTensor):
                     self.child[location] = share.child
                 else:
                     raise ValueError(
-                        f"Shares should be a dict of Pointers, optionally wrapped, but got:\n{shares}"
+                        "Shares should be a dict of Pointers, optionally wrapped, "
+                        f"but got:\n{shares}"
                     )
         else:
             self.child = None
@@ -138,7 +138,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def __bool__(self):
         """Prevent evaluation of encrypted tensor"""
         raise ValueError(
-            "Additive shared tensors can't be converted boolean values. You should decrypt it first."
+            "Additive shared tensors can't be converted boolean values. "
+            "You should decrypt it first."
         )
 
     @property
@@ -233,7 +234,7 @@ class AdditiveSharingTensor(AbstractTensor):
     def get(self):
         """Fetches all shares and returns the plaintext tensor they represent"""
 
-        shares = list()
+        shares = []
 
         for share in self.child.values():
             if isinstance(share, sy.PointerTensor):
@@ -248,9 +249,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
     def virtual_get(self):
         """Get the value of the tensor without calling get
-         - Useful for debugging, only for VirtualWorkers"""
+        - Useful for debugging, only for VirtualWorkers
+        """
 
-        shares = list()
+        shares = []
 
         for v in self.child.values():
             share = v.location.object_store.get_obj(v.id_at_location)
@@ -265,7 +267,7 @@ class AdditiveSharingTensor(AbstractTensor):
         Args:
             *owners the list of shareholders. Can be of any length.
 
-            """
+        """
         shares = self.generate_shares(
             self.child, n_workers=len(owners), random_type=self.torch_dtype
         )
@@ -287,7 +289,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 (i.e., the number of tensors to return)
             random_type: the torch type shares should be encoded in (use the smallest possible)
                 given the choice of mod"
-            """
+        """
         random_type = torch.LongTensor if random_type == torch.int64 else torch.IntTensor
         if not isinstance(secret, random_type):
             secret = secret.type(random_type)
@@ -332,7 +334,7 @@ class AdditiveSharingTensor(AbstractTensor):
         properties as self
         """
 
-        if shape == None or len(shape) == 0:
+        if shape is None or len(shape) == 0:
             shape = self.shape if self.shape else [1]
         zero = torch.zeros(*shape, dtype=self.torch_dtype).share(
             *self.locations,
@@ -829,8 +831,9 @@ class AdditiveSharingTensor(AbstractTensor):
             """ Return a tensor where values are cyclically shifted compared to the original one.
             For instance, torch.roll([1, 2, 3], 1) returns torch.tensor([3, 1, 2]).
             In **kwargs should be dims, an argument to tell along which dimension the tensor should
-            be rolled. If dims is None, the tensor is flattened, rolled, and restored to its original shape.
-            shifts and dims can be tuples of same length to perform several rolls along different dimensions.
+            be rolled. If dims is None, the tensor is flattened, rolled, and restored to its
+            original shape. shifts and dims can be tuples of same length to perform several
+            rolls along different dimensions.
             """
             results = {}
             for worker, share in tensor_shares.items():
@@ -989,7 +992,7 @@ class AdditiveSharingTensor(AbstractTensor):
         assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
         # FIXME make it cleaner and robust for more options
         if n_dim == 2:
-            if dim == None:
+            if dim is None:
                 values = values.view(-1)
             elif dim == 1:
                 values = values.t()
@@ -1098,7 +1101,7 @@ class AdditiveSharingTensor(AbstractTensor):
             share.garbage_collect_data = value
 
     def get_garbage_collect_data(self):
-        garbage_collect_data_dict = dict()
+        garbage_collect_data_dict = {}
         shares = self.child
 
         for worker, share in shares.items():
@@ -1138,15 +1141,16 @@ class AdditiveSharingTensor(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AdditiveSharingTensor":
         """
-            This function reconstructs a AdditiveSharingTensor given it's attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
-            Returns:
-                AdditiveSharingTensor: a AdditiveSharingTensor
-            Examples:
-                shared_tensor = detail(data)
-            """
+            This function reconstructs a AdditiveSharingTensor given it's attributes in
+        form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AdditiveSharingTensor
+        Returns:
+            AdditiveSharingTensor: a AdditiveSharingTensor
+        Examples:
+            shared_tensor = detail(data)
+        """
         tensor_id, field, dtype, crypto_provider, chain, garbage_collect = tensor_tuple
 
         crypto_provider = sy.serde.msgpack.serde._detail(worker, crypto_provider)
@@ -1172,7 +1176,8 @@ class AdditiveSharingTensor(AbstractTensor):
         worker: AbstractWorker, tensor: "AdditiveSharingTensor"
     ) -> "AdditiveSharingTensorPB":
         """
-        This function takes the attributes of a AdditiveSharingTensor and saves them in a protobuf object
+            This function takes the attributes of a AdditiveSharingTensor and saves them in a
+        protobuf object
         Args:
             tensor (AdditiveSharingTensor): a AdditiveSharingTensor
         Returns:
@@ -1209,15 +1214,16 @@ class AdditiveSharingTensor(AbstractTensor):
         worker: AbstractWorker, protobuf_tensor: "AdditiveSharingTensorPB"
     ) -> "AdditiveSharingTensor":
         """
-            This function reconstructs a AdditiveSharingTensor given its' attributes in form of a protobuf object.
-            Args:
-                worker: the worker doing the deserialization
-                protobuf_tensor: a protobuf object holding the attributes of the AdditiveSharingTensor
-            Returns:
-                AdditiveSharingTensor: a AdditiveSharingTensor
-            Examples:
-                shared_tensor = unprotobuf(data)
-            """
+            This function reconstructs a AdditiveSharingTensor given its' attributes in form of a
+            protobuf object.
+        Args:
+            worker: the worker doing the deserialization
+            protobuf_tensor: a protobuf object holding the attributes of the AdditiveSharingTensor
+        Returns:
+            AdditiveSharingTensor: a AdditiveSharingTensor
+        Examples:
+            shared_tensor = unprotobuf(data)
+        """
 
         tensor_id = sy.serde.protobuf.proto.get_protobuf_id(protobuf_tensor.id)
         crypto_provider_id = sy.serde.protobuf.proto.get_protobuf_id(

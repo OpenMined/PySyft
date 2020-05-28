@@ -4,7 +4,6 @@ from typing import List
 from typing import Tuple
 
 import numpy as np
-import torch as th
 
 from syft.generic.frameworks.types import FrameworkTensorType
 from syft.workers.abstract import AbstractWorker
@@ -31,7 +30,7 @@ get_child = lambda i: i.child
 # dict to specify the action depending of the type found
 type_rule = {
     list: lambda _args: [build_rule(a) for a in _args],
-    tuple: lambda _args: tuple([build_rule(a) for a in _args]),
+    tuple: lambda _args: tuple(build_rule(a) for a in _args),
     dict: one,  # FIXME This is for additiveShareTensor.child, it can be confusing and AST.child
     np.ndarray: one,
     # should perhaps be of type ShareDict extending dict or something like this
@@ -513,7 +512,7 @@ def build_wrap_response_with_rules(
 
 
 def zero_fold(*a, **k):
-    return tuple()
+    return ()
 
 
 def one_fold(return_tuple, **kwargs):
@@ -594,7 +593,7 @@ def eight_fold(lambdas, args_, **kwargs):
 
 
 def many_fold(lambdas, args_, **kwargs):
-    return tuple([lambdas[i](args_[i], **kwargs) for i in range(len(lambdas))])
+    return tuple(lambdas[i](args_[i], **kwargs) for i in range(len(lambdas)))
 
 
 # Add the possibility to make a type check in the identity function applied
@@ -706,9 +705,7 @@ def build_register_response_function(response: object) -> Callable:
     return response_hook_function
 
 
-def register_tensor(
-    tensor: FrameworkTensorType, owner: AbstractWorker, response_ids: List = list()
-):
+def register_tensor(tensor: FrameworkTensorType, owner: AbstractWorker, response_ids: List = []):
     """
     Registers a tensor.
 

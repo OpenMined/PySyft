@@ -4,18 +4,16 @@ for all tensors (Torch and Numpy).
 """
 from collections import OrderedDict
 import io
-from tempfile import TemporaryFile
-from typing import Tuple, List
+from typing import Tuple
 import warnings
 
-import numpy
 import torch
 
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.tensor import initialize_tensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import initialize_tensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
 from syft.codes import TENSOR_SERIALIZATION
@@ -27,7 +25,7 @@ from syft.serde.torch.serde import TORCH_ID_MFORMAT
 from syft.serde.torch.serde import torch_tensor_serializer
 from syft.serde.torch.serde import torch_tensor_deserializer
 from syft.serde.torch.serde import numpy_tensor_serializer
-from syft.serde.torch.serde import numpy_tensor_deserializer
+from syft.serde.torch.serde import numpy_tensor_deserializer  # noqa: F401
 
 
 def _serialize_tensor(worker: AbstractWorker, tensor) -> bin:
@@ -95,7 +93,7 @@ def simplified_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -
 
 
 def simplified_tensor_deserializer(worker: AbstractWorker, tensor_tuple: tuple) -> torch.Tensor:
-    """"Strategy to deserialize a simplified tensor into a Torch tensor"""
+    """Strategy to deserialize a simplified tensor into a Torch tensor"""
 
     size, dtype, data_arr = serde._detail(worker, tensor_tuple)
     tensor = torch.tensor(data_arr, dtype=TORCH_STR_DTYPE[dtype]).reshape(size)
@@ -302,7 +300,7 @@ def _simplify_script_module(worker: AbstractWorker, obj: torch.jit.ScriptModule)
 def _detail_script_module(
     worker: AbstractWorker, script_module_bin: Tuple
 ) -> torch.jit.ScriptModule:
-    """"Strategy to deserialize a binary input using Torch load"""
+    """Strategy to deserialize a binary input using Torch load"""
     script_module_stream = io.BytesIO(script_module_bin[0])
     loaded_module = torch.jit.load(script_module_stream)
     return loaded_module

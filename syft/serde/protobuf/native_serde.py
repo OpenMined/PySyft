@@ -67,8 +67,8 @@ class TypeProtoWrapper(SyftSerializable):
     @staticmethod
     def bufferize(worker: AbstractWorker, obj) -> InputTypeDescriptorPB:
         """
-        This method gets the type object and returns the ClassType Protobuf message containing the string with the path
-        of that that and the actual type..
+        This method gets the type object and returns the ClassType Protobuf message containing
+        the string with the path of that that and the actual type..
 
         Args:
             obj_type (s.g builtins.str, builtins.int, torch.tensor): a type
@@ -92,8 +92,8 @@ class TypeProtoWrapper(SyftSerializable):
     @staticmethod
     def unbufferize(worker: AbstractWorker, class_type_msg: InputTypeDescriptorPB):
         """
-        This method receives the ClassType Protobuf message containing the string with the path + type, decodes the string
-        and locates the type in a module, returning the type object.
+        This method receives the ClassType Protobuf message containing the string with the
+        path + type, decodes the string and locates the type in a module, returning the type object.
 
         Args:
             class_type_msg: message encoding the type.
@@ -101,17 +101,18 @@ class TypeProtoWrapper(SyftSerializable):
         Returns:
             type: the type of an object (e.g: builtins.str, builtins.int).
 
-        Warning: if pydoc can't locate the type in the current process, might mean that the file layout is different between
-        sender and receiver.
+        Warning: if pydoc can't locate the type in the current process, might mean that the file
+        layout is different between sender and receiver.
 
         TODO:
-            As syft-protobuf grows in type support, we should change the type serialization by using those types, enabling cross
-            language typechecking/type validation.
+            As syft-protobuf grows in type support, we should change the type serialization
+            by using those types, enabling cross language typechecking/type validation.
         """
         result = pydoc.locate(class_type_msg.type_name)
         if result is None:
             warnings.warn(
-                f"{class_type_msg.type_name} can't be located in the current process, the layout of the modules has been changed.",
+                f"{class_type_msg.type_name} can't be located in the current process, "
+                "the layout of the modules has been changed.",
                 Warning,
             )
             return object

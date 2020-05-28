@@ -1,7 +1,7 @@
-import pytest
 import torch as th
 
 import syft as sy
+from syft.execution.role_assignments import RoleAssignments
 from syft.execution.role import Role
 
 
@@ -30,7 +30,7 @@ def test_framework_methods_traced_by_role():
 
     for role in protocol.roles.values():
         assert len(role.actions) == 1
-        assert "torch.rand" in [action.name for action in role.actions]
+        assert "torch.rand" in (action.name for action in role.actions)
 
 
 def test_trace_communication_actions_send():
@@ -45,7 +45,7 @@ def test_trace_communication_actions_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 2
-    assert "send" in [action.name for action in traced_actions]
+    assert "send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_get():
@@ -61,7 +61,7 @@ def test_trace_communication_actions_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "get" in [action.name for action in traced_actions]
+    assert "get" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_ptr_send():
@@ -77,7 +77,7 @@ def test_trace_communication_actions_ptr_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "send" in [action.name for action in traced_actions]
+    assert "send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_move():
@@ -93,7 +93,7 @@ def test_trace_communication_actions_move():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "move" in [action.name for action in traced_actions]
+    assert "move" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_share():
@@ -110,7 +110,7 @@ def test_trace_communication_actions_share():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "share" in [action.name for action in traced_actions]
+    assert "share" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_share_():
@@ -127,7 +127,7 @@ def test_trace_communication_actions_share_():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "share_" in [action.name for action in traced_actions]
+    assert "share_" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_remote_send():
@@ -143,7 +143,7 @@ def test_trace_communication_actions_remote_send():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "remote_send" in [action.name for action in traced_actions]
+    assert "remote_send" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_mid_get():
@@ -159,7 +159,7 @@ def test_trace_communication_actions_mid_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 3
-    assert "mid_get" in [action.name for action in traced_actions]
+    assert "mid_get" in (action.name for action in traced_actions)
 
 
 def test_trace_communication_actions_remote_get():
@@ -175,7 +175,7 @@ def test_trace_communication_actions_remote_get():
 
     assert protocol.is_built
     assert len(traced_actions) == 4
-    assert "remote_get" in [action.name for action in traced_actions]
+    assert "remote_get" in (action.name for action in traced_actions)
 
 
 def test_create_roles_from_decorator():
@@ -278,3 +278,30 @@ def test_copy():
         for copy_role, role in zip(copy.roles.values(), protocol.roles.values())
     ]
     assert copy.is_built == protocol.is_built
+
+
+def test_role_assignments(workers):
+    @sy.func2protocol(roles=["role1", "role2"], args_shape={"role1": ((1,),), "role2": ((1,),)})
+    def protocol(role1, role2):
+        tensor1 = role1.torch.tensor([1])
+        tensor2 = role2.torch.tensor([2])
+
+        t1plus = tensor1 + 1
+        t2plus = tensor2 + 1
+
+        return t1plus, t2plus
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    protocol.assign("role1", alice)
+    protocol.assign("role2", bob)
+
+    assert protocol.role_assignments.assignments["role1"] == [alice]
+    assert protocol.role_assignments.assignments["role2"] == [bob]
+
+    protocol.role_assignments = RoleAssignments(["role1", "role2"])
+    protocol.assign_roles({"role1": bob, "role2": alice})
+
+    assert protocol.role_assignments.assignments["role1"] == [bob]
+    assert protocol.role_assignments.assignments["role2"] == [alice]

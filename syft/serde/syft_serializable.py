@@ -19,16 +19,19 @@ def get_from_inheritance_chain(cls: type, condition: Callable) -> set:
 
 def get_protobuf_wrappers(cls: type) -> set:
     """
-        Function to retrieve all wrappers that implement the protobuf methods from the SyftSerializable class:
+        Function to retrieve all wrappers that implement the protobuf methods from the
+        SyftSerializable class:
 
-        A type that wants to implement to wrap another type (eg. torch.Tensor) for the protobuf interface and to use it with syft-proto has
-        to inherit SyftSerializable (directly or from the parent class) and to implement
+        A type that wants to implement to wrap another type (eg. torch.Tensor) for the protobuf
+        interface and to use it with syft-proto has to inherit SyftSerializable (directly or
+        from the parent class) and to implement
         (cannot inherit from parent class):
             1. bufferize
             2. unbufferize
             3. get_protobuf_schema
             4. get_original_class
-        If these methods are not implemented, the class won't be enrolled in the types that are wrappers can't use syft-proto.
+        If these methods are not implemented, the class won't be enrolled in the types that
+        are wrappers can't use syft-proto.
     """
 
     def check_implementation(s):
@@ -59,7 +62,8 @@ def get_protobuf_wrappers(cls: type) -> set:
 
 def get_protobuf_classes(cls: type) -> set:
     """
-        Function to retrieve all classes that implement the protobuf methods from the SyftSerializable class:
+        Function to retrieve all classes that implement the protobuf methods from the
+        SyftSerializable class:
 
         A type that wants to implement the protobuf interface and to use it with syft-proto has
         to inherit SyftSerializable (directly or from the parent class) and to implement
@@ -68,7 +72,8 @@ def get_protobuf_classes(cls: type) -> set:
             2. unbufferize
             3. get_protobuf_schema
 
-        If these methods are not implemented, the class won't be enrolled in the types that can use syft-proto.
+        If these methods are not implemented, the class won't be enrolled in the types that can
+        use syft-proto.
     """
 
     def check_implementation(s):
@@ -99,7 +104,8 @@ def get_protobuf_classes(cls: type) -> set:
 
 def get_msgpack_subclasses(cls):
     """
-        Function to retrieve all classes that implement the msgpack methods from the SyftSerializable class:
+        Function to retrieve all classes that implement the msgpack methods from the
+        SyftSerializable class:
 
         A type that wants to implement the msgpack interface and to use it in syft has
         to inherit SyftSerializable (directly or from the parent class) and to implement
@@ -107,7 +113,8 @@ def get_msgpack_subclasses(cls):
             1. simplify
             2. detail
 
-        If these methods are not implemented, the class won't be enrolled in the types that can use msgpack.
+        If these methods are not implemented, the class won't be enrolled in the types that
+        can use msgpack.
     """
 
     def check_implementation(s):

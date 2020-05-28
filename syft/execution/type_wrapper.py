@@ -18,8 +18,8 @@ class NestedTypeWrapper(SyftSerializable):
     @staticmethod
     def get_object_identifiers(obj: any) -> (str, str):
         """
-        Looks for identifiers for different objects, currently, only plans are supported with `name`, other
-        identifiers can be added as well, eg.: `id`.
+        Looks for identifiers for different objects, currently, only plans are supported
+        with `name`, other identifiers can be added as well, eg.: `id`.
 
         Params:
             ojb: the object that you are typechecking
@@ -101,13 +101,15 @@ class NestedTypeWrapper(SyftSerializable):
         """
         type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
         raise TypeError(
-            f"{type_name} {obj_name} {path} has length {call}, while being build with length {build}."
+            f"{type_name} {obj_name} {path} has length {call}, "
+            f"while being build with length {build}."
         )
 
     @staticmethod
     def raise_wrong_number_arguments_err(typechecked_object: any, build: int, call: int) -> None:
         """
-            Function to raise an error if the build/reference function has a different number of arguments.
+            Function to raise an error if the build/reference function has a different number
+            of arguments.
 
             Params:
                 obj_type: the type of the object returned by calling .__name__ on it.
@@ -124,7 +126,8 @@ class NestedTypeWrapper(SyftSerializable):
     @staticmethod
     def raise_key_missing_err(typechecked_object: any, key: any, path: str) -> None:
         """
-            Function to raise an error if the build/reference function has a different number of arguments.
+            Function to raise an error if the build/reference function has a different number
+            of arguments.
 
             Params:
                 obj_type: the type of the object returned by calling .__name__ on type(obj).
@@ -137,7 +140,8 @@ class NestedTypeWrapper(SyftSerializable):
         """
         type_name, obj_name = NestedTypeWrapper.get_object_identifiers(typechecked_object)
         raise KeyError(
-            f"{type_name} {obj_name} {path} does not provide the key {key}, while being build with that key."
+            f"{type_name} {obj_name} {path} does not provide the key {key}, "
+            "while being build with that key."
         )
 
     def input_check(self, typechecked_object: any, args: list) -> None:
@@ -145,12 +149,13 @@ class NestedTypeWrapper(SyftSerializable):
             Method for input validation by comparing the serialized build input with the
             current call input, following the following steps:
                 1. Input length validation - checking that build and call inputs match on length.
-                2. Verify the following nested structures: list, tuple, dict recursively. Lengths must match when
-                comparing two nested lists, tuples or dicts. If they differ, an error will be raised.
-                3. If we hit an object for which we don't support nesting, we compare types between call input and
-                build input. If they differ, a warning will be raised.
-                4. Dicts on the same nesting level on build and call input must have the same keys. If they differ, an
+                2. Verify the following nested structures: list, tuple, dict recursively. Lengths
+                must match when comparing two nested lists, tuples or dicts. If they differ, an
                 error will be raised.
+                3. If we hit an object for which we don't support nesting, we compare types between
+                call input and build input. If they differ, a warning will be raised.
+                4. Dicts on the same nesting level on build and call input must have the same keys.
+                If they differ, an error will be raised.
 
             Params:
                 obj_type: the type of the object returned by calling .__name__ on type(obj).
@@ -171,8 +176,10 @@ class NestedTypeWrapper(SyftSerializable):
                 Recursive method to compare the nested input argument and the nested build argument.
 
                 Params:
-                    build_arg_nested_type: Can be either a nested element (list, tuple, dict) or a type.
-                    call_arg_nested_obj: Can be either a nested element (list, tuple, dict) or an object.
+                    build_arg_nested_type: Can be either a nested element (list, tuple, dict)
+                                        or a type.
+                    call_arg_nested_obj: Can be either a nested element (list, tuple, dict)
+                                        or an object.
 
                 Returns:
                     None

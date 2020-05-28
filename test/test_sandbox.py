@@ -1,6 +1,5 @@
-import pytest
-import torch
 import syft as sy
+import torch  # noqa: F401
 
 # Import Hook
 from syft.frameworks.torch.hook.hook import TorchHook

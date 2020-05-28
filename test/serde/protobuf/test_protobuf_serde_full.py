@@ -1,10 +1,6 @@
 from collections import OrderedDict
 import pytest
-import numpy
 import torch
-from functools import partial
-import traceback
-import io
 
 import syft
 from syft.serde import protobuf
@@ -25,7 +21,8 @@ samples[torch.jit.TopLevelTracedModule] = make_torch_topleveltracedmodule
 samples[torch.nn.Parameter] = make_torch_parameter
 samples[torch.Tensor] = make_torch_tensor
 samples[torch.Size] = make_torch_size
-
+samples[torch.memory_format] = make_torch_memoryformat
+samples[torch.dtype] = make_torch_dtype
 # PySyft
 samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
@@ -40,7 +37,8 @@ samples[syft.execution.state.State] = make_state
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
 samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
-
+samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
+samples[syft.generic.string.String] = make_string
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message

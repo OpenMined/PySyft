@@ -1,11 +1,10 @@
 from collections import defaultdict
-from typing import List
 from typing import Union
 
 from syft.exceptions import ObjectNotFoundError
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 
@@ -106,7 +105,8 @@ class ObjectStore:
         Args:
             obj_id: A string or integer representing id of the object to be
                 removed.
-            force: if true, explicitly forces removal of the object modifying the `garbage_collect_data` attribute.
+            force: if true, explicitly forces removal of the object modifying the
+                `garbage_collect_data` attribute.
         """
         if obj_id in self._objects:
             obj = self._objects[obj_id]

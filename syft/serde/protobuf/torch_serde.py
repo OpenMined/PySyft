@@ -5,11 +5,12 @@ for all tensors (Torch and Numpy).
 import io
 
 import torch
+import pydoc
 
 import syft
 from syft.serde.syft_serializable import SyftSerializable
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import initialize_tensor
+from syft.generic.abstract.tensor import initialize_tensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
@@ -30,7 +31,8 @@ from syft_proto.types.torch.v1.size_pb2 import Size as SizePB
 from syft_proto.types.torch.v1.tensor_data_pb2 import TensorData as TensorDataPB
 from syft_proto.types.torch.v1.tensor_pb2 import TorchTensor as TorchTensorPB
 from syft_proto.types.torch.v1.traced_module_pb2 import TracedModule as TracedModulePB
-
+from syft_proto.types.torch.v1.memory_format_pb2 import MemoryFormat as MemoryFormatPB
+from syft_proto.types.torch.v1.dtype_pb2 import TorchDType as TorchDTypePB
 
 SERIALIZERS_SYFT_TO_PROTOBUF = {
     TENSOR_SERIALIZATION.TORCH: TorchTensorPB.Serializer.SERIALIZER_TORCH,
@@ -113,7 +115,7 @@ def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> 
 def protobuf_tensor_deserializer(
     worker: AbstractWorker, protobuf_tensor: TensorDataPB
 ) -> torch.Tensor:
-    """"Strategy to deserialize a binary input using Protobuf"""
+    """Strategy to deserialize a binary input using Protobuf"""
     size = tuple(protobuf_tensor.shape.dims)
     data = getattr(protobuf_tensor, "contents_" + protobuf_tensor.dtype)
 
@@ -450,7 +452,8 @@ class ScriptFunctionWrapper(SyftSerializable):
         This method serializes a torch.jit.ScriptFunction into a ScriptFunctionPB.
 
         Args:
-            script_module (torch.jit.ScriptFunction): input torch.jit.ScriptFunction to be serialized.
+            script_module (torch.jit.ScriptFunction): input torch.jit.ScriptFunction
+            to be serialized.
 
         Returns:
             protobuf_script (ScriptFunctionPB): serialized torch.jit.ScriptFunction.
@@ -510,7 +513,8 @@ class TopLevelTracedModuleWrapper(SyftSerializable):
             This method serializes a torch.jit.TopLevelTracedModule using TracedModulePB.
 
             Args:
-                script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule to be serialized.
+                script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule
+                to be serialized.
 
             Returns:
                 protobuf_script (TracedModulePB): serialized TopLevelTracedModule.
@@ -609,3 +613,107 @@ class TorchSizeWrapper(SyftSerializable):
                 Protobuf schema for torch.Size.
         """
         return SizePB
+
+
+class TorchMemFormatWrapper(SyftSerializable):
+    """
+    Wrapper that serializes torch.memory_format.
+    """
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, mem_format: torch.memory_format) -> MemoryFormatPB:
+        """
+        This method serializes torch.memory_format into MemoryFormatPB.
+
+         Args:
+            size (torch.memory_format): input torch.memory_format to be serialized.
+
+         Returns:
+            message (MemoryFormatPB): serialized torch.memory_format
+        """
+        message = MemoryFormatPB()
+        message.memory_format_type = str(mem_format).split(".")[-1]
+        return message
+
+    @staticmethod
+    def unbufferize(
+        worker: AbstractWorker, protobuf_mem_format: MemoryFormatPB
+    ) -> torch.memory_format:
+        """
+            This method deserializes MemoryFormatPB into torch.memory_format.
+
+            Args:
+                protobuf_size (MemoryFormatPB): input MemoryFormatPB to be deserialized.
+
+            Returns:
+                torch.memory_format: deserialized MemoryFormatPB
+        """
+        return getattr(torch, protobuf_mem_format.memory_format_type)
+
+    @staticmethod
+    def get_original_class() -> type(torch.memory_format):
+        return torch.memory_format
+
+    @staticmethod
+    def get_protobuf_schema() -> type(MemoryFormatPB):
+        """
+            Returns the protobuf schema used for torch.memory_format.
+
+            Returns:
+                Protobuf schema for torch.memory_format.
+        """
+        return MemoryFormatPB
+
+
+class TorchDTypeWrapper(SyftSerializable):
+    """
+    Wrapper that serializes torch.dtype using protobuffers.
+    """
+
+    @staticmethod
+    def bufferize(worker: AbstractWorker, torch_dtype: torch.dtype) -> TorchDTypePB:
+        """
+            This method serializes torch.dtype into TorchDTypePB.
+
+            Args:
+                torch_dtype (torch.dtype): input torch.dtype to be serialized.
+
+            Returns:
+                protobuf_size: serialized torch.dtype
+        """
+        protobuf_msg = TorchDTypePB()
+        protobuf_msg.torch_type = str(torch_dtype)
+        return protobuf_msg
+
+    @staticmethod
+    def unbufferize(worker: AbstractWorker, protobuf_dtype: TorchDTypePB) -> torch.dtype:
+        """
+            This method deserializes TorchDTypePB into torch.dtype.
+
+            Args:
+                protobuf_dtype (TorchDTypePB): input TorchDTypePB to be deserialized.
+
+            Returns:
+                torch.Size: deserialized TorchDTypePB
+        """
+        return pydoc.locate(protobuf_dtype.torch_type)
+
+    @staticmethod
+    def get_original_class() -> type(torch.dtype):
+        """
+            This method returns the wrapped type.
+
+            Returns:
+                Wrapped type.
+        """
+        return torch.dtype
+
+    @staticmethod
+    def get_protobuf_schema() -> type(TorchDTypePB):
+        """
+            Returns the protobuf schema used for torch.dtype.
+
+            Returns:
+                Protobuf schema for torch.dtype.
+        """
+        return TorchDTypePB

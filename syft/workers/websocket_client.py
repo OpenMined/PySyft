@@ -18,7 +18,7 @@ from syft.messaging.message import Message
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import SearchMessage
 from syft.messaging.message import TensorCommandMessage
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
 
@@ -192,7 +192,7 @@ class WebsocketClientWorker(BaseWorker):
         """
 
         if return_ids is None:
-            return_ids = tuple([sy.ID_PROVIDER.pop()])
+            return_ids = (sy.ID_PROVIDER.pop(),)
 
         name, target, args_, kwargs_ = message
 

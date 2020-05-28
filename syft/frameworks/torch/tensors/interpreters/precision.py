@@ -7,7 +7,7 @@ from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveS
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 
@@ -466,7 +466,7 @@ class FixedPrecisionTensor(AbstractTensor):
         return inverse
 
     def exp(self, iterations=8):
-        """
+        r"""
         Approximates the exponential function using a limit approximation:
         exp(x) = \lim_{n -> infty} (1 + x / n) ^ n
 
@@ -494,7 +494,7 @@ class FixedPrecisionTensor(AbstractTensor):
         For stability:
             sigmoid(x) = (sigmoid(|x|) - 0.5) * sign(x) + 0.5
 
-        Ref: https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/#numerically_stable_sigmoid_function
+        Ref: https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/#numerically_stable_sigmoid_function # noqa: E501
 
         Args:
             tensor (tensor): values where sigmoid should be approximated
@@ -515,7 +515,7 @@ class FixedPrecisionTensor(AbstractTensor):
         Approximates the sigmoid function using Maclaurin, with polynomial
         interpolation of degree 5 over [-8,8]
         NOTE: This method is faster but not as precise as "exp"
-        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid
+        Ref: https://mortendahl.github.io/2017/04/17/private-deep-learning-with-mpc/#approximating-sigmoid # noqa: E501
 
         Args:
             tensor (tensor): values where sigmoid should be approximated
@@ -599,17 +599,19 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def _tanh_chebyshev(tensor, maxval: int = 6, terms: int = 32):
-        """
+        r"""
         Implementation taken from FacebookResearch - CrypTen project
         Computes tanh via Chebyshev approximation with truncation.
           tanh(x) = \sum_{j=1}^terms c_{2j - 1} P_{2j - 1} (x / maxval)
           where c_i is the ith Chebyshev series coefficient and P_i is ith polynomial.
         The approximation is truncated to +/-1 outside [-maxval, maxval].
+
         Args:
             tensor (tensor): values where the tanh needs to be approximated
             maxval (int): interval width used for computing chebyshev polynomials
             terms (int): highest degree of Chebyshev polynomials.
                          Must be even and at least 6.
+
         More details can be found in the paper:
            Guo, Chuan and Hannun, Awni and Knott, Brian and van der Maaten,
            Laurens and Tygert, Mark and Zhu, Ruiyu,
@@ -862,16 +864,17 @@ class FixedPrecisionTensor(AbstractTensor):
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "FixedPrecisionTensor":
+        """This function reconstructs a FixedPrecisionTensor given it's attributes in form
+        of a tuple.
+
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
+        Returns:
+            FixedPrecisionTensor: a FixedPrecisionTensor
+        Examples:
+            shared_tensor = detail(data)
         """
-            This function reconstructs a FixedPrecisionTensor given it's attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the FixedPrecisionTensor
-            Returns:
-                FixedPrecisionTensor: a FixedPrecisionTensor
-            Examples:
-                shared_tensor = detail(data)
-            """
 
         (
             tensor_id,

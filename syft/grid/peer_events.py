@@ -1,5 +1,4 @@
 from syft.codes import MSG_FIELD, GRID_EVENTS
-import json
 import psutil
 
 
