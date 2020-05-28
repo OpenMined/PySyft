@@ -9,6 +9,7 @@ Note that the protocols are quite different in aspect from those papers
 """
 import hashlib
 import math
+import time
 import numpy as np
 import sha_loop
 import multiprocessing
@@ -25,7 +26,6 @@ from syft.generic.utils import remote
 n = 32  # 8  # 32  # bit precision
 λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
 assert λs == 2
-N = 10_000_000  # when to start multi processing
 
 no_wrap = {"no_wrap": True}
 
@@ -38,9 +38,8 @@ def full_name(f):
 EQ = 0
 COMP = 1
 
-
-def multiprocessing_remote(command, location, args, kwargs):
-    return remote(command, location)(*args, **kwargs)
+# number of processes
+N_CORES = 8
 
 
 def fss_op(x1, x2, type_op="eq"):
@@ -69,11 +68,9 @@ def fss_op(x1, x2, type_op="eq"):
 
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
-        numel = x1.child[locations[0].id].numel()
         class_attributes = x1.get_class_attributes()
     else:
         locations = x2.locations
-        numel = x2.child[locations[0].id].numel()
         class_attributes = x2.get_class_attributes()
 
     asynchronous = isinstance(locations[0], WebsocketClientWorker)
@@ -110,40 +107,10 @@ def fss_op(x1, x2, type_op="eq"):
 
     workers_args = [(th.IntTensor([i]), mask_value, type_op) for i in range(2)]
     if not asynchronous:
-        if numel > N:
-            print("sync multi", numel)
-            multiprocessing_args = []
-            kwargs = dict(return_value=False, multiprocessing=True)
-            original_shape = mask_value.shape
-            mask_value = mask_value.reshape(-1)
-            for i, location in enumerate(locations):
-                for j in range(math.ceil(numel / N)):
-                    # overwrite workers_args
-                    workers_args = (th.IntTensor([i]), mask_value[j * N : (j + 1) * N], type_op)
-                    multiprocessing_args.append((evaluate, location.id, workers_args, kwargs))
-            p = multiprocessing.Pool()
-            real_shares = p.starmap(multiprocessing_remote, multiprocessing_args)
-            p.close()
-            shares = []
-            # TODO fix the getting back shares
-            len_loc = len(locations)
-            for i, location in enumerate(locations):
-                real_share = th.cat(
-                    [real_shares[i * len_loc + j] for j in range(math.ceil(numel / N))]
-                )
-                real_share = real_share.reshape(original_shape)
-                shares.append(real_share.send(location))
-
-            assert isinstance(locations[0], sy.VirtualWorker)
-            # Burn the primitives (copies of the workers were sent)
-            for i, location in enumerate(locations):
-                location.crypto_store.get_keys(f"fss_{type_op}", n_instances=numel, remove=True)
-        else:
-            # print("sync")
-            shares = []
-            for i, location in enumerate(locations):
-                share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
-                shares.append(share)
+        shares = []
+        for i, location in enumerate(locations):
+            share = remote(evaluate, location=location)(*workers_args[i], return_value=False)
+            shares.append(share)
     else:
         print("async")
         shares = asyncio.run(
@@ -180,10 +147,37 @@ def mask_builder(x1, x2, type_op):
 
 @allow_command
 def evaluate(b, x_masked, type_op):
+    MULTI_LIMIT = 10_000
     if type_op == "eq":
         return eq_evaluate(b, x_masked)
     elif type_op == "comp":
-        return comp_evaluate(b, x_masked)
+        numel = x_masked.numel()
+        if numel > MULTI_LIMIT:
+            #print('MULTI EVAL', numel, x_masked.owner)
+            owner = x_masked.owner
+            multiprocessing_args = []
+            original_shape = x_masked.shape
+            x_masked = x_masked.reshape(-1)
+            slice_size = math.ceil(numel / N_CORES)
+            for j in range(N_CORES):
+                x_masked_slice = x_masked[j * slice_size: (j + 1) * slice_size]
+                x_masked_slice.owner = owner
+                process_args = (b, x_masked_slice, owner.id, j, j * slice_size)
+                multiprocessing_args.append(process_args)
+            p = multiprocessing.Pool()
+            partitions = p.starmap(comp_evaluate, multiprocessing_args)
+            p.close()
+            partitions = sorted(partitions, key=lambda k: k[0])
+            partitions = [partition[1] for partition in partitions]
+            result = th.cat(partitions)
+
+            # Burn the primitives (copies of the workers were sent)
+            owner.crypto_store.get_keys(f"fss_{type_op}", n_instances=numel, remove=True)
+
+            return result.reshape(*original_shape)
+        else:
+            #print('EVAL', numel)
+            return comp_evaluate(b, x_masked)
     else:
         raise ValueError
 
@@ -198,12 +192,22 @@ def eq_evaluate(b, x_masked):
 
 
 # share level
-def comp_evaluate(b, x_masked):
+def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0):
+    if owner_id is not None:
+        x_masked.owner = x_masked.owner.get_worker(owner_id)
+
+    if burn_offset > 0:
+        _ = x_masked.owner.crypto_store.get_keys(
+            type_op="fss_comp", n_instances=burn_offset, remove=True
+        )
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
         type_op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
     result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
-    return th.tensor(result_share)
+    if core_id is None:
+        return th.tensor(result_share)
+    else:
+        return core_id, th.tensor(result_share)
 
 
 def eq(x1, x2):

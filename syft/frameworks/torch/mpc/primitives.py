@@ -103,6 +103,7 @@ class PrimitiveStorage:
                     )
         else:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
+            #print('check enoought prim?', available_instances, 'neeeded', n_instances)
             if available_instances >= n_instances:
                 keys = []
                 # We iterate on the different elements that constitute a given primitive, for
@@ -162,9 +163,9 @@ class PrimitiveStorage:
 
         while n_instances > 0:
             n_instances_batch = min(500_000, n_instances)
-            if n_instances_batch > 50_000:
-                n_instances_batch = 500_000
-                #n_instances_batch = math.ceil(n_instances_batch/100_000)*100_000
+            if n_instances_batch > 10_000:
+                #     n_instances_batch = 500_000
+                n_instances_batch = math.ceil(n_instances_batch/100_000)*100_000
             # print('| n_instances_batch', n_instances_batch)
             worker_types_primitives = defaultdict(dict)
 
@@ -187,14 +188,15 @@ class PrimitiveStorage:
                     )
                     self._owner.send_msg(worker_message, worker)
             else:
-                # if "comp" in crypto_type:
-                #     print(f"{n_instances_batch} building")
+                if "comp" in crypto_type:
+                    print(f"{n_instances_batch} building")
                 builder = self._builders[crypto_type]
 
                 primitives = builder(n_party=len(workers), n_instances=n_instances_batch, **kwargs)
 
                 for worker_primitives, worker in zip(primitives, workers):
-                    #np.save(filename(worker), worker_primitives)
+                    if "beaver" not in crypto_type:
+                        np.save(filename(worker), worker_primitives)
                     # print('saved', filename(worker))
                     worker_types_primitives[worker][crypto_type] = worker_primitives
 

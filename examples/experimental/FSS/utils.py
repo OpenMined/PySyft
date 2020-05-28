@@ -88,7 +88,7 @@ def test(args, model, private_test_loader):
         private_test_loader[-1][1]
     )
     print(
-        "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.3f}s \tTo time /item: {:.3f}s [{:.3f}]\n".format(
+        "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTo time /item: {:.4f}s [{:.3f}]\n".format(
             correct.item(),
             n_items,
             100.0 * correct.item() / n_items,
