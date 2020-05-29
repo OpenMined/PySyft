@@ -45,6 +45,7 @@ def remote(func, location):
             message=command, recipient=location, return_ids=response_ids, return_value=return_value
         )
 
+        # TODO stale: remove
         if multiprocessing:
             return response.get()
         else:

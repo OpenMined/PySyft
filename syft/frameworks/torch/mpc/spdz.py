@@ -78,6 +78,12 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
 
+    for location, share_delta, share_epsilon in zip(locations, shares_delta, shares_epsilon):
+        location.de_register_obj(share_delta)
+        location.de_register_obj(share_epsilon)
+        del share_delta
+        del share_epsilon
+
     if not asynchronous or True:
         # print('sync spdz')
         shares = []
