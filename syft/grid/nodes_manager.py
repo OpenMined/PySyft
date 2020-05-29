@@ -1,65 +1,153 @@
-from syft.grid.webrtc_connection import WebRTCConnection
-from syft.workers.base import BaseWorker
 import asyncio
+import json
+
+import syft as sy
+from syft.codes import MSG_FIELD, GRID_EVENTS, NODE_EVENTS
+from syft.grid.peer import WebRTCPeer
+from syft.exceptions import GetNotPermittedError
+from aiortc import RTCPeerConnection, RTCSessionDescription
+from aiortc.contrib.signaling import (
+    object_to_string,
+    object_from_string,
+)
+import queue
+import weakref
 
 
-class WebRTCManager(BaseWorker):
-    """ Class used to manage multiple webrtc peer connections in different threads. """
+class WebRTCManager:
+
+    HOST_REQUEST = b"01"
+    REMOTE_REQUEST = b"02"
 
     def __init__(self, grid_descriptor, syft_worker):
         self._connections = {}
         self._grid = grid_descriptor
+
         self.worker = syft_worker
+
+        self._request_pool = queue.Queue()
+        self._response_pool = queue.Queue()
+
+        self.loop = asyncio.get_event_loop()
+
+        # If an external async process already exists (eg. ipython kernel / tornado features)
+        if self.loop.is_running():
+            self.async_method = self.loop.create_task
+        else:
+            self.async_method = asyncio.run
 
     @property
     def nodes(self):
-        """ Return all the peer nodes connected directly with this peer."""
         return list(self._connections.keys())
 
-    def _send_msg(self, message: bin, location):
-        """ Forward a local syft request to the proper destination. """
-        return asyncio.run(self._connection[location.id].send(message))
-
-    def _recv_msg(self, message):
-        """ Overwrite BaseWorker's abstract method. But it's not used. """
-        raise NotImplementedError
-
     def get(self, node_id: str):
-        """ Return a peer connection reference by its ID. """
         return self._connections.get(node_id, None)
 
+    def process_msg(self, message, channel):
+        """ Process syft messages forwarding them to the peer virtual worker and put the
+            response into the response_pool queue to be delivered async.
+
+            Args:
+                message: Binary syft message.
+                channel: Connection channel used by the peers.
+        """
+        if message[:2] == WebRTCManager.HOST_REQUEST:
+            try:
+                decoded_response = self.worker._recv_msg(message[2:])
+            except GetNotPermittedError as e:
+                message = sy.serde.deserialize(message[2:], worker=self.worker)
+                self.worker.tensor_requests.append(message)
+                decoded_response = sy.serde.serialize(e)
+
+            channel.send(WebRTCManager.REMOTE_REQUEST + decoded_response)
+        else:
+            self._response_pool.put(message[2:])
+
     def process_answer(self, destination: str, content: str):
-        """ Set the webrtc connection answer message. """
-        self._connections[destination].set_msg(content)
+        asyncio.run_coroutine_threadsafe(self._process_answer(destination, content), self.loop)
 
     def process_offer(self, destination: str, content: str):
         """ Create a thread to process a webrtc offer connection. """
-        self._connections[destination] = WebRTCConnection(
-            self._grid, self.worker, destination, self._connections, WebRTCConnection.ANSWER
+        self._connections[destination] = WebRTCPeer(
+            destination, weakref.proxy(self.worker), weakref.proxy(self._response_pool)
         )
-        self._connections[destination].set_msg(content)
-        self._connections[destination].start()
+        asyncio.run_coroutine_threadsafe(self._set_answer(destination, content), self.loop)
 
     def start_offer(self, destination: str):
         """ Create a new thread to offer a webrtc connection. """
-
-        # Temporary Notebook async weird constraints
-        # Should be removed after solving #3572
-        if len(self._connections) >= 1:
-            print(
-                "Due to some jupyter notebook async constraints, we do not recommend handling "
-                "multiple connection peers at the same time."
-            )
-            print("This issue is in WIP status and may be solved soon.")
-            print(
-                "You can follow its progress here: https://github.com/OpenMined/PySyft/issues/3572"
-            )
-            return
-
-        self._connections[destination] = WebRTCConnection(
-            self._grid, self.worker, destination, self._connections, WebRTCConnection.OFFER
+        self._connections[destination] = WebRTCPeer(
+            destination, weakref.proxy(self.worker), weakref.proxy(self._response_pool)
         )
-        self._connections[destination].start()
+        asyncio.run_coroutine_threadsafe(self._set_offer(destination), self.loop)
+
+    async def _process_answer(self, destination: str, content: str):
+        """ Set the webrtc connection answer message. """
+        webrtc_obj = self._connections[destination]
+
+        msg = object_from_string(content)
+        if isinstance(msg, RTCSessionDescription):
+            await webrtc_obj.pc.setRemoteDescription(msg)
+            if msg.type == "offer":
+                # send answer
+                await webrtc_obj.pc.setLocalDescription(await webrtc_obj.pc.createAnswer())
+                local_description = object_to_string(webrtc_obj.pc.localDescription)
+
+                response = {
+                    MSG_FIELD.TYPE: NODE_EVENTS.WEBRTC_ANSWER,
+                    MSG_FIELD.FROM: self.worker.id,
+                    MSG_FIELD.PAYLOAD: local_description,
+                }
+
+                forward_payload = {
+                    MSG_FIELD.TYPE: GRID_EVENTS.FORWARD,
+                    MSG_FIELD.DESTINATION: destination,
+                    MSG_FIELD.CONTENT: response,
+                }
+                self._grid.send(json.dumps(forward_payload))
+
+    # OFFER
+    async def _set_offer(self, destination: str):
+        conn_obj = self._connections[destination]
+
+        conn_obj.channel = conn_obj.pc.createDataChannel("chat")
+        channel = conn_obj.channel
+
+        @channel.on("message")
+        def on_message(message):
+            self.process_msg(message, channel)
+
+        await conn_obj.pc.setLocalDescription(await conn_obj.pc.createOffer())
+        local_description = object_to_string(conn_obj.pc.localDescription)
+
+        response = {
+            MSG_FIELD.TYPE: NODE_EVENTS.WEBRTC_OFFER,
+            MSG_FIELD.PAYLOAD: local_description,
+            MSG_FIELD.FROM: self.worker.id,
+        }
+
+        forward_payload = {
+            MSG_FIELD.TYPE: GRID_EVENTS.FORWARD,
+            MSG_FIELD.DESTINATION: destination,
+            MSG_FIELD.CONTENT: response,
+        }
+        self._grid.send(json.dumps(forward_payload))
+
+    # ANSWER
+    async def _set_answer(self, destination: str, content):
+        conn_obj = self._connections[destination]
+
+        pc = conn_obj.pc
+
+        @pc.on("datachannel")
+        def on_datachannel(channel):
+
+            self._connections[destination].channel = channel
+
+            @channel.on("message")
+            def on_message(message):
+                self.process_msg(message, channel)
+
+        await self._process_answer(destination, content)
 
     def __getitem__(self, key):
         """
