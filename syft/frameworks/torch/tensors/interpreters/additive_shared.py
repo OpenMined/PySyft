@@ -12,7 +12,7 @@ from syft.frameworks.torch.tensors.decorators.crypto_provider_required import (
 )
 from syft.generic.utils import memorize
 
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker

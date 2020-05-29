@@ -10,7 +10,7 @@ import pydoc
 import syft
 from syft.serde.syft_serializable import SyftSerializable
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import initialize_tensor
+from syft.generic.abstract.tensor import initialize_tensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 

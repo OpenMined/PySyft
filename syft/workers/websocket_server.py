@@ -10,7 +10,7 @@ import torch
 import websockets
 
 import syft as sy
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError

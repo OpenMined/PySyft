@@ -1,4 +1,4 @@
-# from syft.generic.tensor import AbstractTensor
+# from syft.generic.abstract.tensor import AbstractTensor
 # import torch
 # import numpy as np
 # from typing import Callable, List, Union
