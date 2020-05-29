@@ -313,7 +313,7 @@ def test_execution_with_communications(workers):
         x = role1.torch.rand([1])
         y = role1.torch.rand([1])
 
-        z = role2.torch.rand([1])
+        z = role2.torch.ones([1])
 
         # On role1
         a = x + y
@@ -329,6 +329,8 @@ def test_execution_with_communications(workers):
 
     protocol.assign("role1", alice)
     protocol.assign("role2", bob)
+
+    res = protocol()
 
     res = protocol()
 

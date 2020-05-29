@@ -17,7 +17,6 @@ from syft.serde.syft_serializable import SyftSerializable
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.placeholder_id import PlaceholderId
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
@@ -218,12 +217,10 @@ class ObjectMessage(Message):
     to do so.
     """
 
-    def __init__(self, object_, placeholder_id: PlaceholderId = None):
+    def __init__(self, object_):
         """Initialize the message."""
 
         self.object = object_
-        # If specified, the id of the placeholder to instantiate at reception
-        self.placeholder_id = placeholder_id
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -242,10 +239,7 @@ class ObjectMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, msg.object),
-            sy.serde.msgpack.serde._simplify(worker, msg.placeholder_id),
-        )
+        return (sy.serde.msgpack.serde._simplify(worker, msg.object),)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectMessage":
@@ -262,11 +256,7 @@ class ObjectMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        obj, ph_id = msg_tuple
-        return ObjectMessage(
-            sy.serde.msgpack.serde._detail(worker, obj),
-            sy.serde.msgpack.serde._detail(worker, ph_id),
-        )
+        return ObjectMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
 
     @staticmethod
     def bufferize(worker: AbstractWorker, message: "ObjectMessage") -> "ObjectMessagePB":
@@ -285,24 +275,13 @@ class ObjectMessage(Message):
         bufferized_obj = sy.serde.protobuf.serde._bufferize(worker, message.object)
         protobuf_obj_msg.tensor.CopyFrom(bufferized_obj)
 
-        if message.placeholder_id is not None:
-            protobuf_obj_msg.placeholder_id.CopyFrom(
-                sy.serde.protobuf.serde._bufferize(worker, message.placeholder_id)
-            )
-
         return protobuf_obj_msg
 
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_obj: "ObjectMessagePB") -> "ObjectMessage":
-        object_ = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj.tensor)
-
-        placeholder_id = None
-        if protobuf_obj.placeholder_id:
-            placeholder_id = sy.serde.protobuf.serde._unbufferize(
-                worker, protobuf_obj.placeholder_id
-            )
-
-        object_msg = ObjectMessage(object_, placeholder_id)
+        protobuf_obj = protobuf_obj.tensor
+        object_ = sy.serde.protobuf.serde._unbufferize(worker, protobuf_obj)
+        object_msg = ObjectMessage(object_)
 
         return object_msg
 

@@ -39,12 +39,12 @@ else:
 from syft.frameworks.torch.hook.hook import TorchHook  # noqa: E402,F401
 
 # Import grids
-from syft.grid.private_grid import PrivateGridNetwork  # noqa: E402,F401
-from syft.grid.public_grid import PublicGridNetwork  # noqa: E402,F401
+# from syft.grid.private_grid import PrivateGridNetwork  # noqa: E402,F401
+# from syft.grid.public_grid import PublicGridNetwork  # noqa: E402,F401
 
 
-# Import sandbox
-from syft.sandbox import create_sandbox, make_hook  # noqa: E402,F401
+# # Import sandbox
+# from syft.sandbox import create_sandbox, make_hook  # noqa: E402,F401
 
 # Import federate learning objects
 from syft.frameworks.torch.fl import (  # noqa: E402, F401

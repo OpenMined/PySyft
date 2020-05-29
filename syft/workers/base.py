@@ -11,6 +11,7 @@ from syft.execution.plan import Plan
 from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
+from syft.execution.placeholder import PlaceHolder
 
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
@@ -329,7 +330,6 @@ class BaseWorker(AbstractWorker):
         garbage_collect_data=None,
         requires_grad=False,
         create_pointer=True,
-        placeholder_id: Union[str, int] = None,
         **kwargs,
     ) -> ObjectPointer:
         """Sends tensor to the worker(s).
@@ -386,7 +386,7 @@ class BaseWorker(AbstractWorker):
             obj.id_at_origin = obj.id
 
         # Send the object
-        self.send_obj(obj, worker, placeholder_id)
+        self.send_obj(obj, worker)
 
         if requires_grad:
             obj.origin = None
@@ -397,7 +397,7 @@ class BaseWorker(AbstractWorker):
             return None
 
         # Create the pointer if needed
-        if hasattr(obj, "create_pointer") and not isinstance(
+        if hasattr(type(obj), "create_pointer") and not isinstance(
             obj, sy.Protocol
         ):  # TODO: this seems like hack to check a type
             if ptr_id is None:  # Define a remote id if not specified
@@ -431,7 +431,6 @@ class BaseWorker(AbstractWorker):
             obj: a Framework Tensor or a subclass of an AbstractTensor with an id
         """
         obj = obj_msg.object
-        placeholder_id = obj_msg.placeholder_id
 
         if isinstance(obj, FrameworkTensor) and (
             obj.requires_grad and obj.origin is not None and obj.id_at_origin is not None
@@ -439,8 +438,8 @@ class BaseWorker(AbstractWorker):
             obj.register_hook(obj.trigger_origin_backward_hook(obj.origin, obj.id_at_origin))
 
         # Check if we received an object from a protocol run
-        if placeholder_id in self._protocol_placeholders:
-            self._protocol_placeholders[placeholder_id].instantiate(obj)
+        if isinstance(obj, PlaceHolder) and obj.id.value in self._protocol_placeholders:
+            self._protocol_placeholders[obj.id.value].instantiate(obj.child)
         else:
             # TODO is it really in the else here or do we want to register anyway?
             self.object_store.set_obj(obj)
@@ -718,7 +717,7 @@ class BaseWorker(AbstractWorker):
 
     # SECTION: convenience methods for constructing frequently used messages
 
-    def send_obj(self, obj: object, location: "BaseWorker", placeholder_id: Union[str, int] = None):
+    def send_obj(self, obj: object, location: "BaseWorker"):
         """Send a torch object to a worker.
 
         Args:
@@ -726,7 +725,7 @@ class BaseWorker(AbstractWorker):
             location: A BaseWorker instance indicating the worker which should
                 receive the object.
         """
-        return self.send_msg(ObjectMessage(obj, placeholder_id), location)
+        return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
         self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""

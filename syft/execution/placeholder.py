@@ -10,6 +10,7 @@ class PlaceHolder(AbstractTensor):
         self,
         role=None,
         tracing=False,
+        child=None,
         id=None,
         tags: set = None,
         description: str = None,
@@ -30,7 +31,7 @@ class PlaceHolder(AbstractTensor):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
 
         self.expected_shape = tuple(shape) if shape is not None else None
-        self.child = None
+        self.child = child
         self.role = role
         self.tracing = tracing
 
@@ -152,23 +153,28 @@ class PlaceHolder(AbstractTensor):
             raise ValueError("Sending to multiple destinations in Protocols is not yet supported.")
 
         location = locations[0]
+        destination_ph = PlaceHolder.create_from(self.child, role=location, tracing=self.tracing)
 
         if self.tracing:
-            receiving_ph = PlaceHolder.create_from(self.child, role=location, tracing=self.tracing)
-            location._store_placeholders(receiving_ph)
+            location._store_placeholders(destination_ph)
 
             # Add placeholder_id to kwargs
-            kwargs = {**kwargs, "placeholder_id": receiving_ph.id.value}
+            kwargs = {**kwargs, "destination_id": destination_ph.id.value}
 
             command = ("send", self, locations, kwargs)
             self.role.register_action(
                 (command, None), syft.execution.communication.CommunicationAction
             )
 
-            return receiving_ph
+            return destination_ph
 
         else:
-            return self.child.send(location.worker, **kwargs)
+            # During a Protocol execution, we send a copy of the Placeholder with
+            # the id at destination
+            destination_id = kwargs.pop("destination_id", None)
+            destination_ph.id.value = destination_id
+
+            return self.role.worker.send(destination_ph, location.worker, **kwargs)
 
     # def move(self, *args, **kwargs):
     #     """
@@ -364,6 +370,7 @@ class PlaceHolder(AbstractTensor):
         """
 
         return (
+            syft.serde.msgpack.serde._simplify(worker, placeholder.child),
             syft.serde.msgpack.serde._simplify(worker, placeholder.id),
             syft.serde.msgpack.serde._simplify(worker, placeholder.tags),
             syft.serde.msgpack.serde._simplify(worker, placeholder.description),
@@ -381,14 +388,17 @@ class PlaceHolder(AbstractTensor):
             PlaceHolder: a PlaceHolder
         """
 
-        tensor_id, tags, description, shape = tensor_tuple
+        child, tensor_id, tags, description, shape = tensor_tuple
 
+        child = syft.serde.msgpack.serde._detail(worker, child)
         tensor_id = syft.serde.msgpack.serde._detail(worker, tensor_id)
         tags = syft.serde.msgpack.serde._detail(worker, tags)
         description = syft.serde.msgpack.serde._detail(worker, description)
         shape = syft.serde.msgpack.serde._detail(worker, shape)
 
-        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=shape)
+        return PlaceHolder(
+            child=child, id=tensor_id, tags=tags, description=description, shape=shape
+        )
 
     @staticmethod
     def bufferize(worker: AbstractWorker, placeholder: "PlaceHolder") -> PlaceholderPB:

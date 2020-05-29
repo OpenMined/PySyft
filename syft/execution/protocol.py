@@ -203,6 +203,7 @@ class Protocol(AbstractObject):
         """ Assign a worker to the specified role.
         """
         self.role_assignments.assign(role_id, worker)
+        self.roles[role_id].worker = worker
         # Add the role's placeholders to the worker
         worker._add_protocol_placeholders(self.roles[role_id].placeholders)
 
