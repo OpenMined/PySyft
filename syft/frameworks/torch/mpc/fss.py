@@ -2,8 +2,10 @@
 This is an implementation of Function Secret Sharing
 
 Useful papers are:
-- Function Secret Sharing- Improvements and Extensions, Boyle 2017 https://eprint.iacr.org/2018/707.pdf
-- Secure Computation with Preprocessing via Function Secret Sharing, Boyle 2019 https://eprint.iacr.org/2019/1095
+- Function Secret Sharing- Improvements and Extensions, Boyle 2017
+  Link: https://eprint.iacr.org/2018/707.pdf
+- Secure Computation with Preprocessing via Function Secret Sharing, Boyle 2019
+  Link: https://eprint.iacr.org/2019/1095
 
 Note that the protocols are quite different in aspect from those papers
 """
@@ -59,14 +61,18 @@ def initialize_crypto_plans(worker):
     worker.register_obj(xor_add_plan)
 
 
-def request_run_plan(worker, plan_tag, location, return_value, args=tuple(), kwargs=dict()):
-    response_ids = [sy.ID_PROVIDER.pop()]
-    args = [args, response_ids]
-
-    command = ("run", plan_tag, args, kwargs)
+def request_run_plan(worker, plan_tag, location, return_value, args=(), kwargs={}):
+    response_ids = (sy.ID_PROVIDER.pop(),)
+    args = (args, response_ids)
 
     response = worker.send_command(
-        message=command, recipient=location, return_ids=response_ids, return_value=return_value
+        cmd_name="run",
+        target=plan_tag,
+        recipient=location,
+        return_ids=response_ids,
+        return_value=return_value,
+        kwargs_=kwargs,
+        args_=args,
     )
     return response
 
@@ -113,7 +119,7 @@ def fss_op(x1, x2, type_op="eq"):
         shares = []
         for prev_share, location in zip(prev_shares, locations):
             share = request_run_plan(
-                me, f"#xor_add_1", location, return_value=True, args=(prev_share,)
+                me, "#xor_add_1", location, return_value=True, args=(prev_share,)
             )
             shares.append(share)
 
@@ -123,7 +129,7 @@ def fss_op(x1, x2, type_op="eq"):
         for i, prev_share, location in zip(range(len(locations)), prev_shares, locations):
             share = request_run_plan(
                 me,
-                f"#xor_add_2",
+                "#xor_add_2",
                 location,
                 return_value=False,
                 args=(th.IntTensor([i]), masked_value),
@@ -250,7 +256,7 @@ class DPF:
 
 
 class DIF:
-    "Distributed Interval Function - used for comparison <="
+    """Distributed Interval Function - used for comparison <="""
 
     def __init__(self):
         pass

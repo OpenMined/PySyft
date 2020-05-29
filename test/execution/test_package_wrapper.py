@@ -8,5 +8,5 @@ def test_plan_module_tracing():
         y = torch.rand([1])
         return x + y
 
-    p = plan_test(torch.tensor([3]))
+    plan_test(torch.tensor([3]))
     assert len(plan_test.role.actions) == 2

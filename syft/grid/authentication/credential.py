@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class AbstractCredential(ABC):
     """ AbstractCredential is an abstract class that defines generic methods
-        used by all types of authentications defined in this module. """
+    used by all types of authentications defined in this module. """
 
     @abstractmethod
     def parse(self):

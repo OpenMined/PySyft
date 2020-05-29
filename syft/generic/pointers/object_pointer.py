@@ -11,11 +11,12 @@ from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
+from syft.serde.syft_serializable import SyftSerializable
 
 # this if statement avoids circular imports between base.py and pointer.py
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractObject):
+class ObjectPointer(AbstractSendable, SyftSerializable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
@@ -51,7 +52,6 @@ class ObjectPointer(AbstractObject):
         tags: List[str] = None,
         description: str = None,
     ):
-
         """Initializes a ObjectPointer.
 
         Args:
@@ -207,8 +207,10 @@ class ObjectPointer(AbstractObject):
         owner = pointer.owner
         location = pointer.location
 
+        cmd, _, args_, kwargs_ = command
+
         # Send the command
-        response = owner.send_command(location, command)
+        response = owner.send_command(location, cmd_name=cmd, args_=args_, kwargs_=kwargs_)
 
         return response
 
@@ -363,7 +365,11 @@ class ObjectPointer(AbstractObject):
 
     def setattr(self, name, value):
         self.owner.send_command(
-            message=("__setattr__", self, (name, value), {}), recipient=self.location
+            cmd_name="__setattr__",
+            target=self,
+            args_=(name, value),
+            kwargs_={},
+            recipient=self.location,
         )
 
     @staticmethod

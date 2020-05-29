@@ -20,8 +20,6 @@ from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
 
-from syft.exceptions import CompressionNotFoundException
-
 
 def test_tuple_simplify(workers):
     """This tests our ability to simplify tuple types.
@@ -61,7 +59,7 @@ def test_set_simplify(workers):
     for sets so that the detailer knows how to interpret it."""
 
     me = workers["me"]
-    input = set(["hello", "world"])
+    input = {"hello", "world"}
     set_detail_code = msgpack.proto_type_info(set).code
     str_detail_code = msgpack.proto_type_info(str).code
     target = (set_detail_code, ((str_detail_code, (b"hello",)), (str_detail_code, (b"world",))))
@@ -156,7 +154,9 @@ def test_torch_tensor_simplify(workers):
 
     # make sure the object type ID is correct
     # (0 for torch.Tensor)
-    assert msgpack.serde.detailers[output[0]] == torch_serde._detail_torch_tensor
+    assert (
+        msgpack.serde.msgpack_global_state.detailers[output[0]] == torch_serde._detail_torch_tensor
+    )
 
     # make sure inner type is correct
     assert type(output[1]) == tuple
@@ -186,7 +186,9 @@ def test_torch_tensor_simplify_generic(workers):
 
     # make sure the object type ID is correct
     # (0 for torch.Tensor)
-    assert msgpack.serde.detailers[output[0]] == torch_serde._detail_torch_tensor
+    assert (
+        msgpack.serde.msgpack_global_state.detailers[output[0]] == torch_serde._detail_torch_tensor
+    )
 
     # make sure inner type is correct
     assert type(output[1]) == tuple
@@ -256,7 +258,7 @@ def test_ndarray_simplify(workers):
     output = msgpack.serde._simplify(me, input)
 
     # make sure simplified type ID is correct
-    assert msgpack.serde.detailers[output[0]] == native_serde._detail_ndarray
+    assert msgpack.serde.msgpack_global_state.detailers[output[0]] == native_serde._detail_ndarray
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -277,7 +279,9 @@ def test_numpy_number_simplify(workers):
     output = msgpack.serde._simplify(me, input)
 
     # make sure simplified type ID is correct
-    assert msgpack.serde.detailers[output[0]] == native_serde._detail_numpy_number
+    assert (
+        msgpack.serde.msgpack_global_state.detailers[output[0]] == native_serde._detail_numpy_number
+    )
 
     # make sure serialized form is correct
     assert type(output[1][0]) == bytes
@@ -289,7 +293,7 @@ def test_ellipsis_simplify(workers):
     me = workers["me"]
 
     assert (
-        msgpack.serde.detailers[msgpack.serde._simplify(me, Ellipsis)[0]]
+        msgpack.serde.msgpack_global_state.detailers[msgpack.serde._simplify(me, Ellipsis)[0]]
         == native_serde._detail_ellipsis
     )
 
@@ -304,7 +308,7 @@ def test_torch_device_simplify(workers):
     device = torch.device("cpu")
 
     assert (
-        msgpack.serde.detailers[msgpack.serde._simplify(me, device)[0]]
+        msgpack.serde.msgpack_global_state.detailers[msgpack.serde._simplify(me, device)[0]]
         == torch_serde._detail_torch_device
     )
 
@@ -319,7 +323,7 @@ def test_torch_dtype_simplify(workers):
     dtype = torch.int32
 
     assert (
-        msgpack.serde.detailers[msgpack.serde._simplify(me, dtype)[0]]
+        msgpack.serde.msgpack_global_state.detailers[msgpack.serde._simplify(me, dtype)[0]]
         == torch_serde._detail_torch_dtype
     )
 
@@ -561,14 +565,14 @@ def test_set(compress):
         compression._apply_compress_scheme = compression.apply_no_compression
 
     # Test with integers
-    _set = set([1, 2])
+    _set = {1, 2}
     set_serialized = syft.serde.serialize(_set)
 
     set_serialized_deserialized = syft.serde.deserialize(set_serialized)
     assert _set == set_serialized_deserialized
 
     # Test with strings
-    _set = set(["hello", "world"])
+    _set = {"hello", "world"}
     set_serialized = syft.serde.serialize(_set)
     set_serialized_deserialized = syft.serde.deserialize(set_serialized)
     assert _set == set_serialized_deserialized
@@ -818,9 +822,9 @@ def test_full_serde_virtual_worker(hook):
 
     assert virtual_worker.id == deserialized_worker.id
     assert virtual_worker.auto_add == deserialized_worker.auto_add
-    assert len(deserialized_worker._tensors) == 2
-    assert tensor1.id in deserialized_worker._tensors
-    assert tensor2.id in deserialized_worker._tensors
+    assert len(deserialized_worker.object_store._tensors) == 2
+    assert tensor1.id in deserialized_worker.object_store._tensors
+    assert tensor2.id in deserialized_worker.object_store._tensors
 
 
 def test_serde_object_wrapper_traced_module():
@@ -855,8 +859,8 @@ def test_no_simplifier_found(workers):
     """Test that types that can not be simplified are cached."""
     me = workers["me"]
     # Clean cache.
-    msgpack.serde.no_simplifiers_found = set()
-    x = 1.3
-    assert type(x) not in msgpack.serde.no_simplifiers_found
+    msgpack.serde._no_simplifiers_found = set()
+    x = bytes(5)
+    assert type(x) not in msgpack.serde.msgpack_global_state._no_simplifiers_found
     _ = msgpack.serde._simplify(me, x)
-    assert type(x) in msgpack.serde.no_simplifiers_found
+    assert type(x) in msgpack.serde.msgpack_global_state._no_simplifiers_found

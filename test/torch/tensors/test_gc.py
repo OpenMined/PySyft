@@ -1,11 +1,7 @@
 """All the tests relative to garbage collection of all kinds of remote or local tensors"""
-import time
-
 import torch
 
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
-from syft.workers.websocket_server import WebsocketServerWorker
-from syft.workers.websocket_client import WebsocketClientWorker
 
 # TESTING POINTERS
 
@@ -21,7 +17,7 @@ def test_explicit_garbage_collect_pointer(workers):
     x_ptr = x.send(bob)
 
     # ensure bob has tensor
-    assert x.id in bob._objects
+    assert x.id in bob.object_store._objects
 
     # delete pointer to tensor, which should
     # automatically garbage collect the remote
@@ -29,7 +25,7 @@ def test_explicit_garbage_collect_pointer(workers):
     del x_ptr
 
     # ensure bob's object was garbage collected
-    assert x.id not in bob._objects
+    assert x.id not in bob.object_store._objects
 
 
 def test_explicit_garbage_collect_double_pointer(workers):
@@ -46,16 +42,16 @@ def test_explicit_garbage_collect_double_pointer(workers):
     x_ptr_ptr = x_ptr.send(alice)
 
     # ensure bob has tensor
-    assert x.id in bob._objects
+    assert x.id in bob.object_store._objects
 
     # delete pointer to pointer to tensor, which should automatically
     # garbage collect the remote object on Bob's machine
     del x_ptr_ptr
 
     # ensure bob's object was garbage collected
-    assert x.id not in bob._objects
+    assert x.id not in bob.object_store._objects
     # ensure alice's object was garbage collected
-    assert x_ptr.id not in workers["alice"]._objects
+    assert x_ptr.id not in workers["alice"].object_store._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
@@ -67,11 +63,11 @@ def test_explicit_garbage_collect_double_pointer(workers):
     x = x.send(bob).send(alice)
 
     # ensure bob has tensor
-    assert x_id in bob._objects
+    assert x_id in bob.object_store._objects
     # delete pointer to pointer to tensor
     del x
     # ensure bob's object was garbage collected
-    assert x_id not in bob._objects
+    assert x_id not in bob.object_store._objects
 
 
 def test_implicit_garbage_collection_pointer(workers):
@@ -85,7 +81,7 @@ def test_implicit_garbage_collection_pointer(workers):
     x_ptr = x.send(bob)
 
     # ensure bob has tensor
-    assert x.id in bob._objects
+    assert x.id in bob.object_store._objects
 
     # delete pointer to tensor, which should
     # automatically garbage collect the remote
@@ -93,7 +89,7 @@ def test_implicit_garbage_collection_pointer(workers):
     x_ptr = "asdf"
 
     # ensure bob's object was garbage collected
-    assert x.id not in bob._objects
+    assert x.id not in bob.object_store._objects
 
 
 def test_implicit_garbage_collect_double_pointer(workers):
@@ -110,18 +106,18 @@ def test_implicit_garbage_collect_double_pointer(workers):
     x_ptr_ptr = x_ptr.send(alice)
 
     # ensure bob has tensor
-    assert x.id in bob._objects
+    assert x.id in bob.object_store._objects
     # ensure alice has tensor
-    assert x_ptr.id in alice._objects
+    assert x_ptr.id in alice.object_store._objects
 
     # delete pointer to pointer to tensor, which should automatically
     # garbage collect the remote object on Bob's machine
     x_ptr_ptr = "asdf"
 
     # ensure bob's object was garbage collected
-    assert x.id not in bob._objects
+    assert x.id not in bob.object_store._objects
     # ensure alice's object was garbage collected
-    assert x_ptr.id not in alice._objects
+    assert x_ptr.id not in alice.object_store._objects
 
     # Chained version
     x = torch.Tensor([1, 2])
@@ -132,13 +128,13 @@ def test_implicit_garbage_collect_double_pointer(workers):
     x = x.send(bob).send(alice)
 
     # ensure bob has tensor
-    assert x_id in bob._objects
+    assert x_id in bob.object_store._objects
 
     # delete pointer to pointer to tensor
     x = "asdf"
 
     # ensure bob's object was garbage collected
-    assert x_id not in bob._objects
+    assert x_id not in bob.object_store._objects
 
 
 # TESTING IN PLACE METHODS
@@ -169,11 +165,11 @@ def test_explicit_garbage_collect_logging_on_pointer(workers):
 
     x = x.send(bob)
     x = LoggingTensor().on(x)
-    assert x_id in bob._objects
+    assert x_id in bob.object_store._objects
 
     del x
 
-    assert x_id not in bob._objects
+    assert x_id not in bob.object_store._objects
 
 
 def test_implicit_garbage_collect_logging_on_pointer(workers):
@@ -188,10 +184,10 @@ def test_implicit_garbage_collect_logging_on_pointer(workers):
 
     x = x.send(bob)
     x = LoggingTensor().on(x)
-    assert x_id in bob._objects
+    assert x_id in bob.object_store._objects
 
     x = "open-source"
-    assert x_id not in bob._objects
+    assert x_id not in bob.object_store._objects
 
 
 def test_websocket_garbage_collection(hook, start_remote_worker):
@@ -201,7 +197,7 @@ def test_websocket_garbage_collection(hook, start_remote_worker):
     sample_ptr = sample_data.send(remote_proxy)
 
     _ = sample_ptr.get()
-    assert sample_data not in remote_proxy._objects
+    assert sample_data not in remote_proxy.object_store._objects
 
     remote_proxy.close()
     server.terminate()

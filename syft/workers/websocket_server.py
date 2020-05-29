@@ -1,9 +1,7 @@
 import asyncio
 import binascii
 import logging
-import socket
 import ssl
-import sys
 from typing import Union
 from typing import List
 
@@ -12,8 +10,7 @@ import torch
 import websockets
 
 import syft as sy
-from syft.federated.federated_client import FederatedClient
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError
@@ -22,7 +19,7 @@ from syft.exceptions import ResponseSignatureError
 tblib.pickling_support.install()
 
 
-class WebsocketServerWorker(VirtualWorker, FederatedClient):
+class WebsocketServerWorker(VirtualWorker):
     def __init__(
         self,
         hook,
@@ -176,15 +173,3 @@ class WebsocketServerWorker(VirtualWorker, FederatedClient):
             asyncio.get_event_loop().run_forever()
         except KeyboardInterrupt:
             logging.info("Websocket server stopped.")
-
-    def list_tensors(self, *args):
-        return str(self._tensors)
-
-    def tensors_count(self, *args):
-        return len(self._tensors)
-
-    def list_objects(self, *args):
-        return str(self._objects)
-
-    def objects_count(self, *args):
-        return len(self._objects)

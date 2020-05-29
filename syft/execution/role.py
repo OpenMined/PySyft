@@ -2,8 +2,7 @@ from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
-
-import copy
+from typing import Callable
 
 from syft.generic.frameworks import framework_packages
 
@@ -12,30 +11,31 @@ from syft.execution.action import Action
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.state import State
+from syft.execution.tracing import FrameworkWrapper
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.object import AbstractObject
-from syft.generic.object_storage import ObjectStorage
+from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.execution.v1.role_pb2 import Role as RolePB
 
 
-class Role:
+class Role(SyftSerializable):
     """
     Roles will mainly be used to build protocols but are still a work in progress.
     """
 
     def __init__(
         self,
+        id: Union[str, int] = None,
+        worker: AbstractWorker = None,
         state: State = None,
         actions: List[Action] = None,
         placeholders: Dict[Union[str, int], PlaceHolder] = None,
         input_placeholder_ids: Tuple[int, str] = None,
         output_placeholder_ids: Tuple[int, str] = None,
-        # General kwargs
-        id: Union[str, int] = None,
     ):
         self.id = id or sy.ID_PROVIDER.pop()
+        self.worker = worker or sy.local_worker
 
         self.actions = actions or []
 
@@ -47,12 +47,46 @@ class Role:
         self.output_placeholder_ids = output_placeholder_ids or ()
 
         self.state = state or State()
+        self.tracing = False
+
+        for name, package in framework_packages.items():
+            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            setattr(self, name, tracing_wrapper)
 
     def input_placeholders(self):
         return [self.placeholders[id_] for id_ in self.input_placeholder_ids]
 
     def output_placeholders(self):
         return [self.placeholders[id_] for id_ in self.output_placeholder_ids]
+
+    @staticmethod
+    def nested_object_traversal(obj: any, leaf_function: Callable, leaf_type: type):
+        """
+        Class method to iterate through a tree-like structure, where the branching is determined
+        by the elements of list, tuples and dicts, returning the same tree-like structure with a
+        function applied to its leafs.
+
+        Args:
+            obj: The tree-like structure, can be only the root as well.
+            leaf_function: The function to be applied on the leaf nodes of the tree-like structure.
+            leaf_type: On what type on function to apply the function, if the types won't match,
+            the leaf is returned, to apply on all leafs pass any.
+
+        Returns:
+            Same structure as the obj argument, but with the function applied to the leaf elements.
+        """
+        if isinstance(obj, (list, tuple)):
+            result = [Role.nested_object_traversal(elem, leaf_function, leaf_type) for elem in obj]
+            return type(obj)(result)
+        elif isinstance(obj, dict):
+            return {
+                k: Role.nested_object_traversal(v, leaf_function, leaf_type)
+                for k, v in sorted(obj.items())
+            }
+        elif isinstance(obj, leaf_type):
+            return leaf_function(obj)
+        else:
+            return obj
 
     def register_input(self, arg_):
         """ Takes input argument for this role and generate placeholder.
@@ -63,9 +97,14 @@ class Role:
         """ Takes input arguments for this role and generate placeholders.
         """
         # TODO Should we be able to rebuild?
-        self.input_placeholder_ids += tuple(
-            self._store_placeholders(arg).value for arg in args_ if isinstance(arg, PlaceHolder)
-        )
+        def traversal_function(obj):
+            if obj.id.value not in self.placeholders:
+                self.placeholders[obj.id.value] = obj
+            self.input_placeholder_ids.append(obj.id.value)
+
+        self.input_placeholder_ids = []
+        Role.nested_object_traversal(args_, traversal_function, PlaceHolder)
+        self.input_placeholder_ids = tuple(self.input_placeholder_ids)
 
     def register_output(self, result):
         """ Takes output tensor for this role and generate placeholder.
@@ -75,11 +114,16 @@ class Role:
     def register_outputs(self, results):
         """ Takes output tensors for this role and generate placeholders.
         """
+
+        def traversal_function(obj):
+            if obj.id.value not in self.placeholders:
+                self.placeholders[obj.id.value] = obj
+            self.output_placeholder_ids.append(obj.id.value)
+
         results = (results,) if not isinstance(results, tuple) else results
-        results += tuple(self._store_placeholders(result) for result in results)
-        self.output_placeholder_ids = tuple(
-            result.value for result in results if isinstance(result, PlaceholderId)
-        )
+        self.output_placeholder_ids = []
+        Role.nested_object_traversal(results, traversal_function, PlaceHolder)
+        self.output_placeholder_ids = tuple(self.output_placeholder_ids)
 
     def register_action(self, traced_action, action_type):
         """ Build placeholders and store action.
@@ -96,17 +140,29 @@ class Role:
         action = action_type(*command_placeholder_ids, return_ids=return_placeholder_ids)
         self.actions.append(action)
 
-    def register_state_tensor(self, tensor, owner):
-        placeholder = sy.PlaceHolder(id=tensor.id, role=self, owner=owner)
+    def register_state_tensor(self, tensor):
+        placeholder = sy.PlaceHolder(id=tensor.id, role=self)
         placeholder.instantiate(tensor)
         self.state.state_placeholders.append(placeholder)
         # TODO isn't it weird that state placeholders are both in state and plan?
         self.placeholders[tensor.id] = placeholder
 
-    def execute(self, args_):
-        """ Make the role execute all its actions using args_ as inputs.
+    def reset(self):
+        """ Remove the trace actions on this Role to make it possible to build
+        a Plan or a Protocol several times.
         """
-        self._instantiate_inputs(args_)
+        self.actions = []
+        self.input_placeholder_ids = ()
+        self.output_placeholder_ids = ()
+        # We don't want to remove placeholders coming from the state
+        state_ph_ids = [ph.id.value for ph in self.state.state_placeholders]
+        self.placeholders = {
+            ph_id: ph for ph_id, ph in self.placeholders.items() if ph_id in state_ph_ids
+        }
+
+    def execute(self):
+        """ Make the role execute all its actions.
+        """
         for action in self.actions:
             self._execute_action(action)
 
@@ -116,18 +172,38 @@ class Role:
 
         return tuple(p.child for p in output_placeholders)
 
-    def _instantiate_inputs(self, args_):
+    def load(self, tensor):
+        """ Load tensors used in a protocol from worker's local store
+        """
+        # TODO mock for now, load will use worker's store in a future work
+        if self.tracing:
+            return PlaceHolder.create_from(tensor, role=self, tracing=True)
+        else:
+            return tensor
+
+    def load_state(self):
+        """ Load tensors used in a protocol from worker's local store
+        """
+        return self.state.read()
+
+    def instantiate_inputs(self, args_):
         """ Takes input arguments for this role and generate placeholders.
         """
-        input_placeholders = tuple(
+
+        def traversal_function(obj):
+            placeholder = input_placeholders.pop(0)
+            placeholder.instantiate(obj)
+
+        input_placeholders = [
             self.placeholders[input_id] for input_id in self.input_placeholder_ids
-        )
-        PlaceHolder.instantiate_placeholders(input_placeholders, args_)
+        ]
+
+        Role.nested_object_traversal(args_, traversal_function, FrameworkTensor)
 
     def _execute_action(self, action):
         """ Build placeholders and store action.
         """
-        cmd, _self, args_, kwargs_, return_placeholder = (
+        cmd, _self, args_, kwargs_, return_values = (
             action.name,
             action.target,  # target is equivalent to the "self" in a method
             action.args,
@@ -137,7 +213,13 @@ class Role:
         _self = self._fetch_placeholders_from_ids(_self)
         args_ = self._fetch_placeholders_from_ids(args_)
         kwargs_ = self._fetch_placeholders_from_ids(kwargs_)
-        return_placeholder = self._fetch_placeholders_from_ids(return_placeholder)
+        return_values = self._fetch_placeholders_from_ids(return_values)
+
+        # We can only instantiate placeholders, filter them
+        return_placeholders = []
+        Role.nested_object_traversal(
+            return_values, lambda ph: return_placeholders.append(ph), PlaceHolder
+        )
 
         if _self is None:
             method = self._fetch_package_method(cmd)
@@ -148,7 +230,7 @@ class Role:
         if not isinstance(response, (tuple, list)):
             response = (response,)
 
-        PlaceHolder.instantiate_placeholders(return_placeholder, response)
+        PlaceHolder.instantiate_placeholders(return_placeholders, response)
 
     def _fetch_package_method(self, cmd):
         cmd_path = cmd.split(".")
@@ -167,31 +249,21 @@ class Role:
         """
         Replace in an object all FrameworkTensors with Placeholder ids
         """
-        if isinstance(obj, (tuple, list)):
-            r = [self._store_placeholders(o) for o in obj]
-            return type(obj)(r)
-        elif isinstance(obj, dict):
-            return {key: self._store_placeholders(value) for key, value in obj.items()}
-        elif isinstance(obj, PlaceHolder):
+
+        def traversal_function(obj):
             if obj.id.value not in self.placeholders:
                 self.placeholders[obj.id.value] = obj
             return obj.id
-        else:
-            return obj
+
+        return Role.nested_object_traversal(obj, traversal_function, PlaceHolder)
 
     def _fetch_placeholders_from_ids(self, obj):
         """
         Replace in an object all ids with Placeholders
         """
-        if isinstance(obj, (tuple, list)):
-            r = [self._fetch_placeholders_from_ids(o) for o in obj]
-            return type(obj)(r)
-        elif isinstance(obj, dict):
-            return {key: self._fetch_placeholders_from_ids(value) for key, value in obj.items()}
-        elif isinstance(obj, PlaceholderId):
-            return self.placeholders[obj.value]
-        else:
-            return obj
+        return Role.nested_object_traversal(
+            obj, lambda x: self.placeholders[x.value], PlaceholderId
+        )
 
     def copy(self):
         # TODO not the cleanest method ever
@@ -213,23 +285,14 @@ class Role:
 
         state_placeholders = []
         for ph in self.state.state_placeholders:
-            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value], owner=ph.owner).instantiate(
-                ph.child
-            )
+            new_ph = PlaceHolder(id=old_ids_2_new_ids[ph.id.value]).instantiate(ph.child)
             state_placeholders.append(new_ph)
 
         state = State(state_placeholders)
 
-        def _replace_placeholder_ids(obj):
-            if isinstance(obj, (tuple, list)):
-                r = [_replace_placeholder_ids(o) for o in obj]
-                return type(obj)(r)
-            elif isinstance(obj, dict):
-                return {key: _replace_placeholder_ids(value) for key, value in obj.items()}
-            elif isinstance(obj, PlaceholderId):
-                return PlaceholderId(old_ids_2_new_ids[obj.value])
-            else:
-                return obj
+        _replace_placeholder_ids = lambda obj: Role.nested_object_traversal(
+            obj, lambda x: PlaceholderId(old_ids_2_new_ids[x.value]), PlaceholderId
+        )
 
         new_actions = []
         for action in self.actions:
@@ -352,7 +415,9 @@ class Role:
     @staticmethod
     def unbufferize(worker: AbstractWorker, protobuf_role: RolePB) -> tuple:
         """
-        This function reconstructs a Role object given its attributes in the form of a Protobuf message.
+        This function reconstructs a Role object given its attributes in the form of a
+        Protobuf message.
+
         Args:
             worker: the worker doing the deserialization
             protobuf_role: a Protobuf message holding the attributes of the Role
@@ -403,3 +468,7 @@ class Role:
         role.state = state
 
         return role
+
+    @staticmethod
+    def get_protobuf_schema() -> RolePB:
+        return RolePB

@@ -57,61 +57,14 @@ class AbstractObject(ABC):
         return self
 
     def tag(self, *tags: str) -> "AbstractObject":
-        if self.tags is None:
-            self.tags = set()
+        self.tags = self.tags or set()
 
-        # Update the owner tag index
         for tag in tags:
             self.tags.add(tag)
-            if self.owner is not None:
-                # NOTE: this is a fix to correct faulty registration that can sometimes happen
-                if self.id not in self.owner._objects:
-                    self.owner.register_obj(self)
-                # note: this is a defaultdict(set)
-                self.owner._tag_to_object_ids[tag].add(self.id)
-            else:
-                raise RuntimeError("Can't tag a tensor which doesn't have an owner")
+
+        self.owner.object_store.register_tags(self)
+
         return self
-
-    def serialize(self):  # check serde.py to see how to provide compression schemes
-        """Serializes the tensor on which it's called.
-
-        This is the high level convenience function for serializing torch
-        tensors. It includes three steps, Simplify, Serialize, and Compress as
-        described in serde.py.
-        By default serde is compressing using LZ4
-
-        Returns:
-            The serialized form of the tensor.
-            For example:
-                x = torch.Tensor([1,2,3,4,5])
-                x.serialize() # returns a serialized object
-        """
-        return sy.serde.serialize(self)
-
-    def ser(self, *args, **kwargs):
-        return self.serialize(*args, **kwargs)
-
-    def get(self):
-        """Just a pass through. This is most commonly used when calling .get() on a
-        Syft tensor which has a child which is a pointer, an additive shared tensor,
-        a multi-pointer, etc."""
-        class_attributes = self.get_class_attributes()
-        return type(self)(
-            **class_attributes,
-            owner=self.owner,
-            tags=self.tags,
-            description=self.description,
-            id=self.id,
-        ).on(self.child.get())
-
-    def mid_get(self):
-        """This method calls .get() on a child pointer and correctly registers the results"""
-
-        child_id = self.id
-        tensor = self.get()
-        tensor.id = child_id
-        self.owner.register_obj(tensor)
 
     def get_class_attributes(self):
         """
@@ -203,7 +156,7 @@ class AbstractObject(ABC):
 
 
 def initialize_object(
-    hook, obj, owner=None, reinitialize=True, id=None, init_args=tuple(), init_kwargs={}
+    hook, obj, owner=None, reinitialize=True, id=None, init_args=(), init_kwargs={}
 ):
     """Initializes the tensor.
 

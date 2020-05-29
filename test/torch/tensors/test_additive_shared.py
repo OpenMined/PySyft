@@ -1,9 +1,6 @@
-import copy
 import pytest
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -96,7 +93,7 @@ def test_non_client_registration(hook, workers):
     x = torch.tensor([-1.0])
     x_sh = x.fix_precision().share(alice, bob, crypto_provider=james)
 
-    assert x_sh.id in hook.local_worker._objects
+    assert x_sh.id in hook.local_worker.object_store._objects
     assert (x_sh == hook.local_worker.get_obj(x_sh.id)).get().float_prec()
     hook.local_worker.is_client_worker = True
 
@@ -116,38 +113,38 @@ def test_send_get(workers):
     x_sh = torch.tensor([[3, 4]]).fix_prec(dtype="int").share(alice, bob, crypto_provider=james)
 
     alice_t_id = x_sh.child.child.child["alice"].id_at_location
-    assert alice_t_id in alice._objects
+    assert alice_t_id in alice.object_store._objects
 
     ptr_x = x_sh.send(james)
     ptr_x_id_at_location = ptr_x.id_at_location
-    assert ptr_x_id_at_location in james._objects
-    assert alice_t_id in alice._objects
+    assert ptr_x_id_at_location in james.object_store._objects
+    assert alice_t_id in alice.object_store._objects
 
     x_sh_back = ptr_x.get()
-    assert ptr_x_id_at_location not in james._objects
-    assert alice_t_id in alice._objects
+    assert ptr_x_id_at_location not in james.object_store._objects
+    assert alice_t_id in alice.object_store._objects
 
     x = x_sh_back.get()
-    assert alice_t_id not in alice._objects
+    assert alice_t_id not in alice.object_store._objects
 
     # For long dtype
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     x_sh = torch.tensor([[3, 4]]).fix_prec().share(alice, bob, crypto_provider=james)
 
     alice_t_id = x_sh.child.child.child["alice"].id_at_location
-    assert alice_t_id in alice._objects
+    assert alice_t_id in alice.object_store._objects
 
     ptr_x = x_sh.send(james)
     ptr_x_id_at_location = ptr_x.id_at_location
-    assert ptr_x_id_at_location in james._objects
-    assert alice_t_id in alice._objects
+    assert ptr_x_id_at_location in james.object_store._objects
+    assert alice_t_id in alice.object_store._objects
 
     x_sh_back = ptr_x.get()
-    assert ptr_x_id_at_location not in james._objects
-    assert alice_t_id in alice._objects
+    assert ptr_x_id_at_location not in james.object_store._objects
+    assert alice_t_id in alice.object_store._objects
 
     x = x_sh_back.get()
-    assert alice_t_id not in alice._objects
+    assert alice_t_id not in alice.object_store._objects
 
 
 def test_add(workers):
@@ -519,8 +516,8 @@ def test_chunk(workers):
     expected0 = [torch.tensor([[1, 2, 3, 4]]), torch.tensor([[5, 6, 7, 8]])]
     expected1 = [torch.tensor([[1, 2], [5, 6]]), torch.tensor([[3, 4], [7, 8]])]
 
-    assert all([(res0[i].get() == expected0[i]).all() for i in range(2)])
-    assert all([(res1[i].get() == expected1[i]).all() for i in range(2)])
+    assert all(((res0[i].get() == expected0[i]).all() for i in range(2)))
+    assert all(((res1[i].get() == expected1[i]).all() for i in range(2)))
 
 
 def test_roll(workers):
@@ -679,10 +676,12 @@ def test_eq(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
     y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
@@ -710,12 +709,14 @@ def test_comp(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     x = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
     y = torch.tensor([3.1]).fix_prec().share(*args, **kwargs)
@@ -772,12 +773,14 @@ def test_max(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(*args, **kwargs)
@@ -805,12 +808,14 @@ def test_argmax(workers, protocol):
     )
 
     if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
         me.crypto_store.provide_primitives(
             ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
         )
 
     args = (alice, bob)
-    kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
+    kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
     t = torch.tensor([3, 1.0, 2])
     x = t.fix_prec().share(*args, **kwargs)
@@ -975,7 +980,9 @@ def test_dtype(workers):
         x.child.dtype == "long"
         and x.child.field == 2 ** 64
         and isinstance(
-            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
+            x.child.child["alice"].location.object_store.get_obj(
+                x.child.child["alice"].id_at_location
+            ),
             torch.LongTensor,
         )
         and (x.get() == torch.LongTensor([1, 2, 3])).all()
@@ -986,7 +993,9 @@ def test_dtype(workers):
         x.child.dtype == "int"
         and x.child.field == 2 ** 32
         and isinstance(
-            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
+            x.child.child["alice"].location.object_store.get_obj(
+                x.child.child["alice"].id_at_location
+            ),
             torch.IntTensor,
         )
         and (x.get() == torch.IntTensor([4, 5, 6])).all()
@@ -998,7 +1007,9 @@ def test_dtype(workers):
         x.child.dtype == "custom"
         and x.child.field == 67
         and isinstance(
-            x.child.child["alice"].location._objects[x.child.child["alice"].id_at_location],
+            x.child.child["alice"].location.object_store.get_obj(
+                x.child.child["alice"].id_at_location
+            ),
             torch.IntTensor,
         )
         and (x.get() == torch.IntTensor([1, 2, 3])).all()
@@ -1010,9 +1021,9 @@ def test_dtype(workers):
         x.child.child.dtype == "long"
         and x.child.child.field == 2 ** 64
         and isinstance(
-            x.child.child.child["alice"].location._objects[
+            x.child.child.child["alice"].location.object_store.get_obj(
                 x.child.child.child["alice"].id_at_location
-            ],
+            ),
             torch.LongTensor,
         )
         and (x.get().float_prec() == torch.tensor([1.1, 2.2, 3.3])).all()
@@ -1023,9 +1034,9 @@ def test_dtype(workers):
         x.child.child.dtype == "int"
         and x.child.child.field == 2 ** 32
         and isinstance(
-            x.child.child.child["alice"].location._objects[
+            x.child.child.child["alice"].location.object_store.get_obj(
                 x.child.child.child["alice"].id_at_location
-            ],
+            ),
             torch.IntTensor,
         )
         and (x.get().float_prec() == torch.tensor([4.1, 5.2, 6.3])).all()
@@ -1038,8 +1049,8 @@ def test_garbage_collect_reconstruct(workers):
     a_sh = a.encrypt(workers=[alice, bob], crypto_provider=james)
     a_recon = a_sh.child.child.reconstruct()
 
-    assert len(alice._objects) == 8
-    assert len(bob._objects) == 8
+    assert len(alice.object_store._objects) == 2
+    assert len(bob.object_store._objects) == 2
 
 
 def test_garbage_collect_move(workers):
@@ -1047,8 +1058,8 @@ def test_garbage_collect_move(workers):
     a = torch.ones(1, 5).send(alice)
     b = a.copy().move(bob)
 
-    assert len(alice._objects) == 7
-    assert len(bob._objects) == 7
+    assert len(alice.object_store._objects) == 1
+    assert len(bob.object_store._objects) == 1
 
 
 def test_garbage_collect_mul(workers):
@@ -1062,5 +1073,5 @@ def test_garbage_collect_mul(workers):
     for _ in range(3):
         c = a * b
 
-    assert len(alice._objects) == 9
-    assert len(bob._objects) == 9
+    assert len(alice.object_store._objects) == 3
+    assert len(bob.object_store._objects) == 3
