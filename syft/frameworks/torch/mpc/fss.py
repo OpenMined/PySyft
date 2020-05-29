@@ -105,6 +105,10 @@ def fss_op(x1, x2, type_op="eq"):
 
     mask_value = sum(shares) % 2 ** n
 
+    for location, share in zip(locations, shares):
+        location.de_register_obj(share)
+        del share
+
     workers_args = [(th.IntTensor([i]), mask_value, type_op) for i in range(2)]
     if not asynchronous:
         shares = []
@@ -153,14 +157,14 @@ def evaluate(b, x_masked, type_op):
     elif type_op == "comp":
         numel = x_masked.numel()
         if numel > MULTI_LIMIT:
-            #print('MULTI EVAL', numel, x_masked.owner)
+            # print('MULTI EVAL', numel, x_masked.owner)
             owner = x_masked.owner
             multiprocessing_args = []
             original_shape = x_masked.shape
             x_masked = x_masked.reshape(-1)
             slice_size = math.ceil(numel / N_CORES)
             for j in range(N_CORES):
-                x_masked_slice = x_masked[j * slice_size: (j + 1) * slice_size]
+                x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
                 x_masked_slice.owner = owner
                 process_args = (b, x_masked_slice, owner.id, j, j * slice_size)
                 multiprocessing_args.append(process_args)
@@ -176,7 +180,7 @@ def evaluate(b, x_masked, type_op):
 
             return result.reshape(*original_shape)
         else:
-            #print('EVAL', numel)
+            # print('EVAL', numel)
             return comp_evaluate(b, x_masked)
     else:
         raise ValueError
