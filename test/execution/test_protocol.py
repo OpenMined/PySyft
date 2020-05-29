@@ -48,6 +48,136 @@ def test_trace_communication_actions_send():
     assert "send" in (action.name for action in traced_actions)
 
 
+# def test_trace_communication_actions_get():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         res = ptr.get()
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 3
+#     assert "get" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_ptr_send():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         res = ptr.send(alice.worker)
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 3
+#     assert "send" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_move():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         res = ptr.move(alice.worker)
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 3
+#     assert "move" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_share():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         ptr = ptr.fix_prec()
+#         res = ptr.share(alice.worker, bob.worker)
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 4
+#     assert "share" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_share_():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         ptr = ptr.fix_prec()
+#         res = ptr.share_(alice.worker, bob.worker)
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 4
+#     assert "share_" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_remote_send():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         res = ptr.remote_send(alice.worker)
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 3
+#     assert "remote_send" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_mid_get():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker)
+#         res = ptr.mid_get()
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 3
+#     assert "mid_get" in (action.name for action in traced_actions)
+
+
+# def test_trace_communication_actions_remote_get():
+#     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),)})
+#     def protocol(alice, bob):
+#         tensor = alice.torch.tensor([1])
+
+#         ptr = tensor.send(bob.worker).send(alice.worker)
+#         res = ptr.remote_get()
+#         return res
+
+#     traced_actions = protocol.roles["alice"].actions
+
+#     assert protocol.is_built
+#     assert len(traced_actions) == 4
+#     assert "remote_get" in (action.name for action in traced_actions)
+
+
 def test_create_roles_from_decorator():
     @sy.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(alice, bob):
@@ -191,10 +321,6 @@ def test_execution_with_communications(workers):
 
         # On role2
         res = b + z
-        # d = c.send(role1)
-
-        # # On role1
-        # res = d * 2
 
         return res
 
@@ -204,12 +330,7 @@ def test_execution_with_communications(workers):
     protocol.assign("role1", alice)
     protocol.assign("role2", bob)
 
-    print(protocol.role_assignments.assignments["role1"][0]._protocol_placeholders)
-    print(protocol.role_assignments.assignments["role2"][0]._protocol_placeholders)
-
     res = protocol()
-    print(res)
-    res = protocol()
-    print(res)
 
-    # assert protocol.role_assignments.assignments["role1"][0]._protocol_placeholders == {}
+    assert len(protocol.role_assignments.assignments["role1"][0]._protocol_placeholders) == 3
+    assert len(protocol.role_assignments.assignments["role2"][0]._protocol_placeholders) == 3

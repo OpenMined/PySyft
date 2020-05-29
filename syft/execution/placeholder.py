@@ -170,6 +170,97 @@ class PlaceHolder(AbstractTensor):
         else:
             return self.child.send(location.worker, **kwargs)
 
+    # def move(self, *args, **kwargs):
+    #     """
+    #     calls move on a pointer tensor & register_action to role
+    #     """
+    #     response = self.child.move(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("move", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def share(self, *args, **kwargs):
+    #     """
+    #     Send a command to remote worker to additively share a tensor via pointer tensor
+    #     """
+    #     response = self.child.share(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("share", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def fix_prec(self, *args, **kwargs):
+    #     """
+    #     sends command to remote worker to transform a tensor to fix_precision via pointer tensor
+    #     """
+    #     response = self.child.fix_prec(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("fix_prec", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.computation.ComputationAction
+    #     )
+    #     return placeholder
+
+    # def mid_get(self, *args, **kwargs):
+    #     response = self.child.mid_get(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(self.child, self)
+    #     command = ("mid_get", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def remote_get(self, *args, **kwargs):
+    #     """
+    #     calls remote_get on child & register_action to role
+    #     """
+    #     response = self.child.remote_get(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("remote_get", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def remote_send(self, *args, **kwargs):
+    #     """
+    #     calls remote_send on child & register_action to role
+    #     """
+    #     response = self.child.remote_send(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("remote_send", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def share_(self, *args, **kwargs):
+    #     """
+    #     calls share_ on child & register_action to role
+    #     """
+    #     response = self.child.share_(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("share_", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
+    # def get(self, *args, **kwargs):
+    #     """Requests the tensor/chain being pointed to, be serialized and return via child"""
+    #     response = self.child.get(*args, **kwargs)
+    #     placeholder = PlaceHolder.convert_to_placeholders(response, self)
+    #     command = ("get", self, args, kwargs)
+    #     self.role.register_action(
+    #         (command, placeholder), syft.execution.communication.CommunicationAction
+    #     )
+    #     return placeholder
+
     def copy(self):
         """
         Copying a placeholder doesn't duplicate the child attribute, because all
