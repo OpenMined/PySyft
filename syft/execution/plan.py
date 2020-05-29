@@ -19,7 +19,7 @@ from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -71,7 +71,7 @@ class func2plan(object):
         return plan
 
 
-class Plan(AbstractObject):
+class Plan(AbstractSendable):
     """
     A Plan stores a sequence of actions, just like a function.
 
@@ -117,7 +117,7 @@ class Plan(AbstractObject):
         input_types: list = None,
         description: str = None,
     ):
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        super().__init__(id, owner, tags, description, child=None)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
