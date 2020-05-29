@@ -33,7 +33,7 @@ class GoogleCloud:
         else:
             terraform_script.init()
 
-    def compute_instance(self, name, machine_type, zone, image_family):
+    def compute_instance(self, name, machine_type, zone, image_family, apply=True):
         """
         args:
             name: name of the compute instance
@@ -52,10 +52,52 @@ class GoogleCloud:
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
 
-        if IPython.get_ipython():
-            terraform_notebook.apply()
-        else:
-            terraform_script.apply()
+        if apply:
+            if IPython.get_ipython():
+                terraform_notebook.apply()
+            else:
+                terraform_script.apply()
+
+    def create_cluster(self, name, machine_type, zone, image_family, target_size, apply=True):
+        """
+        args:
+            name: name of the compute instance
+            machine_type: the type of machine
+            zone: zone of your GCP project
+            image_family: image of the OS
+            target_size: number of wokers to be created(N workers + 1 master)
+        """
+        if target_size < 3:
+            raise ValueError("The target-size should be equal to or greater than three.")
+
+        self.compute_instance(name, machine_type, zone, image_family, False)
+
+        instance_template = terrascript.resource.google_compute_instance_template(
+            "worker-template",
+            name=name + "-worker-template",
+            machine_type=machine_type,
+            disk={"source_image": image_family},
+            network_interface={"network": "default", "access_config": {}},
+            lifecycle={"create_before_destroy": True},
+        )
+        self.config += instance_template
+
+        self.config += terrascript.resource.google_compute_instance_group_manager(
+            name,
+            name=name,
+            version={"instance_template": "${" + instance_template.self_link + "}"},
+            base_instance_name=name,
+            zone=zone,
+            target_size=str(target_size),
+        )
+        with open("main.tf.json", "w") as main_config:
+            json.dump(self.config, main_config, indent=2, sort_keys=False)
+
+        if apply:
+            if IPython.get_ipython():
+                terraform_notebook.apply()
+            else:
+                terraform_script.apply()
 
     def destroy(self):
         """
