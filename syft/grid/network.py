@@ -107,19 +107,6 @@ class Network(threading.Thread):
                 destination_id : Id used to identify the peer to be connected.
         """
 
-        # Temporary Notebook async weird constraints
-        # Should be removed after solving #3572
-        if len(self._connection_handler) >= 1:
-            print(
-                "Due to some jupyter notebook async constraints, we do not recommend handling "
-                "multiple connection peers at the same time."
-            )
-            print("This issue is in WIP status and may be solved soon.")
-            print(
-                "You can follow its progress here: https://github.com/OpenMined/PySyft/issues/3572"
-            )
-            return None
-
         webrtc_request = {MSG_FIELD.TYPE: NODE_EVENTS.WEBRTC_SCOPE, MSG_FIELD.FROM: self.id}
 
         forward_payload = {
@@ -181,6 +168,7 @@ class Network(threading.Thread):
             f"hosted_models: {list(self._worker.models.keys())}, "
             f"connected_nodes: {list(self._connection_handler.nodes)}"
         )
+        return repr_str
 
     @property
     def peers(self):
