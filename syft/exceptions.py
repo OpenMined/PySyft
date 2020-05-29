@@ -357,7 +357,16 @@ class EmptyCryptoPrimitiveStoreError(Exception):
 class CryptoProviderNotFoundError(Exception):
     """Raised when trying to multiply or equate shared tensors without crypto provider."""
 
-    pass
+    def __init__(self, operation_name, args_):
+        tensors = args_[0] if (len(args_) > 0) else ""
+
+        message = (
+            f"You tried to make a {operation_name} operation, "
+            "on a shared tensor without a crypto_provider."
+            "A crypto_provide must be passed for operations like mutiplication and comparison.\n"
+            f"Tensors:\n{tensors}"
+        )
+        super().__init__(message)
 
 
 def route_method_exception(exception, self, args_, kwargs_):  # noqa: C901

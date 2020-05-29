@@ -29,11 +29,8 @@ def crypto_provider_required(operation_name=""):
         @wraps(f)
         def method(self, *args, **kwargs):
             if self.crypto_provider is None:
-                raise CryptoProviderNotFoundError(
-                    "For this {} operation, a crypto_provider must be passed.".format(
-                        operation_name
-                    )
-                )
+                print(**kwargs)
+                raise CryptoProviderNotFoundError(operation_name, args)
             else:
                 return f(self, *args, **kwargs)
 
