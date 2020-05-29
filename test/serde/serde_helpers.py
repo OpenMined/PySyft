@@ -1329,12 +1329,15 @@ def make_privatetensor(**kwargs):
 
 # syft.frameworks.torch.tensors.interpreters.PlaceHolder
 def make_placeholder(**kwargs):
-    ph = syft.execution.placeholder.PlaceHolder(shape=torch.randn(3, 4).shape)
+    ph = syft.execution.placeholder.PlaceHolder(
+        shape=torch.randn(3, 4).shape, child=torch.randn(3, 4)
+    )
     ph.tag("tag1")
     ph.describe("just a placeholder")
 
     def compare(detailed, original):
         assert type(detailed) == syft.execution.placeholder.PlaceHolder
+        assert detailed.child.equal(original.child)
         assert detailed.id == original.id
         assert detailed.tags == original.tags
         assert detailed.description == original.description
@@ -1347,6 +1350,7 @@ def make_placeholder(**kwargs):
             "simplified": (
                 CODE[syft.execution.placeholder.PlaceHolder],
                 (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], ph.child),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], ph.id),
                     (CODE[set], ((CODE[str], (b"tag1",)),)),  # (set of str) tags
                     (CODE[str], (b"just a placeholder",)),  # (str) description

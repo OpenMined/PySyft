@@ -1,3 +1,5 @@
+import torch
+
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
@@ -368,7 +370,6 @@ class PlaceHolder(AbstractTensor):
         Returns:
             tuple: a tuple holding the unique attributes of the PlaceHolder.
         """
-
         return (
             syft.serde.msgpack.serde._simplify(worker, placeholder.child),
             syft.serde.msgpack.serde._simplify(worker, placeholder.id),
@@ -387,7 +388,6 @@ class PlaceHolder(AbstractTensor):
         Returns:
             PlaceHolder: a PlaceHolder
         """
-
         child, tensor_id, tags, description, shape = tensor_tuple
 
         child = syft.serde.msgpack.serde._detail(worker, child)
@@ -411,10 +411,18 @@ class PlaceHolder(AbstractTensor):
         Returns:
             PlaceholderPB: a Protobuf message holding the unique attributes of the PlaceHolder.
         """
-
         protobuf_placeholder = PlaceholderPB()
         syft.serde.protobuf.proto.set_protobuf_id(protobuf_placeholder.id, placeholder.id.value)
         protobuf_placeholder.tags.extend(placeholder.tags)
+
+        if isinstance(placeholder.child, torch.nn.Parameter):
+            protobuf_placeholder.child_parameter.CopyFrom(
+                syft.serde.protobuf.serde._bufferize(worker, placeholder.child)
+            )
+        elif isinstance(placeholder.child, torch.Tensor):
+            protobuf_placeholder.child_tensor.CopyFrom(
+                syft.serde.protobuf.serde._bufferize(worker, placeholder.child)
+            )
 
         if placeholder.description:
             protobuf_placeholder.description = placeholder.description
@@ -435,9 +443,16 @@ class PlaceHolder(AbstractTensor):
         Returns:
             PlaceHolder: a PlaceHolder
         """
-
         tensor_id = syft.serde.protobuf.proto.get_protobuf_id(protobuf_placeholder.id)
         tags = set(protobuf_placeholder.tags)
+
+        child = None
+        protobuf_child = protobuf_placeholder.WhichOneof("child")
+        print(protobuf_child)
+        if protobuf_child:
+            child = syft.serde.protobuf.serde._unbufferize(
+                worker, getattr(protobuf_placeholder, protobuf_placeholder.WhichOneof("child"))
+            )
 
         description = None
         if bool(protobuf_placeholder.description):
@@ -445,7 +460,9 @@ class PlaceHolder(AbstractTensor):
 
         expected_shape = tuple(protobuf_placeholder.expected_shape.dims) or None
 
-        return PlaceHolder(id=tensor_id, tags=tags, description=description, shape=expected_shape)
+        return PlaceHolder(
+            child=child, id=tensor_id, tags=tags, description=description, shape=expected_shape
+        )
 
     @staticmethod
     def get_protobuf_schema() -> PlaceholderPB:
