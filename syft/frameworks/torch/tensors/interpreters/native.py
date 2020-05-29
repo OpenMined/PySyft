@@ -1,5 +1,6 @@
 from typing import Union, List
 import weakref
+import warnings
 
 import torch
 
@@ -1045,14 +1046,12 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation"
             )
 
-    def decrypt(self, protocol="mpc", **kwargs):
+    def decrypt(self, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1061,19 +1060,23 @@ class TorchTensor(AbstractTensor):
                     private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
         Returns:
-            An decrypted version of the Tensor following the protocol specified
+            An decrypted version of the Tensor following the protocol guessed from its type
 
         Raises:
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
 
-        if protocol.lower() == "mpc":
+        protocol = kwargs.get("protocol", None)
+        if protocol:
+            warnings.warn("protocol should no longer be used in decrypt")
+
+        if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
             x_encrypted = self.copy()
             x_decrypted = x_encrypted.get().float_prec()
             return x_decrypted
 
-        elif protocol.lower() == "paillier":
+        elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)

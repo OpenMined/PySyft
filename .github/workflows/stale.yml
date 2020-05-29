@@ -18,8 +18,8 @@ jobs:
           This pull request has been marked stale because it has been open 30 days with no activity.
           Leave a comment or remove the `stale` label to unmark it. Otherwise, this will be closed
           in 7 days.
-        stale-issue-label: "stale"
-        stale-pr-label: "stale"
+        stale-issue-label: "Status: Stale :bread:"
+        stale-pr-label: "Status: Stale :bread:"
         exempt-pr-labels: "epic"
         days-before-stale: 30
         days-before-close: 7
