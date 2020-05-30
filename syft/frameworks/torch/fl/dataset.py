@@ -196,9 +196,20 @@ class BaseDataset(AbstractSendable):
 
     @staticmethod
     def bufferize(worker, dataset):
+        """
+        This method serializes a BaseDataset into a BaseDatasetPB.
+
+        Args:
+            dataset (BaseDataset): input BaseDataset to be serialized.
+
+        Returns:
+            proto_dataset (BaseDatasetPB): serialized BaseDataset.
+        """
         proto_dataset = BaseDatasetPB()
         proto_dataset.data.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, dataset.data))
-        proto_dataset.targets.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, dataset.targets))
+        proto_dataset.targets.CopyFrom(
+            syft.serde.protobuf.serde._bufferize(worker, dataset.targets)
+        )
         syft.serde.protobuf.proto.set_protobuf_id(proto_dataset.id, dataset.id)
         for tag in dataset.tags:
             proto_dataset.tags.append(tag)
@@ -211,17 +222,40 @@ class BaseDataset(AbstractSendable):
 
     @staticmethod
     def unbufferize(worker, proto_dataset):
+        """
+        This method deserializes BaseDatasetPB into a BaseDataset.
+
+        Args:
+            proto_dataset (BaseDatasetPB): input serialized BaseDatasetPB.
+
+        Returns:
+             BaseDataset: deserialized BaseDatasetPB.
+        """
         data = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.data)
         targets = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.targets)
         dataset_id = syft.serde.protobuf.proto.get_protobuf_id(proto_dataset.id)
         child = None
         if proto_dataset.HasField("child"):
             child = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.child)
-        return BaseDataset(data=data, targets=targets, id=dataset_id, tags=set(proto_dataset.tags), description=proto_dataset.description, child=child)
+        return BaseDataset(
+            data=data,
+            targets=targets,
+            id=dataset_id,
+            tags=set(proto_dataset.tags),
+            description=proto_dataset.description,
+            child=child,
+        )
 
     @staticmethod
     def get_protobuf_schema():
+        """
+        This method returns the protobuf schema used for BaseDataset.
+
+        Returns:
+           Protobuf schema for BaseDataset.
+       """
         return BaseDatasetPB
+
 
 def dataset_federate(dataset, workers):
     """
