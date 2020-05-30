@@ -7,7 +7,7 @@ from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
@@ -280,8 +280,8 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         C will hold a pointer to a pointer on A which points to the tensor on B.
         Args:
             destination: where the remote value should be sent
-            requires_grad: if true updating the grad of the remote tensor on destination B will trigger
-                a message to update the gradient of the value on A.
+            requires_grad: if true updating the grad of the remote tensor on destination B will
+                trigger a message to update the gradient of the value on A.
         """
         kwargs_ = {"inplace": False, "requires_grad": requires_grad}
         message = TensorCommandMessage.communication(
@@ -420,20 +420,14 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             data = simplify(ptr)
         """
 
-        if ptr.tags:
-            tags = tuple(ptr.tags)  # Need to be converted (set data structure isn't serializable)
-        else:
-            tags = None
-
         return (
-            # ptr.id,
             syft.serde.msgpack.serde._simplify(worker, ptr.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.id_at_location),
             syft.serde.msgpack.serde._simplify(worker, ptr.location.id),
             syft.serde.msgpack.serde._simplify(worker, ptr.point_to_attr),
             syft.serde.msgpack.serde._simplify(worker, ptr._shape),
             ptr.garbage_collect_data,
-            tags,
+            syft.serde.msgpack.serde._simplify(worker, ptr.tags),
             ptr.description,
         )
 

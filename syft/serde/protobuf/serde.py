@@ -12,6 +12,7 @@ from syft.workers.abstract import AbstractWorker
 
 from syft_proto.messaging.v1.message_pb2 import SyftMessage as SyftMessagePB
 from syft_proto.types.syft.v1.arg_pb2 import Arg as ArgPB
+from syft_proto.types.syft.v1.arg_pb2 import ArgList as ArgListPB
 from syft.serde.syft_serializable import (
     SyftSerializable,
     get_protobuf_classes,
@@ -21,7 +22,8 @@ from syft.serde.syft_serializable import (
 
 class MetaProtobufGlobalState(type):
     """
-    Metaclass that wraps all properties in ProtobufGlobalState to be updated when the global state is marked as stale.
+    Metaclass that wraps all properties in ProtobufGlobalState to be updated
+    when the global state is marked as stale.
     """
 
     @staticmethod
@@ -33,7 +35,8 @@ class MetaProtobufGlobalState(type):
             wrapped_func (Property): property of the generated type.
 
         Returns:
-             Property: new property that is wrapped to get updated when the global state is marked as stale.
+             Property: new property that is wrapped to get updated when the global state
+             is marked as stale.
         """
 
         @property
@@ -59,31 +62,36 @@ class MetaProtobufGlobalState(type):
 @dataclass
 class ProtobufGlobalState(metaclass=MetaProtobufGlobalState):
     """
-        Class to generate a global state of the protobufers in a lazy way. All attributes should be used by their
-        properties, not by their hidden value.
+        Class to generate a global state of the protobufers in a lazy way. All attributes
+        should be used by their properties, not by their hidden value.
 
-        The global state can be marked as stale by setting stale_state to False, forcing the next usage of the
-        to be updated, enabling dynamic types in serde.
+        The global state can be marked as stale by setting stale_state to False, forcing
+        the next usage of the to be updated, enabling dynamic types in serde.
 
-        All types should be enrolled in proto.json in syft-serde (soon to be deprecated, when msgpack is removed).
+        All types should be enrolled in proto.json in syft-serde (soon to be deprecated,
+        when msgpack is removed).
 
         Attributes:
 
-            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own force_bufferize and force_unbufferize functions,
-            it should be stored in this list. This will become deprecated soon.
+            _OBJ_FORCE_FULL_PROTOBUF_TRANSLATORS (list): If a type implements its own
+            force_bufferize and force_unbufferize functions, it should be stored in this list.
+            This will become deprecated soon.
 
             _bufferizers (OrderedDict): The mapping from a type to its own bufferizer.
 
-            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced bufferizer.
+            _forced_full_bufferizers (OrderedDict): The mapping from a type to its own forced
+            bufferizer.
 
             _unbufferizers (OrderedDict): The mapping from a type to its own unbufferizer.
 
-            _no_bufferizers_found (set): In this set we store the primitives that we cannot bufferize anymore.
+            _no_bufferizers_found (set): In this set we store the primitives that we cannot
+            bufferize anymore.
 
-            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot force bufferize anymore.
+            _no_full_bufferizers_found (set): In this set we store the primitives that we cannot
+            force bufferize anymore.
 
-            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited bufferizer that a type can use. This might
-            become deprecated
+            _inherited_bufferizers_found (OrderedDict): In this dict we store the any inherited
+            bufferizer that a type can use. This might become deprecated
 
             stale_state (Bool): Marks the global state to be stale or not.
     """
@@ -358,7 +366,7 @@ def serialize(
     protobuf_obj = _bufferize(worker, obj)
 
     obj_type = type(obj)
-    if obj_type == type(None):
+    if isinstance(obj_type, None):
         msg_wrapper.contents_empty_msg.CopyFrom(protobuf_obj)
     elif obj_type == ObjectMessage:
         msg_wrapper.contents_object_msg.CopyFrom(protobuf_obj)
@@ -445,6 +453,7 @@ def _unbufferize(worker: AbstractWorker, obj: object, **kwargs) -> object:
         if current_type in protobuf_global_state.unbufferizers:
             result = protobuf_global_state.bufferizers[current_type](worker, obj, **kwargs)
             return result
+
         raise Exception(f"No unbufferizer found for {current_type}")
 
 
@@ -455,28 +464,39 @@ def bufferize_args(worker: AbstractWorker, args_: list) -> list:
 def bufferize_arg(worker: AbstractWorker, arg: object) -> ArgPB:
     protobuf_arg = ArgPB()
 
-    attr_name = "arg_" + _camel2snake(type(arg).__name__)
+    if isinstance(arg, list):
+        protobuf_arg_list = ArgListPB()
+        arg_list = [bufferize_arg(worker, i) for i in arg]
+        protobuf_arg_list.args.extend(arg_list)
+        protobuf_arg.arg_list.CopyFrom(protobuf_arg_list)
 
-    try:
-        setattr(protobuf_arg, attr_name, arg)
-    except:
-        getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
+    else:
+        attr_name = "arg_" + _camel2snake(type(arg).__name__)
+
+        try:
+            setattr(protobuf_arg, attr_name, arg)
+        except:
+            getattr(protobuf_arg, attr_name).CopyFrom(_bufferize(worker, arg))
 
     return protobuf_arg
 
 
 def unbufferize_args(worker: AbstractWorker, protobuf_args: list) -> list:
-    return tuple([unbufferize_arg(worker, arg) for arg in protobuf_args])
+    return tuple((unbufferize_arg(worker, arg) for arg in protobuf_args))
 
 
 def unbufferize_arg(worker: AbstractWorker, protobuf_arg: ArgPB) -> object:
     protobuf_field_name = protobuf_arg.WhichOneof("arg")
 
     protobuf_arg_field = getattr(protobuf_arg, protobuf_field_name)
-    try:
-        arg = _unbufferize(worker, protobuf_arg_field)
-    except:
-        arg = protobuf_arg_field
+
+    if protobuf_field_name == "arg_list":
+        arg = [unbufferize_arg(worker, i) for i in protobuf_arg_field.args]
+    else:
+        try:
+            arg = _unbufferize(worker, protobuf_arg_field)
+        except:
+            arg = protobuf_arg_field
 
     return arg
 

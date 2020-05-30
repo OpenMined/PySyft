@@ -1,8 +1,6 @@
-from contextlib import contextmanager
 from types import ModuleType
 
 import syft as sy
-from syft.execution.computation import ComputationAction
 from syft.execution.placeholder import PlaceHolder
 from syft.generic.frameworks.types import FrameworkTensor
 

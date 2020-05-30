@@ -1,5 +1,4 @@
 import io
-from tempfile import TemporaryFile
 import warnings
 
 import numpy
@@ -42,7 +41,7 @@ def torch_tensor_serializer(worker: AbstractWorker, tensor) -> bin:
 
 
 def torch_tensor_deserializer(worker: AbstractWorker, tensor_bin) -> torch.Tensor:
-    """"Strategy to deserialize a binary input using Torch load"""
+    """Strategy to deserialize a binary input using Torch load"""
     bin_tensor_stream = io.BytesIO(tensor_bin)
     return torch.load(bin_tensor_stream)
 

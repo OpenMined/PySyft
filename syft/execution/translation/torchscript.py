@@ -13,10 +13,14 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
         translation_plan = self.plan.copy()
         translation_plan.forward = None
 
-        args_shape = translation_plan.get_args_shape()
-        args = PlaceHolder.create_placeholders(args_shape)
+        args = translation_plan.create_dummy_args()
 
-        # To avoid storing Plan state tensors in torchscript, they will be send as parameters
+        # jit.trace clones input args and can change their type, so we have to skip types check
+        # TODO see if type check can be made less strict,
+        #  e.g. tensor/custom tensor/nn.Parameter could be considered same type
+        translation_plan.validate_input_types = False
+
+        # To avoid storing Plan state tensors in torchscript, they will be sent as parameters
         # we trace wrapper func, which accepts state parameters as last arg
         # and sets them into the Plan before executing the Plan
         def wrap_stateful_plan(*args):

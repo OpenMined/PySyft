@@ -1,12 +1,8 @@
-import pytest
-
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 
 import syft as sy
-from itertools import starmap
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
@@ -181,3 +177,103 @@ def test_backward_autograd_can_be_translated(hook, workers):
 
     # Test all results are equal
     assert torch_grads.eq(ts_plan_grads).all()
+
+
+def test_fl_mnist_example_training_can_be_translated(hook, workers):
+    class Net(nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(784, 392)
+            self.fc2 = nn.Linear(392, 10)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
+            return x
+
+    model = Net()
+
+    def set_model_params(module, params_list, start_param_idx=0):
+        """ Set params list into model recursively
+        """
+        param_idx = start_param_idx
+
+        for name, param in module._parameters.items():
+            module._parameters[name] = params_list[param_idx]
+            param_idx += 1
+
+        for name, child in module._modules.items():
+            if child is not None:
+                param_idx += set_model_params(child, params_list, param_idx)
+
+        return param_idx
+
+    def softmax_cross_entropy_with_logits(logits, targets, batch_size):
+        """ Calculates softmax entropy
+            Args:
+                * logits: (NxC) outputs of dense layer
+                * targets: (NxC) one-hot encoded labels
+                * batch_size: value of N, temporarily required because Plan cannot trace .shape
+        """
+        # numstable logsoftmax
+        norm_logits = logits - logits.max()
+        log_probs = norm_logits - norm_logits.exp().sum(dim=1, keepdim=True).log()
+        # reduction = mean
+        return -(targets * log_probs).sum() / batch_size
+
+    def naive_sgd(param, **kwargs):
+        return param - kwargs["lr"] * param.grad
+
+    @sy.func2plan()
+    def train(data, targets, lr, batch_size, model_parameters):
+        # load model params
+        set_model_params(model, model_parameters)
+
+        # forward
+        logits = model(data)
+
+        # loss
+        loss = softmax_cross_entropy_with_logits(logits, targets, batch_size)
+
+        # backward
+        loss.backward()
+
+        # step
+        updated_params = [naive_sgd(param, lr=lr) for param in model_parameters]
+
+        # accuracy
+        pred = th.argmax(logits, dim=1)
+        targets_idx = th.argmax(targets, dim=1)
+        acc = pred.eq(targets_idx).sum().float() / batch_size
+
+        return (loss, acc, *updated_params)
+
+    # Dummy inputs
+    data = th.randn(3, 28 * 28)
+    target = F.one_hot(th.tensor([1, 2, 3]), 10)
+    lr = th.tensor([0.01])
+    batch_size = th.tensor([3.0])
+    model_state = list(model.parameters())
+
+    # Build Plan
+    train.build(data, target, lr, batch_size, model_state, trace_autograd=True)
+
+    # Execute with original forward function (native torch autograd)
+    res_torch = train(data, target, lr, batch_size, model_state)
+
+    # Execute traced operations (traced autograd)
+    train.forward = None
+    res_syft_traced = train(data, target, lr, batch_size, model_state)
+
+    # Translate syft Plan to torchscript and execute it
+    train.add_translation(PlanTranslatorTorchscript)
+    res_torchscript = train.torchscript(data, target, lr, batch_size, model_state)
+
+    # (debug out)
+    print(train.torchscript.code)
+
+    # All variants should be equal
+    for i, out in enumerate(res_torch):
+        assert th.allclose(out, res_syft_traced[i])
+        assert th.allclose(out, res_torchscript[i])

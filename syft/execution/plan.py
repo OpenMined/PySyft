@@ -10,9 +10,7 @@ import warnings
 
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
-from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.role import Role
-from syft.execution.state import State
 from syft.execution.tracing import FrameworkWrapper
 from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
@@ -21,7 +19,7 @@ from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -40,7 +38,7 @@ class func2plan(object):
 
     def __init__(self, args_shape=None, state=None, trace_autograd=False):
         self.args_shape = args_shape
-        self.state_tensors = state or tuple()
+        self.state_tensors = state or ()
         # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
         # will be true. And to know if it was indeed a function, we just need to see if a
@@ -73,7 +71,7 @@ class func2plan(object):
         return plan
 
 
-class Plan(AbstractObject):
+class Plan(AbstractSendable):
     """
     A Plan stores a sequence of actions, just like a function.
 
@@ -119,7 +117,7 @@ class Plan(AbstractObject):
         input_types: list = None,
         description: str = None,
     ):
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        super().__init__(id, owner, tags, description, child=None)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
@@ -136,10 +134,11 @@ class Plan(AbstractObject):
         self.is_built = is_built
         self.torchscript = None
         self.input_types = input_types
+        self.validate_input_types = True
         self.tracing = False
 
         # The plan has not been sent so it has no reference to remote locations
-        self.pointers = dict()
+        self.pointers = {}
 
         if not hasattr(self, "forward"):
             self.forward = forward_func or None
@@ -159,7 +158,10 @@ class Plan(AbstractObject):
 
     def parameters(self):
         """
-        This is defined to match the torch api of nn.Module where .parameters() return the model tensors / parameters
+        This is defined to match the torch api of nn.Module where .parameters()
+
+        Returns:
+            The model tensors / parameters
         """
         if self.state is not None:
             return self.state.tensors()
@@ -189,7 +191,7 @@ class Plan(AbstractObject):
             if isinstance(arg, list):
                 return [build_nested_arg(obj, leaf_function) for obj in arg]
             elif isinstance(arg, tuple):
-                return tuple([build_nested_arg(obj, leaf_function) for obj in arg])
+                return tuple(build_nested_arg(obj, leaf_function) for obj in arg)
             elif isinstance(arg, dict):
                 return {k: build_nested_arg(v, leaf_function) for k, v in arg.items()}
             else:
@@ -199,7 +201,7 @@ class Plan(AbstractObject):
         self.toggle_tracing(True)
         self.is_building = True
 
-        # typecheck
+        # Check the types
         self.input_types = NestedTypeWrapper(args)
 
         # Run once to build the plan
@@ -209,13 +211,16 @@ class Plan(AbstractObject):
             args = build_nested_arg(
                 args,
                 lambda x: AutogradTensor().on(x, wrap=False)
-                if isinstance(x, FrameworkTensor) and x.requires_grad
-                else x,
+                if isinstance(x, FrameworkTensor)
+                else PlaceHolder.create_from(x, role=self.role, tracing=True),
             )
             # Add Placeholder after AutogradTensor in the chain
             # so that all operations that happen inside AutogradTensor are recorded by Placeholder
             args_placeholders = build_nested_arg(
-                args, lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True),
+                args,
+                lambda x: PlaceHolder.insert(x, AutogradTensor, role=self.role, tracing=True)
+                if not isinstance(x, PlaceHolder)
+                else x,
             )
         else:
             # Add Placeholder on top of each arg
@@ -237,10 +242,6 @@ class Plan(AbstractObject):
 
         results = self.forward(*args, **framework_kwargs)
 
-        # Disable tracing
-        self.toggle_tracing(False)
-        self.is_building = False
-
         # Register inputs in role
         self.role.register_inputs(args_placeholders)
 
@@ -251,6 +252,9 @@ class Plan(AbstractObject):
             results_placeholders = PlaceHolder.extract(results)
         self.role.register_outputs(results_placeholders)
 
+        # Disable tracing
+        self.toggle_tracing(False)
+        self.is_building = False
         self.is_built = True
 
         # Build registered translations
@@ -314,7 +318,8 @@ class Plan(AbstractObject):
         if isinstance(value, FrameworkTensor):
             return self.role.placeholders[value.id]
         elif isinstance(value, FrameworkLayerModule):
-            # We need to deepcopy here otherwise the real layer is modified when the Plan is being built
+            # We need to deepcopy here otherwise the real layer is modified when the
+            # Plan is being built
             copied_layer = copy.deepcopy(value)
             for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
                 (copied_name, _) = copied_param
@@ -339,7 +344,8 @@ class Plan(AbstractObject):
                 args = (*args, self.state)
             return self.forward(*args)
         else:
-            self.input_types.input_check(self, args)
+            if self.validate_input_types:
+                self.input_types.input_check(self, args)
             self.role.instantiate_inputs(args)
             result = self.role.execute()
             if len(result) == 1:
@@ -406,6 +412,36 @@ class Plan(AbstractObject):
 
         return [ph.expected_shape for ph in self.role.input_placeholders()]
 
+    def create_dummy_args(self):
+        """Returns dummy arguments matching built Plan arguments' types"""
+        if not self.is_built:
+            raise RuntimeError("A plan needs to be built before input shapes can be known.")
+
+        def traverse_nested_types(arg, leaf_function):
+            if isinstance(arg, list):
+                return [traverse_nested_types(obj, leaf_function) for obj in arg]
+            elif isinstance(arg, tuple):
+                return tuple(traverse_nested_types(obj, leaf_function) for obj in arg)
+            elif isinstance(arg, dict):
+                return {k: traverse_nested_types(v, leaf_function) for k, v in arg.items()}
+            else:
+                return leaf_function(arg)
+
+        input_placeholders = (ph for ph in self.role.input_placeholders())
+
+        def create_dummy(input_type, input_placeholder):
+            if issubclass(input_type, FrameworkTensor):
+                return input_type(
+                    PlaceHolder.create_placeholders([input_placeholder.expected_shape])[0]
+                )
+            else:
+                return input_type()
+
+        return traverse_nested_types(
+            self.input_types.nested_input_types,
+            lambda input_type: create_dummy(input_type, input_placeholders.__next__()),
+        )
+
     @staticmethod
     def register_build_translator(translator: "AbstractPlanTranslator"):
         Plan._build_translators.append(translator)
@@ -468,7 +504,8 @@ class Plan(AbstractObject):
 
         Args:
             owner: the owner of the pointer
-            garbage_collect_data: if true, when the pointer is deleted, the remote target is garbaged collected
+            garbage_collect_data: if true, when the pointer is deleted, the remote target
+                        is garbaged collected
             location: the location of the pointer
             id_at_location: the remote id at location
             tags: the tags inherited from the Plan
@@ -690,7 +727,7 @@ class Plan(AbstractObject):
         input_names = {id: f"arg_{i + 1}" for i, id in enumerate(self.role.input_placeholder_ids)}
         output_names = {id: f"out_{i + 1}" for i, id in enumerate(self.role.output_placeholder_ids)}
         state_names = {
-            id: f"state_{i + 1}" for i, id in enumerate(self.role.state.state_placeholders)
+            ph.id.value: f"state_{i + 1}" for i, ph in enumerate(self.role.state.state_placeholders)
         }
         var_names = {**input_names, **output_names, **state_names}
 

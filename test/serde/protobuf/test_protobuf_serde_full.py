@@ -1,10 +1,6 @@
 from collections import OrderedDict
 import pytest
-import numpy
 import torch
-from functools import partial
-import traceback
-import io
 
 import syft
 from syft.serde import protobuf
@@ -41,6 +37,7 @@ samples[syft.execution.state.State] = make_state
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
 samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
+samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
 
 # Syft Messages

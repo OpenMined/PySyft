@@ -1,7 +1,6 @@
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
 from syft.exceptions import GetNotPermittedError

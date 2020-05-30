@@ -1,9 +1,7 @@
 from contextlib import contextmanager
 
 import logging
-from typing import Callable
 from typing import List
-from typing import Tuple
 from typing import Union
 from typing import TYPE_CHECKING
 
@@ -13,16 +11,17 @@ from syft.execution.plan import Plan
 from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
+
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
-from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.frameworks.types import FrameworkTensorType, framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
-from syft.generic.object_storage import ObjectStore
-from syft.generic.object import AbstractObject
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.object_storage import ObjectStore
+
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import WorkerCommandMessage
 from syft.messaging.message import ForceObjectDeleteMessage
@@ -34,6 +33,7 @@ from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 from syft.workers.abstract import AbstractWorker
+
 
 from syft.exceptions import GetNotPermittedError
 from syft.exceptions import ObjectNotFoundError
@@ -123,7 +123,7 @@ class BaseWorker(AbstractWorker):
 
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
-        self.msg_history = list()
+        self.msg_history = []
 
         # For performance, we cache all possible message types
         self._message_router = {
@@ -132,7 +132,6 @@ class BaseWorker(AbstractWorker):
             WorkerCommandMessage: self.execute_worker_command,
             ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
-            ForceObjectDeleteMessage: self.handle_delete_object_msg,  # FIXME: there is no ObjectDeleteMessage
             ForceObjectDeleteMessage: self.handle_force_delete_object_msg,
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
@@ -420,7 +419,6 @@ class BaseWorker(AbstractWorker):
         # Plan/Protocol, etc. As Syft moves toward multi-tenancy with Grid and so forth,
         # that will probably be useful for providing security and permissioning. In that
         # future, this might look like `self.object_store.set_obj(obj_msg.object)`
-
         """Receive an object from a another worker
 
         Args:
@@ -494,7 +492,8 @@ class BaseWorker(AbstractWorker):
                 try:
                     response = getattr(_self, op_name)(*args_, **kwargs_)
                 except TypeError:
-                    # TODO Andrew thinks this is gross, please fix. Instead need to properly deserialize strings
+                    # TODO Andrew thinks this is gross, please fix. Instead need to
+                    # properly deserialize strings
                     new_args = [
                         arg.decode("utf-8") if isinstance(arg, bytes) else arg for arg in args_
                     ]
@@ -520,7 +519,8 @@ class BaseWorker(AbstractWorker):
             # Register response and create pointers for tensor elements
             try:
                 response = hook_args.register_response(op_name, response, list(return_ids), self)
-                # TODO: Does this mean I can set return_value to False and still get a response? That seems surprising.
+                # TODO: Does this mean I can set return_value to False and still
+                # get a response? That seems surprising.
                 if return_value or isinstance(response, (int, float, bool, str)):
                     return response
                 else:
@@ -617,7 +617,7 @@ class BaseWorker(AbstractWorker):
             A list of PointerTensors or a single PointerTensor if just one response is expected.
         """
         if return_ids is None:
-            return_ids = tuple([sy.ID_PROVIDER.pop()])
+            return_ids = (sy.ID_PROVIDER.pop(),)
 
         try:
             message = TensorCommandMessage.computation(
@@ -1069,7 +1069,7 @@ class BaseWorker(AbstractWorker):
         if results is not None:
             return list(results)
         else:
-            return list()
+            return []
 
     def respond_to_search(self, msg: SearchMessage) -> List[PointerTensor]:
         """
@@ -1273,3 +1273,12 @@ class BaseWorker(AbstractWorker):
                 worker.object_store.rm_obj(obj.id)
 
         return result
+
+    @classmethod
+    def is_framework_supported(cls, framework: str) -> bool:
+        """
+        Returns True if framework is supported, else returns False.
+        :param framework: string
+        :return: True/False
+        """
+        return framework.lower() in framework_packages

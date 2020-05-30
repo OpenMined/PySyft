@@ -79,7 +79,7 @@ class StringHook(ABC):
 
         # The outputs of the following attributed won't
         # be wrapped
-        ignored_attr = set(["__str__", "__repr__", "__format__"])
+        ignored_attr = {"__str__", "__repr__", "__format__"}
 
         if isinstance(value, str) and attr not in ignored_attr:
 

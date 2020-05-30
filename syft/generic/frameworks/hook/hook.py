@@ -1,15 +1,13 @@
 from abc import ABC
 from abc import abstractmethod
 from functools import wraps
-import inspect
-import re
 import types
-from typing import List, Tuple
+from typing import List
 
 import syft
 from syft.generic.frameworks.hook import hook_args
 
-from syft.generic.object import _apply_args
+from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import route_method_exception
@@ -189,9 +187,10 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
                         if not hasattr(args[0], "child") and not isinstance(
                             self.child, PointerTensor
                         ):
-                            # TODO: add check to make sure this isn't getting around a security class
+                            # TODO: add check to make sure this isn't getting around
+                            # a security class
 
-                            _args = list()
+                            _args = []
                             _args.append(type(self)().on(args[0], wrap=False))
                             for a in args[1:]:
                                 _args.append(a)

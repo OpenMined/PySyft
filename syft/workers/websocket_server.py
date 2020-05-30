@@ -1,9 +1,7 @@
 import asyncio
 import binascii
 import logging
-import socket
 import ssl
-import sys
 from typing import Union
 from typing import List
 
@@ -12,7 +10,7 @@ import torch
 import websockets
 
 import syft as sy
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.virtual import VirtualWorker
 
 from syft.exceptions import GetNotPermittedError

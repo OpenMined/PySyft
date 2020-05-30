@@ -10,7 +10,7 @@ import pydoc
 import syft
 from syft.serde.syft_serializable import SyftSerializable
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.tensor import initialize_tensor
+from syft.generic.abstract.tensor import initialize_tensor
 from syft.workers.abstract import AbstractWorker
 from syft.codes import TENSOR_SERIALIZATION
 
@@ -115,7 +115,7 @@ def protobuf_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> 
 def protobuf_tensor_deserializer(
     worker: AbstractWorker, protobuf_tensor: TensorDataPB
 ) -> torch.Tensor:
-    """"Strategy to deserialize a binary input using Protobuf"""
+    """Strategy to deserialize a binary input using Protobuf"""
     size = tuple(protobuf_tensor.shape.dims)
     data = getattr(protobuf_tensor, "contents_" + protobuf_tensor.dtype)
 
@@ -452,7 +452,8 @@ class ScriptFunctionWrapper(SyftSerializable):
         This method serializes a torch.jit.ScriptFunction into a ScriptFunctionPB.
 
         Args:
-            script_module (torch.jit.ScriptFunction): input torch.jit.ScriptFunction to be serialized.
+            script_module (torch.jit.ScriptFunction): input torch.jit.ScriptFunction
+            to be serialized.
 
         Returns:
             protobuf_script (ScriptFunctionPB): serialized torch.jit.ScriptFunction.
@@ -512,7 +513,8 @@ class TopLevelTracedModuleWrapper(SyftSerializable):
             This method serializes a torch.jit.TopLevelTracedModule using TracedModulePB.
 
             Args:
-                script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule to be serialized.
+                script_module (torch.jit.TopLevelTracedModule): input TopLevelTracedModule
+                to be serialized.
 
             Returns:
                 protobuf_script (TracedModulePB): serialized TopLevelTracedModule.
