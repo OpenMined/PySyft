@@ -3,6 +3,8 @@ import logging
 from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_dataset import PointerDataset
+from syft_proto.frameworks.torch.fl.v1.dataset_pb2 import BaseDataset as BaseDatasetPB
+
 import torch
 from torch.utils.data import Dataset
 import syft
@@ -192,6 +194,34 @@ class BaseDataset(AbstractSendable):
             dataset.child = chain
         return dataset
 
+    @staticmethod
+    def bufferize(worker, dataset):
+        proto_dataset = BaseDatasetPB()
+        proto_dataset.data.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, dataset.data))
+        proto_dataset.targets.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, dataset.targets))
+        syft.serde.protobuf.proto.set_protobuf_id(proto_dataset.id, dataset.id)
+        for tag in dataset.tags:
+            proto_dataset.tags.append(tag)
+
+        if dataset.child:
+            proto_dataset.child.CopyFrom(dataset.child)
+
+        proto_dataset.description = dataset.description
+        return proto_dataset
+
+    @staticmethod
+    def unbufferize(worker, proto_dataset):
+        data = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.data)
+        targets = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.targets)
+        dataset_id = syft.serde.protobuf.proto.get_protobuf_id(proto_dataset.id)
+        child = None
+        if proto_dataset.HasField("child"):
+            child = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.child)
+        return BaseDataset(data=data, targets=targets, id=dataset_id, tags=set(proto_dataset.tags), description=proto_dataset.description, child=child)
+
+    @staticmethod
+    def get_protobuf_schema():
+        return BaseDatasetPB
 
 def dataset_federate(dataset, workers):
     """
