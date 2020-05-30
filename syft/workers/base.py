@@ -12,15 +12,16 @@ from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 
+from syft.generic.abstract.hookable import chain_call
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
 from syft.generic.frameworks.types import FrameworkTensorType, framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkShape
+from syft.generic.object_storage import ObjectStore
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.generic.abstract.tensor import AbstractTensor
-from syft.generic.object_storage import ObjectStore
 
 from syft.messaging.message import TensorCommandMessage
 from syft.messaging.message import WorkerCommandMessage
@@ -677,7 +678,9 @@ class BaseWorker(AbstractWorker):
         reason = msg.reason
 
         obj = self.get_obj(obj_id)
-        if hasattr(obj, "allow") and not obj.allow(user):
+
+        permitted = all(chain_call(obj, "allow", user=user))
+        if not permitted:
             raise GetNotPermittedError()
         else:
             self.de_register_obj(obj)
