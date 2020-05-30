@@ -995,4 +995,10 @@ class WorkerCommandMessage(Message):
     # TODO: when testing is fixed, uncomment this to enable worker command message support.
     # @staticmethod
     # def get_protobuf_schema():
+    #     """
+    #         Returns the protobuf schema used for WorkerCommandMessage.
+    #
+    #         Returns:
+    #             Protobuf schema for WorkerCommandMessage.
+    #     """
     #     return WorkerCommandMessagePB
