@@ -237,3 +237,35 @@ class SyftSerializable:
                 Wrapped type.
         """
         return NotImplementedError
+
+
+class ClassSerializerRegistry(type):
+    """
+        Used to register the classes that needs to be serialized with Pysyft.
+    """
+
+    REGISTRY = {}
+
+    def __new__(mcs, *args, **kwargs):
+        new_cls = type.__new__(mcs, *args, **kwargs)
+        if hasattr(new_cls, "is_serializable"):
+            is_serializable = getattr(new_cls, "is_serializable")
+            class_name = new_cls.__name__
+            if is_serializable:
+                mcs.REGISTRY[class_name] = new_cls
+        return super(ClassSerializerRegistry, mcs).__new__(mcs, *args, **kwargs)
+
+    @classmethod
+    def get_registry(cls):
+        return dict(cls.REGISTRY)
+
+    @classmethod
+    def get_registered_class_instance(cls, class_name):
+        class_instance = cls.REGISTRY.get(class_name)
+        if class_instance is None:
+            raise KeyError(f"Class :{class_name} is not registered!")
+
+
+class ClassSerializerRegister(object, metaclass=ClassSerializerRegistry):
+    # Boolean field used to track if class needs serialization.
+    is_serializable = None
