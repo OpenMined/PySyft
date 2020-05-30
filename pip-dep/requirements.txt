@@ -9,8 +9,7 @@ Pillow~=6.2.2
 psutil==5.7.0
 requests~=2.22.0
 scipy~=1.4.1
-git+https://github.com/OpenMined/syft-proto.git@refs/pull/125/merge
-syft-proto~=0.4.6
+git+https://github.com/tudorcebere/syft-proto.git@arg_fix
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0
