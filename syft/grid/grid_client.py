@@ -16,6 +16,10 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
+CHUNK_SIZE = 8192
+SPEED_MULT_FACTOR = 10
+MAX_BUFFER_SIZE = 1048576  # 1 MB
+CHECK_SPEED_ITER = 10
 
 
 class GridError(BaseException):
@@ -84,12 +88,12 @@ class GridClient:
 
         response = res.content
         return response
-    
-    def _yield_chunk_from_request(self, request,chunk_size):
+
+    def _yield_chunk_from_request(self, request, chunk_size):
         for chunk in request.iter_content(chunk_size=chunk_size):
             yield chunk
-    
-    def _read_n_request_chunks(self, chunk_generator,n):
+
+    def _read_n_request_chunks(self, chunk_generator, n):
         for i in range(n):
             try:
                 next(chunk_generator)
@@ -103,13 +107,13 @@ class GridClient:
             "worker_id" : worker_id,
             "random" : random_id
         }
-        start = time() 
-        self._send_http_req("GET","/federated/speed-test",params)
-        ping = (time() - start)*1000 #milliseconds
+        start = time()
+        self._send_http_req("GET", "/federated/speed-test", params)
+        ping = (time() - start) * 1000  # milliseconds
         return ping
-    
+
     def _get_upload_speed(self, worker_id, random_id):
-        data_sample = b"x" * 67108864 #64 MB
+        data_sample = b"x" * MAX_BUFFER_SIZE * 64  # 64 MB
         params = {
             "worker_id" : worker_id,
             "random" : random_id
@@ -118,10 +122,10 @@ class GridClient:
             "upload_data" : data_sample
         }
         start = time()
-        self._send_http_req("POST","/federated/speed-test",params,body) 
-        upload_speed = 64*1024/(time()-start()) #speed in KBps
+        self._send_http_req("POST", "/federated/speed-test", params, body)
+        upload_speed = 64 * 1024 / (time() - start())  # speed in KBps
         return upload_speed
-    
+
     def _get_download_speed(self, worker_id, random_id):
         params = {
             "worker_id" : worker_id,
@@ -131,22 +135,22 @@ class GridClient:
         prev_timestamp = time()
         with requests.get(self.http_url + path, params, stream=True) as r:
             r.raise_for_status()
-            chunk_generator = self._yield_chunk_from_request(r,CHUNK_SIZE)
-            while self._read_n_request_chunks(chunk_generator, buffer_size//CHUNK_SIZE):
+            chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
+            while self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE):
                 time_taken = time() - prev_timestamp
                 if time_taken < 0.5:
-                    buffer_size = min(buffer_size*SPEED_MULT_FACTOR,MAX_BUFFER_SIZE)
+                    buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
                     continue
-                new_speed = buffer_size / (time_taken*1024)
+                new_speed = buffer_size / (time_taken * 1024)
                 speed_history.append(new_speed)
-                if len(speed_history) == SPEED_BUFFER_SIZE:
-                    avg = sum(speed_history)/len(speed_history)
+                if len(speed_history) % CHECK_SPEED_ITER == 0:
+                    avg = sum(speed_history) / len(speed_history)
                     deviation = avg - min(speed_history)
-                    if deviation < 20 && avg > 0:
+                    if (deviation < 20) and (avg > 0):
                         break
                 prev_timestamp = time()
-                
-        avg_speed = sum(speed_history)/len(speed_history)
+
+        avg_speed = sum(speed_history) / len(speed_history)
         return avg_speed
 
     def _serialize(self, obj):
