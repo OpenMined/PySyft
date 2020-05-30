@@ -6,7 +6,7 @@ import syft as sy
 import torch
 
 from syft.generic.abstract.object import AbstractObject
-from syft.generic.pointers.pointer_tensor import PointerTensor
+from syft.generic.abstract.pointer import AbstractPointer
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 
@@ -113,7 +113,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
 
             location = location[0]
 
-            if hasattr(self, "child") and isinstance(self.child, PointerTensor):
+            if hasattr(self, "child") and isinstance(self.child, AbstractPointer):
                 self.child.garbage_collect_data = False
                 if self._is_parameter():
                     self.data.child.garbage_collect_data = False
@@ -223,11 +223,11 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         garbage_collect_data: bool = True,
         shape=None,
         **kwargs,
-    ) -> PointerTensor:
+    ) -> AbstractPointer:
         """Creates a pointer to the "self" torch.Tensor object.
 
         Returns:
-            A PointerTensor pointer to self. Note that this
+            An AbstractPointer pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
         """
         if id_at_location is None:
@@ -242,7 +242,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         if shape is None:
             shape = self.shape
 
-        ptr = sy.PointerTensor.create_pointer(
+        ptr = AbstractPointer.create_pointer(
             self, location, id_at_location, owner, ptr_id, garbage_collect_data, shape
         )
 
@@ -256,7 +256,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         self.child.mid_get()
 
     def remote_get(self):
-        """Assuming .child is a PointerTensor, this method calls .get() on the tensor
+        """Assuming .child is an AbstractPointer, this method calls .get() on the tensor
         that the .child is pointing to (which should also be a PointerTensor)
 
         TODO: make this kind of message forwarding generic?
@@ -279,7 +279,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         """
 
         # If it is a local tensor/chain, we don't need to verify permissions
-        if not isinstance(self.child, sy.PointerTensor):
+        if not isinstance(self.child, AbstractPointer):
             tensor = self.child.get(*args, **kwargs)
         else:  # Remote tensor/chain
             tensor = self.child.get(*args, user=user, reason=reason, **kwargs)
@@ -366,7 +366,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         # We get the owner from self.child because the owner of a wrapper is
         # not reliable and sometimes end up being the sy.local_worker
         self.child.owner.register_obj(self)
-        if isinstance(new_ptr, PointerTensor):
+        if isinstance(new_ptr, AbstractPointer):
             return new_ptr.wrap()
         else:
             return new_ptr

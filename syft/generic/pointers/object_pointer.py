@@ -12,6 +12,7 @@ from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.abstract.sendable import AbstractSendable
+from syft.generic.abstract.pointer import AbstractPointer
 from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from syft.workers.base import BaseWorker
 
 
-class ObjectPointer(AbstractSendable, SyftSerializable):
+class ObjectPointer(AbstractPointer, AbstractSendable, SyftSerializable):
     """A pointer to a remote object.
 
     An ObjectPointer forwards all API calls to the remote. ObjectPointer objects
