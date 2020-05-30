@@ -133,8 +133,9 @@ class GridClient:
         }
         speed_history = []
         prev_timestamp = time()
-        with requests.get(self.http_url + path, params, stream=True) as r:
+        with requests.get(self.http_url + "/federated/speed-test", params, stream=True) as r:
             r.raise_for_status()
+            buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
             while self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE):
                 time_taken = time() - prev_timestamp
@@ -260,8 +261,8 @@ class GridClient:
         return self._send_msg(params)
 
     def get_connection_speed(self, worker_id):
-        random = random.getrandbits(128)
-        ping = self._get_ping(worker_id, random)
-        upload_speed = self._get_upload_speed(worker_id, random)
-        download_speed = self._get_download_speed(worker_id, random)
+        random_num = random.getrandbits(128)
+        ping = self._get_ping(worker_id, random_num)
+        upload_speed = self._get_upload_speed(worker_id, random_num)
+        download_speed = self._get_download_speed(worker_id, random_num)
         return {"ping": ping, "download": download_speed, "upload": upload_speed}
