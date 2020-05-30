@@ -779,7 +779,7 @@ class SearchMessage(Message):
             This method deserializes SearchMessagePB into SearchMessage.
 
             Args:
-                protobuf_msg (SearchMessagePB): input serialized SearchMessagePB.
+                proto_msg (SearchMessagePB): input serialized SearchMessagePB.
 
             Returns:
                 SearchMessage: deserialized SearchMessagePB.
