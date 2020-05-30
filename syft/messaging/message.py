@@ -25,7 +25,8 @@ from syft_proto.messaging.v1.message_pb2 import (
 )
 from syft_proto.messaging.v1.message_pb2 import GetShapeMessage as GetShapeMessagePB
 from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
-from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
+# TODO: uncomment this when solving the WorkerCommandMessage issue.
+# from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
 from syft_proto.messaging.v1.message_pb2 import SearchMessage as SearchMessagePB
 from syft_proto.messaging.v1.message_pb2 import ObjectRequestMessage as ObjectRequestMessagePB
 from syft_proto.messaging.v1.message_pb2 import PlanCommandMessage as PlanCommandMessagePB
@@ -680,7 +681,7 @@ class ForceObjectDeleteMessage(Message):
             This method deserializes ForceObjectDeleteMessagePB into ForceObjectDeleteMessage.
 
             Args:
-                protobuf_msg (ForceObjectDeleteMessagePB): input serialized ForceObjectDeleteMessagePB.
+                proto_msg (ForceObjectDeleteMessagePB): input serialized ForceObjectDeleteMessagePB.
 
             Returns:
                 ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
