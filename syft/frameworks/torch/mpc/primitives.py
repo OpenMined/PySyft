@@ -103,7 +103,7 @@ class PrimitiveStorage:
                     )
         else:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-            #print('check enoought prim?', available_instances, 'neeeded', n_instances)
+            # print('check enoought prim?', available_instances, 'neeeded', n_instances)
             if available_instances >= n_instances:
                 keys = []
                 # We iterate on the different elements that constitute a given primitive, for
@@ -165,7 +165,7 @@ class PrimitiveStorage:
             n_instances_batch = min(500_000, n_instances)
             if n_instances_batch > 10_000:
                 #     n_instances_batch = 500_000
-                n_instances_batch = math.ceil(n_instances_batch/100_000)*100_000
+                n_instances_batch = math.ceil(n_instances_batch / 100_000) * 100_000
             # print('| n_instances_batch', n_instances_batch)
             worker_types_primitives = defaultdict(dict)
 

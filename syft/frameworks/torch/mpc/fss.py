@@ -40,6 +40,7 @@ COMP = 1
 
 # number of processes
 N_CORES = 8
+MULTI_LIMIT = 10_000
 
 
 def fss_op(x1, x2, type_op="eq"):
