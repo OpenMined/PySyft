@@ -20,7 +20,9 @@ from syft.execution.communication import CommunicationAction
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
-from syft_proto.messaging.v1.message_pb2 import ForceObjectDeleteMessage as ForceObjectDeleteMessagePB
+from syft_proto.messaging.v1.message_pb2 import (
+    ForceObjectDeleteMessage as ForceObjectDeleteMessagePB,
+)
 from syft_proto.messaging.v1.message_pb2 import GetShapeMessage as GetShapeMessagePB
 from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
 from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
@@ -28,6 +30,7 @@ from syft_proto.messaging.v1.message_pb2 import SearchMessage as SearchMessagePB
 from syft_proto.messaging.v1.message_pb2 import ObjectRequestMessage as ObjectRequestMessagePB
 from syft_proto.messaging.v1.message_pb2 import PlanCommandMessage as PlanCommandMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
+
 
 class Message(ABC, SyftSerializable):
     """All syft message types extend this class
@@ -404,10 +407,8 @@ class ObjectRequestMessage(Message):
             Returns:
                ObjectRequestMessage: deserialized ObjectRequestMessagePB.
         """
-        obj_id = sy.serde.protobuf.proto.get_protobuf_id(
-            proto_msg.object_id
-        )
-        #add worker support when it will be available
+        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
+        # add worker support when it will be available
         return ObjectRequestMessage(obj_id=obj_id, user=None, reason=proto_msg.reason)
 
     @staticmethod
@@ -419,6 +420,7 @@ class ObjectRequestMessage(Message):
                 Protobuf schema for ObjectRequestMessage.
         """
         return ObjectRequestMessagePB
+
 
 class IsNoneMessage(Message):
     """Check if a worker does not have an object with a specific id.
@@ -497,9 +499,7 @@ class IsNoneMessage(Message):
             Returns:
                 IsNoneMessage: deserialized IsNoneMessagePB.
         """
-        obj_id = sy.serde.protobuf.proto.get_protobuf_id(
-            proto_msg.object_id
-        )
+        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         return IsNoneMessage(obj_id=obj_id)
 
     @staticmethod
@@ -511,6 +511,7 @@ class IsNoneMessage(Message):
                 Protobuf schema for ObjectRequestMessage.
         """
         return IsNoneMessagePB
+
 
 class GetShapeMessage(Message):
     """Get the shape property of a tensor in PyTorch
@@ -605,6 +606,7 @@ class GetShapeMessage(Message):
         """
         return GetShapeMessagePB
 
+
 class ForceObjectDeleteMessage(Message):
     """Garbage collect a remote object
 
@@ -695,6 +697,7 @@ class ForceObjectDeleteMessage(Message):
                 Protobuf schema for ForceObjectDeleteMessage.
         """
         return ForceObjectDeleteMessagePB
+
 
 class SearchMessage(Message):
     """A client queries for a subset of the tensors on a remote worker using this type
@@ -895,6 +898,7 @@ class PlanCommandMessage(Message):
                 Protobuf schema for PlanCommandMessage.
         """
         return PlanCommandMessagePB
+
 
 class WorkerCommandMessage(Message):
     """Message used to execute a function of the remote worker."""

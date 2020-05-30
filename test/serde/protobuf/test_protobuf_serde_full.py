@@ -50,8 +50,9 @@ samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdelet
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 
-#TODO: this should be fixed in a future PR.
-#samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
+# TODO: this should be fixed in a future PR.
+# samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
+
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
