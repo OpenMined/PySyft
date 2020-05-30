@@ -25,6 +25,7 @@ from syft_proto.messaging.v1.message_pb2 import (
 )
 from syft_proto.messaging.v1.message_pb2 import GetShapeMessage as GetShapeMessagePB
 from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
+
 # TODO: uncomment this when solving the WorkerCommandMessage issue.
 # from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
 from syft_proto.messaging.v1.message_pb2 import SearchMessage as SearchMessagePB
