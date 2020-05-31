@@ -1,7 +1,8 @@
 import syft as sy
 
-from syft.serde.syft_serializable import SyftSerializable
 from syft.generic.abstract.object import AbstractObject
+from syft.serde.syft_serializable import SyftSerializable
+from syft.workers.abstract import AbstractWorker
 
 
 class AbstractSendable(AbstractObject, SyftSerializable):
@@ -28,6 +29,34 @@ class AbstractSendable(AbstractObject, SyftSerializable):
     def ser(self, *args, **kwargs):
         return self.serialize(*args, **kwargs)
 
+    def create_pointer(
+        self,
+        location: AbstractWorker = None,
+        id_at_location: (str or int) = None,
+        owner: AbstractWorker = None,
+        ptr_id: (str or int) = None,
+        garbage_collect_data: bool = True,
+        shape=None,
+        **kwargs,
+    ):
+        pass
+
+    def send(
+        self,
+        *location,
+        inplace: bool = False,
+        user: object = None,
+        local_autograd: bool = False,
+        requires_grad: bool = False,
+        preinitialize_grad: bool = False,
+        no_wrap: bool = False,
+        garbage_collect_data: bool = True,
+    ):
+        pass
+
+    def send_(self, *location, **kwargs):
+        pass
+
     def get(self):
         """Just a pass through. This is most commonly used when calling .get() on a
         Syft tensor which has a child which is a pointer, an additive shared tensor,
@@ -41,10 +70,27 @@ class AbstractSendable(AbstractObject, SyftSerializable):
             id=self.id,
         ).on(self.child.get())
 
+    def get_(self, *args, **kwargs):
+        pass
+
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
-
         child_id = self.id
         tensor = self.get()
         tensor.id = child_id
         self.owner.register_obj(tensor)
+
+    def remote_get(self):
+        pass
+
+    def allow(self, user=None) -> bool:
+        pass
+
+    def move(self, location: AbstractWorker):
+        pass
+
+    def move_(self, location: AbstractWorker):
+        pass
+
+    def remote_send(self, location):
+        pass
