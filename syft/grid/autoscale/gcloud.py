@@ -58,9 +58,7 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-    def create_cluster(
-        self, name, machine_type, zone, image_family, target_size, apply=True
-    ):
+    def create_cluster(self, name, machine_type, zone, image_family, target_size, apply=True):
         """
         args:
             name: name of the compute instance
@@ -70,9 +68,7 @@ class GoogleCloud:
             target_size: number of wokers to be created(N workers + 1 master)
         """
         if target_size < 3:
-            raise ValueError(
-                "The target-size should be equal to or greater than three."
-            )
+            raise ValueError("The target-size should be equal to or greater than three.")
 
         self.compute_instance(name, machine_type, zone, image_family, False)
 
