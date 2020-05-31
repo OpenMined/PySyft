@@ -70,7 +70,7 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
-    def plan_func(crypten=crypten):
+    def plan_func(crypten=crypten):  # pragma: no cover
         alice_tensor = crypten.load("crypten_data", 0)
         bob_tensor = crypten.load("crypten_data", 1)
 
@@ -109,7 +109,7 @@ def test_context_jail(workers):
     bob.add_crypten_support()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
-    def jail_func(crypten=crypten):
+    def jail_func(crypten=crypten):  # pragma: no cover
         alice_tensor = crypten.load("crypten_data", 0)
         bob_tensor = crypten.load("crypten_data", 1)
 
@@ -149,7 +149,7 @@ def test_context_jail_with_model(workers):
     @run_multiworkers(
         [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
     )
-    def run_encrypted_eval():
+    def run_encrypted_eval():  # pragma: no cover
         rank = crypten.communicator.get().get_rank()
         t = crypten.load("crypten_data", 0)
 
@@ -177,7 +177,7 @@ def test_context_jail_with_model_failures(workers):
     bob.add_crypten_support()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=pytorch_model)
-    def run_encrypted_eval():
+    def run_encrypted_eval():  # pragma: no cover
         rank = crypten.communicator.get().get_rank()
         t = crypten.load("crypten_data", 0)
 
@@ -191,7 +191,7 @@ def test_context_jail_with_model_failures(workers):
         result = run_encrypted_eval()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=5)
-    def run_encrypted_eval():
+    def run_encrypted_eval():  # pragma: no cover
         rank = crypten.communicator.get().get_rank()
         t = crypten.load("crypten_data", 0)
 
@@ -205,7 +205,7 @@ def test_context_jail_with_model_failures(workers):
         result = run_encrypted_eval()
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=73)
-    def run_encrypted_eval():
+    def run_encrypted_eval():  # pragma: no cover
         rank = crypten.communicator.get().get_rank()
         t = crypten.load("crypten_data", 0)
 
@@ -222,7 +222,7 @@ def test_context_jail_with_model_failures(workers):
 def test_run_party():
     expected = th.tensor(5)
 
-    def party():
+    def party():  # pragma: no cover
         t = crypten.cryptensor(expected)
         return t.get_plain_text()
 

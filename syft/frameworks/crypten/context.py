@@ -13,7 +13,9 @@ from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_bu
 from crypten.communicator import DistributedCommunicator
 
 
-def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs):
+def _launch(
+    func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
+):  # pragma: no cover
     communicator_args = {
         "RANK": rank,
         "WORLD_SIZE": world_size,
@@ -72,7 +74,7 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     return res
 
 
-def _send_party_info(worker, rank, msg, return_values, model=None):
+def _send_party_info(worker, rank, msg, return_values, model=None):  # pragma: no cover
     """Send message to worker with necessary information to run a crypten party.
     Add response to return_values dictionary.
 
