@@ -123,28 +123,6 @@ def run_multiworkers(
             manager = multiprocessing.Manager()
             return_values = manager.dict({rank: None for rank in range(world_size)})
 
-            if isinstance(func, sy.Plan):
-                using_plan = True
-                plan = func
-
-                # This is needed because at building we use a set of methods defined in syft (ex: load)
-                hook_plan_building()
-                crypten.init()
-                plan.build()
-                crypten.uninit()
-                unhook_plan_building()
-
-                # Mark the plan so the other workers will use that tag to retrieve the plan
-                plan.tags = ["crypten_plan"]
-
-                for worker in workers:
-                    plan.send(worker)
-
-            else:  # func
-                using_plan = False
-                jail_runner = jail.JailRunner(func=func)
-                ser_jail_runner = jail.JailRunner.simplify(jail_runner)
-
             rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
 
             sy.local_worker.add_crypten_support()
@@ -163,18 +141,38 @@ def run_multiworkers(
             #     )
             #     ttp_process.start()
 
+            if isinstance(func, sy.Plan):
+                plan = func
+
+                # This is needed because at building we use a set of methods defined in syft (ex: load)
+                hook_plan_building()
+                crypten.init()
+                plan.build()
+                crypten.uninit()
+                unhook_plan_building()
+
+                # Mark the plan so the other workers will use that tag to retrieve the plan
+                plan.tags = ["crypten_plan"]
+
+                for worker in workers:
+                    plan.send(worker)
+
+                msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
+
+            else:  # func
+                jail_runner = jail.JailRunner(func=func)
+                ser_jail_runner = jail.JailRunner.simplify(jail_runner)
+
+                msg = CryptenInitJail(
+                    (rank_to_worker_id, world_size, master_addr, master_port),
+                    ser_jail_runner,
+                    onnx_model,
+                )
+
             # Send messages to other workers so they start their parties
             threads = []
             for i in range(len(workers)):
                 rank = i
-                if using_plan:
-                    msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
-                else:  # jail
-                    msg = CryptenInitJail(
-                        (rank_to_worker_id, world_size, master_addr, master_port),
-                        ser_jail_runner,
-                        onnx_model,
-                    )
                 thread = multiprocessing.Process(
                     target=_send_party_info,
                     args=(workers[i], rank, msg, return_values, crypten_model),
