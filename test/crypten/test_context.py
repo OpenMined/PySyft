@@ -7,8 +7,9 @@ import torch.nn.functional as F
 
 import syft as sy
 
-from syft.frameworks.crypten.context import run_multiworkers
+from syft.frameworks.crypten.context import run_multiworkers, run_party
 from syft.frameworks.crypten.worker_support import methods_to_add
+from syft.frameworks.crypten import utils
 
 
 th.set_num_threads(1)
@@ -161,3 +162,15 @@ def test_context_jail_with_model(workers):
     result = run_encrypted_eval()
     # compare out
     assert th.all(result[0][1] == result[1][1])
+
+
+def test_run_party():
+    expected = th.tensor(5)
+
+    def party():
+        t = crypten.cryptensor(expected)
+        return t.get_plain_text()
+
+    t = run_party(party, 0, 1, "127.0.0.1", 15463, (), {})
+    result = utils.unpack_values(t)
+    assert result == expected
