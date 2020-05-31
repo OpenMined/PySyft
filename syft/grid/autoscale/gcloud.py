@@ -44,9 +44,9 @@ class GoogleCloud:
         self.config += terrascript.resource.google_compute_instance(
             name,
             name=name,
-            machine_type=machine_type,
-            zone=zone,
-            boot_disk={"initialize_params": {"image": image_family}},
+            machine_type=machine_type.value,
+            zone=zone.value,
+            boot_disk={"initialize_params": {"image": image_family.value}},
             network_interface={"network": "default", "access_config": {}},
         )
         with open("main.tf.json", "w") as main_config:
@@ -58,7 +58,9 @@ class GoogleCloud:
             else:
                 terraform_script.apply()
 
-    def create_cluster(self, name, machine_type, zone, image_family, target_size, apply=True):
+    def create_cluster(
+        self, name, machine_type, zone, image_family, target_size, apply=True
+    ):
         """
         args:
             name: name of the compute instance
@@ -68,15 +70,17 @@ class GoogleCloud:
             target_size: number of wokers to be created(N workers + 1 master)
         """
         if target_size < 3:
-            raise ValueError("The target-size should be equal to or greater than three.")
+            raise ValueError(
+                "The target-size should be equal to or greater than three."
+            )
 
         self.compute_instance(name, machine_type, zone, image_family, False)
 
         instance_template = terrascript.resource.google_compute_instance_template(
             "worker-template",
             name=name + "-worker-template",
-            machine_type=machine_type,
-            disk={"source_image": image_family},
+            machine_type=machine_type.value,
+            disk={"source_image": image_family.value},
             network_interface={"network": "default", "access_config": {}},
             lifecycle={"create_before_destroy": True},
         )
@@ -87,7 +91,7 @@ class GoogleCloud:
             name=name,
             version={"instance_template": "${" + instance_template.self_link + "}"},
             base_instance_name=name,
-            zone=zone,
+            zone=zone.value,
             target_size=str(target_size),
         )
         with open("main.tf.json", "w") as main_config:
