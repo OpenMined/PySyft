@@ -554,17 +554,6 @@ class TorchTensor(AbstractTensor):
 
         return output
 
-    def send_(self, *location, **kwargs):
-        """
-        Calls send() with inplace option, but only with a single location
-        :param location: workers locations
-        :return:
-        """
-        if len(location) > 1:
-            raise NotImplementedError("Inplace send to several workers is currently not supported.")
-
-        return self.send(*location, inplace=True, **kwargs)
-
     def create_pointer(
         self,
         location: BaseWorker = None,
@@ -664,41 +653,6 @@ class TorchTensor(AbstractTensor):
         else:
             return tensor
 
-    def get_(self, *args, **kwargs):
-        """
-        Calls get() with inplace option set to True
-        """
-        return self.get(*args, inplace=True, **kwargs)
-
-    def allow(self, user=None) -> bool:
-        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
-        return the result of PrivateTensor's allow method.
-
-            Args:
-                user (object,optional): User credentials to be verified.
-
-            Returns:
-                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns
-                false.
-        """
-        # If it is a wrapper
-        if self.is_wrapper:
-            current_tensor = self.child
-
-            # Verify permissions for each element on the tensor chain.
-            while hasattr(current_tensor, "child"):
-
-                # If it has a list of allowed users, verify permissions,
-                # otherwise (public tensors) go to the next.
-                if hasattr(current_tensor, "allowed_users"):
-                    allow = current_tensor.allow(user)
-                    if not allow:
-                        return False
-
-                # Go to next element on the tensor chain
-                current_tensor = current_tensor.child
-        return True
-
     def move(self, location: BaseWorker, requires_grad: bool = False):
         """
         Move acts on a pointer to A to move the remote value to B (=location).
@@ -721,17 +675,6 @@ class TorchTensor(AbstractTensor):
             return new_ptr.wrap()
         else:
             return new_ptr
-
-    def move_(self, location: BaseWorker, requires_grad: bool = False):
-        """
-        Inplace version of move
-        """
-        new_ptr = self.move(location, requires_grad)
-        self.child = new_ptr
-        return self
-
-    def remote_send(self, location):
-        return self.child.remote_send(location).wrap()
 
     def attr(self, attr_name):
         """"""

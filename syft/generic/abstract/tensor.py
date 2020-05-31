@@ -3,8 +3,9 @@ import weakref
 
 import syft as sy
 from syft.generic.abstract.object import _apply_args  # noqa: F401
-from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.abstract.object import initialize_object
+from syft.generic.abstract.sendable import AbstractSendable
+from syft.workers.abstract import AbstractWorker
 from syft.serde.syft_serializable import SyftSerializable
 
 
@@ -125,6 +126,63 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
             return None
         else:
             return child_grad.wrap()
+
+    def send_(self, *location, **kwargs):
+        """
+        Calls send() with inplace option, but only with a single location
+        :param location: workers locations
+        :return:
+        """
+        if len(location) > 1:
+            raise NotImplementedError("Inplace send to several workers is currently not supported.")
+
+        return self.send(*location, inplace=True, **kwargs)
+
+    def get_(self, *args, **kwargs):
+        """
+        Calls get() with inplace option set to True
+        """
+        return self.get(*args, inplace=True, **kwargs)
+
+    def allow(self, user=None) -> bool:
+        """ This function returns will return True if it isn't a PrivateTensor, otherwise it will
+        return the result of PrivateTensor's allow method.
+
+            Args:
+                user (object,optional): User credentials to be verified.
+
+            Returns:
+                boolean: If it is a public tensor/ allowed user, returns true, otherwise it returns
+                false.
+        """
+        # If it is a wrapper
+        if self.is_wrapper:
+            current_tensor = self.child
+
+            # Verify permissions for each element on the tensor chain.
+            while hasattr(current_tensor, "child"):
+
+                # If it has a list of allowed users, verify permissions,
+                # otherwise (public tensors) go to the next.
+                if hasattr(current_tensor, "allowed_users"):
+                    allow = current_tensor.allow(user)
+                    if not allow:
+                        return False
+
+                # Go to next element on the tensor chain
+                current_tensor = current_tensor.child
+        return True
+
+    def move_(self, location: AbstractWorker, requires_grad: bool = False):
+        """
+        Inplace version of move
+        """
+        new_ptr = self.move(location, requires_grad)
+        self.child = new_ptr
+        return self
+
+    def remote_send(self, location):
+        return self.child.remote_send(location).wrap()
 
 
 def initialize_tensor(hook, obj, owner=None, id=None, init_args=(), init_kwargs={}):

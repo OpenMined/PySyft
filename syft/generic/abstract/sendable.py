@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 import syft as sy
 
 from syft.generic.abstract.object import AbstractObject
@@ -54,6 +56,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
     ):
         pass
 
+    @abstractmethod
     def send_(self, *location, **kwargs):
         pass
 
@@ -70,6 +73,7 @@ class AbstractSendable(AbstractObject, SyftSerializable):
             id=self.id,
         ).on(self.child.get())
 
+    @abstractmethod
     def get_(self, *args, **kwargs):
         pass
 
@@ -83,14 +87,17 @@ class AbstractSendable(AbstractObject, SyftSerializable):
     def remote_get(self):
         pass
 
+    @abstractmethod
     def allow(self, user=None) -> bool:
         pass
 
     def move(self, location: AbstractWorker):
         pass
 
+    @abstractmethod
     def move_(self, location: AbstractWorker):
         pass
 
-    def remote_send(self, location):
+    @abstractmethod
+    def remote_send(self, location: AbstractWorker):
         pass
