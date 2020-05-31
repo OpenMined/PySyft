@@ -150,19 +150,18 @@ def run_multiworkers(
             sy.local_worker.add_crypten_support()
             sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
 
-            # Run TTP if required
             # TODO: run ttp in a specified worker
-            if crypten.mpc.ttp_required():
-                ttp_process, _ = _new_party(
-                    crypten.mpc.provider.TTPServer,
-                    world_size,
-                    world_size,
-                    master_addr,
-                    master_port,
-                    (),
-                    {},
-                )
-                ttp_process.start()
+            # if crypten.mpc.ttp_required():
+            #     ttp_process, _ = _new_party(
+            #         crypten.mpc.provider.TTPServer,
+            #         world_size,
+            #         world_size,
+            #         master_addr,
+            #         master_port,
+            #         (),
+            #         {},
+            #     )
+            #     ttp_process.start()
 
             # Send messages to other workers so they start their parties
             threads = []
