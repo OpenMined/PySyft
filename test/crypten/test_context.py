@@ -164,6 +164,61 @@ def test_context_jail_with_model(workers):
     assert th.all(result[0][1] == result[1][1])
 
 
+def test_context_jail_with_model_failures(workers):
+    dummy_input = th.empty(1, 1, 28, 28)
+    pytorch_model = ExampleNet()
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    alice_tensor_ptr = th.tensor(dummy_input).tag("crypten_data").send(alice)
+
+    alice.add_crypten_support()
+    bob.add_crypten_support()
+
+    @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=pytorch_model)
+    def run_encrypted_eval():
+        rank = crypten.communicator.get().get_rank()
+        t = crypten.load("crypten_data", 0)
+
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
+
+    with pytest.raises(ValueError):
+        result = run_encrypted_eval()
+
+    @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=5)
+    def run_encrypted_eval():
+        rank = crypten.communicator.get().get_rank()
+        t = crypten.load("crypten_data", 0)
+
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
+
+    with pytest.raises(TypeError):
+        result = run_encrypted_eval()
+
+    @run_multiworkers([alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=73)
+    def run_encrypted_eval():
+        rank = crypten.communicator.get().get_rank()
+        t = crypten.load("crypten_data", 0)
+
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
+
+    with pytest.raises(TypeError):
+        result = run_encrypted_eval()
+
+
 def test_run_party():
     expected = th.tensor(5)
 
