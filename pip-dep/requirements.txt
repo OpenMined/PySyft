@@ -1,9 +1,10 @@
 aiortc==0.9.28
 flask_socketio~=4.2.1
 Flask~=1.1.1
-git+git://github.com/Jasopaum/syft-proto@feature/instantiate-ph-on-recv#egg=syft-proto
+git+git://github.com/Jasopaum/syft-proto@feature/instantiate-ph-on-recv
 lz4~=3.0.2
 msgpack~=1.0.0
+notebook==5.7.8
 numpy~=1.18.1
 phe~=1.4.0
 Pillow~=6.2.2
@@ -17,4 +18,3 @@ torch~=1.4.0
 tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
-notebook==5.7.8
