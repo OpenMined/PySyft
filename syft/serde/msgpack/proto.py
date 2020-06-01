@@ -74,5 +74,6 @@ def proto_type_info(cls):
         return TypeInfo(name=type_name, obj=cls.get_msgpack_code())
     else:
         raise UndefinedProtocolTypeError(
-            f"{type_name} is not defined in the protocol file and it does not provide a code by implementing 'get_msgpack_code'."
+            f"{type_name} is not defined in the protocol file and it does not provide a code by"
+            f" implementing 'get_msgpack_code'."
         )
