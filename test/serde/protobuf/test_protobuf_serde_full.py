@@ -28,6 +28,10 @@ samples[
     syft.frameworks.torch.tensors.interpreters.additive_shared.AdditiveSharingTensor
 ] = make_additivesharingtensor
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
+
+samples[
+    syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
+] = make_fixedprecisiontensor
 samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.communication.CommunicationAction] = make_communication_action
