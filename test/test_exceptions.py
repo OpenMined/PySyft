@@ -45,9 +45,10 @@ def test_crypto_provider_not_found_exception(workers):
 
     bob = workers["bob"]
     alice = workers["alice"]
+    james = workers["james"]
 
-    x = th.tensor([1, 2, 3, 4, 5]).send(bob)
-    y = th.tensor([1, 2, 3, 4, 5]).send(alice)
+    x = th.tensor([1, 2, 3]).share(alice, bob)
+    y = th.tensor([1, 2]).share(bob, james)
 
     with pytest.raises(sy.exceptions.CryptoProviderNotFoundError):
         b = x * y
