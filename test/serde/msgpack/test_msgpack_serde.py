@@ -16,9 +16,27 @@ from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.serde import compression
 from syft.serde import msgpack
 from syft.serde import serde
+from syft.serde.syft_serializable import SyftSerializable
 from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
+
+
+class Experiment1(SyftSerializable):
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def simplify(worker, obj):
+        return obj.value
+
+    @staticmethod
+    def detail(worker, obj):
+        return Experiment1(obj)
+
+    @staticmethod
+    def get_msgpack_code():
+        return {"code": 12345}
 
 
 def test_tuple_simplify(workers):
@@ -864,3 +882,19 @@ def test_no_simplifier_found(workers):
     assert type(x) not in msgpack.serde.msgpack_global_state._no_simplifiers_found
     _ = msgpack.serde._simplify(me, x)
     assert type(x) in msgpack.serde.msgpack_global_state._no_simplifiers_found
+
+
+def test_external_lib_msgpack():
+    example1 = Experiment1("test")
+    ser1 = syft.serde.serialize(example1)
+    result1 = syft.serde.deserialize(ser1)
+    assert example1.value == result1.value
+
+    delattr(Experiment1, "get_msgpack_code")
+    syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
+    with pytest.raises(Exception) as e:
+        example2 = Experiment1("test")
+        _ = syft.serde.serialize(example2)
+
+    assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError) == 1
+    setattr(example1, "get_msgpack_code", lambda: {"code": 12345})

@@ -70,7 +70,9 @@ def proto_type_info(cls):
 
     if type_name in proto_info["TYPES"]:
         return TypeInfo(name=type_name, obj=proto_info["TYPES"][type_name])
-    elif hasattr(cls, "get_msgpack_code"):
+    elif cls.get_msgpack_code.__qualname__.startswith(cls.__name__):
         return TypeInfo(name=type_name, obj=cls.get_msgpack_code())
     else:
-        raise UndefinedProtocolTypeError(f"{type_name} is not defined in the protocol file")
+        raise UndefinedProtocolTypeError(
+            f"{type_name} is not defined in the protocol file and it does not provide a code by implementing 'get_msgpack_code'."
+        )
