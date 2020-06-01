@@ -56,7 +56,7 @@ class SumBackward(GradFunc):
 
 
 class MeanBackward(GradFunc):
-    def __init__(self, self_):
+    def __init__(self, self_, dim=None):
         super().__init__(self, self_)
         self.self_ = self_
 
@@ -64,7 +64,6 @@ class MeanBackward(GradFunc):
         if grad.shape != self.self_.shape:
             grad = grad.reshape(-1, 1)
         numel = self.self_.numel()
-        print(numel)
         return ((self.self_ * 0 + 1) * grad / numel,)
 
 

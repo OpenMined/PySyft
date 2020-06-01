@@ -307,6 +307,7 @@ def test_backward_for_linear_model_on_fix_prec_params_with_autograd():
     assert (model.weight.grad == weight_grad).all()
     assert (model.bias.grad == bias_grad).all()
 
+
 def test_hinge_loss(workers):
     """
     TBD
@@ -324,7 +325,7 @@ def test_hinge_loss(workers):
 
     batch_size = 2
     a = (
-        torch.tensor([[3.0, 2, -1, 2],[3.0, 2, -1, 2]], requires_grad=True)
+        torch.tensor([[3.0, 2, -1, 2], [3.0, 2, -1, 2]], requires_grad=True)
         .fix_prec()
         .share(*args, **kwargs)
     )
@@ -334,9 +335,8 @@ def test_hinge_loss(workers):
         .share(*args, **kwargs)
     )
 
-    a_torch = torch.tensor([[3.0, 2, -1, 2],[3.0, 2, -1, 2]], requires_grad=True)
+    a_torch = torch.tensor([[3.0, 2, -1, 2], [3.0, 2, -1, 2]], requires_grad=True)
     b_torch = torch.tensor([[1.0, 2, 3, 2], [1.0, 2, 3, 2]], requires_grad=True)
-
 
     class_score = (a * b).sum(axis=1).reshape(-1, 1)
     loss = (F.relu(a - class_score + 1).sum(axis=1) - 1).sum() / batch_size
