@@ -86,10 +86,7 @@ class PrimitiveStorage:
                     #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
                     #     "]}"
                     # )
-                    # print(
-                    #     f"\t\t\t "
-                    #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),'
-                    # )
+                    print(f"\t\t\t " f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),')
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op],
                         sy.local_worker.clients,
@@ -128,12 +125,12 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    # print(
-                    #     f"Autogenerate: "
-                    #     f'["{type_op}"], '
-                    #     f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                    #     f"n_instances={n_instances}"
-                    # )
+                    print(
+                        f"Autogenerate: "
+                        f'["{type_op}"], '
+                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        f"n_instances={n_instances}"
+                    )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op], sy.local_worker.clients, n_instances=n_instances
                     )
@@ -166,7 +163,7 @@ class PrimitiveStorage:
             if n_instances_batch > 10_000:
                 #     n_instances_batch = 500_000
                 n_instances_batch = math.ceil(n_instances_batch / 100_000) * 100_000
-            # print('| n_instances_batch', n_instances_batch)
+                # print('| n_instances_batch', n_instances_batch)
             worker_types_primitives = defaultdict(dict)
 
             path = "/Users/tryffel/code/PySyft/data/primitives"
