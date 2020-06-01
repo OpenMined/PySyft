@@ -359,25 +359,6 @@ def test_torch_Tensor(compress):
 
 
 @pytest.mark.parametrize("compress", [True, False])
-def test_torch_Tensor_convenience(compress):
-    """This test evaluates torch.Tensor.serialize()
-
-    As opposed to using syft.serde.serialize(), torch objects
-    have a convenience function which lets you call .serialize()
-    directly on the tensor itself. This tests to makes sure it
-    works correctly."""
-    if compress:
-        compression._apply_compress_scheme = compression.apply_lz4_compression
-    else:
-        compression._apply_compress_scheme = compression.apply_no_compression
-
-    t = Tensor(numpy.random.random((100, 100)))
-    t_serialized = t.serialize()
-    t_serialized_deserialized = syft.serde.deserialize(t_serialized)
-    assert (t == t_serialized_deserialized).all()
-
-
-@pytest.mark.parametrize("compress", [True, False])
 def test_tuple(compress):
     # Test with a simple datatype
     if compress:
