@@ -9,6 +9,9 @@ class AbstractSendable(AbstractObject, SyftSerializable):
     This layers functionality for sending objects between workers on top of AbstractObject.
     """
 
+    def send(self, destination):
+        return self.owner.send_obj(self, destination)
+
     def serialize(self):  # check serde.py to see how to provide compression schemes
         """Serializes the tensor on which it's called.
 
