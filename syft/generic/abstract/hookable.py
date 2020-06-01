@@ -8,7 +8,7 @@ def chain_call(obj, method_name, *args, **kwargs):
         method = getattr(current, method_name, None)
         if method:
             results.append(method(*args, **kwargs))
-        current = current.child
+        current = getattr(current, "child", None)
     return results
 
 

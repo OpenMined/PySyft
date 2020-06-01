@@ -11,13 +11,13 @@ from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.abstract.hookable import hookable
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
-from syft.exceptions import SendNotPermittedError
 
 
 def _get_maximum_precision():
@@ -413,6 +413,7 @@ class TorchTensor(AbstractTensor):
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
 
+    @hookable
     def send(
         self,
         *location,
@@ -452,9 +453,6 @@ class TorchTensor(AbstractTensor):
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
-
-        if not self.allow(user=user):
-            raise SendNotPermittedError()
 
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
