@@ -3,12 +3,18 @@ from typing import Callable
 import torch as th
 
 import syft as sy
+import asyncio
+from syft.workers.websocket_client import WebsocketClientWorker
 from syft.frameworks.torch.mpc.beaver import request_triple
 from syft.workers.abstract import AbstractWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
 no_wrap = {"no_wrap": True}
+
+
+def full_name(f):
+    return f"syft.frameworks.torch.mpc.spdz.{f.__name__}"
 
 
 # share level
@@ -58,6 +64,7 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     # TODO field
     type_op = cmd
     locations = x.locations
+    asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
     shares_delta, shares_epsilon = [], []
     for location in locations:
@@ -71,11 +78,36 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
 
-    shares = []
-    for i, location in enumerate(locations):
-        args = (th.LongTensor([i]), delta, epsilon, type_op)
-        share = remote(spdz_compute, location=location)(*args, return_value=False)
-        shares.append(share)
+    for location, share_delta, share_epsilon in zip(locations, shares_delta, shares_epsilon):
+        location.de_register_obj(share_delta)
+        location.de_register_obj(share_epsilon)
+        del share_delta
+        del share_epsilon
+
+    if not asynchronous or True:
+        # print('sync spdz')
+        shares = []
+        for i, location in enumerate(locations):
+            args = (th.LongTensor([i]), delta, epsilon, type_op)
+            share = remote(spdz_compute, location=location)(*args, return_value=False)
+            shares.append(share)
+    else:
+        print("async spdz")
+        shares = asyncio.run(
+            sy.local_worker.async_dispatch(
+                workers=locations,
+                commands=[
+                    (
+                        full_name(spdz_compute),
+                        None,
+                        (th.LongTensor([i]), delta, epsilon, type_op),
+                        {},
+                    )
+                    for i in [0, 1]
+                ],
+                return_value=False,
+            )
+        )
 
     shares = {loc.id: share for loc, share in zip(locations, shares)}
 

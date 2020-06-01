@@ -5,7 +5,6 @@ import weakref
 
 import numpy as np
 import torch
-
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
@@ -20,6 +19,8 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
 from syft.exceptions import SendNotPermittedError
+
+from syft.frameworks.torch.nn.functional import batch_norm
 
 
 def _get_maximum_precision():
@@ -288,6 +289,21 @@ class TorchTensor(AbstractTensor):
 
         module.roll = roll
 
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+            @overloaded.module
+            def functional(module):
+                module.batch_norm = batch_norm
+
+            module.functional = functional
+
+        module.nn = nn  # Handles all the overloading properly
+
     @classmethod
     def handle_func_command(cls, command):
         """
@@ -321,7 +337,6 @@ class TorchTensor(AbstractTensor):
         cmd, _, args_, kwargs_ = command
 
         try:  # will work if tensors are wrappers
-
             # Replace all torch tensor with their child attribute
             # Note that we return also args_type which helps handling case 3 in the docstring
             new_args, new_kwargs, new_type, args_type = hook_args.unwrap_args_from_function(
@@ -333,6 +348,15 @@ class TorchTensor(AbstractTensor):
                 return args_type.handle_func_command(command)
             # build the new command
             new_command = (cmd, None, new_args, new_kwargs)
+
+            # Check that the function has not been overwritten
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, cmd)
+                return command(*args_, **kwargs_)
+            except AttributeError:
+                pass
+
             # Send it to the appropriate class and get the response
             try:
                 response = new_type.handle_func_command(new_command)
@@ -347,13 +371,14 @@ class TorchTensor(AbstractTensor):
             response = hook_args.hook_response(cmd, response, wrap_type=args_type)
         except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
 
-            # Check that the function has not been overwritten
-            try:
-                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-                command = cls.rgetattr(cls, cmd)
-                return command(*args_, **kwargs_)
-            except AttributeError:
-                pass
+            # # Check that the function has not been overwritten
+            # try:
+            #     # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            #     command = cls.rgetattr(cls, cmd)
+            #     print('internal', command)
+            #     return command(*args_, **kwargs_)
+            # except AttributeError:
+            #     pass
 
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker

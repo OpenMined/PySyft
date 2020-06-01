@@ -159,6 +159,13 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return share.shape
 
+    def numel(self):
+        """
+        Return the number of elements
+        """
+        for share in self.child.values():
+            return share.numel()
+
     @property
     def min_value(self):
         if self._min_value is None:

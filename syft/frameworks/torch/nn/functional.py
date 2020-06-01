@@ -50,7 +50,7 @@ def batch_norm(input, _a, _b, weight, bias, _c, _d, eps):
 
     x = None
 
-    for i in range(3):
+    for i in range(10):
         if x is not None:
             y = 3 - var * (x * x)
             x = y * x / 2
@@ -124,7 +124,7 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     #                       [in values to compute out value 1],
     #                       ...
     #                       [in values to compute out value nb_rows_out*nb_cols_out]]
-    im_flat = input.view(batch_size, -1)
+    im_flat = input.reshape(batch_size, -1)
     im_reshaped = []
     for cur_row_out in range(nb_rows_out):
         for cur_col_out in range(nb_cols_out):
@@ -139,7 +139,7 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
     #                       [weights for out channel 1],
     #                       ...
     #                       [weights for out channel nb_channels_out]].TRANSPOSE()
-    weight_reshaped = weight.view(nb_channels_out // groups, -1).t()
+    weight_reshaped = weight.reshape(nb_channels_out // groups, -1).t()
 
     return (
         im_reshaped,
@@ -171,7 +171,7 @@ def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
     # ... And reshape it back to an image
     res = (
         res.permute(0, 2, 1)
-        .view(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
+        .reshape(batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
         .contiguous()
     )
 
@@ -323,7 +323,7 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     #                       [in values to compute out value 1],
     #                       ...
     #                       [in values to compute out value nb_rows_out*nb_cols_out]]
-    im_flat = input.view(batch_size, nb_channels_in, -1)
+    im_flat = input.reshape(batch_size, nb_channels_in, -1)
     im_reshaped = []
     for cur_row_out in range(nb_rows_out):
         for cur_col_out in range(nb_cols_out):
@@ -352,7 +352,7 @@ def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
     )
 
     # ... And reshape it back to an image
-    res = res.view(  # .permute(0, 2, 1)
+    res = res.reshape(  # .permute(0, 2, 1)
         batch_size, nb_channels_out, nb_rows_out, nb_cols_out
     ).contiguous()
 
@@ -433,14 +433,14 @@ def _pool2d(
     if mode == "max":
         # Optim
         if im_reshaped.shape[-1] == 4:
-            print("Optim pool k=2")
+            # print("Optim pool k=2")
             ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
             max1 = ab + (cd >= ab) * (cd - ab)
             e, f = max1[:, :, :, 0], max1[:, :, :, 1]
             max2 = e + (f >= e) * (f - e)
             res = max2
         elif im_reshaped.shape[-1] == 9:
-            print("Optim pool k=3")
+            # print("Optim pool k=3")
             abcd, efgh = im_reshaped[:, :, :, :4], im_reshaped[:, :, :, 4:8]
             ABCD = abcd + (efgh >= abcd) * (efgh - abcd)
             AB, CD = ABCD[:, :, :, :2], ABCD[:, :, :, 2:]

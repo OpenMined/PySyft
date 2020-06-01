@@ -216,7 +216,7 @@ def test_backward_for_remote_binary_cmd_local_autograd(workers, cmd):
     assert (b.grad.get() == b_torch.grad).all()
 
 
-@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid"])
+@pytest.mark.parametrize("cmd", ["asin", "sin", "sinh", "tanh", "sigmoid", "sum", "mean"])
 def test_backward_for_remote_unary_cmd_local_autograd(workers, cmd):
     """
     Test .backward() on unary methods on remote tensors using
@@ -306,6 +306,52 @@ def test_backward_for_linear_model_on_fix_prec_params_with_autograd():
     loss.backward(one)
     assert (model.weight.grad == weight_grad).all()
     assert (model.bias.grad == bias_grad).all()
+
+
+def test_hinge_loss(workers):
+    """
+    TBD
+    """
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+    backward_one = True
+
+    batch_size = 2
+    a = (
+        torch.tensor([[3.0, 2, -1, 2], [3.0, 2, -1, 2]], requires_grad=True)
+        .fix_prec()
+        .share(*args, **kwargs)
+    )
+    b = (
+        torch.tensor([[1.0, 2, 3, 2], [1.0, 2, 3, 2]], requires_grad=True)
+        .fix_prec()
+        .share(*args, **kwargs)
+    )
+
+    a_torch = torch.tensor([[3.0, 2, -1, 2], [3.0, 2, -1, 2]], requires_grad=True)
+    b_torch = torch.tensor([[1.0, 2, 3, 2], [1.0, 2, 3, 2]], requires_grad=True)
+
+    class_score = (a * b).sum(axis=1).reshape(-1, 1)
+    loss = (F.relu(a - class_score + 1).sum(axis=1) - 1).sum() / batch_size
+    c = loss
+
+    class_score_torch = (a_torch * b_torch).sum(axis=1).reshape(-1, 1)
+    loss_torch = (F.relu(a_torch - class_score_torch + 1).sum(axis=1) - 1).sum() / batch_size
+    c_torch = loss_torch
+
+    ones = torch.ones(c.shape).fix_prec().share(*args, **kwargs)
+    c.backward(ones if backward_one else None)
+    c_torch.backward(torch.ones(c_torch.shape))
+
+    assert (a.grad.get().float_prec() == a_torch.grad).all()
+    assert (b.grad.get().float_prec() == b_torch.grad).all()
 
 
 @pytest.mark.parametrize("cmd", ["__add__", "__sub__", "__mul__", "__matmul__"])
