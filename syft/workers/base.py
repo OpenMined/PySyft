@@ -12,7 +12,7 @@ from syft.frameworks.torch.mpc.primitives import PrimitiveStorage
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 
-from syft.generic.abstract.hookable import chain_call
+from syft.generic.abstract.hookable import map_chain_call
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.remote import Remote
@@ -679,7 +679,7 @@ class BaseWorker(AbstractWorker):
 
         obj = self.get_obj(obj_id)
 
-        permitted = all(chain_call(obj, "allow", user=user))
+        permitted = all(map_chain_call(obj, "allow", user=user))
         if not permitted:
             raise GetNotPermittedError()
         else:
