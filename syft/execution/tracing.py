@@ -6,10 +6,9 @@ from syft.generic.frameworks.types import FrameworkTensor
 
 
 class FrameworkWrapper:
-    def __init__(self, package, role, owner):
+    def __init__(self, package, role):
         self.package = package
         self.role = role
-        self.owner = owner
 
     def __getattr__(self, attr_name):
         package_attr = getattr(self.package, attr_name)
@@ -17,7 +16,7 @@ class FrameworkWrapper:
         if not callable(package_attr):
             # If it's a sub-module, wrap that for tracing too
             if isinstance(package_attr, ModuleType):
-                return FrameworkWrapper(package_attr, self.role, self.owner)
+                return FrameworkWrapper(package_attr, self.role)
             else:
                 return package_attr
 

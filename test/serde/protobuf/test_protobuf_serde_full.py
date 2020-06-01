@@ -42,9 +42,19 @@ samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
+
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
+samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
+samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
+samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
+samples[syft.messaging.message.ForceObjectDeleteMessage] = make_forceobjectdeletemessage
+samples[syft.messaging.message.SearchMessage] = make_searchmessage
+samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
+
+# TODO: this should be fixed in a future PR.
+# samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 
 def test_serde_coverage():
