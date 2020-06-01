@@ -152,7 +152,6 @@ def mask_builder(x1, x2, type_op):
 
 @allow_command
 def evaluate(b, x_masked, type_op):
-    MULTI_LIMIT = 10_000
     if type_op == "eq":
         return eq_evaluate(b, x_masked)
     elif type_op == "comp":

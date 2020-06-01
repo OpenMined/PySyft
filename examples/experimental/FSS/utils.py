@@ -21,7 +21,12 @@ def train(args, model, private_train_loader, optimizer, epoch):
     model.train()
     times = []
 
-    n_items = (len(private_train_loader) - 1) * args.batch_size + len(private_train_loader[-1][1])
+    try:
+        n_items = (len(private_train_loader) - 1) * args.batch_size + len(
+            private_train_loader[-1][1]
+        )
+    except TypeError:
+        n_items = len(private_train_loader.dataset)
 
     for batch_idx, (data, target) in enumerate(
         private_train_loader
@@ -34,6 +39,10 @@ def train(args, model, private_train_loader, optimizer, epoch):
 
         # loss = F.nll_loss(output, target)  <-- not possible here
         batch_size = output.shape[0]
+
+        # class_score = (output * target).sum(axis=1).reshape(-1, 1)
+        # hinge _loss = (F.relu(output - class_score + 1).sum(axis=1) - 1).sum() / batch_size
+        # print("LOSS", loss)
         loss = ((output - target) ** 2).sum() / batch_size
 
         loss.backward()
@@ -84,9 +93,12 @@ def test(args, model, private_test_loader):
     if correct.is_wrapper:
         correct = correct.get().float_precision()
 
-    n_items = (len(private_test_loader) - 1) * args.test_batch_size + len(
-        private_test_loader[-1][1]
-    )
+    try:
+        n_items = (len(private_test_loader) - 1) * args.test_batch_size + len(
+            private_test_loader[-1][1]
+        )
+    except TypeError:
+        n_items = len(private_test_loader.dataset)
     print(
         "\nTest set: Accuracy: {}/{} ({:.0f}%) \tTime /item: {:.4f}s \tTo time /item: {:.4f}s [{:.3f}]\n".format(
             correct.item(),
@@ -118,7 +130,7 @@ def one_hot_of(index_tensor):
     return onehot_tensor
 
 
-def get_private_data_loaders(workers, args, kwargs):
+def get_private_data_loaders(workers, args, kwargs, dataset="mnist"):
     def secret_share(tensor):
         """
         Transform to fixed precision and secret share a tensor
@@ -127,12 +139,19 @@ def get_private_data_loaders(workers, args, kwargs):
             *workers, **kwargs
         )
 
-    transformation = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    )
+    if dataset == "mnist":
+        transformation = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        )
+        torch_dataset = datasets.MNIST
+    elif dataset == "cifar":
+        transformation = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        )
+        torch_dataset = datasets.CIFAR10
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST("../data", train=True, download=True, transform=transformation),
+        torch_dataset("../data", train=True, download=True, transform=transformation),
         batch_size=args.batch_size,
     )
 
@@ -143,7 +162,7 @@ def get_private_data_loaders(workers, args, kwargs):
         private_train_loader.append((secret_share(data), secret_share(one_hot_of(target))))
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST("../data", train=False, download=True, transform=transformation),
+        torch_dataset("../data", train=False, download=True, transform=transformation),
         batch_size=args.test_batch_size,
     )
 
@@ -156,33 +175,46 @@ def get_private_data_loaders(workers, args, kwargs):
     return private_train_loader, private_test_loader
 
 
-def get_public_data_loaders(workers, args, kwargs):
+def get_public_data_loaders(workers, args, kwargs, dataset="mnist"):
 
-    transformation = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
-    )
+    if dataset == "mnist":
+        transformation = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+        )
+        torch_dataset = datasets.MNIST
+    elif dataset == "cifar":
+        transformation = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        )
+        torch_dataset = datasets.CIFAR10
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST("../data", train=True, download=True, transform=transformation),
+        torch_dataset("../data", train=True, download=True, transform=transformation),
         batch_size=args.batch_size,
     )
 
-    public_train_loader = []
-    for i, (data, target) in enumerate(train_loader):
-        if args.n_train_items >= 0 and i >= args.n_train_items / args.batch_size:
-            break
-        public_train_loader.append((data, one_hot_of(target)))
+    if args.n_train_items >= -10:
+        public_train_loader = []
+        for i, (data, target) in enumerate(train_loader):
+            if args.n_train_items >= 0 and i >= args.n_train_items / args.batch_size:
+                break
+            public_train_loader.append((data, one_hot_of(target)))
+    else:
+        public_train_loader = train_loader
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST("../data", train=False, download=True, transform=transformation),
+        torch_dataset("../data", train=False, download=True, transform=transformation),
         batch_size=args.test_batch_size,
     )
 
-    public_test_loader = []
-    for i, (data, target) in enumerate(test_loader):
-        if args.n_test_items >= 0 and i >= args.n_test_items / args.test_batch_size:
-            break
-        public_test_loader.append((data, target))
+    if args.n_test_items >= -10:
+        public_test_loader = []
+        for i, (data, target) in enumerate(test_loader):
+            if args.n_test_items >= 0 and i >= args.n_test_items / args.test_batch_size:
+                break
+            public_test_loader.append((data, target))
+    else:
+        public_test_loader = test_loader
 
     return public_train_loader, public_test_loader
 
