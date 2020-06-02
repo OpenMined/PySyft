@@ -228,9 +228,8 @@ class String(AbstractSendable):
 
         return _self + other
 
-    @staticmethod
     def create_pointer(
-        obj,
+        self,
         location: BaseWorker = None,
         id_at_location: (str or int) = None,
         register: bool = False,
@@ -247,10 +246,10 @@ class String(AbstractSendable):
         """
 
         if id_at_location is None:
-            id_at_location = obj.id
+            id_at_location = self.id
 
         if owner is None:
-            owner = obj.owner
+            owner = self.owner
 
         string_pointer = StringPointer(
             location=location,
