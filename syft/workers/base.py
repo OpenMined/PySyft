@@ -102,7 +102,8 @@ class BaseWorker(AbstractWorker):
         self.hook = hook
 
         self.object_store = ObjectStore(owner=self)
-        self.message_handler = BaseMessageHandler(self.object_store, self)
+        self.message_handlers = []
+        self.message_handlers.append(BaseMessageHandler(self.object_store, self))
 
         self.id = id
         self.is_client_worker = is_client_worker
@@ -339,11 +340,13 @@ class BaseWorker(AbstractWorker):
             )
 
         # Step 2: route message to appropriate function
-        if self.message_handler.supports(msg):
-            response = self.message_handler.handle(msg)
-        else:
-            # TODO: Raise an exception here
-            response = None
+
+        response = None
+        for handler in self.message_handlers:
+            if handler.supports(msg):
+                response = handler.handle(msg)
+                break
+        # TODO(karlhigley): Raise an exception if no handler is found
 
         # Step 3: Serialize the message to simple python objects
         bin_response = sy.serde.serialize(response, worker=self)
