@@ -6,14 +6,14 @@ class AbstractSendable(AbstractObject, SyftSerializable):
     """This layers functionality for sending objects between workers on top of AbstractObject.
     """
 
-    def send(self, destination: "BaseWorker") -> "ObjectPointer":
+    def send(self, destination):
         """Send the current object to the worker `destination`.
 
         Args:
-            destination: The worker where the current object is sent.
+            destination (BaseWorker): The worker where the current object is sent.
  
         Returns:
-            A pointer to the send object.
+            An  object of type ObjectPointer pointing to the sent object.
         """
 
         ptr = self.owner.send(self, destination)
