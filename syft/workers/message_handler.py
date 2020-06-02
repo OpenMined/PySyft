@@ -7,6 +7,7 @@ from syft import codes
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
 from syft.generic.abstract.hookable import chain_call
+from syft.generic.abstract.message_handler import AbstractMessageHandler
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
@@ -26,13 +27,18 @@ from syft.exceptions import PlanCommandUnknownError
 from syft.exceptions import ResponseSignatureError
 
 
-class BaseMessageHandler:
+class BaseMessageHandler(AbstractMessageHandler):
     def __init__(self, object_store, worker):
-        self.object_store = object_store
+        super().__init__(object_store)
         self.worker = worker
 
-        # For performance, we cache all possible message types
-        self._message_router = {
+        self.plan_routing_table = {
+            codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote,
+            codes.PLAN_CMDS.FETCH_PROTOCOL: self._fetch_protocol_remote,
+        }
+
+    def init_routing_table(self):
+        return {
             TensorCommandMessage: self.execute_tensor_command,
             PlanCommandMessage: self.execute_plan_command,
             WorkerCommandMessage: self.execute_worker_command,
@@ -43,17 +49,6 @@ class BaseMessageHandler:
             GetShapeMessage: self.handle_get_shape_message,
             SearchMessage: self.respond_to_search,
         }
-
-        self._plan_command_router = {
-            codes.PLAN_CMDS.FETCH_PLAN: self._fetch_plan_remote,
-            codes.PLAN_CMDS.FETCH_PROTOCOL: self._fetch_protocol_remote,
-        }
-
-    def supports(self, msg):
-        return type(msg) in self._message_router.keys()
-
-    def handle(self, msg):
-        return self._message_router[type(msg)](msg)
 
     def execute_tensor_command(self, cmd: TensorCommandMessage) -> PointerTensor:
         if isinstance(cmd.action, ComputationAction):
@@ -289,7 +284,7 @@ class BaseMessageHandler:
         args_ = msg.args
 
         try:
-            command = self._plan_command_router[command_name]
+            command = self.plan_routing_table[command_name]
         except KeyError:
             raise PlanCommandUnknownError(command_name)
 
