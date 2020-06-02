@@ -407,6 +407,9 @@ class PointerTensor(ObjectPointer, AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
+    def __iter__(self):
+        return (self[idx] for idx in range(self.shape[0]))
+
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "PointerTensor") -> tuple:
         """
