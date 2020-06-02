@@ -6,7 +6,7 @@ from syft import codes
 
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.generic.abstract.hookable import chain_call
+from syft.generic.abstract.hookable import map_chain_call
 from syft.generic.abstract.message_handler import AbstractMessageHandler
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
@@ -199,7 +199,7 @@ class BaseMessageHandler(AbstractMessageHandler):
 
         obj = self.get_obj(obj_id)
 
-        permitted = all(chain_call(obj, "allow", user=user))
+        permitted = all(map_chain_call(obj, "allow", user=user))
         if not permitted:
             raise GetNotPermittedError()
         else:
