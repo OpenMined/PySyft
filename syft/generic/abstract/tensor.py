@@ -126,6 +126,27 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
         else:
             return child_grad.wrap()
 
+    def get(self):
+        """Just a pass through. This is most commonly used when calling .get() on a
+        Syft tensor which has a child which is a pointer, an additive shared tensor,
+        a multi-pointer, etc."""
+        class_attributes = self.get_class_attributes()
+        return type(self)(
+            **class_attributes,
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+            id=self.id,
+        ).on(self.child.get())
+
+    def mid_get(self):
+        """This method calls .get() on a child pointer and correctly registers the results"""
+
+        child_id = self.id
+        tensor = self.get()
+        tensor.id = child_id
+        self.owner.register_obj(tensor)
+
 
 def initialize_tensor(hook, obj, owner=None, id=None, init_args=(), init_kwargs={}):
     """Initializes the tensor.
