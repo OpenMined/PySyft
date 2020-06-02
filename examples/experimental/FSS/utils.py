@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from torchvision import datasets, transforms
 
-MODEL_PATH = "/content/PySyft/data/models/"
+MODEL_PATH = "/Users/tryffel/code/PySyft/data/models/"
 
 
 def save(model, name):
@@ -12,7 +12,7 @@ def save(model, name):
 
 
 def load(model, name):
-    model.load_state_dict(torch.load(MODEL_PATH + name))
+    model.load_state_dict(torch.load(MODEL_PATH + name, map_location=torch.device("cpu")))
     model.eval()
     return model
 

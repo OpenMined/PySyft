@@ -50,7 +50,7 @@ def batch_norm(input, _a, _b, weight, bias, _c, _d, eps):
 
     x = None
 
-    for i in range(10):
+    for i in range(3):
         if x is not None:
             y = 3 - var * (x * x)
             x = y * x / 2
