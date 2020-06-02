@@ -2,7 +2,6 @@ from typing import List, Union
 
 import syft
 
-from syft.generic.abstract.hookable import hookable
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
@@ -176,71 +175,6 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             "id_at_location": self.id_at_location,
             "garbage_collect_data": self.garbage_collect_data,
         }
-
-    @staticmethod
-    @hookable
-    def create_pointer(
-        tensor,
-        location: AbstractWorker = None,
-        id_at_location: (str or int) = None,
-        owner: AbstractWorker = None,
-        ptr_id: (str or int) = None,
-        garbage_collect_data=None,
-        shape=None,
-    ) -> "PointerTensor":
-        """Creates a pointer to the "self" FrameworkTensor object.
-
-        This method is called on a FrameworkTensor object, returning a pointer
-        to that object. This method is the CORRECT way to create a pointer,
-        and the parameters of this method give all possible attributes that
-        a pointer can be created with.
-
-        Args:
-            location: The AbstractWorker object which points to the worker on which
-                this pointer's object can be found. In nearly all cases, this
-                is self.owner and so this attribute can usually be left blank.
-                Very rarely you may know that you are about to move the Tensor
-                to another worker so you can pre-initialize the location
-                attribute of the pointer to some other worker, but this is a
-                rare exception.
-            id_at_location: A string or integer id of the tensor being pointed
-                to. Similar to location, this parameter is almost always
-                self.id and so you can leave this parameter to None. The only
-                exception is if you happen to know that the ID is going to be
-                something different than self.id, but again this is very rare
-                and most of the time, setting this means that you are probably
-                doing something you shouldn't.
-            owner: A AbstractWorker parameter to specify the worker on which the
-                pointer is located. It is also where the pointer is registered
-                if register is set to True.
-            ptr_id: A string or integer parameter to specify the id of the pointer
-                in case you wish to set it manually for any special reason.
-                Otherwise, it will be set randomly.
-            garbage_collect_data: If true (default), delete the remote tensor when the
-                pointer is deleted.
-
-        Returns:
-            A FrameworkTensor[PointerTensor] pointer to self. Note that this
-            object itself will likely be wrapped by a FrameworkTensor wrapper.
-        """
-        if owner is None:
-            owner = tensor.owner
-
-        if location is None:
-            location = tensor.owner
-
-        ptr = PointerTensor(
-            location=location,
-            id_at_location=id_at_location,
-            owner=owner,
-            id=ptr_id,
-            garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
-            shape=shape,
-            tags=tensor.tags,
-            description=tensor.description,
-        )
-
-        return ptr
 
     def move(self, destination: AbstractWorker, requires_grad: bool = False):
         """
