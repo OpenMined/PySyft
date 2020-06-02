@@ -15,7 +15,6 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         Returns:
             An  object of type ObjectPointer pointing to the sent object.
         """
-
         ptr = self.owner.send(self, destination)
 
         return ptr
