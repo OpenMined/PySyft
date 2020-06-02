@@ -22,6 +22,7 @@ from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
 from test.serde.serde_helpers import SerializableDummyClass
 
+
 def test_tuple_simplify(workers):
     """This tests our ability to simplify tuple types.
 

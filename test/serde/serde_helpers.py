@@ -9,6 +9,7 @@ from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
 from syft.serde.syft_serializable import SyftSerializable
 
+
 class SerializableDummyClass(SyftSerializable):
     def __init__(self, value):
         self.value = value
@@ -24,6 +25,7 @@ class SerializableDummyClass(SyftSerializable):
     @staticmethod
     def get_msgpack_code():
         return {"code": 12345}
+
 
 # Make dict of type codes
 CODE = OrderedDict()
@@ -2031,6 +2033,7 @@ def make_paillier(**kwargs):
             "cmp_detailed": compare,
         }
     ]
+
 
 def make_serializable_dummy_class(**kwargs):
     def compare(simplified, detailed):
