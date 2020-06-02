@@ -1,9 +1,10 @@
-from abc import ABC
-from abc import abstractmethod
-
 import inspect
 import re
 import types
+
+from abc import ABC
+from abc import abstractmethod
+from collections import defaultdict
 
 import syft
 
@@ -107,6 +108,14 @@ class TensorHook(ABC):
             return len(self.shape)
 
         tensor_type.dim = dim
+
+        @property
+        def remote_refs(self):
+            if self._remote_refs is None:
+                self._remote_refs = defaultdict(set)
+            return self._remote_refs
+
+        tensor_type.remote_refs = remote_refs
 
     def _which_methods_should_we_auto_overload(self, tensor_type: type):
         """Creates a list of Torch methods to auto overload.

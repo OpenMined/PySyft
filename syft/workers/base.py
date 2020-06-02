@@ -400,9 +400,9 @@ class BaseWorker(AbstractWorker):
 
             pointer = type(obj).create_pointer(
                 obj,
-                owner=self,
                 location=worker,
                 id_at_location=obj.id,
+                owner=self,
                 register=True,
                 ptr_id=ptr_id,
                 garbage_collect_data=garbage_collect_data,

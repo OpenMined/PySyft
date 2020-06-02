@@ -13,14 +13,12 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         super().__init__(*args, **kwargs)
 
         # { worker_id -> set(object_ids) }
-        self.remote_refs = defaultdict(set)
+        self._remote_refs = defaultdict(set)
 
     def send(self, destination):
         return self.owner.send_obj(self, destination)
 
     def _before_create_pointer(self, location, id_at_location, *args, **kwargs):
-        self.remote_refs[location] = id_at_location
-
-    @staticmethod
-    def _before_create_pointer(sendable, location, id_at_location, *args, **kwargs):
-        sendable.remote_refs[location] = id_at_location
+        if not hasattr(self, "_remote_refs") or self._remote_refs is None:
+            self._remote_refs = defaultdict(set)
+        self._remote_refs[location] = id_at_location
