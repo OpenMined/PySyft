@@ -7,6 +7,23 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
+from syft.serde.syft_serializable import SyftSerializable
+
+class SerializableDummyClass(SyftSerializable):
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def simplify(worker, obj):
+        return obj.value
+
+    @staticmethod
+    def detail(worker, obj):
+        return SerializableDummyClass(obj)
+
+    @staticmethod
+    def get_msgpack_code():
+        return {"code": 12345}
 
 # Make dict of type codes
 CODE = OrderedDict()
@@ -2011,6 +2028,22 @@ def make_paillier(**kwargs):
                 CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
                 simplfied,
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+def make_serializable_dummy_class(**kwargs):
+    def compare(simplified, detailed):
+        assert simplified.value == detailed.value
+        return True
+
+    obj = SerializableDummyClass("test")
+    simplified = SerializableDummyClass.simplify(kwargs["workers"]["serde_worker"], obj)
+
+    return [
+        {
+            "value": obj,
+            "simplified": (SerializableDummyClass.get_msgpack_code()["code"], simplified),
             "cmp_detailed": compare,
         }
     ]
