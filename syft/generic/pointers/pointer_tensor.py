@@ -1,13 +1,15 @@
 from typing import List, Union
 
 import syft
+
+from syft.generic.abstract.hookable import hookable
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook.hook_args import one
 from syft.generic.frameworks.hook.hook_args import register_type_rule
 from syft.generic.frameworks.hook.hook_args import register_forward_func
 from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.types import FrameworkShapeType
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.messaging.message import TensorCommandMessage
 from syft.workers.abstract import AbstractWorker
@@ -176,11 +178,12 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         }
 
     @staticmethod
+    @hookable
     def create_pointer(
         tensor,
-        location: Union[AbstractWorker, str] = None,
+        location: AbstractWorker = None,
         id_at_location: (str or int) = None,
-        owner: Union[AbstractWorker, str] = None,
+        owner: AbstractWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data=None,
         shape=None,
@@ -226,23 +229,16 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         if location is None:
             location = tensor.owner
 
-        owner = tensor.owner.get_worker(owner)
-        location = tensor.owner.get_worker(location)
-
-        # previous_pointer = owner.get_pointer_to(location, id_at_location)
-        previous_pointer = None
-
-        if previous_pointer is None:
-            ptr = PointerTensor(
-                location=location,
-                id_at_location=id_at_location,
-                owner=owner,
-                id=ptr_id,
-                garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
-                shape=shape,
-                tags=tensor.tags,
-                description=tensor.description,
-            )
+        ptr = PointerTensor(
+            location=location,
+            id_at_location=id_at_location,
+            owner=owner,
+            id=ptr_id,
+            garbage_collect_data=True if garbage_collect_data is None else garbage_collect_data,
+            shape=shape,
+            tags=tensor.tags,
+            description=tensor.description,
+        )
 
         return ptr
 

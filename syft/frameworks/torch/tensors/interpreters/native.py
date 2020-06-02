@@ -593,6 +593,14 @@ class TorchTensor(AbstractTensor):
         if shape is None:
             shape = self.shape
 
+        # ptr = syft.PointerTensor(
+        #     location=location,
+        #     id_at_location=id_at_location,
+        #     owner=owner,
+        #     id=ptr_id,
+        #     garbage_collect_data=garbage_collect_data,
+        #     shape=shape)
+
         ptr = syft.PointerTensor.create_pointer(
             self, location, id_at_location, owner, ptr_id, garbage_collect_data, shape
         )
