@@ -1,7 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
 
-from syft.generic.object_store import ObjectStore
+from syft.generic.object_storage import ObjectStore
 
 
 class AbstractMessageHandler(ABC):
