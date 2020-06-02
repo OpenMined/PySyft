@@ -881,6 +881,6 @@ def test_external_lib_msgpack():
         example2 = SerializableDummyClass("test")
         _ = syft.serde.serialize(example2)
 
-    assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError) == 1
+    assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError)
     setattr(SerializableDummyClass, "get_msgpack_code", saved_attr)
     syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
