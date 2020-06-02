@@ -154,7 +154,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             response.garbage_collect_data = False
             if kwargs_.get("requires_grad", False):
                 response = hook_args.register_response(
-                    "send", response, [sy.ID_PROVIDER.pop()], self
+                    "send", response, [sy.ID_PROVIDER.pop()], self.worker
                 )
             else:
                 self.object_store.rm_obj(action.target.id)
