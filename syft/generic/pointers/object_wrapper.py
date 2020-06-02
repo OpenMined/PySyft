@@ -48,9 +48,8 @@ class ObjectWrapper(SyftSerializable):
     def obj(self):
         return self._obj
 
-    @staticmethod
     def create_pointer(
-        object,
+        self,
         owner: "BaseWorker",
         location: "BaseWorker",
         ptr_id: Union[int, str],
@@ -89,9 +88,9 @@ class ObjectWrapper(SyftSerializable):
             owner=owner,
             location=location,
             id=ptr_id,
-            id_at_location=id_at_location if id_at_location is not None else object.id,
-            tags=object.tags,
-            description=object.description,
+            id_at_location=id_at_location if id_at_location is not None else self.id,
+            tags=self.tags,
+            description=self.description,
             garbage_collect_data=False if garbage_collect_data is None else garbage_collect_data,
         )
         return pointer
