@@ -1180,7 +1180,9 @@ def make_objectpointer(**kwargs):
     alice = kwargs["workers"]["alice"]
     obj = torch.randn(3, 3)
     obj_ptr = obj.send(alice)
-    ptr = syft.generic.pointers.object_pointer.ObjectPointer.create_pointer(obj, alice, obj.id)
+    ptr = syft.generic.pointers.object_pointer.ObjectPointer(
+        location=alice, id_at_location=obj.id, owner=obj.owner
+    )
 
     def compare(detailed, original):
         assert type(detailed) == syft.generic.pointers.object_pointer.ObjectPointer
