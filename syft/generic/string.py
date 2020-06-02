@@ -1,12 +1,16 @@
 from typing import List
 from typing import Tuple
 from typing import Union
+
 import syft as sy
-from syft.generic.pointers.string_pointer import StringPointer
-from syft.workers.base import BaseWorker
+from syft.generic.abstract.hookable import hookable
 from syft.generic.abstract.sendable import AbstractSendable
+from syft.generic.pointers.string_pointer import StringPointer
 from syft.generic.frameworks.overload import overloaded
 from syft.generic.frameworks.hook import hook_args
+
+from syft.workers.base import BaseWorker
+
 from syft_proto.generic.string_pb2 import String as StringPB
 
 
@@ -228,6 +232,7 @@ class String(AbstractSendable):
 
         return _self + other
 
+    @hookable
     def create_pointer(
         self,
         location: BaseWorker = None,

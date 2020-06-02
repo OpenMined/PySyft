@@ -16,10 +16,11 @@ from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.generic.abstract.sendable import AbstractSendable
+from syft.generic.abstract.hookable import hookable
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -496,6 +497,7 @@ class Plan(AbstractSendable):
 
     share = share_
 
+    @hookable
     def create_pointer(
         self, owner, garbage_collect_data, location=None, id_at_location=None, tags=None, **kwargs
     ):

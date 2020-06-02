@@ -3,6 +3,7 @@ from typing import Union
 from typing import TYPE_CHECKING
 
 import syft as sy
+from syft.generic.abstract.hookable import hookable
 from syft.generic.pointers.callable_pointer import create_callable_pointer
 from syft.workers.abstract import AbstractWorker
 from syft.serde.syft_serializable import SyftSerializable
@@ -48,6 +49,7 @@ class ObjectWrapper(SyftSerializable):
     def obj(self):
         return self._obj
 
+    @hookable
     def create_pointer(
         self,
         owner: "BaseWorker",

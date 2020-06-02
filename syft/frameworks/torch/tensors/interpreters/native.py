@@ -565,6 +565,7 @@ class TorchTensor(AbstractTensor):
 
         return self.send(*location, inplace=True, **kwargs)
 
+    @hookable
     def create_pointer(
         self,
         location: BaseWorker = None,

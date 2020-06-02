@@ -1,13 +1,16 @@
-import math
 import logging
-from syft.generic.abstract.sendable import AbstractSendable
-from syft.workers.base import BaseWorker
-from syft.generic.pointers.pointer_dataset import PointerDataset
-from syft_proto.frameworks.torch.fl.v1.dataset_pb2 import BaseDataset as BaseDatasetPB
+import math
 
 import torch
 from torch.utils.data import Dataset
+
 import syft
+from syft.generic.abstract.hookable import hookable
+from syft.generic.abstract.sendable import AbstractSendable
+from syft.generic.pointers.pointer_dataset import PointerDataset
+from syft.workers.base import BaseWorker
+
+from syft_proto.frameworks.torch.fl.v1.dataset_pb2 import BaseDataset as BaseDatasetPB
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +122,7 @@ class BaseDataset(AbstractSendable):
         self.targets.share_(*args, **kwargs)
         return self
 
+    @hookable
     def create_pointer(
         self, owner, garbage_collect_data, location=None, id_at_location=None, **kwargs
     ):
