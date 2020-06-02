@@ -1,6 +1,7 @@
-from syft.serde.syft_serializable import SyftSerializable
 from collections import defaultdict
+
 from syft.generic.abstract.object import AbstractObject
+from syft.serde.syft_serializable import SyftSerializable
 
 
 class AbstractSendable(AbstractObject, SyftSerializable):
@@ -16,3 +17,10 @@ class AbstractSendable(AbstractObject, SyftSerializable):
 
     def send(self, destination):
         return self.owner.send_obj(self, destination)
+
+    def _before_create_pointer(self, location, id_at_location, *args, **kwargs):
+        self.remote_refs[location] = id_at_location
+
+    @staticmethod
+    def _before_create_pointer(sendable, location, id_at_location, *args, **kwargs):
+        sendable.remote_refs[location] = id_at_location
