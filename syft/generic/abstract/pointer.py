@@ -2,8 +2,8 @@ from abc import abstractmethod
 from typing import List
 from typing import Union
 
-from syft.generic.abstract.sendable import AbstractSendable
 from syft.serde.syft_serializable import SyftSerializable
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.abstract import AbstractWorker
 
 
