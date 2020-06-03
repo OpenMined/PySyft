@@ -1,5 +1,7 @@
 from abc import ABC
 from abc import abstractmethod
+from typing import Union
+
 from syft.serde.syft_serializable import SyftSerializable
 
 
@@ -34,5 +36,33 @@ class AbstractWorker(ABC, SyftSerializable):
 
         Args:
             message: The binary message being received.
+        """
+        pass
+
+    @abstractmethod
+    def send_obj(self, obj: object, location: "AbstractWorker"):
+        """Send a torch object to a worker.
+
+        Args:
+            obj: An object to be sent.
+            location: An AbstractWorker instance indicating the worker which should
+                receive the object.
+        """
+        pass
+
+    @abstractmethod
+    def request_obj(
+        self, obj_id: Union[str, int], location: "AbstractWorker", *args, **kwargs
+    ) -> object:
+        """Returns the requested object from specified location.
+
+        Args:
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
+                location.
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
+        Returns:
+            A torch Tensor or Variable object.
         """
         pass
