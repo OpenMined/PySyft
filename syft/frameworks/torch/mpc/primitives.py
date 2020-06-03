@@ -235,7 +235,7 @@ class PrimitiveStorage:
 
             current_primitives = getattr(self, crypto_type)
             if crypto_type == "beaver":
-                for op_shapes, primitive_triple in primitives.items():
+                for op_shapes, primitive_triple in primitives:
                     if (
                         op_shapes not in current_primitives
                         or len(current_primitives[op_shapes]) == 0
@@ -315,7 +315,7 @@ class PrimitiveStorage:
         assert n_party == 2, f"Only 2 workers supported for the moment"
         n = sy.frameworks.torch.mpc.fss.n
         op_shapes = kwargs["beaver"]["op_shapes"]
-        primitives_worker = [{}, {}]
+        primitives_worker = [[], []]
         for op, a_shape, b_shape in op_shapes:
             cmd = getattr(th, op)
             a = th.randint(0, 2 ** n, (n_instances, *a_shape))
@@ -342,13 +342,14 @@ class PrimitiveStorage:
             else:
                 c = cmd(a, b)
 
-            for i in range(n_party):
-                primitives_worker[i][(op, a_shape, b_shape)] = [None, None, None]
-
+            masks_0 = []
+            masks_1 = []
             for i, tensor in enumerate([a, b, c]):
                 mask = th.randint(0, 2 ** n, tensor.shape)
-                # mask = th.zeros(*tensor.shape).long()
-                primitives_worker[0][(op, a_shape, b_shape)][i] = tensor - mask
-                primitives_worker[1][(op, a_shape, b_shape)][i] = mask
+                masks_0.append(tensor - mask)
+                masks_1.append(mask)
+
+            primitives_worker[0].append(((op, a_shape, b_shape), masks_0))
+            primitives_worker[1].append(((op, a_shape, b_shape), masks_1))
 
         return primitives_worker
