@@ -59,6 +59,7 @@ class PrimitiveStorage:
         if type_op == "beaver":
             op = kwargs.get("op")
             shapes = kwargs.get("shapes")
+            dtype = kwargs.get("dtype")
             op_shapes = (op, *shapes)
             primitive_stack = primitive_stack[op_shapes]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
@@ -92,6 +93,7 @@ class PrimitiveStorage:
                         sy.local_worker.clients,
                         n_instances=n_instances,
                         beaver={"op_shapes": [op_shapes]},
+                        dtype=dtype,
                     )
                     return self.get_keys(type_op, n_instances=n_instances, remove=remove, **kwargs)
                 else:
@@ -188,13 +190,15 @@ class PrimitiveStorage:
 
             def filename(worker):
                 if "beaver" in crypto_type:
+                    raise NotImplementedError
                     op, *shapes = kwargs["beaver"]["op_shapes"][0]
+                    dtype = kwargs["dtype"]  # TODO add dtype
                     shapes = [",".join([str(s) for s in shape]) for shape in shapes]
                     return f"{path}/{crypto_type}-{op}-({shapes[0]})-({shapes[1]})-{n_instances_batch}-{worker.id}.data"
                 else:
                     return f"{path}/{crypto_type}-{n_instances_batch}-{worker.id}.data"
 
-            if os.path.isfile(filename(workers[0]) + ".npy") and "beaver" not in crypto_type:
+            if "beaver" not in crypto_type and os.path.isfile(filename(workers[0]) + ".npy"):
                 # if "comp" in crypto_type:
                 #     print(f"{n_instances_batch} from file")
                 for i, worker in enumerate(workers):
@@ -212,7 +216,6 @@ class PrimitiveStorage:
                 for worker_primitives, worker in zip(primitives, workers):
                     if "beaver" not in crypto_type:
                         np.save(filename(worker), worker_primitives)
-                    # print('saved', filename(worker))
                     worker_types_primitives[worker][crypto_type] = worker_primitives
 
                 for i, worker in enumerate(workers):
@@ -316,10 +319,11 @@ class PrimitiveStorage:
         n = sy.frameworks.torch.mpc.fss.n
         op_shapes = kwargs["beaver"]["op_shapes"]
         primitives_worker = [[], []]
-        for op, a_shape, b_shape in op_shapes:
+        dtype = kwargs.get("dtype")
+        for op, a_shape, b_shape in op_shapes:  # , dtype
             cmd = getattr(th, op)
-            a = th.randint(0, 2 ** n, (n_instances, *a_shape))
-            b = th.randint(0, 2 ** n, (n_instances, *b_shape))
+            a = th.randint(0, 2 ** n, (n_instances, *a_shape), dtype=dtype)
+            b = th.randint(0, 2 ** n, (n_instances, *b_shape), dtype=dtype)
             # a = th.ones(*(n_instances, *a_shape)).long()
             # b = th.ones(*(n_instances, *b_shape)).long()
 
@@ -345,7 +349,7 @@ class PrimitiveStorage:
             masks_0 = []
             masks_1 = []
             for i, tensor in enumerate([a, b, c]):
-                mask = th.randint(0, 2 ** n, tensor.shape)
+                mask = th.randint(0, 2 ** n, tensor.shape, dtype=dtype)
                 masks_0.append(tensor - mask)
                 masks_1.append(mask)
 

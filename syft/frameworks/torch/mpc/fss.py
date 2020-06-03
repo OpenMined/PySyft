@@ -74,6 +74,7 @@ def fss_op(x1, x2, type_op="eq"):
         locations = x2.locations
         class_attributes = x2.get_class_attributes()
 
+    dtype = class_attributes.get("dtype")
     asynchronous = isinstance(locations[0], WebsocketClientWorker)
 
     workers_args = [
@@ -110,7 +111,7 @@ def fss_op(x1, x2, type_op="eq"):
         location.de_register_obj(share)
         del share
 
-    workers_args = [(th.IntTensor([i]), mask_value, type_op) for i in range(2)]
+    workers_args = [(th.IntTensor([i]), mask_value, type_op, dtype) for i in range(2)]
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
@@ -151,7 +152,7 @@ def mask_builder(x1, x2, type_op):
 
 
 @allow_command
-def evaluate(b, x_masked, type_op):
+def evaluate(b, x_masked, type_op, dtype):
     if type_op == "eq":
         return eq_evaluate(b, x_masked)
     elif type_op == "comp":
@@ -166,7 +167,7 @@ def evaluate(b, x_masked, type_op):
             for j in range(N_CORES):
                 x_masked_slice = x_masked[j * slice_size : (j + 1) * slice_size]
                 x_masked_slice.owner = owner
-                process_args = (b, x_masked_slice, owner.id, j, j * slice_size)
+                process_args = (b, x_masked_slice, owner.id, j, j * slice_size, dtype)
                 multiprocessing_args.append(process_args)
             p = multiprocessing.Pool()
             partitions = p.starmap(comp_evaluate, multiprocessing_args)
@@ -181,7 +182,7 @@ def evaluate(b, x_masked, type_op):
             return result.reshape(*original_shape)
         else:
             # print('EVAL', numel)
-            return comp_evaluate(b, x_masked)
+            return comp_evaluate(b, x_masked, dtype=dtype)
     else:
         raise ValueError
 
@@ -196,7 +197,7 @@ def eq_evaluate(b, x_masked):
 
 
 # share level
-def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0):
+def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype=None):
     if owner_id is not None:
         x_masked.owner = x_masked.owner.get_worker(owner_id)
 
@@ -208,10 +209,13 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0):
         type_op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
     result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
+
+    dtype_options = {None: th.long, "int": th.int32, "long": th.long}
+    result = th.tensor(result_share, dtype=dtype_options[dtype])
     if core_id is None:
-        return th.tensor(result_share)
+        return result
     else:
-        return core_id, th.tensor(result_share)
+        return core_id, result
 
 
 def eq(x1, x2):
