@@ -135,9 +135,9 @@ def get_private_data_loaders(workers, args, kwargs, dataset="mnist"):
         """
         Transform to fixed precision and secret share a tensor
         """
-        return tensor.fix_precision(precision_fractional=args.precision_fractional).share(
-            *workers, **kwargs
-        )
+        return tensor.fix_precision(
+            precision_fractional=args.precision_fractional, dtype=args.dtype
+        ).share(*workers, **kwargs)
 
     if dataset == "mnist":
         transformation = transforms.Compose(

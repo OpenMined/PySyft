@@ -21,7 +21,7 @@ def full_name(f):
 @allow_command
 def spdz_mask(x, y, type_op):
     a, b, c = x.owner.crypto_store.get_keys(
-        "beaver", op=type_op, shapes=(x.shape, y.shape), n_instances=1, remove=False
+        "beaver", op=type_op, shapes=(x.shape, y.shape), n_instances=1, remove=False, dtype=x.dtype
     )
     return x - a, y - b
 
@@ -30,7 +30,7 @@ def spdz_mask(x, y, type_op):
 @allow_command
 def spdz_compute(j, delta, epsilon, type_op):
     a, b, c = delta.owner.crypto_store.get_keys(
-        "beaver", op=type_op, shapes=(delta.shape, epsilon.shape), n_instances=1, remove=True
+        "beaver", op=type_op, shapes=(delta.shape, epsilon.shape), n_instances=1, remove=True, dtype=delta.dtype
     )
 
     cmd = getattr(th, type_op)
