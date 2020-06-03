@@ -320,6 +320,9 @@ class PrimitiveStorage:
         op_shapes = kwargs["beaver"]["op_shapes"]
         primitives_worker = [[], []]
         dtype = kwargs.get("dtype")
+        if isinstance(dtype, str) or dtype is None:
+            dtype_options = {None: th.long, "int": th.int32, "long": th.long}
+            dtype = dtype_options[dtype]
         for op, a_shape, b_shape in op_shapes:  # , dtype
             cmd = getattr(th, op)
             a = th.randint(0, 2 ** n, (n_instances, *a_shape), dtype=dtype)
