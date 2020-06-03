@@ -232,10 +232,10 @@ class AdditiveSharingTensor(AbstractTensor):
             mask_pos = x > self.max_value
             mask_neg = x < self.min_value
             if mask_pos.any():
-                mask_pos = mask_pos.long()
+                mask_pos = mask_pos.type(self.torch_dtype)
                 return self.modulo(x - (mask_pos * self.field))
             elif mask_neg.any():
-                mask_neg = mask_neg.long()
+                mask_neg = mask_neg.type(self.torch_dtype)
                 return self.modulo(x + (mask_neg * self.field))
             else:
                 return x.type(self.torch_dtype)
@@ -604,7 +604,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 return result
             else:
                 result = {
-                    worker: (self.modulo(cmd(share, other).long()))
+                    worker: (self.modulo(cmd(share, other).type(self.torch_dtype)))
                     for worker, share in shares.items()
                 }
                 result = hook_args.hook_response(
@@ -1084,12 +1084,14 @@ class AdditiveSharingTensor(AbstractTensor):
             result = self.flatten()
             key = list(result.child.keys())[0]
             n_elem = result.child[key].nelement()
-            result = result * torch.tensor(list(range(n_elem))).long()
+            result = result * torch.tensor(list(range(n_elem))).type(self.torch_dtype)
             return result.sum()
         else:
             size = [1] * self.dim()
             size[dim] = self.shape[dim]
-            result = self * torch.tensor(list(range(self.shape[dim]))).view(size).long()
+            result = self * torch.tensor(list(range(self.shape[dim]))).view(size).type(
+                self.torch_dtype
+            )
             return result.sum(dim, keepdim=keepdim)
 
     def argmax(
