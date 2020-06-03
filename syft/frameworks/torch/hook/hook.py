@@ -1,6 +1,5 @@
 import copy
 from functools import wraps
-from collections import defaultdict
 import logging
 from math import inf
 import torch

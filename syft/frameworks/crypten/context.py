@@ -79,7 +79,8 @@ def _send_party_info(worker, rank, msg, return_values, model=None):
     Args:
         worker (BaseWorker): worker to send the message to.
         rank (int): rank of the crypten party.
-        msg (CryptenInitMessage): message containing the rank, world_size, master_addr and master_port.
+        msg (CryptenInitMessage): message containing the rank, world_size, master_addr and
+            master_port.
         return_values (dict): dictionnary holding return values of workers.
         model: crypten model to unpack parameters to (if received).
     """
@@ -126,7 +127,8 @@ def run_multiworkers(
                 using_plan = True
                 plan = func
 
-                # This is needed because at building we use a set of methods defined in syft (ex: load)
+                # This is needed because at building we use a set of methods defined in syft
+                # (ex: load)
                 hook_plan_building()
                 crypten.init()
                 plan.build()

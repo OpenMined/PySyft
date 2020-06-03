@@ -1,4 +1,3 @@
-import torch
 import syft
 
 from syft.frameworks.crypten.context import run_party

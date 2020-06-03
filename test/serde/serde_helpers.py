@@ -2058,7 +2058,7 @@ def make_crypteninitjail(**kwargs):
 
         return True
 
-    jail_runner = ("test = 5", ["crypten",])
+    jail_runner = ("test = 5", ["crypten"])
     jr_simplified = (
         CODE[tuple],
         ((CODE[str], (b"test = 5",)), (CODE[list], ((CODE[str], (b"crypten",)),))),

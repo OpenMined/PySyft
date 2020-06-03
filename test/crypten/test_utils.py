@@ -2,7 +2,6 @@ import pytest
 import torch as th
 import crypten
 from syft.frameworks.crypten import utils
-from syft.frameworks import crypten as syft_crypten
 
 
 @pytest.mark.parametrize(
@@ -11,7 +10,7 @@ from syft.frameworks import crypten as syft_crypten
         # return tensor
         th.tensor([1, 2, 3, 4]),
         # return tensor1, tensor2, tensor3
-        (th.tensor([1, 2, 4, 5]), th.tensor([1.0, 2.0, 3.0,]), th.tensor([5, 6, 7, 8])),
+        (th.tensor([1, 2, 4, 5]), th.tensor([1.0, 2.0, 3.0]), th.tensor([5, 6, 7, 8])),
     ],
 )
 def test_pack_tensors(tensors):

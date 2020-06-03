@@ -1,7 +1,5 @@
-from functools import wraps
 import copy
 
-import syft
 from syft.execution.plan import Plan
 
 import crypten
@@ -98,7 +96,8 @@ def hook_crypten_module():
     crypten.nn.Module.move = module_move_
 
     def module_get_(nn_self):
-        """Overloads crypten.nn instances with get method so that parameters could be sent back to owner"""
+        """Overloads crypten.nn instances with get method so that parameters could be sent back to
+        owner"""
         nn_self._check_encrypted()
         for p in nn_self.parameters():
             p.get_()

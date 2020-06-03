@@ -1,12 +1,7 @@
-from crypten.mpc import MPCTensor
-
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.tensor import AbstractTensor
-from syft.workers.abstract import AbstractWorker
 
-from functools import wraps
 from syft.generic.frameworks.hook.trace import tracer
-from syft.generic.frameworks.overload import overloaded
 
 
 class SyftCrypTensor(AbstractTensor):
