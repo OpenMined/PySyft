@@ -11,10 +11,11 @@ class AbstractSendable(AbstractObject, SyftSerializable):
 
         Args:
             destination (BaseWorker): The worker where the current object is sent.
- 
+
         Returns:
             An  object of type ObjectPointer pointing to the sent object.
         """
+
         ptr = self.owner.send(self, destination)
 
         return ptr
