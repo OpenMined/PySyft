@@ -447,7 +447,7 @@ class TorchTensor(AbstractTensor):
             garbage_collect_data: argument passed down to create_pointer()
 
         Returns:
-            A torch.Tensor[PointerTensor] pointer to self. Note that this
+            A PointerTensor pointer to self. Note that this
             object will likely be wrapped by a torch.Tensor wrapper.
 
         Raises:
