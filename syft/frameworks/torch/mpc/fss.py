@@ -235,6 +235,7 @@ class DPF:
             Array(n + 1, 2, n_values),
             Array(n, 2, (λs + 1), n_values),
         )
+        _CW = []
         s[0] = randbit(shape=(2, λ, n_values))
         t[0] = np.array([[0, 1]] * n_values).T
         for i in range(0, n):
@@ -247,15 +248,17 @@ class DPF:
 
             cw_i = SwitchTableDPF(s_rand, α[i])
             CW[i] = cw_i ^ g0 ^ g1
+            _CW.append(compress(CW[i], α[i], op=EQ))
+            CWi = uncompress(_CW[i])
 
             for b in (0, 1):
-                τ = [g0, g1][b] ^ (t[i, b] * CW[i])
+                τ = [g0, g1][b] ^ (t[i, b] * CWi)
                 filtered_τ = multi_dim_filter(τ, α[i])
                 s[i + 1, b], t[i + 1, b] = split(filtered_τ, (EQ, λs, 1))
 
         CW_n = (-1) ** t[n, 1] * (beta - convert(s[n, 0]) + convert(s[n, 1]))
         CW_n = CW_n.astype(np.int64)
-        return (alpha, s[0][0], s[0][1], *CW, CW_n)
+        return (alpha, s[0][0], s[0][1], *_CW, CW_n)
 
     @staticmethod
     def eval(b, x, *k_b):
@@ -265,14 +268,15 @@ class DPF:
         n_values = x.shape[0]
         x = bit_decomposition(x)
         s, t = Array(n + 1, λs, n_values), Array(n + 1, 1, n_values)
-        s[0], *CW = k_b
+        s[0], *_CW, _CWn = k_b
         t[0] = b
         for i in range(0, n):
-            τ = G(s[i]) ^ (t[i] * CW[i])
+            CWi = uncompress(_CW[i])
+            τ = G(s[i]) ^ (t[i] * CWi)
             filtered_τ = multi_dim_filter(τ, x[i])
             s[i + 1], t[i + 1] = split(filtered_τ, (EQ, λs, 1))
 
-        flat_result = (-1) ** b * (t[n].squeeze() * CW[n] + convert(s[n]))
+        flat_result = (-1) ** b * (t[n].squeeze() * _CWn + convert(s[n]))
         return flat_result.astype(np.int64).reshape(original_shape)
 
 
@@ -291,6 +295,7 @@ class DIF:
             Array(n, 2, 2 * (λs + 1), n_values),
             Array(n + 1, n_values),
         )
+        _CW = []
         s[0] = randbit(shape=(2, λ, n_values))
         t[0] = np.array([[0, 1]] * n_values).T
 
@@ -304,9 +309,11 @@ class DIF:
             σ_rand = (σL_0 ^ σL_1) * α[i] + (σR_0 ^ σR_1) * (1 - α[i])
             cw_i = SwitchTableDIF(s_rand, σ_rand, α[i])
             CW[i] = cw_i ^ h0 ^ h1
+            _CW.append(compress(CW[i], α[i], op=COMP))
+            CWi = uncompress(_CW[i], op=COMP)
 
             for b in (0, 1):
-                dual_state = [h0, h1][b] ^ (t[i, b] * CW[i])
+                dual_state = [h0, h1][b] ^ (t[i, b] * CWi)
                 # the state obtained by following the special path
                 state = multi_dim_filter(dual_state, α[i])
                 _, _, s[i + 1, b], t[i + 1, b] = split(state, (COMP, λs, 1, λs, 1))
@@ -324,9 +331,9 @@ class DIF:
 
         CW_leaf[n] = (-1) ** t[n, 1] * (1 - convert(s[n, 0]) + convert(s[n, 1]))
 
-        CW_leaf = CW_leaf.astype(np.int64)
+        CW_leaf = CW_leaf.astype(np.int32)
 
-        return (alpha, s[0][0], s[0][1], *CW, CW_leaf)
+        return (alpha, s[0][0], s[0][1], *_CW, CW_leaf)
 
     @staticmethod
     def eval(b, x, *k_b):
@@ -342,11 +349,13 @@ class DIF:
             Array(n + 1, 1, n_values),
             Array(n + 1, n_values),
         )
-        s[0], *CW, CW_leaf = k_b
+        s[0], *_CW, CW_leaf = k_b
+        CW_leaf = CW_leaf.astype(np.int64)
         t[0] = b
 
         for i in range(0, n):
-            dual_state = H(s[i]) ^ (t[i] * CW[i])
+            CWi = uncompress(_CW[i], op=COMP)
+            dual_state = H(s[i]) ^ (t[i] * CWi)
             state = multi_dim_filter(dual_state, x[i])
             σ[i + 1], τ[i + 1], s[i + 1], t[i + 1] = split(state, (COMP, λs, 1, λs, 1))
             out[i] = (-1) ** b * (τ[i + 1] * CW_leaf[i] + convert(σ[i + 1]))
@@ -355,6 +364,44 @@ class DIF:
         out[n] = (-1) ** b * (t[n].squeeze() * CW_leaf[n] + convert(s[n]))
 
         return out.sum(axis=0).astype(np.int64).reshape(original_shape)
+
+
+def compress(CWi, alpha_i, op=EQ):
+    if op == EQ:
+        sL, tL, sR, tR = split(CWi, (op, λs, 1, λs, 1))
+        return (tL.astype(np.bool), tR.astype(np.bool), (1 - alpha_i) * sR + alpha_i * sL)
+    else:
+        σL, τL, sL, tL, σR, τR, sR, tR = split(CWi, (op, λs, 1, λs, 1, λs, 1, λs, 1))
+        return (
+            τL.astype(np.bool),
+            tL.astype(np.bool),
+            τR.astype(np.bool),
+            tR.astype(np.bool),
+            alpha_i * σR + (1 - alpha_i) * σL,
+            (1 - alpha_i) * sR + alpha_i * sL,
+        )
+
+
+def uncompress(_CWi, op=EQ):
+    if op == EQ:
+        CWi = concat(
+            _CWi[2],
+            _CWi[0].reshape(1, -1).astype(np.uint64),
+            _CWi[2],
+            _CWi[1].reshape(1, -1).astype(np.uint64),
+        ).reshape(2, 3, -1)
+    else:
+        CWi = concat(
+            _CWi[4],
+            _CWi[0].reshape(1, -1).astype(np.uint64),
+            _CWi[5],
+            _CWi[1].reshape(1, -1).astype(np.uint64),
+            _CWi[4],
+            _CWi[2].reshape(1, -1).astype(np.uint64),
+            _CWi[5],
+            _CWi[3].reshape(1, -1).astype(np.uint64),
+        ).reshape(2, 6, -1)
+    return CWi
 
 
 def Array(*shape):
@@ -493,7 +540,7 @@ split_helpers = {
         x[0, 3:5],
         x[0, 5],
         x[1, :2],
-        x[1, 3],
+        x[1, 2],
         x[1, 3:5],
         x[1, 5],
     ),
@@ -538,6 +585,6 @@ def convert(x):
     """
     convert a multi dim big tensor to a "random" single tensor
     """
-    # Select the 16th least significant bits
-    r = x[-1] & 0b1111111111111111
+    # Select the 31st least significant bits
+    r = x[-1] & 0b1111_1111_1111_1111_1111_1111_1111_111
     return r.astype(np.int64)
