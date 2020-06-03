@@ -112,25 +112,43 @@ class PrimitiveStorage:
                     # [:1] ~ [slice(1)]
                     # [1:] ~ [slice(1, None)]
                     # [:, :, :1] ~ [slice(None)] * 2 + [slice(1)]
-                    n_dim = len(prim.shape)
-                    get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
-                    remaining_slice = tuple(
-                        [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
-                    )
+                    if isinstance(prim, tuple):
 
-                    keys.append(prim[get_slice])
-                    if remove:
-                        primitive_stack[i] = prim[remaining_slice]
+                        ps = []
+                        left_ps = []
+                        for p in prim:
+                            n_dim = len(p.shape)
+                            get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
+                            remaining_slice = tuple(
+                                [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
+                            )
+                            ps.append(p[get_slice])
+                            if remove:
+                                left_ps.append(p[remaining_slice])
+
+                        keys.append(tuple(ps))
+                        if remove:
+                            primitive_stack[i] = tuple(left_ps)
+                    else:
+                        n_dim = len(prim.shape)
+                        get_slice = tuple([slice(None)] * (n_dim - 1) + [slice(n_instances)])
+                        remaining_slice = tuple(
+                            [slice(None)] * (n_dim - 1) + [slice(n_instances, None)]
+                        )
+
+                        keys.append(prim[get_slice])
+                        if remove:
+                            primitive_stack[i] = prim[remaining_slice]
 
                 return keys
             else:
                 if not self.force_preprocessing:
-                    # print(
-                    #     f"Autogenerate: "
-                    #     f'["{type_op}"], '
-                    #     f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                    #     f"n_instances={n_instances}"
-                    # )
+                    print(
+                        f"Autogenerate: "
+                        f'["{type_op}"], '
+                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        f"n_instances={n_instances}"
+                    )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op], sy.local_worker.clients, n_instances=n_instances
                     )
@@ -236,9 +254,18 @@ class PrimitiveStorage:
                         if len(current_primitives[i]) == 0:
                             current_primitives[i] = primitive
                         else:
-                            current_primitives[i] = np.concatenate(
-                                (current_primitives[i], primitive), axis=len(primitive.shape) - 1
-                            )
+                            if isinstance(current_primitives[i], tuple):
+                                new_prims = []
+                                for cur_prim, prim in zip(current_primitives[i], primitive):
+                                    new_prims.append(
+                                        np.concatenate((cur_prim, prim), axis=len(prim.shape) - 1)
+                                    )
+                                current_primitives[i] = tuple(new_prims)
+                            else:
+                                current_primitives[i] = np.concatenate(
+                                    (current_primitives[i], primitive),
+                                    axis=len(primitive.shape) - 1,
+                                )
             else:
                 raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
 
