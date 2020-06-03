@@ -1,5 +1,3 @@
-import unittest.mock as mock
-
 import pytest
 import torch as th
 import torch.nn as nn
@@ -7,14 +5,10 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 import syft as sy
-from itertools import starmap
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.execution.placeholder import PlaceHolder
-from syft.execution.plan import Plan
 from syft.serde.msgpack import serde
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
-from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 
 
 def test_plan_built_automatically():
@@ -855,7 +849,7 @@ def test_plan_type_error(hook):
     pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
-        "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k1": {"kk1": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn"},
         "k2": [pointer_to_data_1, pointer_to_data_2],
     }
 
@@ -863,9 +857,9 @@ def test_plan_type_error(hook):
     with pytest.raises(TypeError) as e:
         _ = pointer_to_plan(call_build)
 
-    assert (
-        str(e.value)
-        == "Plan plan_type_err element 1 of element 0 of key kk1 of key k1 of element 0 of input has type int, while being built with type float."
+    assert str(e.value) == (
+        "Plan plan_type_err element 1 of element 0 of key kk1 of key k1 of element 0 of "
+        "input has type int, while being built with type float."
     )
 
 
@@ -894,9 +888,9 @@ def test_plan_missmatch_Err(hook):
     with pytest.raises(TypeError) as e:
         _ = pointer_to_plan(call_build)
 
-    assert (
-        str(e.value)
-        == "Plan plan_missmatch_err element 0 of element 0 of input has length 3, while being build with length 2."
+    assert str(e.value) == (
+        "Plan plan_missmatch_err element 0 of element 0 of input has length 3, while being "
+        "build with length 2."
     )
 
 
@@ -917,9 +911,9 @@ def test_wrong_type_err(hook):
     with pytest.raises(TypeError) as e:
         pointer_to_plan(call_build)
 
-    assert (
-        str(e.value)
-        == "Plan plan_wrong_type_err element 0 of input has type tuple, while being built with type list."
+    assert str(e.value) == (
+        "Plan plan_wrong_type_err element 0 of input has type tuple, while being "
+        "built with type list."
     )
 
 
@@ -941,9 +935,9 @@ def test_wrong_size_dict(hook):
     with pytest.raises(TypeError) as e:
         pointer_to_plan(call_build)
 
-    assert (
-        str(e.value)
-        == "Plan plan_wrong_size_dict element 0 of input has length 3, while being build with length 2."
+    assert str(e.value) == (
+        "Plan plan_wrong_size_dict element 0 of input has length 3, while being "
+        "build with length 2."
     )
 
 
@@ -970,7 +964,7 @@ def test_plan_key_error(hook):
     pointer_to_data_2 = x2.send(device_1)
 
     call_build = {
-        "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn",},
+        "k1": {"kk1_wrong": [(pointer_to_data_1, 1.5), [pointer_to_data_1, True]], "kk2": "warn"},
         "k2": [pointer_to_data_1, pointer_to_data_2],
     }
 
@@ -978,9 +972,9 @@ def test_plan_key_error(hook):
     with pytest.raises(KeyError) as e:
         _ = pointer_to_plan(call_build)
 
-    assert (
-        str(e.value)
-        == "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, while being build with that key.'"
+    assert str(e.value) == (
+        "'Plan plan_type_warn key k1 of element 0 of input does not provide the key kk1, "
+        "while being build with that key.'"
     )
 
 
@@ -1008,7 +1002,7 @@ def test_backward_autograd_can_be_traced(hook, workers):
         "var_5 = var_4.mul(0)\n    var_6 = var_5.add(1)\n    var_7 = var_3.mul(0)\n    "
         "var_8 = var_7.add(1)\n    var_9 = var_8.mul(var_6)\n    var_10 = var_9.div(2)\n    "
         "var_11 = var_10.mul(-1)\n    var_12 = var_0.__rtruediv__(1)\n    "
-        "var_13 = var_11.mul(var_12)\n    var_14 = var_13.mul(5)\n    var_15 = var_13.mul(arg_1)\n    "
+        "var_13 = var_11.mul(var_12)\n    var_14 = var_13.mul(5)\n    var_15 = var_13.mul(arg_1)\n    "  # noqa:
         "out_1 = var_14.copy()\n    return out_1"
     )
     assert autograd_test.code == autograd_str

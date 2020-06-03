@@ -37,28 +37,31 @@
 # /docs/ @doctocat
 
 # Syft Core Team
-/* @OpenMined/syft-core-team
-/pip-dep/ @OpenMined/syft-core-team
-/syft/execution/ @OpenMined/syft-core-team
-/syft/generic/ @OpenMined/syft-core-team
-/syft/messaging/ @OpenMined/syft-core-team
-/syft/serde/ @OpenMined/syft-core-team
-/syft/workers/ @OpenMined/syft-core-team
+/* @OpenMined/syft-core
+/pip-dep/ @OpenMined/syft-core
+/syft/execution/ @OpenMined/syft-core
+/syft/generic/ @OpenMined/syft-core
+/syft/messaging/ @OpenMined/syft-core
+/syft/serde/ @OpenMined/syft-core
+/syft/workers/ @OpenMined/syft-core
 
 # Crypto Team
-/syft/torch/he/ @OpenMined/crypto-team
-/syft/torch/linalg/ @OpenMined/crypto-team
-/syft/torch/mpc/ @OpenMined/crypto-team
-/syft/torch/nn/ @OpenMined/crypto-team
-/syft/torch/tensors/interpreters/additive_shared.py @OpenMined/crypto-team
-/syft/torch/tensors/interpreters/autograd.py @OpenMined/crypto-team
-/syft/torch/tensors/interpreters/paillier.py @OpenMined/crypto-team
-/syft/torch/tensors/interpreters/precision.py @OpenMined/crypto-team
+/syft/torch/he/ @OpenMined/cryptography
+/syft/torch/linalg/ @OpenMined/cryptography
+/syft/torch/mpc/ @OpenMined/cryptography
+/syft/torch/nn/ @OpenMined/cryptography
+/syft/torch/tensors/interpreters/additive_shared.py @OpenMined/cryptography
+/syft/torch/tensors/interpreters/autograd.py @OpenMined/cryptography
+/syft/torch/tensors/interpreters/paillier.py @OpenMined/cryptography
+/syft/torch/tensors/interpreters/precision.py @OpenMined/cryptography
+
+# Grid Tream
+/syft/grid/ @OpenMined/grid
 
 # NLP Team
-/syft/generic/string.py @OpenMined/nlp-team
-/syft/generic/pointers/string_pointer.py @OpenMined/nlp-team
+/syft/generic/string.py @OpenMined/natural-language-processing
+/syft/generic/pointers/string_pointer.py @OpenMined/natural-language-processing
 
 # Writing Team
-/examples/tutorials/translations/ @OpenMined/writing-team
+/examples/tutorials/translations/ @OpenMined/technical-writing
 

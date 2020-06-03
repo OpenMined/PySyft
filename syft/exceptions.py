@@ -55,7 +55,10 @@ class InvalidTensorForRemoteGet(Exception):
     """Raised when a chain of pointer tensors is not provided for `remote_get`."""
 
     def __init__(self, tensor: object):
-        message = f"Tensor does not have attribute child. You remote get should be called on a chain of pointer tensors, instead you called it on {tensor}."
+        message = (
+            "Tensor does not have attribute child. You remote get should "
+            f"be called on a chain of pointer tensors, instead you called it on {tensor}."
+        )
         super().__init__(message)
 
 
@@ -94,48 +97,33 @@ class TensorsNotCollocatedException(Exception):
 
         if isinstance(tensor_a, sy.PointerTensor) and isinstance(tensor_b, sy.PointerTensor):
             message = (
-                "You tried to call "
-                + attr
-                + " involving two tensors which"
-                + " are not on the same machine! One tensor is on "
-                + str(tensor_a.location)
-                + " while the other is on "
-                + str(tensor_b.location)
-                + ". Use a combination of .move(), .get(), and/or .send() to co-locate them to the same machine."
+                f"You tried to call {attr} involving two tensors which are not on the same machine!"
+                " One tensor is on {tensor_a.location} while the other is on {tensor_b.location}."
+                " Use a combination of .move(), .get(), and/or .send()"
+                " to co-locate them to the same machine."
             )
         elif isinstance(tensor_a, sy.PointerTensor):
             message = (
-                "You tried to call "
-                + attr
-                + " involving two tensors where one tensor is actually located"
-                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
-                + str(tensor_a.location.id)
-                + ") on the other tensor.\n"
-                + "\nTensor A: "
-                + str(tensor_a)
-                + "\nTensor B: "
-                + str(tensor_b)
+                f"You tried to call {attr} involving two tensors where one tensor is actually"
+                " located on another machine (is a PointerTensor). Call .get() on a"
+                " the PointerTensor or .send({tensor_b.location.id}) on the other tensor.\n"
+                "Tensor A: {tensor_a}\n"
+                "Tensor B: {tensor_b}"
             )
         elif isinstance(tensor_b, sy.PointerTensor):
             message = (
-                "You tried to call "
-                + attr
-                + " involving two tensors where one tensor is actually located"
-                + " on another machine (is a PointerTensor). Call .get() on the PointerTensor or .send("
-                + str(tensor_b.location.id)
-                + ") on the other tensor.\n"
-                + "\nTensor A: "
-                + str(tensor_a)
-                + "\nTensor B: "
-                + str(tensor_b)
+                f"You tried to call {attr} involving two tensors where one tensor is actually"
+                " located on another machine (is a PointerTensor). Call .get() on a"
+                " the PointerTensor or .send({tensor_a.location.id}) on the other tensor.\n"
+                "Tensor A: {tensor_a}\n"
+                "Tensor B: {tensor_b}"
             )
         else:
             message = (
-                "You tried to call "
-                + attr
-                + " involving two tensors which are not on the same machine."
-                + "Try calling .send(), .move(), and/or .get() on these tensors to get them to the same"
-                + "worker before calling methods that involve them working together."
+                f"You tried to call {attr} involving two tensors which are not"
+                " on the same machine. Try calling .send(), .move(), and/or .get() on these"
+                " tensors to get them to the same worker before calling methods that involve"
+                " them working together."
             )
 
         super().__init__(message)
@@ -319,11 +307,8 @@ class ObjectNotFoundError(Exception):
         message = ""
         message += 'Object "' + str(obj_id) + '" not found on worker! '
         message += (
-            "You tried to interact with an object ID:"
-            + str(obj_id)
-            + " on "
-            + str(worker)
-            + " which does not exist. "
+            f"You just tried to interact with an object ID: {obj_id} on {worker} "
+            "which does not exist!!!"
         )
         message += (
             "Use .send() and .get() on all your tensors to make sure they're "
@@ -369,7 +354,7 @@ class EmptyCryptoPrimitiveStoreError(Exception):
         super().__init__(message)
 
 
-def route_method_exception(exception, self, args_, kwargs_):
+def route_method_exception(exception, self, args_, kwargs_):  # noqa: C901
     try:
         if self.is_wrapper:
             if isinstance(self.child, sy.PointerTensor):
@@ -388,6 +373,6 @@ def route_method_exception(exception, self, args_, kwargs_):
                         return TensorsNotCollocatedException(self, args_[0])
                 elif isinstance(args_[0], sy.PointerTensor):
                     return TensorsNotCollocatedException(self, args_[0])
-    except:
+    except:  # noqa: E722
         ""
     return exception

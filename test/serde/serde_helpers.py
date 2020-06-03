@@ -1,21 +1,38 @@
 from collections import OrderedDict
-import pytest
 import numpy
 import torch
-from functools import partial
 import traceback
 import io
 
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
+from syft.serde.syft_serializable import SyftSerializable
+
+
+class SerializableDummyClass(SyftSerializable):
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def simplify(worker, obj):
+        return obj.value
+
+    @staticmethod
+    def detail(worker, obj):
+        return SerializableDummyClass(obj)
+
+    @staticmethod
+    def get_msgpack_code():
+        return {"code": 12345}
+
 
 # Make dict of type codes
 CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.get_simplifiers():
+for cls, simplifier in msgpack.serde.msgpack_global_state.simplifiers.items():
     CODE[cls] = simplifier[0]
 FORCED_CODE = OrderedDict()
-for cls, simplifier in msgpack.serde.forced_full_simplifiers.items():
+for cls, simplifier in msgpack.serde.msgpack_global_state.forced_full_simplifiers.items():
     FORCED_CODE[cls] = simplifier[0]
 
 ########################################################################
@@ -69,7 +86,7 @@ def make_dict(**kwargs):
                 ),
             ),
         },
-        {"value": {}, "simplified": (CODE[dict], tuple())},
+        {"value": {}, "simplified": (CODE[dict], ())},
     ]
 
 
@@ -84,8 +101,9 @@ def make_list(**kwargs):
             ),
         },
         {"value": ["hello"], "simplified": (CODE[list], ((CODE[str], (b"hello",)),))},  # item
-        {"value": [], "simplified": (CODE[list], tuple())},
-        # Tests that forced full simplify should return just simplified object if it doesn't have full simplifier
+        {"value": [], "simplified": (CODE[list], ())},
+        # Tests that forced full simplify should return just simplified object
+        # if it doesn't have full simplifier
         {
             "forced": True,
             "value": ["hello"],
@@ -102,7 +120,7 @@ def make_tuple(**kwargs):
             "simplified": (CODE[tuple], ((CODE[str], (b"hello",)), (CODE[str], (b"world",)))),
         },
         {"value": ("hello",), "simplified": (CODE[tuple], ((CODE[str], (b"hello",)),))},
-        {"value": tuple(), "simplified": (CODE[tuple], tuple())},
+        {"value": (), "simplified": (CODE[tuple], ())},
     ]
 
 
@@ -122,7 +140,7 @@ def make_set(**kwargs):
             "cmp_simplified": compare_simplified,
         },
         {"value": {"hello"}, "simplified": (CODE[set], ((CODE[str], (b"hello",)),))},
-        {"value": set([]), "simplified": (CODE[set], tuple())},
+        {"value": set(), "simplified": (CODE[set], ())},
     ]
 
 
@@ -155,7 +173,8 @@ def make_str(**kwargs):
 def make_int(**kwargs):
     return [
         {"value": 5, "simplified": 5},
-        # Tests that forced full simplify should return just simplified object if it doesn't have full simplifier
+        # Tests that forced full simplify should return just simplified
+        # object if it doesn't have full simplifier
         {"forced": True, "value": 5, "simplified": 5},
     ]
 
@@ -312,7 +331,8 @@ def make_torch_memoryformat(**kwargs):
 
 
 # torch.jit.TopLevelTracedModule
-# NOTE: if the model is created inside the function, it will be serialized differently depending on the context
+# NOTE: if the model is created inside the function, it will be serialized differently
+# depending on the context
 class TopLevelTraceModel(torch.nn.Module):
     def __init__(self):
         super(TopLevelTraceModel, self).__init__()
@@ -324,11 +344,8 @@ class TopLevelTraceModel(torch.nn.Module):
         return x
 
 
-topLevelTraceModel = TopLevelTraceModel()
-
-
 def make_torch_topleveltracedmodule(**kwargs):
-    tm = torch.jit.trace(topLevelTraceModel, torch.randn(10, 3))
+    tm = torch.jit.trace(TopLevelTraceModel(), torch.randn(10, 3))
 
     return [
         {
@@ -557,7 +574,8 @@ def make_fixedprecisiontensor(**kwargs):
     fpt = fpt_tensor.child
     fpt.tag("tag1")
     fpt.describe("desc")
-    # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors during simplify
+    # AdditiveSharingTensor.simplify sets garbage_collect_data=False on child tensors
+    # during simplify
     # This changes tensors' internal state in chain and is required to pass the test
     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], fpt)
 
@@ -974,8 +992,8 @@ def make_protocol(**kwargs):
 
     @syft.func2protocol(roles=["alice", "bob"], args_shape={"alice": ((1,),), "bob": ((1,),)})
     def protocol(alice, bob):
-        tensor1 = alice.fetch(torch.tensor([1]))
-        tensor2 = bob.fetch(torch.tensor([1]))
+        tensor1 = alice.load(torch.tensor([1]))
+        tensor2 = bob.load(torch.tensor([1]))
 
         t1plus = tensor1 + 1
         t2plus = tensor2 + 1
@@ -1011,6 +1029,36 @@ def make_protocol(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], protocol.tags),
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], protocol.description
+                    ),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+# Protocol
+def make_role_assignments(**kwargs):
+    alice = kwargs["workers"]["alice"]
+    bob = kwargs["workers"]["bob"]
+
+    role_assignments = syft.execution.role_assignments.RoleAssignments(
+        {"role1": alice, "role2": bob}
+    )
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.role_assignments.RoleAssignments
+        assert detailed.assignments == original.assignments
+        return True
+
+    return [
+        {
+            "value": role_assignments,
+            "simplified": (
+                CODE[syft.execution.role_assignments.RoleAssignments],
+                (
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], role_assignments.assignments
                     ),
                 ),
             ),
@@ -1164,12 +1212,12 @@ def make_objectpointer(**kwargs):
 # syft.generic.string.String
 def make_string(**kwargs):
     def compare_simplified(actual, expected):
-        """This is a custom comparison functino.
-           The reason for using this is that when set is that tags are use. Tags are sets.
-           When sets are simplified and converted to tuple, elements order in tuple is random
-           We compare tuples as sets because the set order is undefined.
+        """This is a custom comparison function.
+        The reason for using this is that when set is that tags are use. Tags are sets.
+        When sets are simplified and converted to tuple, elements order in tuple is random
+        We compare tuples as sets because the set order is undefined.
 
-           This function is inspired by the one with the same name defined above in `make_set`.
+        This function is inspired by the one with the same name defined above in `make_set`.
         """
         assert actual[0] == expected[0]
         assert actual[1][0] == expected[1][0]
@@ -1182,7 +1230,7 @@ def make_string(**kwargs):
     return [
         {
             "value": syft.generic.string.String(
-                "Hello World", id=1234, tags=set(["tag1", "tag2"]), description="description"
+                "Hello World", id=1234, tags={"tag1", "tag2"}, description="description"
             ),
             "simplified": (
                 CODE[syft.generic.string.String],
@@ -1194,68 +1242,6 @@ def make_string(**kwargs):
                 ),
             ),
             "cmp_simplified": compare_simplified,
-        }
-    ]
-
-
-# syft.federated.train_config.TrainConfig
-def make_trainconfig(**kwargs):
-    class Model(torch.jit.ScriptModule):
-        def __init__(self):
-            super(Model, self).__init__()
-            self.w1 = torch.nn.Parameter(torch.randn(10, 1), requires_grad=True)
-            self.b1 = torch.nn.Parameter(torch.randn(1), requires_grad=True)
-
-        @torch.jit.script_method
-        def forward(self, x):  # pragma: no cover
-            x = x @ self.w1 + self.b1
-            return x
-
-    class Loss(torch.jit.ScriptModule):
-        def __init__(self):
-            super(Loss, self).__init__()
-
-        @torch.jit.script_method
-        def forward(self, pred, target):  # pragma: no cover
-            return ((target.view(pred.shape).float() - pred.float()) ** 2).mean()
-
-    loss = Loss()
-    model = Model()
-    conf = syft.federated.train_config.TrainConfig(
-        model=model, loss_fn=loss, batch_size=2, optimizer="SGD", optimizer_args={"lr": 0.1}
-    )
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.federated.train_config.TrainConfig
-        assert detailed.id == original.id
-        assert detailed._model_id == original._model_id
-        assert detailed._loss_fn_id == original._loss_fn_id
-        assert detailed.batch_size == original.batch_size
-        assert detailed.epochs == original.epochs
-        assert detailed.optimizer == original.optimizer
-        assert detailed.optimizer_args == original.optimizer_args
-        assert detailed.max_nr_batches == original.max_nr_batches
-        assert detailed.shuffle == original.shuffle
-        return True
-
-    return [
-        {
-            "value": conf,
-            "simplified": (
-                CODE[syft.federated.train_config.TrainConfig],
-                (
-                    None,  # (int) _model_id
-                    None,  # (int) _loss_fn_id
-                    2,  # (int) batch_size
-                    1,  # (int) epochs
-                    (CODE[str], (b"SGD",)),  # (str) optimizer
-                    (CODE[dict], (((CODE[str], (b"lr",)), 0.1),)),  # (dict) optimizer_args
-                    conf.id,  # (int or str)
-                    -1,  # (int) max_nr_batches
-                    True,  # (bool) shuffle
-                ),
-            ),
-            "cmp_detailed": compare,
         }
     ]
 
@@ -1356,7 +1342,7 @@ def make_autogradtensor(**kwargs):
 # syft.frameworks.torch.tensors.interpreters.private.PrivateTensor
 def make_privatetensor(**kwargs):
     t = torch.tensor([1, 2, 3])
-    pt = t.private_tensor(allowed_users=("test",))
+    pt = t.private_tensor(allowed_users=["test"])
     pt.tag("tag1")
     pt.describe("private")
     pt = pt.child
@@ -1495,6 +1481,10 @@ def make_computation_action(**kwargs):
     b = a.sum(1, keepdim=True)
     op2 = bob._get_msg(-1).action
 
+    c = torch.tensor([[1, 2], [3, 4]]).send(bob)
+    d = c.sum([0, 1], keepdim=True)
+    op3 = bob._get_msg(-1).action
+
     bob.log_msgs = False
 
     def compare(detailed, original):
@@ -1555,6 +1545,21 @@ def make_computation_action(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.kwargs),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_ids),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_value),
+                ),
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": op3,
+            "simplified": (
+                CODE[syft.execution.computation.ComputationAction],
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1914,7 +1919,7 @@ def make_getnotpermittederror(**kwargs):
                         "Traceback (most recent call last):\n"
                         + "".join(traceback.format_tb(err.__traceback__)),
                     ),  # (str) traceback
-                    (CODE[dict], tuple()),  # (dict) attributes
+                    (CODE[dict], ()),  # (dict) attributes
                 ),
             ),
             "cmp_detailed": compare,
@@ -2109,6 +2114,23 @@ def make_paillier(**kwargs):
                 CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
                 simplfied,
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_serializable_dummy_class(**kwargs):
+    def compare(simplified, detailed):
+        assert simplified.value == detailed.value
+        return True
+
+    obj = SerializableDummyClass("test")
+    simplified = SerializableDummyClass.simplify(kwargs["workers"]["serde_worker"], obj)
+
+    return [
+        {
+            "value": obj,
+            "simplified": (SerializableDummyClass.get_msgpack_code()["code"], simplified),
             "cmp_detailed": compare,
         }
     ]

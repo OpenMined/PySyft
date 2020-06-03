@@ -8,12 +8,11 @@ from syft.serde import serialize
 from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
-from syft.federated.federated_client import FederatedClient
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.grid.authentication.credential import AbstractCredential
 
 
-class NodeClient(WebsocketClientWorker, FederatedClient):
+class NodeClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(
@@ -75,8 +74,9 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
     @property
     def url(self) -> str:
         """ Get Node URL Address.
-            Returns:
-                address (str) : Node's address.
+
+        Returns:
+            address (str) : Node's address.
         """
         if self.port:
             return (
@@ -89,8 +89,8 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
     def models(self) -> list:
         """ Get models stored at remote node.
 
-            Returns:
-                models (List) : List of models stored in this node.
+        Returns:
+            models (List) : List of models stored in this node.
         """
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
         response = self._forward_json_to_websocket_server_worker(message)
@@ -98,8 +98,9 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def _authenticate(self):
         """ Perform Authentication Process using credentials grid credentials.
-            Raises:
-                RuntimeError : If authentication process fail.
+
+        Raises:
+            RuntimeError : If authentication process fail.
         """
         if not isinstance(self.credential, AbstractCredential):
             raise RuntimeError("Your credential needs to be an instance of grid credentials.")
@@ -120,8 +121,9 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def _update_node_reference(self, new_id: str):
         """ Update worker references changing node id references at hook structure.
-            Args:
-                new_id (str) : New worker ID.
+
+        Args:
+            new_id (str) : New worker ID.
         """
         del self.hook.local_worker._known_workers[self.id]
         self.id = new_id
@@ -129,8 +131,9 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def _parse_address(self, address: str) -> tuple:
         """ Parse Address string to define secure flag and split into host and port.
-            Args:
-                address (str) : Adress of remote worker.
+
+        Args:
+            address (str) : Adress of remote worker.
         """
         url = urlparse(address)
         secure = True if url.scheme == "wss" else False
@@ -138,8 +141,9 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def _get_node_infos(self) -> str:
         """ Get Node ID from remote node worker
-            Returns:
-                node_id (str) : node id used by remote worker.
+
+        Returns:
+            node_id (str) : node id used by remote worker.
         """
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.GET_ID}
         response = self._forward_json_to_websocket_server_worker(message)
@@ -156,20 +160,22 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def _forward_json_to_websocket_server_worker(self, message: dict) -> dict:
         """ Prepare/send a JSON message to a remote node and receive the response.
-            Args:
-                message (dict) : message payload.
-            Returns:
-                node_response (dict) : response payload.
+
+        Args:
+            message (dict) : message payload.
+        Returns:
+            node_response (dict) : response payload.
         """
         self.ws.send(json.dumps(message))
         return json.loads(self.ws.recv())
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """ Send a bin message to a remote node and receive the response.
-            Args:
-                message (bytes) : message payload.
-            Returns:
-                node_response (bytes) : response payload.
+
+        Args:
+            message (bytes) : message payload.
+        Returns:
+            node_response (bytes) : response payload.
         """
         self.ws.send_binary(message)
         response = self.ws.recv()
@@ -185,10 +191,11 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
 
     def connect_nodes(self, node) -> dict:
         """ Connect two remote workers between each other.
-            Args:
-                node (WebsocketFederatedClient) : Node that will be connected with this remote worker.
-            Returns:
-                node_response (dict) : node response.
+
+        Args:
+            node (WebsocketFederatedClient) : Node that will be connected with this remote worker.
+        Returns:
+            node_response (dict) : node response.
         """
         message = {
             REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.CONNECT_NODE,
@@ -206,18 +213,19 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
         allow_remote_inference: bool = False,
     ):
         """ Hosts the model and optionally serve it using a Socket / Rest API.
-            Args:
-                model : A jit model or Syft Plan.
-                model_id (str): An integer/string representing the model id.
-                If it isn't provided and the model is a Plan we use model.id,
-                if the model is a jit model we raise an exception.
-                allow_download (bool) : Allow to copy the model to run it locally.
-                allow_remote_inference (bool) : Allow to run remote inferences.
-            Returns:
-                result (bool) : True if model was served sucessfully.
-            Raises:
-                ValueError: model_id isn't provided and model is a jit model.
-                RunTimeError: if there was a problem during model serving.
+
+        Args:
+            model : A jit model or Syft Plan.
+            model_id (str): An integer/string representing the model id.
+            If it isn't provided and the model is a Plan we use model.id,
+            if the model is a jit model we raise an exception.
+            allow_download (bool) : Allow to copy the model to run it locally.
+            allow_remote_inference (bool) : Allow to run remote inferences.
+        Returns:
+            result (bool) : True if model was served sucessfully.
+        Raises:
+            ValueError: model_id isn't provided and model is a jit model.
+            RunTimeError: if there was a problem during model serving.
         """
 
         # If the model is a Plan we send the model
@@ -248,13 +256,13 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
     def run_remote_inference(self, model_id, data):
         """ Run a dataset inference using a remote model.
 
-            Args:
-                model_id (str) : Model ID.
-                data (Tensor) : dataset to be inferred.
-            Returns:
-                inference (Tensor) : Inference result
-            Raises:
-                RuntimeError : If an unexpected behavior happen.
+        Args:
+            model_id (str) : Model ID.
+            data (Tensor) : dataset to be inferred.
+        Returns:
+            inference (Tensor) : Inference result
+        Raises:
+            RuntimeError : If an unexpected behavior happen.
         """
         serialized_data = serialize(data).decode(self.encoding)
         message = {
@@ -269,10 +277,10 @@ class NodeClient(WebsocketClientWorker, FederatedClient):
     def delete_model(self, model_id: str) -> bool:
         """ Delete a model previously registered.
 
-            Args:
-                model_id (String) : ID of the model that will be deleted.
-            Returns:
-                result (bool) : If succeeded, return True.
+        Args:
+            model_id (String) : ID of the model that will be deleted.
+        Returns:
+            result (bool) : If succeeded, return True.
         """
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.DELETE_MODEL, "model_id": model_id}
         response = self._forward_json_to_websocket_server_worker(message)

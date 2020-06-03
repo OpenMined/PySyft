@@ -1,9 +1,7 @@
-import math
-from typing import Union, Tuple, List
-import warnings
+from typing import Union, List
 import weakref
+import warnings
 
-import numpy as np
 import torch
 
 import syft
@@ -12,20 +10,22 @@ from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.abstract.hookable import hookable
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
-from syft.exceptions import SendNotPermittedError
 
 
 def _get_maximum_precision():
-    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+    """This function returns the maximum value allowed for precision fractions before the
+    chain decides to use LPT.
 
-    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+    This function can be overridden if the setup requires the use of LargePrecisionTensor
+    from a smaller precision.
 
     The default value is the size of torch.long
 
@@ -272,6 +272,12 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def get_class_attributes(self):
+        """
+        Return class attributes for torch tensors
+        """
+        return {"type": self.dtype}
+
     def _is_parameter(self):
         """
         Utility method to test if the tensor is in fact a Parameter
@@ -388,7 +394,7 @@ class TorchTensor(AbstractTensor):
     @staticmethod
     def _get_response(cmd, args_, kwargs_):
         """
-            Return the evaluation of the cmd string parameter
+        Return the evaluation of the cmd string parameter
         """
         command_method = TorchTensor._get_method(cmd)
 
@@ -401,12 +407,13 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-            Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid erros.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
 
+    @hookable
     def send(
         self,
         *location,
@@ -446,9 +453,6 @@ class TorchTensor(AbstractTensor):
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
-
-        if not self.allow(user=user):
-            raise SendNotPermittedError()
 
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
@@ -539,7 +543,7 @@ class TorchTensor(AbstractTensor):
 
         else:
 
-            children = list()
+            children = []
             for loc in location:
                 children.append(self.clone().send(loc, no_wrap=True))
 
@@ -565,7 +569,6 @@ class TorchTensor(AbstractTensor):
         self,
         location: BaseWorker = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
@@ -591,7 +594,7 @@ class TorchTensor(AbstractTensor):
             shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
-            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
+            self, location, id_at_location, owner, ptr_id, garbage_collect_data, shape
         )
 
         return ptr
@@ -618,12 +621,12 @@ class TorchTensor(AbstractTensor):
 
     def get(self, *args, inplace: bool = False, user=None, reason: str = "", **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
-            Args:
-                args: args to forward to worker
-                inplace: if true, return the same object instance, else a new wrapper
-                kwargs: kwargs to forward to worker
-            Raises:
-                GetNotPermittedError: Raised if get is not permitted on this tensor
+        Args:
+            args: args to forward to worker
+            inplace: if true, return the same object instance, else a new wrapper
+            kwargs: kwargs to forward to worker
+        Raises:
+            GetNotPermittedError: Raised if get is not permitted on this tensor
         """
 
         # If it is a local tensor/chain, we don't need to verify permissions
@@ -685,7 +688,8 @@ class TorchTensor(AbstractTensor):
             # Verify permissions for each element on the tensor chain.
             while hasattr(current_tensor, "child"):
 
-                # If it has a list of allowed users, verify permissions, otherwise (public tensors) go to the next.
+                # If it has a list of allowed users, verify permissions,
+                # otherwise (public tensors) go to the next.
                 if hasattr(current_tensor, "allowed_users"):
                     allow = current_tensor.allow(user)
                     if not allow:
@@ -781,13 +785,13 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def private_tensor(self, *args, allowed_users: Tuple[str], no_wrap: bool = False, **kwargs):
+    def private_tensor(self, *args, allowed_users: List[str], no_wrap: bool = False, **kwargs):
         """
         Convert a tensor or syft tensor to private tensor
 
         Args:
             *args (tuple): args to transmit to the private tensor.
-            allowed_users (tuple): Tuple of allowed users.
+            allowed_users (list): List of allowed users.
             no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
             **kwargs (dict): kwargs to transmit to the private tensor
         """
@@ -797,9 +801,9 @@ class TorchTensor(AbstractTensor):
 
         if self.is_wrapper:
             self.child = (
-                syft.PrivateTensor(*args, **kwargs)
+                syft.PrivateTensor(tags=self.tags, *args, **kwargs)
                 .on(self.child, wrap=False)
-                .register_credentials(allowed_users)
+                .register_credentials(tuple(allowed_users))
             )
             if no_wrap:
                 return self.child
@@ -807,9 +811,9 @@ class TorchTensor(AbstractTensor):
                 return self
 
         private_tensor = (
-            syft.PrivateTensor(*args, **kwargs)
+            syft.PrivateTensor(tags=self.tags, *args, **kwargs)
             .on(self, wrap=False)
-            .register_credentials(allowed_users)
+            .register_credentials(tuple(allowed_users))
         )
         if not no_wrap:
             private_tensor = private_tensor.wrap()
@@ -983,8 +987,8 @@ class TorchTensor(AbstractTensor):
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
                         generation of the random numbers for encryption
                     requires_grad (bool): If true, whenever the remote value of this tensor
-                        will have its gradient updated (for example when calling .backward()), a call
-                        will be made to set back the local gradient value.
+                        will have its gradient updated (for example when calling .backward()),
+                        a call will be made to set back the local gradient value.
                     no_wrap (bool): If True, wrap() is called on the created pointer
                     Keyword Args: To be parsed as kwargs for the .fix_prec() method
 
@@ -1028,14 +1032,12 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation"
             )
 
-    def decrypt(self, protocol="mpc", **kwargs):
+    def decrypt(self, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1044,19 +1046,23 @@ class TorchTensor(AbstractTensor):
                     private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
         Returns:
-            An decrypted version of the Tensor following the protocol specified
+            An decrypted version of the Tensor following the protocol guessed from its type
 
         Raises:
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
 
-        if protocol.lower() == "mpc":
+        protocol = kwargs.get("protocol", None)
+        if protocol:
+            warnings.warn("protocol should no longer be used in decrypt")
+
+        if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
             x_encrypted = self.copy()
             x_decrypted = x_encrypted.get().float_prec()
             return x_decrypted
 
-        elif protocol.lower() == "paillier":
+        elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)

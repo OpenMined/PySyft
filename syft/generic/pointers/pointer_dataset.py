@@ -4,6 +4,7 @@ from typing import Union
 import syft as sy
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.workers.abstract import AbstractWorker
+from syft_proto.generic.pointers.v1.pointer_dataset_pb2 import PointerDataset as PointerDatasetPB
 
 
 class PointerDataset(ObjectPointer):
@@ -142,3 +143,76 @@ class PointerDataset(ObjectPointer):
             )
 
             return ptr
+
+    @staticmethod
+    def bufferize(worker, pointer_obj):
+        """
+        This method serializes a PointerDataset into a PointerDatasetPB.
+
+        Args:
+            pointer_obj (PointerDataset): input PointerDataset to be serialized.
+
+        Returns:
+            protobuf_script (PointerDatasetPB): serialized PointerDataset.
+        """
+        proto_pointer = PointerDatasetPB()
+        sy.serde.protobuf.proto.set_protobuf_id(proto_pointer.object_id, pointer_obj.id)
+        sy.serde.protobuf.proto.set_protobuf_id(proto_pointer.location_id, pointer_obj.location.id)
+        sy.serde.protobuf.proto.set_protobuf_id(
+            proto_pointer.object_id_at_location, pointer_obj.id_at_location
+        )
+        for tag in pointer_obj.tags:
+            proto_pointer.tags.append(tag)
+
+        if pointer_obj.description:
+            proto_pointer.description = pointer_obj.description
+        proto_pointer.garbage_collect_data = pointer_obj.garbage_collect_data
+        return proto_pointer
+
+    @staticmethod
+    def unbufferize(worker, proto_pointer_obj: PointerDatasetPB):
+        """
+        This method deserializes PointerDatasetPB into a PointerDataset.
+
+        Args:
+            protobuf_script (PointerDatasetPB): input serialized PointerDatasetPB.
+
+        Returns:
+            loaded_module (PointerDataset): deserialized PointerDatasetPB.
+        """
+        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_pointer_obj.object_id)
+        id_at_location = sy.serde.protobuf.proto.get_protobuf_id(
+            proto_pointer_obj.object_id_at_location
+        )
+        worker_id = sy.serde.protobuf.proto.get_protobuf_id(proto_pointer_obj.location_id)
+        tags = proto_pointer_obj.tags
+
+        description = proto_pointer_obj.description if proto_pointer_obj.description else None
+
+        garbage_collect_data = proto_pointer_obj.garbage_collect_data
+
+        if worker_id == worker.id:
+            dataset = worker.get_obj(id_at_location)
+            return dataset
+
+        location = sy.hook.local_worker.get_worker(worker_id)
+
+        return PointerDataset(
+            location=location,
+            id_at_location=id_at_location,
+            owner=worker,
+            tags=set(tags),
+            description=description,
+            garbage_collect_data=garbage_collect_data,
+            id=obj_id,
+        )
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+        This method returns the protobuf schema used for PointerDataset.
+
+        Returns:
+           Protobuf schema for PointerDataset.
+       """
+        return PointerDatasetPB

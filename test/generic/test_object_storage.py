@@ -7,9 +7,8 @@ def test_clear_objects():
     """
     Checks the clear_objects method
     """
-    obj_storage = (
-        object_storage.ObjectStore()
-    )  #  obj_storage is a wrapper object to a collection of objects
+    #  obj_storage is a wrapper object to a collection of objects
+    obj_storage = object_storage.ObjectStore()
 
     x = torch.tensor(1)
     obj_storage.set_obj(x)
@@ -34,7 +33,7 @@ def test_set_obj_takes_ownership(workers):
 
     x.owner = bob
 
-    me.set_obj(x)
+    me.object_store.set_obj(x)
 
     objs = me.object_store._objects
 
