@@ -1,7 +1,8 @@
 from typing import Callable
+import math
 
 import torch as th
-
+import multiprocessing
 import syft as sy
 import asyncio
 from syft.workers.websocket_client import WebsocketClientWorker
@@ -11,6 +12,8 @@ from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
 no_wrap = {"no_wrap": True}
+
+from syft.frameworks.torch.mpc.fss import N_CORES
 
 
 def full_name(f):
@@ -26,18 +29,59 @@ def spdz_mask(x, y, type_op):
     return x - a, y - b
 
 
+def slice(x, j, slice_size):
+    x_slice = x[j * slice_size : (j + 1) * slice_size]
+    x_slice.owner = x.owner
+    return x_slice
+
+
+def triple_mat_mul(core_id, delta, epsilon, a, b):
+    cmd = th.matmul
+    delta_b = cmd(delta, b)
+    a_epsilon = cmd(a, epsilon)
+    delta_epsilon = cmd(delta, epsilon)
+    return core_id, delta_b, a_epsilon, delta_epsilon
+
+
 # share level
 @allow_command
 def spdz_compute(j, delta, epsilon, type_op):
     a, b, c = delta.owner.crypto_store.get_keys(
-        "beaver", op=type_op, shapes=(delta.shape, epsilon.shape), n_instances=1, remove=True, dtype=delta.dtype
+        "beaver",
+        op=type_op,
+        shapes=(delta.shape, epsilon.shape),
+        n_instances=1,
+        remove=True,
+        dtype=delta.dtype,
     )
 
-    cmd = getattr(th, type_op)
+    if type_op == "matmul":
+        batch_size = delta.shape[0]
 
-    delta_b = cmd(delta, b)
-    a_epsilon = cmd(a, epsilon)
-    delta_epsilon = cmd(delta, epsilon)
+        multiprocessing_args = []
+        slice_size = math.ceil(batch_size / N_CORES)
+        for core_id in range(N_CORES):
+            process_args = (
+                core_id,
+                slice(delta, core_id, slice_size),
+                epsilon,
+                slice(a, core_id, slice_size),
+                b,
+            )
+            multiprocessing_args.append(process_args)
+        p = multiprocessing.Pool()
+        partitions = p.starmap(triple_mat_mul, multiprocessing_args)
+        p.close()
+        partitions = sorted(partitions, key=lambda k: k[0])
+        delta_b = th.cat([partition[1] for partition in partitions])
+        a_epsilon = th.cat([partition[2] for partition in partitions])
+        delta_epsilon = th.cat([partition[3] for partition in partitions])
+    else:
+        cmd = getattr(th, type_op)
+
+        delta_b = cmd(delta, b)
+        a_epsilon = cmd(a, epsilon)
+        delta_epsilon = cmd(delta, epsilon)
 
     if j:
         return delta_epsilon + delta_b + a_epsilon + c
