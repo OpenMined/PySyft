@@ -31,6 +31,23 @@ def test_send_module(workers, model):
         assert torch.all(p.data == p_cmp)
 
 
+def test_share_module(workers, model):
+    alice = workers["alice"]
+    bob = workers["bob"]
+    cp = workers["charlie"]
+
+    model.fix_prec()
+    model.share(alice, bob, crypto_provider=cp)
+    for p in model.parameters():
+        assert isinstance(p.child, syft.FixedPrecisionTensor)
+        assert isinstance(p.child.child, syft.AdditiveSharingTensor)
+
+    model.get()
+    model.float_prec()
+    for p in model.parameters():
+        assert isinstance(p, torch.Tensor)
+
+
 def test_move_module(workers, model):
     alice = workers["alice"]
     bob = workers["bob"]
@@ -53,3 +70,11 @@ def test_copy(model):
 
         for p in copy_model.parameters():
             assert not torch.all(p == 0)
+
+
+def test_encrypted_model(model):
+    crypten.init()
+    model.encrypt()
+    with pytest.raises(RuntimeError):
+        model._check_encrypted()
+    crypten.uninit()

@@ -13,7 +13,9 @@ from syft.frameworks.crypten.hook.hook import hook_plan_building, unhook_plan_bu
 from crypten.communicator import DistributedCommunicator
 
 
-def _launch(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs):
+def _launch(
+    func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
+):  # pragma: no cover
     communicator_args = {
         "RANK": rank,
         "WORLD_SIZE": world_size,
@@ -65,14 +67,14 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     if was_initialized:
         crypten.uninit()
     process.start()
-    process.join()
+    # wait for response
+    res = queue.get()
     if was_initialized:
         crypten.init()
-    res = queue.get()
     return res
 
 
-def _send_party_info(worker, rank, msg, return_values, model=None):
+def _send_party_info(worker, rank, msg, return_values, model=None):  # pragma: no cover
     """Send message to worker with necessary information to run a crypten party.
     Add response to return_values dictionary.
 
@@ -120,11 +122,29 @@ def run_multiworkers(
 
             crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
 
-            world_size = len(workers) + 1
-            return_values = {rank: None for rank in range(world_size)}
+            world_size = len(workers)
+            manager = multiprocessing.Manager()
+            return_values = manager.dict({rank: None for rank in range(world_size)})
+
+            rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
+
+            sy.local_worker.add_crypten_support()
+            sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
+
+            # TODO: run ttp in a specified worker
+            # if crypten.mpc.ttp_required():
+            #     ttp_process, _ = _new_party(
+            #         crypten.mpc.provider.TTPServer,
+            #         world_size,
+            #         world_size,
+            #         master_addr,
+            #         master_port,
+            #         (),
+            #         {},
+            #     )
+            #     ttp_process.start()
 
             if isinstance(func, sy.Plan):
-                using_plan = True
                 plan = func
 
                 # This is needed because at building we use a set of methods defined in syft
@@ -141,74 +161,32 @@ def run_multiworkers(
                 for worker in workers:
                     plan.send(worker)
 
-                jail_or_plan = plan
+                msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
 
             else:  # func
-                using_plan = False
-                jail_runner = jail.JailRunner(func=func, model=crypten_model)
+                jail_runner = jail.JailRunner(func=func)
                 ser_jail_runner = jail.JailRunner.simplify(jail_runner)
 
-                jail_or_plan = jail_runner
-
-            rank_to_worker_id = dict(
-                zip(range(1, len(workers) + 1), [worker.id for worker in workers])
-            )
-
-            sy.local_worker.add_crypten_support()
-            sy.local_worker._set_rank_to_worker_id(rank_to_worker_id)
-
-            # Start local party
-            process, queue = _new_party(
-                jail_or_plan, 0, world_size, master_addr, master_port, (), {}
-            )
-
-            was_initialized = DistributedCommunicator.is_initialized()
-            if was_initialized:
-                crypten.uninit()
-            process.start()
-
-            # Run TTP if required
-            # TODO: run ttp in a specified worker
-            if crypten.mpc.ttp_required():
-                ttp_process, _ = _new_party(
-                    crypten.mpc.provider.TTPServer,
-                    world_size,
-                    world_size,
-                    master_addr,
-                    master_port,
-                    (),
-                    {},
+                msg = CryptenInitJail(
+                    (rank_to_worker_id, world_size, master_addr, master_port),
+                    ser_jail_runner,
+                    onnx_model,
                 )
-                ttp_process.start()
 
             # Send messages to other workers so they start their parties
             threads = []
             for i in range(len(workers)):
-                rank = i + 1
-                if using_plan:
-                    msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
-                else:  # jail
-                    msg = CryptenInitJail(
-                        (rank_to_worker_id, world_size, master_addr, master_port),
-                        ser_jail_runner,
-                        onnx_model,
-                    )
-                thread = threading.Thread(
-                    target=_send_party_info, args=(workers[i], rank, msg, return_values)
+                rank = i
+                thread = multiprocessing.Process(
+                    target=_send_party_info,
+                    args=(workers[i], rank, msg, return_values, crypten_model),
                 )
                 thread.start()
                 threads.append(thread)
 
-            # Wait for local party and sender threads
-            # Joining the process blocks! But queue.get() can also wait for the party
-            # and it works fine.
-            # process.join() -> blocks
-            local_party_result = queue.get()
-            return_values[0] = utils.unpack_values(local_party_result, crypten_model)
+            # wait for workers running the parties return a response
             for thread in threads:
                 thread.join()
-            if was_initialized:
-                crypten.init()
 
             return return_values
 
