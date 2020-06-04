@@ -91,10 +91,7 @@ class State(SyftSerializable):
         """
         Simplify the plan's state when sending a plan
         """
-        return (
-            sy.serde.msgpack.serde._simplify(worker, state.state_placeholders),
-            sy.serde.msgpack.serde._simplify(worker, state.tensors()),
-        )
+        return (sy.serde.msgpack.serde._simplify(worker, state.state_placeholders),)
 
     @staticmethod
     def detail(worker: AbstractWorker, state_tuple: tuple) -> "State":
@@ -102,16 +99,12 @@ class State(SyftSerializable):
         Reconstruct the plan's state from the state elements and supposed
         ids.
         """
-        state_placeholders, state_elements = state_tuple
+        (state_placeholders,) = state_tuple
 
         state_placeholders = sy.serde.msgpack.serde._detail(worker, state_placeholders)
-        state_elements = sy.serde.msgpack.serde._detail(worker, state_elements)
 
-        for state_element in state_elements:
-            worker.register_obj(state_element, obj_id=state_element.id)
-
-        for state_placeholder, state_element in zip(state_placeholders, state_elements):
-            state_placeholder.instantiate(state_element)
+        for state_placeholder in state_placeholders:
+            worker.register_obj(state_placeholder.child)
 
         state = State(state_placeholders)
         return state
@@ -154,23 +147,14 @@ class State(SyftSerializable):
         ids.
         """
         state_placeholders = protobuf_state.placeholders
-        state_elements = protobuf_state.tensors
 
         state_placeholders = [
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
             for placeholder in protobuf_state.placeholders
         ]
 
-        state_elements = []
-        for protobuf_tensor in protobuf_state.tensors:
-            tensor = getattr(protobuf_tensor, protobuf_tensor.WhichOneof("tensor"))
-            state_elements.append(sy.serde.protobuf.serde._unbufferize(worker, tensor))
-
-        for state_element in state_elements:
-            worker.register_obj(state_element, obj_id=state_element.id)
-
-        for state_placeholder, state_element in zip(state_placeholders, state_elements):
-            state_placeholder.instantiate(state_element)
+        for state_placeholder in state_placeholders:
+            worker.register_obj(state_placeholder.child)
 
         state = State(state_placeholders)
         return state

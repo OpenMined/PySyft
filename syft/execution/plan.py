@@ -278,6 +278,7 @@ class Plan(AbstractSendable):
         plan_copy = Plan(
             name=self.name,
             role=self.role.copy(),
+            state_tensors=self.state.tensors(),
             include_state=self.include_state,
             is_built=self.is_built,
             id=sy.ID_PROVIDER.pop(),

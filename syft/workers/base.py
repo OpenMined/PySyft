@@ -196,9 +196,6 @@ class BaseWorker(AbstractWorker):
         # ie {exec_id: {**placehohlders}, exec_2: {**other_phs}}
         self._protocol_placeholders = {}
 
-    def register_obj(self, obj):
-        self.object_store.register_obj(self, obj)
-
     def clear_objects(self, return_self: bool = True):
         """Removes all objects from the object storage.
 
