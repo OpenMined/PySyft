@@ -267,6 +267,8 @@ def test_binding_encrypted_plan(hook, workers):
 
 @pytest.mark.parametrize("is_func2plan", [True, False])
 def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
+    me = hook.local_worker
+    me.is_client_worker = False
     # TODO: this test is not working properly with remote workers.
     # We need to investigate why this might be the case.
 
@@ -328,3 +330,5 @@ def test_fetch_encrypted_stateful_plan(hook, is_func2plan, workers):
 
     # Make sure plan is using the blueprint: forward
     assert plan.forward is not None
+
+    me.is_client_worker = True
