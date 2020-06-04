@@ -6,8 +6,6 @@ import syft as sy
 from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
-from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
-from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
 class State(SyftSerializable):
@@ -121,22 +119,6 @@ class State(SyftSerializable):
             for placeholder in state.state_placeholders
         ]
         protobuf_state.placeholders.extend(protobuf_placeholders)
-
-        state_tensors = []
-        for tensor in state.tensors():
-            protobuf_tensor = sy.serde.protobuf.serde._bufferize(worker, tensor)
-            state_tensor = StateTensorPB()
-            if type(protobuf_tensor) == ParameterPB:
-                state_tensor.torch_param.CopyFrom(
-                    sy.serde.protobuf.serde._bufferize(worker, tensor)
-                )
-            else:
-                state_tensor.torch_tensor.CopyFrom(
-                    sy.serde.protobuf.serde._bufferize(worker, tensor)
-                )
-            state_tensors.append(state_tensor)
-
-        protobuf_state.tensors.extend(state_tensors)
 
         return protobuf_state
 

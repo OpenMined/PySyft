@@ -971,13 +971,6 @@ def make_state(**kwargs):
                             msgpack.serde._simplify(kwargs["workers"]["serde_worker"], p2),
                         ),
                     ),
-                    (
-                        CODE[list],
-                        (  # (list) tensors
-                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], t1),
-                            msgpack.serde._simplify(kwargs["workers"]["serde_worker"], t2),
-                        ),
-                    ),
                 ),
             ),
             "cmp_detailed": compare,

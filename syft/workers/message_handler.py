@@ -181,8 +181,8 @@ class BaseMessageHandler(AbstractMessageHandler):
             obj.register_hook(obj.trigger_origin_backward_hook(obj.origin, obj.id_at_origin))
 
         # Check if we received an object from a protocol run
-        if isinstance(obj, PlaceHolder) and obj.id.value in self._protocol_placeholders:
-            self._protocol_placeholders[obj.id.value].instantiate(obj.child)
+        if isinstance(obj, PlaceHolder) and obj.id.value in self.worker._protocol_placeholders:
+            self.worker._protocol_placeholders[obj.id.value].instantiate(obj.child)
         else:
             # TODO is it really in the else here or do we want to register anyway?
             self.object_store.set_obj(obj)
