@@ -1,3 +1,4 @@
+import pytest
 import crypten
 
 import torch as th

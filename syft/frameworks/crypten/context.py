@@ -1,6 +1,5 @@
 import functools
 import multiprocessing
-import threading
 import os
 
 import torch as th
