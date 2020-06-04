@@ -33,7 +33,35 @@ class Dropout(_DropoutNd):
         p (float, optional): probability of an element to be zero-ed.
         inplace (bool, optional): If set to ``True``, will do this operation in-place
 
+    Shape:
+        - Input: :math:`(*)`. Input can be of any shape
+        - Output: :math:`(*)`. Output is of the same shape as input
+    """
 
+    def forward(self, input):
+        return F.dropout(input, self.p, self.training, self.inplace)
+
+
+class Dropout2d(_DropoutNd):
+    """
+    Randomly zero out entire channels (a channel is a 2D feature map,
+    e.g., the :math:`j`-th channel of the :math:`i`-th sample in the
+    batched input is a 2D tensor :math:`\text{input}[i, j]`).
+    Each channel will be zeroed out independently on every forward call with
+    probability :attr:`p` using samples from a Bernoulli distribution.
+
+    Usually the input comes from :class:`nn.Conv2d` modules.
+
+    As described in the paper
+    `Efficient Object Localization Using Convolutional Networks`.
+
+    Args:
+        p (float, optional): probability of an element to be zero-ed.
+        inplace (bool, optional): If set to ``True``, will do this operation in-place
+
+    Shape:
+        - Input: :math:`(N, C, H, W)`
+        - Output: :math:`(N, C, H, W)` (same shape as input)
     """
 
     def forward(self, input):

@@ -20,7 +20,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
         binomial = torch.distributions.binomial.Binomial(probs=1 - p)
 
         # we must convert the normal tensor to fixed precision before multiplication
-        # Note that: Weights of a model are alwasy Float values
+        # Note that: Weights of a model are always Float values
         # Hence input will always be of type FixedPrecisionTensor > ...
         noise = (binomial.sample(input.shape).type(torch.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
             **input.get_class_attributes(), no_wrap=True
@@ -31,6 +31,35 @@ def dropout(input, p=0.5, training=True, inplace=False):
             return input
 
         return input * noise
+
+    return input
+
+
+def dropout2d(input, p=0.5, training=True, inplace=False):
+    """
+    Args:
+        p: probability of an element to be zeroed. Default: 0.5
+        training: If training, cause dropout layers are not used during evaluation of model
+        inplace: If set to True, will do this operation in-place. Default: False
+    """
+    if training:
+        distribution = torch.distributions.Bernoulli(probs=1 - p)
+
+        # get batch size and number of feature maps
+        num_feature_maps = [input.shape[0], input.shape[3]]
+
+        # Convert the normal tensor to fixed precision before multiplication
+        noise = (
+            (distribution.sample(num_feature_maps).type(torch.FloatTensor)).reshape(
+                [-1, 1, 1, input.shape[3]]
+            )
+        ).fix_prec(**input.get_class_attributes(), no_wrap=True)
+
+        if inplace:
+            input = torch.div(input, p) * noise
+            return input
+
+        return torch.div(input, p) * noise
 
     return input
 
