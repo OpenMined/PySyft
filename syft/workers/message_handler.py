@@ -196,15 +196,18 @@ class BaseMessageHandler(AbstractMessageHandler):
         obj_id = msg.object_id
         user = msg.user
         reason = msg.reason
+        get_copy = msg.get_copy
 
         obj = self.get_obj(obj_id)
 
         permitted = all(map_chain_call(obj, "allow", user=user))
         if not permitted:
             raise GetNotPermittedError()
-        else:
+
+        if not get_copy:
             self.object_store.de_register_obj(obj)
-            return obj
+
+        return obj
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         self.object_store.force_rm_obj(msg.object_id)
@@ -245,7 +248,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             # decision to decide when to delete the tensor.
             ptr = obj.create_pointer(
                 garbage_collect_data=False, owner=sy.local_worker, tags=obj.tags
-            ).wrap()
+            )
             results.append(ptr)
 
         return results

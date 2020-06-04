@@ -618,3 +618,20 @@ def test_iterable_pointer(workers):
         assert len(alice.object_store) == 3
         assert isinstance(tensor, PointerTensor)
         assert torch.all(tensor.get() == t[:, 1][idx])
+
+
+def test_get_copy(workers):
+    alice = workers["alice"]
+
+    t = torch.Tensor([[1, 2], [4, 5], [7, 8]])
+
+    p = t.send(alice)
+
+    local_t = p.get(get_copy=False)
+    assert torch.all(local_t == t)
+    assert len(alice.object_store) == 0
+
+    p = t.send(alice)
+    local_t = p.get(get_copy=True)
+    assert torch.all(local_t == t)
+    assert len(alice.object_store) == 1

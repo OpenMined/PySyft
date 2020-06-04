@@ -227,7 +227,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
             pointer = err.pointer
             return pointer
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
@@ -268,7 +268,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
                 obj = obj.child
         else:
             # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason, get_copy)
 
         # Remove this pointer by default
         if deregister_ptr:
