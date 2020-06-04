@@ -271,8 +271,8 @@ class TorchHook(FrameworkHook):
 
         # Returns a list of methods to be overloaded, stored in the dict to_auto_overload
         # with tensor_type as a key
-        self.to_auto_overload[tensor_type].extend(
-            self._which_methods_should_we_auto_overload(tensor_type)
+        self.to_auto_overload[tensor_type] = self._which_methods_should_we_auto_overload(
+            tensor_type
         )
 
         # [We don't rename native methods as torch tensors are not hooked] Rename native functions
