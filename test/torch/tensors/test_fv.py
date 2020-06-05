@@ -366,4 +366,10 @@ def test_fv_encryption_decrption_without_changing_parameters():
     decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
     values = [0, 1, -1, 100, -100, 1000]
     for value in values:
+        # Checking simple encryption-decryption with same parameters.
         assert value == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(value))))
+
+        # Checking the decryption of same ciphertext 3 times (checking for ciphertext deepcopy).
+        ct = encryptor.encrypt(encoder.encode(value))
+        for _ in range(3):
+            assert value == encoder.decode(decryptor.decrypt(ct))
