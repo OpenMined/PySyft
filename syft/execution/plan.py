@@ -303,7 +303,7 @@ class Plan(AbstractSendable):
             self.state_attributes[name] = value
         elif isinstance(value, FrameworkLayerModule):
             for param in value.parameters():
-                self.role.register_state_tensor(param.data)
+                self.role.register_state_tensor(param)
             self.state_attributes[name] = value
         else:
             object.__setattr__(self, name, value)
@@ -324,7 +324,7 @@ class Plan(AbstractSendable):
             copied_layer = copy.deepcopy(value)
             for copied_param, param in zip(copied_layer.named_parameters(), value.parameters()):
                 (copied_name, _) = copied_param
-                copied_layer._parameters[copied_name] = self.role.placeholders[param.data.id]
+                copied_layer._parameters[copied_name] = self.role.placeholders[param.id]
 
             return copied_layer
 
