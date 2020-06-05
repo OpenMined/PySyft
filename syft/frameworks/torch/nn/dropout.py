@@ -65,4 +65,4 @@ class Dropout2d(_DropoutNd):
     """
 
     def forward(self, input):
-        return F.dropout(input, self.p, self.training, self.inplace)
+        return F.dropout2d(input, self.p, self.training, self.inplace)
