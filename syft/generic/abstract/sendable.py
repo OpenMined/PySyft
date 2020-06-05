@@ -53,4 +53,4 @@ class AbstractSendable(AbstractObject, SyftSerializable):
         garbage_collect_data: bool = True,
         **kwargs,
     ) -> "AbstractPointer":
-        pass
+        raise NotImplementedError
