@@ -448,7 +448,7 @@ class PlaceHolder(AbstractTensor):
 
         child = None
         protobuf_child = protobuf_placeholder.WhichOneof("child")
-        print(protobuf_child)
+
         if protobuf_child:
             child = syft.serde.protobuf.serde._unbufferize(
                 worker, getattr(protobuf_placeholder, protobuf_placeholder.WhichOneof("child"))

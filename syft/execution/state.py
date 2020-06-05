@@ -101,9 +101,6 @@ class State(SyftSerializable):
 
         state_placeholders = sy.serde.msgpack.serde._detail(worker, state_placeholders)
 
-        for state_placeholder in state_placeholders:
-            worker.register_obj(state_placeholder.child)
-
         state = State(state_placeholders)
         return state
 
@@ -134,9 +131,6 @@ class State(SyftSerializable):
             sy.serde.protobuf.serde._unbufferize(worker, placeholder)
             for placeholder in protobuf_state.placeholders
         ]
-
-        for state_placeholder in state_placeholders:
-            worker.register_obj(state_placeholder.child)
 
         state = State(state_placeholders)
         return state
