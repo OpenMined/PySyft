@@ -356,3 +356,14 @@ def test_fv_encryption_decrption_standard_seq_level(
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
     decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
     assert integer == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(integer))))
+
+
+def test_fv_encryption_decrption_without_changing_parameters():
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    values = [0, 1, -1, 100, -100, 1000]
+    for value in values:
+        assert value == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(value))))
