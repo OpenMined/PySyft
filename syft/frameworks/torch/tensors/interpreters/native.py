@@ -447,8 +447,8 @@ class TorchTensor(AbstractTensor):
             garbage_collect_data: argument passed down to create_pointer()
 
         Returns:
-            A PointerTensor pointer to self. Note that this
-            object will likely be wrapped by a torch.Tensor wrapper.
+            A PointerTensor pointer to self. Note that this object will likely
+            be wrapped a torch.Tensor wrapper.
 
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
