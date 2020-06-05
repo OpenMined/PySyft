@@ -238,7 +238,7 @@ class Plan(AbstractSendable):
         forward_args = inspect.getfullargspec(self.forward).args
         for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
             if f_name in forward_args:
-                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+                framework_kwargs[f_name] = wrap_framework_func(self.role)
 
         results = self.forward(*args, **framework_kwargs)
 
@@ -457,8 +457,8 @@ class Plan(AbstractSendable):
             f_package (imported module): imported library
         """
 
-        def call_wrapped_framework(role, owner):
-            return FrameworkWrapper(f_package, role, owner)
+        def call_wrapped_framework(role):
+            return FrameworkWrapper(f_package, role)
 
         Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
