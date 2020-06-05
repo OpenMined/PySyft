@@ -27,7 +27,6 @@ class SerializableDummyClass(SyftSerializable):
         return {"code": 12345}
 
 
-
 # Make dict of type codes
 CODE = OrderedDict()
 for cls, simplifier in msgpack.serde.msgpack_global_state.simplifiers.items():
@@ -55,9 +54,8 @@ for cls, simplifier in msgpack.serde.msgpack_global_state.forced_full_simplifier
 # Native types.
 ########################################################################
 
+
 # None
-
-
 def make_none(**kwargs):
     return [{"value": None}]
 
