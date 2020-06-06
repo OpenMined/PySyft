@@ -16,8 +16,8 @@ class Evaluator:
         """Adds two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First argument for addition.
-            op2 (Ciphertext/Plaintext): Second argument for addition.
+            op1 (Ciphertext/Plaintext): First argument.
+            op2 (Ciphertext/Plaintext): Second argument.
 
         Retruns:
             If both arguments are Plaintext elements then the result will be a Plaintext object
@@ -45,8 +45,8 @@ class Evaluator:
         """Adds two ciphertexts.
 
         Args:
-            ct1 (Ciphertext): ciphertext form first argument for addition.
-            ct2 (Ciphertext): ciphertext form second argument for addition.
+            ct1 (Ciphertext): First argument.
+            ct2 (Ciphertext): Second argument.
 
         Retruns:
             A Ciphertext object with value equivalent to result of addition of two provided
@@ -65,9 +65,8 @@ class Evaluator:
         """Adds a ciphertext and a plaintext.
 
         Args:
-            pt (Plaintext): plaintext form first argument for addition.
-            ct (Ciphertext): ciphertext form second argument for addition.
-
+            pt (Plaintext): First argument.
+            ct (Ciphertext): Second argument.
         Retruns:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
@@ -79,8 +78,8 @@ class Evaluator:
         """Adds two plaintexts object.
 
         Args:
-            pt1 (Plaintext): plaintext form first argument for addition.
-            pt2 (Plaintext): plaintext form second argument for addition.
+            pt1 (Plaintext): First argument.
+            pt2 (Plaintext): Second argument.
 
         Retruns:
             A Plaintext object with value equivalent to result of addition of two provided
