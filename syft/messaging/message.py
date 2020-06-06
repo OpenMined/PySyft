@@ -30,6 +30,7 @@ from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
 # from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
 from syft_proto.messaging.v1.message_pb2 import SearchMessage as SearchMessagePB
 from syft_proto.messaging.v1.message_pb2 import ObjectRequestMessage as ObjectRequestMessagePB
+from syft_proto.messaging.v1.message_pb2 import ObjectRequestCopyMessage as ObjectRequestCopyMessagePB
 from syft_proto.messaging.v1.message_pb2 import PlanCommandMessage as PlanCommandMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 
@@ -331,13 +332,12 @@ class ObjectRequestMessage(Message):
     # TODO: add more efficient detailer and simplifier custom for this type
     # https://github.com/OpenMined/PySyft/issues/2512
 
-    def __init__(self, obj_id, user, reason, get_copy):
+    def __init__(self, obj_id, user, reason):
         """Initialize the message."""
 
         self.object_id = obj_id
         self.user = user
         self.reason = reason
-        self.get_copy = get_copy
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -360,7 +360,6 @@ class ObjectRequestMessage(Message):
             sy.serde.msgpack.serde._simplify(worker, msg.object_id),
             sy.serde.msgpack.serde._simplify(worker, msg.user),
             sy.serde.msgpack.serde._simplify(worker, msg.reason),
-            sy.serde.msgpack.serde._simplify(worker, msg.get_copy),
         )
 
     @staticmethod
@@ -415,7 +414,7 @@ class ObjectRequestMessage(Message):
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
         return ObjectRequestMessage(
-            obj_id=obj_id, user=None, reason=proto_msg.reason, get_copy=proto_msg.get_copy
+            obj_id=obj_id, user=None, reason=proto_msg.reason
         )
 
     @staticmethod
@@ -427,6 +426,111 @@ class ObjectRequestMessage(Message):
                 Protobuf schema for ObjectRequestMessage.
         """
         return ObjectRequestMessagePB
+
+
+class ObjectRequestCopyMessage(Message):
+    """Request another worker to send one of its objects (and do not deregister it)
+
+    If ObjectMessage pushes an object to another worker, this Message type pulls an
+    object from another worker. It also assumes that the other worker will NOT
+    delete it's local copy of the object after sending it to you."""
+
+    # TODO: add more efficient detailer and simplifier custom for this type
+    # https://github.com/OpenMined/PySyft/issues/2512
+
+    def __init__(self, obj_id, user, reason):
+        """Initialize the message."""
+
+        self.object_id = obj_id
+        self.user = user
+        self.reason = reason
+
+    def __str__(self):
+        """Return a human readable version of this message"""
+        return f"({type(self).__name__} {self.object_id, self.user, self.reason})"
+
+    @staticmethod
+    def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
+        """
+        This function takes the attributes of a Message and saves them in a tuple.
+        The detail() method runs the inverse of this method.
+        Args:
+            worker (AbstractWorker): a reference to the worker doing the serialization
+            msg (Message): a Message
+        Returns:
+            tuple: a tuple holding the unique attributes of the message
+        Examples:
+            data = simplify(msg)
+        """
+        return (
+            sy.serde.msgpack.serde._simplify(worker, msg.object_id),
+            sy.serde.msgpack.serde._simplify(worker, msg.user),
+            sy.serde.msgpack.serde._simplify(worker, msg.reason)
+        )
+
+    @staticmethod
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectRequestMessage":
+        """
+        This function takes the simplified tuple version of this message and converts
+        it into an ObjectRequestMessage. The simplify() method runs the inverse of this method.
+
+        Args:
+            worker (AbstractWorker): a reference to the worker necessary for detailing. Read
+                syft/serde/serde.py for more information on why this is necessary.
+            msg_tuple (Tuple): the raw information being detailed.
+        Returns:
+            ptr (ObjectRequestMessage): a ObjectRequestMessage.
+        Examples:
+            message = detail(sy.local_worker, msg_tuple)
+        """
+        return ObjectRequestMessage(
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[2])
+        )
+
+    @staticmethod
+    def bufferize(worker, msg):
+        """
+            This method serializes a ObjectRequestCopyMessage using ObjectRequestCopyMessagePB.
+
+            Args:
+                msg (ObjectRequestCopyMessage): input ObjectRequestCopyMessage to be serialized.
+
+            Returns:
+                proto_msg (ObjectRequestCopyMessagePB): serialized ObjectRequestCopyMessage.
+        """
+        proto_msg = ObjectRequestMessagePB()
+        sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
+        proto_msg.reason = msg.reason
+        return proto_msg
+
+    @staticmethod
+    def unbufferize(worker, proto_msg):
+        """
+            This method deserializes ObjectRequestMessagePB into ObjectRequestMessage.
+
+            Args:
+                protobuf_msg (ObjectRequestMessagePB): input serialized ObjectRequestMessagePB.
+
+            Returns:
+               ObjectRequestMessage: deserialized ObjectRequestMessagePB.
+        """
+        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
+        # add worker support when it will be available
+        return ObjectRequestMessage(
+            obj_id=obj_id, user=None, reason=proto_msg.reason
+        )
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+            Returns the protobuf schema used for ObjectRequestMessage.
+
+            Returns:
+                Protobuf schema for ObjectRequestMessage.
+        """
+        return ObjectRequestCopyMessagePB
 
 
 class IsNoneMessage(Message):

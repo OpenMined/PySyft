@@ -18,6 +18,7 @@ from syft.messaging.message import GetShapeMessage
 from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
+from syft.messaging.message import ObjectRequestCopyMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 
@@ -44,6 +45,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             WorkerCommandMessage: self.execute_worker_command,
             ObjectMessage: self.handle_object_msg,
             ObjectRequestMessage: self.respond_to_obj_req,
+            ObjectRequestCopyMessage: self.respond_to_obj_copy_req,
             ForceObjectDeleteMessage: self.handle_force_delete_object_msg,
             IsNoneMessage: self.is_object_none,
             GetShapeMessage: self.handle_get_shape_message,
@@ -196,7 +198,6 @@ class BaseMessageHandler(AbstractMessageHandler):
         obj_id = msg.object_id
         user = msg.user
         reason = msg.reason
-        get_copy = msg.get_copy
 
         obj = self.get_obj(obj_id)
 
@@ -204,8 +205,25 @@ class BaseMessageHandler(AbstractMessageHandler):
         if not permitted:
             raise GetNotPermittedError()
 
-        if not get_copy:
-            self.object_store.de_register_obj(obj)
+        self.object_store.de_register_obj(obj)
+
+        return obj
+
+    def respond_to_obj_copy_req(self, msg: ObjectRequestCopyMessage):
+        """Returns the deregistered object from registry.
+
+        Args:
+            request_msg (tuple): Tuple containing object id, user credentials and reason.
+        """
+        obj_id = msg.object_id
+        user = msg.user
+        reason = msg.reason
+
+        obj = self.get_obj(obj_id)
+
+        permitted = all(map_chain_call(obj, "allow", user=user))
+        if not permitted:
+            raise GetNotPermittedError()
 
         return obj
 

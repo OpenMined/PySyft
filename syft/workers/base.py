@@ -25,6 +25,7 @@ from syft.messaging.message import IsNoneMessage
 from syft.messaging.message import Message
 from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
+from syft.messaging.message import ObjectRequestCopyMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
 
@@ -550,7 +551,6 @@ class BaseWorker(AbstractWorker):
         location: "BaseWorker",
         user=None,
         reason: str = "",
-        get_copy: bool = False,
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -563,7 +563,28 @@ class BaseWorker(AbstractWorker):
         Returns:
             A torch Tensor or Variable object.
         """
-        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason, get_copy), location)
+        obj = self.send_msg(ObjectRequestMessage(obj_id, user, reason), location)
+        return obj
+
+    def request_copy_obj(
+        self,
+        obj_id: Union[str, int],
+        location: "BaseWorker",
+        user=None,
+        reason: str = "",
+    ) -> object:
+        """Returns the requested object from specified location (without deleting that object)
+
+        Args:
+            obj_id (int or string):  A string or integer id of an object to look up.
+            location (BaseWorker): A BaseWorker instance that lets you provide the lookup
+                location.
+            user (object, optional): user credentials to perform user authentication.
+            reason (string, optional): a description of why the data scientist wants to see it.
+        Returns:
+            A torch Tensor or Variable object.
+        """
+        obj = self.send_msg(ObjectRequestCopyMessage(obj_id, user, reason), location)
         return obj
 
     # SECTION: Manage the workers network

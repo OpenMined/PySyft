@@ -627,11 +627,6 @@ def test_get_copy(workers):
 
     p = t.send(alice)
 
-    local_t = p.get(get_copy=False)
-    assert torch.all(local_t == t)
-    assert len(alice.object_store) == 0
-
-    p = t.send(alice)
-    local_t = p.get(get_copy=True)
+    local_t = p.get_copy()
     assert torch.all(local_t == t)
     assert len(alice.object_store) == 1
