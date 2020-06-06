@@ -166,6 +166,10 @@ class BaseWorker(AbstractWorker):
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
+        # Register the specific handlers for each framework
+        for _, message_handler_constructor in sy.framework_message_handler.items():
+            self.message_handlers.append(message_handler_constructor(self.object_store, self))
+
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 
@@ -830,14 +834,9 @@ class BaseWorker(AbstractWorker):
 
         return self.msg_history[index]
 
-    def add_crypten_support(self):
-        from syft.workers.worker_support import add_support
-
-        """Add CrypTen specific methods"""
         add_support(self, "crypten")
 
     def remove_crypten_support(self):
-        from syft.workers.worker_support import remove_support
 
         """Remove CrypTen specifc methods"""
         remove_support(self, "crypten")
