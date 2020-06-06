@@ -27,7 +27,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
     def init_routing_table(self):
         return {
             CryptenInitPlan: self.run_crypten_party_plan,
-            CryptenInitJail: self.run_crypten_party_jail
+            CryptenInitJail: self.run_crypten_party_jail,
         }
 
     def run_crypten_party_plan(self, msg: CryptenInitPlan) -> ObjectMessage:

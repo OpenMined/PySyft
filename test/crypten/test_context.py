@@ -32,6 +32,7 @@ class ExampleNet(nn.Module):
         out = self.fc2(out)
         return out
 
+
 def test_context(workers):
     # alice and bob
     n_workers = 2

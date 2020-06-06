@@ -40,6 +40,7 @@ else:
 
 if dependency_check.crypten_available:
     from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
     framework_message_handler["crypten"] = CryptenMessageHandler
 
 # Pytorch dependencies
