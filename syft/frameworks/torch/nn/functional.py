@@ -23,7 +23,7 @@ def dropout(input, p=0.5, training=True, inplace=False):
         # Note that: Weights of a model are always Float values
         # Hence input will always be of type FixedPrecisionTensor > ...
         noise = (binomial.sample(input.shape).type(torch.FloatTensor) * (1.0 / (1.0 - p))).fix_prec(
-            **input.get_class_attributes(), no_wrap=True
+            no_wrap=True
         )
 
         if inplace:
@@ -53,7 +53,7 @@ def dropout2d(input, p=0.5, training=True, inplace=False):
             (distribution.sample(num_feature_maps).type(torch.FloatTensor)).reshape(
                 [-1, 1, 1, input.shape[3]]
             )
-        ).fix_prec(**input.get_class_attributes(), no_wrap=True)
+        ).fix_prec(no_wrap=True)
 
         if inplace:
             input = torch.div(input, p) * noise
