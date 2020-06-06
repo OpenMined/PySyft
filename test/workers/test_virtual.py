@@ -239,13 +239,13 @@ def test_send_jit_scriptmodule(hook, workers):  # pragma: no cover
     assert res == torch.tensor(6)
 
 
-def test_send_command_whitelist(hook, workers):
+def test_send_command_allow_list(hook, workers):
     bob = workers["bob"]
-    whitelisted_methods = {
+    allow_listed_methods = {
         "torch": {"tensor": [1, 2, 3], "rand": (2, 3), "randn": (2, 3), "zeros": (2, 3)}
     }
 
-    for framework, methods in whitelisted_methods.items():
+    for framework, methods in allow_listed_methods.items():
         attr = getattr(bob.remote, framework)
 
         for method, inp in methods.items():
@@ -255,7 +255,7 @@ def test_send_command_whitelist(hook, workers):
                 assert (x.get() == getattr(torch, method)(inp)).all()
 
 
-def test_send_command_not_whitelisted(hook, workers):
+def test_send_command_not_allow_listed(hook, workers):
     bob = workers["bob"]
 
     method_not_exist = "openmind"
