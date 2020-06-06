@@ -13,6 +13,17 @@ class Evaluator:
         self.coeff_modulus = context.param.coeff_modulus
 
     def add(self, op1, op2):
+        """Adds two operands using FV scheme.
+
+        Args:
+            op1 (Ciphertext/Plaintext): First argument for addition.
+            op2 (Ciphertext/Plaintext): Second argument for addition.
+
+        Retruns:
+            If both arguments are Plaintext elements then the result will be a Plaintext object
+                otherwise a Ciphertext object with value equivalent to the result of addition
+                operation of two provided arguments.
+        """
         op1, op2 = copy.deepcopy(op1), copy.deepcopy(op2)
 
         if isinstance(op1, CipherText) and isinstance(op2, CipherText):
@@ -32,6 +43,14 @@ class Evaluator:
 
     def _add_cipher_cipher(self, ct1, ct2):
         """Adds two ciphertexts.
+
+        Args:
+            ct1 (Ciphertext): ciphertext form first argument for addition.
+            ct2 (Ciphertext): ciphertext form second argument for addition.
+
+        Retruns:
+            A Ciphertext object with value equivalent to result of addition of two provided
+                arguments.
         """
         ct1, ct2 = copy.deepcopy(ct1.data), copy.deepcopy(ct2.data)
         result = ct2 if len(ct2) > len(ct1) else ct1
@@ -44,12 +63,28 @@ class Evaluator:
 
     def _add_plain_cipher(self, pt, ct):
         """Adds a ciphertext and a plaintext.
+
+        Args:
+            pt (Plaintext): plaintext form first argument for addition.
+            ct (Ciphertext): ciphertext form second argument for addition.
+
+        Retruns:
+            A Ciphertext object with value equivalent to result of addition of two provided
+                arguments.
         """
         pt, ct = copy.deepcopy(pt), copy.deepcopy(ct)
         return multiply_add_plain_with_delta(ct, pt, self.context)
 
     def _add_plain_plain(self, pt1, pt2):
-        """Adds two plaintexts.
+        """Adds two plaintexts object.
+
+        Args:
+            pt1 (Plaintext): plaintext form first argument for addition.
+            pt2 (Plaintext): plaintext form second argument for addition.
+
+        Retruns:
+            A Plaintext object with value equivalent to result of addition of two provided
+                arguments.
         """
         pt1, pt2 = copy.deepcopy(pt1), copy.deepcopy(pt2)
         encoder = IntegerEncoder(self.context)

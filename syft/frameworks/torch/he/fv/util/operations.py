@@ -152,10 +152,10 @@ def xgcd(x, y):
 
 
 def multiply_add_plain_with_delta(phase, message, context):
-    """Add message (PlainText) into phase.
+    """Add message into phase.
 
     Args:
-        phase: phase is pre-computed carrier polynomial where we can add message data.
+        phase (Ciphertext): phase is pre-computed carrier polynomial where we can add message data.
         message (Plaintext): A plaintext representation of integer data to be encrypted.
         context (Context): Context for extracting encryption parameters.
 
