@@ -376,7 +376,9 @@ def test_fv_encryption_decrption_without_changing_parameters():
             assert value == encoder.decode(decryptor.decrypt(ct))
 
 
-@pytest.mark.parametrize("int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100)])
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
 def test_fv_add_cipher_cipher(int1, int2):
     ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
     keys = KeyGenerator(ctx).keygen()
@@ -395,7 +397,9 @@ def test_fv_add_cipher_cipher(int1, int2):
     )
 
 
-@pytest.mark.parametrize("int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100)])
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
 def test_fv_add_plain_cipher(int1, int2):
     ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
     keys = KeyGenerator(ctx).keygen()
@@ -415,7 +419,9 @@ def test_fv_add_plain_cipher(int1, int2):
     )
 
 
-@pytest.mark.parametrize("int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100)])
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
 def test_fv_add_plain_plain(int1, int2):
     ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
     encoder = IntegerEncoder(ctx)
