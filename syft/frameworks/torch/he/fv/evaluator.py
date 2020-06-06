@@ -19,13 +19,11 @@ class Evaluator:
             op1 (Ciphertext/Plaintext): First argument.
             op2 (Ciphertext/Plaintext): Second argument.
 
-        Retruns:
+        Returns:
             If both arguments are Plaintext elements then the result will be a Plaintext object
                 otherwise a Ciphertext object with value equivalent to the result of addition
                 operation of two provided arguments.
         """
-        op1, op2 = copy.deepcopy(op1), copy.deepcopy(op2)
-
         if isinstance(op1, CipherText) and isinstance(op2, CipherText):
             return self._add_cipher_cipher(op1, op2)
 
@@ -48,7 +46,7 @@ class Evaluator:
             ct1 (Ciphertext): First argument.
             ct2 (Ciphertext): Second argument.
 
-        Retruns:
+        Returns:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
         """
@@ -67,11 +65,11 @@ class Evaluator:
         Args:
             pt (Plaintext): First argument.
             ct (Ciphertext): Second argument.
-        Retruns:
+        Returns:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
         """
-        pt, ct = copy.deepcopy(pt), copy.deepcopy(ct)
+        ct = copy.deepcopy(ct)
         return multiply_add_plain_with_delta(ct, pt, self.context)
 
     def _add_plain_plain(self, pt1, pt2):
@@ -81,11 +79,10 @@ class Evaluator:
             pt1 (Plaintext): First argument.
             pt2 (Plaintext): Second argument.
 
-        Retruns:
+        Returns:
             A Plaintext object with value equivalent to result of addition of two provided
                 arguments.
         """
-        pt1, pt2 = copy.deepcopy(pt1), copy.deepcopy(pt2)
         encoder = IntegerEncoder(self.context)
 
         return encoder.encode(encoder.decode(pt1) + encoder.decode(pt2))

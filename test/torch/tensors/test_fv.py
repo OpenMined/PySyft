@@ -391,6 +391,7 @@ def test_fv_add_cipher_cipher(int1, int2):
         int1 + int2
         == encoder.decode(decryptor.decrypt(evaluator._add_cipher_cipher(op1, op2)))
         == encoder.decode(decryptor.decrypt(evaluator.add(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op2, op1)))
     )
 
 
@@ -410,6 +411,7 @@ def test_fv_add_plain_cipher(int1, int2):
         int1 + int2
         == encoder.decode(decryptor.decrypt(evaluator._add_plain_cipher(op1, op2)))
         == encoder.decode(decryptor.decrypt(evaluator.add(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op2, op1)))
     )
 
 
@@ -424,4 +426,5 @@ def test_fv_add_plain_plain(int1, int2):
         int1 + int2
         == encoder.decode(evaluator._add_plain_plain(op1, op2))
         == encoder.decode(evaluator.add(op1, op2))
+        == encoder.decode(evaluator.add(op2, op1))
     )
