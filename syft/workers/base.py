@@ -834,13 +834,6 @@ class BaseWorker(AbstractWorker):
 
         return self.msg_history[index]
 
-        add_support(self, "crypten")
-
-    def remove_crypten_support(self):
-
-        """Remove CrypTen specifc methods"""
-        remove_support(self, "crypten")
-
     @property
     def message_pending_time(self):
         """
