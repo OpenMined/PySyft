@@ -1,19 +1,16 @@
 from typing import List
-from typing import Tuple
-from typing import Union
-from typing import Dict
 
 import torch
 
 import syft as sy
-from syft.execution.placeholder_id import PlaceholderId
+from syft.serde.syft_serializable import SyftSerializable
 from syft.workers.abstract import AbstractWorker
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.state_tensor_pb2 import StateTensor as StateTensorPB
 from syft_proto.types.torch.v1.parameter_pb2 import Parameter as ParameterPB
 
 
-class State:
+class State(SyftSerializable):
     """The State is a Plan attribute and is used to send tensors along functions.
 
     It references Plan tensor or parameters attributes using their name, and make
@@ -53,7 +50,7 @@ class State:
         currently building.
         """
         if self.tracing:
-            return [ph for ph in self.state_placeholders]
+            return list(self.state_placeholders)
         else:
             return [ph.child for ph in self.state_placeholders]
 
@@ -177,3 +174,7 @@ class State:
 
         state = State(state_placeholders)
         return state
+
+    @staticmethod
+    def get_protobuf_schema() -> StatePB:
+        return StatePB

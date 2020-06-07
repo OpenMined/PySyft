@@ -1,4 +1,3 @@
-from functools import wraps
 import torch
 
 import syft
@@ -22,7 +21,7 @@ def backwards_grad(grad_fn, in_grad=None):
 
 class AutogradTensor(AbstractTensor):
     """ A tensor that tracks operations to build a dynamic graph and backprops
-        through the graph to calculate gradients.
+    through the graph to calculate gradients.
     """
 
     def __init__(
@@ -52,6 +51,7 @@ class AutogradTensor(AbstractTensor):
 
     @property
     def data(self):
+        # TODO why is that? Normally .data is detached from autograd
         return self
 
     @data.setter
@@ -187,9 +187,30 @@ class AutogradTensor(AbstractTensor):
         module.neg = neg
 
         def log(self):
+            """Overriding torch's log method.
+            """
             return self.log()
 
         module.log = log
+
+        def exp(self):
+            """Overriding torch's exp function.
+            """
+            return self.exp()
+
+        module.exp = exp
+
+        def sum(self, **kwargs):
+            """Overriding torch's sum function.
+            """
+            return self.sum(**kwargs)
+
+        module.sum = sum
+
+        def mean(self, **kwargs):
+            return self.mean(**kwargs)
+
+        module.mean = mean
 
         def matmul(self, other):
             return self.matmul(other)
@@ -339,15 +360,16 @@ class AutogradTensor(AbstractTensor):
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "AutogradTensor":
         """
-            This function reconstructs (deserializes) an AutogradTensor given its attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                tensor_tuple: a tuple holding the attributes of the AutogradTensor
-            Returns:
-                AutogradTensor: an AutogradTensor
-            Examples:
-                shared_tensor = detail(data)
-            """
+            This function reconstructs (deserializes) an AutogradTensor given its
+        attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            tensor_tuple: a tuple holding the attributes of the AutogradTensor
+        Returns:
+            AutogradTensor: an AutogradTensor
+        Examples:
+            shared_tensor = detail(data)
+        """
         (
             tensor_id,
             chain,

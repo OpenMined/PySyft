@@ -19,8 +19,8 @@ def test_nn_linear(workers):
 
     y = model(x)
 
-    assert len(alice._objects) == 10  # x, y, weight, bias
-    assert len(bob._objects) == 10
+    assert len(alice.object_store._objects) == 4  # x, y, weight, bias
+    assert len(bob.object_store._objects) == 4
     assert y.get().float_prec() == torch.tensor([[2.0]])
 
 

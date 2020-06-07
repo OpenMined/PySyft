@@ -24,7 +24,7 @@ class TorchAttributes(FrameworkAttributes):
         hook: A TorchHook to stash
     """
 
-    ### Subclasses must provide the following class attributes ###
+    # Subclasses must provide the following class attributes
     ALIAS = "torch"
     Tensor = TorchTensor
 

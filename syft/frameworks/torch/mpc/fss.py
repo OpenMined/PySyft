@@ -2,8 +2,10 @@
 This is an implementation of Function Secret Sharing
 
 Useful papers are:
-- Function Secret Sharing- Improvements and Extensions, Boyle 2017 https://eprint.iacr.org/2018/707.pdf
-- Secure Computation with Preprocessing via Function Secret Sharing, Boyle 2019 https://eprint.iacr.org/2019/1095
+- Function Secret Sharing- Improvements and Extensions, Boyle 2017
+  Link: https://eprint.iacr.org/2018/707.pdf
+- Secure Computation with Preprocessing via Function Secret Sharing, Boyle 2019
+  Link: https://eprint.iacr.org/2019/1095
 
 Note that the protocols are quite different in aspect from those papers
 """
@@ -285,7 +287,7 @@ class DPF:
 
 
 class DIF:
-    """Distributed Point Function - used for equality"""
+    """Distributed Point Function - used for comparison"""
 
     @staticmethod
     def keygen(n_values=1):

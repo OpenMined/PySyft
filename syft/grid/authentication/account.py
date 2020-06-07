@@ -5,13 +5,14 @@ from syft.grid.authentication.credential import AbstractCredential
 
 
 class AccountCredential(AbstractCredential):
-    """Parse/represent credentials based on username-password structure. 
-        Expected JSON Format:
-        { "accounts": [ {"user": "example1", "password": "pass_example"},
-                          {"user": "user2", "password": "password2"},
-                           ....
-                        ]
-        }
+    """Parse/represent credentials based on username-password structure.
+
+    Expected JSON Format:
+    { "accounts": [ {"user": "example1", "password": "pass_example"},
+                      {"user": "user2", "password": "password2"},
+                       ....
+                    ]
+    }
     """
 
     # Constants used to parse user credential files
@@ -21,9 +22,10 @@ class AccountCredential(AbstractCredential):
 
     def __init__(self, username, password):
         """ Initialize a user authentication object.
-            Args:
-                username (str) : Key to identify this object.
-                password (str) : Secret used to validate user.
+
+        Args:
+            username (str) : Key to identify this object.
+            password (str) : Secret used to validate user.
         """
         self.username = username
         self.password = password
@@ -32,15 +34,16 @@ class AccountCredential(AbstractCredential):
     @staticmethod
     def parse(path: str, file_name: str):
         """ Static method used to create new account authentication instances
-            parsing a json file.
-            Args:
-                path (str) : Json file path.
-                file_name (str) : File's name.
-            Returns:
-                List : List of account objects.
+        parsing a json file.
+
+        Args:
+            path (str) : Json file path.
+            file_name (str) : File's name.
+        Returns:
+            List : List of account objects.
         """
         user_files = glob.glob(os.path.join(path, file_name))
-        users = dict()
+        users = {}
         for f in user_files:
             with open(f) as json_file:
                 credentials = json.load(json_file)

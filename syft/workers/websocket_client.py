@@ -8,6 +8,7 @@ import websockets
 import logging
 import ssl
 import time
+import asyncio
 
 import syft as sy
 
@@ -93,7 +94,11 @@ class WebsocketClientWorker(BaseWorker):
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """
+<<<<<<< HEAD
         Note: is subclassed by the node client when yuo use the GridNode
+=======
+        Note: Is subclassed by the node client when you use the GridNode
+>>>>>>> master
         """
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
@@ -146,8 +151,19 @@ class WebsocketClientWorker(BaseWorker):
     def clear_objects_remote(self):
         return self._send_msg_and_deserialize("clear_objects", return_self=False)
 
+    async def async_dispatch(self, workers, commands):
+        results = await asyncio.gather(
+            *[
+                worker.async_send_command(message=command)
+                for worker, command in zip(workers, commands)
+            ]
+        )
+        return results
+
     async def async_send_msg(self, message: Message) -> object:
         """Asynchronous version of send_msg."""
+        if self.verbose:
+            print("async_send_msg", message)
 
         async with websockets.connect(
             self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
@@ -167,7 +183,7 @@ class WebsocketClientWorker(BaseWorker):
         return response
 
     async def async_send_command(
-        self, message: tuple, return_ids: str = None, return_value: bool = False,
+        self, message: tuple, return_ids: str = None, return_value: bool = False
     ) -> Union[List[PointerTensor], PointerTensor]:
         """
         Sends a command through a message to the server part attached to the client
@@ -183,7 +199,7 @@ class WebsocketClientWorker(BaseWorker):
         """
 
         if return_ids is None:
-            return_ids = tuple([sy.ID_PROVIDER.pop()])
+            return_ids = (sy.ID_PROVIDER.pop(),)
 
         name, target, args_, kwargs_ = message
 
@@ -329,7 +345,7 @@ class WebsocketClientWorker(BaseWorker):
         out = "<"
         out += str(type(self)).split("'")[1].split(".")[-1]
         out += " id:" + str(self.id)
-        out += " #tensors local:" + str(len(self._tensors))
+        out += " #tensors local:" + str(len(self.object_store._tensors))
         out += " #tensors remote: " + str(self.tensors_count_remote())
         out += ">"
         return out

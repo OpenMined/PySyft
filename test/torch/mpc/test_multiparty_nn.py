@@ -1,5 +1,4 @@
 import torch
-import syft as sy
 from syft.frameworks.torch.mpc import securenn
 
 

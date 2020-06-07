@@ -1,5 +1,4 @@
 import pytest
-import syft
 import torch as th
 import numpy as np
 

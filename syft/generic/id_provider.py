@@ -18,7 +18,7 @@ class IdProvider:
     """
 
     def __init__(self, given_ids=None):
-        self.given_ids = given_ids if given_ids is not None else list()
+        self.given_ids = given_ids if given_ids is not None else []
         self.generated = set()
         self.record_ids = False
         self.recorded_ids = []
@@ -47,7 +47,8 @@ class IdProvider:
     def set_next_ids(self, given_ids: List, check_ids: bool = True):
         """Sets the next ids returned by the id provider
 
-        Note that the ids are returned in reverse order of the list, as a pop() operation is applied.
+        Note that the ids are returned in reverse order of the list, as a pop()
+        operation is applied.
 
         Args:
             given_ids: List, next ids returned by the id provider
@@ -66,13 +67,14 @@ class IdProvider:
         """Starts the recording in form of a list of the generated ids.
         """
         self.record_ids = True
-        self.recorded_ids = list()
+        self.recorded_ids = []
 
     def get_recorded_ids(self, continue_recording=False):
         """Returns the generated ids since the last call to start_recording_ids.
 
         Args:
-            continue_recording: if False, the recording is stopped and the list of recorded ids is reset
+            continue_recording: if False, the recording is stopped and the
+                list of recorded ids is reset
 
         Returns:
             list of recorded ids
@@ -80,5 +82,9 @@ class IdProvider:
         ret_val = self.recorded_ids
         if not continue_recording:
             self.record_ids = False
-            self.recorded_ids = list()
+            self.recorded_ids = []
         return ret_val
+
+    @staticmethod
+    def seed(seed=0):
+        random.seed(seed)

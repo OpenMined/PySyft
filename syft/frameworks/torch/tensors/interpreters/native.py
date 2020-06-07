@@ -1,9 +1,6 @@
-import math
-from typing import Union, Tuple, List
-import warnings
+from typing import Union, List
 import weakref
 
-import numpy as np
 import torch
 import syft
 from syft.generic.frameworks.hook import hook_args
@@ -24,9 +21,11 @@ from syft.frameworks.torch.nn.functional import batch_norm
 
 
 def _get_maximum_precision():
-    """This function returns the maximum value allowed for precision fractions before the chain decides to use LPT.
+    """This function returns the maximum value allowed for precision fractions before the
+    chain decides to use LPT.
 
-    This function can be overridden if the setup requires the use of LargePrecisionTensor from a smaller precision.
+    This function can be overridden if the setup requires the use of LargePrecisionTensor
+    from a smaller precision.
 
     The default value is the size of torch.long
 
@@ -273,6 +272,12 @@ class TorchTensor(AbstractTensor):
         else:
             self._id = new_id
 
+    def get_class_attributes(self):
+        """
+        Return class attributes for torch tensors
+        """
+        return {"type": self.dtype}
+
     def _is_parameter(self):
         """
         Utility method to test if the tensor is in fact a Parameter
@@ -413,7 +418,7 @@ class TorchTensor(AbstractTensor):
     @staticmethod
     def _get_response(cmd, args_, kwargs_):
         """
-            Return the evaluation of the cmd string parameter
+        Return the evaluation of the cmd string parameter
         """
         command_method = TorchTensor._get_method(cmd)
 
@@ -426,7 +431,7 @@ class TorchTensor(AbstractTensor):
 
     def _fix_torch_library(cmd):
         """
-            Change the cmd string parameter to use nn.functional path to avoid erros.
+        Change the cmd string parameter to use nn.functional path to avoid erros.
         """
         if "_C._nn" in cmd:
             cmd = cmd.replace("_C._nn", "nn.functional")
@@ -564,7 +569,7 @@ class TorchTensor(AbstractTensor):
 
         else:
 
-            children = list()
+            children = []
             for loc in location:
                 children.append(self.clone().send(loc, no_wrap=True))
 
@@ -590,7 +595,6 @@ class TorchTensor(AbstractTensor):
         self,
         location: BaseWorker = None,
         id_at_location: (str or int) = None,
-        register: bool = False,
         owner: BaseWorker = None,
         ptr_id: (str or int) = None,
         garbage_collect_data: bool = True,
@@ -616,7 +620,7 @@ class TorchTensor(AbstractTensor):
             shape = self.shape
 
         ptr = syft.PointerTensor.create_pointer(
-            self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, shape
+            self, location, id_at_location, owner, ptr_id, garbage_collect_data, shape
         )
 
         return ptr
@@ -643,12 +647,12 @@ class TorchTensor(AbstractTensor):
 
     def get(self, *args, inplace: bool = False, user=None, reason: str = "", **kwargs):
         """Requests the tensor/chain being pointed to, be serialized and return
-            Args:
-                args: args to forward to worker
-                inplace: if true, return the same object instance, else a new wrapper
-                kwargs: kwargs to forward to worker
-            Raises:
-                GetNotPermittedError: Raised if get is not permitted on this tensor
+        Args:
+            args: args to forward to worker
+            inplace: if true, return the same object instance, else a new wrapper
+            kwargs: kwargs to forward to worker
+        Raises:
+            GetNotPermittedError: Raised if get is not permitted on this tensor
         """
 
         # If it is a local tensor/chain, we don't need to verify permissions
@@ -710,7 +714,8 @@ class TorchTensor(AbstractTensor):
             # Verify permissions for each element on the tensor chain.
             while hasattr(current_tensor, "child"):
 
-                # If it has a list of allowed users, verify permissions, otherwise (public tensors) go to the next.
+                # If it has a list of allowed users, verify permissions,
+                # otherwise (public tensors) go to the next.
                 if hasattr(current_tensor, "allowed_users"):
                     allow = current_tensor.allow(user)
                     if not allow:
@@ -806,13 +811,13 @@ class TorchTensor(AbstractTensor):
 
     float_precision_ = float_prec_
 
-    def private_tensor(self, *args, allowed_users: Tuple[str], no_wrap: bool = False, **kwargs):
+    def private_tensor(self, *args, allowed_users: List[str], no_wrap: bool = False, **kwargs):
         """
         Convert a tensor or syft tensor to private tensor
 
         Args:
             *args (tuple): args to transmit to the private tensor.
-            allowed_users (tuple): Tuple of allowed users.
+            allowed_users (list): List of allowed users.
             no_wrap (bool): if True, we don't add a wrapper on top of the private tensor
             **kwargs (dict): kwargs to transmit to the private tensor
         """
@@ -822,9 +827,9 @@ class TorchTensor(AbstractTensor):
 
         if self.is_wrapper:
             self.child = (
-                syft.PrivateTensor(*args, **kwargs)
+                syft.PrivateTensor(tags=self.tags, *args, **kwargs)
                 .on(self.child, wrap=False)
-                .register_credentials(allowed_users)
+                .register_credentials(tuple(allowed_users))
             )
             if no_wrap:
                 return self.child
@@ -832,9 +837,9 @@ class TorchTensor(AbstractTensor):
                 return self
 
         private_tensor = (
-            syft.PrivateTensor(*args, **kwargs)
+            syft.PrivateTensor(tags=self.tags, *args, **kwargs)
             .on(self, wrap=False)
-            .register_credentials(allowed_users)
+            .register_credentials(tuple(allowed_users))
         )
         if not no_wrap:
             private_tensor = private_tensor.wrap()
@@ -1009,8 +1014,8 @@ class TorchTensor(AbstractTensor):
                     crypto_provider (syft.VirtualWorker): Worker responsible for the
                         generation of the random numbers for encryption
                     requires_grad (bool): If true, whenever the remote value of this tensor
-                        will have its gradient updated (for example when calling .backward()), a call
-                        will be made to set back the local gradient value.
+                        will have its gradient updated (for example when calling .backward()),
+                        a call will be made to set back the local gradient value.
                     no_wrap (bool): If True, wrap() is called on the created pointer
                     Keyword Args: To be parsed as kwargs for the .fix_prec() method
 

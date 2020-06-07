@@ -34,20 +34,26 @@ def test_clear_object_for_worker_created_with_pre_existing_id(hook):
 
     ptr = th.tensor([1, 2, 3]).send(worker)
 
-    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
-    assert len(worker._objects) == 1
+    assert len(worker._known_workers[worker.id].object_store._objects) == len(
+        worker.object_store._objects
+    )
+    assert len(worker.object_store._objects) == 1
 
     # create worker with pre-existing id
     worker = sy.VirtualWorker(hook, id="worker")
     worker.clear_objects()
 
-    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
-    assert len(worker._objects) == 0
+    assert len(worker._known_workers[worker.id].object_store._objects) == len(
+        worker.object_store._objects
+    )
+    assert len(worker.object_store._objects) == 0
 
     ptr = th.tensor([1, 2, 3]).send(worker)
 
-    assert len(worker._known_workers[worker.id]._objects) == len(worker._objects)
-    assert len(worker._objects) == 1
+    assert len(worker._known_workers[worker.id].object_store._objects) == len(
+        worker.object_store._objects
+    )
+    assert len(worker.object_store._objects) == 1
 
 
 def test_create_already_existing_worker_with_different_type(hook, start_proc):
@@ -91,10 +97,10 @@ def test_execute_worker_function(hook):
 
 
 def test_enable_registration_with_ctx(hook):
-    assert hook.local_worker.is_client_worker == True
+    assert hook.local_worker.is_client_worker
     with hook.local_worker.registration_enabled():
-        hook.local_worker.is_client_worker == False
-    assert hook.local_worker.is_client_worker == True
+        hook.local_worker.is_client_worker is False
+    assert hook.local_worker.is_client_worker
 
 
 def test_send_command_whitelist(hook, workers):
@@ -124,3 +130,10 @@ def test_send_command_not_whitelisted(hook, workers):
 
             with pytest.raises(AttributeError):
                 getattr(attr, method_not_exist)
+
+
+def test_is_framework_supported(hook):
+    worker = sy.VirtualWorker(hook, id="worker")
+    assert worker.is_framework_supported("torch") is True
+    assert sy.VirtualWorker.is_framework_supported("torch") is True
+    assert worker.is_framework_supported("mock_framework") is False

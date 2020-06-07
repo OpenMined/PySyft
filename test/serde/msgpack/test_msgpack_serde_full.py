@@ -3,14 +3,11 @@ import pytest
 import numpy
 import torch
 from functools import partial
-import traceback
-import io
 
 import syft
 from syft.serde import msgpack
 from test.serde.serde_helpers import *
 
-# Dictionary containing test samples functions
 samples = OrderedDict()
 
 # Native
@@ -24,6 +21,7 @@ samples[slice] = make_slice
 samples[str] = make_str
 samples[range] = make_range
 samples[type(Ellipsis)] = make_ellipsis
+samples[type] = make_type
 
 # Numpy
 samples[numpy.float32] = partial(make_numpy_number, numpy.float32)
@@ -51,12 +49,11 @@ samples[syft.execution.communication.CommunicationAction] = make_communication_a
 samples[syft.execution.computation.ComputationAction] = make_computation_action
 samples[syft.execution.placeholder.PlaceHolder] = make_placeholder
 samples[syft.execution.placeholder_id.PlaceholderId] = make_placeholder_id
+samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
 samples[syft.execution.state.State] = make_state
-
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
@@ -65,6 +62,7 @@ samples[
 ] = make_additivesharingtensor
 samples[syft.frameworks.torch.tensors.interpreters.autograd.AutogradTensor] = make_autogradtensor
 samples[syft.frameworks.torch.tensors.interpreters.gradients_core.GradFunc] = make_gradfn
+samples[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor] = make_paillier
 samples[
     syft.frameworks.torch.tensors.interpreters.precision.FixedPrecisionTensor
 ] = make_fixedprecisiontensor
@@ -85,15 +83,15 @@ samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
-samples[syft.messaging.message.TensorCommandMessage] = make_command_message
+samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
-samples[syft.workers.base.BaseWorker] = make_baseworker
+samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in msgpack.serde.simplifiers.items():
+    for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 

@@ -1,6 +1,6 @@
 from collections import defaultdict
-from typing import List, Tuple, Union
 import math
+from typing import List
 
 import numpy as np
 import torch as th
@@ -87,7 +87,10 @@ class PrimitiveStorage:
                         #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
                         #     "]}"
                         # )
-                        print(f"\t\t\t " f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),')
+                        print(
+                            f"\t\t\t "
+                            f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),'
+                        )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op],
                         sy.local_worker.clients,
@@ -163,17 +166,14 @@ class PrimitiveStorage:
     def provide_primitives(
         self, crypto_type: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
     ):
-        """
-        Build n_instances of crypto primitives of the different crypto_types given and send them to some workers.
+        """ Build n_instances of crypto primitives of the different crypto_types given and
+        send them to some workers.
 
         Args:
             crypto_types: type of primitive (fss_eq, etc)
             workers: recipients for those primitive
             n_instances: how many of them are needed
             **kwargs: any parameters needs for the primitive builder
-
-        Returns:
-
         """
         if isinstance(crypto_type, list):
             crypto_type = crypto_type[0]

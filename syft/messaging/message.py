@@ -9,22 +9,20 @@ All Syft message types extend the Message class.
 
 from abc import ABC
 from abc import abstractmethod
-from typing import Union
-from typing import List
 
 import syft as sy
 from syft.workers.abstract import AbstractWorker
+from syft.serde.syft_serializable import SyftSerializable
 
 from syft.execution.action import Action
 from syft.execution.computation import ComputationAction
 from syft.execution.communication import CommunicationAction
-from syft.execution.placeholder import PlaceHolder
 
 from syft_proto.messaging.v1.message_pb2 import ObjectMessage as ObjectMessagePB
 from syft_proto.messaging.v1.message_pb2 import TensorCommandMessage as CommandMessagePB
 
 
-class Message(ABC):
+class Message(ABC, SyftSerializable):
     """All syft message types extend this class
 
     All messages in the pysyft protocol extend this class. This abstraction
@@ -56,7 +54,7 @@ class TensorCommandMessage(Message):
     """All syft actions use this message type
 
     In Syft, an action is when one worker wishes to tell another worker to do something with
-    objects contained in the worker._objects registry (or whatever the official object store is
+    objects contained in the worker.object_store registry (or whatever the official object store is
     backed with in the case that it's been overridden). Semantically, one could view all Messages
     as a kind of action, but when we say action this is what we mean. For example, telling a
     worker to take two tensors and add them together is an action. However, sending an object
@@ -66,13 +64,14 @@ class TensorCommandMessage(Message):
         """Initialize an action message
 
         Args:
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the action properly.
-            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.), the id of
-                action results are set by the client. This allows the client to be able to predict where
-                the results will be ahead of time. Importantly, this allows the client to pre-initalize the
-                pointers to the future data, regardless of whether the action has yet executed. It also
-                reduces the size of the response from the action (which is very often empty).
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the action properly.
+            return_ids (Tuple): primarily for our async infrastructure (Plan, Protocol, etc.),
+                the id of action results are set by the client. This allows the client to be able
+                to predict where the results will be ahead of time. Importantly, this allows the
+                client to pre-initalize the pointers to the future data, regardless of whether
+                the action has yet executed. It also reduces the size of the response from the
+                action (which is very often empty).
 
         """
 
@@ -115,11 +114,11 @@ class TensorCommandMessage(Message):
         return TensorCommandMessage(action)
 
     @staticmethod
-    def communication(obj_id, name, source, destinations, kwargs_):
+    def communication(name, target, args_, kwargs_, return_ids):
         """ Helper function to build a TensorCommandMessage containing a CommunicationAction
         directly from the action arguments.
         """
-        action = CommunicationAction(obj_id, name, source, destinations, kwargs_)
+        action = CommunicationAction(name, target, args_, kwargs_, return_ids)
         return TensorCommandMessage(action)
 
     @staticmethod
@@ -205,6 +204,10 @@ class TensorCommandMessage(Message):
         detailed_action = sy.serde.protobuf.serde._unbufferize(worker, action)
         return TensorCommandMessage(detailed_action)
 
+    @staticmethod
+    def get_protobuf_schema() -> CommandMessagePB:
+        return CommandMessagePB
+
 
 class ObjectMessage(Message):
     """Send an object to another worker using this message type.
@@ -280,6 +283,10 @@ class ObjectMessage(Message):
 
         return object_msg
 
+    @staticmethod
+    def get_protobuf_schema() -> ObjectMessagePB:
+        return ObjectMessagePB
+
 
 class ObjectRequestMessage(Message):
     """Request another worker to send one of its objects
@@ -300,7 +307,7 @@ class ObjectRequestMessage(Message):
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {(self.object_id, self.user, self.reason)})"
+        return f"({type(self).__name__} {self.object_id, self.user, self.reason})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
@@ -567,8 +574,8 @@ class PlanCommandMessage(Message):
 
         Args:
             command_name (str): name used to identify the command.
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the command properly.
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the command properly.
         """
 
         self.command_name = command_name
@@ -626,8 +633,8 @@ class WorkerCommandMessage(Message):
 
         Args:
             command_name (str): name used to identify the command.
-            message (Tuple): this is typically the args and kwargs of a method call on the client, but it
-                can be any information necessary to execute the command properly.
+            message (Tuple): this is typically the args and kwargs of a method call on the client,
+                but it can be any information necessary to execute the command properly.
         """
 
         # call the parent constructor - setting the type integer correctly
@@ -639,11 +646,6 @@ class WorkerCommandMessage(Message):
     def __str__(self):
         """Return a human readable version of this message"""
         return f"({type(self).__name__} {(self.command_name, self.message)})"
-
-    @property
-    def contents(self):
-        """Returns a tuple with the contents of the operation (backwards compatability)."""
-        return (self.command_name, self.message)
 
     @staticmethod
     def simplify(worker: AbstractWorker, ptr: "WorkerCommandMessage") -> tuple:

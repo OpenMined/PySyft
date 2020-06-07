@@ -126,7 +126,7 @@ class MultiPointerTensor(AbstractTensor):
 
     def get(self, sum_results: bool = False) -> FrameworkTensor:
 
-        results = list()
+        results = []
         for v in self.child.values():
             results.append(v.get())
 
@@ -136,11 +136,15 @@ class MultiPointerTensor(AbstractTensor):
         return results
 
     def virtual_get(self, sum_results: bool = False):
-        """Get the value of the tensor without calling get - Only for VirtualWorkers"""
+        """
+        Get the value of the tensor without sending `get` message
 
-        results = list()
+        (Only for VirtualWorkers)
+        """
+
+        results = []
         for v in self.child.values():
-            value = v.location._objects[v.id_at_location]
+            value = v.location.object_store.get_obj(v.id_at_location)
             results.append(value)
 
         if sum_results:
