@@ -4,7 +4,7 @@ import binascii
 import base64
 import websocket
 import requests
-from time import time
+from timeit import timeit
 import random
 
 import syft as sy
@@ -103,30 +103,47 @@ class GridClient:
 
     def _get_ping(self, worker_id, random_id):
         params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
-        start = time()
-        self._send_http_req("GET", "/federated/speed-test", params)
-        ping = (time() - start) * 1000  # milliseconds
+        ping = timeit(self._send_http_req("GET", "/federated/speed-test", params), number=1)
         return ping
 
     def _get_upload_speed(self, worker_id, random_id):
-        data_sample = b"x" * MAX_BUFFER_SIZE * 64  # 64 MB
-        params = {"worker_id": worker_id, "random": random_id}
-        body = {"upload_data": data_sample}
-        start = time()
-        self._send_http_req("POST", "/federated/speed-test", params, body)
-        upload_speed = 64 * 1024 / (time() - start())  # speed in KBps
-        return upload_speed
+        buffer_size = CHUNK_SIZE
+        speed_history = []
+
+        while True:
+            data_sample = b"x" * buffer_size
+            params = {"worker_id": worker_id, "random": random_id}
+            body = {"upload_data": data_sample}
+            timetaken = timeit(
+                self._send_http_req("POST", "/federated/speed-test", params, body), number=1,
+            )
+            if time_taken < 0.5:
+                buffer_size = min(
+                    buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE * 64
+                )  # 64 MB max file size
+                continue
+            upload_speed = 64 * 1024 / time_taken  # speed in KBps
+            speed_history.append(upload_speed)
+            if len(speed_history) % CHECK_SPEED_ITER == 0:
+                avg = sum(speed_history) / len(speed_history)
+                deviation = avg - min(speed_history)
+                if (deviation < 20) and (avg > 0):
+                    break
+        avg_speed = sum(speed_history) / len(speed_history)
+        return avg_speed
 
     def _get_download_speed(self, worker_id, random_id):
         params = {"worker_id": worker_id, "random": random_id}
         speed_history = []
-        prev_timestamp = time()
         with requests.get(self.http_url + "/federated/speed-test", params, stream=True) as r:
             r.raise_for_status()
             buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
-            while self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE):
-                time_taken = time() - prev_timestamp
+            while True:
+                timetaken = timeit(
+                    self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE),
+                    number=1,
+                )
                 if time_taken < 0.5:
                     buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
                     continue
@@ -137,7 +154,6 @@ class GridClient:
                     deviation = avg - min(speed_history)
                     if (deviation < 20) and (avg > 0):
                         break
-                prev_timestamp = time()
 
         avg_speed = sum(speed_history) / len(speed_history)
         return avg_speed
@@ -244,7 +260,7 @@ class GridClient:
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
             "type": "federated/report",
-            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64,},
+            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
         }
         return self._send_msg(params)
 
