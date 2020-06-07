@@ -77,7 +77,9 @@ class GridClient:
 
         return json_response
 
-    def _send_http_req(self, method, path: str, params: dict = None, body: bytes = None):
+    def _send_http_req(
+        self, method, path: str, params: dict = None, body: bytes = None
+    ):
         if method == "GET":
             res = requests.get(self.http_url + path, params)
         elif method == "POST":
@@ -102,11 +104,7 @@ class GridClient:
         return True
 
     def _get_ping(self, worker_id, random_id):
-        params = {
-            "is_ping" : 1,
-            "worker_id" : worker_id,
-            "random" : random_id
-        }
+        params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
         start = time()
         self._send_http_req("GET", "/federated/speed-test", params)
         ping = (time() - start) * 1000  # milliseconds
@@ -114,30 +112,26 @@ class GridClient:
 
     def _get_upload_speed(self, worker_id, random_id):
         data_sample = b"x" * MAX_BUFFER_SIZE * 64  # 64 MB
-        params = {
-            "worker_id" : worker_id,
-            "random" : random_id
-        }
-        body = {
-            "upload_data" : data_sample
-        }
+        params = {"worker_id": worker_id, "random": random_id}
+        body = {"upload_data": data_sample}
         start = time()
         self._send_http_req("POST", "/federated/speed-test", params, body)
         upload_speed = 64 * 1024 / (time() - start())  # speed in KBps
         return upload_speed
 
     def _get_download_speed(self, worker_id, random_id):
-        params = {
-            "worker_id" : worker_id,
-            "random" : random_id
-        }
+        params = {"worker_id": worker_id, "random": random_id}
         speed_history = []
         prev_timestamp = time()
-        with requests.get(self.http_url + "/federated/speed-test", params, stream=True) as r:
+        with requests.get(
+            self.http_url + "/federated/speed-test", params, stream=True
+        ) as r:
             r.raise_for_status()
             buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
-            while self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE):
+            while self._read_n_request_chunks(
+                chunk_generator, buffer_size // CHUNK_SIZE
+            ):
                 time_taken = time() - prev_timestamp
                 if time_taken < 0.5:
                     buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
@@ -186,7 +180,9 @@ class GridClient:
         serialized_model = binascii.hexlify(self._serialize(model)).decode()
         serialized_plans = self._serialize_object(client_plans)
         serialized_protocols = self._serialize_object(client_protocols)
-        serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
+        serialized_avg_plan = binascii.hexlify(
+            self._serialize(server_averaging_plan)
+        ).decode()
 
         # "federated/host-training" request body
         message = {
@@ -248,7 +244,9 @@ class GridClient:
             "request_key": request_key,
             "plan_id": protocol_id,
         }
-        serialized_protocol = self._send_http_req("GET", "/federated/get-protocol", params)
+        serialized_protocol = self._send_http_req(
+            "GET", "/federated/get-protocol", params
+        )
         return self._unserialize(serialized_protocol, ProtocolPB)
 
     def report(self, worker_id: str, request_key: str, diff: State):
@@ -256,7 +254,11 @@ class GridClient:
         diff_base64 = base64.b64encode(diff_serialized).decode("ascii")
         params = {
             "type": "federated/report",
-            "data": {"worker_id": worker_id, "request_key": request_key, "diff": diff_base64},
+            "data": {
+                "worker_id": worker_id,
+                "request_key": request_key,
+                "diff": diff_base64,
+            },
         }
         return self._send_msg(params)
 
