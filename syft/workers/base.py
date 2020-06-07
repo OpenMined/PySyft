@@ -85,6 +85,7 @@ class BaseWorker(AbstractWorker):
             The argument may be a floating point number for subsecond
             precision.
     """
+
     _framework_message_handler = {}
 
     def __init__(
