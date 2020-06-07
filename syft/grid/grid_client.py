@@ -19,7 +19,8 @@ TIMEOUT_INTERVAL = 60
 CHUNK_SIZE = 8192
 SPEED_MULT_FACTOR = 10
 MAX_BUFFER_SIZE = 1048576  # 1 MB
-CHECK_SPEED_ITER = 10
+CHECK_SPEED_EVERY = 10
+MAX_SPEED_TESTS = 50
 
 
 class GridError(BaseException):
@@ -103,19 +104,26 @@ class GridClient:
 
     def _get_ping(self, worker_id, random_id):
         params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
-        ping = timeit(self._send_http_req("GET", "/federated/speed-test", params), number=1)
+        ping = (
+            timeit(
+                lambda: self._send_http_req("GET", "/federated/speed-test", params),
+                number=MAX_SPEED_TESTS,
+            )
+            * 1000
+        )  # for ms
         return ping
 
     def _get_upload_speed(self, worker_id, random_id):
         buffer_size = CHUNK_SIZE
         speed_history = []
 
-        while True:
+        for _ in range(MAX_SPEED_TESTS):
             data_sample = b"x" * buffer_size
             params = {"worker_id": worker_id, "random": random_id}
             body = {"upload_data": data_sample}
-            timetaken = timeit(
-                self._send_http_req("POST", "/federated/speed-test", params, body), number=1,
+            time_taken = timeit(
+                lambda: self._send_http_req("POST", "/federated/speed-test", params, body),
+                number=1,
             )
             if time_taken < 0.5:
                 buffer_size = min(
@@ -124,13 +132,16 @@ class GridClient:
                 continue
             upload_speed = 64 * 1024 / time_taken  # speed in KBps
             speed_history.append(upload_speed)
-            if len(speed_history) % CHECK_SPEED_ITER == 0:
+            if len(speed_history) % CHECK_SPEED_EVERY == 0:
                 avg = sum(speed_history) / len(speed_history)
                 deviation = avg - min(speed_history)
                 if (deviation < 20) and (avg > 0):
                     break
-        avg_speed = sum(speed_history) / len(speed_history)
-        return avg_speed
+        if len(speed_history) == 0:
+            return -1
+        else:
+            avg_speed = sum(speed_history) / len(speed_history)
+            return avg_speed
 
     def _get_download_speed(self, worker_id, random_id):
         params = {"worker_id": worker_id, "random": random_id}
@@ -139,9 +150,9 @@ class GridClient:
             r.raise_for_status()
             buffer_size = CHUNK_SIZE
             chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
-            while True:
-                timetaken = timeit(
-                    self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE),
+            for _ in range(MAX_SPEED_TESTS):
+                time_taken = timeit(
+                    lambda: self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE),
                     number=1,
                 )
                 if time_taken < 0.5:
@@ -149,14 +160,17 @@ class GridClient:
                     continue
                 new_speed = buffer_size / (time_taken * 1024)
                 speed_history.append(new_speed)
-                if len(speed_history) % CHECK_SPEED_ITER == 0:
+                if len(speed_history) % CHECK_SPEED_EVERY == 0:
                     avg = sum(speed_history) / len(speed_history)
                     deviation = avg - min(speed_history)
                     if (deviation < 20) and (avg > 0):
                         break
 
-        avg_speed = sum(speed_history) / len(speed_history)
-        return avg_speed
+        if len(speed_history) == 0:
+            return -1
+        else:
+            avg_speed = sum(speed_history) / len(speed_history)
+            return avg_speed
 
     def _serialize(self, obj):
         """Serializes object to protobuf"""
