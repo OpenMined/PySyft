@@ -903,9 +903,14 @@ class AdditiveSharingTensor(AbstractTensor):
         module.nn = nn
 
     ## SECTION SNN
-
+    @crypto_protocol("snn")
     def relu(self, inplace=False):
         return securenn.relu(self)
+
+    @crypto_protocol("fss")
+    def relu(self):
+        zero = self - self
+        return self * (self >= zero)
 
     def positive(self):
         # self >= 0
@@ -932,7 +937,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
     @crypto_protocol("fss")
     def __ge__(self, other):
-        return other <= self
+        return fss.le(other, self)
 
     def lt(self, other):
         return (other - self - 1).positive()
