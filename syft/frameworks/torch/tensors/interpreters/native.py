@@ -1,5 +1,6 @@
 from typing import Union, List
 import weakref
+import warnings
 
 import torch
 import syft
@@ -8,14 +9,14 @@ from syft.generic.frameworks.overload import overloaded
 from syft.frameworks.torch.tensors.interpreters.paillier import PaillierTensor
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.frameworks.types import FrameworkTensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.abstract.hookable import hookable
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.utils import memorize
 from syft.workers.base import BaseWorker
 
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
-from syft.exceptions import SendNotPermittedError
 
 from syft.frameworks.torch.nn.functional import batch_norm
 
@@ -437,6 +438,7 @@ class TorchTensor(AbstractTensor):
             cmd = cmd.replace("_C._nn", "nn.functional")
         return cmd
 
+    @hookable
     def send(
         self,
         *location,
@@ -476,9 +478,6 @@ class TorchTensor(AbstractTensor):
         Raises:
                 SendNotPermittedError: Raised if send is not permitted on this tensor.
         """
-
-        if not self.allow(user=user):
-            raise SendNotPermittedError()
 
         # If you send a pointer p1, you want the pointer to pointer p2 to control
         # the garbage collection and not the remaining old p1 (here self). Because if
@@ -1059,14 +1058,12 @@ class TorchTensor(AbstractTensor):
                 "Encryption and Secure Multi-Party Computation"
             )
 
-    def decrypt(self, protocol="mpc", **kwargs):
+    def decrypt(self, **kwargs):
         """
         This method will decrypt each value in the tensor using Multi Party
         Computation (default) or Paillier Homomorphic Encryption
 
         Args:
-            protocol (str): Currently supports 'mpc' for Multi Party
-                Computation and 'paillier' for Paillier Homomorphic Encryption
             **kwargs:
                 With Respect to MPC accepts:
                     None
@@ -1075,19 +1072,23 @@ class TorchTensor(AbstractTensor):
                     private_key (phe.paillier.PaillierPrivateKey): Can be obtained using
                         ```public_key, private_key = sy.frameworks.torch.he.paillier.keygen()```
         Returns:
-            An decrypted version of the Tensor following the protocol specified
+            An decrypted version of the Tensor following the protocol guessed from its type
 
         Raises:
             NotImplementedError: If protocols other than the ones mentioned above are queried
 
         """
 
-        if protocol.lower() == "mpc":
+        protocol = kwargs.get("protocol", None)
+        if protocol:
+            warnings.warn("protocol should no longer be used in decrypt")
+
+        if isinstance(self.child, (syft.FixedPrecisionTensor, syft.AutogradTensor)):
             x_encrypted = self.copy()
             x_decrypted = x_encrypted.get().float_prec()
             return x_decrypted
 
-        elif protocol.lower() == "paillier":
+        elif isinstance(self.child, PaillierTensor):
             # self.copy() not required as PaillierTensor's decrypt method is not inplace
             private_key = kwargs.get("private_key")
             return self.child.decrypt(private_key)

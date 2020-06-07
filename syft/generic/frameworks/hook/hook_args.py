@@ -216,7 +216,7 @@ def hook_response(attr, response, wrap_type, wrap_args={}, new_self=None):
     """
 
     # inline methods should just return new_self
-    if "__i" == attr[0:3]:
+    if "__i" == attr[0:3] and attr != "__iter__":
         return new_self
 
     # TODO: Why do we need to cast it in a tuple? this is a (small) time waste

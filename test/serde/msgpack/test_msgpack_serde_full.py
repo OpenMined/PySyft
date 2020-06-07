@@ -53,6 +53,7 @@ samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
+samples[syft.execution.role_assignments.RoleAssignments] = make_role_assignments
 samples[syft.execution.state.State] = make_state
 
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
@@ -87,6 +88,9 @@ samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_messa
 samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
+
+# testing
+samples[SerializableDummyClass] = make_serializable_dummy_class
 
 
 def test_serde_coverage():

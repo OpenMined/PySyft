@@ -4,7 +4,7 @@ from typing import Union
 from syft.exceptions import ObjectNotFoundError
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkTensorType
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
 
@@ -161,3 +161,9 @@ class ObjectStore:
 
         for tag in obj.tags:
             self._tag_to_object_ids[tag].add(obj.id)
+
+    def __len__(self):
+        """
+        Return the number of objects in the store
+        """
+        return len(self._objects)

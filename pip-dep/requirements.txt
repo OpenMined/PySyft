@@ -9,10 +9,11 @@ Pillow~=6.2.2
 psutil==5.7.0
 requests~=2.22.0
 scipy~=1.4.1
-syft-proto~=0.4.5
+syft-proto==0.4.7
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0
 tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
+notebook==5.7.8

@@ -1,8 +1,10 @@
 import math
 import logging
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.workers.base import BaseWorker
 from syft.generic.pointers.pointer_dataset import PointerDataset
+from syft_proto.frameworks.torch.fl.v1.dataset_pb2 import BaseDataset as BaseDatasetPB
+
 import torch
 from torch.utils.data import Dataset
 import syft
@@ -10,7 +12,7 @@ import syft
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset(AbstractObject):
+class BaseDataset(AbstractSendable):
     """
     This is a base class to be used for manipulating a dataset. This is composed
     of a .data attribute for inputs and a .targets one for labels. It is to
@@ -191,6 +193,68 @@ class BaseDataset(AbstractObject):
             chain = syft.serde.msgpack.serde._detail(worker, chain)
             dataset.child = chain
         return dataset
+
+    @staticmethod
+    def bufferize(worker, dataset):
+        """
+        This method serializes a BaseDataset into a BaseDatasetPB.
+
+        Args:
+            dataset (BaseDataset): input BaseDataset to be serialized.
+
+        Returns:
+            proto_dataset (BaseDatasetPB): serialized BaseDataset.
+        """
+        proto_dataset = BaseDatasetPB()
+        proto_dataset.data.CopyFrom(syft.serde.protobuf.serde._bufferize(worker, dataset.data))
+        proto_dataset.targets.CopyFrom(
+            syft.serde.protobuf.serde._bufferize(worker, dataset.targets)
+        )
+        syft.serde.protobuf.proto.set_protobuf_id(proto_dataset.id, dataset.id)
+        for tag in dataset.tags:
+            proto_dataset.tags.append(tag)
+
+        if dataset.child:
+            proto_dataset.child.CopyFrom(dataset.child)
+
+        proto_dataset.description = dataset.description
+        return proto_dataset
+
+    @staticmethod
+    def unbufferize(worker, proto_dataset):
+        """
+        This method deserializes BaseDatasetPB into a BaseDataset.
+
+        Args:
+            proto_dataset (BaseDatasetPB): input serialized BaseDatasetPB.
+
+        Returns:
+             BaseDataset: deserialized BaseDatasetPB.
+        """
+        data = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.data)
+        targets = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.targets)
+        dataset_id = syft.serde.protobuf.proto.get_protobuf_id(proto_dataset.id)
+        child = None
+        if proto_dataset.HasField("child"):
+            child = syft.serde.protobuf.serde._unbufferize(worker, proto_dataset.child)
+        return BaseDataset(
+            data=data,
+            targets=targets,
+            id=dataset_id,
+            tags=set(proto_dataset.tags),
+            description=proto_dataset.description,
+            child=child,
+        )
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+        This method returns the protobuf schema used for BaseDataset.
+
+        Returns:
+           Protobuf schema for BaseDataset.
+       """
+        return BaseDatasetPB
 
 
 def dataset_federate(dataset, workers):

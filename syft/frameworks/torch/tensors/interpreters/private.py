@@ -3,12 +3,11 @@ import syft
 
 from typing import List, Tuple
 
+from syft.exceptions import SendNotPermittedError
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
-
-
 from syft.workers.abstract import AbstractWorker
-from syft.generic.tensor import AbstractTensor
 
 
 class PrivateTensor(AbstractTensor):
@@ -60,6 +59,10 @@ class PrivateTensor(AbstractTensor):
             bool : A boolean value (True if the user is allowed and false if it isn't).
         """
         return user in self.allowed_users
+
+    def _before_send(self, *location, user: object = None, **kwargs):
+        if not self.allow(user):
+            raise SendNotPermittedError()
 
     def register_credentials(self, users: List[str]) -> "PrivateTensor":
         """ Register a new user credential(s) into the list of allowed users to get this tensor.

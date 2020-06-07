@@ -19,7 +19,7 @@ from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
-from syft.generic.object import AbstractObject
+from syft.generic.abstract.sendable import AbstractSendable
 from syft.generic.pointers.pointer_plan import PointerPlan
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.autograd import AutogradTensor
@@ -71,7 +71,7 @@ class func2plan(object):
         return plan
 
 
-class Plan(AbstractObject):
+class Plan(AbstractSendable):
     """
     A Plan stores a sequence of actions, just like a function.
 
@@ -117,7 +117,7 @@ class Plan(AbstractObject):
         input_types: list = None,
         description: str = None,
     ):
-        AbstractObject.__init__(self, id, owner, tags, description, child=None)
+        super().__init__(id, owner, tags, description, child=None)
 
         # Plan instance info
         self.name = name or self.__class__.__name__
@@ -238,7 +238,7 @@ class Plan(AbstractObject):
         forward_args = inspect.getfullargspec(self.forward).args
         for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
             if f_name in forward_args:
-                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+                framework_kwargs[f_name] = wrap_framework_func(self.role)
 
         results = self.forward(*args, **framework_kwargs)
 
@@ -457,8 +457,8 @@ class Plan(AbstractObject):
             f_package (imported module): imported library
         """
 
-        def call_wrapped_framework(role, owner):
-            return FrameworkWrapper(f_package, role, owner)
+        def call_wrapped_framework(role):
+            return FrameworkWrapper(f_package, role)
 
         Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 

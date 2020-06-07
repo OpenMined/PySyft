@@ -585,3 +585,36 @@ def test_inplace_ops_on_remote_long_tensor(workers):
     p.get_()
 
     assert p == torch.LongTensor([4])
+
+
+def test_iterable_pointer(workers):
+    alice = workers["alice"]
+
+    t = torch.Tensor([[1, 2], [4, 5], [7, 8]])
+
+    p = t.send(alice)
+
+    assert len(alice.object_store) == 1
+    for idx, tensor in enumerate(p):
+        assert len(alice.object_store) == 2
+        assert isinstance(tensor, PointerTensor)
+        assert torch.all(tensor.get() == t[idx])
+
+    assert len(alice.object_store) == 1
+
+    l = []
+    for idx, tensor in enumerate(p):
+        l.append(tensor)
+
+    assert len(alice.object_store) == 4
+
+    del l
+    del tensor
+
+    assert len(alice.object_store) == 1
+    for idx, tensor in enumerate(p[:, 1]):
+
+        # Should be 3 because p[:, 1] will create another tensor on alice side
+        assert len(alice.object_store) == 3
+        assert isinstance(tensor, PointerTensor)
+        assert torch.all(tensor.get() == t[:, 1][idx])

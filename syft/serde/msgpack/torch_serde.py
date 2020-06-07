@@ -12,8 +12,8 @@ import torch
 import syft
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.generic.pointers.multi_pointer import MultiPointerTensor
-from syft.generic.tensor import initialize_tensor
-from syft.generic.tensor import AbstractTensor
+from syft.generic.abstract.tensor import initialize_tensor
+from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 from syft.serde.msgpack import serde
 from syft.codes import TENSOR_SERIALIZATION

@@ -7,6 +7,25 @@ import io
 import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
+from syft.serde.syft_serializable import SyftSerializable
+
+
+class SerializableDummyClass(SyftSerializable):
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def simplify(worker, obj):
+        return obj.value
+
+    @staticmethod
+    def detail(worker, obj):
+        return SerializableDummyClass(obj)
+
+    @staticmethod
+    def get_msgpack_code():
+        return {"code": 12345}
+
 
 # Make dict of type codes
 CODE = OrderedDict()
@@ -1018,6 +1037,36 @@ def make_protocol(**kwargs):
     ]
 
 
+# Protocol
+def make_role_assignments(**kwargs):
+    alice = kwargs["workers"]["alice"]
+    bob = kwargs["workers"]["bob"]
+
+    role_assignments = syft.execution.role_assignments.RoleAssignments(
+        {"role1": alice, "role2": bob}
+    )
+
+    def compare(detailed, original):
+        assert type(detailed) == syft.execution.role_assignments.RoleAssignments
+        assert detailed.assignments == original.assignments
+        return True
+
+    return [
+        {
+            "value": role_assignments,
+            "simplified": (
+                CODE[syft.execution.role_assignments.RoleAssignments],
+                (
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], role_assignments.assignments
+                    ),
+                ),
+            ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
 # syft.generic.pointers.pointer_tensor.PointerTensor
 def make_pointertensor(**kwargs):
     alice = kwargs["workers"]["alice"]
@@ -1432,6 +1481,10 @@ def make_computation_action(**kwargs):
     b = a.sum(1, keepdim=True)
     op2 = bob._get_msg(-1).action
 
+    c = torch.tensor([[1, 2], [3, 4]]).send(bob)
+    d = c.sum([0, 1], keepdim=True)
+    op3 = bob._get_msg(-1).action
+
     bob.log_msgs = False
 
     def compare(detailed, original):
@@ -1492,6 +1545,21 @@ def make_computation_action(**kwargs):
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.kwargs),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_ids),
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op2.return_value),
+                ),
+            ),
+            "cmp_detailed": compare,
+        },
+        {
+            "value": op3,
+            "simplified": (
+                CODE[syft.execution.computation.ComputationAction],
+                (
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.name),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.target),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.args),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.kwargs),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.return_ids),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], op3.return_value),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1962,6 +2030,23 @@ def make_paillier(**kwargs):
                 CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
                 simplfied,
             ),
+            "cmp_detailed": compare,
+        }
+    ]
+
+
+def make_serializable_dummy_class(**kwargs):
+    def compare(simplified, detailed):
+        assert simplified.value == detailed.value
+        return True
+
+    obj = SerializableDummyClass("test")
+    simplified = SerializableDummyClass.simplify(kwargs["workers"]["serde_worker"], obj)
+
+    return [
+        {
+            "value": obj,
+            "simplified": (SerializableDummyClass.get_msgpack_code()["code"], simplified),
             "cmp_detailed": compare,
         }
     ]

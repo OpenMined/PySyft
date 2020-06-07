@@ -50,7 +50,7 @@ class Role(SyftSerializable):
         self.tracing = False
 
         for name, package in framework_packages.items():
-            tracing_wrapper = FrameworkWrapper(package=package, role=self, owner=self.worker)
+            tracing_wrapper = FrameworkWrapper(package=package, role=self)
             setattr(self, name, tracing_wrapper)
 
     def input_placeholders(self):
