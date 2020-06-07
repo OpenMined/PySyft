@@ -18,9 +18,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Framework specific message handlers
-framework_message_handler = {}
-
 # The purpose of the following import section is to increase the convenience of using
 # PySyft by making it possible to import the most commonly used objects from syft
 # directly (i.e., syft.TorchHook or syft.VirtualWorker or syft.LoggingTensor)
@@ -37,11 +34,6 @@ if dependency_check.tfe_available:
     __all__.extend(["KerasHook", "TFECluster", "TFEWorker"])
 else:
     logger.info("TF Encrypted Keras not available.")
-
-if dependency_check.crypten_available:
-    from syft.frameworks.crypten.message_handler import CryptenMessageHandler
-
-    framework_message_handler["crypten"] = CryptenMessageHandler
 
 # Pytorch dependencies
 # Import Hook

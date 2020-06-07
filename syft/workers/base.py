@@ -85,6 +85,7 @@ class BaseWorker(AbstractWorker):
             The argument may be a floating point number for subsecond
             precision.
     """
+    _framework_message_handler = {}
 
     def __init__(
         self,
@@ -167,7 +168,7 @@ class BaseWorker(AbstractWorker):
         self.crypto_store = PrimitiveStorage(owner=self)
 
         # Register the specific handlers for each framework
-        for _, message_handler_constructor in sy.framework_message_handler.items():
+        for _, message_handler_constructor in BaseWorker._framework_message_handler.items():
             self.message_handlers.append(message_handler_constructor(self.object_store, self))
 
     def get_obj(self, obj_id: Union[str, int]) -> object:
@@ -978,6 +979,13 @@ class BaseWorker(AbstractWorker):
 
         return result
 
+    @staticmethod
+    def register_message_handlers():
+        if sy.dependency_check.crypten_available:
+            from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
+            BaseWorker._framework_message_handler["crypten"] = CryptenMessageHandler
+
     @classmethod
     def is_framework_supported(cls, framework: str) -> bool:
         """
@@ -986,3 +994,6 @@ class BaseWorker(AbstractWorker):
         :return: True/False
         """
         return framework.lower() in framework_packages
+
+
+BaseWorker.register_message_handlers()
