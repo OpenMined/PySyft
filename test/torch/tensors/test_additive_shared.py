@@ -753,7 +753,7 @@ def test_comp(workers, protocol):
     )
 
     if protocol == "fss":
-        me.crypto_store.provide_primitives(["fss_eq", "fss_comp"], [alice, bob], n_instances=50)
+        me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=50)
 
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)

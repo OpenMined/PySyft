@@ -63,7 +63,6 @@ class PrimitiveStorage:
             op_shapes = (op, *shapes)
             primitive_stack = primitive_stack[op_shapes]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-            # print('requires:', n_instances, '\tavailable:', available_instances)
             if available_instances >= n_instances:
                 keys = []
                 for i, prim in enumerate(primitive_stack):
@@ -78,16 +77,17 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    # print(
-                    #     f"Autogenerate: "
-                    #     f'["{type_op}"], '
-                    #     # f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                    #     f"n_instances={n_instances}, "
-                    #     'beaver={"op_shape": ['
-                    #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
-                    #     "]}"
-                    # )
-                    # print(f"\t\t\t " f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),')
+                    if sy.verbose:
+                        # print(
+                        #     f"Autogenerate: "
+                        #     f'["{type_op}"], '
+                        #     # f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        #     f"n_instances={n_instances}, "
+                        #     'beaver={"op_shape": ['
+                        #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
+                        #     "]}"
+                        # )
+                        print(f"\t\t\t " f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),')
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op],
                         sy.local_worker.clients,
@@ -102,7 +102,6 @@ class PrimitiveStorage:
                     )
         else:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
-            # print('check enoought prim?', available_instances, 'neeeded', n_instances)
             if available_instances >= n_instances:
                 keys = []
                 # We iterate on the different elements that constitute a given primitive, for
@@ -145,12 +144,13 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    print(
-                        f"Autogenerate: "
-                        f'["{type_op}"], '
-                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                        f"n_instances={n_instances}"
-                    )
+                    if sy.verbose:
+                        print(
+                            f"Autogenerate: "
+                            f'["{type_op}"], '
+                            f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                            f"n_instances={n_instances}"
+                        )
                     sy.local_worker.crypto_store.provide_primitives(
                         [type_op], sy.local_worker.clients, n_instances=n_instances
                     )
@@ -181,9 +181,7 @@ class PrimitiveStorage:
         while n_instances > 0:
             n_instances_batch = min(500_000, n_instances)
             if n_instances_batch > 10_000:
-                #     n_instances_batch = 500_000
                 n_instances_batch = math.ceil(n_instances_batch / 100_000) * 100_000
-                # print('| n_instances_batch', n_instances_batch)
             worker_types_primitives = defaultdict(dict)
 
             path = "/Users/tryffel/code/PySyft/data/primitives"
@@ -199,16 +197,12 @@ class PrimitiveStorage:
                     return f"{path}/{crypto_type}-{n_instances_batch}-{worker.id}.data"
 
             if "beaver" not in crypto_type and os.path.isfile(filename(workers[0]) + ".npy"):
-                # if "comp" in crypto_type:
-                #     print(f"{n_instances_batch} from file")
                 for i, worker in enumerate(workers):
                     worker_message = self._owner.create_worker_command_message(
                         "load_crypto_primitive", None, crypto_type, filename(worker)
                     )
                     self._owner.send_msg(worker_message, worker)
             else:
-                if "comp" in crypto_type:
-                    print(f"{n_instances_batch} building")
                 builder = self._builders[crypto_type]
 
                 primitives = builder(n_party=len(workers), n_instances=n_instances_batch, **kwargs)
