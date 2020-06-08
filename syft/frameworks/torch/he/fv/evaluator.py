@@ -4,13 +4,13 @@ from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.plaintext import PlainText
-from syft.frameworks.torch.he.fv.integer_encoder import IntegerEncoder
 
 
 class Evaluator:
     def __init__(self, context):
         self.context = context
         self.coeff_modulus = context.param.coeff_modulus
+        self.plain_modulus = context.param.plain_modulus
 
     def add(self, op1, op2):
         """Adds two operands using FV scheme.
@@ -83,6 +83,5 @@ class Evaluator:
             A Plaintext object with value equivalent to result of addition of two provided
                 arguments.
         """
-        encoder = IntegerEncoder(self.context)
-
-        return encoder.encode(encoder.decode(pt1) + encoder.decode(pt2))
+        pt1, pt2 = copy.deepcopy(pt1), copy.deepcopy(pt2)
+        return PlainText(poly_add_mod(pt1.data, pt2.data, self.plain_modulus))
