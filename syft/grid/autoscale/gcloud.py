@@ -1,11 +1,11 @@
 """To autoscale pygrid workers on Google Cloud Platfrom"""
-import os
 import json
-import shutil
-import subprocess
+import IPython
 import terrascript
 import terrascript.provider
 import terrascript.resource
+from utils.script import terraform_script
+from utils.notebook import terraform_notebook
 
 
 class GoogleCloud:
@@ -18,8 +18,7 @@ class GoogleCloud:
             project_id: project_id of your project in GCP
             region: region of your GCP project
         """
-        shutil.copy2(credentials, os.getcwd() + "/credentials.json")
-        self.credentials = "credentials.json"
+        self.credentials = credentials
         self.project_id = project_id
         self.region = region
         self.config = terrascript.Terrascript()
@@ -28,7 +27,11 @@ class GoogleCloud:
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
-        subprocess.call("terraform init", shell=True)
+
+        if IPython.get_ipython():
+            terraform_notebook.init()
+        else:
+            terraform_script.init()
 
     def compute_instance(self, name, machine_type, zone, image_family):
         """
@@ -48,12 +51,18 @@ class GoogleCloud:
         )
         with open("main.tf.json", "w") as main_config:
             json.dump(self.config, main_config, indent=2, sort_keys=False)
-        # subprocess.call("terraform plan", shell=True)
-        subprocess.call("terraform apply", shell=True)
+
+        if IPython.get_ipython():
+            terraform_notebook.apply()
+        else:
+            terraform_script.apply()
 
     def destroy(self):
         """
         args:
         """
-        subprocess.call("terraform destroy", shell=True)
-        os.remove(self.credentials)
+        if IPython.get_ipython():
+            terraform_notebook.destroy()
+        else:
+            terraform_script.destroy()
+        del self.credentials

@@ -9,7 +9,6 @@ from RestrictedPython.Eval import default_guarded_getiter, default_guarded_getit
 from RestrictedPython.Guards import (
     guarded_iter_unpack_sequence,
     guarded_unpack_sequence,
-    guarded_setattr,
 )
 from RestrictedPython.PrintCollector import PrintCollector
 

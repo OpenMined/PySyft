@@ -29,7 +29,6 @@ teachers as well). We however include the label files required to
 reproduce key results from our paper (https://arxiv.org/abs/1610.05755):
 the epsilon bounds for MNIST and SVHN students.
 """
-import os
 import math
 from typing import List, Tuple, Union
 
@@ -209,14 +208,14 @@ def perform_analysis(
     moments: int = 8,
     beta: float = 0.09,
 ) -> Tuple[float, float]:
-    """"
+    """
     Performs PATE analysis on predictions from teachers and combined predictions for student.
 
     Args:
-        teacher_preds: a numpy array of dim (num_teachers x num_examples). Each value corresponds to the
-            index of the label which a teacher gave for a specific example
-        indices: a numpy array of dim (num_examples) of aggregated examples which were aggregated using
-            the noisy max mechanism.
+        teacher_preds: a numpy array of dim (num_teachers x num_examples). Each value corresponds
+            to the index of the label which a teacher gave for a specific example
+        indices: a numpy array of dim (num_examples) of aggregated examples which were aggregated
+            using the noisy max mechanism.
         noise_eps: the epsilon level used to create the indices
         delta: the desired level of delta
         moments: the number of moments to track (see the paper)
@@ -226,7 +225,7 @@ def perform_analysis(
     """
     num_teachers, num_examples = teacher_preds.shape
     _num_examples = indices.shape[0]
-    labels = set(list(teacher_preds.flatten()))
+    labels = set(teacher_preds.flatten())
     num_labels = len(labels)
 
     assert num_examples == _num_examples
@@ -267,7 +266,8 @@ def perform_analysis(
 
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
-            "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
+            "Warning: May not have used enough values of l. Increase 'moments' variable and "
+            "run again."
         )
 
     # Data independent bound, as mechanism is
@@ -284,7 +284,8 @@ def perform_analysis(
 
 def tensors_to_literals(tensor_list: List[torch.Tensor]) -> List[Union[float, int]]:
     """
-    Converts list of torch tensors to list of integers/floats. Fix for not having the functionality which converts list of tensors to tensors
+    Converts list of torch tensors to list of integers/floats. Fix for not having the functionality
+    which converts list of tensors to tensors
 
     Args:
         tensor_list: List of torch tensors
@@ -459,8 +460,8 @@ def perform_analysis_torch(
     Args:
         preds: a torch tensor of dim (num_teachers x num_examples). Each value corresponds to the
             index of the label which a teacher gave for a specific example
-        indices: a torch tensor of dim (num_examples) of aggregated examples which were aggregated using
-            the noisy max mechanism.
+        indices: a torch tensor of dim (num_examples) of aggregated examples which were aggregated
+            using the noisy max mechanism.
         noise_eps: the epsilon level used to create the indices
         delta: the desired level of delta
         moments: the number of moments to track (see the paper)
@@ -475,7 +476,7 @@ def perform_analysis_torch(
     assert num_examples == _num_examples
 
     labels = list(preds.flatten())
-    labels = set([tensor.item() for tensor in labels])
+    labels = {tensor.item() for tensor in labels}
     num_labels = len(labels)
 
     counts_mat = torch.zeros(num_examples, num_labels, dtype=torch.float32)
@@ -506,7 +507,8 @@ def perform_analysis_torch(
 
     if min(eps_list_nm) == eps_list_nm[-1]:
         print(
-            "Warning: May not have used enough values of l. Increase 'moments' variable and run again."
+            "Warning: May not have used enough values of l. Increase 'moments' variable "
+            "and run again."
         )
 
     # Computer epsilon when not taking teacher quorum into account

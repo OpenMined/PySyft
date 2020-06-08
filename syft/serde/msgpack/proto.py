@@ -4,8 +4,8 @@ in https://github.com/OpenMined/proto.
 The reason for this is to have stable constants used in Serde serialization protocol
 and the definition file that can be used not only by PySyft but also in other languages.
 
-https://github.com/OpenMined/proto (`pysyft_proto` module) is included as dependency in setup.py exposes
-contents of `proto.json` file in `proto_info` variable.
+https://github.com/OpenMined/proto (`pysyft_proto` module) is included as dependency in setup.py
+exposes contents of `proto.json` file in `proto_info` variable.
 
 IMPORTANT: New types added in Serde need to be also defined in `proto.json`.
 """
@@ -25,7 +25,9 @@ class TypeInfo:
     """
 
     def __init__(self, name, obj):
-        """Initializes type info for a given class identified by `name` with contents of `proto_info` for this class."""
+        """Initializes type info for a given class identified by `name` with contents of
+        `proto_info` for this class.
+        """
         self.name = name
         self.obj = obj
 
@@ -50,7 +52,8 @@ class TypeInfo:
 
 def fullname(cls):
     """Returns full name of a given *class* (not instance of class).
-    Source: https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python.
+    Source:
+    https://stackoverflow.com/questions/2020014/get-fully-qualified-class-name-of-an-object-in-python. # noqa: E501
     """
     module = cls.__module__
     if module is None or module == str.__module__:
@@ -67,5 +70,10 @@ def proto_type_info(cls):
 
     if type_name in proto_info["TYPES"]:
         return TypeInfo(name=type_name, obj=proto_info["TYPES"][type_name])
+    elif cls.get_msgpack_code.__qualname__.startswith(cls.__name__):
+        return TypeInfo(name=type_name, obj=cls.get_msgpack_code())
     else:
-        raise UndefinedProtocolTypeError(f"{type_name} is not defined in the protocol file")
+        raise UndefinedProtocolTypeError(
+            f"{type_name} is not defined in the protocol file and it does not provide a code by"
+            f" implementing 'get_msgpack_code'."
+        )

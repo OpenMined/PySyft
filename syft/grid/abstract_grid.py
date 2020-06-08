@@ -8,7 +8,7 @@ from typing import Dict
 
 from abc import ABC, abstractmethod
 
-from syft.workers.node_client import NodeClient
+from syft.workers.node_client import NodeClient  # noqa: F401
 
 
 class AbstractGrid(ABC):
@@ -55,7 +55,8 @@ class AbstractGrid(ABC):
 
     def _check_node_type(self, grid_workers: List[Any], node_type: Any) -> bool:
         """ Private method used to verify if workers used by grid network are exactly what we expect.
-            Returns:
-               result : Boolean result.
+
+        Returns:
+            result : Boolean result.
         """
         return all(isinstance(node, node_type) for node in grid_workers)

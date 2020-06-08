@@ -3,14 +3,11 @@ import pytest
 import numpy
 import torch
 from functools import partial
-import traceback
-import io
 
 import syft
 from syft.serde import msgpack
 from test.serde.serde_helpers import *
 
-# Dictionary containing test samples functions
 samples = OrderedDict()
 
 # Native
@@ -56,9 +53,8 @@ samples[syft.execution.plan.NestedTypeWrapper] = make_nested_type_wrapper
 samples[syft.execution.plan.Plan] = make_plan
 samples[syft.execution.protocol.Protocol] = make_protocol
 samples[syft.execution.role.Role] = make_role
+samples[syft.execution.role_assignments.RoleAssignments] = make_role_assignments
 samples[syft.execution.state.State] = make_state
-
-samples[syft.federated.train_config.TrainConfig] = make_trainconfig
 
 samples[syft.frameworks.torch.fl.dataset.BaseDataset] = make_basedataset
 samples[syft.frameworks.torch.tensors.decorators.logging.LoggingTensor] = make_loggingtensor
@@ -95,10 +91,13 @@ samples[syft.messaging.message.CryptenInitJail] = make_crypteninitjail
 
 samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
+# testing
+samples[SerializableDummyClass] = make_serializable_dummy_class
+
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""
-    for cls, _ in msgpack.serde.simplifiers.items():
+    for cls, _ in msgpack.serde.msgpack_global_state.simplifiers.items():
         has_sample = cls in samples
         assert has_sample, f"Serde for {cls} is not tested"
 

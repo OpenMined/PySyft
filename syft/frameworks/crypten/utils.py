@@ -1,7 +1,6 @@
 import torch
 import crypten
 from crypten.nn import onnx_converter as _onnx_converter
-from syft.frameworks import crypten as syft_crypten
 
 
 PACK_OTHER = -1

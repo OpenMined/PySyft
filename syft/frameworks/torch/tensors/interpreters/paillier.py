@@ -1,10 +1,18 @@
-from syft.generic.tensor import AbstractTensor
-from syft.generic.frameworks.hook import hook_args
-from syft.generic.frameworks.overload import overloaded
-from syft.workers.abstract import AbstractWorker
 import syft as sy
 import numpy as np
 import torch as th
+
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.frameworks.hook import hook_args
+from syft.generic.frameworks.hook.hook_args import (
+    get_child,
+    register_backward_func,
+    register_forward_func,
+    register_type_rule,
+    one,
+)
+from syft.generic.frameworks.overload import overloaded
+from syft.workers.abstract import AbstractWorker
 
 
 class PaillierTensor(AbstractTensor):
@@ -293,3 +301,8 @@ class PaillierTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+
+register_type_rule({PaillierTensor: one})
+register_forward_func({PaillierTensor: get_child})
+register_backward_func({PaillierTensor: lambda i, **kwargs: PaillierTensor().on(i, wrap=False)})

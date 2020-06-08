@@ -17,7 +17,7 @@ def test_simple_func():
 
 
 def import_socket():  # pragma: no cover
-    import socket
+    import socket  # noqa: F401
 
 
 def test_import():
