@@ -125,6 +125,8 @@ def test_CoeffModulus_bfv_default(poly_modulus, SeqLevelType, result):
         ([0, 0], [0, 0], 3, [0, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 3, [0, 2, 1, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 1, [0, 0, 0, 0]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [1, 2, 0, 2, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0, 0, 0, 0]),
     ],
 )
 def test_poly_add_mod(op1, op2, mod, result):
@@ -133,7 +135,12 @@ def test_poly_add_mod(op1, op2, mod, result):
 
 @pytest.mark.parametrize(
     "op1, op2, mod, result",
-    [([1, 1], [2, 1], 5, [1, 3]), ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1])],
+    [
+        ([1, 1], [2, 1], 5, [1, 3]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [0, 1, 1, 1, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0]),
+    ],
 )
 def test_poly_mul_mod(op1, op2, mod, result):
     print("test poly_mul_mod : ", poly_mul_mod(op1, op2, mod))
@@ -356,3 +363,20 @@ def test_fv_encryption_decrption_standard_seq_level(
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
     decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
     assert integer == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(integer))))
+
+
+def test_fv_encryption_decrption_without_changing_parameters():
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    values = [0, 1, -1, 100, -100, 1000]
+    for value in values:
+        # Checking simple encryption-decryption with same parameters.
+        assert value == encoder.decode(decryptor.decrypt(encryptor.encrypt(encoder.encode(value))))
+
+        # Checking the decryption of same ciphertext 3 times (checking for ciphertext deepcopy).
+        ct = encryptor.encrypt(encoder.encode(value))
+        for _ in range(3):
+            assert value == encoder.decode(decryptor.decrypt(ct))

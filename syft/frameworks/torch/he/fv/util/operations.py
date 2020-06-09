@@ -66,6 +66,15 @@ def poly_add_mod(op1, op2, modulus):
 def poly_mul_mod(op1, op2, modulus):
     """return multiplication of two polynomials with all coefficients of
     polynomial %q(coefficient modulus) and result polynomial % t(polynomial modulus)"""
+
+    # For non same size polynomails we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != len(op2):
+        if len(op1) > len(op2):
+            op2 = op2 + [0] * (len(op1) - len(op2))
+        else:
+            op1 = op1 + [0] * (len(op2) - len(op1))
+
     poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
     result = (
         poly.polydiv(
