@@ -1,5 +1,6 @@
-from syft.generic.tensor import AbstractTensor
-import pyfe as fe
+from pyfe.encryptor import Encryptor
+
+from syft.generic.abstract.tensor import AbstractTensor
 
 
 class FunctionalEncryptedTensor(AbstractTensor):
@@ -19,29 +20,36 @@ class FunctionalEncryptedTensor(AbstractTensor):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.scheme = None
 
-    def encrypt(self, scheme):
+    def encrypt(self, context, public_key):
         """
         This method will encrypt each value in the tensor using Functional encryption.
 
         Args:
-            scheme: a PyFE Scheme created using
-                pyfe.scheme.Scheme()
+            context: a PyFE Context created using
+                pyfe.context.Context()
+            public_key: a PublicKey object
         """
         output = FunctionalEncryptedTensor()
         output.child = self.child
-        output.encrypt_(scheme)
+        output.encrypt_(context, public_key)
 
-    def encrypt_(self, scheme):
+    def encrypt_(self, context, public_key):
         """
             This method will encrypt each value in the tensor using Functional encryption.
 
         Args:
-            scheme: a PyFE Scheme created using
-                pyfe.scheme.Scheme()
+            context: a PyFE Context created using
+                pyfe.context.Context()
+            public_key: a PublicKey object
         """
-        input = self.child.flatten().tolist()
-        pk, msk = scheme.setup(vector_length=len(input))
 
-        new_child = scheme.encrypt(pk, fe.vectors.Vector(input))
+        input = self.child.flatten().tolist()
+
+        # We are required to provide pk manually by user , key generation requires length of data
+        # TODO: Find solution for this
+
+        encryptor = Encryptor(context, public_key)
+
+        new_child = encryptor.encrypt(input)
+
         self.child = new_child
-        self.scheme = scheme

@@ -1032,13 +1032,13 @@ class TorchTensor(AbstractTensor):
             return x_encrypted
 
         elif protocol.lower() == "fe":
-            scheme = kwargs.get("scheme")
+            context = kwargs.get("context")
+            public_key = kwargs.get("public_key")
 
-            x = self.copy()
-            x_encrypted = FunctionalEncryptedTensor().on(x)  # Instantiate the class
-            x_encrypted.child.encrypt_(scheme)  # Perform functional encryption
+            encrypted_vect = FunctionalEncryptedTensor().on(self)  # Instantiate the class
+            encrypted_vect.child.encrypt_(context, public_key)  # Perform functional encryption
 
-            return x_encrypted
+            return encrypted_vect
 
         else:
             raise NotImplementedError(
