@@ -125,6 +125,8 @@ def test_CoeffModulus_bfv_default(poly_modulus, SeqLevelType, result):
         ([0, 0], [0, 0], 3, [0, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 3, [0, 2, 1, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 1, [0, 0, 0, 0]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [1, 2, 0, 2, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0, 0, 0, 0]),
     ],
 )
 def test_poly_add_mod(op1, op2, mod, result):
@@ -133,7 +135,12 @@ def test_poly_add_mod(op1, op2, mod, result):
 
 @pytest.mark.parametrize(
     "op1, op2, mod, result",
-    [([1, 1], [2, 1], 5, [1, 3]), ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1])],
+    [
+        ([1, 1], [2, 1], 5, [1, 3]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [0, 1, 1, 1, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0]),
+    ],
 )
 def test_poly_mul_mod(op1, op2, mod, result):
     print("test poly_mul_mod : ", poly_mul_mod(op1, op2, mod))
