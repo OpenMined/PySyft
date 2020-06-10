@@ -687,6 +687,16 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __eq__ = eq
 
+    def var(self, unbiased=False, **kwargs):
+        mu = self.mean(**kwargs)
+        unbiased_self = self - mu
+        mean = (unbiased_self * unbiased_self).mean(**kwargs)
+        if unbiased:
+            numel = self.numel()
+            return mean * numel / (numel - 1)
+        else:
+            return mean
+
     @staticmethod
     @overloaded.module
     def torch(module):

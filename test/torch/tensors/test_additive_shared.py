@@ -908,6 +908,44 @@ def test_torch_dot(workers):
     assert torch.dot(x, y).get().float_prec() == 45
 
 
+def test_numel(workers):
+    """Test numel on AST which returns an integer"""
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    a = torch.ones(1, 5)
+    expected = a.numel()
+
+    a = a.encrypt(workers=[alice, bob], crypto_provider=james)
+
+    result = a.numel()
+
+    assert expected == result
+
+
+def test_mean(workers):
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    t = torch.tensor([1.0, 2, 3, 4])
+    expected = t.mean()
+
+    x = t.encrypt(workers=[alice, bob], crypto_provider=james)
+
+    result = x.mean().decrypt()
+
+    assert expected == result
+
+
+@pytest.mark.parametrize("unbiased", [True, False])
+def test_var(workers, unbiased):
+    bob, alice, james, me = (workers["bob"], workers["alice"], workers["james"], workers["me"])
+    t = torch.tensor([1.0, 2, 3, 4])
+    expected = t.var(unbiased=unbiased)
+
+    x = t.encrypt(workers=[alice, bob], crypto_provider=james)
+
+    result = x.var(unbiased=unbiased).decrypt()
+
+    assert (expected - result).abs() < 0.01  # Fix precision round error
+
+
 def test_unbind(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
