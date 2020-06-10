@@ -1,10 +1,10 @@
 """To test the implementation of gcloud.py"""
-from syft.grid.autoscale import gcloud
-from syft.grid.autoscale.utils import gcloud_configurations as configs
+import syft.grid.autoscale.gcloud as gcloud
+import syft.grid.autoscale.utils.gcloud_configurations as configs
 
 
 NEW = gcloud.GoogleCloud(
-    credentials="/usr/terraform.json", project_id="project", region="us-central1",
+    credentials="/usr/terraform.json", project_id="project", region=configs.Region.us_central1,
 )
 
 NEW.create_cluster(

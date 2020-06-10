@@ -44,9 +44,9 @@ class GoogleCloud:
         self.config += terrascript.resource.google_compute_instance(
             name,
             name=name,
-            machine_type=machine_type.value,
-            zone=zone.value,
-            boot_disk={"initialize_params": {"image": image_family.value}},
+            machine_type=machine_type,
+            zone=zone,
+            boot_disk={"initialize_params": {"image": image_family}},
             network_interface={"network": "default", "access_config": {}},
         )
         with open("main.tf.json", "w") as main_config:
@@ -75,8 +75,8 @@ class GoogleCloud:
         instance_template = terrascript.resource.google_compute_instance_template(
             "worker-template",
             name=name + "-worker-template",
-            machine_type=machine_type.value,
-            disk={"source_image": image_family.value},
+            machine_type=machine_type,
+            disk={"source_image": image_family},
             network_interface={"network": "default", "access_config": {}},
             lifecycle={"create_before_destroy": True},
         )
@@ -87,7 +87,7 @@ class GoogleCloud:
             name=name,
             version={"instance_template": "${" + instance_template.self_link + "}"},
             base_instance_name=name,
-            zone=zone.value,
+            zone=zone,
             target_size=str(target_size),
         )
         with open("main.tf.json", "w") as main_config:
