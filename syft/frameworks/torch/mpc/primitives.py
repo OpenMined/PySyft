@@ -77,7 +77,7 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    if sy.verbose:
+                    if self._owner.verbose:
                         # print(
                         #     f"Autogenerate: "
                         #     f'["{type_op}"], '
@@ -147,7 +147,7 @@ class PrimitiveStorage:
                 return keys
             else:
                 if not self.force_preprocessing:
-                    if sy.verbose:
+                    if self._owner.verbose:
                         print(
                             f"Autogenerate: "
                             f'["{type_op}"], '

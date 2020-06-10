@@ -170,6 +170,8 @@ class BaseWorker(AbstractWorker):
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
+        self.syft = sy
+
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 

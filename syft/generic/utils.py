@@ -37,12 +37,12 @@ def remote(func, location):
 
     def remote_exec(*args, return_value=False, return_arity=1, multiprocessing=False, **kwargs):
 
-        response_ids = [sy.ID_PROVIDER.pop() for _ in range(return_arity)]
+        response_ids = tuple(sy.ID_PROVIDER.pop() for _ in range(return_arity))
 
         command = (command_name, None, args, kwargs)
 
         response = worker.send_command(
-            message=command, recipient=location, return_ids=response_ids, return_value=return_value
+            location, *command, return_ids=response_ids, return_value=return_value
         )
 
         # TODO stale: remove
