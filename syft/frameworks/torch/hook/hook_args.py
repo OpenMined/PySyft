@@ -1,9 +1,6 @@
 import torch
 
 from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
-from syft.frameworks.torch.tensors.interpreters.functional_encrypted import (
-    FunctionalEncryptedTensor,
-)
 from syft.generic.frameworks.hook.hook_args import (
     register_ambiguous_method,
     register_ambiguous_function,
