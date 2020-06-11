@@ -60,6 +60,15 @@ def invert_mod(value, modulus):
 def poly_add_mod(op1, op2, modulus):
     """return addition of two polynomials with all coefficients of
     polynomial %q(coefficient modulus)"""
+
+    # For non same size polynomails we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != len(op2):
+        if len(op1) > len(op2):
+            op2 = op2 + [0] * (len(op1) - len(op2))
+        else:
+            op1 = op1 + [0] * (len(op2) - len(op1))
+
     return np.mod(np.polyadd(op1, op2), modulus).tolist()
 
 
@@ -161,10 +170,10 @@ def xgcd(x, y):
 
 
 def multiply_add_plain_with_delta(phase, message, context):
-    """Add message (PlainText) into phase.
+    """Add message into phase.
 
     Args:
-        phase: phase is pre-computed carrier polynomial where we can add message data.
+        phase (Ciphertext): phase is pre-computed carrier polynomial where we can add message data.
         message (Plaintext): A plaintext representation of integer data to be encrypted.
         context (Context): Context for extracting encryption parameters.
 
