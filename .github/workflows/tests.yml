@@ -55,11 +55,11 @@ jobs:
         wget http://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
         tar xf pbc-0.5.14.tar.gz
         cd pbc-0.5.14
-        ./configure && make && sudo make install
+        ./configure && make && sudo make install && cd ..
         git clone https://github.com/JHUISI/charm.git
         cd charm
-        ./configure.sh && make && sudo make install && sudo ldconfig
-        rm -rf charm pbc-0.5.14/ pbc-0.5.14.tar.gz
+        ./configure.sh && make && sudo make install && sudo ldconfig && cd ..
+        rm -rf charm/ pbc-0.5.14/ pbc-0.5.14.tar.gz
 
     - name: Lint, format, and type-check
       run: |
