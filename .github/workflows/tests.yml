@@ -59,6 +59,7 @@ jobs:
         git clone https://github.com/JHUISI/charm.git
         cd charm
         ./configure.sh && make && sudo make install && sudo ldconfig
+        rm -rf charm pbc-0.5.14/ pbc-0.5.14.tar.gz
 
     - name: Lint, format, and type-check
       run: |
