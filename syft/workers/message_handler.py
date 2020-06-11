@@ -266,7 +266,7 @@ class BaseMessageHandler(AbstractMessageHandler):
             # decision to decide when to delete the tensor.
             ptr = obj.create_pointer(
                 garbage_collect_data=False, owner=sy.local_worker, tags=obj.tags
-            )
+            ).wrap()
             results.append(ptr)
 
         return results
