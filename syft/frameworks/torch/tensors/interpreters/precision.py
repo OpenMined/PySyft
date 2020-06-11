@@ -10,6 +10,10 @@ from syft.generic.pointers.multi_pointer import MultiPointerTensor
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.workers.abstract import AbstractWorker
 
+from syft_proto.frameworks.torch.tensors.interpreters.v1.precision_pb2 import (
+    FixedPrecisionTensor as FixedPrecisionTensorPB,
+)
+
 
 class FixedPrecisionTensor(AbstractTensor):
     def __init__(
@@ -683,6 +687,16 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __eq__ = eq
 
+    def var(self, unbiased=False, **kwargs):
+        mu = self.mean(**kwargs)
+        unbiased_self = self - mu
+        mean = (unbiased_self * unbiased_self).mean(**kwargs)
+        if unbiased:
+            numel = self.numel()
+            return mean * numel / (numel - 1)
+        else:
+            return mean
+
     @staticmethod
     @overloaded.module
     def torch(module):
@@ -905,6 +919,77 @@ class FixedPrecisionTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
+    @staticmethod
+    def bufferize(worker, prec_tensor):
+        """
+         This method serializes FixedPrecisionTensor into FixedPrecisionTensorPB.
+
+          Args:
+             prec_tensor (FixedPrecisionTensor): input FixedPrecisionTensor to be serialized.
+
+          Returns:
+             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+         """
+        proto_prec_tensor = FixedPrecisionTensorPB()
+        syft.serde.protobuf.proto.set_protobuf_id(proto_prec_tensor.id, prec_tensor.id)
+        proto_prec_tensor.field = str(prec_tensor.field)
+        proto_prec_tensor.dtype = prec_tensor.dtype
+        proto_prec_tensor.base = prec_tensor.base
+        proto_prec_tensor.kappa = prec_tensor.kappa
+        proto_prec_tensor.precision_fractional = prec_tensor.precision_fractional
+        for tag in prec_tensor.tags:
+            proto_prec_tensor.tags.append(tag)
+        proto_prec_tensor.description = prec_tensor.description
+        if hasattr(prec_tensor, "child"):
+            proto_prec_tensor.child.CopyFrom(
+                syft.serde.protobuf.serde._bufferize(worker, prec_tensor.child)
+            )
+
+        return proto_prec_tensor
+
+    @staticmethod
+    def unbufferize(worker, proto_prec_tensor):
+        """
+            This method deserializes FixedPrecisionTensorPB into FixedPrecisionTensor.
+
+            Args:
+                proto_prec_tensor (FixedPrecisionTensorPB): input FixedPrecisionTensor to be
+                deserialized.
+
+            Returns:
+                tensor (FixedPrecisionTensor): deserialized FixedPrecisionTensorPB
+        """
+        proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_prec_tensor.id)
+
+        child = None
+        if proto_prec_tensor.HasField("child"):
+            child = syft.serde.protobuf.serde._unbufferize(worker, proto_prec_tensor.child)
+
+        tensor = FixedPrecisionTensor(
+            owner=worker,
+            id=proto_id,
+            field=proto_prec_tensor.field,
+            dtype=proto_prec_tensor.dtype,
+            base=proto_prec_tensor.base,
+            precision_fractional=proto_prec_tensor.precision_fractional,
+            kappa=proto_prec_tensor.kappa,
+            tags=set(proto_prec_tensor.tags),
+            description=proto_prec_tensor.description,
+        )
+
+        tensor.child = child
+        return tensor
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+            Returns the protobuf schema used for FixedPrecisionTensor.
+
+            Returns:
+                Protobuf schema for FixedPrecisionTensor.
+        """
+        return FixedPrecisionTensorPB
 
 
 ### Register the tensor with hook_args.py ###

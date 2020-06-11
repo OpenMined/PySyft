@@ -1,3 +1,4 @@
+import copy
 from numpy.polynomial import polynomial as poly
 
 
@@ -32,7 +33,7 @@ class Decryptor:
         """
 
         # Calculate [c0 + c1 * sk + c2 * sk^2 ...]_q
-        temp_product_modq = self._mul_ct_sk(encrypted.data)
+        temp_product_modq = self._mul_ct_sk(copy.deepcopy(encrypted.data))
 
         # Divide scaling variant using BEHZ FullRNS techniques
         result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)

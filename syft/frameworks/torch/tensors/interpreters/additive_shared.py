@@ -155,6 +155,13 @@ class AdditiveSharingTensor(AbstractTensor):
         for share in self.child.values():
             return share.shape
 
+    def numel(self):
+        """
+        Return the number of elements
+        """
+        for share in self.child.values():
+            return share.numel()
+
     @property
     def min_value(self):
         if self._min_value is None:
@@ -719,6 +726,18 @@ class AdditiveSharingTensor(AbstractTensor):
                 results[worker] = share_results
 
         return results
+
+    @overloaded.method
+    def mean(self, shares, **kwargs):
+        result = {}
+        m = None
+        for worker, share in shares.items():
+            sum_value = share.sum(**kwargs)
+            if m is None:
+                m = share.numel() // sum_value.numel()
+            result[worker] = sum_value / m
+
+        return result
 
     @staticmethod
     @overloaded.module

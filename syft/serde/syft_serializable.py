@@ -204,6 +204,24 @@ class SyftSerializable:
         raise NotImplementedError
 
     @staticmethod
+    def get_msgpack_code():
+        """
+            Method that provides a code for msgpack if the type is not present in proto.json.
+
+            The returned object should be similar to:
+            {
+                "code": int value,
+                "forced_code": int value
+            }
+
+            Both keys are optional, the common and right way would be to add only the "code" key.
+
+            Returns:
+                dict: A dict with the "code" or "forced_code" keys.
+        """
+        raise NotImplementedError
+
+    @staticmethod
     def unbufferize(worker, obj):
         """
             Deserialization method for protobuf.

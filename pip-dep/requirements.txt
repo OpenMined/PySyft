@@ -11,7 +11,7 @@ psutil==5.7.0
 pyfe~=0.0.1
 requests~=2.22.0
 scipy~=1.4.1
-syft-proto~=0.4.6
+syft-proto==0.4.7
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0

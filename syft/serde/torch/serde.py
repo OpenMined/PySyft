@@ -61,7 +61,7 @@ def numpy_tensor_serializer(worker: AbstractWorker, tensor: torch.Tensor) -> bin
             "Torch to Numpy serializer can only be used with tensors that do not require grad. "
             "Detaching tensor to continue"
         )
-        tensor = torch.detach()
+        tensor = tensor.detach()
 
     np_tensor = tensor.numpy()
     outfile = io.BytesIO()
