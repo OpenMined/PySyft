@@ -546,11 +546,7 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self,
-        obj_id: Union[str, int],
-        location: "BaseWorker",
-        user=None,
-        reason: str = "",
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = "",
     ) -> object:
         """Returns the requested object from specified location.
 
@@ -567,11 +563,7 @@ class BaseWorker(AbstractWorker):
         return obj
 
     def request_copy_obj(
-        self,
-        obj_id: Union[str, int],
-        location: "BaseWorker",
-        user=None,
-        reason: str = "",
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = "",
     ) -> object:
         """Returns the requested object from specified location (without deleting that object)
 

@@ -30,7 +30,9 @@ from syft_proto.messaging.v1.message_pb2 import IsNoneMessage as IsNoneMessagePB
 # from syft_proto.messaging.v1.message_pb2 import WorkerCommandMessage as WorkerCommandMessagePB
 from syft_proto.messaging.v1.message_pb2 import SearchMessage as SearchMessagePB
 from syft_proto.messaging.v1.message_pb2 import ObjectRequestMessage as ObjectRequestMessagePB
-from syft_proto.messaging.v1.message_pb2 import ObjectRequestCopyMessage as ObjectRequestCopyMessagePB
+from syft_proto.messaging.v1.message_pb2 import (
+    ObjectRequestCopyMessage as ObjectRequestCopyMessagePB,
+)
 from syft_proto.messaging.v1.message_pb2 import PlanCommandMessage as PlanCommandMessagePB
 from syft_proto.types.syft.v1.id_pb2 import Id as IdPB
 
@@ -412,9 +414,7 @@ class ObjectRequestMessage(Message):
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
-        return ObjectRequestMessage(
-            obj_id=obj_id, user=None, reason=proto_msg.reason
-        )
+        return ObjectRequestMessage(obj_id=obj_id, user=None, reason=proto_msg.reason)
 
     @staticmethod
     def get_protobuf_schema():
@@ -464,7 +464,7 @@ class ObjectRequestCopyMessage(Message):
         return (
             sy.serde.msgpack.serde._simplify(worker, msg.object_id),
             sy.serde.msgpack.serde._simplify(worker, msg.user),
-            sy.serde.msgpack.serde._simplify(worker, msg.reason)
+            sy.serde.msgpack.serde._simplify(worker, msg.reason),
         )
 
     @staticmethod
@@ -485,7 +485,7 @@ class ObjectRequestCopyMessage(Message):
         return ObjectRequestCopyMessage(
             sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[2])
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
         )
 
     @staticmethod
@@ -518,9 +518,7 @@ class ObjectRequestCopyMessage(Message):
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
-        return ObjectRequestCopyMessage(
-            obj_id=obj_id, user=None, reason=proto_msg.reason
-        )
+        return ObjectRequestCopyMessage(obj_id=obj_id, user=None, reason=proto_msg.reason)
 
     @staticmethod
     def get_protobuf_schema():
