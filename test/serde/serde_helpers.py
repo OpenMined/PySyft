@@ -1710,37 +1710,8 @@ def make_objectrequestmessage(**kwargs):
         }
     ]
 
-
 # ObjectRequestCopyMessage
-def make_objectrequestcopymessage(**kwargs):
-    bob = kwargs["workers"]["bob"]
-    bob.log_msgs = True
-    x = torch.tensor([1, 2, 3, 4]).send(bob)
-    x.get()
-    obj_req = bob._get_msg(-1)
-    bob.log_msgs = False
-
-    def compare(detailed, original):
-        assert type(detailed) == syft.messaging.message.ObjectRequestMessage
-        assert detailed.object_id == original.object_id
-        assert detailed.user == original.user
-        assert detailed.reason == original.reason
-        return True
-
-    return [
-        {
-            "value": obj_req,
-            "simplified": (
-                CODE[syft.messaging.message.ObjectRequestMessage],
-                (
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.object_id),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.user),
-                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], obj_req.reason),
-                ),
-            ),
-            "cmp_detailed": compare,
-        }
-    ]
+make_objectrequestcopymessage = make_objectrequestmessage
 
 
 # IsNoneMessage

@@ -82,6 +82,7 @@ samples[syft.messaging.message.GetShapeMessage] = make_getshapemessage
 samples[syft.messaging.message.IsNoneMessage] = make_isnonemessage
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.ObjectRequestMessage] = make_objectrequestmessage
+samples[syft.messaging.message.ObjectRequestCopyMessage] = make_objectrequestcopymessage
 samples[syft.messaging.message.PlanCommandMessage] = make_plancommandmessage
 samples[syft.messaging.message.SearchMessage] = make_searchmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message

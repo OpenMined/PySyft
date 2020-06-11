@@ -381,7 +381,6 @@ class ObjectRequestMessage(Message):
             sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[3]),
         )
 
     @staticmethod
@@ -450,7 +449,7 @@ class ObjectRequestCopyMessage(Message):
         return f"({type(self).__name__} {self.object_id, self.user, self.reason})"
 
     @staticmethod
-    def simplify(worker: AbstractWorker, msg: "ObjectRequestMessage") -> tuple:
+    def simplify(worker: AbstractWorker, msg: "ObjectRequestCopyMessage") -> tuple:
         """
         This function takes the attributes of a Message and saves them in a tuple.
         The detail() method runs the inverse of this method.
@@ -469,7 +468,7 @@ class ObjectRequestCopyMessage(Message):
         )
 
     @staticmethod
-    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectRequestMessage":
+    def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ObjectRequestCopyMessage":
         """
         This function takes the simplified tuple version of this message and converts
         it into an ObjectRequestMessage. The simplify() method runs the inverse of this method.
@@ -483,7 +482,7 @@ class ObjectRequestCopyMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ObjectRequestMessage(
+        return ObjectRequestCopyMessage(
             sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[2])
@@ -500,7 +499,7 @@ class ObjectRequestCopyMessage(Message):
             Returns:
                 proto_msg (ObjectRequestCopyMessagePB): serialized ObjectRequestCopyMessage.
         """
-        proto_msg = ObjectRequestMessagePB()
+        proto_msg = ObjectRequestCopyMessagePB()
         sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
         proto_msg.reason = msg.reason
         return proto_msg
@@ -508,27 +507,28 @@ class ObjectRequestCopyMessage(Message):
     @staticmethod
     def unbufferize(worker, proto_msg):
         """
-            This method deserializes ObjectRequestMessagePB into ObjectRequestMessage.
+            This method deserializes ObjectRequestCopyMessagePB into ObjectRequestCopyMessage.
 
             Args:
-                protobuf_msg (ObjectRequestMessagePB): input serialized ObjectRequestMessagePB.
+                protobuf_msg (ObjectRequestCopyMessagePB): input serialized
+                                                            ObjectRequestCopyMessagePB.
 
             Returns:
-               ObjectRequestMessage: deserialized ObjectRequestMessagePB.
+               ObjectRequestMessage: deserialized ObjectRequestCopyMessagePB.
         """
         obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
         # add worker support when it will be available
-        return ObjectRequestMessage(
+        return ObjectRequestCopyMessage(
             obj_id=obj_id, user=None, reason=proto_msg.reason
         )
 
     @staticmethod
     def get_protobuf_schema():
         """
-            Returns the protobuf schema used for ObjectRequestMessage.
+            Returns the protobuf schema used for ObjectRequestCopyMessage.
 
             Returns:
-                Protobuf schema for ObjectRequestMessage.
+                Protobuf schema for ObjectRequestCopyMessage.
         """
         return ObjectRequestCopyMessagePB
 

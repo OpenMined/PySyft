@@ -664,6 +664,26 @@ class TorchTensor(AbstractTensor):
         else:
             return tensor
 
+    def get_copy(self, *args, user=None, reason: str = "", **kwargs):
+        """Requests the tensor/chain being pointed to, be serialized and return
+        Args:
+            args: args to forward to worker
+            kwargs: kwargs to forward to worker
+        Raises:
+            GetNotPermittedError: Raised if get is not permitted on this tensor
+        """
+
+        # If it is a local tensor/chain, we don't need to verify permissions
+        if not isinstance(self.child, syft.PointerTensor):
+            tensor = self.child.get_copy(*args, **kwargs)
+        else:  # Remote tensor/chain
+            tensor = self.child.get_copy(*args, user=user, reason=reason, **kwargs)
+
+        # Clean the wrapper
+        delattr(self, "child")
+
+        return tensor
+
     def get_(self, *args, **kwargs):
         """
         Calls get() with inplace option set to True

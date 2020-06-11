@@ -294,7 +294,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
         self.owner.send_command(cmd_name="mid_get", target=self, recipient=self.location)
         return self
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the tensor/chain being pointed to, be serialized and return
 
         Since PointerTensor objects always point to a remote tensor (or chain
@@ -322,7 +322,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             object used to point to #on a remote machine.
         """
         tensor = ObjectPointer.get(
-            self, user=user, reason=reason, deregister_ptr=deregister_ptr, get_copy=get_copy
+            self, user=user, reason=reason, deregister_ptr=deregister_ptr
         )
 
         # TODO: remove these 3 lines

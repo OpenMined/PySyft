@@ -139,6 +139,19 @@ class AbstractTensor(AbstractSendable, SyftSerializable):
             id=self.id,
         ).on(self.child.get())
 
+    def get_copy(self):
+        """Just a pass through. This is most commonly used when calling .get_copy() on a
+        Syft tensor which has a child which is a pointer, an additive shared tensor,
+        a multi-pointer, etc."""
+        class_attributes = self.get_class_attributes()
+        return type(self)(
+            **class_attributes,
+            owner=self.owner,
+            tags=self.tags,
+            description=self.description,
+            id=self.id,
+        ).on(self.child.get_copy())
+
     def mid_get(self):
         """This method calls .get() on a child pointer and correctly registers the results"""
 

@@ -227,7 +227,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
             pointer = err.pointer
             return pointer
 
-    def get(self, user=None, reason: str = "", deregister_ptr: bool = True, get_copy: bool = False):
+    def get(self, user=None, reason: str = "", deregister_ptr: bool = True):
         """Requests the object being pointed to.
 
         The object to which the pointer points will be requested, serialized and returned.
@@ -248,8 +248,6 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
         Returns:
             An AbstractObject object which is the tensor (or chain) that this
             object used to point to on a location.
-
-        TODO: add param get_copy which doesn't destroy remote if true.
         """
 
         if self.point_to_attr is not None:
@@ -267,8 +265,50 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
             if hasattr(obj, "child"):
                 obj = obj.child
         else:
-            # get tensor from location
-            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason, get_copy)
+            # get object from location
+            obj = self.owner.request_obj(self.id_at_location, self.location, user, reason)
+
+        # Remove this pointer by default
+        if deregister_ptr:
+            self.owner.de_register_obj(self)
+
+        if self.garbage_collect_data:
+            # data already retrieved, do not collect any more.
+            self.garbage_collect_data = False
+
+        return obj
+
+    def get_copy(self, user=None, reason: str = "", deregister_ptr: bool = True):
+        """Requests the object being pointed to.
+
+        The object to which the pointer points will be requested, serialized and returned.
+
+        Args:
+            user (obj, optional) : authenticate/allow user to perform get on remote private objects.
+            reason (str, optional) : a description of why the data scientist wants to see it.
+
+        Returns:
+            An AbstractObject object which is the tensor (or chain) that this
+            object used to point to on a location.
+        """
+
+        if self.point_to_attr is not None:
+
+            raise exceptions.CannotRequestObjectAttribute(
+                "You called .get() on a pointer to"
+                " a tensor attribute. This is not yet"
+                " supported. Call .clone().get() instead."
+            )
+
+        # if the pointer happens to be pointing to a local object,
+        # just return that object (this is an edge case)
+        if self.location == self.owner:
+            obj = self.owner.get_obj(self.id_at_location)
+            if hasattr(obj, "child"):
+                obj = obj.child
+        else:
+            # get object from location
+            obj = self.owner.request_copy_obj(self.id_at_location, self.location, user, reason)
 
         # Remove this pointer by default
         if deregister_ptr:
