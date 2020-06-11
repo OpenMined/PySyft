@@ -51,6 +51,7 @@ jobs:
         pip3 install flake8-comprehensions
         pip3 install pep8-naming
         pip3 install codecov
+
         sudo apt-get -y install flex bison libssl-dev python-dev libgmp-dev
         wget http://crypto.stanford.edu/pbc/files/pbc-0.5.14.tar.gz
         tar xf pbc-0.5.14.tar.gz
