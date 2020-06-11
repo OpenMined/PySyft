@@ -5,7 +5,7 @@ from syft.skeleton import fib
 
 __author__ = "Andrew Trask"
 __copyright__ = "Andrew Trask"
-__license__ = "mit"
+__license__ = "Apache 2.0"
 
 
 def test_fib():

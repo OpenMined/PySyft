@@ -23,7 +23,7 @@ from syft import __version__
 
 __author__ = "Andrew Trask"
 __copyright__ = "Andrew Trask"
-__license__ = "mit"
+__license__ = "Apache 2.0"
 
 _logger = logging.getLogger(__name__)
 

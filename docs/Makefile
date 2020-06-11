@@ -8,7 +8,7 @@ PAPER         =
 BUILDDIR      = ../build/sphinx/
 AUTODOCDIR    = api
 AUTODOCBUILD  = sphinx-apidoc
-PROJECT       = syft
+PROJECT       = PySyft
 MODULEDIR     = ../src/syft
 
 # User-friendly check for sphinx-build
