@@ -11,7 +11,7 @@ class FunctionalEncryptedTensor(AbstractTensor):
         Args:
             owner: An optional BaseWorker object to specify the worker on which
                 the tensor is located.
-            id: An optional string or integer id of the CKKSTensor.
+            id: An optional string or integer id of the FunctionalEncryptedTensor.
             tags: an optional set of hashtags corresponding to this tensor
                 which this tensor should be searchable for
             description: an optional string describing the purpose of the
