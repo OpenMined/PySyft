@@ -1994,23 +1994,26 @@ def make_gradfn(**kwargs):
 
 
 def make_paillier(**kwargs):
-    # TODO: Add proper testing for paillier tensor
+    PaillierTensor = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor
+    pub, pri = syft.keygen()
+    tensor = torch.randn(4, 3)
+    tensor = tensor.encrypt(protocol="paillier", public_key=pub)
+    simplified = PaillierTensor.simplify(kwargs["workers"]["serde_worker"], tensor)
 
-    def compare(original, detailed):
+    def compare(detailed, original):
+        assert isinstance(detailed, PaillierTensor)
+        assert isinstance(original, PaillierTensor)
+        for i in range(len(detailed)):
+            for j in range(len(detailed[0])):
+                assert detailed[i][j].public_key == original[i][j].public_key
+                assert detailed[i][j].exponent == original[i][j].exponent
+
         return True
-
-    tensor = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor()
-    simplfied = syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor.simplify(
-        kwargs["workers"]["serde_worker"], tensor
-    )
 
     return [
         {
             "value": tensor,
-            "simplified": (
-                CODE[syft.frameworks.torch.tensors.interpreters.paillier.PaillierTensor],
-                simplfied,
-            ),
+            "simplified": (CODE[PaillierTensor], simplified,),
             "cmp_detailed": compare,
         }
     ]

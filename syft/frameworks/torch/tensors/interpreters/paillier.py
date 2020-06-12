@@ -14,6 +14,8 @@ from syft.generic.frameworks.hook.hook_args import (
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 
+from phe.paillier import EncryptedNumber, PaillierPublicKey
+
 
 class PaillierTensor(AbstractTensor):
     def __init__(self, owner=None, id=None, tags=None, description=None):
@@ -274,11 +276,34 @@ class PaillierTensor(AbstractTensor):
         Examples:
             data = _simplify(tensor)
         """
-
-        chain = None
-        if hasattr(tensor, "child"):
-            chain = sy.serde.msgpack.serde._simplify(worker, tensor.child)
-        return tensor.id, chain
+        if isinstance(tensor.child, PaillierTensor):
+            struct = {}
+            first_element = tensor.child.child[0]
+            if isinstance(first_element, np.ndarray):
+                values = []
+                struct["public_key"] = {
+                    "g": first_element[0].public_key.g,
+                    "n": first_element[0].public_key.n,
+                }
+                for subtensor in tensor.child.child:
+                    row = [
+                        (str(subtensor[i].ciphertext()), str(subtensor[i].exponent))
+                        for i in range(len(subtensor))
+                    ]
+                    values.append(row)
+                struct["values"] = values
+            else:
+                struct["public_key"] = {
+                    "g": first_element.public_key.g,
+                    "n": first_element.public_key.n,
+                }
+                struct["values"] = [
+                    (str(tensor[i].ciphertext()), str(tensor[i].exponent))
+                    for i in range(len(tensor))
+                ]
+            return tensor.id, sy.serde.msgpack.serde._simplify(worker, struct)
+        else:
+            raise TypeError(type(tensor))
 
     @staticmethod
     def detail(worker: AbstractWorker, tensor_tuple: tuple) -> "PaillierTensor":
@@ -293,14 +318,24 @@ class PaillierTensor(AbstractTensor):
             logtensor = detail(data)
         """
         obj_id, chain = tensor_tuple
+        struct = sy.serde.msgpack.serde._detail(worker, chain)
 
-        tensor = PaillierTensor(owner=worker, id=obj_id)
-
-        if chain is not None:
-            chain = sy.serde.msgpack.serde._detail(worker, chain)
-            tensor.child = chain
-
-        return tensor
+        if isinstance(struct, dict) and chain is not None:
+            tensor = PaillierTensor(owner=worker, id=obj_id)
+            public_key = struct["public_key"]
+            pub = PaillierPublicKey(n=int(public_key["n"]))
+            if isinstance(struct["values"][0], list):
+                values = [
+                    [EncryptedNumber(pub, int(x[0]), int(x[1])) for x in y]
+                    for y in struct["values"]
+                ]
+            else:
+                values = [EncryptedNumber(pub, int(x[0]), int(x[1])) for x in struct["values"]]
+            tensor.child = np.array(values)
+            syft_tensor = tensor.wrap()
+            return syft_tensor
+        else:
+            raise TypeError(type(struct))
 
 
 register_type_rule({PaillierTensor: one})
