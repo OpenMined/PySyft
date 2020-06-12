@@ -14,7 +14,8 @@ from syft.generic.frameworks.hook.hook_args import (
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 
-from phe.paillier import EncryptedNumber, PaillierPublicKey
+from phe.paillier import EncryptedNumber
+from phe.paillier import PaillierPublicKey
 
 
 class PaillierTensor(AbstractTensor):
