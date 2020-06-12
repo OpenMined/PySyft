@@ -2003,10 +2003,16 @@ def make_paillier(**kwargs):
     def compare(detailed, original):
         assert isinstance(detailed, PaillierTensor)
         assert isinstance(original, PaillierTensor)
-        for i in range(len(detailed)):
-            for j in range(len(detailed[0])):
-                assert detailed[i][j].public_key == original[i][j].public_key
-                assert detailed[i][j].exponent == original[i][j].exponent
+
+        if isinstance(detailed, numpy.ndarray):
+            for i in range(len(detailed)):
+                for j in range(len(detailed[0])):
+                    assert detailed[i][j].public_key == original[i][j].public_key
+                    assert detailed[i][j].exponent == original[i][j].exponent
+        else:
+            for i in range(len(detailed)):
+                assert detailed[i].public_key == original[i].public_key
+                assert detailed[i].exponent == original[i].exponent
 
         return True
 
