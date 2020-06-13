@@ -8,7 +8,7 @@ import syft
 def model():
     l_in, l_h, l_out = 32, 16, 2
     model = crypten.nn.Sequential(
-        [crypten.nn.Linear(l_in, l_h), crypten.nn.ReLU(), crypten.nn.Linear(l_h, l_out)]
+        crypten.nn.Linear(l_in, l_h), crypten.nn.ReLU(), crypten.nn.Linear(l_h, l_out)
     )
     return model
 
