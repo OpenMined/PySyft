@@ -249,7 +249,7 @@ class BaseMessageHandler(AbstractMessageHandler):
 
             # Wrap only if the pointer points to a tensor.
             # If it points to a generic object, do not wrap.
-            if isinstance(ptr, PointerTensor):
+            if isinstance(obj, FrameworkTensor):
                 ptr.wrap()
 
             results.append(ptr)
