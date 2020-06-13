@@ -1,7 +1,5 @@
 import syft
 
-from syft.frameworks.crypten.context import run_party
-
 import crypten.communicator as comm
 import crypten
 
@@ -21,6 +19,3 @@ def load(tag: str, src: int, **kwargs):
         result = crypten.load_from_party(preloaded=-1, src=src, **kwargs)
 
     return result
-
-
-__all__ = ["run_party", "load"]

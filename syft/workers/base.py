@@ -86,6 +86,8 @@ class BaseWorker(AbstractWorker):
             precision.
     """
 
+    _framework_message_handler = {}
+
     def __init__(
         self,
         hook: "FrameworkHook",
@@ -165,6 +167,10 @@ class BaseWorker(AbstractWorker):
 
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
+
+        # Register the specific handlers for each framework
+        for _, message_handler_constructor in BaseWorker._framework_message_handler.items():
+            self.message_handlers.append(message_handler_constructor(self.object_store, self))
 
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
@@ -830,18 +836,6 @@ class BaseWorker(AbstractWorker):
 
         return self.msg_history[index]
 
-    def add_crypten_support(self):
-        from syft.workers.worker_support import add_support
-
-        """Add CrypTen specific methods"""
-        add_support(self, "crypten")
-
-    def remove_crypten_support(self):
-        from syft.workers.worker_support import remove_support
-
-        """Remove CrypTen specifc methods"""
-        remove_support(self, "crypten")
-
     @property
     def message_pending_time(self):
         """
@@ -986,6 +980,13 @@ class BaseWorker(AbstractWorker):
 
         return result
 
+    @staticmethod
+    def register_message_handlers():
+        if sy.dependency_check.crypten_available:
+            from syft.frameworks.crypten.message_handler import CryptenMessageHandler
+
+            BaseWorker._framework_message_handler["crypten"] = CryptenMessageHandler
+
     @classmethod
     def is_framework_supported(cls, framework: str) -> bool:
         """
@@ -994,3 +995,6 @@ class BaseWorker(AbstractWorker):
         :return: True/False
         """
         return framework.lower() in framework_packages
+
+
+BaseWorker.register_message_handlers()
