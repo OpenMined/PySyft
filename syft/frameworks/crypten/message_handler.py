@@ -49,12 +49,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         plan = plans[0].get()
 
-        rank = None
-        for r, worker_id in self.worker.rank_to_worker_id.items():
-            if worker_id == self.worker.id:
-                rank = r
-                break
-
+        rank = self._current_rank()
         assert rank is not None
 
         return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
@@ -78,13 +73,17 @@ class CryptenMessageHandler(AbstractMessageHandler):
         crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
         jail_runner = JailRunner.detail(ser_func, model=crypten_model)
 
+        rank = self._current_rank()
+        assert rank is not None
+
+        return_value = run_party(jail_runner, rank, world_size, master_addr, master_port, (), {})
+        return ObjectMessage(return_value)
+
+    def _current_rank(self):
+        """Returns current rank based on worker_id."""
         rank = None
         for r, worker_id in self.worker.rank_to_worker_id.items():
             if worker_id == self.worker.id:
                 rank = r
                 break
-
-        assert rank is not None
-
-        return_value = run_party(jail_runner, rank, world_size, master_addr, master_port, (), {})
-        return ObjectMessage(return_value)
+        return rank
