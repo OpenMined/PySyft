@@ -108,6 +108,9 @@ def run_multiworkers(
             # - check if workers are reachable / they can handle the computation
             # - check return code of processes for possible failure
 
+            if len(workers) != len(set([worker.id for worker in workers])):
+                raise RuntimeError("found workers with same ID but IDs must be unique")
+
             if model is not None:
                 if not isinstance(model, th.nn.Module):
                     raise TypeError("model must be a torch.nn.Module")
