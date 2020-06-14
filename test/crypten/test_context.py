@@ -201,6 +201,6 @@ def test_duplicate_ids(workers):
     @run_multiworkers([alice, alice2], master_addr="127.0.0.1")
     def jail_func(crypten=crypten):  # pragma: no cover
         pass
-    
+
     with pytest.raises(RuntimeError):
         return_values = jail_func()
