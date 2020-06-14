@@ -26,6 +26,7 @@ from syft.exceptions import ObjectNotFoundError
 from syft.exceptions import PlanCommandUnknownError
 from syft.exceptions import ResponseSignatureError
 
+import torch
 
 class BaseMessageHandler(AbstractMessageHandler):
     def __init__(self, object_store, worker):
@@ -249,7 +250,7 @@ class BaseMessageHandler(AbstractMessageHandler):
 
             # Wrap only if the pointer points to a tensor.
             # If it points to a generic object, do not wrap.
-            if isinstance(obj, FrameworkTensor):
+            if isinstance(obj, torch.Tensor):
                 ptr.wrap()
 
             results.append(ptr)
