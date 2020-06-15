@@ -13,8 +13,12 @@ from crypten.communicator import DistributedCommunicator
 
 
 def _launch(
-    func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
+    cid, func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs
 ):  # pragma: no cover
+
+    # set CrypTen computation id
+    sy.frameworks.crypten.CID = cid
+
     communicator_args = {
         "RANK": rank,
         "WORLD_SIZE": world_size,
@@ -34,19 +38,20 @@ def _launch(
     queue.put(return_value)
 
 
-def _new_party(func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
+def _new_party(cid, func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
     queue = multiprocessing.Queue()
     process = multiprocessing.Process(
         target=_launch,
-        args=(func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs),
+        args=(cid, func, rank, world_size, master_addr, master_port, queue, func_args, func_kwargs),
     )
     return process, queue
 
 
-def run_party(func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
+def run_party(cid, func, rank, world_size, master_addr, master_port, func_args, func_kwargs):
     """Start crypten party localy and run computation.
 
     Args:
+        cid (int): CrypTen computation id.
         func (function): computation to be done.
         rank (int): rank of the crypten party.
         world_size (int): number of crypten parties involved in the computation.
@@ -60,7 +65,7 @@ def run_party(func, rank, world_size, master_addr, master_port, func_args, func_
     """
 
     process, queue = _new_party(
-        func, rank, world_size, master_addr, master_port, func_args, func_kwargs
+        cid, func, rank, world_size, master_addr, master_port, func_args, func_kwargs
     )
     was_initialized = DistributedCommunicator.is_initialized()
     if was_initialized:

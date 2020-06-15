@@ -1,28 +1,21 @@
-import types
+from random import randint
 
 from syft.messaging.message import CryptenInitPlan
 from syft.messaging.message import CryptenInitJail
 from syft.messaging.message import ObjectMessage
 
+from syft.frameworks import crypten as syft_crypten
 from syft.frameworks.crypten.context import run_party
-
 from syft.frameworks.crypten.jail import JailRunner
 from syft.frameworks.crypten import utils
-from syft.workers.base import BaseWorker
 
 from syft.generic.abstract.message_handler import AbstractMessageHandler
-
-
-def get_worker_from_rank(worker: BaseWorker, rank: int) -> BaseWorker:
-    assert hasattr(worker, "rank_to_worker_id"), "First need to call run_crypten_party"
-    return worker._get_worker_based_on_id(worker.rank_to_worker_id[rank])
 
 
 class CryptenMessageHandler(AbstractMessageHandler):
     def __init__(self, object_store, worker):
         super().__init__(object_store)
         self.worker = worker
-        setattr(worker, "get_worker_from_rank", types.MethodType(get_worker_from_rank, worker))
 
     def init_routing_table(self):
         return {
@@ -41,7 +34,10 @@ class CryptenMessageHandler(AbstractMessageHandler):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        self.worker.rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
+        rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
+
+        cid = CryptenMessageHandler._get_computation_id()
+        syft_crypten.RANK_TO_WORKER_ID[cid] = rank_to_worker_id
 
         # TODO Change this, we need a way to handle multiple plan definitions
         plans = self.worker.search("crypten_plan")
@@ -49,10 +45,13 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         plan = plans[0].get()
 
-        rank = self._current_rank()
+        rank = self._current_rank(rank_to_worker_id)
         assert rank is not None
 
-        return_value = run_party(plan, rank, world_size, master_addr, master_port, (), {})
+        return_value = run_party(cid, plan, rank, world_size, master_addr, master_port, (), {})
+        # remove rank to id transaltion dict
+        del syft_crypten.RANK_TO_WORKER_ID[cid]
+
         return ObjectMessage(return_value)
 
     def run_crypten_party_jail(self, msg: CryptenInitJail):
@@ -66,24 +65,39 @@ class CryptenMessageHandler(AbstractMessageHandler):
             An ObjectMessage containing the return value of the crypten function computed.
         """
 
-        self.worker.rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
+        rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
+
+        cid = CryptenMessageHandler._get_computation_id()
+        syft_crypten.RANK_TO_WORKER_ID[cid] = rank_to_worker_id
 
         ser_func = msg.jail_runner
         onnx_model = msg.model
         crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
         jail_runner = JailRunner.detail(ser_func, model=crypten_model)
 
-        rank = self._current_rank()
+        rank = self._current_rank(rank_to_worker_id)
         assert rank is not None
 
-        return_value = run_party(jail_runner, rank, world_size, master_addr, master_port, (), {})
+        return_value = run_party(
+            cid, jail_runner, rank, world_size, master_addr, master_port, (), {}
+        )
+        # remove rank to id transaltion dict
+        del syft_crypten.RANK_TO_WORKER_ID[cid]
+
         return ObjectMessage(return_value)
 
-    def _current_rank(self):
+    def _current_rank(self, rank_to_worker_id):
         """Returns current rank based on worker_id."""
         rank = None
-        for r, worker_id in self.worker.rank_to_worker_id.items():
+        for r, worker_id in rank_to_worker_id.items():
             if worker_id == self.worker.id:
                 rank = r
                 break
         return rank
+
+    @staticmethod
+    def _get_computation_id():
+        cid = randint(0, 2 ** 32)
+        while cid in syft_crypten.RANK_TO_WORKER_ID.keys():
+            cid = randint(0, 2 ** 32)
+        return cid
