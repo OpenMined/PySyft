@@ -100,7 +100,8 @@ class Plan(AbstractSendable):
         owner: plan owner
         tags: plan tags
         description: plan description
-        base_framework: The underlying framework (pytorch, tensorflow) which the plan is to be executed in
+        base_framework: The underlying framework (pytorch, tensorflow) which the
+                        plan is to be executed in
         frameworks: A list of frameworks which the plan will also support
     """
 
