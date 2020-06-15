@@ -1,10 +1,13 @@
 from torch import jit
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.translation import TranslationTarget
 from syft.execution.translation.abstract import AbstractPlanTranslator
 
 
 class PlanTranslatorTorchscript(AbstractPlanTranslator):
     """Performs translation from 'list of ops' Plan into torchscript Plan"""
+
+    framework = TranslationTarget.TORCHSCRIPT.value
 
     def __init__(self, plan):
         super().__init__(plan)
