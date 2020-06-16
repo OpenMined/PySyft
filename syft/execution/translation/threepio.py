@@ -17,12 +17,12 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
         threepio = Threepio(self.plan.base_framework, to_framework, None)
         function_name = action.name.split(".")[-1]
         args = action.args if action.target is None else (action.target, *action.args)
-        cmd = threepio.translate(Command(function_name, args, action.kwargs))
+        cmd = threepio.translate(Command(function_name, args, action.kwargs))[0]
 
         new_action = action.copy()
-        new_action.name = ".".join(cmd[0].attrs)
-        new_action.args = tuple(cmd[0].args)
-        new_action.kwargs = cmd[0].kwargs
+        new_action.name = ".".join(cmd.attrs)
+        new_action.args = tuple(cmd.args)
+        new_action.kwargs = cmd.kwargs
         new_action.target = None
         return new_action
 
