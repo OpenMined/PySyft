@@ -1,5 +1,5 @@
 from pythreepio.threepio import Threepio
-from pythreepio.utils import Command
+from pythreepio.command import Command
 from syft.execution.action import Action
 from syft.execution.role import Role
 from syft.execution.translation import TranslationTarget
