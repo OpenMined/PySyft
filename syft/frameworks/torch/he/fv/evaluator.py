@@ -5,6 +5,8 @@ from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
+from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_delta
 from syft.frameworks.torch.he.fv.util.operations import multiply_sub_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
@@ -199,5 +201,52 @@ class Evaluator:
         for i in range(min_size + 1, max_size):
             for j in range(len(self.coeff_modulus)):
                 result[i][j] = poly_negate_mod(result[i][j], self.coeff_modulus[j])
+        
+        return CipherText(result)
 
+    def _mul_cipher_cipher(self, ct1, ct2):
+        ct1, ct2 = ct1.data, ct2.data
+
+        if len(ct1) > 2:
+            # TODO: perfrom relinearisation operation.
+            raise RuntimeError(
+                "Cannot multiply ciphertext of size >2, Perfrom relinearisation operation."
+            )
+        if len(ct2) > 2:
+            # TODO: perfrom relinearisation operation.
+            raise RuntimeError(
+                "Cannot multiply ciphertext of size >2, Perfrom relinearisation operation."
+            )
+
+        ct10, ct11 = copy.deepcopy(ct1)
+        ct20, ct21 = ct2
+
+        t_div_q = self.context.plain_div_coeff_modulus
+
+        result = [
+            [0] * len(self.coeff_modulus),
+            [0] * len(self.coeff_modulus),
+            [0] * len(self.coeff_modulus),
+        ]
+
+        for i in range(len(self.coeff_modulus)):
+            result[0][i] = [
+                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
+                for x in poly_mul_mod(ct10[i], ct20[i], self.coeff_modulus[i])
+            ]
+            result[1][i] = [
+                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
+                for x in poly_add_mod(
+                    poly_mul_mod(ct11[i], ct20[i], self.coeff_modulus[i]),
+                    poly_mul_mod(ct10[i], ct21[i], self.coeff_modulus[i]),
+                    self.coeff_modulus[i],
+                )
+            ]
+            result[2][i] = [
+                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
+                for x in poly_mul_mod(ct11[i], ct21[i], self.coeff_modulus[i])
+            ]
+
+        print("result: ", result)
+        print("\n\n")
         return CipherText(result)

@@ -16,8 +16,14 @@ class Context:
 
         self.param = encryption_param
 
+        # q/t
         self.coeff_div_plain_modulus = [
             x / encryption_param.plain_modulus for x in encryption_param.coeff_modulus
+        ]
+
+        # t/q
+        self.plain_div_coeff_modulus = [
+            encryption_param.plain_modulus / x for x in encryption_param.coeff_modulus
         ]
 
         self.rns_tool = RNSTool(encryption_param)
