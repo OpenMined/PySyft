@@ -1,4 +1,4 @@
-from random import randint
+import syft
 
 from syft.messaging.message import CryptenInitPlan
 from syft.messaging.message import CryptenInitJail
@@ -36,7 +36,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
 
-        cid = CryptenMessageHandler._get_computation_id()
+        cid = syft.ID_PROVIDER.pop()
         syft_crypten.RANK_TO_WORKER_ID[cid] = rank_to_worker_id
 
         # TODO Change this, we need a way to handle multiple plan definitions
@@ -67,7 +67,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         rank_to_worker_id, world_size, master_addr, master_port = msg.crypten_context
 
-        cid = CryptenMessageHandler._get_computation_id()
+        cid = syft.ID_PROVIDER.pop()
         syft_crypten.RANK_TO_WORKER_ID[cid] = rank_to_worker_id
 
         ser_func = msg.jail_runner
@@ -95,9 +95,3 @@ class CryptenMessageHandler(AbstractMessageHandler):
                 break
         return rank
 
-    @staticmethod
-    def _get_computation_id():
-        cid = randint(0, 2 ** 32)
-        while cid in syft_crypten.RANK_TO_WORKER_ID.keys():
-            cid = randint(0, 2 ** 32)
-        return cid
