@@ -186,7 +186,7 @@ def test_run_party():
         t = crypten.cryptensor(expected)
         return t.get_plain_text()
 
-    t = run_party(party, 0, 1, "127.0.0.1", 15463, (), {})
+    t = run_party(None, party, 0, 1, "127.0.0.1", 15463, (), {})
     result = utils.unpack_values(t)
     assert result == expected
 
