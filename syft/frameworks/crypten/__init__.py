@@ -6,7 +6,10 @@ import crypten
 from syft.workers.base import BaseWorker
 
 
-RANK_TO_WORKER_ID = {}
+RANK_TO_WORKER_ID = {
+    # Contains translation dictionaries for every computation.
+    # cid (computation id): {rank_to_worker_id dictionary for a specific computation}
+}
 CID = None
 
 
