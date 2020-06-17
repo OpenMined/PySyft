@@ -30,7 +30,7 @@ def get_worker_from_rank(rank: int, cid: int = None) -> BaseWorker:
     if rank_to_worker_id is None:
         raise RuntimeError(
             "CrypTen computation not initiated properly, computation_id doesn't match any rank to"
-            "worker_id transaltion table"
+            "worker_id translation table"
         )
     return syft.local_worker._get_worker_based_on_id(rank_to_worker_id[rank])
 
