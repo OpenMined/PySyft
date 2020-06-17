@@ -122,6 +122,8 @@ You can check the PyGrid's official development and community roadmap [here](htt
 
 ![High-level Architecture](https://raw.githubusercontent.com/OpenMined/PyGrid/dev/art/PyGrid-Arch.png)
 
+## Support
+For support in using this library, please join the  [**#lib_pygrid**](https://openmined.slack.com/archives/C8PNKSDRU) Slack channel. If you’d like to follow along with any code changes to the library, please join the [**#code_pygrid**](https://openmined.slack.com/archives/C0134KC28AD) Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Disclaimer
 Do ***NOT*** use this code to protect data (private or otherwise) - at present it is very insecure.
