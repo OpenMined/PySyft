@@ -10,16 +10,22 @@ RANK_TO_WORKER_ID = {}
 CID = None
 
 
-def get_worker_from_rank(cid: int, rank: int) -> BaseWorker:
+def get_worker_from_rank(rank: int, cid: int = None) -> BaseWorker:
     """Find the worker running CrypTen party with specific rank in a certain computation.
 
     Args:
-        cid: CrypTen computation id.
         rank: rank of the CrypTen party.
+        cid: CrypTen computation id.
 
     Returns:
         BaseWorker corresponding to cid and rank.
     """
+    if cid is None:
+        if CID is None:
+            # Neither CID have been set appropriately nor cid have been passed
+            raise ValueError("cid must be set.")
+        cid = CID
+
     rank_to_worker_id = RANK_TO_WORKER_ID.get(cid, None)
     if rank_to_worker_id is None:
         raise RuntimeError(
@@ -34,7 +40,7 @@ def load(tag: str, src: int, **kwargs):
         if CID is None:
             raise RuntimeError("CrypTen computation id is not set.")
 
-        worker = get_worker_from_rank(CID, src)
+        worker = get_worker_from_rank(src)
         results = worker.search(tag)
 
         # Make sure there is only one result
