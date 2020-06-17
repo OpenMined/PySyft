@@ -1,4 +1,5 @@
 import copy
+import numpy as np
 from numpy.polynomial import polynomial as poly
 
 
@@ -56,7 +57,7 @@ class Decryptor:
         """
         phase = encrypted[0]
 
-        secret_key_array = self._get_sufficient_sk_power(len(encrypted))
+        secret_key_array = self._get_sufficient_sk_power(len(encrypted) - 1)
 
         for j in range(1, len(encrypted)):
             for i in range(len(self._coeff_modulus)):
@@ -85,5 +86,7 @@ class Decryptor:
 
         for i in range(2, max_power + 1):
             for j in range(len(self._coeff_modulus)):
-                sk_power[i - 1].append(poly.polypow(self._secret_key[j], i).astype(int).tolist())
+                sk_power[i - 1].append(
+                    poly.polypow(np.array(self._secret_key[j], dtype="object"), i).tolist()
+                )
         return sk_power
