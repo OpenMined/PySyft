@@ -119,6 +119,7 @@ def poly_mul_mod(op1, op2, coeff_mod):
         else:
             op1 = op1 + [0] * (len(op2) - len(op1))
 
+    poly_len = len(op1)  # length of the polynomails
     poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
     result = (
         poly.polydiv(
@@ -127,6 +128,10 @@ def poly_mul_mod(op1, op2, coeff_mod):
         )[1]
         % coeff_mod
     ).tolist()
+
+    if len(result) != poly_len:
+        result += [0] * (poly_len - len(result))
+
     return [round(x) for x in result]
 
 

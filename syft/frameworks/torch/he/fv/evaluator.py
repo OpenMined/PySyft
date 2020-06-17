@@ -247,6 +247,4 @@ class Evaluator:
                 for x in poly_mul_mod(ct11[i], ct21[i], self.coeff_modulus[i])
             ]
 
-        print("result: ", result)
-        print("\n\n")
         return CipherText(result)
