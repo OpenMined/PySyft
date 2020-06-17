@@ -135,8 +135,6 @@ def run_multiworkers(
 
             rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
 
-            sy.local_worker.rank_to_worker_id = rank_to_worker_id
-
             # TODO: run ttp in a specified worker
             # if crypten.mpc.ttp_required():
             #     ttp_process, _ = _new_party(
@@ -193,8 +191,6 @@ def run_multiworkers(
             # wait for workers running the parties return a response
             for thread in threads:
                 thread.join()
-
-            del sy.local_worker.rank_to_worker_id
 
             return return_values
 
