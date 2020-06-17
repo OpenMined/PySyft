@@ -94,4 +94,3 @@ class CryptenMessageHandler(AbstractMessageHandler):
                 rank = r
                 break
         return rank
-
