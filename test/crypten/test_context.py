@@ -186,6 +186,21 @@ def test_run_party():
         t = crypten.cryptensor(expected)
         return t.get_plain_text()
 
-    t = run_party(party, 0, 1, "127.0.0.1", 15463, (), {})
+    t = run_party(None, party, 0, 1, "127.0.0.1", 15463, (), {})
     result = utils.unpack_values(t)
     assert result == expected
+
+
+def test_duplicate_ids(workers):
+    # alice and bob
+    n_workers = 2
+
+    alice = workers["alice"]
+    alice2 = workers["alice"]
+
+    @run_multiworkers([alice, alice2], master_addr="127.0.0.1")
+    def jail_func(crypten=crypten):  # pragma: no cover
+        pass
+
+    with pytest.raises(RuntimeError):
+        return_values = jail_func()
