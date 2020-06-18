@@ -1,5 +1,7 @@
-from . import Attribute
-from . import Method
+import syft as sy
+
+from syft.ast.attribute import Attribute
+
 from .util import unsplit
 from .util import module_type
 
@@ -22,4 +24,4 @@ class Callable(Attribute):
                 if isinstance(attr_ref, module_type):
                     raise Exception("Module cannot be attr of callable.")
                 else:
-                    self.attrs[path[index]] = Method(path[index], unsplit(path[:index + 1]), attr_ref)
+                    self.attrs[path[index]] = sy.ast.Method(path[index], unsplit(path[:index + 1]), attr_ref)

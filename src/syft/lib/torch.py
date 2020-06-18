@@ -1,4 +1,4 @@
-from .ast import Globals
+from ..ast import Globals
 
 import torch
 
@@ -11,8 +11,11 @@ whitelist.add('torch.ones')
 whitelist.add('torch.nn.Linear')
 whitelist.add('torch.nn.Linear.parameters')
 
-torch_ast = Globals()
+ast = Globals()
 
 for method in whitelist:
-    torch_ast.add_path(method, torch)
+    ast.add_path(method, torch)
 
+for klass in ast.classes:
+    klass.create_pointer_class()
+    klass.create_send_method()

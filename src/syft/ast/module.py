@@ -1,6 +1,6 @@
-from . import Attribute
-from . import Class
-from . import Function
+from syft.ast.attribute import Attribute
+from syft.ast.klass import Class
+from syft.ast.function import Function
 
 from .util import unsplit
 from .util import module_type

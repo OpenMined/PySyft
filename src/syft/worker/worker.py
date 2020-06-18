@@ -1,7 +1,10 @@
+import syft as sy
+
 from ..message import RunClassMethodMessage
 from ..message import SaveObjectMessage
 from ..message import GetObjectMessage
 from ..message import DeleteObjectMessage
+from ..message import RunFunctionOrConstructorMessage
 
 from ..store import ObjectStore
 
@@ -14,12 +17,18 @@ class Worker:
         self.id = id
         self.store = ObjectStore()
         self.frameworks = Globals()
+        for fw in sy.lib.supported_frameworks:
+            for name, ast in fw.ast.attrs.items():
+                if(name in self.frameworks.attrs):
+                    raise KeyError("Framework already imported. Why are you importing it twice?")
+                self.frameworks.attrs[name] = ast
 
         self.msg_router = {}
         self.msg_router[RunClassMethodMessage] = self.process_run_class_method_message
         self.msg_router[SaveObjectMessage] = self.process_save_object_message
         self.msg_router[GetObjectMessage] = self.process_get_object_message
         self.msg_router[DeleteObjectMessage] = self.process_delete_object_message
+        self.msg_router[RunFunctionOrConstructorMessage] = self.process_run_function_or_constructor_message
 
     def process_run_class_method_message(self, msg):
 
@@ -34,17 +43,20 @@ class Worker:
         args_with_objects = list()
         kwargs_with_objects = {}
 
+        # Step 1a: set self_is_object to be the object self_possibly_pointer points to
         if issubclass(type(self_possibly_pointer), Pointer):
             self_is_object = self.store.get_object(self_possibly_pointer.id_at_location)
         else:
             self_is_object = self_possibly_pointer
 
+        # Step 1b: replace arg pointers with objects the pointers point to
         for arg in args_with_pointers:
             if issubclass(type(arg), Pointer):
                 args_with_objects.append(self.store.get_object(arg.id_at_location))
             else:
                 args_with_objects.append(arg)
 
+        # Step 1c: replace kwarg pointers with objects the pointers point to
         for name, kwarg in kwargs_with_objects.items():
             if issubclass(type(kwarg), Pointer):
                 args_with_objects[name] = self.store.get_object(kwarg.id_at_location)

@@ -1,3 +1,5 @@
+from syft.worker.client import Client
+
 class VirtualClient(Client):
 
     def __init__(self, id, worker, verbose=False):

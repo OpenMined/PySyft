@@ -1,3 +1,6 @@
+from syft.worker.worker import Worker
+from syft.worker.virtual.virtual_client import VirtualClient
+
 class VirtualWorker(Worker):
 
     def __init__(self, *args, **kwargs):
