@@ -1,4 +1,4 @@
-from . import Callable
+from syft.ast.callable import Callable
 
 from ..message import RunClassMethodMessage
 from ..message import SaveObjectMessage

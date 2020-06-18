@@ -1,4 +1,4 @@
-from . import Module
+from syft.ast.module import Module
 
 from .util import unsplit
 
