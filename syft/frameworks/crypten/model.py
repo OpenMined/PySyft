@@ -53,7 +53,8 @@ class OnnxModel(AbstractSendable):
 
     @staticmethod
     def simplify(worker: AbstractWorker, model: "OnnxModel") -> tuple:
-        """Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
+        """
+        Takes the attributes of a FixedPrecisionTensor and saves them in a tuple.
 
         Args:
             worker: the worker doing the serialization
@@ -72,13 +73,13 @@ class OnnxModel(AbstractSendable):
     @staticmethod
     def detail(worker: AbstractWorker, model: tuple) -> "OnnxModel":
         """
-            This function reconstructs an OnnxModel given it's attributes in form of a tuple.
-            Args:
-                worker: the worker doing the deserialization
-                model: a tuple holding the attributes of the OnnxModel
-            Returns:
-                OnnxModel: an OnnxModel
-            """
+        This function reconstructs an OnnxModel given it's attributes in form of a tuple.
+        Args:
+            worker: the worker doing the deserialization
+            model: a tuple holding the attributes of the OnnxModel
+        Returns:
+            OnnxModel: an OnnxModel
+        """
 
         (serialized_model, model_id, tags, description) = model
 

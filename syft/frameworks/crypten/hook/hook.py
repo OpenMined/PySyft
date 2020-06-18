@@ -24,7 +24,7 @@ class CrypTenPlanBuild(object):
 
 
 crypten_plan_hook = {
-    crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor,},
+    crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor},
     crypten.nn.Module: {
         "encrypt": CrypTenPlanBuild.f_return_none,
         "__call__": CrypTenPlanBuild.f_return_cryptensor,
