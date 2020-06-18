@@ -29,6 +29,9 @@ class ComputationAction(Action):
         """
         super().__init__(name, target, args_, kwargs_, return_ids, return_value=return_value)
 
+    def copy(self):
+        return ComputationAction(self.name, self.target, self.args, self.kwargs, self.return_ids)
+
     @staticmethod
     def simplify(worker: AbstractWorker, action: "Action") -> tuple:
         """
