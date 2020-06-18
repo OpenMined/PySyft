@@ -58,7 +58,12 @@ class AdditiveSharingTensor(AbstractTensor):
 
         self.child = shares
         self.dtype = dtype
-        if dtype == "custom":
+        if dtype is None and field is None:
+            # Default args
+            self.dtype = "long"
+            self.field = 2 ** 64
+            self.torch_dtype = torch.int64
+        elif dtype == "custom":
             if field is None:
                 raise ValueError("Field cannot be None for custom dtype")
             self.field = field
@@ -87,7 +92,7 @@ class AdditiveSharingTensor(AbstractTensor):
                     self.field = 2 ** 64
                     self.torch_dtype = torch.int64
             else:
-                warnings.warn("Default args selected")
+                warnings.warn("Invalid field and no dtype: default args selected")
                 # Default args
                 self.dtype = "long"
                 self.field = 2 ** 64
@@ -228,10 +233,10 @@ class AdditiveSharingTensor(AbstractTensor):
             mask_pos = x > self.max_value
             mask_neg = x < self.min_value
             if mask_pos.any():
-                mask_pos = mask_pos.long()
+                mask_pos = mask_pos.type(self.torch_dtype)
                 return self.modulo(x - (mask_pos * self.field))
             elif mask_neg.any():
-                mask_neg = mask_neg.long()
+                mask_neg = mask_neg.type(self.torch_dtype)
                 return self.modulo(x + (mask_neg * self.field))
             else:
                 return x.type(self.torch_dtype)
