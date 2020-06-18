@@ -358,7 +358,7 @@ class ObjectRequestMessage(Message):
         return (
             sy.serde.msgpack.serde._simplify(worker, msg.object_id),
             sy.serde.msgpack.serde._simplify(worker, msg.user),
-            sy.serde.msgpack.serde._simplify(worker, msg.reason)
+            sy.serde.msgpack.serde._simplify(worker, msg.reason),
         )
 
     @staticmethod
@@ -379,7 +379,7 @@ class ObjectRequestMessage(Message):
         return ObjectRequestMessage(
             sy.serde.msgpack.serde._detail(worker, msg_tuple[0]),
             sy.serde.msgpack.serde._detail(worker, msg_tuple[1]),
-            sy.serde.msgpack.serde._detail(worker, msg_tuple[2])
+            sy.serde.msgpack.serde._detail(worker, msg_tuple[2]),
         )
 
     @staticmethod

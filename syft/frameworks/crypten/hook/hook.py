@@ -7,7 +7,6 @@ import torch as th
 
 
 class CrypTenPlanBuild(object):
-
     @staticmethod
     def f_return_none(*args, **kwargs):
         return None
@@ -25,13 +24,11 @@ class CrypTenPlanBuild(object):
 
 
 crypten_plan_hook = {
-    crypten : {
-        "load": CrypTenPlanBuild.f_return_model_or_cryptensor,
-    },
+    crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor,},
     crypten.nn.Module: {
         "encrypt": CrypTenPlanBuild.f_return_none,
         "__call__": CrypTenPlanBuild.f_return_cryptensor,
-    }
+    },
 }
 
 

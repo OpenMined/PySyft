@@ -321,9 +321,7 @@ class PointerTensor(ObjectPointer, AbstractTensor):
             An AbstractTensor object which is the tensor (or chain) that this
             object used to point to #on a remote machine.
         """
-        tensor = ObjectPointer.get(
-            self, user=user, reason=reason, deregister_ptr=deregister_ptr
-        )
+        tensor = ObjectPointer.get(self, user=user, reason=reason, deregister_ptr=deregister_ptr)
 
         # TODO: remove these 3 lines
         # The fact we have to check this means

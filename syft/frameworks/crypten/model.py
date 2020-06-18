@@ -49,7 +49,6 @@ class OnnxModel(AbstractSendable):
             self, location, id_at_location, register, owner, ptr_id, garbage_collect_data, **kwargs
         )
 
-        import pdb; pdb.set_trace()
         return ptr
 
     @staticmethod

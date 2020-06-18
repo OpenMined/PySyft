@@ -551,11 +551,7 @@ class BaseWorker(AbstractWorker):
         return self.send_msg(ObjectMessage(obj), location)
 
     def request_obj(
-        self,
-        obj_id: Union[str, int],
-        location: "BaseWorker",
-        user=None,
-        reason: str = ""
+        self, obj_id: Union[str, int], location: "BaseWorker", user=None, reason: str = ""
     ) -> object:
         """Returns the requested object from specified location.
 
