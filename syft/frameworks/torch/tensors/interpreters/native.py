@@ -164,7 +164,7 @@ class TorchTensor(AbstractTensor):
 
             # good to ensure that the ID stays consistent
             # not 100% this is required but it's at least
-            # good practice
+            # a good practice
             try:
                 to_return.id = self.grad_id
             except AttributeError:
