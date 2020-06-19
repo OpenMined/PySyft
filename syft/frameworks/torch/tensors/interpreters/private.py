@@ -8,6 +8,8 @@ from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
+from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
+from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 
 class PrivateTensor(AbstractTensor):
@@ -15,6 +17,8 @@ class PrivateTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
+        field = None,
+        dtype:str = None,
         tags: set = None,
         description: str = None,
         allowed_users: Tuple[str] = (),
@@ -36,6 +40,8 @@ class PrivateTensor(AbstractTensor):
                                     registered here.
         """
         super().__init__(tags=tags, description=description)
+        self.field = field
+        self.dtype = dtype
         self.owner = owner
         self.id = id if id else syft.ID_PROVIDER.pop()
         self.child = None
@@ -47,7 +53,8 @@ class PrivateTensor(AbstractTensor):
         """ Specify all the attributes need to build a wrapper correctly when returning
         a response.
         """
-        return {"allowed_users": self.allowed_users}
+        return {"allowed_users": self.allowed_users,"dtype": self.dtype,
+}
 
     def allow(self, user) -> bool:
         """ Overwrite native's allowed to verify if a specific user is allowed to get this tensor.
@@ -80,6 +87,107 @@ class PrivateTensor(AbstractTensor):
     def float_precision(self):
         """ Forward float_precision method to next child on tensor stack. """
         return self.child.float_precision()
+
+    @overloaded.method
+    def add(self, _self, other):
+        """Add two Private tensors together.
+        """
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
+            return getattr(_self, "add")(scaled_int)
+
+        if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
+            # If we try to add a PT>(wrap)>AST and a PT>torch.tensor,
+            # we want to perform AST + torch.tensor
+            other = other.wrap()
+        elif isinstance(other, AdditiveSharingTensor) and isinstance(_self, torch.Tensor):
+            # If we try to add a PT>torch.tensor and a PT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            _self, other = other, _self.wrap()
+
+        response = getattr(_self, "add")(other)
+
+        return response
+
+    __add__ = add
+    __radd__ = add
+
+    def add_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.add(value_or_tensor)
+        else:
+            result = self.add(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
+    def __iadd__(self, other):
+        """Add two Private tensors together.
+        """
+        self.child = self.add(other).child
+
+        return self
+
+    @overloaded.method
+    def sub(self, _self, other):
+        """Subtracts a Private tensor from another one.
+        """
+        if isinstance(other, (int, float)):
+            scaled_int = int(other * self.base ** self.precision_fractional)
+            return getattr(_self, "sub")(scaled_int)
+
+        if isinstance(_self, AdditiveSharingTensor) and isinstance(other, torch.Tensor):
+            # If we try to subtract a PT>(wrap)>AST and a PT>torch.tensor,
+            # we want to perform AST - torch.tensor
+            other = other.wrap()
+        elif isinstance(other, AdditiveSharingTensor) and isinstance(_self, torch.Tensor):
+            # If we try to subtract a PT>torch.tensor and a PT>(wrap)>AST,
+            # we swap operators so that we do the same operation as above
+            _self, other = -other, -_self.wrap()
+
+        response = getattr(_self, "sub")(other)
+
+        return response
+
+    __sub__ = sub
+
+    def __rsub__(self, other):
+        return (self - other) * -1
+
+    def sub_(self, value_or_tensor, tensor=None):
+        if tensor is None:
+            result = self.sub(value_or_tensor)
+        else:
+            result = self.sub(value_or_tensor * tensor)
+
+        self.child = result.child
+        return self
+
+    def __isub__(self, other):
+        self.child = self.sub(other).child
+
+        return self
+
+    @overloaded.method
+    def t(self, _self, *args, **kwargs):
+        """Transpose a tensor. Hooked is handled by the decorator"""
+        response = getattr(_self, "t")(*args, **kwargs)
+
+        return response
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @staticmethod
     @overloaded.module
@@ -145,6 +253,87 @@ class PrivateTensor(AbstractTensor):
         # Modules should be registered just like functions
         module.nn = nn
 
+
+    @classmethod
+    def handle_func_command(cls, command):
+        """
+        Receive an instruction for a function to be applied on a Private Tensor,
+        Perform some specific action (like logging) which depends of the
+        instruction content, replace in the args all the PTensors with
+        their child attribute, forward the command instruction to the
+        handle_function_command of the type of the child attributes, get the
+        response and replace a Private on top of all tensors found in
+        the response.
+        :param command: instruction of a function command: (command name,
+        <no self>, arguments[, kwargs_])
+        :return: the response of the function command
+        """
+        cmd, _, args_, kwargs_ = command
+
+        tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
+
+        # Check that the function has not been overwritten
+        try:
+            # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+            cmd = cls.rgetattr(cls, cmd)
+            return cmd(*args_, **kwargs_)
+        except AttributeError:
+            pass
+
+        # Replace all PrivateTensor with their child attribute
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+
+        # build the new command
+        new_command = (cmd, None, new_args, new_kwargs)
+
+        # Send it to the appropriate class and get the response
+        response = new_type.handle_func_command(new_command)
+
+        # Put back PrivateTensor on the tensors found in the response
+        response = hook_args.hook_response(
+            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+        )
+
+        return response
+
+    def share(self, *owners, protocol=None, field=None, dtype=None, crypto_provider=None):
+        """
+        Forward the .share() command to the child tensor, and reconstruct a new
+        PrivateTensor since the command is not inplace and should return
+        a new chain
+        Args:
+            *owners: the owners of the shares of the resulting AdditiveSharingTensor
+            protocol: the crypto protocol used to perform the computations ('snn' or 'fss')
+            dtype: the dtype in which the share values live
+            crypto_provider: the worker used to provide the crypto primitives used
+                to perform some computations on AdditiveSharingTensors
+        Returns:
+            A PrivateTensor whose child has been shared
+        """
+        if dtype is None:
+            dtype = self.dtype
+        else:
+            assert (
+                dtype == self.dtype
+            ), "When sharing a PrivateTensor, the dtype of the resulting AdditiveSharingTensor \
+                must be the same as the one of the original tensor"
+
+        tensor = PrivateTensor(owner=self.owner, **self.get_class_attributes())
+
+        tensor.child = self.child.share(
+            *owners, protocol=protocol, dtype=dtype, crypto_provider=crypto_provider, no_wrap=True
+        )
+        return tensor
+
+    def share_(self, *args, **kwargs):
+        """
+        Performs an inplace call to share. The PrivateTensor returned is therefore the same,
+        contrary to the classic share version
+        """
+        self.child = self.child.share_(*args, no_wrap=True, **kwargs)
+        return self
+
+
     @staticmethod
     def simplify(worker: AbstractWorker, tensor: "PrivateTensor") -> tuple:
         """Takes the attributes of a PrivateTensor and saves them in a tuple.
@@ -162,6 +351,8 @@ class PrivateTensor(AbstractTensor):
 
         return (
             syft.serde.msgpack.serde._simplify(worker, tensor.id),
+            syft.serde.msgpack.serde._simplify(worker, tensor.field),
+            tensor.dtype,
             syft.serde.msgpack.serde._simplify(worker, tensor.allowed_users),
             syft.serde.msgpack.serde._simplify(worker, tensor.tags),
             syft.serde.msgpack.serde._simplify(worker, tensor.description),
@@ -181,11 +372,13 @@ class PrivateTensor(AbstractTensor):
             shared_tensor = detail(data)
         """
 
-        tensor_id, allowed_users, tags, description, chain = tensor_tuple
+        (tensor_id,field,dtype, allowed_users, tags, description, chain) = tensor_tuple
 
         tensor = PrivateTensor(
             owner=worker,
             id=syft.serde.msgpack.serde._detail(worker, tensor_id),
+            field=syft.serde.msgpack.serde._detail(worker, field),
+            dtype=dtype,
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
             allowed_users=syft.serde.msgpack.serde._detail(worker, allowed_users),
@@ -196,6 +389,7 @@ class PrivateTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
+
 
 
 ### Register the tensor with hook_args.py ###
