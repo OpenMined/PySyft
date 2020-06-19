@@ -1,4 +1,4 @@
-from syft.grid.webrtc_connection import WebRTCConnection
+from syft.grid.dynamic_fl.rtc.webrtc_connection import WebRTCConnection
 from syft.workers.base import BaseWorker
 import asyncio
 
