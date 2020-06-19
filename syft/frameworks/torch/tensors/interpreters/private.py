@@ -9,7 +9,6 @@ from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
 from syft.workers.abstract import AbstractWorker
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
-from syft.generic.pointers.multi_pointer import MultiPointerTensor
 
 
 class PrivateTensor(AbstractTensor):
@@ -17,8 +16,8 @@ class PrivateTensor(AbstractTensor):
         self,
         owner=None,
         id=None,
-        field = None,
-        dtype:str = None,
+        field= None,
+        dtype: str = None,
         tags: set = None,
         description: str = None,
         allowed_users: Tuple[str] = (),
@@ -53,8 +52,7 @@ class PrivateTensor(AbstractTensor):
         """ Specify all the attributes need to build a wrapper correctly when returning
         a response.
         """
-        return {"allowed_users": self.allowed_users,"dtype": self.dtype,
-}
+        return {"allowed_users": self.allowed_users, "dtype": self.dtype}
 
     def allow(self, user) -> bool:
         """ Overwrite native's allowed to verify if a specific user is allowed to get this tensor.
@@ -174,19 +172,6 @@ class PrivateTensor(AbstractTensor):
         response = getattr(_self, "t")(*args, **kwargs)
 
         return response
-#
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     @staticmethod
@@ -389,7 +374,6 @@ class PrivateTensor(AbstractTensor):
             tensor.child = chain
 
         return tensor
-
 
 
 ### Register the tensor with hook_args.py ###
