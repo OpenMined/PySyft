@@ -76,7 +76,7 @@ def test_func_plan_can_be_translated_to_tfjs(hook, workers):
     assert len(serde_plan_full.role.actions[0].args) == 2
 
 
-@pytest.mark.skip(reason="Missing translation for torch.nn.functional.linear")  # pragma: no cover
+# @pytest.mark.skip(reason="Missing translation for torch.nn.functional.linear")  # pragma: no cover
 def test_cls_plan_can_be_translated_to_tfjs(hook, workers):
     Plan._build_translators = []
 
@@ -94,7 +94,15 @@ def test_cls_plan_can_be_translated_to_tfjs(hook, workers):
 
     plan = Net()
     plan.build(th.zeros(10, 2))
-    orig_plan = plan.copy()
+    js_plan = plan.copy()
+    js_plan.add_translation(PlanTranslatorTfjs)
+    js_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
+
+    assert js_plan.role.actions[0].name == "tf.transpose"
+    assert js_plan.role.actions[1].name == "tf.matMul"
+    assert js_plan.role.actions[2].name == "tf.relu"
+    assert js_plan.role.actions[3].name == "tf.transpose"
+    assert js_plan.role.actions[4].name == "tf.matMul"
 
 
 def test_func_plan_can_be_translated_to_torchscript(hook, workers):
