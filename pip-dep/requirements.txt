@@ -18,5 +18,5 @@ psycopg2-binary
 requests==2.22.0
 requests_toolbelt
 syft==0.2.6
-Werkzeug==0.15.3
+Werkzeug==0.15.5
 
