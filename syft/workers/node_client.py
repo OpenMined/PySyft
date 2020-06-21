@@ -25,6 +25,7 @@ class NodeClient(WebsocketClientWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
+        timeout: int = None,
     ):
         """
         Args:
@@ -63,6 +64,7 @@ class NodeClient(WebsocketClientWorker):
             log_msgs,
             verbose,
             None,  # initial data
+            timeout,
         )
 
         # Update Node reference using node's Id given by the remote node
