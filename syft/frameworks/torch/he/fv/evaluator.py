@@ -1,6 +1,7 @@
 import copy
 
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
+from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.plaintext import PlainText
@@ -38,6 +39,24 @@ class Evaluator:
 
         else:
             raise TypeError(f"Addition Operation not supported between {type(op1)} and {type(op2)}")
+
+    def negate(self, ct):
+        """Negate a cipher i.e -(ct_value)
+
+        Args:
+            ct (Ciphertext): Ciphertext to be negated.
+
+        Returns:
+            A Ciphertext object with value equivalent to result of -(ct_value).
+        """
+        result = copy.deepcopy(ct.data)
+
+        for i in range(len(result)):
+            for j in range(len(result[i])):
+                for k in range(len(result[i][j])):
+                    result[i][j][k] = negate_mod(ct.data[i][j][k], self.coeff_modulus[j])
+
+        return CipherText(result)
 
     def _add_cipher_cipher(self, ct1, ct2):
         """Adds two ciphertexts.
