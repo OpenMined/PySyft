@@ -45,6 +45,7 @@ class NodeClient(WebsocketClientWorker):
             verbose : a verbose option - will print all messages
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
+            timeout : connection's timeout with the remote worker.
         """
         self.address = address
         self.encoding = encoding
