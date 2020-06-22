@@ -41,6 +41,14 @@ Before you start to spin-up instances we encourace to set a budget alert on GCP 
 
 ### Spin-up Instances using the follwoing commands:-
 
+You can find sample code in test .py  and  test .ipynb
+
+- Import enums from the gcloud_configurations .py
+
+```bash
+import syft.grid.autoscale.utils.gcloud_configurations as configs
+```
+
 - Initialize using :
 
 ```bash
@@ -74,6 +82,12 @@ c1 = instance_name.create_cluster(
     target_size=3,
     eviction_policy="delete",
 )
+```
+
+- Run a parameter sweep to figure out the best parameters using :
+
+```bash
+c1.sweep()
 ```
 
 - Destroy the created instances using :
