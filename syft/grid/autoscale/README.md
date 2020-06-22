@@ -33,7 +33,13 @@ pip install terrascript
 
 ## Usage
 
-You can create compute instance using the sample code in test .py
+### Set Up Budget Alerts(important)
+
+Before you start to spin-up instances we encourace to set a budget alert on GCP to avoid suprise costs.
+
+[setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
+
+### Spin-up Instances using the follwoing commands:-
 
 - Initialize using :
 
@@ -42,7 +48,7 @@ You can create compute instance using the sample code in test .py
 instance_name = gcloud.GoogleCloud(
     credentials="GCP Login/terraf.json",
     project_id="terraform",
-    region="us-central1"
+    region=configs.Region.us_central1,
 )
 ```
 
@@ -51,9 +57,22 @@ instance_name = gcloud.GoogleCloud(
 ```bash
 instance_name.compute_instance(
     name="new-12345",
-    machine_type="f1-micro",
-    zone="us-central1-a",
-    image_family="debian-9",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    image_family=configs.ImageFamily.ubuntu_2004_lts,
+)
+```
+
+- Create Clusters using :
+
+```bash
+c1 = instance_name.create_cluster(
+    name="my-cluster1",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    image_family=configs.ImageFamily.ubuntu_2004_lts,
+    target_size=3,
+    eviction_policy="delete",
 )
 ```
 
@@ -61,3 +80,4 @@ instance_name.compute_instance(
 
 ```bash
 instance_name.destroy()
+```
