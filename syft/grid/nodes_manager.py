@@ -2,7 +2,7 @@ import asyncio
 import json
 import syft as sy
 from syft.codes import MSG_FIELD, GRID_EVENTS, NODE_EVENTS
-from syft.grid.peer import WebRTCPeer
+from syft.grid.peer import WebRTCPeer, Header
 from syft.exceptions import GetNotPermittedError
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.signaling import (
@@ -12,13 +12,10 @@ from aiortc.contrib.signaling import (
 import queue
 import weakref
 import uvloop
+import sys
 
 
 class WebRTCManager:
-
-    HOST_REQUEST = b"01"
-    REMOTE_REQUEST = b"02"
-
     def __init__(self, grid_descriptor, syft_worker):
         self._connections = {}
         self._grid = grid_descriptor
@@ -36,7 +33,6 @@ class WebRTCManager:
         else:
             self.async_method = asyncio.run
 
-        self._request_pool = asyncio.Queue(loop=self.loop)
         self._response_pool = asyncio.Queue(loop=self.loop)
         self._buffered_msg = {}
 
@@ -47,6 +43,47 @@ class WebRTCManager:
     def get(self, node_id: str):
         return self._connections.get(node_id, None)
 
+    async def _process_host_request(self, message, channel, conn_obj):
+        try:
+            message = self.worker._recv_msg(message)
+        except GetNotPermittedError as e:
+            message = sy.serde.deserialize(message, worker=self.worker)
+            self.worker.tensor_requests.append(message)
+            decoded_response = sy.serde.serialize(e)
+
+        # Small messages should be sent in just one payload.
+        if sys.getsizeof(message) <= conn_obj._buffer_chunk:
+            channel.send(Header.REMOTE_REQUEST + message)
+        else:  # Split large messages into several chunks sending them in sequence.
+            for i in range(0, len(message), conn_obj._buffer_chunk):
+                # If it's the last chunk, use FINISH BUFFER header and wait for response.
+                if i + conn_obj._buffer_chunk >= len(message):
+                    channel.send(
+                        Header.FINISH_REMOTE_BUFF_REQUEST + message[i : i + conn_obj._buffer_chunk]
+                    )
+                else:  # If it's not the last chunk, just send without wait for any response.
+                    channel.send(Header.BUFFERED_REQUEST + message[i : i + conn_obj._buffer_chunk])
+
+    async def _process_host_buffer_payload(self, message, channel, conn_obj):
+        self._buffered_msg[conn_obj.id] += message
+        decoded_response = self.worker._recv_msg(self._buffered_msg[conn_obj.id])
+        channel.send(Header.REMOTE_REQUEST + decoded_response)
+        del self._buffered_msg[conn_obj.id]
+
+    async def _process_remote_request(self, message, channel, conn_obj):
+        await self._response_pool.put(message)
+
+    async def _process_remote_buffer_payload(self, message, channel, conn_obj):
+        self._buffered_msg[conn_obj.id] += message
+        await self._response_pool.put(self._buffered_msg[conn_obj.id])
+        del self._buffered_msg[conn_obj.id]
+
+    async def _aggregate_buffered_payload(self, message, channel, conn_obj):
+        if self._buffered_msg.get(conn_obj.id, None):
+            self._buffered_msg[conn_obj.id] += message
+        else:
+            self._buffered_msg[conn_obj.id] = message
+
     async def process_msg(self, message, channel, conn_obj):
         """ Process syft messages forwarding them to the peer virtual worker and put the
             response into the response_pool queue to be delivered async.
@@ -55,26 +92,18 @@ class WebRTCManager:
                 message: Binary syft message.
                 channel: Connection channel used by the peers.
         """
-        if message[:2] == WebRTCManager.HOST_REQUEST:
-            try:
-                decoded_response = self.worker._recv_msg(message[2:])
-            except GetNotPermittedError as e:
-                message = sy.serde.deserialize(message[2:], worker=self.worker)
-                self.worker.tensor_requests.append(message)
-                decoded_response = sy.serde.serialize(e)
+        self.message_routes = {
+            Header.HOST_REQUEST: self._process_host_request,
+            Header.REMOTE_REQUEST: self._process_remote_request,
+            Header.BUFFERED_REQUEST: self._aggregate_buffered_payload,
+            Header.FINISH_HOST_BUFF_REQUEST: self._process_host_buffer_payload,
+            Header.FINISH_REMOTE_BUFF_REQUEST: self._process_remote_buffer_payload,
+        }
 
-            channel.send(WebRTCManager.REMOTE_REQUEST + decoded_response)
-        elif message[:2] == WebRTCPeer.REMOTE_REQUEST:
-            await self._response_pool.put(message[2:])
-        elif message[:2] == WebRTCPeer.BUFFERED_REQUEST:
-            if self._buffered_msg.get(conn_obj.id, None):
-                self._buffered_msg[conn_obj.id] += message[2:]
-            else:
-                self._buffered_msg[conn_obj.id] = message[2:]
-        else:
-            self._buffered_msg[conn_obj.id] += message[2:]
-            decoded_response = self.worker._recv_msg(self._buffered_msg[conn_obj.id])
-            channel.send(WebRTCManager.REMOTE_REQUEST + decoded_response)
+        # All methods add their responses into the aiortc response queue which is also async, so we do not need to care about queuing responses.
+        asyncio.run_coroutine_threadsafe(
+            self.message_routes[message[:2]](message[2:], channel, conn_obj), self.loop
+        )
 
     def process_answer(self, destination: str, content: str):
         asyncio.run_coroutine_threadsafe(self._process_answer(destination, content), self.loop)
