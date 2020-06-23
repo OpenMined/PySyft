@@ -13,6 +13,5 @@ syft-proto~=0.4.5
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0
-tornado==4.5.3
 websocket_client~=0.57.0
 websockets~=8.1.0
