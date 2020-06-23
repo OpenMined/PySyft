@@ -72,6 +72,21 @@ def poly_add_mod(op1, op2, modulus):
     return np.mod(np.polyadd(op1, op2), modulus).tolist()
 
 
+def poly_sub_mod(op1, op2, modulus):
+    """return subtraction of two polynomials with all coefficients of
+    polynomial %q(coefficient modulus)"""
+
+    # For non same size polynomails we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != len(op2):
+        if len(op1) > len(op2):
+            op2 = op2 + [0] * (len(op1) - len(op2))
+        else:
+            op1 = op1 + [0] * (len(op2) - len(op1))
+
+    return np.mod(np.polysub(op1, op2), modulus).tolist()
+
+
 def poly_mul_mod(op1, op2, modulus):
     """return multiplication of two polynomials with all coefficients of
     polynomial %q(coefficient modulus) and result polynomial % t(polynomial modulus)"""
@@ -169,28 +184,55 @@ def xgcd(x, y):
     return [x, prev_a, prev_b]
 
 
-def multiply_add_plain_with_delta(phase, message, context):
+def multiply_add_plain_with_delta(ct, pt, context):
     """Add message into phase.
 
     Args:
-        phase (Ciphertext): phase is pre-computed carrier polynomial where we can add message data.
-        message (Plaintext): A plaintext representation of integer data to be encrypted.
+        ct (Ciphertext): ct is pre-computed carrier polynomial where we can add pt data.
+        pt (Plaintext): A plaintext representation of integer data to be encrypted.
         context (Context): Context for extracting encryption parameters.
 
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
     coeff_modulus = context.param.coeff_modulus
-    message = message.data
-    plain_coeff_count = len(message)
+    pt = pt.data
+    plain_coeff_count = len(pt)
     delta = context.coeff_div_plain_modulus
-    phase0, phase1 = phase.data  # here phase = pk * u * e
+    ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
         for j in range(len(coeff_modulus)):
-            temp = round(delta[j] * message[i]) % coeff_modulus[j]
-            phase0[j][i] = (phase0[j][i] + temp) % coeff_modulus[j]
+            temp = round(delta[j] * pt[i]) % coeff_modulus[j]
+            ct0[j][i] = (ct0[j][i] + temp) % coeff_modulus[j]
 
-    return CipherText([phase0, phase1])  # phase0 = pk0 * u * e + delta * m
+    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e + delta * pt
+
+
+def multiply_sub_plain_with_delta(ct, pt, context):
+    """Subtract plaintext from ciphertext.
+
+    Args:
+        ct (Ciphertext): ct is pre-computed carrier polynomial where we can add message data.
+        pt (Plaintext): A plaintext representation of integer data to be encrypted.
+        context (Context): Context for extracting encryption parameters.
+
+    Returns:
+        A Ciphertext object with the encrypted result of encryption process.
+    """
+    coeff_modulus = context.param.coeff_modulus
+    pt = pt.data
+    plain_coeff_count = len(pt)
+    delta = context.coeff_div_plain_modulus
+    ct0, ct1 = ct.data  # here ct = pk * u * e
+
+    # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
+    # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
+    for i in range(plain_coeff_count):
+        for j in range(len(coeff_modulus)):
+            temp = round(delta[j] * pt[i]) % coeff_modulus[j]
+            ct0[j][i] = (ct0[j][i] - temp) % coeff_modulus[j]
+
+    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e - delta * pt
