@@ -19,6 +19,7 @@ from syft.serde import serde
 from syft.serde.msgpack import native_serde
 from syft.serde.msgpack import torch_serde
 from syft.workers.virtual import VirtualWorker
+from test.serde.serde_helpers import SerializableDummyClass
 
 
 def test_tuple_simplify(workers):
@@ -354,25 +355,6 @@ def test_torch_Tensor(compress):
 
     t = Tensor(numpy.random.random((100, 100)))
     t_serialized = syft.serde.serialize(t)
-    t_serialized_deserialized = syft.serde.deserialize(t_serialized)
-    assert (t == t_serialized_deserialized).all()
-
-
-@pytest.mark.parametrize("compress", [True, False])
-def test_torch_Tensor_convenience(compress):
-    """This test evaluates torch.Tensor.serialize()
-
-    As opposed to using syft.serde.serialize(), torch objects
-    have a convenience function which lets you call .serialize()
-    directly on the tensor itself. This tests to makes sure it
-    works correctly."""
-    if compress:
-        compression._apply_compress_scheme = compression.apply_lz4_compression
-    else:
-        compression._apply_compress_scheme = compression.apply_no_compression
-
-    t = Tensor(numpy.random.random((100, 100)))
-    t_serialized = t.serialize()
     t_serialized_deserialized = syft.serde.deserialize(t_serialized)
     assert (t == t_serialized_deserialized).all()
 
@@ -864,3 +846,22 @@ def test_no_simplifier_found(workers):
     assert type(x) not in msgpack.serde.msgpack_global_state._no_simplifiers_found
     _ = msgpack.serde._simplify(me, x)
     assert type(x) in msgpack.serde.msgpack_global_state._no_simplifiers_found
+
+
+def test_external_lib_msgpack():
+    example1 = SerializableDummyClass("test")
+    ser1 = syft.serde.serialize(example1)
+    result1 = syft.serde.deserialize(ser1)
+    assert example1.value == result1.value
+
+    saved_attr = SerializableDummyClass.get_msgpack_code
+    delattr(SerializableDummyClass, "get_msgpack_code")
+    syft.serde.msgpack.serde.msgpack_global_state.stale_state = True
+
+    with pytest.raises(Exception) as e:
+        example2 = SerializableDummyClass("test")
+        _ = syft.serde.serialize(example2)
+
+    assert isinstance(e.value, syft.exceptions.UndefinedProtocolTypeError)
+    setattr(SerializableDummyClass, "get_msgpack_code", saved_attr)
+    syft.serde.msgpack.serde.msgpack_global_state.stale_state = True

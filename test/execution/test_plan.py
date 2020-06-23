@@ -996,14 +996,27 @@ def test_backward_autograd_can_be_traced(hook, workers):
     autograd_test.forward = None
     plan_grads = autograd_test(X)
 
-    autograd_str = (
-        "def autograd_test(arg_1):\n    var_0 = arg_1.mul(5)\n    var_1 = var_0.log()\n    "
-        "var_2 = var_1.neg()\n    var_3 = var_2.div(2)\n    var_4 = var_3.sum()\n    "
-        "var_5 = var_4.mul(0)\n    var_6 = var_5.add(1)\n    var_7 = var_3.mul(0)\n    "
-        "var_8 = var_7.add(1)\n    var_9 = var_8.mul(var_6)\n    var_10 = var_9.div(2)\n    "
-        "var_11 = var_10.mul(-1)\n    var_12 = var_0.__rtruediv__(1)\n    "
-        "var_13 = var_11.mul(var_12)\n    var_14 = var_13.mul(5)\n    var_15 = var_13.mul(arg_1)\n    "  # noqa:
-        "out_1 = var_14.copy()\n    return out_1"
-    )
+    print(autograd_test.code)
+
+    autograd_str = """def autograd_test(arg_1):
+    var_0 = arg_1.mul(5)
+    var_1 = var_0.log()
+    var_2 = var_1.neg()
+    var_3 = var_2.div(2)
+    var_4 = var_3.sum()
+    var_5 = var_4.mul(0)
+    var_6 = var_5.add(1)
+    var_7 = var_6.reshape(-1, 1)
+    var_8 = var_3.mul(0)
+    var_9 = var_8.add(1)
+    var_10 = var_9.mul(var_7)
+    var_11 = var_10.div(2)
+    var_12 = var_11.mul(-1)
+    var_13 = var_0.__rtruediv__(1)
+    var_14 = var_12.mul(var_13)
+    var_15 = var_14.mul(5)
+    var_16 = var_14.mul(arg_1)
+    out_1 = var_15.copy()
+    return out_1"""
     assert autograd_test.code == autograd_str
     assert torch_grads.eq(plan_grads).all()

@@ -1,3 +1,4 @@
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -16,6 +17,8 @@ from syft.execution.type_wrapper import NestedTypeWrapper
 from syft.execution.translation.abstract import AbstractPlanTranslator
 from syft.execution.translation.default import PlanTranslatorDefault
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.execution.translation.threepio import PlanTranslatorTfjs
+from syft.execution.translation import TranslationTarget
 from syft.generic.frameworks import framework_packages
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.frameworks.types import FrameworkLayerModule
@@ -97,6 +100,9 @@ class Plan(AbstractSendable):
         owner: plan owner
         tags: plan tags
         description: plan description
+        base_framework: The underlying framework (pytorch, tensorflow) which the
+                        plan is to be executed in
+        frameworks: A list of frameworks which the plan will also support
     """
 
     _build_translators = []
@@ -116,6 +122,8 @@ class Plan(AbstractSendable):
         tags: List[str] = None,
         input_types: list = None,
         description: str = None,
+        roles: Dict[str, Role] = None,
+        base_framework: str = TranslationTarget.PYTORCH.value,
     ):
         super().__init__(id, owner, tags, description, child=None)
 
@@ -136,6 +144,8 @@ class Plan(AbstractSendable):
         self.input_types = input_types
         self.validate_input_types = True
         self.tracing = False
+        self._base_framework = base_framework
+        self.roles = roles or {base_framework: self.role}
 
         # The plan has not been sent so it has no reference to remote locations
         self.pointers = {}
@@ -155,6 +165,21 @@ class Plan(AbstractSendable):
     @property
     def actions(self):
         return self.role.actions
+
+    @property
+    def base_framework(self):
+        return self._base_framework
+
+    @base_framework.setter
+    def base_framework(self, val):
+        if val in self.roles:
+            self._base_framework = val
+            self.role = self.roles[self._base_framework]
+            return
+        raise ValueError(
+            "Value given does not match any available Roles."
+            " Please check to see if the proper translations have been added to Plan."
+        )
 
     def parameters(self):
         """
@@ -225,7 +250,7 @@ class Plan(AbstractSendable):
         else:
             # Add Placeholder on top of each arg
             args = args_placeholders = build_nested_arg(
-                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True),
+                args, lambda x: PlaceHolder.create_from(x, role=self.role, tracing=True)
             )
 
         # Add state to args if needed
@@ -238,7 +263,7 @@ class Plan(AbstractSendable):
         forward_args = inspect.getfullargspec(self.forward).args
         for f_name, wrap_framework_func in Plan._wrapped_frameworks.items():
             if f_name in forward_args:
-                framework_kwargs[f_name] = wrap_framework_func(self.role, self.owner)
+                framework_kwargs[f_name] = wrap_framework_func(self.role)
 
         results = self.forward(*args, **framework_kwargs)
 
@@ -285,6 +310,7 @@ class Plan(AbstractSendable):
             tags=self.tags,
             input_types=self.input_types,
             description=self.description,
+            roles=self.roles,
         )
 
         plan_copy.torchscript = self.torchscript
@@ -457,13 +483,15 @@ class Plan(AbstractSendable):
             f_package (imported module): imported library
         """
 
-        def call_wrapped_framework(role, owner):
-            return FrameworkWrapper(f_package, role, owner)
+        def call_wrapped_framework(role):
+            return FrameworkWrapper(f_package, role)
 
         Plan._wrapped_frameworks[f_name] = call_wrapped_framework
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
-        return plan_translator(self).translate()
+        role = plan_translator(self).translate()
+        self.roles[plan_translator.framework] = role
+        return role
 
     def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
         plan_translator(self).remove()
@@ -624,7 +652,7 @@ class Plan(AbstractSendable):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript, input_types,) = plan_tuple
+        (id_, role, include_state, name, tags, description, torchscript, input_types) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -749,6 +777,7 @@ class Plan(AbstractSendable):
 
 # Auto-register Plan build-time translations
 Plan.register_build_translator(PlanTranslatorTorchscript)
+Plan.register_build_translator(PlanTranslatorTfjs)
 
 # Auto-register Plan build-time frameworks
 for f_name, f_package in framework_packages.items():
