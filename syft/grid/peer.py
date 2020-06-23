@@ -7,12 +7,15 @@ from syft.workers.virtual import VirtualWorker
 from syft.messaging.message import SearchMessage
 from syft.exceptions import GetNotPermittedError
 from aiortc import RTCPeerConnection
+import sys
 
 
 class WebRTCPeer(BaseWorker):
 
     HOST_REQUEST = b"01"
     REMOTE_REQUEST = b"02"
+    BUFFERED_REQUEST = b"03"
+    FINISH_BUFFER = b"04"
 
     def __init__(self, node_id: str, worker: VirtualWorker, response_pool: queue.Queue):
         BaseWorker.__init__(self, sy.hook, id=node_id)
@@ -23,17 +26,19 @@ class WebRTCPeer(BaseWorker):
 
     async def _send_msg(self, message: bin, location=None):
         self.channel.send(WebRTCPeer.HOST_REQUEST + message)
-
-        # Wait
-        # PySyft is a sync library and should wait for this response.
-        while self._response_pool.empty():
-            await asyncio.sleep(0.01)
-
-        return self._response_pool.get()
+        return await self._response_pool.get()
 
     def _recv_msg(self, message: bin):
         # if self.available:
-        return asyncio.run(self._send_msg(message))
+        if sys.getsizeof(message) <= 200000:
+            return asyncio.run(self._send_msg(message))
+        else:
+            for i in range(0, len(message), 200000):
+                if i + 200000 >= len(message):
+                    self.channel.send(WebRTCPeer.FINISH_BUFFER + message[i : i + 200000])
+                    return asyncio.run(self._response_pool.get())
+                else:
+                    self.channel.send(WebRTCPeer.BUFFERED_REQUEST + message[i : i + 200000])
         # else:  # PySyft's GC delete commands
         #    return self._worker._recv_msg(message)
 

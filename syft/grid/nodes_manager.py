@@ -1,6 +1,5 @@
 import asyncio
 import json
-
 import syft as sy
 from syft.codes import MSG_FIELD, GRID_EVENTS, NODE_EVENTS
 from syft.grid.peer import WebRTCPeer
@@ -12,6 +11,7 @@ from aiortc.contrib.signaling import (
 )
 import queue
 import weakref
+import uvloop
 
 
 class WebRTCManager:
@@ -25,8 +25,8 @@ class WebRTCManager:
 
         self.worker = syft_worker
 
-        self._request_pool = queue.Queue()
-        self._response_pool = queue.Queue()
+        # Uvloop
+        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
         self.loop = asyncio.get_event_loop()
 
@@ -36,6 +36,10 @@ class WebRTCManager:
         else:
             self.async_method = asyncio.run
 
+        self._request_pool = asyncio.Queue(loop=self.loop)
+        self._response_pool = asyncio.Queue(loop=self.loop)
+        self._buffered_msg = {}
+
     @property
     def nodes(self):
         return list(self._connections.keys())
@@ -43,7 +47,7 @@ class WebRTCManager:
     def get(self, node_id: str):
         return self._connections.get(node_id, None)
 
-    def process_msg(self, message, channel):
+    async def process_msg(self, message, channel, conn_obj):
         """ Process syft messages forwarding them to the peer virtual worker and put the
             response into the response_pool queue to be delivered async.
 
@@ -60,8 +64,17 @@ class WebRTCManager:
                 decoded_response = sy.serde.serialize(e)
 
             channel.send(WebRTCManager.REMOTE_REQUEST + decoded_response)
+        elif message[:2] == WebRTCPeer.REMOTE_REQUEST:
+            await self._response_pool.put(message[2:])
+        elif message[:2] == WebRTCPeer.BUFFERED_REQUEST:
+            if self._buffered_msg.get(conn_obj.id, None):
+                self._buffered_msg[conn_obj.id] += message[2:]
+            else:
+                self._buffered_msg[conn_obj.id] = message[2:]
         else:
-            self._response_pool.put(message[2:])
+            self._buffered_msg[conn_obj.id] += message[2:]
+            decoded_response = self.worker._recv_msg(self._buffered_msg[conn_obj.id])
+            channel.send(WebRTCManager.REMOTE_REQUEST + decoded_response)
 
     def process_answer(self, destination: str, content: str):
         asyncio.run_coroutine_threadsafe(self._process_answer(destination, content), self.loop)
@@ -113,8 +126,8 @@ class WebRTCManager:
         channel = conn_obj.channel
 
         @channel.on("message")
-        def on_message(message):
-            self.process_msg(message, channel)
+        async def on_message(message):
+            await self.process_msg(message, channel, conn_obj)
 
         await conn_obj.pc.setLocalDescription(await conn_obj.pc.createOffer())
         local_description = object_to_string(conn_obj.pc.localDescription)
@@ -144,8 +157,8 @@ class WebRTCManager:
             self._connections[destination].channel = channel
 
             @channel.on("message")
-            def on_message(message):
-                self.process_msg(message, channel)
+            async def on_message(message):
+                await self.process_msg(message, channel, conn_obj)
 
         await self._process_answer(destination, content)
 
