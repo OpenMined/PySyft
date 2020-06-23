@@ -121,31 +121,30 @@ def test_CoeffModulus_bfv_default(poly_modulus, SeqLevelType, result):
 
 
 @pytest.mark.parametrize(
-    "op1, op2, mod, result",
+    "op1, op2, coeff_mod, poly_mod, result",
     [
-        ([0, 0], [0, 0], 3, [0, 0]),
-        ([1, 2, 3, 4], [2, 3, 4, 5], 3, [0, 2, 1, 0]),
-        ([1, 2, 3, 4], [2, 3, 4, 5], 1, [0, 0, 0, 0]),
-        ([1, 2, 3, 4, 5], [1, -4], 3, [2, 1, 0, 1, 2]),
-        ([4, 4], [-4, -4, -4, -4], 4, [0, 0, 0, 0]),
+        ([0, 0], [0, 0], 3, 2, [0, 0]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 3, 4, [0, 2, 1, 0]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 1, 4, [0, 0, 0, 0]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, 5, [2, 1, 0, 1, 2]),
+        ([4, 4], [-4, -4, -4, -4], 4, 4, [0, 0, 0, 0]),
     ],
 )
-def test_poly_add_mod(op1, op2, mod, result):
-    assert poly_add_mod(op1, op2, mod) == result
+def test_poly_add_mod(op1, op2, coeff_mod, poly_mod, result):
+    assert poly_add_mod(op1, op2, coeff_mod, poly_mod) == result
 
 
 @pytest.mark.parametrize(
-    "op1, op2, mod, result",
+    "op1, op2, coeff_mod, poly_mod, result",
     [
-        ([1, 1], [2, 1], 5, [1, 3]),
-        ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1, 0]),
-        ([1, 2, 3, 4, 5], [1, -4], 3, [0, 1, 1, 1, 1]),
-        ([4, 4], [-4, -4, -4, -4], 4, [0, 0, 0, 0]),
+        ([1, 1], [2, 1], 5, 2, [1, 3]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 5, 4, [3, 1, 1, 0]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, 5, [0, 1, 1, 1, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, 4, [0, 0, 0, 0]),
     ],
 )
-def test_poly_mul_mod(op1, op2, mod, result):
-    print("test poly_mul_mod : ", poly_mul_mod(op1, op2, mod))
-    assert poly_mul_mod(op1, op2, mod) == result
+def test_poly_mul_mod(op1, op2, coeff_mod, poly_mod, result):
+    assert poly_mul_mod(op1, op2, coeff_mod, poly_mod) == result
 
 
 @pytest.mark.parametrize("op1, mod, result", [([2, 3], 7, [5, 4]), ([0, 0], 7, [0, 0])])

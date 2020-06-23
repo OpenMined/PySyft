@@ -1,5 +1,7 @@
 import copy
 from enum import Enum
+import numpy as np
+from numpy.polynomial import polynomial as poly
 
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
@@ -39,6 +41,7 @@ def _typecheck(op1, op2):
 class Evaluator:
     def __init__(self, context):
         self.context = context
+        self.poly_modulus = context.param.poly_modulus
         self.coeff_modulus = context.param.coeff_modulus
         self.plain_modulus = context.param.plain_modulus
 
@@ -133,7 +136,9 @@ class Evaluator:
 
         for i in range(min(len(ct1), len(ct2))):
             for j in range(len(self.coeff_modulus)):
-                result[i][j] = poly_add_mod(ct1[i][j], ct2[i][j], self.coeff_modulus[j])
+                result[i][j] = poly_add_mod(
+                    ct1[i][j], ct2[i][j], self.coeff_modulus[j], self.poly_modulus
+                )
 
         return CipherText(result)
 
@@ -163,7 +168,7 @@ class Evaluator:
                 arguments.
         """
         pt1, pt2 = copy.deepcopy(pt1), copy.deepcopy(pt2)
-        return PlainText(poly_add_mod(pt1.data, pt2.data, self.plain_modulus))
+        return PlainText(poly_add_mod(pt1.data, pt2.data, self.plain_modulus, self.poly_modulus))
 
     def _sub_cipher_plain(self, ct, pt):
         """Subtract a plaintext from a ciphertext.
@@ -210,41 +215,71 @@ class Evaluator:
         if len(ct1) > 2:
             # TODO: perfrom relinearisation operation.
             raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perfrom relinearisation operation."
+                "Cannot multiply ciphertext of size >2, Perform relinearisation operation."
             )
         if len(ct2) > 2:
             # TODO: perfrom relinearisation operation.
             raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perfrom relinearisation operation."
+                "Cannot multiply ciphertext of size >2, Perform relinearisation operation."
             )
 
         ct10, ct11 = copy.deepcopy(ct1)
-        ct20, ct21 = ct2
+        ct20, ct21 = copy.deepcopy(ct2)
 
-        t_div_q = self.context.plain_div_coeff_modulus
-
+        # lenght of coeff_modulus determine no of polynomials.
         result = [
             [0] * len(self.coeff_modulus),
             [0] * len(self.coeff_modulus),
             [0] * len(self.coeff_modulus),
         ]
 
+        # coefficients raised by q(coefficient modulus)
         for i in range(len(self.coeff_modulus)):
-            result[0][i] = [
-                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
-                for x in poly_mul_mod(ct10[i], ct20[i], self.coeff_modulus[i])
-            ]
-            result[1][i] = [
-                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
-                for x in poly_add_mod(
-                    poly_mul_mod(ct11[i], ct20[i], self.coeff_modulus[i]),
-                    poly_mul_mod(ct10[i], ct21[i], self.coeff_modulus[i]),
-                    self.coeff_modulus[i],
-                )
-            ]
-            result[2][i] = [
-                int(multiply_mod(x, t_div_q[i], self.coeff_modulus[i]))
-                for x in poly_mul_mod(ct11[i], ct21[i], self.coeff_modulus[i])
-            ]
+            ct10[i] = [x * self.coeff_modulus[i] for x in ct10[i]]
+            ct11[i] = [x * self.coeff_modulus[i] for x in ct11[i]]
+            ct20[i] = [x * self.coeff_modulus[i] for x in ct20[i]]
+            ct21[i] = [x * self.coeff_modulus[i] for x in ct21[i]]
+
+        poly_mod = np.array([1] + [0] * (self.poly_modulus - 1) + [1])
+        for i in range(len(self.coeff_modulus)):
+
+            result[0][i] = (
+                poly.polydiv(
+                    poly.polymul(
+                        np.array(ct10[i], dtype="object"), np.array(ct20[i], dtype="object")
+                    ),
+                    poly_mod,
+                )[1]
+            ).tolist()
+
+            result[1][i] = (
+                poly.polydiv(
+                    poly.polyadd(
+                        poly.polymul(
+                            np.array(ct11[i], dtype="object"), np.array(ct20[i], dtype="object")
+                        ),
+                        poly.polymul(
+                            np.array(ct10[i], dtype="object"), np.array(ct21[i], dtype="object")
+                        ),
+                    ),
+                    poly_mod,
+                )[1]
+            ).tolist()
+
+            result[2][i] = (
+                poly.polydiv(
+                    poly.polymul(
+                        np.array(ct11[i], dtype="object"), np.array(ct21[i], dtype="object")
+                    ),
+                    poly_mod,
+                )[1]
+            ).tolist()
+
+        for i in range(len(result)):
+            for j in range(len(self.coeff_modulus)):
+                result[i][j] = [
+                    round((x * self.plain_modulus) / self.coeff_modulus[j]) % self.coeff_modulus[j]
+                    for x in result[i][j]
+                ]
 
         return CipherText(result)

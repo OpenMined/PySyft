@@ -1,6 +1,5 @@
 import copy
 
-
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
@@ -19,7 +18,6 @@ class Decryptor:
         self._context = context
         self._coeff_modulus = context.param.coeff_modulus
         self._coeff_count = context.param.poly_modulus
-        self.sk = secret_key  # -- debug
         self._secret_key_array = [secret_key.data]
 
     def decrypt(self, encrypted):
@@ -35,14 +33,8 @@ class Decryptor:
         # Calculate [c0 + c1 * sk + c2 * sk^2 ...]_q
         temp_product_modq = self._mul_ct_sk(copy.deepcopy(encrypted.data))
 
-        print("temp_product_modq : ", temp_product_modq)
-        print("\n\n")
-
         # Divide scaling variant using BEHZ FullRNS techniques
         result = self._context.rns_tool.decrypt_scale_and_round(temp_product_modq)
-
-        print('result "Divide scaling variant using BEHZ FullRNS techniques : ', result)
-        print("\n\n")
 
         # removing leading zeroes in plaintext representation.
         plain_coeff_count = get_significant_count(result)
@@ -68,17 +60,15 @@ class Decryptor:
             for i in range(len(self._coeff_modulus)):
                 phase[i] = poly_add_mod(
                     poly_mul_mod(
-                        encrypted[j][i], secret_key_array[j - 1][i], self._coeff_modulus[i]
+                        encrypted[j][i],
+                        secret_key_array[j - 1][i],
+                        self._coeff_modulus[i],
+                        self._coeff_count,
                     ),
                     phase[i],
                     self._coeff_modulus[i],
+                    self._coeff_count,
                 )
-
-        # only for debug
-        print("phase [c0 + c1 * sk + c2 * sk^2 ...]_q. : ", phase)
-        print("\n\n")
-        # debug
-
         return phase
 
     def _get_sufficient_sk_power(self, max_power):
@@ -101,14 +91,8 @@ class Decryptor:
                     self._secret_key_array[-1][i],
                     self._secret_key_array[0][i],
                     self._coeff_modulus[i],
+                    self._coeff_count,
                 )
             self._secret_key_array.append(sk_extra_power)
-
-        # only for debug
-        print(self.sk.data)
-        print("\n\n")
-        print("sk_power : ", self._secret_key_array)
-        print("\n\n")
-        # debug
 
         return self._secret_key_array

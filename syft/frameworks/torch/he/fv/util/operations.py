@@ -57,7 +57,7 @@ def invert_mod(value, modulus):
         return gcd_tuple[1]
 
 
-def poly_add_mod(op1, op2, coeff_mod):
+def poly_add_mod(op1, op2, coeff_mod, poly_mod):
     """Add two polynomails and modulo every coefficient with coeff_mod.
 
     Args:
@@ -70,16 +70,16 @@ def poly_add_mod(op1, op2, coeff_mod):
 
     # For non same size polynomails we have to shift the polynomials because numpy consider right
     # side as lower order of polynomial and we consider right side as heigher order.
-    if len(op1) != len(op2):
-        if len(op1) > len(op2):
-            op2 = op2 + [0] * (len(op1) - len(op2))
-        else:
-            op1 = op1 + [0] * (len(op2) - len(op1))
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
 
-    return np.mod(np.polyadd(op1, op2), coeff_mod).tolist()
+    return np.mod(
+        np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
+    ).tolist()
 
-
-def poly_sub_mod(op1, op2, coeff_mod):
+def poly_sub_mod(op1, op2, coeff_mod, poly_mod):
     """Subtract two polynomails and modulo every coefficient with coeff_mod.
 
     Args:
@@ -89,18 +89,20 @@ def poly_sub_mod(op1, op2, coeff_mod):
     Returns:
         A list with polynomial coefficients.
     """
+
     # For non same size polynomails we have to shift the polynomials because numpy consider right
     # side as lower order of polynomial and we consider right side as heigher order.
-    if len(op1) != len(op2):
-        if len(op1) > len(op2):
-            op2 = op2 + [0] * (len(op1) - len(op2))
-        else:
-            op1 = op1 + [0] * (len(op2) - len(op1))
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
 
-    return np.mod(np.polysub(op1, op2), coeff_mod).tolist()
+    return np.mod(
+        np.polysub(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
+    ).tolist()
 
 
-def poly_mul_mod(op1, op2, coeff_mod):
+def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
     """Multiply two polynomails and modulo every coefficient with coeff_mod.
 
     Args:
@@ -113,14 +115,13 @@ def poly_mul_mod(op1, op2, coeff_mod):
 
     # For non same size polynomails we have to shift the polynomials because numpy consider right
     # side as lower order of polynomial and we consider right side as heigher order.
-    if len(op1) != len(op2):
-        if len(op1) > len(op2):
-            op2 = op2 + [0] * (len(op1) - len(op2))
-        else:
-            op1 = op1 + [0] * (len(op2) - len(op1))
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
 
-    poly_len = len(op1)  # length of the polynomails
-    poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
+    poly_len = poly_mod
+    poly_mod = np.array([1] + [0] * (poly_len - 1) + [1])
     result = (
         poly.polydiv(
             poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")) % coeff_mod,
