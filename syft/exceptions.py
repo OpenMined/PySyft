@@ -368,6 +368,12 @@ class CryptoProviderNotFoundError(Exception):
         )
         super().__init__(message)
 
+        
+class TranslationUnavailableError(Exception):
+    """Raised when trying to translate a plan to use a framework that is unavailable"""
+
+    pass
+
 
 def route_method_exception(exception, self, args_, kwargs_):  # noqa: C901
     try:

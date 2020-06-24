@@ -89,6 +89,9 @@ samples[syft.messaging.message.WorkerCommandMessage] = make_workercommandmessage
 
 samples[syft.workers.virtual.VirtualWorker] = make_virtual_worker
 
+# testing
+samples[SerializableDummyClass] = make_serializable_dummy_class
+
 
 def test_serde_coverage():
     """Checks all types in serde are tested"""

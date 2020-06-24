@@ -161,3 +161,9 @@ class ObjectStore:
 
         for tag in obj.tags:
             self._tag_to_object_ids[tag].add(obj.id)
+
+    def __len__(self):
+        """
+        Return the number of objects in the store
+        """
+        return len(self._objects)
