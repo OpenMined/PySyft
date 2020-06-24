@@ -17,11 +17,21 @@ class CrypTenPlanBuild(object):
 
     @staticmethod
     def f_return_model_or_cryptensor(*args, **kwargs):
+        '''
+        # TODO: When we solve the problem converting OnnxModels to PyTorch we can
+        have serialized models on workers that we can load without having the party
+        that started the computation know about the instrinsics of the architecture
         if args[0] == "crypten_model":
             return crypten.nn.Module()
         else:
-            return crypten.cryptensor(th.zeros([]))
+        '''
+        return crypten.cryptensor(th.zeros([]))
 
+
+crypten_to_auto_overload = {
+    crypten.mpc.MPCTensor: ["get_plain_text"],
+    crypten.nn.Module: ["encrypt", "decrypt", "__call__"]
+}
 
 crypten_plan_hook = {
     crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor},

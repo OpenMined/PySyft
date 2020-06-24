@@ -145,10 +145,11 @@ class TorchHook(FrameworkHook):
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
         if dependency_check.crypten_available:
-            self.to_auto_overload[crypten.mpc.MPCTensor] = ["get_plain_text"]
-            self._hook_syft_placeholder_methods(crypten.mpc.MPCTensor, PlaceHolder)
-            self.to_auto_overload[crypten.nn.Module] = ["encrypt", "decrypt", "__call__", "train", "size"]
-            self._hook_syft_placeholder_methods(crypten.nn.Module, PlaceHolder)
+            from syft.frameworks.crypten.hook.hook import crypten_to_auto_overload
+
+            for component, methods in crypten_to_auto_overload.items():
+                self.to_auto_overload[component] = methods
+                self._hook_syft_placeholder_methods(component, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
