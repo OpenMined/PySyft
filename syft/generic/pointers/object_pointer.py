@@ -249,7 +249,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
             An AbstractObject object which is the tensor (or chain) that this
             object used to point to on a location.
 
-            TODO: add param get_copy which doesn't destroy remote if true.
+        TODO: add param get_copy which doesn't destroy remote if true.
         """
 
         if self.point_to_attr is not None:
