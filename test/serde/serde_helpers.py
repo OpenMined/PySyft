@@ -2076,14 +2076,18 @@ def make_crypteninitplan(**kwargs):
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.CryptenInitPlan
         assert detailed.crypten_context == original.crypten_context
+        assert detailed.model == original.model
 
         return True
 
     rank_to_worker_id = {0: "alice", 1: "bob"}
+    model = b"test binary model"
+    model_simplified = model
+
     return [
         {
             "value": syft.messaging.message.CryptenInitPlan(
-                (rank_to_worker_id, 2, "127.0.0.1", 8080),
+                (rank_to_worker_id, 2, "127.0.0.1", 8080), model
             ),
             "simplified": (
                 CODE[syft.messaging.message.CryptenInitPlan],
@@ -2098,6 +2102,7 @@ def make_crypteninitplan(**kwargs):
                             2,  # world size
                             (CODE[str], (b"127.0.0.1",)),  # address
                             8080,  # port
+                            model_simplified,  # serialized model
                         ),
                     ),
                 ),  # (Any) simplified content
