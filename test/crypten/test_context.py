@@ -205,32 +205,6 @@ def test_duplicate_ids(workers):
         return_values = jail_func()
 
 
-def test_context_jail_with_model(workers):
-    dummy_input = th.empty(1, 1, 28, 28)
-    pytorch_model = ExampleNet()
-
-    alice = workers["alice"]
-    bob = workers["bob"]
-
-    alice_tensor_ptr = th.tensor(dummy_input).tag("crypten_data").send(alice)
-
-    @run_multiworkers(
-        [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
-    )
-    def run_encrypted_eval():  # pragma: no cover
-        t = crypten.load("crypten_data", 0)
-
-        model.encrypt()  # noqa: F821
-        out = model(t)  # noqa: F821
-        model.decrypt()  # noqa: F821
-        out = out.get_plain_text()
-        return model, out  # noqa: F821
-
-    result = run_encrypted_eval()
-    # compare out
-    assert th.all(result[0][1] == result[1][1])
-
-
 def test_context_plan_with_model(workers):
     dummy_input = th.empty(1, 1, 28, 28)
     pytorch_model = ExampleNet()
