@@ -8,7 +8,6 @@ import torch.nn.functional as F
 import syft as sy
 
 from syft.frameworks.crypten.context import run_multiworkers, run_party
-from syft.frameworks.crypten.model import OnnxModel
 from syft.frameworks.crypten import utils
 
 
