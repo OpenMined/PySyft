@@ -1246,6 +1246,65 @@ def make_string(**kwargs):
     ]
 
 
+# syft.framework.crypten.model.OnnxModel
+def make_onnxmodel(**kwargs):
+
+    from syft.frameworks.crypten.utils import pytorch_to_onnx
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(3, 3)
+            self.fc2 = torch.nn.Linear(3, 2)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            x = self.fc2(x)
+            return torch.nn.functional.log_softmax(x, dim=0)
+
+    dummy_input = torch.Tensor([1, 2, 3])
+    serialized_model = pytorch_to_onnx(Net(), dummy_input)
+
+    def compare_simplified(actual, expected):
+        """This is a custom comparison function.
+        The reason for using this is that when set is that tags are use. Tags are sets.
+        When sets are simplified and converted to tuple, elements order in tuple is random
+        We compare tuples as sets because the set order is undefined.
+
+        This function is inspired by the one with the same name defined above in `make_set`.
+        """
+        return True
+
+    def compare_detailed(detailed, original):
+        assert detailed.serialized_model == original.serialized_model
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+
+        return True
+
+    return [
+        {
+            "value": syft.frameworks.crypten.model.OnnxModel(
+                serialized_model=serialized_model,
+                id=1234,
+                tags={"tag1", "tag2"},
+                description="Test Onnx"
+            ),
+            "simplified": (
+                CODE[syft.frameworks.crypten.model.OnnxModel],
+                (
+                    (CODE[str], (serialized_model,)),
+                    1234,
+                    (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"Test Onnx",)),
+                ),
+            ),
+            "cmp_detailed": compare_detailed,
+        }
+    ]
+
+
 # syft.workers.virtual.VirtualWorker
 def make_virtual_worker(**kwargs):
     worker = VirtualWorker(

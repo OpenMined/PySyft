@@ -8,18 +8,29 @@ from syft.workers.base import BaseWorker
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.abstract.sendable import AbstractSendable
 
+from syft_proto.frameworks.crypten.onnx_model_pb2 import (
+    OnnxModel as OnnxModelPB,
+)
+
+# ATTENTION!
+# Currently, this class is not used but we might start using it when PyTorch introduces support
+# to convert from OnnxToPytorch
+
 
 class OnnxModel(AbstractSendable):
     def __init__(
         self,
         serialized_model: bytes,
-        model_id: int = None,
+        id: int = None,
         owner: "syft.workers.AbstractWorker" = None,
         tags: List[str] = None,
         description: str = None,
     ):
-        super(OnnxModel, self).__init__(model_id, owner, tags, description, None)
+        super(OnnxModel, self).__init__(id, owner, tags, description, None)
         self.serialized_model = serialized_model
+
+    def get_class_attributes(self):
+        return {"serialized_model": self.serialized_model}
 
     def create_pointer(
         self,
@@ -36,6 +47,7 @@ class OnnxModel(AbstractSendable):
         Returns:
             An ObjectPointer pointer to self.
         """
+
         if id_at_location is None:
             id_at_location = self.id
 
@@ -81,14 +93,68 @@ class OnnxModel(AbstractSendable):
             OnnxModel: an OnnxModel
         """
 
-        (serialized_model, model_id, tags, description) = model
+        (serialized_model, id, tags, description) = model
 
         model = OnnxModel(
             serialized_model=syft.serde.msgpack.serde._detail(worker, serialized_model),
-            model_id=syft.serde.msgpack.serde._detail(worker, model_id),
+            id=syft.serde.msgpack.serde._detail(worker, id),
             owner=worker,
             tags=syft.serde.msgpack.serde._detail(worker, tags),
             description=syft.serde.msgpack.serde._detail(worker, description),
         )
 
         return model
+
+    @staticmethod
+    def bufferize(worker, onnx_model):
+        """
+         This method serializes OnnxModel into OnnxModelPB.
+
+          Args:
+             onnx_model (OnnxModel): input OnnxModel to be serialized.
+
+          Returns:
+             proto_prec_tensor (FixedPrecisionTensorPB): serialized FixedPrecisionTensor
+         """
+        proto_onnx_model = OnnxModelPB()
+        syft.serde.protobuf.proto.set_protobuf_id(proto_onnx_model.id, onnx_model.id)
+        proto_onnx_model.serialized_model = onnx_model.serialized_model
+        for tag in onnx_model.tags:
+            proto_onnx_model.tags.append(tag)
+        proto_onnx_model.description = onnx_model.description
+
+        return proto_onnx_model
+
+    @staticmethod
+    def unbufferize(worker, proto_onnx_model):
+        """
+            This method deserializes OnnxModelPB into OnnxModel.
+
+            Args:
+                proto_onnx_model (OnnxModelPB): input OnnxModel to be
+                deserialized.
+
+            Returns:
+                onnx_model (OnnxModel): deserialized OnnxModelPB
+        """
+        proto_id = syft.serde.protobuf.proto.get_protobuf_id(proto_onnx_model.id)
+
+        onnx_model = OnnxModel(
+            proto_onnx_model.serialized_model,
+            owner=worker,
+            id=proto_id,
+            tags=set(proto_onnx_model.tags),
+            description=proto_onnx_model.description,
+        )
+
+        return onnx_model
+
+    @staticmethod
+    def get_protobuf_schema():
+        """
+            Returns the protobuf schema used for OnnxModel.
+
+            Returns:
+                Protobuf schema for OnnxModel.
+        """
+        return OnnxModelPB
