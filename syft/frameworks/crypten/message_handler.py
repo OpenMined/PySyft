@@ -39,6 +39,9 @@ class CryptenMessageHandler(AbstractMessageHandler):
         cid = syft.ID_PROVIDER.pop()
         syft_crypten.RANK_TO_WORKER_ID[cid] = rank_to_worker_id
 
+        onnx_model = msg.model
+        crypten_model = None if onnx_model is None else utils.onnx_to_crypten(onnx_model)
+
         # TODO Change this, we need a way to handle multiple plan definitions
         plans = self.worker.search("crypten_plan")
         assert len(plans) == 1
@@ -48,7 +51,12 @@ class CryptenMessageHandler(AbstractMessageHandler):
         rank = self._current_rank(rank_to_worker_id)
         assert rank is not None
 
-        return_value = run_party(cid, plan, rank, world_size, master_addr, master_port, (), {})
+        if crypten_model:
+            args = (crypten_model, )
+        else:
+            args = ()
+
+        return_value = run_party(cid, plan, rank, world_size, master_addr, master_port, args, {})
         # remove rank to id transaltion dict
         del syft_crypten.RANK_TO_WORKER_ID[cid]
 

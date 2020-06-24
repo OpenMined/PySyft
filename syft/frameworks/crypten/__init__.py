@@ -1,12 +1,11 @@
 import syft
 
-from syft.frameworks.crypten import utils
+import syft.frameworks.crypten.model
 
 import crypten.communicator as comm
 import crypten
 
 from syft.workers.base import BaseWorker
-from syft.generic.pointers.object_pointer import ObjectPointer
 
 
 RANK_TO_WORKER_ID = {
@@ -35,26 +34,27 @@ def get_worker_from_rank(rank: int, cid: int = None) -> BaseWorker:
     rank_to_worker_id = RANK_TO_WORKER_ID.get(cid, None)
     if rank_to_worker_id is None:
         raise RuntimeError(
-            "CrypTen computation not initiated properly, computation_id doesn't match any rank to"
+            "CrypTen computation not initiated properly, computation_id doesn't match any rank to "
             "worker_id translation table"
         )
     return syft.local_worker._get_worker_based_on_id(rank_to_worker_id[rank])
 
 
 def load(tag: str, src: int, **kwargs):
+    ''' TODO: Think of a method to keep the serialized models at the workers that are part of the
+    computation in such a way that the worker that started the computation do not know what
+    model architecture is used
+
     if tag.startswith("crypten_model"):
         worker = get_worker_from_rank(src)
         results = worker.search(tag)
         assert len(results) == 1
 
-        result = results[0]
-
-        if isinstance(result, ObjectPointer):
-            model = result.clone().get()
-        else:
-            model = result
+        model = results[0]
+        assert isinstance(model, OnnxModel)
 
         return utils.onnx_to_crypten(model.serialized_model)
+    '''
 
     if src == comm.get().get_rank():
         if CID is None:

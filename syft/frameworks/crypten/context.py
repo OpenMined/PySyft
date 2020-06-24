@@ -131,19 +131,6 @@ def run_multiworkers(
 
             rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
 
-            # TODO: run ttp in a specified worker
-            # if crypten.mpc.ttp_required():
-            #     ttp_process, _ = _new_party(
-            #         crypten.mpc.provider.TTPServer,
-            #         world_size,
-            #         world_size,
-            #         master_addr,
-            #         master_port,
-            #         (),
-            #         {},
-            #     )
-            #     ttp_process.start()
-
             if isinstance(func, sy.Plan):
                 plan = func
 
@@ -151,7 +138,14 @@ def run_multiworkers(
                 # (ex: load)
                 hook_plan_building()
                 crypten.init()
-                plan.build()
+
+                # We can build the plan only using a crypten model such that the actions
+                # traced inside the plan would know about it's existance
+                if crypten_model is None:
+                    plan.build()
+                else:
+                    plan.build(crypten_model)
+
                 crypten.uninit()
                 unhook_plan_building()
 
@@ -161,7 +155,8 @@ def run_multiworkers(
                 for worker in workers:
                     plan.send(worker)
 
-                msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port))
+                msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port),
+                                      onnx_model)
 
             else:  # func
                 jail_runner = jail.JailRunner(func=func)

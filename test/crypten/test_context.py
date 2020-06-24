@@ -14,7 +14,6 @@ from syft.frameworks.crypten import utils
 
 th.set_num_threads(1)
 
-
 # Define an example network
 class ExampleNet(nn.Module):
     def __init__(self):
@@ -34,7 +33,7 @@ class ExampleNet(nn.Module):
         return out
 
 
-def test_context(workers):
+def test_context_plan(workers):
     # alice and bob
     n_workers = 2
 
@@ -46,7 +45,7 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
-    def plan_func(crypten=crypten):  # pragma: no cover
+    def plan_func(model=None, crypten=crypten):  # pragma: no cover
         alice_tensor = crypten.load("crypten_data", 0)
         bob_tensor = crypten.load("crypten_data", 1)
 
@@ -207,36 +206,53 @@ def test_duplicate_ids(workers):
         return_values = jail_func()
 
 
-def test_plan_model_inference(workers):
-    # alice and bob
-    n_workers = 2
+def test_context_jail_with_model(workers):
+    dummy_input = th.empty(1, 1, 28, 28)
+    pytorch_model = ExampleNet()
 
     alice = workers["alice"]
     bob = workers["bob"]
 
-    bob._objects.clear()
-    alice._objects.clear()
+    alice_tensor_ptr = th.tensor(dummy_input).tag("crypten_data").send(alice)
 
-    dummy_input = th.empty(1, 1, 28, 28)
-    x_bob = th.rand(10, 1, 28, 28).tag("crypten_data").send(bob)
-    dummy_model = (
-        OnnxModel(utils.pytorch_to_onnx(ExampleNet(), dummy_input)).tag("crypten_model").send(alice)
+    @run_multiworkers(
+        [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
     )
+    def run_encrypted_eval():  # pragma: no cover
+        t = crypten.load("crypten_data", 0)
 
-    @run_multiworkers([alice, bob], master_addr="127.0.0.1")
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
+
+    result = run_encrypted_eval()
+    # compare out
+    assert th.all(result[0][1] == result[1][1])
+
+
+def test_context_plan_with_model(workers):
+    dummy_input = th.empty(1, 1, 28, 28)
+    pytorch_model = ExampleNet()
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    alice_tensor_ptr = th.tensor(dummy_input).tag("crypten_data").send(alice)
+
+    @run_multiworkers(
+        [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
+    )
     @sy.func2plan()
-    def plan_func_model(crypten=crypten):
-        x_bob_enc = crypten.load("crypten_data", 1)
-        model = crypten.load("crypten_model", 0)
-        model.encrypt()
+    def plan_func_model(model=None, crypten=crypten):
+        t = crypten.load("crypten_data", 0)
 
-        y = model(x_bob_enc)
-        return y.get_plain_text()
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
 
-    return_values = plan_func_model()
-
-    ref_value = return_values[0]
-
-    for rank in range(n_workers):
-        assert return_values[rank].shape == th.Size([10, 2])
-        assert th.all(return_values[rank] == ref_value)
+    result = plan_func_model()
+    assert th.all(result[0][1] == result[1][1])

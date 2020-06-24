@@ -1014,8 +1014,10 @@ class CryptenInitPlan(Message):
     allows the exchange of information such as the ip and port of the master party to connect to,
     as well as the rank of the party to run and the number of parties involved."""
 
-    def __init__(self, crypten_context):
+    def __init__(self, crypten_context, model=None):
+        # crypten_context = (rank_to_worker_ids, world_size, master_addr, master_port)
         self.crypten_context = crypten_context
+        self.model = model
 
     def __str__(self):
         """Return a human readable version of this message"""
@@ -1033,7 +1035,9 @@ class CryptenInitPlan(Message):
         Returns:
             tuple: a tuple holding the unique attributes of the message
         """
-        return (sy.serde.msgpack.serde._simplify(worker, message.crypten_context),)
+        return (
+            sy.serde.msgpack.serde._simplify(worker, (*message.crypten_context, message.model)),
+        )
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "CryptenInitPlan":
@@ -1052,7 +1056,9 @@ class CryptenInitPlan(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return CryptenInitPlan(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        msg_tuple = sy.serde.msgpack.serde._detail(worker, msg_tuple[0])
+        *context, model = msg_tuple
+        return CryptenInitPlan(tuple(context), model)
 
 
 class CryptenInitJail(Message):
