@@ -1,7 +1,5 @@
 import syft
 
-import syft.frameworks.crypten.model
-
 import crypten.communicator as comm
 import crypten
 
@@ -62,6 +60,8 @@ def load(tag: str, src: int, **kwargs):
 
         worker = get_worker_from_rank(src)
         results = worker.search(tag)
+
+        # Make sure there is only one result
         assert len(results) == 1
 
         result = crypten.load_from_party(preloaded=results[0], src=src, **kwargs)
