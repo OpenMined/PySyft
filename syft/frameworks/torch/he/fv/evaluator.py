@@ -1,4 +1,5 @@
 import copy
+from enum import Enum
 
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
@@ -8,6 +9,30 @@ from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_
 from syft.frameworks.torch.he.fv.util.operations import multiply_sub_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
 from syft.frameworks.torch.he.fv.plaintext import PlainText
+
+
+class ParamTypes(Enum):
+    """Enumeration for type checking of parameters.
+    """
+
+    CTCT = 1
+    PTPT = 2
+    CTPT = 3
+    PTCT = 4
+
+
+def _typecheck(op1, op2):
+    """Check the type of parameters used and return correct enum type."""
+    if isinstance(op1, CipherText) and isinstance(op2, CipherText):
+        return ParamTypes.CTCT
+    elif isinstance(op1, PlainText) and isinstance(op2, PlainText):
+        return ParamTypes.PTPT
+    elif isinstance(op1, CipherText) and isinstance(op2, PlainText):
+        return ParamTypes.CTPT
+    elif isinstance(op1, PlainText) and isinstance(op2, CipherText):
+        return ParamTypes.PTCT
+    else:
+        return None
 
 
 class Evaluator:
@@ -28,29 +53,44 @@ class Evaluator:
                 otherwise a Ciphertext object with value equivalent to the result of addition
                 operation of two provided arguments.
         """
-        if isinstance(op1, CipherText) and isinstance(op2, CipherText):
+
+        param_type = _typecheck(op1, op2)
+
+        if param_type == ParamTypes.CTCT:
             return self._add_cipher_cipher(op1, op2)
 
-        elif isinstance(op1, PlainText) and isinstance(op2, PlainText):
+        elif param_type == ParamTypes.PTPT:
             return self._add_plain_plain(op1, op2)
 
-        elif isinstance(op1, CipherText) and isinstance(op2, PlainText):
+        elif param_type == ParamTypes.CTPT:
             return self._add_cipher_plain(op1, op2)
 
-        elif isinstance(op1, PlainText) and isinstance(op2, CipherText):
+        elif param_type == ParamTypes.PTCT:
             return self._add_cipher_plain(op2, op1)
 
         else:
             raise TypeError(f"Addition Operation not supported between {type(op1)} and {type(op2)}")
 
     def sub(self, op1, op2):
-        if isinstance(op1, CipherText) and isinstance(op2, CipherText):
+        """Subtracts two operands using FV scheme.
+
+        Args:
+            op1 (Ciphertext/Plaintext): First argument.
+            op2 (Ciphertext/Plaintext): Second argument.
+
+        Returns:
+            A ciphertext object with the value equivalent to the result of the subtraction
+                of two operands.
+        """
+        param_type = _typecheck(op1, op2)
+
+        if param_type == ParamTypes.CTCT:
             return self._sub_cipher_cipher(op1, op2)
 
-        elif isinstance(op1, CipherText) and isinstance(op2, PlainText):
+        elif param_type == ParamTypes.CTPT:
             return self._sub_cipher_plain(op1, op2)
 
-        elif isinstance(op1, PlainText) and isinstance(op2, CipherText):
+        elif param_type == ParamTypes.PTCT:
             return self._sub_cipher_plain(op2, op1)
 
         else:
