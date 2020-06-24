@@ -1289,7 +1289,7 @@ def make_onnxmodel(**kwargs):
                 serialized_model=serialized_model,
                 id=1234,
                 tags={"tag1", "tag2"},
-                description="Test Onnx"
+                description="Test Onnx",
             ),
             "simplified": (
                 CODE[syft.frameworks.crypten.model.OnnxModel],

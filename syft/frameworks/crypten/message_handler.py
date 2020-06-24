@@ -52,7 +52,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
         assert rank is not None
 
         if crypten_model:
-            args = (crypten_model, )
+            args = (crypten_model,)
         else:
             args = ()
 

@@ -155,8 +155,9 @@ def run_multiworkers(
                 for worker in workers:
                     plan.send(worker)
 
-                msg = CryptenInitPlan((rank_to_worker_id, world_size, master_addr, master_port),
-                                      onnx_model)
+                msg = CryptenInitPlan(
+                    (rank_to_worker_id, world_size, master_addr, master_port), onnx_model
+                )
 
             else:  # func
                 jail_runner = jail.JailRunner(func=func)

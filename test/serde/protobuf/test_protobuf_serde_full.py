@@ -46,11 +46,6 @@ samples[syft.generic.pointers.pointer_tensor.PointerTensor] = make_pointertensor
 samples[syft.generic.pointers.pointer_dataset.PointerDataset] = make_pointerdataset
 samples[syft.generic.string.String] = make_string
 
-# Onnx
-samples[
-    syft.frameworks.crypten.model.OnnxModel
-] = make_onnxmodel
-
 # Syft Messages
 samples[syft.messaging.message.ObjectMessage] = make_objectmessage
 samples[syft.messaging.message.TensorCommandMessage] = make_tensor_command_message
