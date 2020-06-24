@@ -28,9 +28,6 @@ from syft.execution.plan import Plan
 from syft.frameworks.crypten.hook.hook import hook_crypten
 from syft.frameworks.crypten.hook.hook import hook_crypten_module
 
-if dependency_check.crypten_available:
-    import crypten
-
 
 class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.

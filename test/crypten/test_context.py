@@ -13,6 +13,7 @@ from syft.frameworks.crypten import utils
 
 th.set_num_threads(1)
 
+
 # Define an example network
 class ExampleNet(nn.Module):
     def __init__(self):
