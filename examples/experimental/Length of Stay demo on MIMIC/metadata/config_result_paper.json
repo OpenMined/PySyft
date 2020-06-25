@@ -1,0 +1,9 @@
+{
+    "batch_size": 100,
+    "nb_epoch": 250,
+    "learning_rate": 0.005,
+    "final_activation": "linear",
+    "loss_name": "mean_squared_error",
+    "ffn_depth": 2,
+    "optim_name": "rmsprop"
+}
