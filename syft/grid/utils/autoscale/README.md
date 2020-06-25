@@ -18,7 +18,6 @@ In addition to a GCP account, you'll need two things to use Terraform to provisi
   - Leave the "Key Type" as JSON.
   - Click "Create" to create the key and save the key file to your system.
   - You can read more about service account keys in Google's documentation.
-  -For more info check this [link.](https://cloud.google.com/iam/docs/creating-managing-service-accounts)
 
 ## Dependencies
 
