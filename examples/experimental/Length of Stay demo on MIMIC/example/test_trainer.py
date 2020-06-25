@@ -24,7 +24,8 @@ def test_trainer() -> None:
     """function showing how to use the train function
     """
     sys.path.append(".")
-    os.chdir(os.path.dirname(os.path.dirname(__file__)))
+    path_dirname = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(path_dirname)
 
     from pytorch import train
 
