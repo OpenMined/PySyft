@@ -6,10 +6,9 @@ import sys
 import json
 import numpy as np
 import logging
+import torch
 import torch.nn as nn
 from pprint import pformat
-from torch import randint as torch_randint
-from torch import float as torch_float
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
@@ -31,10 +30,10 @@ def test_trainer() -> None:
 
     n_features = 10
     n_samples = 1000
-    X = torch_randint(
-        10, size=(n_samples, n_features), dtype=torch_float
+    X = torch.randint(
+        10, size=(n_samples, n_features), dtype=torch.float
     )  # (n_samples, n_features)
-    Y = torch_randint(3, size=(n_samples, 1), dtype=torch_float)  # (n_samples,)
+    Y = torch.randint(3, size=(n_samples, 1), dtype=torch.float)  # (n_samples,)
 
     dataset = TensorDataset(X, Y)
 

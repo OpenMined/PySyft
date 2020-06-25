@@ -3,10 +3,8 @@ Module containing functions useful for training a pytorch neural network
 """
 import numpy as np
 import logging
+import torch
 import torch.optim as optim
-from torch import no_grad
-from torch import manual_seed as torch_manual_seed
-from torch.cuda import manual_seed_all as torch_cuda_manual_seed_all
 import torch.nn.functional as F
 
 
@@ -79,7 +77,7 @@ def _fit(nb_epoch, model, loss_func, opt, train_dl, valid_dl):
 
 def _evaluate(model, loss_func, train_dl, valid_dl, epoch):
     model.eval()
-    with no_grad():
+    with torch.no_grad():
         val_losses, val_nums = zip(*[_loss_batch(model, loss_func, xb, yb) for xb, yb in valid_dl])
         train_losses, train_nums = zip(
             *[_loss_batch(model, loss_func, xb, yb) for xb, yb in train_dl]
@@ -98,5 +96,5 @@ def _loss_batch(model, loss_func, xb, yb, opt=None):
 
 def set_seed(seed: int):
     np.random.seed(seed)
-    torch_manual_seed(seed)
-    torch_cuda_manual_seed_all(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
