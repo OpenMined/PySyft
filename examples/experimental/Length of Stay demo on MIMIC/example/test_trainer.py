@@ -36,12 +36,12 @@ def test_trainer() -> None:
     dataset = TensorDataset(X, Y)
 
     with open(CONFIG_PATH) as json_file:
-        train_args = json.load(json_file)
+        train_params = json.load(json_file)
 
     train_dataloader, val_dataloader, _ = train_val_test_dataloaders(
-        dataset, batch_size=train_args.pop("batch_size")
+        dataset, batch_size=train_params.pop("batch_size")
     )
-    train_args.update(
+    train_params.update(
         {
             "train_dataloader": train_dataloader,
             "val_dataloader": val_dataloader,
@@ -49,8 +49,8 @@ def test_trainer() -> None:
         }
     )
     logging.info("The train function is tested with the following parameters:")
-    logging.info(pformat(train_args))
-    model = train(**train_args)
+    logging.info(pformat(train_params))
+    model = train(**train_params)
 
     assert isinstance(model, nn.Module)
 
