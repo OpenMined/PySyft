@@ -10,8 +10,10 @@ import torch.nn.functional as F
 
 from pytorch.models import FeedforwardNeuralNetwork
 
-
+# The loss functions used must be averaged over the batch to be consistent with
+# the calculation of the metrics.
 LOSSES = {"mean_squared_error": F.mse_loss}
+
 OPTIMIZERS = {"rmsprop": optim.RMSprop}
 
 logger = logging.getLogger(__name__)
@@ -67,22 +69,25 @@ def train(
             opt.step()
             opt.zero_grad()
 
-        test(model, loss_func, train_dataloader, val_dataloader, epoch)
+        logger.info(f"Epoch n°{epoch} completed")
+        test(model, loss_func, val_dataloader, loss_name="Validation")
+        test(model, loss_func, train_dataloader, loss_name="Train")
+
     return model
 
 
-def test(model, loss_func, train_dl, valid_dl, epoch):
+def test(model, loss_func, dataloader, loss_name: str = None):
     model.eval()
+    test_loss = 0
     with torch.no_grad():
-        val_losses, val_nums = zip(*[_loss_batch(model, loss_func, xb, yb) for xb, yb in valid_dl])
-        train_losses, train_nums = zip(
-            *[_loss_batch(model, loss_func, xb, yb) for xb, yb in train_dl]
-        )
-    train_loss = np.sum(np.multiply(train_losses, train_nums)) / np.sum(train_nums)
-    val_loss = np.sum(np.multiply(val_losses, val_nums)) / np.sum(val_nums)
-    logger.info(
-        f"epoch n°{epoch} completed\n" f"train_loss: {train_loss}\n" f"val_loss: {val_loss}"
-    )
+        for data, target in dataloader:
+            # data, target = data.to(device), target.to(device)
+            output = model(data)
+            test_loss += loss_func(output, target, reduction="sum").item()  # sum up batch loss
+
+    test_loss /= len(dataloader.dataset)
+
+    logger.info(f"{loss_name} loss: {test_loss}")
 
 
 def _loss_batch(model, loss_func, xb, yb, opt=None):

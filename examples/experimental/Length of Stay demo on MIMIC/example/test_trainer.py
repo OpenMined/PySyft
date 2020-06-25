@@ -45,6 +45,7 @@ def test_trainer() -> None:
             "train_dataloader": train_dataloader,
             "val_dataloader": val_dataloader,
             "n_features": n_features,
+            "nb_epoch": 2,
         }
     )
     logging.info("The train function is tested with the following parameters:")
