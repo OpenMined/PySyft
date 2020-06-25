@@ -9,7 +9,7 @@ In addition to a GCP account, you'll need two things to use Terraform to provisi
 
 - Google Compute Engine: You'll need to enable Google Compute Engine for your project. Do so now in the console. Make sure the project you're using to follow this guide is selected and click the "Enable" button.
 
-- A GCP service account key: Terraform will access your GCP account by using a service account key. Create one now in the console. When creating the key, use the following settings:
+- A [GCP service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts) key: Terraform will access your GCP account by using a service account key. Create one now in the console. When creating the key, use the following settings:
 
   - Select the project you created in the previous step.
   - Under "Service account", select "New service account".
@@ -18,7 +18,6 @@ In addition to a GCP account, you'll need two things to use Terraform to provisi
   - Leave the "Key Type" as JSON.
   - Click "Create" to create the key and save the key file to your system.
   - You can read more about service account keys in Google's documentation.
-  -For more info check this [link.](https://cloud.google.com/iam/docs/creating-managing-service-accounts)
 
 ## Dependencies
 
@@ -34,25 +33,25 @@ pip install terrascript
 
 ## Usage
 
-### Set Up Budget Alerts(important)
+### Set Up Budget Alerts (important)
 
 Before you start to spin-up instances we encourace to set a budget alert on GCP to avoid suprise costs.
 
-[setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
+[Setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
 
 ### Spin-up Instances using the follwoing commands:-
 
-You can find sample code in test .py  and  test .ipynb
+You can find sample code in ```test.py```  and  ```test.ipynb```
 
-- Import enums from the gcloud_configurations .py
+- Import enums from the ```gcloud_configurations.py```
 
-```bash
+```python
 import syft.grid.autoscale.utils.gcloud_configurations as configs
 ```
 
 - Initialize using :
 
-```bash
+```python
 
 instance_name = gcloud.GoogleCloud(
     credentials="GCP Login/terraf.json",
@@ -63,7 +62,7 @@ instance_name = gcloud.GoogleCloud(
 
 - Create Instnaces using :
 
-```bash
+```python
 instance_name.compute_instance(
     name="new-12345",
     machine_type=configs.MachineType.f1_micro,
@@ -74,7 +73,7 @@ instance_name.compute_instance(
 
 - Create Clusters using :
 
-```bash
+```python
 c1 = instance_name.create_cluster(
     name="my-cluster1",
     machine_type=configs.MachineType.f1_micro,
@@ -87,12 +86,12 @@ c1 = instance_name.create_cluster(
 
 - Run a parameter sweep to figure out the best parameters using :
 
-```bash
+```python
 c1.sweep()
 ```
 
 - Destroy the created instances using :
 
-```bash
+```python
 instance_name.destroy()
 ```
