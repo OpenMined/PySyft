@@ -441,3 +441,15 @@ def test_fv_add_plain_plain(int1, int2):
         == encoder.decode(evaluator.add(op1, op2))
         == encoder.decode(evaluator.add(op2, op1))
     )
+
+
+@pytest.mark.parametrize("val", [(0), (-1), (100), (-1000), (-123), (99), (0xFFF), (0xFFFFFF)])
+def test_fv_negate_cipher(val):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    evaluator = Evaluator(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    op = encryptor.encrypt(encoder.encode(val))
+    assert -val == encoder.decode(decryptor.decrypt(evaluator.negate(op)))
