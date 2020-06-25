@@ -278,8 +278,13 @@ class Evaluator:
         for i in range(len(result)):
             for j in range(len(self.coeff_modulus)):
                 result[i][j] = [
-                    round((x * self.plain_modulus) / self.coeff_modulus[j]) % self.coeff_modulus[j]
+                    round(
+                        ((x * self.plain_modulus) / self.coeff_modulus[j])
+                        / (self.coeff_modulus[j] * self.coeff_modulus[j])
+                    )
+                    % self.coeff_modulus[j]
                     for x in result[i][j]
                 ]
 
+        print("result :", result)
         return CipherText(result)

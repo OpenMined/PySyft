@@ -124,7 +124,8 @@ def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
     poly_mod = np.array([1] + [0] * (poly_len - 1) + [1])
     result = (
         poly.polydiv(
-            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")) % coeff_mod,
+            poly.polymul(np.array(op1[::-1], dtype="object"), np.array(op2[::-1], dtype="object"))
+            % coeff_mod,
             poly_mod,
         )[1]
         % coeff_mod
@@ -133,7 +134,7 @@ def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
     if len(result) != poly_len:
         result += [0] * (poly_len - len(result))
 
-    return [round(x) for x in result]
+    return [round(x) for x in result[::-1]]
 
 
 def poly_negate_mod(op, coeff_mod):

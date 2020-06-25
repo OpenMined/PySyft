@@ -20,6 +20,7 @@ from syft.frameworks.torch.he.fv.util.operations import reverse_bit
 from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
 from syft.frameworks.torch.he.fv.evaluator import Evaluator
+from syft.frameworks.torch.he.fv.secret_key import SecretKey
 
 
 @pytest.mark.parametrize(
@@ -137,9 +138,9 @@ def test_poly_add_mod(op1, op2, coeff_mod, poly_mod, result):
 @pytest.mark.parametrize(
     "op1, op2, coeff_mod, poly_mod, result",
     [
-        ([1, 1], [2, 1], 5, 2, [1, 3]),
-        ([1, 2, 3, 4], [2, 3, 4, 5], 5, 4, [3, 1, 1, 0]),
-        ([1, 2, 3, 4, 5], [1, -4], 3, 5, [0, 1, 1, 1, 1]),
+        ([1, 1], [2, 1], 5, 2, [3, 4]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 5, 4, [0, 2, 4, 4]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, 5, [1, 0, 2, 2, 2]),
         ([4, 4], [-4, -4, -4, -4], 4, 4, [0, 0, 0, 0]),
     ],
 )
@@ -167,6 +168,86 @@ def test_poly_negate_mod(op1, mod, result):
 )
 def test_get_significant_count(ptr, result):
     assert result == get_significant_count(ptr)
+
+
+@pytest.mark.parametrize(
+    "poly_mod, coeff_mod, plain_mod, sk, max_power, result",
+    [
+        (2, [11], 2, [[1, 1]], 2, [[[1, 1]], [[2, 0]]]),
+        (4, [11], 4, [[1, 0, 10, 10]], 3, [[[1, 0, 10, 10]], [[9, 0, 2, 3]], [[5, 0, 6, 4]]]),
+        (
+            8,
+            [131],
+            8,
+            [[1, 0, 130, 130, 0, 130, 0, 1]],
+            4,
+            [
+                [[1, 0, 130, 130, 0, 130, 0, 1]],
+                [[4, 1, 129, 1, 2, 128, 0, 0]],
+                [[7, 130, 126, 10, 6, 125, 6, 4]],
+                [[16, 113, 111, 24, 127, 109, 24, 13]],
+            ],
+        ),
+        (
+            8,
+            [131],
+            8,
+            [[1, 130, 0, 130, 130, 0, 0, 0]],
+            4,
+            [
+                [[1, 130, 0, 130, 130, 0, 0, 0]],
+                [[2, 0, 2, 130, 2, 0, 129, 130]],
+                [[0, 128, 4, 1, 6, 130, 4, 3]],
+                [[123, 123, 0, 117, 0, 123, 8, 0]],
+            ],
+        ),
+    ],
+)
+def test_get_sufficient_sk_power(poly_mod, coeff_mod, plain_mod, sk, max_power, result):
+    ctx = Context(EncryptionParams(poly_mod, coeff_mod, plain_mod))
+    sk = SecretKey(sk)
+    decrypter = Decryptor(ctx, sk)
+    output = decrypter._get_sufficient_sk_power(max_power)
+    assert output == result
+
+
+@pytest.mark.parametrize(
+    "poly_mod, coeff_mod, plain_mod, sk, ct, result",
+    [
+        (2, [17], 2, [[1, 1]], [[[1, 1]], [[1, 1]], [[1, 1]]], [[5, 16]]),
+        (2, [17], 2, [[1, 1]], [[[1, 1]], [[2, 3]], [[15, 5]]], [[16, 6]]),
+        (
+            4,
+            [31],
+            4,
+            [[1, 30, 30, 0]],
+            [[[189, 231, 179, 412]], [[12, 10, 0, 11]], [[134, 234, 11, 199]]],
+            [[12, 10, 18, 2]],
+        ),
+        (
+            4,
+            [1031],
+            4,
+            [[0, 1, 1030, 1030]],
+            [[[1, 2, 3, 4]], [[1, 2, 3, 4]], [[1, 2, 3, 4]], [[1, 2, 3, 4]]],
+            [[10, 1025, 1027, 1019]],
+        ),
+        (
+            4,
+            [1031],
+            4,
+            [[1030, 1, 1, 1030]],
+            [[[1, 1, 1, 1]], [[1, 2, 3, 4]], [[4, 3, 2, 1]], [[0, 0, 0, 0]]],
+            [[9, 1026, 3, 1028]],
+        ),
+    ],
+)
+def test_mul_ct_sk(poly_mod, coeff_mod, plain_mod, sk, ct, result):
+    ctx = Context(EncryptionParams(poly_mod, coeff_mod, plain_mod))
+    sk = SecretKey(sk)
+    decrypter = Decryptor(ctx, sk)
+    output = decrypter._mul_ct_sk(ct)
+    assert output == result
 
 
 @pytest.mark.parametrize(
