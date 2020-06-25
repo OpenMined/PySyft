@@ -13,10 +13,8 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
-print(os.path.dirname(os.path.dirname(__file__)))
-CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "metadata", "config_result_paper.json",
-)
+grand_parent_folder = os.path.dirname(os.path.dirname(__file__))
+CONFIG_PATH = os.path.join(grand_parent_folder, "metadata", "config_result_paper.json")
 
 
 def test_trainer() -> None:
