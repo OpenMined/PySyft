@@ -59,23 +59,19 @@ def train(
         n_input=n_features, hidden_dim=hidden_dim, final_activation=final_activation,
     )
     opt = OPTIMIZERS[optim_name](model.parameters(), lr=learning_rate)
-    _fit(nb_epoch, model, loss_func, opt, train_dataloader, val_dataloader)
-    return model
-
-
-def _fit(nb_epoch, model, loss_func, opt, train_dl, valid_dl):
     for epoch in range(nb_epoch):
         model.train()
-        for xb, yb in train_dl:
+        for xb, yb in train_dataloader:
             loss = loss_func(model(xb), yb)
             loss.backward()
             opt.step()
             opt.zero_grad()
 
-        _evaluate(model, loss_func, train_dl, valid_dl, epoch)
+        test(model, loss_func, train_dataloader, val_dataloader, epoch)
+    return model
 
 
-def _evaluate(model, loss_func, train_dl, valid_dl, epoch):
+def test(model, loss_func, train_dl, valid_dl, epoch):
     model.eval()
     with torch.no_grad():
         val_losses, val_nums = zip(*[_loss_batch(model, loss_func, xb, yb) for xb, yb in valid_dl])
