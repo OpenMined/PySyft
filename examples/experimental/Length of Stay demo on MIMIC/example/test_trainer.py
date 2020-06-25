@@ -1,17 +1,12 @@
 """module containing functions showing how to use the other functions in the
     Length of Stay demo on MIMIC folder
 """
-if __name__ == "__main__":
-    import os
-    import sys
-
-    sys.path.append(".")
-    os.chdir(os.path.dirname(os.path.dirname(__file__)))
-
 import os
+import sys
 import json
 import numpy as np
 import logging
+import torch.nn as nn
 from pprint import pformat
 from torch import randint as torch_randint
 from torch import float as torch_float
@@ -19,15 +14,20 @@ from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 
-
-from pytorch import train
-
-CONFIG_PATH = os.path.join("metadata", "config_result_paper.json")
+print(os.path.dirname(os.path.dirname(__file__)))
+CONFIG_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "metadata", "config_result_paper.json",
+)
 
 
 def test_trainer() -> None:
     """function showing how to use the train function
     """
+    sys.path.append(".")
+    os.chdir(os.path.dirname(os.path.dirname(__file__)))
+
+    from pytorch import train
+
     n_features = 10
     n_samples = 1000
     X = torch_randint(
@@ -52,7 +52,9 @@ def test_trainer() -> None:
     )
     logging.info("The train function is tested with the following parameters:")
     logging.info(pformat(train_args))
-    train(**train_args)
+    model = train(**train_args)
+
+    assert isinstance(model, nn.Module)
 
 
 def train_val_test_dataloaders(
@@ -95,5 +97,4 @@ def train_val_test_dataloaders(
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    os.chdir(os.path.dirname(os.path.dirname(__file__)))
     test_trainer()
