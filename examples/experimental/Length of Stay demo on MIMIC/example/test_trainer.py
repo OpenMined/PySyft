@@ -11,7 +11,6 @@ import torch.nn as nn
 from pprint import pformat
 from torch.utils.data import TensorDataset
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
 
 grand_parent_folder = os.path.dirname(os.path.dirname(__file__))
 CONFIG_PATH = os.path.join(grand_parent_folder, "metadata", "config_result_paper.json")
@@ -56,43 +55,28 @@ def test_trainer() -> None:
 
 
 def train_val_test_dataloaders(
-    dataset: object, batch_size: int, val_size: float = 0.2, test_size: float = 0.2, seed: int = 1,
+    dataset: object, batch_size: int, val_frac: float = 0.2, test_frac: float = 0.2, seed: int = 1,
 ) -> (object, object, object):
-    """Function that creates 3 DataLoaders for train, validation and test sets
+    """Function that creates 3 DataLoaders for train, validation, test sets
         respectively
     """
     dataset_size = len(dataset)
-    indices = list(range(dataset_size))
-    split_val = int(np.floor(val_size * dataset_size))
-    split_test = split_val + int(np.floor(test_size * dataset_size))
+    lenghts = []
+    lenghts.append(int(np.floor(val_frac * dataset_size)))
+    lenghts.append(int(np.floor(test_frac * dataset_size)))
+    lenghts.insert(0, dataset_size - lenghts[0] - lenghts[1])
+    assert lenghts[2] >= 0
 
-    np.random.seed(seed)
-    np.random.shuffle(indices)
-    val_indices, test_indices, train_indices = (
-        indices[:split_val],
-        indices[split_val:split_test],
-        indices[split_test:],
-    )
+    datasets = torch.utils.data.random_split(dataset, lenghts)
+    logging.debug(f"datasets lenghts: {[len(data) for data in datasets]}")
 
-    train_sampler = SubsetRandomSampler(train_indices)
-    valid_sampler = SubsetRandomSampler(val_indices)
-    test_sampler = SubsetRandomSampler(test_indices)
-
-    train_dataloader = DataLoader(
-        dataset, batch_size=batch_size, drop_last=True, sampler=train_sampler
-    )
-
-    val_dataloader = DataLoader(
-        dataset, batch_size=batch_size, drop_last=True, sampler=valid_sampler
-    )
-
-    test_dataloader = DataLoader(
-        dataset, batch_size=batch_size, drop_last=True, sampler=test_sampler
-    )
-
-    return train_dataloader, val_dataloader, test_dataloader
+    dataloaders = [
+        DataLoader(dataset, batch_size=batch_size, drop_last=True) for dataset in datasets
+    ]
+    logging.debug(f"dataloaders lenghts: {[len(data) for data in dataloaders]}")
+    return dataloaders  # [train_dataloader, validation_dataloader, test_dataloader]
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     test_trainer()
