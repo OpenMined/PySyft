@@ -25,6 +25,7 @@ class NodeClient(WebsocketClientWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
+        timeout: int = None,
     ):
         """
         Args:
@@ -44,6 +45,7 @@ class NodeClient(WebsocketClientWorker):
             verbose : a verbose option - will print all messages
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
+            timeout : connection's timeout with the remote worker.
         """
         self.address = address
         self.encoding = encoding
@@ -63,6 +65,7 @@ class NodeClient(WebsocketClientWorker):
             log_msgs,
             verbose,
             None,  # initial data
+            timeout,
         )
 
         # Update Node reference using node's Id given by the remote node
