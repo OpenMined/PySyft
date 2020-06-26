@@ -25,9 +25,11 @@ def test_trainer() -> None:
 
     from pytorch import train
     from pytorch import Arguments
+    from pytorch.trainer import set_seed
 
     n_features = 10
     n_samples = 1000
+    set_seed(1)
     X = torch.randint(
         10, size=(n_samples, n_features), dtype=torch.float
     )  # (n_samples, n_features)
