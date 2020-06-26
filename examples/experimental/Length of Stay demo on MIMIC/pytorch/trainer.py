@@ -56,7 +56,7 @@ def train(
     Return:
         the trained model
     """
-    set_seed(args)
+    set_seed(seed=args.seed)
 
     loss_func = LOSSES[loss_name]
     model = FeedforwardNeuralNetwork(
@@ -93,12 +93,11 @@ def test(args, model, loss_func, dataloader, loss_name: str = None):
     logger.info(f"{loss_name} loss: {test_loss}")
 
 
-def set_seed(args: object):
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if args.device == "cuda":
-        torch.cuda.manual_seed_all(args.seed)
+def set_seed(seed: object):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 class Arguments:
