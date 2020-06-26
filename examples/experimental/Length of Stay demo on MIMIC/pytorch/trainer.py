@@ -1,6 +1,7 @@
 """
 Module containing functions useful for training a pytorch neural network
 """
+import random
 import numpy as np
 import logging
 import torch
@@ -20,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def train(
+    args: object,
     train_dataloader: object,
     val_dataloader: object,
     n_features: int,
@@ -30,11 +32,11 @@ def train(
     learning_rate: float = 0.005,
     ffn_depth: int = 2,
     optim_name: str = "rmsprop",
-    seed: int = 1,
 ) -> object:
     """performs the training of FeedforwardNeuralNetwork
 
     Args:
+        args: an instance of Arguments
         train_dataloader : an instance of the torch DataLoader class containing
             the training data
         val_dataloader : an instance of the torch DataLoader class containing
@@ -54,34 +56,35 @@ def train(
     Return:
         the trained model
     """
-    set_seed(seed)
+    set_seed(args)
 
     loss_func = LOSSES[loss_name]
     model = FeedforwardNeuralNetwork(
         n_input=n_features, hidden_dim=hidden_dim, final_activation=final_activation,
-    )
+    ).to(args.device)
     opt = OPTIMIZERS[optim_name](model.parameters(), lr=learning_rate)
     for epoch in range(nb_epoch):
         model.train()
         for xb, yb in train_dataloader:
+            xb, yb = xb.to(args.device), yb.to(args.device)
             loss = loss_func(model(xb), yb)
             loss.backward()
             opt.step()
             opt.zero_grad()
 
         logger.info(f"Epoch n°{epoch} completed")
-        test(model, loss_func, val_dataloader, loss_name="Validation")
-        test(model, loss_func, train_dataloader, loss_name="Train")
+        test(args, model, loss_func, val_dataloader, loss_name="Validation")
+        test(args, model, loss_func, train_dataloader, loss_name="Train")
 
     return model
 
 
-def test(model, loss_func, dataloader, loss_name: str = None):
+def test(args, model, loss_func, dataloader, loss_name: str = None):
     model.eval()
     test_loss = 0
     with torch.no_grad():
         for data, target in dataloader:
-            # data, target = data.to(device), target.to(device)
+            data, target = data.to(args.device), target.to(args.device)
             output = model(data)
             test_loss += loss_func(output, target, reduction="sum").item()  # sum up batch loss
 
@@ -90,12 +93,29 @@ def test(model, loss_func, dataloader, loss_name: str = None):
     logger.info(f"{loss_name} loss: {test_loss}")
 
 
-def _loss_batch(model, loss_func, xb, yb, opt=None):
-    loss = loss_func(model(xb), yb)
-    return loss.item(), len(xb)
+def set_seed(args: object):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if args.device == "cuda":
+        torch.cuda.manual_seed_all(args.seed)
 
 
-def set_seed(seed: int):
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+class Arguments:
+    def __init__(self):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.batch_size = 100
+        self.nb_epoch = 250
+        self.learning_rate = 0.005
+        self.final_activation = "linear"
+        self.loss_name = "mean_squared_error"
+        self.ffn_depth = 2
+        self.optim_name = "rmsprop"
+        self.seed = 1
+
+        self.train_dataloader = None
+        self.val_dataloader = None
+        self.n_features = None
+
+    def from_dico(self, dico):
+        self.__dict__.update(dico)

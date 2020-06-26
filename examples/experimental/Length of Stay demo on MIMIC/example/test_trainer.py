@@ -24,6 +24,7 @@ def test_trainer() -> None:
     os.chdir(path_dirname)
 
     from pytorch import train
+    from pytorch import Arguments
 
     n_features = 10
     n_samples = 1000
@@ -48,9 +49,24 @@ def test_trainer() -> None:
             "nb_epoch": 2,
         }
     )
+
+    args = Arguments()
+    args.from_dico(train_params)
+
     logging.info("The train function is tested with the following parameters:")
     logging.info(pformat(train_params))
-    model = train(**train_params)
+    model = train(
+        args=args,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
+        n_features=n_features,
+        final_activation=args.final_activation,
+        loss_name=args.loss_name,
+        nb_epoch=args.nb_epoch,
+        learning_rate=args.learning_rate,
+        ffn_depth=args.ffn_depth,
+        optim_name=args.optim_name,
+    )
 
     assert isinstance(model, nn.Module)
 
