@@ -59,13 +59,17 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
             return self.translate_multi_action(translated_cmds, action, role)
 
         for cmd in translated_cmds:
-            role.actions.append(self.create_action(action, cmd))
+            role_action = (
+                (".".join(cmd.attrs), None, tuple(cmd.args), cmd.kwargs),
+                PlaceHolder(id=action.return_ids[0]),
+            )
+            role.register_action(role_action, ComputationAction)
 
     def translate_framework(self, to_framework: str) -> Role:
         """Translates current plan's Role to specified framework"""
         plan = self.plan.copy()
-        role = plan.role.copy()
-        role.reset()
+        new_role = plan.role.copy()
+        new_role.reset()
         # Check to see if plan has been translated to this framework yet
         if plan.roles.get(to_framework, None) is not None:
             plan.default_framework = to_framework
@@ -73,8 +77,8 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
 
         new_actions = []
         for action in plan.role.actions:
-            self.translate_action(action, to_framework, role)
-        return role
+            self.translate_action(action, to_framework, new_role)
+        return new_role
 
 
 class PlanTranslatorTfjs(PlanTranslatorThreepio):
