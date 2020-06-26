@@ -2,9 +2,7 @@
 Changelog
 =========
 
-Version 0.1
-===========
+Version 0.3.0
+=============
 
-- Feature A added
-- FIX: nasty bug #1729 fixed
-- add your changes here!
+- PyScaffold For Initial Project - https://github.com/OpenMined/PySyft/issues/3721

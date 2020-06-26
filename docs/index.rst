@@ -11,6 +11,8 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   User Guide <user_guide>
+   Contributor Guide <contributor_guide>
    License <license>
    Authors <authors>
    Changelog <changelog>
@@ -21,9 +23,9 @@ Description
 
 Most software libraries let you compute over information you own and see inside of machines you control. However, this means that you cannot compute on information without first obtaining (at least partial) ownership of that information. It also means that you cannot compute using machines without first obtaining control over those machines. This is very limiting to human collaboration in all areas of life and systematically drives the centralization of data, because you cannot work with a bunch of data without first putting it all in one (central) place.
 
-The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (general) control over.
+The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (general) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used for computation.
 
-This library is the centerpiece of the Syft ecosystem. It has two primary purposes. You can either use PySyf to:
+This library is the centerpiece of the Syft ecosystem. It has two primary purposes. You can either use PySyft to:
 
 1) **Dynamic:** Directly compute over data you cannot see.
 2) **Static:** Create static graphs of computation which can be deployed/scaled at a later date on different compute.
@@ -52,6 +54,18 @@ However, the Syft ecosystem only focuses on consistent object serialization/dese
 .. _GridNode: https://github.com/OpenMined/GridNode
 .. _GridMonitor: https://github.com/OpenMined/GridMonitor
 
+Want to Use PySyft?
+===================
+
+If you would like to become a user of PySyft, please progress to our :ref:`contributor_guide`.
+
+Want to Develop PySyft?
+=======================
+
+If you would like to become a developer of PySyft, please see our :ref:`contributor_guide`. This documentation will help you setup your development environment, give you a roadmap for learning the codebase, and help you find your first project to contribute.
+
+
+
 .. note::
 
     This is the main page of your project's `Sphinx`_ documentation.
@@ -73,7 +87,6 @@ However, the Syft ecosystem only focuses on consistent object serialization/dese
 
 Indices and tables
 ==================
-
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`

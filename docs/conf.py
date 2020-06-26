@@ -44,8 +44,8 @@ except FileNotFoundError:
 try:
     import sphinx
     from pkg_resources import parse_version
-
-    cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir}"
+    # found this --module-first here shorturl.at/iDKNW
+    cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir} --module-first"
     cmd_line = cmd_line_template.format(outputdir=output_dir, moduledir=module_dir)
 
     args = cmd_line.split(" ")

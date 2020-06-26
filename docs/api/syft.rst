@@ -1,6 +1,11 @@
 syft package
 ============
 
+.. automodule:: syft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Subpackages
 -----------
 
@@ -45,11 +50,3 @@ syft.store module
    :undoc-members:
    :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: syft
-   :members:
-   :undoc-members:
-   :show-inheritance:
