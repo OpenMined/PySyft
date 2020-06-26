@@ -3,7 +3,9 @@ from enum import Enum
 import numpy as np
 from numpy.polynomial import polynomial as poly
 
+from syft.frameworks.torch.he.fv.util.operations import poly_add
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
+from syft.frameworks.torch.he.fv.util.operations import poly_mul
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
@@ -223,8 +225,8 @@ class Evaluator:
                 "Cannot multiply ciphertext of size >2, Perform relinearisation operation."
             )
 
-        ct10, ct11 = copy.deepcopy(ct1)
-        ct20, ct21 = copy.deepcopy(ct2)
+        ct10, ct11 = ct1
+        ct20, ct21 = ct2
 
         # lenght of coeff_modulus determine no of polynomials.
         result = [
@@ -233,53 +235,25 @@ class Evaluator:
             [0] * len(self.coeff_modulus),
         ]
 
-        # coefficients raised by q(coefficient modulus)
+        # coefficients raised by q(coefficient modulus) to avoid precision issue while
+        # calculating (t/q * polynomial).
         for i in range(len(self.coeff_modulus)):
             ct10[i] = [x * self.coeff_modulus[i] for x in ct10[i]]
             ct11[i] = [x * self.coeff_modulus[i] for x in ct11[i]]
             ct20[i] = [x * self.coeff_modulus[i] for x in ct20[i]]
             ct21[i] = [x * self.coeff_modulus[i] for x in ct21[i]]
 
-        poly_mod = np.array([1] + [0] * (self.poly_modulus - 1) + [1])
         for i in range(len(self.coeff_modulus)):
 
-            result[0][i] = (
-                poly.polydiv(
-                    poly.polymul(
-                        np.array(ct10[i], dtype="object"), np.array(ct20[i], dtype="object")
-                    ),
-                    poly_mod,
-                )[1]
-            ).tolist()
+            result[0][i] = poly_mul(ct10[i], ct20[i], self.poly_modulus)
 
-            result[1][i] = (
-                poly.polydiv(
-                    poly.polyadd(
-                        np.array(
-                            poly.polymul(
-                                np.array(ct11[i], dtype="object"), np.array(ct20[i], dtype="object")
-                            ),
-                            dtype="object",
-                        ),
-                        np.array(
-                            poly.polymul(
-                                np.array(ct10[i], dtype="object"), np.array(ct21[i], dtype="object")
-                            ),
-                            dtype="object",
-                        ),
-                    ),
-                    poly_mod,
-                )[1]
-            ).tolist()
+            result[1][i] = poly_add(
+                poly_mul(ct11[i], ct20[i], self.poly_modulus),
+                poly_mul(ct10[i], ct21[i], self.poly_modulus),
+                self.poly_modulus,
+            )
 
-            result[2][i] = (
-                poly.polydiv(
-                    poly.polymul(
-                        np.array(ct11[i], dtype="object"), np.array(ct21[i], dtype="object")
-                    ),
-                    poly_mod,
-                )[1]
-            ).tolist()
+            result[2][i] = poly_mul(ct11[i], ct21[i], self.poly_modulus)
 
         for i in range(len(result)):
             for j in range(len(self.coeff_modulus)):
