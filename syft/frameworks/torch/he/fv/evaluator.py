@@ -12,8 +12,7 @@ from syft.frameworks.torch.he.fv.plaintext import PlainText
 
 
 class ParamTypes(Enum):
-    """Enumeration for type checking of parameters.
-    """
+    """Enumeration for type checking of parameters."""
 
     CTCT = 1
     PTPT = 2
