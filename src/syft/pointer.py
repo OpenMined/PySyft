@@ -4,7 +4,6 @@ import random
 
 
 class Pointer:
-
     def __init__(self, location, id_at_location=None):
         if id_at_location is None:
             id_at_location = random.randint(0, 1000)

@@ -18,9 +18,10 @@ Note: This skeleton file can be safely removed if not needed!
 import torch
 
 module_type = type(torch)
-func_type = type(lambda x:x)
+func_type = type(lambda x: x)
 builtin_func_type = type(torch.ones)
 class_type = type(func_type)
+
 
 def unsplit(list_of_things, separator="."):
     out = ""

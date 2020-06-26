@@ -12,6 +12,7 @@ from ..ast import Globals
 
 from ..pointer import Pointer
 
+
 class Worker:
     def __init__(self, id):
         self.id = id
@@ -19,8 +20,10 @@ class Worker:
         self.frameworks = Globals()
         for fw in sy.lib.supported_frameworks:
             for name, ast in fw.ast.attrs.items():
-                if(name in self.frameworks.attrs):
-                    raise KeyError("Framework already imported. Why are you importing it twice?")
+                if name in self.frameworks.attrs:
+                    raise KeyError(
+                        "Framework already imported. Why are you importing it twice?"
+                    )
                 self.frameworks.attrs[name] = ast
 
         self.msg_router = {}
@@ -28,7 +31,9 @@ class Worker:
         self.msg_router[SaveObjectMessage] = self.process_save_object_message
         self.msg_router[GetObjectMessage] = self.process_get_object_message
         self.msg_router[DeleteObjectMessage] = self.process_delete_object_message
-        self.msg_router[RunFunctionOrConstructorMessage] = self.process_run_function_or_constructor_message
+        self.msg_router[
+            RunFunctionOrConstructorMessage
+        ] = self.process_run_function_or_constructor_message
 
     def process_run_class_method_message(self, msg):
 
@@ -64,7 +69,9 @@ class Worker:
                 args_with_objects[name] = kwarg
 
         # Step 2: Execute method
-        result = self.frameworks(msg.path)(self_is_object, *args_with_objects, **kwargs_with_objects)
+        result = self.frameworks(msg.path)(
+            self_is_object, *args_with_objects, **kwargs_with_objects
+        )
 
         # Step 3: Store result
         self.store.store_object(result_id_at_location, result)

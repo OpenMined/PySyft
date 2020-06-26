@@ -20,8 +20,12 @@ class Globals(Module):
 
         if framework_name not in self.attrs:
             if framework_reference is not None:
-                self.attrs[framework_name] = Module(framework_name, unsplit(path), framework_reference)
+                self.attrs[framework_name] = Module(
+                    framework_name, unsplit(path), framework_reference
+                )
             else:
-                raise Exception("You must pass in a framework object the first time you add method within a framework.")
+                raise Exception(
+                    "You must pass in a framework object the first time you add method within a framework."
+                )
 
         self.attrs[framework_name].add_path(path, 1)

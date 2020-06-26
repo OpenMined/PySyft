@@ -1,8 +1,8 @@
 from syft.worker.worker import Worker
 from syft.worker.virtual.virtual_client import VirtualClient
 
-class VirtualWorker(Worker):
 
+class VirtualWorker(Worker):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.client = VirtualClient(self.id, self, verbose=False)

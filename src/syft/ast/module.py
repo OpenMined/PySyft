@@ -27,12 +27,20 @@ class Module(Attribute):
             attr_ref = getattr(self.ref, path[index])
 
             if isinstance(attr_ref, module_type):
-                self.attrs[path[index]] = Module(path[index], unsplit(path[:index + 1]), attr_ref)
+                self.attrs[path[index]] = Module(
+                    path[index], unsplit(path[: index + 1]), attr_ref
+                )
             elif isinstance(attr_ref, class_type):
-                self.attrs[path[index]] = Class(path[index], unsplit(path[:index + 1]), attr_ref)
+                self.attrs[path[index]] = Class(
+                    path[index], unsplit(path[: index + 1]), attr_ref
+                )
             elif isinstance(attr_ref, func_type):
-                self.attrs[path[index]] = Function(path[index], unsplit(path[:index + 1]), attr_ref)
+                self.attrs[path[index]] = Function(
+                    path[index], unsplit(path[: index + 1]), attr_ref
+                )
             elif isinstance(attr_ref, builtin_func_type):
-                self.attrs[path[index]] = Function(path[index], unsplit(path[:index + 1]), attr_ref)
+                self.attrs[path[index]] = Function(
+                    path[index], unsplit(path[: index + 1]), attr_ref
+                )
 
         self.attrs[path[index]].add_path(path, index + 1)

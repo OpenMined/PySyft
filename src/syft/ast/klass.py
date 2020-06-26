@@ -23,15 +23,18 @@ class Class(Callable):
             # TODO: lookup actual return type instead of just guessing that it's identical
             result = getattr(self, self.pointer_name)(location=__self.location)
 
-            cmd = RunClassMethodMessage(attr_path_and_name, __self, args, kwargs, result.id_at_location)
+            cmd = RunClassMethodMessage(
+                attr_path_and_name, __self, args, kwargs, result.id_at_location
+            )
             __self.location.send_msg(cmd)
 
             return result
 
         attrs = {}
         for attr_name, attr in self.attrs.items():
-            attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(attr, attr.path_and_name, _self, args,
-                                                                               kwargs)
+            attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(
+                attr, attr.path_and_name, _self, args, kwargs
+            )
 
         klass_pointer = type(self.pointer_name, (Pointer,), attrs)
 
@@ -52,4 +55,4 @@ class Class(Callable):
             return ptr
 
         # using curse because Numpy tries to lock down custom attributes
-        curse(outer_self.ref, 'send', send)
+        curse(outer_self.ref, "send", send)
