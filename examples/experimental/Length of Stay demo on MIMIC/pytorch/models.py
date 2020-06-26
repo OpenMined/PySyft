@@ -9,7 +9,7 @@ https://www.sciencedirect.com/science/article/pii/S1532046418300716
 """
 import torch.nn as nn
 
-ACTIVATION_FUNCTIONS = {"linear": None, "sigmoid": nn.Sigmoid, "relu": nn.ReLU}
+ACTIVATION_FUNCTIONS = ["relu", "sigmoid", "linear"]
 
 
 class FeedforwardNeuralNetwork(nn.Module):
@@ -47,11 +47,15 @@ class FeedforwardNeuralNetwork(nn.Module):
             self.hidden_layers.append(
                 nn.Sequential(nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid())
             )
-        if ACTIVATION_FUNCTIONS[final_activation]:
-            self.output_layer = nn.Sequential(
-                nn.Linear(hidden_dim, 1), ACTIVATION_FUNCTIONS[final_activation](),
-            )
-        else:
+        assert final_activation.lower() in ACTIVATION_FUNCTIONS, (
+            f"final activatation function {final_activation} isn't correct."
+            f"It shoud be one of them: {ACTIVATION_FUNCTIONS}"
+        )
+        if final_activation.lower() == "relu":
+            self.output_layer = nn.Sequential(nn.Linear(hidden_dim, 1), nn.ReLU(),)
+        elif final_activation.lower() == "sigmoid":
+            self.output_layer = nn.Sequential(nn.Linear(hidden_dim, 1), nn.Sigmoid(),)
+        elif final_activation.lower() == "linear":
             self.output_layer = nn.Linear(hidden_dim, 1)
 
     def forward(self, x):
