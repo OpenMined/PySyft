@@ -577,10 +577,20 @@ def test_fv_sub_cipher_plain(int1, int2):
     )
 
 @pytest.mark.parametrize(
-    "int1, int2", [(-1, 1), (0, 0), (100, 10), (1000, 0), (-1000, 100), (-99, -99), (-99, 99)]
+    "int1, int2",
+    [
+        (0x12345678, 0x54321),
+        (-1, 1),
+        (0, 0),
+        (100, 10),
+        (1000, 0),
+        (-1000, 100),
+        (-99, -99),
+        (-99, 99),
+    ],
 )
 def test_fv_mul_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key

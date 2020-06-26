@@ -255,11 +255,17 @@ class Evaluator:
             result[1][i] = (
                 poly.polydiv(
                     poly.polyadd(
-                        poly.polymul(
-                            np.array(ct11[i], dtype="object"), np.array(ct20[i], dtype="object")
+                        np.array(
+                            poly.polymul(
+                                np.array(ct11[i], dtype="object"), np.array(ct20[i], dtype="object")
+                            ),
+                            dtype="object",
                         ),
-                        poly.polymul(
-                            np.array(ct10[i], dtype="object"), np.array(ct21[i], dtype="object")
+                        np.array(
+                            poly.polymul(
+                                np.array(ct10[i], dtype="object"), np.array(ct21[i], dtype="object")
+                            ),
+                            dtype="object",
                         ),
                     ),
                     poly_mod,
@@ -286,5 +292,4 @@ class Evaluator:
                     for x in result[i][j]
                 ]
 
-        print("result :", result)
         return CipherText(result)
