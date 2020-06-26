@@ -42,9 +42,11 @@ class FeedforwardNeuralNetwork(nn.Module):
         if not hidden_dim:
             hidden_dim = 8 * n_input
         self.input_layer = nn.Sequential(nn.Linear(n_input, hidden_dim), nn.Sigmoid())
-        self.hidden_layers = [
-            nn.Sequential(nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid()) for _ in range(ffn_depth)
-        ]
+        self.hidden_layers = nn.ModuleList()
+        for _ in range(ffn_depth - 1):
+            self.hidden_layers.append(
+                nn.Sequential(nn.Linear(hidden_dim, hidden_dim), nn.Sigmoid())
+            )
         if ACTIVATION_FUNCTIONS[final_activation]:
             self.output_layer = nn.Sequential(
                 nn.Linear(hidden_dim, 1), ACTIVATION_FUNCTIONS[final_activation](),
