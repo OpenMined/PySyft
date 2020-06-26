@@ -26,7 +26,7 @@ class FeedforwardNeuralNetwork(nn.Module):
         self,
         n_input: int,
         hidden_dim: int = None,
-        ffn_depth: int = 1,
+        ffn_depth: int = 2,
         final_activation: str = "linear",
     ):
         """
