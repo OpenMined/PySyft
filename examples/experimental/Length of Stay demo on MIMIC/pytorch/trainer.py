@@ -117,5 +117,5 @@ class Arguments:
         self.val_dataloader = None
         self.n_features = None
 
-    def from_dico(self, dico):
+    def from_dict(self, dico):
         self.__dict__.update(dico)

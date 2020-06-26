@@ -51,7 +51,7 @@ def test_trainer() -> None:
     )
 
     args = Arguments()
-    args.from_dico(train_params)
+    args.from_dict(train_params)
 
     logging.info("The train function is tested with the following parameters:")
     logging.info(pformat(train_params))
