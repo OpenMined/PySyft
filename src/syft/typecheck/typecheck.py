@@ -15,16 +15,16 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
     Decorator to enforce typechecking using the type hints of a function.
 
     If you use this decorator you have to:
-        1. type your arguments and return type using explicit typing.
-        2. address those arguments by their keys.
+    1. type your arguments and return type using explicit typing.
+    2. address those arguments by their keys.
 
     Example:
 
-        @type_hints
-        def func(x: int, y: int) -> int:
-            return x + y
+    @type_hints
+    def func(x: int, y: int) -> int:
+    return x + y
 
-        func(x = 1, y = 2)
+    func(x = 1, y = 2)
     """
     signature = inspect.signature(decorated)
     stack_message_error = None
