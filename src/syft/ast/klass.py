@@ -1,12 +1,12 @@
-# from .. import ast
+from .. import ast
 from .. import message as msg
 from .. import pointer as ptr
 
 from forbiddenfruit import curse
 
 
-# class Class(ast.callable.Callable):
-class Class(object):
+class Class(ast.callable.Callable):
+
     ""
 
     def __init__(self, name, path_and_name, ref):
@@ -31,7 +31,7 @@ class Class(object):
             attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(attr, attr.path_and_name, _self, args,
                                                                                kwargs)
 
-        klass_pointer = type(self.pointer_name, (ptr.Pointer,), attrs)
+        klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
 
         setattr(self, self.pointer_name, klass_pointer)
 

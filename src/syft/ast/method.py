@@ -1,5 +1,5 @@
-# from .. import ast
-#
-#
-# class Method(ast.callable.Callable):
-#     """"""
+from .. import ast
+
+
+class Method(ast.callable.Callable):
+    """"""

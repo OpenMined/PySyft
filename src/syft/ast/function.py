@@ -1,5 +1,5 @@
-# from .. import ast
-#
-#
-# class Function(ast.callable.Callable):
-#     """"""
+from .. import ast
+
+
+class Function(ast.callable.Callable):
+    """"""

@@ -5,6 +5,7 @@ from .util import module_type
 
 
 class Callable(ast.attribute.Attribute):
+
     """A method, function, or constructor which can be directly executed"""
 
     def __call__(self, path, index):
@@ -22,4 +23,4 @@ class Callable(ast.attribute.Attribute):
                 if isinstance(attr_ref, module_type):
                     raise Exception("Module cannot be attr of callable.")
                 else:
-                    self.attrs[path[index]] = sy.ast.Method(path[index], unsplit(path[:index + 1]), attr_ref)
+                    self.attrs[path[index]] = ast.method.Method(path[index], unsplit(path[:index + 1]), attr_ref)

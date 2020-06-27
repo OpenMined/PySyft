@@ -1,4 +1,4 @@
-# from . import torch
-# from . import numpy
-#
-# supported_frameworks = [torch, numpy]
+from . import torch
+from . import numpy
+
+supported_frameworks = [torch, numpy]

@@ -1,1 +1,1 @@
-# from .pointer import Pointer
+from . import pointer
