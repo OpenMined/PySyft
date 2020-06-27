@@ -28,8 +28,9 @@ class Class(ast.callable.Callable):
 
         attrs = {}
         for attr_name, attr in self.attrs.items():
-            attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(attr, attr.path_and_name, _self, args,
-                                                                               kwargs)
+            attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(
+                attr, attr.path_and_name, _self, args, kwargs
+            )
 
         klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
 
@@ -50,4 +51,4 @@ class Class(ast.callable.Callable):
             return ptr
 
         # using curse because Numpy tries to lock down custom attributes
-        curse(outer_self.ref, 'send', send)
+        curse(outer_self.ref, "send", send)

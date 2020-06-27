@@ -2,7 +2,6 @@ from .. import ast
 from abc import ABC
 
 class Attribute(ABC):
-
     def __init__(self, name, path_and_name, ref):
         self.name = name  # __add__
         self.path_and_name = path_and_name  # torch.Tensor.__add__
