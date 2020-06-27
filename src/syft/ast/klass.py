@@ -1,14 +1,12 @@
-from syft.ast.callable import Callable
-
-from ..message import RunClassMethodMessage
-from ..message import SaveObjectMessage
-
-from ..pointer import Pointer
+# from .. import ast
+from .. import message as msg
+from .. import pointer as ptr
 
 from forbiddenfruit import curse
 
 
-class Class(Callable):
+# class Class(ast.callable.Callable):
+class Class(object):
     ""
 
     def __init__(self, name, path_and_name, ref):
@@ -23,7 +21,7 @@ class Class(Callable):
             # TODO: lookup actual return type instead of just guessing that it's identical
             result = getattr(self, self.pointer_name)(location=__self.location)
 
-            cmd = RunClassMethodMessage(attr_path_and_name, __self, args, kwargs, result.id_at_location)
+            cmd = msg.RunClassMethodMessage(attr_path_and_name, __self, args, kwargs, result.id_at_location)
             __self.location.send_msg(cmd)
 
             return result
@@ -33,7 +31,7 @@ class Class(Callable):
             attrs[attr_name] = lambda _self, *args, **kwargs: run_class_method(attr, attr.path_and_name, _self, args,
                                                                                kwargs)
 
-        klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+        klass_pointer = type(self.pointer_name, (ptr.Pointer,), attrs)
 
         setattr(self, self.pointer_name, klass_pointer)
 
@@ -43,7 +41,7 @@ class Class(Callable):
             ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
 
             # Step 2: create message which contains object to send
-            obj_msg = SaveObjectMessage(id=ptr.id_at_location, obj=self)
+            obj_msg = msg.SaveObjectMessage(id=ptr.id_at_location, obj=self)
 
             # Step 3: send message
             location.send_msg(obj_msg)

@@ -1,5 +1,5 @@
-from syft.ast.callable import Callable
-
-
-class Function(Callable):
-    """"""
+# from .. import ast
+#
+#
+# class Function(ast.callable.Callable):
+#     """"""

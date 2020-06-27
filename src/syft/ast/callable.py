@@ -1,12 +1,10 @@
-import syft as sy
-
-from syft.ast.attribute import Attribute
+from .. import ast
 
 from .util import unsplit
 from .util import module_type
 
 
-class Callable(Attribute):
+class Callable(ast.attribute.Attribute):
     """A method, function, or constructor which can be directly executed"""
 
     def __call__(self, path, index):

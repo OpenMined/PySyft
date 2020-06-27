@@ -13,34 +13,12 @@ Subpackages
 
    syft.ast
    syft.lib
+   syft.message
+   syft.pointer
    syft.worker
 
 Submodules
 ----------
-
-syft.message module
--------------------
-
-.. automodule:: syft.message
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.pointer module
--------------------
-
-.. automodule:: syft.pointer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-syft.skeleton module
---------------------
-
-.. automodule:: syft.skeleton
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 syft.store module
 -----------------
