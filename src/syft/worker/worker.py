@@ -4,7 +4,7 @@ from ..message.message import GetObjectMessage
 from ..message.message import DeleteObjectMessage
 from ..message.message import RunFunctionOrConstructorMessage
 
-from ..store import ObjectStore
+from ..store.store import ObjectStore
 
 from ..ast.globals import Globals
 
