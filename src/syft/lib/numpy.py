@@ -6,7 +6,6 @@ whitelist.add('numpy.array')
 whitelist.add('numpy.ndarray')
 whitelist.add('numpy.ndarray.__add__')
 
-
 ast = Globals()
 
 for method in whitelist:
