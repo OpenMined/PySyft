@@ -46,7 +46,7 @@ try:
     dist_name = __name__
     __version__ = get_distribution(dist_name).version
 except DistributionNotFound:
-    __version__ = 'unknown'
+    __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
 
@@ -56,7 +56,7 @@ finally:
 # from . import worker
 # from . import lib
 
-
 # from .worker.virtual.virtual_worker import VirtualWorker
 # from .worker import create_virtual_workers
 # from .worker import create_virtual_workers as cvw
+

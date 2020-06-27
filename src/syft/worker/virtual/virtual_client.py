@@ -1,7 +1,7 @@
 from ..client import Client
 
-class VirtualClient(Client):
 
+class VirtualClient(Client):
     def __init__(self, id, worker, verbose=False):
         super().__init__(id=id, verbose=verbose)
         self.worker = worker
@@ -15,6 +15,6 @@ class VirtualClient(Client):
     def __repr__(self):
         out = f"<VirtualClient id:{self.id}>"
 
-        if (self.verbose):
+        if self.verbose:
             out += "\n" + str(self.worker.store._objects)
         return out
