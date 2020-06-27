@@ -278,3 +278,14 @@ class Evaluator:
                 result[i][j] = poly_mul_mod(ct[i][0], pt, self.coeff_modulus[j], self.poly_modulus)
 
         return CipherText(result)
+
+    def _mul_plain_plain(self, pt1, pt2):
+        pt1, pt2 = pt1.data, pt2.data
+
+        # plaintext with value 0 is empty list
+        if not pt1:
+            pt1 = [0]
+        if not pt2:
+            pt2 = [0]
+
+        return PlainText(poly_mul_mod(pt1, pt2, self.plain_modulus, self.poly_modulus))
