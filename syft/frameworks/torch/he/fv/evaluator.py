@@ -48,7 +48,7 @@ class Evaluator:
         self.plain_modulus = context.param.plain_modulus
 
     def add(self, op1, op2):
-        """Adds two operands using FV scheme.
+        """Add two operands using FV scheme.
 
         Args:
             op1 (Ciphertext/Plaintext): First polynomial argument (Augend).
@@ -121,6 +121,18 @@ class Evaluator:
                     result[i][j][k] = negate_mod(ct.data[i][j][k], self.coeff_modulus[j])
 
         return CipherText(result)
+
+    def mul(self, op1, op2):
+        """Multiply two operands using FV scheme.
+
+        Args:
+            op1 (Ciphertext/Plaintext): First argument.
+            op2 (Ciphertext/Plaintext): Second argument.
+
+        Returns:
+            A Ciphertext object with a value equivalent to the result of the product of two
+                operands.
+        """
 
     def _add_cipher_cipher(self, ct1, ct2):
         """Adds two ciphertexts.
@@ -228,20 +240,11 @@ class Evaluator:
         ct10, ct11 = ct1
         ct20, ct21 = ct2
 
-        # lenght of coeff_modulus determine no of polynomials.
         result = [
             [0] * len(self.coeff_modulus),
             [0] * len(self.coeff_modulus),
             [0] * len(self.coeff_modulus),
         ]
-
-        # coefficients raised by q(coefficient modulus) to avoid precision issue while
-        # calculating (t/q * polynomial).
-        for i in range(len(self.coeff_modulus)):
-            ct10[i] = [x * self.coeff_modulus[i] for x in ct10[i]]
-            ct11[i] = [x * self.coeff_modulus[i] for x in ct11[i]]
-            ct20[i] = [x * self.coeff_modulus[i] for x in ct20[i]]
-            ct21[i] = [x * self.coeff_modulus[i] for x in ct21[i]]
 
         for i in range(len(self.coeff_modulus)):
 
@@ -258,10 +261,7 @@ class Evaluator:
         for i in range(len(result)):
             for j in range(len(self.coeff_modulus)):
                 result[i][j] = [
-                    round(
-                        ((x * self.plain_modulus) / self.coeff_modulus[j])
-                        / (self.coeff_modulus[j] * self.coeff_modulus[j])
-                    )
+                    round(((x * self.plain_modulus) / self.coeff_modulus[j]))
                     % self.coeff_modulus[j]
                     for x in result[i][j]
                 ]
