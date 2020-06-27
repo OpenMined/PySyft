@@ -1,4 +1,4 @@
-from .message import GetObjectMessage
+from ..message.message import GetObjectMessage
 
 import random
 

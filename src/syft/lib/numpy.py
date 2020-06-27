@@ -1,5 +1,5 @@
 import numpy as np
-from ..ast import Globals
+from ..ast.globals import Globals
 
 whitelist = set()
 whitelist.add('numpy.array')

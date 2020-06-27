@@ -1,5 +1,5 @@
-from syft.worker.worker import Worker
-from syft.worker.virtual.virtual_client import VirtualClient
+from ..worker import Worker
+from ..virtual.virtual_client import VirtualClient
 
 class VirtualWorker(Worker):
 

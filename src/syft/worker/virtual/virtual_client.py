@@ -1,4 +1,4 @@
-from syft.worker.client import Client
+from ..client import Client
 
 class VirtualClient(Client):
 

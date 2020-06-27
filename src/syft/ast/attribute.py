@@ -1,6 +1,5 @@
+from .. import ast
 from abc import ABC
-import syft as sy
-
 
 class Attribute(ABC):
 
@@ -14,7 +13,7 @@ class Attribute(ABC):
     def classes(self):
         out = list()
 
-        if isinstance(self, sy.ast.Class):
+        if isinstance(self, ast.klass.Class):
             out.append(self)
 
         for name, ref in self.attrs.items():
@@ -26,7 +25,7 @@ class Attribute(ABC):
     def methods(self):
         out = list()
 
-        if isinstance(self, sy.ast.Method):
+        if isinstance(self, ast.method.Method):
             out.append(self)
 
         for name, ref in self.attrs.items():
@@ -38,7 +37,7 @@ class Attribute(ABC):
     def functions(self):
         out = list()
 
-        if isinstance(self, sy.ast.Function):
+        if isinstance(self, ast.function.Function):
             out.append(self)
 
         for name, ref in self.attrs.items():
@@ -50,7 +49,7 @@ class Attribute(ABC):
     def modules(self):
         out = list()
 
-        if isinstance(self, sy.ast.Module):
+        if isinstance(self, ast.module.Module):
             out.append(self)
 
         for name, ref in self.attrs.items():

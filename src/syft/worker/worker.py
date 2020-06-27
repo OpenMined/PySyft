@@ -1,23 +1,23 @@
-import syft as sy
-
-from ..message import RunClassMethodMessage
-from ..message import SaveObjectMessage
-from ..message import GetObjectMessage
-from ..message import DeleteObjectMessage
-from ..message import RunFunctionOrConstructorMessage
+from ..message.message import RunClassMethodMessage
+from ..message.message import SaveObjectMessage
+from ..message.message import GetObjectMessage
+from ..message.message import DeleteObjectMessage
+from ..message.message import RunFunctionOrConstructorMessage
 
 from ..store import ObjectStore
 
-from ..ast import Globals
+from ..ast.globals import Globals
 
-from ..pointer import Pointer
+from ..pointer.pointer import Pointer
+
+from ..lib import supported_frameworks
 
 class Worker:
     def __init__(self, id):
         self.id = id
         self.store = ObjectStore()
         self.frameworks = Globals()
-        for fw in sy.lib.supported_frameworks:
+        for fw in supported_frameworks:
             for name, ast in fw.ast.attrs.items():
                 if(name in self.frameworks.attrs):
                     raise KeyError("Framework already imported. Why are you importing it twice?")

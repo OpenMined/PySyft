@@ -1,4 +1,4 @@
-from syft.worker.virtual.virtual_worker import VirtualWorker
+from .virtual.virtual_worker import VirtualWorker
 
 
 def create_virtual_workers(*args):
