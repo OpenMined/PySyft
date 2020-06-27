@@ -6,6 +6,7 @@ from numpy.polynomial import polynomial as poly
 from syft.frameworks.torch.he.fv.util.operations import poly_add
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_mul
+from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
@@ -265,5 +266,15 @@ class Evaluator:
                     % self.coeff_modulus[j]
                     for x in result[i][j]
                 ]
+
+        return CipherText(result)
+
+    def _mul_cipher_plain(self, ct, pt):
+        ct, pt = ct.data, pt.data
+        result = copy.deepcopy(ct)
+
+        for i in range(len(result)):
+            for j in range(len(self.coeff_modulus)):
+                result[i][j] = poly_mul_mod(ct[i][0], pt, self.coeff_modulus[j], self.poly_modulus)
 
         return CipherText(result)

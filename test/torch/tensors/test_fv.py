@@ -600,3 +600,29 @@ def test_fv_mul_cipher_cipher(int1, int2):
     op1 = encryptor.encrypt(encoder.encode(int1))
     op2 = encryptor.encrypt(encoder.encode(int2))
     assert int1 * int2 == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_cipher(op1, op2)))
+
+
+@pytest.mark.parametrize(
+    "int1, int2",
+    [
+        (0x12345678, 0x54321),
+        (-1, 1),
+        (0, 0),
+        (100, 10),
+        (1000, 0),
+        (-1000, 100),
+        (-99, -99),
+        (-99, 99),
+    ],
+)
+def test_fv_mul_cipher_plain(int1, int2):
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(int1))
+    op2 = encoder.encode(int2)
+    assert int1 * int2 == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_plain(op1, op2)))
