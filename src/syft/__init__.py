@@ -5,23 +5,25 @@ This package has two kinds of attributes: submodules, and convenience functions.
 Submodules are configured in the standard way, but the convenience
 functions exist to allow for a convenient `import syft as sy` to then expose
 the most-used functionalities directly on syft. Note that this way of importing
-PySyft is the strict convention in this codebase. Do NOT simply call
-`import syft` and then directly use `syft.<method>` everywhere. Previous
-versions of the codebase mix and matched `sy` and `syft` references and it was
-very annoying.
+PySyft is the strict convention in this codebase. (Do no simply call
+`import syft` and then directly use `syft.<method>`.)
 
-Now, it's important to recognize that the syft module is split into two
+The syft module is split into two
 distinct groups of functionality which we casually refer to as syft "core"
 and syft "python". "core" functionality is functionality which is designed
 to be universal across all Syft languages (javascript, kotlin, swift, etc.).
 Syft "python" includes all functionality which by its very nature cannot be
 truly polyglot. Syft "core" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library abstract syntax tree using a white\
-list of methods
 * :py:mod:`syft.worker` - APIs for interacting with remote machines you do not directly control.
 * :py:mod:`syft.message` - APIs for serializing messages sent between Client and Worker classes.
 * :py:mod:`syft.pointer` - Client side API for referring to objects on a Worker
+
+Syft "python" functionality includes the following modules:
+
+* :py:mod:`syft.ast` - code generates external library abstract syntax tree using a white\
+list of methods
+* :py:mod:`syft.typecheck` - automatically checks Python type hints
 
 
 This is a skeleton file that can serve as a starting point for a Python
