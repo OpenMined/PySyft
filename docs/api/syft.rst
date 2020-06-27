@@ -15,16 +15,6 @@ Subpackages
    syft.lib
    syft.message
    syft.pointer
+   syft.store
+   syft.typecheck
    syft.worker
-
-Submodules
-----------
-
-syft.store module
------------------
-
-.. automodule:: syft.store
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
