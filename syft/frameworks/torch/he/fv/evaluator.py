@@ -44,8 +44,8 @@ class Evaluator:
         """Adds two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First argument.
-            op2 (Ciphertext/Plaintext): Second argument.
+            op1 (Ciphertext/Plaintext): First polynomial argument (Augend).
+            op2 (Ciphertext/Plaintext): Second polynomial argument (Addend).
 
         Returns:
             If both arguments are Plaintext elements then the result will be a Plaintext object
@@ -74,8 +74,8 @@ class Evaluator:
         """Subtracts two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First argument.
-            op2 (Ciphertext/Plaintext): Second argument.
+            op1 (Ciphertext/Plaintext): First polynomail argument (Minuend).
+            op2 (Ciphertext/Plaintext): Second polynomial argument (Subtrahend).
 
         Returns:
             A ciphertext object with the value equivalent to the result of the subtraction
@@ -119,8 +119,8 @@ class Evaluator:
         """Adds two ciphertexts.
 
         Args:
-            ct1 (Ciphertext): First argument.
-            ct2 (Ciphertext): Second argument.
+            ct1 (Ciphertext): First polynomail argument (Augend).
+            ct2 (Ciphertext): Second polynomial argument (Addend).
 
         Returns:
             A Ciphertext object with value equivalent to result of addition of two provided
@@ -139,8 +139,9 @@ class Evaluator:
         """Add a plaintext into a ciphertext.
 
         Args:
-            ct (Ciphertext): First argument.
-            pt (Plaintext): Second argument.
+            ct (Ciphertext): First polynomail argument (Augend).
+            pt (Plaintext): Second polynomial argument (Addend).
+
         Returns:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
@@ -152,8 +153,8 @@ class Evaluator:
         """Adds two plaintexts object.
 
         Args:
-            pt1 (Plaintext): First argument.
-            pt2 (Plaintext): Second argument.
+            pt1 (Plaintext): First polynomail argument (Augend).
+            pt2 (Plaintext): Second polynomial argument (Addend).
 
         Returns:
             A Plaintext object with value equivalent to result of addition of two provided
@@ -166,8 +167,9 @@ class Evaluator:
         """Subtract a plaintext from a ciphertext.
 
         Args:
-            ct (Ciphertext): First argument.
-            pt (Plaintext): Second argument.
+            ct (Ciphertext): First polynomail argument (Minuend).
+            pt (Plaintext): Second polynomial argument (Subtrahend).
+
         Returns:
             A Ciphertext object with value equivalent to result of addition of two provided
                 arguments.
@@ -179,8 +181,8 @@ class Evaluator:
         """Subtract two ciphertexts.
 
         Args:
-            ct1 (Ciphertext): First argument.
-            ct2 (Ciphertext): Second argument.
+            ct1 (Ciphertext): First polynomail argument (Minuend).
+            ct2 (Ciphertext): Second polynomial argument (Subtrahend).
 
         Returns:
             A Ciphertext object with value equivalent to result of subtraction of two provided
