@@ -4,6 +4,16 @@ import crypten
 from syft.frameworks.crypten import utils
 
 
+class ExampleNet(th.nn.Module):
+    def __init__(self):
+        super(ExampleNet, self).__init__()
+        self.fc = th.nn.Linear(28 * 28, 2)
+
+    def forward(self, x):
+        out = self.fc(x)
+        return out
+
+
 @pytest.mark.parametrize(
     "tensors",
     [
@@ -27,15 +37,6 @@ def test_pack_tensors(tensors):
 
 
 def test_pack_crypten_model():
-    class ExampleNet(th.nn.Module):
-        def __init__(self):
-            super(ExampleNet, self).__init__()
-            self.fc = th.nn.Linear(28 * 28, 2)
-
-        def forward(self, x):
-            out = self.fc(x)
-            return out
-
     dummy_input = th.rand(1, 28 * 28)
     expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
     expected_out = expected_crypten_model(dummy_input)
@@ -52,6 +53,29 @@ def test_pack_crypten_model():
 
     out = crypten_model(dummy_input)
     assert th.all(expected_out == out)
+
+
+def test_pack_typerror_crypten_model():
+    dummy_input = th.rand(1, 28 * 28)
+    expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
+    expected_crypten_model.encrypted = True
+
+    with pytest.raises(TypeError):
+        packed = utils.pack_values(expected_crypten_model)
+
+
+def test_unpack_typerror_crypten_model():
+    dummy_input = th.rand(1, 28 * 28)
+    expected_crypten_model = crypten.nn.from_pytorch(ExampleNet(), dummy_input)
+    packed = utils.pack_values(expected_crypten_model)
+
+    with pytest.raises(TypeError):
+        utils.unpack_values(packed)
+
+
+def test_pack_other():
+    expected_value = utils.pack_values(42)
+    assert 42 == utils.unpack_values(expected_value)
 
 
 def test_serialize_models():
