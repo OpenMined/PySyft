@@ -23,7 +23,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
             CryptenInitJail: self.run_crypten_party_jail,
         }
 
-    def run_crypten_party_plan(self, msg: CryptenInitPlan) -> ObjectMessage:
+    def run_crypten_party_plan(self, msg: CryptenInitPlan) -> ObjectMessage:  # pragma: no cover
         """Run crypten party according to the information received.
 
         Args:
@@ -62,7 +62,7 @@ class CryptenMessageHandler(AbstractMessageHandler):
 
         return ObjectMessage(return_value)
 
-    def run_crypten_party_jail(self, msg: CryptenInitJail):
+    def run_crypten_party_jail(self, msg: CryptenInitJail):  # pragma: no cover
         """Run crypten party according to the information received.
 
         Args:
