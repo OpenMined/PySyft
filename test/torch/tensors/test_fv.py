@@ -601,7 +601,12 @@ def test_fv_mul_cipher_cipher(int1, int2):
 
     op1 = encryptor.encrypt(encoder.encode(int1))
     op2 = encryptor.encrypt(encoder.encode(int2))
-    assert int1 * int2 == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_cipher(op1, op2)))
+    assert (
+        int1 * int2
+        == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_cipher(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.mul(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.mul(op2, op1)))
+    )
 
 
 @pytest.mark.parametrize(
@@ -627,7 +632,12 @@ def test_fv_mul_cipher_plain(int1, int2):
 
     op1 = encryptor.encrypt(encoder.encode(int1))
     op2 = encoder.encode(int2)
-    assert int1 * int2 == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_plain(op1, op2)))
+    assert (
+        int1 * int2
+        == encoder.decode(decryptor.decrypt(evaluator._mul_cipher_plain(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.mul(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.mul(op2, op1)))
+    )
 
 
 @pytest.mark.parametrize(
@@ -650,4 +660,9 @@ def test_fv_mul_plain_plain(int1, int2):
 
     op1 = encoder.encode(int1)
     op2 = encoder.encode(int2)
-    assert int1 * int2 == encoder.decode(evaluator._mul_plain_plain(op1, op2))
+    assert (
+        int1 * int2
+        == encoder.decode(evaluator._mul_plain_plain(op1, op2))
+        == encoder.decode(evaluator.mul(op1, op2))
+        == encoder.decode(evaluator._mul_plain_plain(op2, op1))
+    )

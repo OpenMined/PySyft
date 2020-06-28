@@ -92,6 +92,7 @@ def poly_add_mod(op1, op2, coeff_mod, poly_mod):
         np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
     ).tolist()
 
+
 def poly_sub_mod(op1, op2, coeff_mod, poly_mod):
     """Subtract two polynomails and modulo every coefficient with coeff_mod.
 

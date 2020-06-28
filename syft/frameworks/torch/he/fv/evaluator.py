@@ -124,13 +124,29 @@ class Evaluator:
         """Multiply two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First argument.
-            op2 (Ciphertext/Plaintext): Second argument.
+            op1 (Ciphertext/Plaintext): First polynomail argument (Multiplicand).
+            op2 (Ciphertext/Plaintext): Second polynomail argument (Multiplier).
 
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
                 operands.
         """
+        param_type = _typecheck(op1, op2)
+
+        if param_type == ParamTypes.CTCT:
+            return self._mul_cipher_cipher(op1, op2)
+
+        elif param_type == ParamTypes.PTPT:
+            return self._mul_plain_plain(op1, op2)
+
+        elif param_type == ParamTypes.CTPT:
+            return self._mul_cipher_plain(op1, op2)
+
+        elif param_type == ParamTypes.PTCT:
+            return self._mul_cipher_plain(op2, op1)
+
+        else:
+            raise TypeError(f"Addition Operation not supported between {type(op1)} and {type(op2)}")
 
     def _add_cipher_cipher(self, ct1, ct2):
         """Adds two ciphertexts.
@@ -224,6 +240,16 @@ class Evaluator:
         return CipherText(result)
 
     def _mul_cipher_cipher(self, ct1, ct2):
+        """Multiply two operands using FV scheme.
+
+        Args:
+            op1 (Ciphertext): First polynomail argument (Multiplicand).
+            op2 (Ciphertext): Second polynomail argument (Multiplier).
+
+        Returns:
+            A Ciphertext object with a value equivalent to the result of the product of two
+                operands.
+        """
         ct1, ct2 = ct1.data, ct2.data
 
         if len(ct1) > 2:
@@ -269,6 +295,16 @@ class Evaluator:
         return CipherText(result)
 
     def _mul_cipher_plain(self, ct, pt):
+        """Multiply two operands using FV scheme.
+
+        Args:
+            op1 (Ciphertext): First polynomail argument (Multiplicand).
+            op2 (Plaintext): Second polynomail argument (Multiplier).
+
+        Returns:
+            A Ciphertext object with a value equivalent to the result of the product of two
+                operands.
+        """
         ct, pt = ct.data, pt.data
         result = copy.deepcopy(ct)
 
@@ -279,6 +315,16 @@ class Evaluator:
         return CipherText(result)
 
     def _mul_plain_plain(self, pt1, pt2):
+        """Multiply two operands using FV scheme.
+
+        Args:
+            op1 (Plaintext): First polynomail argument (Multiplicand).
+            op2 (Plaintext): Second polynomail argument (Multiplier).
+
+        Returns:
+            A Ciphertext object with a value equivalent to the result of the product of two
+                operands.
+        """
         pt1, pt2 = pt1.data, pt2.data
 
         # plaintext with value 0 is empty list
