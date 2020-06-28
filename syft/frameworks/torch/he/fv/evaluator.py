@@ -1,7 +1,5 @@
 import copy
 from enum import Enum
-import numpy as np
-from numpy.polynomial import polynomial as poly
 
 from syft.frameworks.torch.he.fv.util.operations import poly_add
 from syft.frameworks.torch.he.fv.util.operations import poly_add_mod
@@ -11,7 +9,6 @@ from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_sub_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_negate_mod
 from syft.frameworks.torch.he.fv.util.operations import poly_mul_mod
-from syft.frameworks.torch.he.fv.util.operations import multiply_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_add_plain_with_delta
 from syft.frameworks.torch.he.fv.util.operations import multiply_sub_plain_with_delta
 from syft.frameworks.torch.he.fv.ciphertext import CipherText
@@ -216,12 +213,14 @@ class Evaluator:
 
         for i in range(min_size):
             for j in range(len(self.coeff_modulus)):
-                result[i][j] = poly_sub_mod(ct1[i][j], ct2[i][j], self.coeff_modulus[j])
+                result[i][j] = poly_sub_mod(
+                    ct1[i][j], ct2[i][j], self.coeff_modulus[j], self.poly_modulus
+                )
 
         for i in range(min_size + 1, max_size):
             for j in range(len(self.coeff_modulus)):
                 result[i][j] = poly_negate_mod(result[i][j], self.coeff_modulus[j])
-        
+
         return CipherText(result)
 
     def _mul_cipher_cipher(self, ct1, ct2):
