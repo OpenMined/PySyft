@@ -38,9 +38,8 @@ def test_typecheck_generic_dtypes():
         func(x=["1", "2", "3"], y=[1, 2, 2.0])
 
     assert (
-        str(e.value)
-        == "Error in argument y: Argument should have any of the types "
-           "(typing.List[str], typing.List[int])."
+        str(e.value) == "Error in argument y: Argument should have any of the types "
+        "(typing.List[str], typing.List[int])."
     )
 
 
