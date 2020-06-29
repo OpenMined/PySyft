@@ -79,7 +79,7 @@ class Evaluator:
         """Subtracts two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First polynomail argument (Minuend).
+            op1 (Ciphertext/Plaintext): First polynomial argument (Minuend).
             op2 (Ciphertext/Plaintext): Second polynomial argument (Subtrahend).
 
         Returns:
@@ -124,8 +124,8 @@ class Evaluator:
         """Multiply two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext/Plaintext): First polynomail argument (Multiplicand).
-            op2 (Ciphertext/Plaintext): Second polynomail argument (Multiplier).
+            op1 (Ciphertext/Plaintext): First polynomial argument (Multiplicand).
+            op2 (Ciphertext/Plaintext): Second polynomial argument (Multiplier).
 
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
@@ -146,13 +146,15 @@ class Evaluator:
             return self._mul_cipher_plain(op2, op1)
 
         else:
-            raise TypeError(f"Addition Operation not supported between {type(op1)} and {type(op2)}")
+            raise TypeError(
+                f"Multiplication Operation not supported between {type(op1)} and {type(op2)}"
+            )
 
     def _add_cipher_cipher(self, ct1, ct2):
         """Adds two ciphertexts.
 
         Args:
-            ct1 (Ciphertext): First polynomail argument (Augend).
+            ct1 (Ciphertext): First polynomial argument (Augend).
             ct2 (Ciphertext): Second polynomial argument (Addend).
 
         Returns:
@@ -174,7 +176,7 @@ class Evaluator:
         """Add a plaintext into a ciphertext.
 
         Args:
-            ct (Ciphertext): First polynomail argument (Augend).
+            ct (Ciphertext): First polynomial argument (Augend).
             pt (Plaintext): Second polynomial argument (Addend).
 
         Returns:
@@ -188,7 +190,7 @@ class Evaluator:
         """Adds two plaintexts object.
 
         Args:
-            pt1 (Plaintext): First polynomail argument (Augend).
+            pt1 (Plaintext): First polynomial argument (Augend).
             pt2 (Plaintext): Second polynomial argument (Addend).
 
         Returns:
@@ -202,7 +204,7 @@ class Evaluator:
         """Subtract a plaintext from a ciphertext.
 
         Args:
-            ct (Ciphertext): First polynomail argument (Minuend).
+            ct (Ciphertext): First polynomial argument (Minuend).
             pt (Plaintext): Second polynomial argument (Subtrahend).
 
         Returns:
@@ -216,7 +218,7 @@ class Evaluator:
         """Subtract two ciphertexts.
 
         Args:
-            ct1 (Ciphertext): First polynomail argument (Minuend).
+            ct1 (Ciphertext): First polynomial argument (Minuend).
             ct2 (Ciphertext): Second polynomial argument (Subtrahend).
 
         Returns:
@@ -243,8 +245,8 @@ class Evaluator:
         """Multiply two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext): First polynomail argument (Multiplicand).
-            op2 (Ciphertext): Second polynomail argument (Multiplier).
+            op1 (Ciphertext): First polynomial argument (Multiplicand).
+            op2 (Ciphertext): Second polynomial argument (Multiplier).
 
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
@@ -253,15 +255,24 @@ class Evaluator:
         ct1, ct2 = ct1.data, ct2.data
 
         if len(ct1) > 2:
-            # TODO: perfrom relinearisation operation.
+            # TODO: perform relinearization operation.
             raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perform relinearisation operation."
+                "Cannot multiply ciphertext of size >2, Perform relinearization operation."
             )
         if len(ct2) > 2:
-            # TODO: perfrom relinearisation operation.
+            # TODO: perform relinearization operation.
             raise RuntimeError(
-                "Cannot multiply ciphertext of size >2, Perform relinearisation operation."
+                "Cannot multiply ciphertext of size >2, Perform relinearization operation."
             )
+
+        # Now the size of ciphertexts is 2.
+        # Multiplication operation of ciphertext:
+        #   result = [r1, r2, r3] where
+        #   r1 = ct1[0] * ct2[0]
+        #   r2 = ct1[0] * ct2[1] + ct1[1] * ct2[0]
+        #   r3 = ct1[1] * ct2[1]
+        #
+        # where ct1[i], ct2[i] are polynomials.
 
         ct10, ct11 = ct1
         ct20, ct21 = ct2
@@ -273,7 +284,6 @@ class Evaluator:
         ]
 
         for i in range(len(self.coeff_modulus)):
-
             result[0][i] = poly_mul(ct10[i], ct20[i], self.poly_modulus)
 
             result[1][i] = poly_add(
@@ -298,8 +308,8 @@ class Evaluator:
         """Multiply two operands using FV scheme.
 
         Args:
-            op1 (Ciphertext): First polynomail argument (Multiplicand).
-            op2 (Plaintext): Second polynomail argument (Multiplier).
+            op1 (Ciphertext): First polynomial argument (Multiplicand).
+            op2 (Plaintext): Second polynomial argument (Multiplier).
 
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
@@ -318,19 +328,12 @@ class Evaluator:
         """Multiply two operands using FV scheme.
 
         Args:
-            op1 (Plaintext): First polynomail argument (Multiplicand).
-            op2 (Plaintext): Second polynomail argument (Multiplier).
+            op1 (Plaintext): First polynomial argument (Multiplicand).
+            op2 (Plaintext): Second polynomial argument (Multiplier).
 
         Returns:
             A Ciphertext object with a value equivalent to the result of the product of two
                 operands.
         """
         pt1, pt2 = pt1.data, pt2.data
-
-        # plaintext with value 0 is empty list
-        if not pt1:
-            pt1 = [0]
-        if not pt2:
-            pt2 = [0]
-
         return PlainText(poly_mul_mod(pt1, pt2, self.plain_modulus, self.poly_modulus))
