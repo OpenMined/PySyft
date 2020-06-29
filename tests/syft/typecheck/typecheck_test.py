@@ -13,7 +13,9 @@ def test_typecheck_basic_dtypes():
     with pytest.raises(TypeError) as e:
         func(x="test", y=2)
 
-    assert str(e.value) == 'type of argument "x" must be int; got str instead'
+    assert (
+        str(e.value) == 'type of argument "x" must be int; got str instead'
+    )
 
 
 def test_typecheck_generic_dtypes():
@@ -27,7 +29,10 @@ def test_typecheck_generic_dtypes():
     with pytest.raises(TypeError) as e:
         func(x=[1, 2, 3], y=["unu", "doi", "trei"])
 
-    assert str(e.value) == 'type of argument "x"[0] must be str; got int instead'
+    assert (
+        str(e.value)
+        == 'type of argument "x"[0] must be str; got int instead'
+    )
 
     with pytest.raises(TypeError) as e:
         func(x=["1", "2", "3"], y=[1, 2, 2.0])
@@ -55,7 +60,10 @@ def test_mappings():
     with pytest.raises(TypeError) as e:
         func(x={1: "1"})
 
-    assert str(e.value) == 'type of keys of argument "x" must be str; got int instead'
+    assert (
+        str(e.value)
+        == 'type of keys of argument "x" must be str; got int instead'
+    )
 
 
 def test_ret_type():
@@ -73,4 +81,4 @@ def test_ret_type():
 
         func()
 
-    assert str(e.value) == "type of the return value must be int; got float instead"
+    assert str(e.value) == 'type of the return value must be int; got float instead'
