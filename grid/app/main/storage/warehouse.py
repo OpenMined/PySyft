@@ -31,11 +31,17 @@ class Warehouse:
         return objects
 
     def count(self, **kwargs):
+        """ Query and return the count.
+            Args:
+                parameters: List of parameters used to filter.
+            Return:
+                count: Count of object instances.
+        """
         query = db.session.query(func.count(self._schema.id)).filter_by(**kwargs)
         return int(query.scalar())
 
     def first(self, **kwargs):
-        """ Query and return the first occurence.
+        """ Query and return the first occurrence.
             Args:
                 parameters: List of parameters used to filter.
             Return:
@@ -44,7 +50,7 @@ class Warehouse:
         return self._schema.query.filter_by(**kwargs).first()
 
     def last(self, **kwargs):
-        """ Query and return the last occurence.
+        """ Query and return the last occurrence.
             Args:
                 parameters: List of parameters used to filter.
             Return:
@@ -57,7 +63,7 @@ class Warehouse:
         )
 
     def contains(self, **kwargs):
-        """ Check if the object id already exists into the database.
+        """ Check if the object id already exists in the database.
             Args:
                 id: Object ID.
         """

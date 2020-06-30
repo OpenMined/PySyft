@@ -56,7 +56,7 @@ class FLController:
         )
 
         # Save Model
-        # Define the initial version ( first checkpoint)
+        # Define the initial version (first checkpoint)
         _model = model_manager.create(model, _process)
 
         # Create the initial cycle
@@ -77,7 +77,7 @@ class FLController:
         return cycle_manager.last_participation(process, worker_id)
 
     def assign(self, name: str, version: str, worker, last_participation: int):
-        """ Assign a new worker  the specified federated training worker cycle
+        """ Assign a new worker the specified federated training worker cycle
             Args:
                 name: Federated learning process name.
                 version: Federated learning process version.
@@ -103,8 +103,8 @@ class FLController:
         # Check if already exists a relation between the worker and the cycle.
         _assigned = cycle_manager.is_assigned(worker.id, _cycle.id)
 
-        # Check bandwith
-        _comp_bandwith = worker_manager.is_eligible(worker.id, server_config)
+        # Check bandwidth
+        _comp_bandwidth = worker_manager.is_eligible(worker.id, server_config)
 
         # Check if the current worker is allowed to join into this cycle
         _allowed = True
@@ -115,7 +115,7 @@ class FLController:
         #     >= _cycle.sequence
         # )
 
-        _accepted = (not _assigned) and _comp_bandwith and _allowed
+        _accepted = (not _assigned) and _comp_bandwidth and _allowed
         if _accepted:
             # Assign
             # 1 - Generate new request key

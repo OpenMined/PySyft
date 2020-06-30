@@ -60,7 +60,7 @@ class ModelNotFoundError(PyGridError):
         super().__init__(message)
 
 
-class ProcessFoundError(PyGridError):
+class ProcessNotFoundError(PyGridError):
     def __init__(self):
         message = "Not found any process related with this cycle and worker ID."
         super().__init__(message)

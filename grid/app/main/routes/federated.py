@@ -21,7 +21,7 @@ from requests_toolbelt import MultipartEncoder
 from flask import render_template, Response, request, current_app, send_file
 
 # Dependencies used by req_join endpoint
-# It's is a mockup endpoint and should be removed soon.
+# It's a mockup endpoint and should be removed soon.
 from scipy.stats import poisson
 import numpy as np
 from math import floor
@@ -331,7 +331,7 @@ def auth():
             return Response(
                 json.dumps(
                     {
-                        "error": "The 'auth_token' you sent did not pass 3rd party verificaiton. "
+                        "error": "The 'auth_token' you sent did not pass 3rd party verification. "
                     }
                 ),
                 status=status_code,
@@ -356,7 +356,7 @@ def fl_cycle_application_decision():
         - is under max worker (with some padding to account for expected percent of workers so do not report successfully)
     """
 
-    # parse query strings (for now), evetually this will be parsed from the request body
+    # parse query strings (for now), eventually this will be parsed from the request body
     model_id = request.args.get("model_id")
     up_speed = request.args.get("up_speed")
     down_speed = request.args.get("down_speed")
@@ -412,7 +412,7 @@ def fl_cycle_application_decision():
             _accept = True
         elif _server_config["pool_selection"] == "random":
             """
-                probabilistic model for rejction rate:
+                probabilistic model for rejection rate:
                     - model the rate of worker's request to join as lambda in a poisson process
                     - set probabilistic reject rate such that we can expect enough workers will request to join and be accepted
                         - between now and ETA till end of _server_config['cycle_length']

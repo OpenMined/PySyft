@@ -7,7 +7,7 @@ class Config(db.Model):
             id (Integer, Primary Key): Config ID.
             config (String): Dictionary
             is_server_config (Boolean) : Boolean flag to indicate if it is a server config (True) or client config (False)
-            fl_process_id (Integer, Foreign Key) : Referece to FL Process.
+            fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
     __tablename__ = "__config__"

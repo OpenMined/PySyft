@@ -46,18 +46,18 @@ class WorkerManager:
         return self._workers.update()
 
     def is_eligible(self, worker_id: str, server_config: dict):
-        """ Check if Worker is eligible to join in an new cycle by using its bandwith statistics.
+        """ Check if Worker is eligible to join in an new cycle by using its bandwidth statistics.
             Args:
                 worker_id : Worker's ID.
-                server_confing : FL Process Server Config.
+                server_config : FL Process Server Config.
             Returns:
                 result: Boolean flag.
         """
         _worker = self._workers.first(id=worker_id)
 
-        # Check bandwith
-        _comp_bandwith = (
+        # Check bandwidth
+        _comp_bandwidth = (
             _worker.avg_upload > server_config["minimum_upload_speed"]
         ) and (_worker.avg_download > server_config["minimum_download_speed"])
 
-        return _comp_bandwith
+        return _comp_bandwidth

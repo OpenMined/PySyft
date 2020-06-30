@@ -54,7 +54,7 @@ class CycleManager:
     def last_participation(self, process: int, worker_id: str):
         """ Retrieve the last time the worker participated from this cycle.
             Args:
-                process_id : Federated Learning Process ID.
+                process: Federated Learning Process.
                 worker_id: Worker's ID.
             Returns:
                 last_participation: last cycle.
@@ -77,7 +77,7 @@ class CycleManager:
     def last(self, fl_process_id: int, version: str = None):
         """ Retrieve the last not completed registered cycle.
             Args:
-                model_id: Model's ID.
+                fl_process_id: Federated Learning Process ID.
                 version: Model's version.
             Returns:
                 cycle: Cycle Instance / None

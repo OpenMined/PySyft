@@ -7,7 +7,7 @@ from ..storage.warehouse import Warehouse
 from ..syft_assets import plans, protocols
 from ..exceptions import (
     FLProcessConflict,
-    ProcessFoundError,
+    ProcessNotFoundError,
     PlanNotFoundError,
     ProtocolNotFoundError,
 )
@@ -28,8 +28,12 @@ class ProcessManager:
     ):
         """ Register a new federated learning process
             Args:
-                name : FL Process name.
-                version : Process version.
+                client_config: the client configurations
+                client_plans: an object containing syft plans.
+                client_protocols: an object containing syft protocols.
+                server_config: the server configurations
+                server_avg_plan: a function that will instruct PyGrid on how to average model
+                    diffs that are returned from the workers.
             Returns:
                 process : FLProcess Instance.
             Raises:
@@ -79,7 +83,7 @@ class ProcessManager:
         _process = self._processes.last(**kwargs)
 
         if not _process:
-            raise ProcessFoundError
+            raise ProcessNotFoundError
 
         # Server configs
         server = self._configs.first(fl_process_id=_process.id, is_server_config=True)
@@ -137,12 +141,12 @@ class ProcessManager:
             Returns:
                 process : FLProcess Instance or None if it wasn't found.
             Raises:
-                ProcessNotFound (PyGridError) : If Process not found.
+                ProcessNotFoundError (PyGridError) : If Process not found.
         """
         _process = self._processes.query(**kwargs)
 
         if not _process:
-            raise ProcessFoundError
+            raise ProcessNotFoundError
 
         return _process
 
@@ -153,12 +157,12 @@ class ProcessManager:
             Returns:
                 process : FLProcess Instance or None if it wasn't found.
             Raises:
-                ProcessNotFound (PyGridError) : If Process not found.
+                ProcessNotFoundError (PyGridError) : If Process not found.
         """
         _process = self._processes.first(**kwargs)
 
         if not _process:
-            raise ProcessFoundError
+            raise ProcessNotFoundError
 
         return _process
 
@@ -174,7 +178,7 @@ class ProcessManager:
         _process = self._processes.last(**kwargs)
 
         if not _process:
-            raise ProcessFoundError
+            raise ProcessNotFoundError
 
         return _process
 

@@ -7,12 +7,12 @@ import sys
 
 import argparse
 
-from app import create_app
+from .app import create_app
 
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
-parser = argparse.ArgumentParser(description="Run Grid Gatway application.")
+parser = argparse.ArgumentParser(description="Run Grid Gateway application.")
 
 
 parser.add_argument(

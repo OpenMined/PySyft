@@ -21,7 +21,7 @@ handler = SocketHandler()
 def host_federated_training(message: dict, socket) -> str:
     """This will allow for training cycles to begin on end-user devices.
         Args:
-            message : Message body sended by some client.
+            message : Message body sent by some client.
             socket: Socket descriptor.
         Returns:
             response : String response to the client
@@ -67,7 +67,7 @@ def host_federated_training(message: dict, socket) -> str:
 def authenticate(message: dict, socket) -> str:
     """ New workers should receive a unique worker ID after authenticate on PyGrid platform.
         Args:
-            message : Message body sended by some client.
+            message : Message body sent by some client.
             socket: Socket descriptor.
         Returns:
             response : String response to the client
@@ -96,9 +96,9 @@ def authenticate(message: dict, socket) -> str:
 
 
 def cycle_request(message: dict, socket) -> str:
-    """This event is where the worker is attempting to join an active federated learning cycle.
+    """ This event is where the worker is attempting to join an active federated learning cycle.
         Args:
-            message : Message body sended by some client.
+            message : Message body sent by some client.
             socket: Socket descriptor.
         Returns:
             response : String response to the client
@@ -147,7 +147,7 @@ def report(message: dict, socket) -> str:
     """ This method will allow a worker that has been accepted into a cycle
         and finished training a model on their device to upload the resulting model diff.
         Args:
-            message : Message body sended by some client.
+            message : Message body sent by some client.
             socket: Socket descriptor.
         Returns:
             response : String response to the client

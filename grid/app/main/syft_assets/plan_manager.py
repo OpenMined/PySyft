@@ -26,7 +26,7 @@ class PlanManager:
             plans_converted = {}
             for idx, plan_ser in plans.items():
                 try:
-                    plan = self.unserialize_plan(plan_ser)
+                    plan = self.deserialize_plan(plan_ser)
                 except:
                     raise PlanInvalidError()
                 try:
@@ -70,7 +70,7 @@ class PlanManager:
         return _plans
 
     def first(self, **kwargs):
-        """ Retrieve the first occurence that matches with query.
+        """ Retrieve the first occurrence that matches with query.
             Args:
                 query : query used to identify the desired plans object.
             Returns:
@@ -93,8 +93,8 @@ class PlanManager:
         self._plans.delete(**kwargs)
 
     @staticmethod
-    def unserialize_plan(bin: bin) -> "sy.Plan":
-        """Unserializes a Plan"""
+    def deserialize_plan(bin: bin) -> "sy.Plan":
+        """Deserialize a Plan"""
         pb = PlanPB()
         pb.ParseFromString(bin)
         plan = protobuf.serde._unbufferize(worker, pb)
@@ -102,7 +102,7 @@ class PlanManager:
 
     @staticmethod
     def serialize_plan(plan: "sy.Plan") -> bin:
-        """Serializes a Plan"""
+        """Serialize a Plan"""
         pb = protobuf.serde._bufferize(worker, plan)
         serialized_plan = pb.SerializeToString()
         return serialized_plan
