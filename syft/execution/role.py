@@ -341,7 +341,7 @@ class Role(SyftSerializable):
         connected_actions_idx = set()
         for action_rev_idx, action in enumerate(reversed(self.actions)):
             return_ids = (
-                set([ph.value for ph in action.return_ids if isinstance(ph, PlaceholderId)])
+                {ph.value for ph in action.return_ids if isinstance(ph, PlaceholderId)}
                 if action.return_ids is not None
                 else set()
             )
@@ -397,12 +397,12 @@ class Role(SyftSerializable):
         self.output_placeholder_ids = tuple(
             ph_id
             for ph_id in self.output_placeholder_ids
-            if not ph_id in disconnected_placeholder_ids
+            if ph_id not in disconnected_placeholder_ids
         )
         self.input_placeholder_ids = tuple(
             ph_id
             for ph_id in self.input_placeholder_ids
-            if not ph_id in disconnected_placeholder_ids
+            if ph_id not in disconnected_placeholder_ids
         )
         for ph_id in disconnected_placeholder_ids:
             self.placeholders.pop(ph_id, None)
