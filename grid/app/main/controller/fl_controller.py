@@ -115,7 +115,12 @@ class FLController:
         #     >= _cycle.sequence
         # )
 
-        _accepted = (not _assigned) and _comp_bandwidth and _allowed
+        _accepted = (
+            (server_config["num_cycles"] == 0)
+            or (not _assigned)
+            and _comp_bandwidth
+            and _allowed
+        )
         if _accepted:
             # Assign
             # 1 - Generate new request key
