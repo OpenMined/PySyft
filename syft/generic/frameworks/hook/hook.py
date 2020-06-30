@@ -115,6 +115,10 @@ class FrameworkHook(TensorHook, PointerHook, StringHook, ABC):
             # Send it to the appropriate class and get the response
             response = getattr(new_self, attr)(*new_args, **new_kwargs)
 
+            # For inplace methods, just directly return self
+            if syft.framework.is_inplace_method(attr):
+                return self
+
             # Put back SyftTensor on the tensors found in the response
             response = hook_args.hook_response(
                 attr, response, wrap_type=type(self), wrap_args=self.get_class_attributes()

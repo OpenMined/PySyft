@@ -280,6 +280,7 @@ class Plan(AbstractSendable):
         # Disable tracing
         self.toggle_tracing(False)
         self.is_building = False
+        self.role._prune_actions()
         self.is_built = True
 
         # Build registered translations

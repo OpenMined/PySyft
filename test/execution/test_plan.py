@@ -1020,3 +1020,58 @@ def test_backward_autograd_can_be_traced(hook, workers):
     return out_1"""
     assert autograd_test.code == autograd_str
     assert torch_grads.eq(plan_grads).all()
+
+
+def test_prune_unused_actions(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test(X):
+        # stored as constant, action is removed
+        d = X.dim()
+        v1 = X + d
+        v1.add_(1.0)
+        # side-effect on input
+        X.add_(1.0)
+        # unused actions
+        v3 = X + 5
+        v3.add_(1.0)
+        X += 1.0
+        v2 = v1 + 1.0
+        v2 += 1.0
+        return v2
+
+    orig_input = th.ones(5, 5)
+    orig_output = test(orig_input)
+
+    test.forward = None
+    traced_input = th.ones(5, 5)
+    traced_output = test(traced_input)
+
+    assert len(test.role.actions) == 6
+    assert orig_input.eq(traced_input).all()
+    assert orig_output.eq(traced_output).all()
+
+
+def test_inplace_ops(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test(X):
+        X += 1.0
+        X -= 1.0
+        X *= 2.0
+        X /= 2.0
+        X.add_(1.0)
+        X.sub_(1.0)
+        X.mul_(2.0)
+        X.div_(2.0)
+        return X
+
+    orig_input = th.ones(5, 5)
+    orig_output = test(orig_input)
+
+    test.forward = None
+    traced_input = th.ones(5, 5)
+    traced_output = test(traced_input)
+
+    assert orig_input.eq(traced_input).all()
+    assert orig_output.eq(traced_output).all()
+    for action in test.role.actions:
+        assert action.return_ids[0] == action.target

@@ -4,6 +4,7 @@ from typing import Tuple
 from typing import Union
 from typing import Callable
 
+import syft
 from syft.generic.frameworks import framework_packages
 
 import syft as sy
@@ -311,6 +312,100 @@ class Role(SyftSerializable):
             output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
         )
+
+    def _is_inplace_operation(self, cmd: str, target: PlaceholderId):
+        """
+        Helper method that returns True if cmd is inplace operation
+        """
+        if target is None:
+            framework_name, command = cmd.split(".", 2)
+            framework = getattr(syft, framework_name, syft.framework)
+            return framework.is_inplace_method(command)
+
+        elif isinstance(target, PlaceholderId):
+            ph = self.placeholders.get(target.value, None)
+            if ph is not None:
+                framework_name = ph.child.__module__
+                framework = getattr(syft, framework_name, syft.framework)
+                return framework.is_inplace_method(cmd)
+
+        return False
+
+    def _prune_actions(self):
+        """
+        Removes unnecessary actions and placeholders.
+        """
+
+        # Track operations on output placeholders from bottom to top
+        output_connected_placeholder_ids = set(self.output_placeholder_ids)
+        connected_actions_idx = set()
+        for action_rev_idx, action in enumerate(reversed(self.actions)):
+            return_ids = (
+                set([ph.value for ph in action.return_ids if isinstance(ph, PlaceholderId)])
+                if action.return_ids is not None
+                else set()
+            )
+            target_id = action.target.value if action.target is not None else None
+            # Operation resulted in placeholder connected to output
+            returns_connected_ph = (
+                len(return_ids.intersection(output_connected_placeholder_ids)) > 0
+            )
+            # Operation has side-effect on placeholder connected to output
+            affects_connected_ph = (
+                target_id in output_connected_placeholder_ids
+                and self._is_inplace_operation(action.name, action.target)
+            )
+
+            if returns_connected_ph or affects_connected_ph:
+                connected_actions_idx.add(len(self.actions) - 1 - action_rev_idx)
+
+                def append_to_connected_ph(ph_id):
+                    output_connected_placeholder_ids.add(ph_id.value)
+
+                Role.nested_object_traversal(action.args, append_to_connected_ph, PlaceholderId)
+                Role.nested_object_traversal(action.target, append_to_connected_ph, PlaceholderId)
+
+        # Trace actions that have side-effects on inputs
+        input_connected_placeholder_ids = set(self.input_placeholder_ids)
+        for action_idx, action in enumerate(self.actions):
+            target_id = action.target.value if action.target is not None else None
+            affects_connected_ph = (
+                target_id in input_connected_placeholder_ids
+                and self._is_inplace_operation(action.name, action.target)
+            )
+
+            if affects_connected_ph:
+                connected_actions_idx.add(action_idx)
+
+                def append_to_connected_ph(ph_id):
+                    input_connected_placeholder_ids.add(ph_id.value)
+
+                Role.nested_object_traversal(action.args, append_to_connected_ph, PlaceholderId)
+                Role.nested_object_traversal(action.target, append_to_connected_ph, PlaceholderId)
+
+        connected_placeholder_ids = output_connected_placeholder_ids.union(
+            input_connected_placeholder_ids
+        )
+        disconnected_placeholder_ids = set(self.placeholders.keys()).difference(
+            connected_placeholder_ids
+        )
+
+        # Remove unused actions
+        self.actions = [a for i, a in enumerate(self.actions) if i in connected_actions_idx]
+
+        # Remove unused placeholders
+        self.output_placeholder_ids = tuple(
+            ph_id
+            for ph_id in self.output_placeholder_ids
+            if not ph_id in disconnected_placeholder_ids
+        )
+        self.input_placeholder_ids = tuple(
+            ph_id
+            for ph_id in self.input_placeholder_ids
+            if not ph_id in disconnected_placeholder_ids
+        )
+        for ph_id in disconnected_placeholder_ids:
+            self.placeholders.pop(ph_id, None)
 
     @staticmethod
     def simplify(worker: AbstractWorker, role: "Role") -> tuple:
