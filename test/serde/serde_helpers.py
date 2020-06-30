@@ -805,6 +805,10 @@ def make_plan(**kwargs):
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
+        assert detailed._base_framework == original._base_framework
+        assert detailed.roles.keys() == original.roles.keys()
+        for detailed_role, original_role in zip(detailed.roles.values(), original.roles.values()):
+            compare_roles(detailed_role, original_role)
         with kwargs["workers"]["serde_worker"].registration_enabled():
             t = torch.tensor([1.1, -2, 3])
             res1 = detailed(t)
@@ -828,6 +832,10 @@ def make_plan(**kwargs):
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.input_types),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], plan._base_framework
+                    ),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.roles),
                 ),
             ),
             "cmp_detailed": compare,
@@ -851,6 +859,10 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.input_types
                     ),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan._base_framework
+                    ),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.roles),
                 ),
             ),
             "cmp_detailed": compare,
