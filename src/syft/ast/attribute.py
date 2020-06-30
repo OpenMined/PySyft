@@ -1,6 +1,7 @@
 from .. import ast
 from abc import ABC
 
+
 class Attribute(ABC):
     def __init__(self, name, path_and_name, ref):
         self.name = name  # __add__
