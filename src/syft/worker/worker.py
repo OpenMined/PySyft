@@ -3,9 +3,11 @@ from syft.ast.globals import Globals
 from syft.lib import supported_frameworks
 from syft.typecheck.typecheck import type_hints
 from syft.worker.worker_service import message_service_mapping
+from syft.worker.worker_supervisor import WorkerSupervisor
+from syft.worker.worker_supervisor import WorkerStats
 
 
-class Worker:
+class Worker(metaclass=WorkerSupervisor):
     """
     Basic class for a syft worker behavior, explicit purpose workers will
     inherit this class (eg. WebsocketWorker, VirtualWorker).
@@ -20,7 +22,7 @@ class Worker:
     """
 
     @type_hints
-    def __init__(self, id: str):
+    def __init__(self, id: str, debug: bool = False):
         self.id = id
         self.store = ObjectStore()
         self.frameworks = Globals()
@@ -33,10 +35,25 @@ class Worker:
                 self.frameworks.attrs[name] = ast
 
         self.msg_router = message_service_mapping
+        self.worker_stats = None
+        if debug:
+            self.worker_stats = WorkerStats()
 
-    def recv_msg(self, msg) -> None:
-        # return self.msg_router[type(msg)](msg)
+    @type_hints
+    def recv_msg(self, msg: "SyftMessage") -> None:
         pass
 
+    @type_hints
+    def _send_msg(self) -> None:
+        raise NotImplementedError
+
+    @type_hints
+    def _recv_msg(self) -> None:
+        raise NotImplementedError
+
     def __repr__(self):
-        return f"<Worker id:{self.id}>"
+        if self.worker_stats:
+            return f"Worker: {self.id}\n{self.worker_stats}"
+
+        return f"Worker id:{self.id}"
+
