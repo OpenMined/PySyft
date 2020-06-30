@@ -58,7 +58,6 @@ finally:
 # from . import worker
 # from . import lib
 
-
-from syft.worker.virtual.virtual_worker import VirtualWorker
-from syft.worker import create_virtual_workers
-from syft.worker import create_virtual_workers as cvw
+# from .worker.virtual.virtual_worker import VirtualWorker
+# from .worker import create_virtual_workers
+# from .worker import create_virtual_workers as cvw

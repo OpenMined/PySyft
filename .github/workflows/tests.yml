@@ -4,15 +4,16 @@ on:
   push:
     branches:
     - master
+    - syft_0.3.0
     paths:
     - '**.py'
-    - 'pip-dep/**'
+    - 'setup.cfg'
 
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
     - '**.py'
-    - 'pip-dep/**'
+    - 'setup.cfg'
 
 jobs:
   python-tests:
@@ -21,7 +22,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.7, 3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -29,55 +30,23 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+
     - uses: actions/cache@v1.1.2
+    - name: Cache packages
       id: cache-reqs
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-python-${{ matrix.python-version }}-pip-${{ hashFiles('pip-dep/requirements*.txt') }}
-    - name: Install PySyft dependencies
-      run: |
-        sudo apt-get update
-        python -m pip install --upgrade pip
-        hash -r
-        pip3 install -r pip-dep/requirements.txt
-        pip3 install -r pip-dep/requirements_dev.txt
-        pip3 install -r pip-dep/requirements_udacity.txt
-        pip3 install -r pip-dep/requirements_notebooks.txt
-        python setup.py install
-    - name: Install build tools
-      run: |
-        pip3 install flake8
-        #- pip3 install flake8-docstrings
-        pip3 install flake8-comprehensions
-        pip3 install pep8-naming
-        pip3 install codecov     
-    - name: Lint, format, and type-check
-      run: |
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 --config=.flake8 .
-        black --check .
-        # Run type checker in CI such that type errors can be identified and gradually addressed.
-        # Once all existing type errors are addressed, the `|| echo` after the mypy call can be removed.
-        mypy syft || echo "Type errors found, continuing build..."
-    - name: Check docstring coverage
-      run: |
-        interrogate -mvp syft/ -f 52.5
+        path: ~/.eggs
+        key: ${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('**.egg') }}
+
     - name: Scan for security issues
       run: |
             bandit -r syft -ll
-    - name: Run tests
+    - name: Install
       run: |
-        coverage run -m pytest test/ --randomly-dont-reset-seed --deselect=test/efficiency --deselect=test/notebooks
-    - name: Check test coverage
+            python setup.py install
+    - name: Run flake8
       run: |
-        coverage report --ignore-errors --fail-under 95 -m
-        # ensuring coverage of tests stays at 100 until entire coverage can be 100
-        coverage report --ignore-errors --fail-under 100 -m --include="test/*"
-    - name: Run codecov
+            python setup.py flake8
+    - name: Run tests with coverage
       run: |
-        bash <(curl -s https://codecov.io/bash) -t a74f260d-4d79-4591-a38b-77f81447c9fb -X gcov
-    - name: Build docs
-      run: |
-        # delete stale existing documentation if there's one
-        make -C ./docs/ clean
-        make -C ./docs/ html
+            python setup.py test

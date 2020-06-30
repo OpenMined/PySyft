@@ -26,19 +26,19 @@ class Module(ast.attribute.Attribute):
             attr_ref = getattr(self.ref, path[index])
 
             if isinstance(attr_ref, module_type):
-                self.attrs[path[index]] = Module(
+                self.attrs[path[index]] = ast.module.Module(
                     path[index], unsplit(path[: index + 1]), attr_ref
                 )
             elif isinstance(attr_ref, class_type):
-                self.attrs[path[index]] = Class(
+                self.attrs[path[index]] = ast.klass.Class(
                     path[index], unsplit(path[: index + 1]), attr_ref
                 )
             elif isinstance(attr_ref, func_type):
-                self.attrs[path[index]] = Function(
+                self.attrs[path[index]] = ast.function.Function(
                     path[index], unsplit(path[: index + 1]), attr_ref
                 )
             elif isinstance(attr_ref, builtin_func_type):
-                self.attrs[path[index]] = Function(
+                self.attrs[path[index]] = ast.function.Function(
                     path[index], unsplit(path[: index + 1]), attr_ref
                 )
 
