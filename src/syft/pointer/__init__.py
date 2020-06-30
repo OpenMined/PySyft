@@ -1,1 +1,1 @@
-from . import pointer
+from . import pointer  # noqa: F401

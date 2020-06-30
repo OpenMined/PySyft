@@ -1,5 +1,5 @@
 import pytest
-from typing import List, Union, Optional, Tuple, Dict, DefaultDict, TypedDict
+from typing import List, Union, Optional, Dict
 from syft.typecheck.typecheck import type_hints
 
 
@@ -38,9 +38,8 @@ def test_typecheck_generic_dtypes():
         func(x=["1", "2", "3"], y=[1, 2, 2.0])
 
     assert (
-        str(e.value)
-        == "Error in argument y: Argument should have any of the types "
-           "(typing.List[str], typing.List[int])."
+        str(e.value) == "Error in argument y: Argument should have any of the types "
+        "(typing.List[str], typing.List[int])."
     )
 
 
@@ -52,7 +51,7 @@ def test_optional():
     func(x=0)
     func(x=None)
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(AttributeError) as _:
         func(x="test")
 
 
