@@ -1,7 +1,9 @@
 from ..worker import Worker
 from ..virtual.virtual_client import VirtualClient
+from typing import final
 
 
+@final
 class VirtualWorker(Worker):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

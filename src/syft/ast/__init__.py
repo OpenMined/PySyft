@@ -1,7 +1,7 @@
-from syft.ast.attribute import Attribute
-from syft.ast.callable import Callable
-from syft.ast.klass import Class
-from syft.ast.function import Function
-from syft.ast.globals import Globals
-from syft.ast.method import Method
-from syft.ast.module import Module
+from . import attribute  # noqa: F401
+from . import module  # noqa: F401
+from . import callable  # noqa: F401
+from . import klass  # noqa: F401
+from . import function  # noqa: F401
+from . import globals  # noqa: F401
+from . import method  # noqa: F401

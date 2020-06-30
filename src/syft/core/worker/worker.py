@@ -17,8 +17,9 @@ from ..pointer.pointer import Pointer
 
 
 class Worker:
-    def __init__(self, id, supported_frameworks):
+    def __init__(self, id, verbose=False):
         self.id = id
+        self.verbose = verbose
         self.store = ObjectStore()
         self.frameworks = Globals()
         for fw in supported_frameworks:
@@ -42,7 +43,6 @@ class Worker:
 
         self_possibly_pointer = msg._self
         args_with_pointers = msg.args
-        kwargs_with_pointers = msg.kwargs
 
         result_id_at_location = msg.id_at_location
 
