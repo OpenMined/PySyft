@@ -281,27 +281,32 @@ class AutogradTensor(AbstractTensor):
         :return: the response of the function command
         """
 
-        cmd, _, args_, kwargs_ = command
+        cmd_name, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
+        cmd = None
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args_, **kwargs_)
+            cmd = cls.rgetattr(cls, cmd_name)
         except AttributeError:
             pass
 
+        if cmd is not None:
+            return cmd(*args_, **kwargs_)
+
         # Replace all AutogradTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
+        new_command = (cmd_name, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
 
         # Put back AutogradTensor on the tensors found in the response
-        response = hook_args.hook_response(cmd, response, wrap_type=cls)
+        response = hook_args.hook_response(cmd_name, response, wrap_type=cls)
 
         return response
 
