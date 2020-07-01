@@ -1,3 +1,4 @@
+from __future__ import annotations
 from syft.store.store import ObjectStore
 from syft.ast.globals import Globals
 from syft.lib import supported_frameworks

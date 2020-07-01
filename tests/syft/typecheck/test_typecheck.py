@@ -10,11 +10,11 @@ def test_typecheck_basic_dtypes():
 
     func(x=1, y=2)
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
         func(x="test", y=2)
 
     assert (
-        str(e.value) == "Error in argument x: Argument should have type <class 'int'>."
+        str(e.value) == 'type of argument "x" must be int; got str instead'
     )
 
 
@@ -26,21 +26,16 @@ def test_typecheck_generic_dtypes():
     func(x=["1", "2", "3"], y=[1, 2, 3])
     func(x=["2", "2", "3"], y=["unu", "doi", "trei"])
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
         func(x=[1, 2, 3], y=["unu", "doi", "trei"])
 
     assert (
         str(e.value)
-        == "Error in argument x: Iterable should have type typing.List[str]."
+        == 'type of argument "x"[0] must be str; got int instead'
     )
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
         func(x=["1", "2", "3"], y=[1, 2, 2.0])
-
-    assert (
-        str(e.value) == "Error in argument y: Argument should have any of the types "
-        "(typing.List[str], typing.List[int])."
-    )
 
 
 def test_optional():
@@ -51,7 +46,7 @@ def test_optional():
     func(x=0)
     func(x=None)
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
         func(x="test")
 
 
@@ -62,12 +57,12 @@ def test_mappings():
 
     func(x={"1": "2"})
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
         func(x={1: "1"})
 
     assert (
         str(e.value)
-        == "Error in argument x: Key element of mapping should have type <class 'str'>."
+        == 'type of keys of argument "x" must be str; got int instead'
     )
 
 
@@ -78,7 +73,7 @@ def test_ret_type():
 
     func()
 
-    with pytest.raises(AttributeError) as e:
+    with pytest.raises(TypeError) as e:
 
         @type_hints
         def func() -> int:
@@ -86,4 +81,4 @@ def test_ret_type():
 
         func()
 
-    assert str(e.value) == "Return type is <class 'float'>, should be <class 'int'>."
+    assert str(e.value) == 'type of the return value must be int; got float instead'

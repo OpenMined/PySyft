@@ -5,13 +5,13 @@ from syft.typecheck.typecheck import type_hints
 class WorkerService:
     @staticmethod
     @type_hints
-    def process(worker: "Worker", msg: "SyftMessage"):
+    def process(worker: "Worker", msg: "SyftMessage") -> None:
         raise NotImplementedError
 
     @staticmethod
     @type_hints
     def message_type_handler() -> "SyftMessage":
-        raise NotImplementedError
+        return None
 
     @staticmethod
     @type_hints
