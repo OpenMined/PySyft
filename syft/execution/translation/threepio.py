@@ -50,18 +50,23 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
     @staticmethod
     def _restore_placeholders(action: ComputationAction):
         """Converts PlaceholderId's to PlaceHolder in an Action"""
+
         def wrap_in_placeholder(ph_id):
             return PlaceHolder(id=ph_id)
 
-        action.target = Role.nested_object_traversal(action.target, wrap_in_placeholder, PlaceholderId)
+        action.target = Role.nested_object_traversal(
+            action.target, wrap_in_placeholder, PlaceholderId
+        )
         action.args = Role.nested_object_traversal(action.args, wrap_in_placeholder, PlaceholderId)
-        action.kwargs = Role.nested_object_traversal(action.kwargs, wrap_in_placeholder, PlaceholderId)
-        action.return_ids = Role.nested_object_traversal(action.return_ids, wrap_in_placeholder, PlaceholderId)
+        action.kwargs = Role.nested_object_traversal(
+            action.kwargs, wrap_in_placeholder, PlaceholderId
+        )
+        action.return_ids = Role.nested_object_traversal(
+            action.return_ids, wrap_in_placeholder, PlaceholderId
+        )
         return action
 
-    def translate_action(
-        self, action: ComputationAction, to_framework: str, role: Role
-    ):
+    def translate_action(self, action: ComputationAction, to_framework: str, role: Role):
         """Uses threepio to perform command level translation given a specific action"""
         self._restore_placeholders(action)
         threepio = Threepio(self.plan.base_framework, to_framework, None)
