@@ -15,6 +15,7 @@ class WorkerSupervisor(type):
             execution_time = time.time() - start_time
             name = func.__qualname__
             msg_type = None
+
             if func.__name__ == "recv_msg":
                 msg_type = type(kwargs["msg"])
 
