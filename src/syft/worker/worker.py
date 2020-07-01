@@ -1,8 +1,8 @@
 from __future__ import annotations
+import syft
 from syft.store.store import ObjectStore
 from syft.ast.globals import Globals
 from syft.lib import supported_frameworks
-from syft.typecheck.typecheck import type_hints
 from syft.worker.worker_service import message_service_mapping
 from syft.worker.worker_supervisor import WorkerSupervisor
 from syft.worker.worker_supervisor import WorkerStats
@@ -22,7 +22,7 @@ class Worker(metaclass=WorkerSupervisor):
     Each worker is identified by an id of type str.
     """
 
-    @type_hints
+    @syft.typecheck.type_hints
     def __init__(self, id: str, debug: bool = False):
         self.id = id
         self.store = ObjectStore()
@@ -40,15 +40,15 @@ class Worker(metaclass=WorkerSupervisor):
         if debug:
             self.worker_stats = WorkerStats()
 
-    @type_hints
-    def recv_msg(self, msg: "SyftMessage") -> None:
+    @syft.typecheck.type_hints
+    def recv_msg(self, msg: "syft.message.SyftMessage") -> None:
         pass
 
-    @type_hints
+    @syft.typecheck.type_hints
     def _send_msg(self) -> None:
         raise NotImplementedError
 
-    @type_hints
+    @syft.typecheck.type_hints
     def _recv_msg(self) -> None:
         raise NotImplementedError
 
@@ -57,4 +57,3 @@ class Worker(metaclass=WorkerSupervisor):
             return f"Worker: {self.id}\n{self.worker_stats}"
 
         return f"Worker id:{self.id}"
-

@@ -1,22 +1,23 @@
+from __future__ import annotations
+import syft
 from syft.worker.worker_service import WorkerService, message_service_mapping
 from syft.message import SaveObjectMessage
-from syft.typecheck.typecheck import type_hints
 
 
 class SaveObjectService(WorkerService):
     @staticmethod
-    @type_hints
-    def process(worker: "Worker", msg: SaveObjectMessage):
+    @syft.typecheck.type_hints
+    def process(worker: "syft.worker.Worker", msg: SaveObjectMessage):
         # self.store.store_object(msg.id, msg.obj)
         pass
 
     @staticmethod
-    @type_hints
+    @syft.typecheck.type_hints
     def message_type_handler() -> type:
         return SaveObjectMessage
 
     @staticmethod
-    @type_hints
+    @syft.typecheck.type_hints
     def register_service() -> None:
         message_service_mapping[SaveObjectMessage] = SaveObjectService
 
