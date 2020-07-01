@@ -10,6 +10,7 @@ phe~=1.4.0
 Pillow~=6.2.2
 psutil==5.7.0
 requests~=2.22.0
+requests-toolbelt==0.9.1
 scipy~=1.4.1
 syft-proto==0.4.7
 tblib~=1.6.0

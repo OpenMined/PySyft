@@ -1,4 +1,6 @@
 import json
+import requests
+from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from typing import Union
 from urllib.parse import urlparse
@@ -25,6 +27,7 @@ class NodeClient(WebsocketClientWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
+        timeout: int = None,
     ):
         """
         Args:
@@ -44,6 +47,7 @@ class NodeClient(WebsocketClientWorker):
             verbose : a verbose option - will print all messages
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
+            timeout : connection's timeout with the remote worker.
         """
         self.address = address
         self.encoding = encoding
@@ -63,6 +67,7 @@ class NodeClient(WebsocketClientWorker):
             log_msgs,
             verbose,
             None,  # initial data
+            timeout,
         )
 
         # Update Node reference using node's Id given by the remote node
@@ -239,7 +244,7 @@ class NodeClient(WebsocketClientWorker):
         else:
             res_model = model
 
-        serialized_model = serialize(res_model)
+        serialized_model = serialize(res_model).decode(self.encoding)
 
         message = {
             REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.HOST_MODEL,
@@ -248,10 +253,31 @@ class NodeClient(WebsocketClientWorker):
             "allow_download": str(allow_download),
             "mpc": str(mpc),
             "allow_remote_inference": str(allow_remote_inference),
-            "model": serialized_model.decode(self.encoding),
+            "model": serialized_model,
         }
-        response = self._forward_json_to_websocket_server_worker(message)
-        return self._return_bool_result(response)
+
+        url = self.address.replace("ws", "http") + "/serve-model/"
+
+        # Multipart encoding
+        form = MultipartEncoder(message)
+        upload_size = form.len
+
+        # Callback that shows upload progress
+        def progress_callback(monitor):
+            upload_progress = "{} / {} ({:.2f} %)".format(
+                monitor.bytes_read, upload_size, (monitor.bytes_read / upload_size) * 100
+            )
+            print(upload_progress, end="\r")
+            if monitor.bytes_read == upload_size:
+                print()
+
+        monitor = MultipartEncoderMonitor(form, progress_callback)
+        headers = {"Prefer": "respond-async", "Content-Type": monitor.content_type}
+
+        session = requests.Session()
+        response = session.post(url, headers=headers, data=monitor).content
+        session.close()
+        return self._return_bool_result(json.loads(response))
 
     def run_remote_inference(self, model_id, data):
         """ Run a dataset inference using a remote model.

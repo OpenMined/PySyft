@@ -39,6 +39,7 @@ class WebsocketClientWorker(BaseWorker):
         log_msgs: bool = False,
         verbose: bool = False,
         data: List[Union[torch.Tensor, AbstractTensor]] = None,
+        timeout: int = None,
     ):
         """A client which will forward all messages to a remote worker running a
         WebsocketServerWorker and receive all responses back from the server.
@@ -46,6 +47,7 @@ class WebsocketClientWorker(BaseWorker):
 
         self.port = port
         self.host = host
+        self.timeout = TIMEOUT_INTERVAL if timeout is None else timeout
 
         super().__init__(
             hook=hook,
@@ -68,7 +70,7 @@ class WebsocketClientWorker(BaseWorker):
         return f"wss://{self.host}:{self.port}" if self.secure else f"ws://{self.host}:{self.port}"
 
     def connect(self):
-        args_ = {"max_size": None, "timeout": TIMEOUT_INTERVAL, "url": self.url}
+        args_ = {"max_size": None, "timeout": self.timeout, "url": self.url}
 
         if self.secure:
             args_["sslopt"] = {"cert_reqs": ssl.CERT_NONE}
@@ -106,7 +108,7 @@ class WebsocketClientWorker(BaseWorker):
             self.ws.shutdown()
             time.sleep(0.1)
             # Avoid timing out on the server-side
-            self.ws = websocket.create_connection(self.url, max_size=None, timeout=TIMEOUT_INTERVAL)
+            self.ws = websocket.create_connection(self.url, max_size=None, timeout=self.timeout)
             logger.warning("Created new websocket connection")
             time.sleep(0.1)
             response = self._forward_to_websocket_server_worker(message)
@@ -160,7 +162,7 @@ class WebsocketClientWorker(BaseWorker):
             print("async_send_msg", message)
 
         async with websockets.connect(
-            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+            self.url, timeout=self.timeout, max_size=None, ping_timeout=self.timeout
         ) as websocket:
             # Step 1: serialize the message to a binary
             bin_message = sy.serde.serialize(message, worker=self)
@@ -244,7 +246,7 @@ class WebsocketClientWorker(BaseWorker):
         # This code is not tested with secure connections (wss protocol).
         self.close()
         async with websockets.connect(
-            self.url, timeout=TIMEOUT_INTERVAL, max_size=None, ping_timeout=TIMEOUT_INTERVAL
+            self.url, timeout=self.timeout, max_size=None, ping_timeout=self.timeout
         ) as websocket:
             message = self.create_worker_command_message(
                 command_name="fit", return_ids=return_ids, dataset_key=dataset_key, device=device
