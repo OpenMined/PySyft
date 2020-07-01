@@ -21,7 +21,6 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
 
     func(x = 1, y = 2)
     """
-
     literal_signature = inspect.signature(decorated)
     solved_signature = typing.get_type_hints(decorated)
 
@@ -58,4 +57,5 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         return typechecked(decorated)(*args, **kwargs)
 
     decorator.__qualname__ = decorated.__qualname__
+    decorator.__name__ = decorated.__name__
     return decorator
