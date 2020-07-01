@@ -41,7 +41,7 @@ transport protocol for _how_ messages are sent we leave up to the _specific inst
 The primary instantiation of Domain/Worker/Client that we use for development, testing, and learning is the
 VirtualDomain/VirtualWorker/VirtualClient instantiation. More on that in a moment...
 
-If you're learning Syft, the next step you should take is to jump into the :py:mod:`syft.core.worker.client.Client`
+If you're learning Syft, the next step you should take is to jump into the :py:mod:`syft.core.worker.domain.Domain`
 class...
 
 
