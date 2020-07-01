@@ -144,9 +144,9 @@ class TorchHook(FrameworkHook):
         if dependency_check.crypten_available:
             from syft.frameworks.crypten.hook.hook import crypten_to_auto_overload
 
-            for component, methods in crypten_to_auto_overload.items():
-                self.to_auto_overload[component] = methods
-                self._hook_syft_placeholder_methods(component, PlaceHolder)
+            for crypten_class, method_names in crypten_to_auto_overload.items():
+                self.to_auto_overload[crypten_class] = method_names
+                self._hook_syft_placeholder_methods(crypten_class, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)
