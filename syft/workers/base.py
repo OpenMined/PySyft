@@ -501,8 +501,13 @@ class BaseWorker(AbstractWorker):
                 )
                 responses.append(response)
 
+            if return_value:
+                responses = [response.get() for response in responses]
+
             if len(return_ids) == 1:
                 responses = responses[0]
+            else:
+                responses = tuple(responses)
         else:
             responses = ret_val
         return responses

@@ -22,13 +22,15 @@ class memorize(dict):
 
 
 def allow_command(func):
-    func_name = f"{func.__module__}.{func.__name__}"
+    module = func.__module__
+    func_name = f"{module}{'.' if module else ''}{func.__name__}"
     allowed_commands.update({func_name})
     return func
 
 
 def remote(func, location):
-    command_name = f"{func.__module__}.{func.__name__}"
+    module = func.__module__
+    command_name = f"{module}{'.' if module else ''}{func.__name__}"
 
     worker = sy.local_worker
 
