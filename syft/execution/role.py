@@ -340,11 +340,11 @@ class Role(SyftSerializable):
         output_connected_placeholder_ids = set(self.output_placeholder_ids)
         connected_actions_idx = set()
         for action_rev_idx, action in enumerate(reversed(self.actions)):
-            return_ids = (
-                {ph.value for ph in action.return_ids if isinstance(ph, PlaceholderId)}
-                if action.return_ids is not None
-                else set()
-            )
+            return_ids = set()
+            if action.return_ids is not None:
+                for ph in action.return_ids:
+                    if isinstance(ph, PlaceholderId):
+                        return_ids.add(ph.value)
             target_id = action.target.value if action.target is not None else None
             # Operation resulted in placeholder connected to output
             returns_connected_ph = (
