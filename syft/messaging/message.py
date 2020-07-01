@@ -115,7 +115,7 @@ class TensorCommandMessage(Message):
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"{self.action}"
+        return f"({type(self).__name__} {self.action})"
 
     @staticmethod
     def computation(name, target, args_, kwargs_, return_ids, return_value=False):

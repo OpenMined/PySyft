@@ -140,3 +140,6 @@ if "ID_PROVIDER" not in globals():
     from syft.generic.id_provider import IdProvider
 
     ID_PROVIDER = IdProvider()
+
+# garbage collect all remote data every garbage_delay seconds
+garbage_delay = 0

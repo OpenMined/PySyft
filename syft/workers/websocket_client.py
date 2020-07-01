@@ -8,7 +8,6 @@ import websockets
 import logging
 import ssl
 import time
-import asyncio
 
 import syft as sy
 
@@ -96,11 +95,7 @@ class WebsocketClientWorker(BaseWorker):
 
     def _forward_to_websocket_server_worker(self, message: bin) -> bin:
         """
-<<<<<<< HEAD
-        Note: is subclassed by the node client when yuo use the GridNode
-=======
         Note: Is subclassed by the node client when you use the GridNode
->>>>>>> master
         """
         self.ws.send(str(binascii.hexlify(message)))
         response = binascii.unhexlify(self.ws.recv()[2:-1])
@@ -195,7 +190,6 @@ class WebsocketClientWorker(BaseWorker):
                 tensors that should be returned as response to the command execution.
         Returns:
             A list of PointerTensors or a single PointerTensor if just one response is expected.
-
         Note: this is the async version of send_command, with the major difference that you
         directly call it on the client worker (so we don't have the recipient kw argument)
         """

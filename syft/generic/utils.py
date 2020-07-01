@@ -37,7 +37,7 @@ def remote(func, location):
     if isinstance(location, str):
         location = worker.get_worker(location)
 
-    def remote_exec(*args, return_value=False, return_arity=1, multiprocessing=False, **kwargs):
+    def remote_exec(*args, return_value=False, return_arity=1, **kwargs):
 
         response_ids = tuple(sy.ID_PROVIDER.pop() for _ in range(return_arity))
 
@@ -47,10 +47,6 @@ def remote(func, location):
             location, *command, return_ids=response_ids, return_value=return_value
         )
 
-        # TODO stale: remove
-        if multiprocessing:
-            return response.get()
-        else:
-            return response
+        return response
 
     return remote_exec
