@@ -466,9 +466,12 @@ class BaseWorker(AbstractWorker):
 
         self.trash[location.id][1].append(object_id)
 
-        if (time.time() - self.trash[location.id][0]) > delay:
-            self.send_msg(ForceObjectDeleteMessage(self.trash[location.id][1]), location)
-            self.trash[location.id] = (time.time(), [])
+        try:
+            if (time.time() - self.trash[location.id][0]) > delay:
+                self.send_msg(ForceObjectDeleteMessage(self.trash[location.id][1]), location)
+                self.trash[location.id] = (time.time(), [])
+        except TypeError:
+            pass
 
     async def async_dispatch(self, workers, commands, return_value=False):
         results = await asyncio.gather(

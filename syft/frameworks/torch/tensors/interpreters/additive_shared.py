@@ -1114,10 +1114,10 @@ class AdditiveSharingTensor(AbstractTensor):
 
         for worker, share in x.child.items():
 
-            response_ids = [sy.ID_PROVIDER.pop()]
+            response_ids = (sy.ID_PROVIDER.pop(), )
             command = ("helper_argmax_pairwise", share, tuple(), dict(dim=dim))
             response = self.owner.send_command(
-                message=command, recipient=share.location, return_ids=response_ids
+                share.location, *command, return_ids=response_ids
             )
             x_pairwise_shares[worker] = response
         x_pairwise = AdditiveSharingTensor(**self.get_class_attributes()).on(
