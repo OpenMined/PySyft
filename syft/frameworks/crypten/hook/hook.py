@@ -36,26 +36,35 @@ crypten_to_auto_overload = {
 }
 
 """
-# Methods which we overwrite when building the plan
-# This list might become bigger as we should support more operations
-#
-# Why is needed?
-# When the local party builds the plan it needs to trace the operations that
-# are done on a CrypTensor and CrypTenModule. It does not know about
-# what data/model are involved in the computation.
-# Because of this, when building the plan, the local party can work with
-# only some "shells" of specific operations
-#
-# Workflow for local party -- can be seen in syft/frameworks/crypten/context.py:
-# 1. replace real functions/methods with shell like functions/methods (only for some)
-# 2. crypten_init (to be able to perform some of the crypten computation on the
-#   shell CryptenTensors/CryptenModules)
-#    Eg: cryptensor + cryptensor
-#   If this is not done CrypTen will throw an exception because there is tried
-# to run crypten specific computation in a not crypten environment
-# 3. build the plan (register the set of actions that should be performed)
-# 4. crypten_uninit
-# 5. Undo "1"
+Methods which we overwrite when building the plan
+This list might become bigger as we should support more operations
+
+Why is needed?
+When the local party builds the plan it needs to trace the operations that
+are done on a CrypTensor and CrypTenModule. It does not know about
+what data/model are involved in the computation.
+Because of this, when building the plan, the local party can work with
+only some "shells" of specific operations
+
+Workflow for local party -- can be seen in syft/frameworks/crypten/context.py:
+1. replace real functions/methods with shell like functions/methods (only for some)
+2. Call "crypten_init" (to be able to perform some of the CrypTen computation on the
+  shell CryptenTensors/CryptenModules)
+   Eg: cryptensor + cryptensor
+  If this is not done CrypTen will throw an exception because there is tried
+to run crypten specific computation in a not crypten environment
+3. build the plan (register the set of actions that should be performed)
+4. Call "crypten_uninit"
+5. Undo the operations done at step 1
+
+Q: Why get_plain_text appears only in the crypten_to_auto_overload, but not
+in crypten_plan_hook?
+A: 1. The method is added to the PlaceHolder class such that when the plan is
+built it would be traced.
+   2. The local party will build the plan by being in a CrypTen context (there
+is called "crypten.init()" before building the plan) and calling "get_plain_text"
+on the "shell" CrypTensor (in our case is a CrypTensor that has only values of 0)
+will not require to overwrite another function
 """
 crypten_plan_hook = {
     crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor},

@@ -131,6 +131,19 @@ def run_multiworkers(
 
             rank_to_worker_id = dict(zip(range(0, len(workers)), [worker.id for worker in workers]))
 
+            # TODO: run ttp in a specified worker
+            # if crypten.mpc.ttp_required():
+            #     ttp_process, _ = _new_party(
+            #         crypten.mpc.provider.TTPServer,
+            #         world_size,
+            #         world_size,
+            #         master_addr,
+            #         master_port,
+            #         (),
+            #         {},
+            #     )
+            #     ttp_process.start()
+
             if isinstance(func, sy.Plan):
                 plan = func
 
