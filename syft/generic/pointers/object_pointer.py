@@ -12,7 +12,6 @@ from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.abstract.sendable import AbstractSendable
-from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
