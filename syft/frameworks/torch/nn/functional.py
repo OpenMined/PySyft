@@ -50,13 +50,15 @@ def batch_norm(input, _a, _b, weight, bias, _c, _d, eps):
 
     x = None
 
-    for i in range(3):
+    C = 8
+
+    for i in range(25):
         if x is not None:
-            y = 3 - var * (x * x)
-            x = y * x / 2
+            y = C + 1 - var * (x * x)
+            x = y * x / C
         else:
-            y = 3 - var
-            x = y / 2
+            y = C + 1 - var
+            x = y / C
 
     inv_var = x
 
