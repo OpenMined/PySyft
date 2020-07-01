@@ -2,17 +2,19 @@
 from .socket_handler import SocketHandler
 
 # PyGrid imports
-from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
 from ..exceptions import CycleNotFoundError, MaxCycleLimitExceededError
-from ..controller import processes
+from ..codes import MSG_FIELD, RESPONSE_MSG, CYCLE, FL_EVENTS
+from ..auth.federated import verify_token
 from ..workers import worker_manager
+from ..controller import processes
 
 # Generic imports
-import uuid
 import json
-from binascii import unhexlify
-import traceback
+import uuid
 import base64
+import traceback
+from binascii import unhexlify
+
 
 # Singleton socket handler
 handler = SocketHandler()
@@ -64,14 +66,7 @@ def host_federated_training(message: dict, socket) -> str:
     return json.dumps(response)
 
 
-def authenticate(message: dict, socket) -> str:
-    """ New workers should receive a unique worker ID after authenticate on PyGrid platform.
-        Args:
-            message : Message body sent by some client.
-            socket: Socket descriptor.
-        Returns:
-            response : String response to the client
-    """
+def assign_worker(message, socket):
     response = {}
 
     # Create a new worker instance and bind it with the socket connection.
@@ -92,6 +87,28 @@ def authenticate(message: dict, socket) -> str:
         response[RESPONSE_MSG.ERROR] = str(e)
 
     response = {MSG_FIELD.TYPE: FL_EVENTS.AUTHENTICATE, MSG_FIELD.DATA: response}
+    return response
+
+
+def authenticate(message: dict, socket) -> str:
+    """ New workers should receive a unique worker ID after authenticate on PyGrid platform.
+        Args:
+            message : Message body sended by some client.
+            socket: Socket descriptor.
+        Returns:
+            response : String response to the client
+    """
+    response = {}
+    _auth_token = message.get("auth_token")
+    model_name = message.get("model_name", None)
+
+    verification_result = verify_token(_auth_token, model_name)
+
+    if verification_result["status"] == RESPONSE_MSG.SUCCESS:
+        response = assign_worker({"auth_token": _auth_token}, None)
+    else:
+        response[RESPONSE_MSG.ERROR] = verification_result["error"]
+
     return json.dumps(response)
 
 

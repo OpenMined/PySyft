@@ -7,16 +7,13 @@ from ..workers import worker_manager
 from ..processes import process_manager
 from ..syft_assets import plans, protocols
 from ..codes import RESPONSE_MSG, CYCLE, MSG_FIELD
-from ..events.fl_events import report, cycle_request
-from ..events.fl_events import authenticate as fl_events_auth
+from ..events.fl_events import report, cycle_request, assign_worker
+from ..auth.federated import verify_token
 from ..exceptions import InvalidRequestKeyError, PyGridError
 
 # General Imports
 import io
-import jwt
 import json
-import base64
-import requests
 from requests_toolbelt import MultipartEncoder
 from flask import render_template, Response, request, current_app, send_file
 
@@ -249,94 +246,17 @@ def auth():
     _auth_token = data["auth_token"]
     model_name = data.get("model_name", None)
 
-    server, _ = process_manager.get_configs(name=model_name)
-
-    """stub DB vars"""
-    JWT_VERIFY_API = server.config.get("JWT_VERIFY_API", None)
-    RSA = server.config.get("JWT_with_RSA", None)
-
-    if RSA:
-        pub_key = server.config.get("pub_key", None)
-    else:
-        SECRET = server.config.get("JWT_SECRET", "very long a$$ very secret key phrase")
-    """end stub DB vars"""
-
-    HIGH_SECURITY_RISK_NO_AUTH_FLOW = False if JWT_VERIFY_API is not None else True
-
     try:
-        if not HIGH_SECURITY_RISK_NO_AUTH_FLOW:
-            if _auth_token is None:
+        verification_result = verify_token(_auth_token, model_name)
 
-                status_code = 400
-                return Response(
-                    json.dumps(
-                        {
-                            "error": "Authentication is required, please pass an 'auth_token'."
-                        }
-                    ),
-                    status=status_code,
-                    mimetype="application/json",
-                )
-            else:
-                base64Header, base64Payload, signature = _auth_token.split(".")
-                header_str = base64.b64decode(base64Header)
-                header = json.loads(header_str)
-                _algorithm = header["alg"]
-
-                if not RSA:
-                    payload_str = base64.b64decode(base64Payload)
-                    payload = json.loads(payload_str)
-                    expected_token = jwt.encode(
-                        payload, SECRET, algorithm=_algorithm
-                    ).decode("utf-8")
-
-                    if expected_token != _auth_token:
-                        status_code = 400
-                        return Response(
-                            json.dumps(
-                                {"error": "The 'auth_token' you sent is invalid."}
-                            ),
-                            status=status_code,
-                            mimetype="application/json",
-                        )
-                else:
-                    # we should check if RSA is true there is a pubkey string included during call to `host_federated_training`
-                    # here we assume it exists / no redundant check
-                    try:
-                        jwt.decode(_auth_token, pub_key, _algorithm)
-
-                    except Exception as e:
-                        if e.__class__.__name__ == "InvalidSignatureError":
-                            status_code = 400
-                            return Response(
-                                json.dumps(
-                                    {
-                                        "error": "The 'auth_token' you sent is invalid. "
-                                        + str(e)
-                                    }
-                                ),
-                                status=status_code,
-                                mimetype="application/json",
-                            )
-        external_api_verify_data = {"auth_token": f"{_auth_token}"}
-        verification_result = requests.get(
-            "http://google.com"
-        )  # test with get and google for now. using .post should result in failure
-        # TODO:@MADDIE replace after we have a api to test with `verification_result = requests.post(JWT_VERIFY_API, data = json.dumps(external_api_verify_data))`
-        if verification_result.status_code == 200:
-            resp = fl_events_auth({"auth_token": _auth_token}, None)
+        if verification_result["status"] == RESPONSE_MSG.SUCCESS:
+            resp = assign_worker({"auth_token": _auth_token}, None)
             response_body = json.loads(resp)["data"]
-        else:
+
+        elif verification_result["status"] == RESPONSE_MSG.ERROR:
             status_code = 400
-            return Response(
-                json.dumps(
-                    {
-                        "error": "The 'auth_token' you sent did not pass 3rd party verification. "
-                    }
-                ),
-                status=status_code,
-                mimetype="application/json",
-            )
+            response_body = {"error": verification_result["error"]}
+
     except Exception as e:
         status_code = 401
         response_body = {"error_auth_failed": str(e)}
