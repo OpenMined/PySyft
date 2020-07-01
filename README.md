@@ -39,7 +39,7 @@ work from the command line.
 ```bash
 conda create -n pysyft python=3.7
 conda activate pysyft # some older version of conda require "source activate pysyft" instead.
-conda install jupyter notebook
+conda install jupyter notebook==5.7.8 tornado==4.5.3
 ```
 **Note:** Use Python 3.6-3.7. Tensorflow does not support Python 3.8 hence it might lead to installation errors.
 
