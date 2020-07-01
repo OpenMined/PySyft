@@ -7,11 +7,7 @@ from typing import Any
 
 from syft.generic.frameworks.hook.hook import FrameworkHook
 
-# from syft.frameworks.torch.mpc.fss import authorized1
-# from syft.frameworks.torch.mpc.spdz import authorized2
-
-
-allowed_commands = set()  # authorized1.union(authorized2)
+allowed_commands = set()
 
 
 class FrameworkAttributes(ABC):

@@ -1,3 +1,4 @@
+import pytest
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -5,7 +6,9 @@ import torch.nn.functional as F
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
 from syft.execution.plan import Plan
+from syft.execution.translation import TranslationTarget
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.execution.translation.threepio import PlanTranslatorTfjs
 from syft.serde.serde import deserialize
 from syft.serde.serde import serialize
 
@@ -34,6 +37,64 @@ def test_plan_can_be_jit_traced(hook, workers):
     y = torchscript_plan(t)
 
     assert (y == th.tensor([3.0, 5])).all()
+
+
+def test_func_plan_can_be_translated_to_tfjs(hook, workers):
+    Plan._build_translators = []
+
+    @sy.func2plan(args_shape=[(3, 3)])
+    def plan(x):
+        x = x * 2
+        x = x.abs()
+        return x
+
+    orig_plan = plan.copy()
+
+    plan_js = plan.copy()
+    plan_js.add_translation(PlanTranslatorTfjs)
+    plan_js.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert plan_js.role.actions[0].name == "tf.mul"
+    assert len(plan_js.role.actions[0].args) == 2
+
+    # Test plan caching
+    plan_js2 = plan_js.copy()
+    plan_js2.add_translation(PlanTranslatorTfjs)
+    plan_js2.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert plan_js2.role.actions[0].name == "tf.mul"
+    assert len(plan_js2.role.actions[0].args) == 2
+
+    # check that translation can be done after serde
+    serde_plan = deserialize(serialize(orig_plan))
+    serde_plan.add_translation(PlanTranslatorTfjs)
+    serde_plan.base_framework = TranslationTarget.TENSORFLOW_JS.value
+    assert serde_plan.role.actions[0].name == "tf.mul"
+    assert len(serde_plan.role.actions[0].args) == 2
+
+    # check that translation is not lost after serde
+    serde_plan_full = deserialize(serialize(plan_js))
+    assert serde_plan_full.role.actions[0].name == "tf.mul"
+    assert len(serde_plan_full.role.actions[0].args) == 2
+
+
+@pytest.mark.skip(reason="Missing translation for torch.nn.functional.linear")  # pragma: no cover
+def test_cls_plan_can_be_translated_to_tfjs(hook, workers):
+    Plan._build_translators = []
+
+    class Net(sy.Plan):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = nn.Linear(2, 3)
+            self.fc2 = nn.Linear(3, 1)
+
+        def forward(self, x):
+            x = self.fc1(x)
+            x = F.relu(x)
+            x = self.fc2(x)
+            return x
+
+    plan = Net()
+    plan.build(th.zeros(10, 2))
+    orig_plan = plan.copy()
 
 
 def test_func_plan_can_be_translated_to_torchscript(hook, workers):
@@ -205,7 +266,7 @@ def test_fl_mnist_example_training_can_be_translated(hook, workers):
 
         for name, child in module._modules.items():
             if child is not None:
-                param_idx += set_model_params(child, params_list, param_idx)
+                param_idx = set_model_params(child, params_list, param_idx)
 
         return param_idx
 

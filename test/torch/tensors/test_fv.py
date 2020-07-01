@@ -19,6 +19,7 @@ from syft.frameworks.torch.he.fv.util.operations import xgcd
 from syft.frameworks.torch.he.fv.util.operations import reverse_bit
 from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
+from syft.frameworks.torch.he.fv.evaluator import Evaluator
 
 
 @pytest.mark.parametrize(
@@ -125,6 +126,8 @@ def test_CoeffModulus_bfv_default(poly_modulus, SeqLevelType, result):
         ([0, 0], [0, 0], 3, [0, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 3, [0, 2, 1, 0]),
         ([1, 2, 3, 4], [2, 3, 4, 5], 1, [0, 0, 0, 0]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [2, 1, 0, 1, 2]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0, 0, 0, 0]),
     ],
 )
 def test_poly_add_mod(op1, op2, mod, result):
@@ -133,7 +136,12 @@ def test_poly_add_mod(op1, op2, mod, result):
 
 @pytest.mark.parametrize(
     "op1, op2, mod, result",
-    [([1, 1], [2, 1], 5, [1, 3]), ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1])],
+    [
+        ([1, 1], [2, 1], 5, [1, 3]),
+        ([1, 2, 3, 4], [2, 3, 4, 5], 5, [3, 1, 1]),
+        ([1, 2, 3, 4, 5], [1, -4], 3, [0, 1, 1, 1, 1]),
+        ([4, 4], [-4, -4, -4, -4], 4, [0]),
+    ],
 )
 def test_poly_mul_mod(op1, op2, mod, result):
     print("test poly_mul_mod : ", poly_mul_mod(op1, op2, mod))
@@ -373,3 +381,118 @@ def test_fv_encryption_decrption_without_changing_parameters():
         ct = encryptor.encrypt(encoder.encode(value))
         for _ in range(3):
             assert value == encoder.decode(decryptor.decrypt(ct))
+
+
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
+def test_fv_add_cipher_cipher(int1, int2):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(int1))
+    op2 = encryptor.encrypt(encoder.encode(int2))
+    assert (
+        int1 + int2
+        == encoder.decode(decryptor.decrypt(evaluator._add_cipher_cipher(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op2, op1)))
+    )
+
+
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
+def test_fv_add_cipher_plain(int1, int2):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(int1))
+    op2 = encoder.encode(int2)
+
+    assert (
+        int1 + int2
+        == encoder.decode(decryptor.decrypt(evaluator._add_cipher_plain(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.add(op2, op1)))
+    )
+
+
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
+def test_fv_add_plain_plain(int1, int2):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    encoder = IntegerEncoder(ctx)
+    evaluator = Evaluator(ctx)
+    op1 = encoder.encode(int1)
+    op2 = encoder.encode(int2)
+    assert (
+        int1 + int2
+        == encoder.decode(evaluator._add_plain_plain(op1, op2))
+        == encoder.decode(evaluator.add(op1, op2))
+        == encoder.decode(evaluator.add(op2, op1))
+    )
+
+
+@pytest.mark.parametrize("val", [(0), (-1), (100), (-1000), (-123), (99), (0xFFF), (0xFFFFFF)])
+def test_fv_negate_cipher(val):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    evaluator = Evaluator(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    op = encryptor.encrypt(encoder.encode(val))
+    assert -val == encoder.decode(decryptor.decrypt(evaluator.negate(op)))
+
+
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
+def test_fv_sub_cipher_cipher(int1, int2):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(int1))
+    op2 = encryptor.encrypt(encoder.encode(int2))
+    assert (
+        int1 - int2
+        == encoder.decode(decryptor.decrypt(evaluator._sub_cipher_cipher(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.sub(op1, op2)))
+        == -encoder.decode(decryptor.decrypt(evaluator.sub(op2, op1)))
+    )
+
+
+@pytest.mark.parametrize(
+    "int1, int2", [(0, 0), (-1, 1), (100, -10), (1000, 100), (-1000, 100), (-100, -100)]
+)
+def test_fv_sub_cipher_plain(int1, int2):
+    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [30, 30]), 1024))
+    keys = KeyGenerator(ctx).keygen()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op1 = encryptor.encrypt(encoder.encode(int1))
+    op2 = encoder.encode(int2)
+
+    assert (
+        int1 - int2
+        == encoder.decode(decryptor.decrypt(evaluator._sub_cipher_plain(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.sub(op1, op2)))
+        == encoder.decode(decryptor.decrypt(evaluator.sub(op2, op1)))
+    )

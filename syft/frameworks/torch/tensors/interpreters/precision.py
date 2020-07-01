@@ -692,11 +692,15 @@ class FixedPrecisionTensor(AbstractTensor):
         result = _self.argmax(**kwargs)
         return result.long() * self.base ** self.precision_fractional
 
-    def var(self, **kwargs):
-        # Note that this implem is different from pytorch (which divides by m-1)
+    def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu
-        return (unbiased_self * unbiased_self).mean(**kwargs)
+        mean = (unbiased_self * unbiased_self).mean(**kwargs)
+        if unbiased:
+            numel = self.numel()
+            return mean * numel / (numel - 1)
+        else:
+            return mean
 
     @staticmethod
     @overloaded.module

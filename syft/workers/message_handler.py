@@ -251,7 +251,13 @@ class BaseMessageHandler(AbstractMessageHandler):
             # decision to decide when to delete the tensor.
             ptr = obj.create_pointer(
                 garbage_collect_data=False, owner=sy.local_worker, tags=obj.tags
-            ).wrap()
+            )
+
+            # Wrap only if the pointer points to a tensor.
+            # If it points to a generic object, do not wrap.
+            if isinstance(ptr, PointerTensor):
+                ptr = ptr.wrap()
+
             results.append(ptr)
 
         return results

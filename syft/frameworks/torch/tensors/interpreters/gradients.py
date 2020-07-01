@@ -40,8 +40,7 @@ class SubBackward(GradFunc):
 
 
 class SumBackward(GradFunc):
-    """Tensor Sum backward gradient class
-    """
+    """Tensor Sum backward gradient class"""
 
     def __init__(self, self_, **kwargs):
         super().__init__(self, self_)
@@ -55,6 +54,8 @@ class SumBackward(GradFunc):
 
 
 class MeanBackward(GradFunc):
+    """Tensor Mean backward gradient class"""
+
     def __init__(self, self_, dim=None):
         super().__init__(self, self_)
         self.self_ = self_
@@ -67,6 +68,8 @@ class MeanBackward(GradFunc):
 
 
 class ReshapeBackward(GradFunc):
+    """Tensor reshape backward gradient class"""
+
     def __init__(self, self_, *dims):
         super().__init__(self, self_)
         self.self_ = self_
