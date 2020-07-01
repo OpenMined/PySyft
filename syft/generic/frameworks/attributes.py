@@ -7,11 +7,25 @@ from typing import Any
 
 from syft.generic.frameworks.hook.hook import FrameworkHook
 
+allowed_commands = set()
+
 
 class FrameworkAttributes(ABC):
+    _allowed_commands = None
+
     @abstractmethod
     def __init__(self, framework: ModuleType, hook: FrameworkHook):
         pass
+
+    @property
+    def allowed_commands(self):
+        if self._allowed_commands is None:
+            self._allowed_commands = allowed_commands
+        return self._allowed_commands
+
+    @allowed_commands.setter
+    def allowed_commands(self, new_commands):
+        self._allowed_commands = new_commands
 
     # Forcing subclasses to define a class-level constant; see
     # https://stackoverflow.com/a/53417582 for nuance
