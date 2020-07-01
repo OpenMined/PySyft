@@ -5,6 +5,7 @@ from pythreepio.command import Command
 from syft.execution.computation import ComputationAction
 from syft.execution.role import Role
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.placeholder_id import PlaceholderId
 from syft.execution.translation import TranslationTarget
 from syft.execution.translation.abstract import AbstractPlanTranslator
 
@@ -32,7 +33,7 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
         for cmd in translated_cmds:
             # Create local store of placeholders
             if cmd.placeholder_output is not None:
-                store[cmd.placeholder_output] = PlaceHolder(role=self.plan.role)
+                store[cmd.placeholder_output] = PlaceHolder(role=role)
 
             for i, arg in enumerate(cmd.args):
                 if type(arg) == pythreepio.command.Placeholder:
@@ -46,10 +47,23 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
             )
             role.register_action(role_action, ComputationAction)
 
+    @staticmethod
+    def _restore_placeholders(action: ComputationAction):
+        """Converts PlaceholderId's to PlaceHolder in an Action"""
+        def wrap_in_placeholder(ph_id):
+            return PlaceHolder(id=ph_id)
+
+        action.target = Role.nested_object_traversal(action.target, wrap_in_placeholder, PlaceholderId)
+        action.args = Role.nested_object_traversal(action.args, wrap_in_placeholder, PlaceholderId)
+        action.kwargs = Role.nested_object_traversal(action.kwargs, wrap_in_placeholder, PlaceholderId)
+        action.return_ids = Role.nested_object_traversal(action.return_ids, wrap_in_placeholder, PlaceholderId)
+        return action
+
     def translate_action(
         self, action: ComputationAction, to_framework: str, role: Role
-    ) -> ComputationAction:
+    ):
         """Uses threepio to perform command level translation given a specific action"""
+        self._restore_placeholders(action)
         threepio = Threepio(self.plan.base_framework, to_framework, None)
         function_name = action.name.split(".")[-1]
         args = action.args if action.target is None else (action.target, *action.args)
@@ -61,22 +75,24 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
         for cmd in translated_cmds:
             role_action = (
                 (".".join(cmd.attrs), None, tuple(cmd.args), cmd.kwargs),
-                PlaceHolder(id=action.return_ids[0]),
+                action.return_ids,
             )
             role.register_action(role_action, ComputationAction)
 
     def translate_framework(self, to_framework: str) -> Role:
         """Translates current plan's Role to specified framework"""
-        plan = self.plan.copy()
-        new_role = plan.role.copy()
-        new_role.reset()
-        # Check to see if plan has been translated to this framework yet
-        if plan.roles.get(to_framework, None) is not None:
-            plan.default_framework = to_framework
-            return plan
 
-        new_actions = []
-        for action in plan.role.actions:
+        # Check to see if plan has been translated to this framework yet
+        if self.plan.roles.get(to_framework, None) is not None:
+            return self.plan.role
+
+        new_role = self.plan.role.copy()
+
+        # We don't want to fully reset Role because we need to keep input/output placeholders
+        # (which are known only at the Plan build time)
+        new_role.actions = []
+
+        for action in self.plan.role.actions:
             self.translate_action(action, to_framework, new_role)
         return new_role
 

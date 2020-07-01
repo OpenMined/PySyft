@@ -54,6 +54,8 @@ def test_func_plan_can_be_translated_to_tfjs(hook, workers):
     plan_js.base_framework = TranslationTarget.TENSORFLOW_JS.value
     assert plan_js.role.actions[0].name == "tf.mul"
     assert len(plan_js.role.actions[0].args) == 2
+    assert len(plan_js.role.input_placeholders()) == len(orig_plan.role.input_placeholders())
+    assert len(plan_js.role.output_placeholders()) == len(orig_plan.role.output_placeholders())
 
     # Test plan caching
     plan_js2 = plan_js.copy()
