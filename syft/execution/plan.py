@@ -311,7 +311,6 @@ class Plan(AbstractSendable):
             input_types=self.input_types,
             description=self.description,
             base_framework=self._base_framework,
-            roles={fw_name: role.copy() for fw_name, role in self.roles.items()},
         )
 
         plan_copy.torchscript = self.torchscript
