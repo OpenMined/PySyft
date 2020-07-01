@@ -336,76 +336,91 @@ class Role(SyftSerializable):
         Removes unnecessary actions and placeholders.
         """
 
-        # Track operations on output placeholders from bottom to top
-        output_connected_placeholder_ids = set(self.output_placeholder_ids)
+        def action_affects_placeholder_ids(action: Action, ids: set, inplace_only=False) -> bool:
+            """Returns true if action updates provided placeholder ids"""
+
+            # Operation has side-effect on connected placeholder(s)
+            target_ids = get_action_placeholder_ids(action, "target")
+            affects_connected_ph = len(
+                target_ids.intersection(ids)
+            ) > 0 and self._is_inplace_operation(action.name, action.target)
+
+            if inplace_only or affects_connected_ph:
+                return affects_connected_ph
+
+            # Operation resulted in connected placeholder(s)
+            return_ids = get_action_placeholder_ids(action, "return")
+            returns_connected_ph = len(return_ids.intersection(ids)) > 0
+            return returns_connected_ph
+
+        def get_action_placeholder_ids(action, scope="all"):
+            """Returns PlaceholderId's used by Action"""
+            ids = set()
+            attrs = {
+                "all": ["target", "args", "kwargs", "return_ids"],
+                "return": ["return_ids"],
+                "target": ["target"],
+            }
+            for attr in attrs.get(scope):
+                Role.nested_object_traversal(
+                    getattr(action, attr), lambda ph_id: ids.add(ph_id.value), PlaceholderId
+                )
+
+            return ids
+
+        def find_connected_placeholder_ids(start_action_idx, ph_id):
+            """Returns all placeholders affecting given PlaceholderId (including itself)"""
+            placeholders = {ph_id} if not isinstance(ph_id, set) else ph_id
+            actions_idx = set()
+
+            # We need to examine actions in the order opposite to execution order
+            # To track placeholders that affected `id` starting from the given action
+            # and above in the execution flow
+            for action_idx_rev, action in enumerate(reversed(self.actions[: start_action_idx + 1])):
+                action_idx = start_action_idx - action_idx_rev
+                if action_affects_placeholder_ids(action, placeholders):
+                    placeholders |= get_action_placeholder_ids(action)
+                    actions_idx.add(action_idx)
+
+            return placeholders, actions_idx
+
+        connected_placeholder_ids = set()
         connected_actions_idx = set()
-        for action_rev_idx, action in enumerate(reversed(self.actions)):
-            return_ids = set()
-            if action.return_ids is not None:
-                for ph in action.return_ids:
-                    if isinstance(ph, PlaceholderId):
-                        return_ids.add(ph.value)
-            target_id = action.target.value if action.target is not None else None
-            # Operation resulted in placeholder connected to output
-            returns_connected_ph = (
-                len(return_ids.intersection(output_connected_placeholder_ids)) > 0
+
+        # Find placeholders that affect output placeholders, starting from the last action
+        if len(self.output_placeholder_ids) > 0:
+            placeholder_ids, actions_idx = find_connected_placeholder_ids(
+                len(self.actions) - 1, set(self.output_placeholder_ids)
             )
-            # Operation has side-effect on placeholder connected to output
-            affects_connected_ph = (
-                target_id in output_connected_placeholder_ids
-                and self._is_inplace_operation(action.name, action.target)
-            )
+            connected_placeholder_ids |= placeholder_ids
+            connected_actions_idx |= actions_idx
 
-            if returns_connected_ph or affects_connected_ph:
-                connected_actions_idx.add(len(self.actions) - 1 - action_rev_idx)
-
-                def append_to_connected_ph(ph_id):
-                    output_connected_placeholder_ids.add(ph_id.value)
-
-                Role.nested_object_traversal(action.args, append_to_connected_ph, PlaceholderId)
-                Role.nested_object_traversal(action.target, append_to_connected_ph, PlaceholderId)
-
-        # Trace actions that have side-effects on inputs
-        input_connected_placeholder_ids = set(self.input_placeholder_ids)
+        # Find inputs that have side-effects and all placeholders connected with them
+        input_ids = set(self.input_placeholder_ids)
         for action_idx, action in enumerate(self.actions):
-            target_id = action.target.value if action.target is not None else None
-            affects_connected_ph = (
-                target_id in input_connected_placeholder_ids
-                and self._is_inplace_operation(action.name, action.target)
-            )
-
-            if affects_connected_ph:
-                connected_actions_idx.add(action_idx)
-
-                def append_to_connected_ph(ph_id):
-                    input_connected_placeholder_ids.add(ph_id.value)
-
-                Role.nested_object_traversal(action.args, append_to_connected_ph, PlaceholderId)
-                Role.nested_object_traversal(action.target, append_to_connected_ph, PlaceholderId)
-
-        connected_placeholder_ids = output_connected_placeholder_ids.union(
-            input_connected_placeholder_ids
-        )
-        disconnected_placeholder_ids = set(self.placeholders.keys()).difference(
-            connected_placeholder_ids
-        )
+            if action_affects_placeholder_ids(action, input_ids, inplace_only=True):
+                target_ids = get_action_placeholder_ids(action, "target")
+                placeholder_ids, actions_idx = find_connected_placeholder_ids(
+                    action_idx, target_ids
+                )
+                connected_placeholder_ids |= placeholder_ids
+                connected_actions_idx |= actions_idx
 
         # Remove unused actions
         self.actions = [a for i, a in enumerate(self.actions) if i in connected_actions_idx]
 
         # Remove unused placeholders
         self.output_placeholder_ids = tuple(
-            ph_id
-            for ph_id in self.output_placeholder_ids
-            if ph_id not in disconnected_placeholder_ids
+            ph_id for ph_id in self.output_placeholder_ids if ph_id in connected_placeholder_ids
         )
         self.input_placeholder_ids = tuple(
-            ph_id
-            for ph_id in self.input_placeholder_ids
-            if ph_id not in disconnected_placeholder_ids
+            ph_id for ph_id in self.input_placeholder_ids if ph_id in connected_placeholder_ids
         )
-        for ph_id in disconnected_placeholder_ids:
-            self.placeholders.pop(ph_id, None)
+        self.placeholders = {
+            ph_id: ph
+            for ph_id, ph in self.placeholders.items()
+            if ph_id in connected_placeholder_ids
+        }
 
     @staticmethod
     def simplify(worker: AbstractWorker, role: "Role") -> tuple:
