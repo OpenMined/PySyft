@@ -166,6 +166,8 @@ class BaseWorker(AbstractWorker):
         # storage object for crypto primitives
         self.crypto_store = PrimitiveStorage(owner=self)
 
+        self.syft = sy
+
     def get_obj(self, obj_id: Union[str, int]) -> object:
         """Returns the object from registry.
 
@@ -499,8 +501,13 @@ class BaseWorker(AbstractWorker):
                 )
                 responses.append(response)
 
+            if return_value:
+                responses = [response.get() for response in responses]
+
             if len(return_ids) == 1:
                 responses = responses[0]
+            else:
+                responses = tuple(responses)
         else:
             responses = ret_val
         return responses
