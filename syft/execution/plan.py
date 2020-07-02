@@ -310,7 +310,8 @@ class Plan(AbstractSendable):
             tags=self.tags,
             input_types=self.input_types,
             description=self.description,
-            roles=self.roles,
+            base_framework=self._base_framework,
+            roles={fw_name: role.copy() for fw_name, role in self.roles.items()},
         )
 
         plan_copy.torchscript = self.torchscript
