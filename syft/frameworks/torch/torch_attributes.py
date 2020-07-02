@@ -140,6 +140,8 @@ class TorchAttributes(FrameworkAttributes):
         # Negatives:
         # __init__, __import__, __iter__, __foo__, __bar_foo
 
+        self.global_state_change_methods = {"seed", "manual_seed"}
+
     def is_inplace_method(self, method_name):
         """Determine if a method is inplace or not.
 
@@ -158,3 +160,6 @@ class TorchAttributes(FrameworkAttributes):
 
             self.inplace_methods[method_name] = is_inplace
             return is_inplace
+
+    def is_global_state_change_method(self, method_name):
+        return method_name in self.global_state_change_methods

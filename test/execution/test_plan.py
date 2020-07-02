@@ -1015,7 +1015,6 @@ def test_backward_autograd_can_be_traced(hook, workers):
     var_13 = var_0.__rtruediv__(1)
     var_14 = var_12.mul(var_13)
     var_15 = var_14.mul(5)
-    var_16 = var_14.mul(arg_1)
     out_1 = var_15.copy()
     return out_1"""
     assert autograd_test.code == autograd_str

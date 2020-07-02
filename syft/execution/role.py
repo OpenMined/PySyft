@@ -313,23 +313,39 @@ class Role(SyftSerializable):
             id=sy.ID_PROVIDER.pop(),
         )
 
-    def _is_inplace_operation(self, cmd: str, target: PlaceholderId):
-        """
-        Helper method that returns True if cmd is inplace operation
-        """
-        if target is None:
-            framework_name, command = cmd.split(".", 2)
-            framework = getattr(syft, framework_name, syft.framework)
-            return framework.is_inplace_method(command)
+    def _get_command_framework(self, action: Action):
+        """Helper method that returns framework module associated with command."""
+        if action.target is None:
+            framework_name, command = action.name.split(".", 2)
+            return getattr(syft, framework_name, syft.framework)
 
-        elif isinstance(target, PlaceholderId):
-            ph = self.placeholders.get(target.value, None)
+        elif isinstance(action.target, PlaceholderId):
+            ph = self.placeholders.get(action.target.value, None)
             if ph is not None:
                 framework_name = ph.child.__module__
-                framework = getattr(syft, framework_name, syft.framework)
-                return framework.is_inplace_method(cmd)
+                return getattr(syft, framework_name, syft.framework)
 
-        return False
+        return None
+
+    def _is_inplace_action(self, action: Action):
+        """
+        Helper method that returns True if action contains inplace operation.
+        """
+        framework = self._get_command_framework(action)
+        if framework is not None:
+            return framework.is_inplace_method(action.name.split(".")[-1])
+        else:
+            return False
+
+    def _is_state_change_action(self, action: Action):
+        """
+        Helper method that returns True if action affects module state.
+        """
+        framework = self._get_command_framework(action)
+        if framework is not None:
+            return framework.is_global_state_change_method(action.name.split(".")[-1])
+        else:
+            return False
 
     def _prune_actions(self):
         """
@@ -343,7 +359,7 @@ class Role(SyftSerializable):
             target_ids = get_action_placeholder_ids(action, "target")
             affects_connected_ph = len(
                 target_ids.intersection(ids)
-            ) > 0 and self._is_inplace_operation(action.name, action.target)
+            ) > 0 and self._is_inplace_action(action)
 
             if inplace_only or affects_connected_ph:
                 return affects_connected_ph
@@ -406,16 +422,15 @@ class Role(SyftSerializable):
                 connected_placeholder_ids |= placeholder_ids
                 connected_actions_idx |= actions_idx
 
-        # Remove unused actions
-        self.actions = [a for i, a in enumerate(self.actions) if i in connected_actions_idx]
+        # Remove actions that do not affect input/output placeholders
+        # Exception is actions that affect module state, like `torch.manual_seed(n)`
+        self.actions = [
+            a for i, a in enumerate(self.actions)
+            if i in connected_actions_idx or self._is_state_change_action(a)
+        ]
 
-        # Remove unused placeholders
-        self.output_placeholder_ids = tuple(
-            ph_id for ph_id in self.output_placeholder_ids if ph_id in connected_placeholder_ids
-        )
-        self.input_placeholder_ids = tuple(
-            ph_id for ph_id in self.input_placeholder_ids if ph_id in connected_placeholder_ids
-        )
+        # Remove unused placeholders, except inputs
+        connected_placeholder_ids |= input_ids
         self.placeholders = {
             ph_id: ph
             for ph_id, ph in self.placeholders.items()
