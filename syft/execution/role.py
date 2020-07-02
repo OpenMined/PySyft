@@ -425,7 +425,8 @@ class Role(SyftSerializable):
         # Remove actions that do not affect input/output placeholders
         # Exception is actions that affect module state, like `torch.manual_seed(n)`
         self.actions = [
-            a for i, a in enumerate(self.actions)
+            a
+            for i, a in enumerate(self.actions)
             if i in connected_actions_idx or self._is_state_change_action(a)
         ]
 
