@@ -77,7 +77,6 @@ def test_func_plan_can_be_translated_to_tfjs(hook, workers):
     assert len(serde_plan_full.role.actions[0].args) == 2
 
 
-# @pytest.mark.skip(reason="Missing translation for torch.nn.functional.linear")  # pragma: no cover
 def test_cls_plan_can_be_translated_to_tfjs(hook, workers):
     Plan._build_translators = []
 
