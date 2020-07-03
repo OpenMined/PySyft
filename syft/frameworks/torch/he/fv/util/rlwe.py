@@ -122,6 +122,7 @@ def encrypt_asymmetric(context, public_key):
         A ciphertext object containing encryption of zeroes by asymmetric encryption procedure.
     """
     param = context.param
+    poly_mod = param.poly_modulus
     coeff_modulus = param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
     encrypted_size = len(public_key)
@@ -141,7 +142,10 @@ def encrypt_asymmetric(context, public_key):
         e = sample_poly_normal(param)
         for i in range(coeff_mod_size):
             result[j][i] = poly_add_mod(
-                poly_mul_mod(public_key[j][i], u[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+                poly_mul_mod(public_key[j][i], u[i], coeff_modulus[i], poly_mod),
+                e[i],
+                coeff_modulus[i],
+                poly_mod,
             )
     return CipherText(result)
 
@@ -157,6 +161,7 @@ def encrypt_symmetric(context, secret_key):
     Returns:
         A ciphertext object containing encryption of zeroes by symmetric encryption procedure.
     """
+    poly_mod = context.param.poly_modulus
     coeff_modulus = context.param.coeff_modulus
     coeff_mod_size = len(coeff_modulus)
 
@@ -173,7 +178,10 @@ def encrypt_symmetric(context, secret_key):
     for i in range(coeff_mod_size):
         c0[i] = poly_negate_mod(
             poly_add_mod(
-                poly_mul_mod(c1[i], secret_key[i], coeff_modulus[i]), e[i], coeff_modulus[i]
+                poly_mul_mod(c1[i], secret_key[i], coeff_modulus[i], poly_mod),
+                e[i],
+                coeff_modulus[i],
+                poly_mod,
             ),
             coeff_modulus[i],
         )
