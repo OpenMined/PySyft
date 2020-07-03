@@ -8,6 +8,8 @@ import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
 from syft.serde.syft_serializable import SyftSerializable
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.execution.translation.threepio import PlanTranslatorTfjs
 
 
 class SerializableDummyClass(SyftSerializable):
@@ -773,6 +775,11 @@ def make_pointerdataset(**kwargs):
 
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
+    syft.execution.plan.Plan._build_translators = [
+        PlanTranslatorTorchscript,
+        PlanTranslatorTfjs,
+    ]
+
     # Function to plan
     @syft.func2plan([torch.Size((3,))])
     def plan(x):
