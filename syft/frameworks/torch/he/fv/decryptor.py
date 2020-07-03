@@ -1,6 +1,4 @@
 import copy
-from numpy.polynomial import polynomial as poly
-
 
 from syft.frameworks.torch.he.fv.plaintext import PlainText
 from syft.frameworks.torch.he.fv.util.operations import get_significant_count
@@ -20,7 +18,7 @@ class Decryptor:
         self._context = context
         self._coeff_modulus = context.param.coeff_modulus
         self._coeff_count = context.param.poly_modulus
-        self._secret_key = secret_key.data
+        self._secret_key_array = [secret_key.data]
 
     def decrypt(self, encrypted):
         """Decrypts the encrypted ciphertext objects.
@@ -56,18 +54,21 @@ class Decryptor:
         """
         phase = encrypted[0]
 
-        secret_key_array = self._get_sufficient_sk_power(len(encrypted))
+        secret_key_array = self._get_sufficient_sk_power(len(encrypted) - 1)
 
         for j in range(1, len(encrypted)):
             for i in range(len(self._coeff_modulus)):
                 phase[i] = poly_add_mod(
                     poly_mul_mod(
-                        encrypted[j][i], secret_key_array[j - 1][i], self._coeff_modulus[i]
+                        encrypted[j][i],
+                        secret_key_array[j - 1][i],
+                        self._coeff_modulus[i],
+                        self._coeff_count,
                     ),
                     phase[i],
                     self._coeff_modulus[i],
+                    self._coeff_count,
                 )
-
         return phase
 
     def _get_sufficient_sk_power(self, max_power):
@@ -79,11 +80,19 @@ class Decryptor:
         Returns:
             A 2-dim list having secretkey powers.
         """
-        sk_power = [[] for _ in range(max_power)]
 
-        sk_power[0] = self._secret_key
+        if max_power == len(self._secret_key_array):
+            return self._secret_key_array
 
-        for i in range(2, max_power + 1):
-            for j in range(len(self._coeff_modulus)):
-                sk_power[i - 1].append(poly.polypow(self._secret_key[j], i).astype(int).tolist())
-        return sk_power
+        while len(self._secret_key_array) < max_power:
+            sk_extra_power = [0] * len(self._coeff_modulus)
+            for i in range(len(self._coeff_modulus)):
+                sk_extra_power[i] = poly_mul_mod(
+                    self._secret_key_array[-1][i],
+                    self._secret_key_array[0][i],
+                    self._coeff_modulus[i],
+                    self._coeff_count,
+                )
+            self._secret_key_array.append(sk_extra_power)
+
+        return self._secret_key_array
