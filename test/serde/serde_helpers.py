@@ -3,6 +3,7 @@ import numpy
 import torch
 import traceback
 import io
+import warnings
 
 import syft
 from syft.serde import msgpack
@@ -813,9 +814,20 @@ def make_plan(**kwargs):
         assert detailed.tags == original.tags
         assert detailed.description == original.description
         assert detailed._base_framework == original._base_framework
+
+        warnings.warn("+++++++++++++++++++++ COMPARING PLANS +++++++++++++++++++++")
+        warnings.warn(f"DETAILED: {detailed.code}")
+        warnings.warn(f"ORIGINAL: {original.code}")
+        det_r = {k: (v.id, [a.code() for a in v.actions]) for k, v in detailed.roles.items()}
+        orig_r = {k: (v.id, [a.code() for a in v.actions]) for k, v in original.roles.items()}
+        warnings.warn(f"DETAILED ROLES: {det_r}")
+        warnings.warn(f"ORIGINAL ROLES: {orig_r}")
+
         assert detailed.roles.keys() == original.roles.keys()
+
         for detailed_role, original_role in zip(detailed.roles.values(), original.roles.values()):
             compare_roles(detailed_role, original_role)
+
         with kwargs["workers"]["serde_worker"].registration_enabled():
             t = torch.tensor([1.1, -2, 3])
             res1 = detailed(t)
