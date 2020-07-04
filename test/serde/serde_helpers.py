@@ -823,6 +823,8 @@ def make_plan(**kwargs):
             res1 = detailed(t)
             res2 = original(t)
         assert res1.equal(res2)
+
+        assert original.code == detailed.code
         return True
 
     return [
