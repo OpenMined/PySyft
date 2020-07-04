@@ -266,7 +266,7 @@ def test_fl_mnist_example_training_can_be_translated(hook, workers):
 
         for name, child in module._modules.items():
             if child is not None:
-                param_idx += set_model_params(child, params_list, param_idx)
+                param_idx = set_model_params(child, params_list, param_idx)
 
         return param_idx
 

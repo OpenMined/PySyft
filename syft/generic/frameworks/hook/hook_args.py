@@ -722,7 +722,7 @@ def register_tensor(tensor: FrameworkTensorType, owner: AbstractWorker, response
     owner.de_register_obj(tensor)  # Doesn't raise Exceptions if absent on owner
     tensor.owner = owner
     try:
-        tensor.id = response_ids.pop(-1)
+        tensor.id = response_ids.pop(0)
     except IndexError:
         raise exceptions.ResponseSignatureError
 
