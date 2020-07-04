@@ -3,7 +3,6 @@ import numpy
 import torch
 import traceback
 import io
-import warnings
 
 import syft
 from syft.serde import msgpack
