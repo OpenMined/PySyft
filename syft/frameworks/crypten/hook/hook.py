@@ -5,29 +5,101 @@ from syft.execution.plan import Plan
 import crypten
 import torch as th
 
-methods_to_hook = ["load"]
+
+class CrypTenPlanBuild(object):
+    @staticmethod
+    def f_return_none(*args, **kwargs):
+        return None
+
+    @staticmethod
+    def f_return_cryptensor(*args, **kwargs):
+        return crypten.cryptensor(th.zeros([]))
+
+    @staticmethod
+    def f_return_model_or_cryptensor(*args, **kwargs):
+        """
+        # TODO: When we solve the problem converting OnnxModels to PyTorch we can
+        have serialized models on workers that we can load without having the party
+        that started the computation know about the instrinsics of the architecture
+        if args[0] == "crypten_model":
+            return crypten.nn.Module()
+        else:
+        """
+        return crypten.cryptensor(th.zeros([]))
+
+
+# Methods that need to be added to the PlaceHolder when building the plan
+# and hence need to be traced
+crypten_to_auto_overload = {
+    crypten.mpc.MPCTensor: ["get_plain_text"],
+    crypten.nn.Module: ["encrypt", "decrypt", "__call__"],
+}
+
+"""
+Methods which we overwrite when building the plan
+This list might become bigger as we should support more operations
+
+Why is needed?
+When the local party builds the plan it needs to trace the operations that
+are done on a CrypTensor and CrypTenModule. It does not know about
+what data/model are involved in the computation.
+Because of this, when building the plan, the local party can work with
+only some "shells" of specific operations
+
+Workflow for local party -- can be seen in syft/frameworks/crypten/context.py:
+1. replace real functions/methods with shell like functions/methods (only for some)
+2. Call "crypten_init" (to be able to perform some of the CrypTen computation on the
+  shell CryptenTensors/CryptenModules)
+   Eg: cryptensor + cryptensor
+  If this is not done CrypTen will throw an exception because there is tried
+to run crypten specific computation in a not crypten environment
+3. build the plan (register the set of actions that should be performed)
+4. Call "crypten_uninit"
+5. Undo the operations done at step 1
+
+Q: Why get_plain_text appears only in the crypten_to_auto_overload, but not
+in crypten_plan_hook?
+A: 1. The method is added to the PlaceHolder class such that when the plan is
+built it would be traced.
+   2. The local party will build the plan by being in a CrypTen context (there
+is called "crypten.init()" before building the plan) and calling "get_plain_text"
+on the "shell" CrypTensor (in our case is a CrypTensor that has only values of 0)
+will not require to overwrite another function
+"""
+crypten_plan_hook = {
+    crypten: {"load": CrypTenPlanBuild.f_return_model_or_cryptensor},
+    crypten.nn.Module: {
+        "encrypt": CrypTenPlanBuild.f_return_none,
+        "decrypt": CrypTenPlanBuild.f_return_none,
+        "__call__": CrypTenPlanBuild.f_return_cryptensor,
+    },
+}
 
 
 def hook_plan_building():
-    """When builing the plan we should not call directly specific
+    """
+    When builing the plan we should not call directly specific
     methods from CrypTen and as such we return here some "dummy" responses
     only to build the plan.
     """
 
-    f = lambda *args, **kwargs: crypten.cryptensor(th.zeros([]))
-    for method_name in methods_to_hook:
-        method = getattr(crypten, method_name)
-        setattr(crypten, f"native_{method_name}", method)
-        setattr(crypten, method_name, f)
+    for module, replace_dict in crypten_plan_hook.items():
+        for method_name, f_replace in replace_dict.items():
+            method = getattr(module, method_name)
+            setattr(module, f"native_{method_name}", method)
+            setattr(module, method_name, f_replace)
 
 
 def unhook_plan_building():
-    """After building the plan we unhook the methods such that
+    """
+    After building the plan we unhook the methods such that
     we call the "real" methods in the actual workers
     """
-    for method_name in methods_to_hook:
-        method = getattr(crypten, f"native_{method_name}")
-        setattr(crypten, method_name, method)
+
+    for module, replace_dict in crypten_plan_hook.items():
+        for method_name in replace_dict:
+            method = getattr(module, f"native_{method_name}")
+            setattr(module, method_name, method)
 
 
 def hook_crypten():

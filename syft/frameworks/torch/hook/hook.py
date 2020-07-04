@@ -28,9 +28,6 @@ from syft.execution.plan import Plan
 from syft.frameworks.crypten.hook.hook import hook_crypten
 from syft.frameworks.crypten.hook.hook import hook_crypten_module
 
-if dependency_check.crypten_available:
-    import crypten
-
 
 class TorchHook(FrameworkHook):
     """A Hook which Overrides Methods on PyTorch Tensors.
@@ -145,8 +142,11 @@ class TorchHook(FrameworkHook):
         self._hook_native_tensor(torch.Tensor, TorchTensor)
 
         if dependency_check.crypten_available:
-            self.to_auto_overload[crypten.mpc.MPCTensor] = ["get_plain_text"]
-            self._hook_syft_placeholder_methods(crypten.mpc.MPCTensor, PlaceHolder)
+            from syft.frameworks.crypten.hook.hook import crypten_to_auto_overload
+
+            for crypten_class, method_names in crypten_to_auto_overload.items():
+                self.to_auto_overload[crypten_class] = method_names
+                self._hook_syft_placeholder_methods(crypten_class, PlaceHolder)
 
         # Add all hooked tensor methods to pointer but change behaviour to have the cmd sent
         self._hook_pointer_tensor_methods(self.torch.Tensor)

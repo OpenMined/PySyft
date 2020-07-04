@@ -26,14 +26,14 @@ class ExampleNet(nn.Module):
         out = self.conv1(x)
         out = F.relu(out)
         out = F.max_pool2d(out, 2)
-        out = out.view(out.size(0), -1)
+        out = out.view(-1, 16 * 12 * 12)
         out = self.fc1(out)
         out = F.relu(out)
         out = self.fc2(out)
         return out
 
 
-def test_context(workers):
+def test_context_plan(workers):
     # alice and bob
     n_workers = 2
 
@@ -45,7 +45,7 @@ def test_context(workers):
 
     @run_multiworkers([alice, bob], master_addr="127.0.0.1")
     @sy.func2plan()
-    def plan_func(crypten=crypten):  # pragma: no cover
+    def plan_func(model=None, crypten=crypten):  # pragma: no cover
         alice_tensor = crypten.load("crypten_data", 0)
         bob_tensor = crypten.load("crypten_data", 1)
 
@@ -204,3 +204,29 @@ def test_duplicate_ids(workers):
 
     with pytest.raises(RuntimeError):
         return_values = jail_func()
+
+
+def test_context_plan_with_model(workers):
+    dummy_input = th.empty(1, 1, 28, 28)
+    pytorch_model = ExampleNet()
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    alice_tensor_ptr = th.tensor(dummy_input).tag("crypten_data").send(alice)
+
+    @run_multiworkers(
+        [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
+    )
+    @sy.func2plan()
+    def plan_func_model(model=None, crypten=crypten):
+        t = crypten.load("crypten_data", 0)
+
+        model.encrypt()  # noqa: F821
+        out = model(t)  # noqa: F821
+        model.decrypt()  # noqa: F821
+        out = out.get_plain_text()
+        return model, out  # noqa: F821
+
+    result = plan_func_model()
+    assert th.all(result[0][1] == result[1][1])

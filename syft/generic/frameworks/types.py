@@ -40,6 +40,8 @@ if dependency_check.crypten_available:
 
     framework_packages["crypten"] = crypten
     framework_tensors.append(crypten.mpc.MPCTensor)
+    framework_tensors.append(crypten.nn.Module)
+
 
 framework_tensors = tuple(framework_tensors)
 FrameworkTensorType = Union[framework_tensors]
