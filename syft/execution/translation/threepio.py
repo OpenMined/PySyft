@@ -33,7 +33,7 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
         """Translates current plan's Role to specified framework"""
 
         # Check to see if plan has been translated to this framework yet
-        if self.plan.roles.get(to_framework, None) is not None:
+        if self.plan.roles.get(to_framework, None):
             return self.plan.role
 
         new_role = self.plan.role.copy()
