@@ -11,6 +11,7 @@ import syft as sy
 from syft.serde import protobuf
 
 from syft.execution.state import State
+from syft.grid.exceptions import GridError
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
@@ -18,7 +19,7 @@ from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 TIMEOUT_INTERVAL = 60
 
 
-class GridWorker:
+class StaticFLClient:
     def __init__(self, id: str, address: str, secure: bool = False):
         self.id = id
         self.address = address

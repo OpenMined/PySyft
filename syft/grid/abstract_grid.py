@@ -8,7 +8,7 @@ from typing import Dict
 
 from abc import ABC, abstractmethod
 
-from syft.workers.node_client import NodeClient  # noqa: F401
+from syft.grid.clients.dynamic_fl_client import DynamicFlCLient  # noqa: F401
 
 
 class AbstractGrid(ABC):
@@ -34,7 +34,7 @@ class AbstractGrid(ABC):
     @abstractmethod
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["NodeClient", Tuple["NodeClient"]]:
+    ) -> Union["DynamicFLCLient", Tuple["DynamicFLCLient"]]:
         raise NotImplementedError
 
     @abstractmethod

@@ -1,4 +1,4 @@
-from .dynamic.rtc.network import Network
+from .rtc.network import Network
 import sys
 import uuid
 
