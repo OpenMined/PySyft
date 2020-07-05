@@ -4,8 +4,8 @@ from syft.store.store import ObjectStore
 from syft.ast.globals import Globals
 from syft.lib import supported_frameworks
 from syft.worker.worker_service import message_service_mapping
-from syft.worker.worker_supervisor import WorkerSupervisor
-from syft.worker.worker_supervisor import WorkerStats
+from syft.worker.worker_supervisor.supervisor import WorkerSupervisor
+from syft.worker.worker_supervisor.stats import WorkerStats
 
 
 class Worker(metaclass=WorkerSupervisor):

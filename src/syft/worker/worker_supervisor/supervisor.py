@@ -23,6 +23,7 @@ class WorkerSupervisor(type):
             args = str(kwargs)
             event = WorkerEventLog(
                 method_name=name,
+                start_time=start_time,
                 execution_time=execution_time,
                 sizeof_object_store=0,
                 # len(self.object_store)

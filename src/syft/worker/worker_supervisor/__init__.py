@@ -1,2 +1,3 @@
-from syft.worker.worker_supervisor.supervisor import WorkerSupervisor
-from syft.worker.worker_supervisor.stats import WorkerStats, WorkerEventLog
+from . import stats
+from . import supervisor
+from . import policies

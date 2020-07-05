@@ -40,7 +40,8 @@ also be used as template for Python modules.
 
 Note: This skeleton file can be safely removed if not needed!
 """
-from .message import SyftMessage
+from . import worker, typecheck, message
+
 
 from pkg_resources import get_distribution, DistributionNotFound
 
@@ -56,7 +57,6 @@ finally:
 # from . import message
 # from . import pointer
 # from . import ast
-# from . import worker
 # from . import lib
 
 # from .worker.virtual.virtual_worker import VirtualWorker
