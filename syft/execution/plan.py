@@ -311,7 +311,8 @@ class Plan(AbstractSendable):
             tags=self.tags,
             input_types=self.input_types,
             description=self.description,
-            roles=self.roles,
+            base_framework=self._base_framework,
+            roles={fw_name: role.copy() for fw_name, role in self.roles.items()},
         )
 
         plan_copy.torchscript = self.torchscript
@@ -491,8 +492,9 @@ class Plan(AbstractSendable):
 
     def add_translation(self, plan_translator: "AbstractPlanTranslator"):
         role = plan_translator(self).translate()
-        self.roles[plan_translator.framework] = role
-        return role
+        if isinstance(role, Role):
+            self.roles[plan_translator.framework] = role
+        return self
 
     def remove_translation(self, plan_translator: "AbstractPlanTranslator" = PlanTranslatorDefault):
         plan_translator(self).remove()
@@ -642,6 +644,8 @@ class Plan(AbstractSendable):
             sy.serde.msgpack.serde._simplify(worker, plan.description),
             sy.serde.msgpack.serde._simplify(worker, plan.torchscript),
             sy.serde.msgpack.serde._simplify(worker, plan.input_types),
+            sy.serde.msgpack.serde._simplify(worker, plan._base_framework),
+            sy.serde.msgpack.serde._simplify(worker, plan.roles),
         )
 
     @staticmethod
@@ -653,7 +657,18 @@ class Plan(AbstractSendable):
         Returns:
             plan: a Plan object
         """
-        (id_, role, include_state, name, tags, description, torchscript, input_types) = plan_tuple
+        (
+            id_,
+            role,
+            include_state,
+            name,
+            tags,
+            description,
+            torchscript,
+            input_types,
+            base_framework,
+            roles,
+        ) = plan_tuple
 
         id_ = sy.serde.msgpack.serde._detail(worker, id_)
         role = sy.serde.msgpack.serde._detail(worker, role)
@@ -662,6 +677,8 @@ class Plan(AbstractSendable):
         description = sy.serde.msgpack.serde._detail(worker, description)
         torchscript = sy.serde.msgpack.serde._detail(worker, torchscript)
         input_types = sy.serde.msgpack.serde._detail(worker, input_types)
+        base_framework = sy.serde.msgpack.serde._detail(worker, base_framework)
+        roles = sy.serde.msgpack.serde._detail(worker, roles)
 
         plan = sy.Plan(
             role=role,
@@ -673,6 +690,8 @@ class Plan(AbstractSendable):
             tags=tags,
             description=description,
             input_types=input_types,
+            base_framework=base_framework,
+            roles=roles,
         )
 
         plan.torchscript = torchscript
@@ -712,6 +731,14 @@ class Plan(AbstractSendable):
             input_types = sy.serde.protobuf.serde._bufferize(worker, plan.input_types)
             protobuf_plan.input_types.CopyFrom(input_types)
 
+        protobuf_plan.base_framework = plan._base_framework
+
+        if plan.roles:
+            for framework_name, role in plan.roles.items():
+                protobuf_plan.roles.get_or_create(framework_name).CopyFrom(
+                    sy.serde.protobuf.serde._bufferize(worker, role)
+                )
+
         return protobuf_plan
 
     @staticmethod
@@ -731,6 +758,13 @@ class Plan(AbstractSendable):
         tags = set(protobuf_plan.tags) if protobuf_plan.tags else None
         description = protobuf_plan.description if protobuf_plan.description else None
         input_types = sy.serde.protobuf.serde._unbufferize(worker, protobuf_plan.input_types)
+        base_framework = protobuf_plan.base_framework
+
+        roles = {}
+        for framework_name in protobuf_plan.roles:
+            roles[framework_name] = sy.serde.protobuf.serde._unbufferize(
+                worker, protobuf_plan.roles[framework_name]
+            )
 
         plan = Plan(
             role=role,
@@ -742,6 +776,8 @@ class Plan(AbstractSendable):
             tags=tags,
             description=description,
             input_types=input_types,
+            base_framework=base_framework,
+            roles=roles,
         )
 
         if protobuf_plan.torchscript:
