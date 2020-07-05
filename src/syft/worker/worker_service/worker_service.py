@@ -1,19 +1,20 @@
 from __future__ import annotations
-import syft
-
+from ....typecheck import type_hints
+from ..worker import Worker
+from ...message import SyftMessage
 
 class WorkerService:
     @staticmethod
-    @syft.typecheck.type_hints
-    def process(worker: "syft.worker.Worker", msg: "syft.message.SyftMessage") -> None:
+    @type_hints
+    def process(worker: Worker, msg: SyftMessage) -> None:
         raise NotImplementedError
 
     @staticmethod
-    @syft.typecheck.type_hints
-    def message_type_handler() -> "syft.message.SyftMessage":
+    @type_hints
+    def message_type_handler() -> SyftMessage:
         raise NotImplementedError
 
     @staticmethod
-    @syft.typecheck.type_hints
+    @type_hints
     def register_service() -> None:
         raise NotImplementedError

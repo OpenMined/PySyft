@@ -1,22 +1,23 @@
 from __future__ import annotations
-import syft
-from syft.worker.worker_service import WorkerService, message_service_mapping
-from syft.message import RunFunctionOrConstructorMessage
 
+from .worker_service import WorkerService
+from .. import message_service_mapping
+from ...message import RunFunctionOrConstructorMessage
+from ....typecheck import type_hints
 
 class RunFunctionOrConstructorService(WorkerService):
     @staticmethod
-    @syft.typecheck.type_hints
-    def process(worker: "Worker", msg: RunFunctionOrConstructorMessage):
+    @type_hints
+    def process(worker: "Worker", msg: RunFunctionOrConstructorMessage) -> None:
         pass
 
     @staticmethod
-    @syft.typecheck.type_hints
+    @type_hints
     def message_type_handler() -> type:
         return RunFunctionOrConstructorMessage
 
     @staticmethod
-    @syft.typecheck.type_hints
+    @type_hints
     def register_service() -> None:
         message_service_mapping[
             RunFunctionOrConstructorMessage

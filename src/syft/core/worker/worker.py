@@ -1,14 +1,24 @@
+# -*- coding: utf-8 -*-
+"""
+stuff
+"""
+
 from __future__ import annotations
-import syft
-from syft.store.store import ObjectStore
-from syft.ast.globals import Globals
-from syft.lib import supported_frameworks
-from syft.worker.worker_service import message_service_mapping
-from syft.worker.worker_supervisor import WorkerSupervisor
-from syft.worker.worker_supervisor import WorkerStats
+
+from ..store.store import ObjectStore
+
+from ...ast.globals import Globals
+from ..message import SyftMessage
+from .. import worker
+from .supervisor.supervisor import WorkerSupervisor
+from .supervisor.stats import WorkerStats
+
+from ...typecheck import type_hints
+
 
 
 class Worker(metaclass=WorkerSupervisor):
+
     """
     Basic class for a syft worker behavior, explicit purpose workers will
     inherit this class (eg. WebsocketWorker, VirtualWorker).
@@ -22,10 +32,10 @@ class Worker(metaclass=WorkerSupervisor):
     Each worker is identified by an id of type str.
     """
 
-    @syft.typecheck.type_hints
-    def __init__(self, id: str, debug: bool = False):
+    @type_hints
+    def __init__(self, id: str, debug: bool = False, supported_frameworks: list = []):
+
         self.id = id
-        self.verbose = verbose
         self.store = ObjectStore()
         self.frameworks = Globals()
         for fw in supported_frameworks:
@@ -36,20 +46,21 @@ class Worker(metaclass=WorkerSupervisor):
                     )
                 self.frameworks.attrs[name] = ast
 
-        self.msg_router = message_service_mapping
+        self.msg_router = worker.message_service_mapping
         self.worker_stats = None
         if debug:
             self.worker_stats = WorkerStats()
 
-    @syft.typecheck.type_hints
-    def recv_msg(self, msg: "syft.message.SyftMessage") -> None:
+
+    @type_hints
+    def recv_msg(self, msg: SyftMessage) -> None:
         pass
 
-    @syft.typecheck.type_hints
+    @type_hints
     def _send_msg(self) -> None:
         raise NotImplementedError
 
-    @syft.typecheck.type_hints
+    @type_hints
     def _recv_msg(self) -> None:
         raise NotImplementedError
 

@@ -36,13 +36,21 @@ However, you will find that Domain, Worker, and Client all have missing function
 This might seem like a critical oversight, but it's actually an important abstraction. These classes are merely
 interfaces for the API language that all Domain, Worker, and Client objects should use. This language is universal
 regardless of whether two phones, two hospitals, or two satellites are talking to each other! However, the exact
-transport protocol for _how_ messages are sent we leave up to the _specific instantiation_ of a worker.
+transport protocol for _how_ messages are sent we leave up to the _specific instance of a worker.
 
-The primary instantiation of Domain/Worker/Client that we use for development, testing, and learning is the
-VirtualDomain/VirtualWorker/VirtualClient instantiation. More on that in a moment...
+The primary instance of Domain/Worker/Client that we use for development, testing, and learning is the
+VirtualDomain/VirtualWorker/VirtualClient instance. More on that in a moment...
 
 If you're learning Syft, the next step you should take is to jump into the :py:mod:`syft.core.worker.domain.Domain`
 class...
 
 
 """
+
+from .service.worker_service import WorkerService
+from typing import Dict
+
+message_service_mapping: Dict[str, WorkerService] = {}
+
+from . import worker
+from . import service

@@ -34,7 +34,8 @@ list of methods
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
-from .message import SyftMessage
+from . import typecheck
+
 
 from pkg_resources import get_distribution, DistributionNotFound
 
@@ -50,7 +51,6 @@ finally:
 # from . import message
 # from . import pointer
 # from . import ast
-# from . import worker
 # from . import lib
 
 # from .worker.virtual.virtual_worker import VirtualWorker

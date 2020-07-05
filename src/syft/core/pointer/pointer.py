@@ -1,6 +1,6 @@
 import random
 
-from syft.message.get_object_message import GetObjectMessage
+from ..message import GetObjectMessage
 
 
 class Pointer:

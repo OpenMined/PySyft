@@ -1,4 +1,4 @@
-from syft.message import SyftMessage
+from .syft_message import SyftMessage
 
 
 class RunClassMethodMessage(SyftMessage):

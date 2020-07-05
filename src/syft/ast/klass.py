@@ -22,6 +22,7 @@ class Class(ast.callable.Callable):
             result = getattr(self, self.pointer_name)(location=__self.location)
 
             cmd = msg.RunClassMethodMessage(
+
                 attr_path_and_name, __self, args, kwargs, result.id_at_location
             )
             __self.location.send_msg(cmd)
@@ -44,7 +45,7 @@ class Class(ast.callable.Callable):
             ptr = getattr(outer_self, outer_self.pointer_name)(location=location)
 
             # Step 2: create message which contains object to send
-            obj_msg = msg.message.SaveObjectMessage(id=ptr.id_at_location, obj=self)
+            obj_msg = msg.SaveObjectMessage(id=ptr.id_at_location, obj=self)
 
             # Step 3: send message
             location.send_msg(obj_msg)

@@ -1,13 +1,13 @@
 import time
 from typing import Callable
 
-import syft
-from syft.worker.worker_supervisor.stats import WorkerEventLog
+from ....typecheck import type_hints
+from .stats import WorkerEventLog
 
 
 class WorkerSupervisor(type):
     @staticmethod
-    @syft.typecheck.type_hints
+    @type_hints
     def generate_wrapper(func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
             start_time = time.time()
@@ -23,6 +23,7 @@ class WorkerSupervisor(type):
             args = str(kwargs)
             event = WorkerEventLog(
                 method_name=name,
+                start_time=start_time,
                 execution_time=execution_time,
                 sizeof_object_store=0,
                 # len(self.object_store)
