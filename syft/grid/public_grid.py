@@ -10,7 +10,7 @@ from typing import Dict
 
 # Syft imports
 from syft.grid.abstract_grid import AbstractGrid
-from syft.grid.clients.dynamic_fl_client import DynamicFlCLient
+from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 from syft.execution.plan import Plan
 from syft.codes import GATEWAY_ENDPOINTS
 
@@ -66,7 +66,7 @@ class PublicGridNetwork(AbstractGrid):
 
     def query_model_hosts(
         self, id: str, mpc: bool = False
-    ) -> Union["DynamicFlClient", Tuple["DynamicFlClient"]]:
+    ) -> Union["DynamicFLClient", Tuple["DynamicFLClient"]]:
         """ This method will search for a specific model registered on grid network, if found,
         It will return all grid nodes that contains the desired model.
 
@@ -160,7 +160,7 @@ class PublicGridNetwork(AbstractGrid):
 
                     # Connect nodes to each other
                     model_nodes = smpc_workers + [crypto_provider, host]
-                    self._connect_all_nodes(model_nodes, DynamicFlClient)
+                    self._connect_all_nodes(model_nodes, DynamicFLClient)
 
                     # SMPC Share
                     model.fix_precision().share(*smpc_workers, crypto_provider=crypto_provider)
@@ -180,7 +180,7 @@ class PublicGridNetwork(AbstractGrid):
         else:
             raise RuntimeError("Model needs to be a plan to be encrypted!")
 
-    def _query_unencrypted_models(self, id) -> "DynamicFlClient":
+    def _query_unencrypted_models(self, id) -> "DynamicFLClient":
         """ Search for a specific model registered on grid network, if found,
         It will return the first node that contains the desired model.
 
@@ -197,7 +197,7 @@ class PublicGridNetwork(AbstractGrid):
             # Return the first node that stores the desired model
             return self.__connect_with_node(node_id, node_url)
 
-    def _query_encrypted_models(self, id) -> List["DynamicFlClient"]:
+    def _query_encrypted_models(self, id) -> List["DynamicFLClient"]:
         """ Search for a specific encrypted model registered on grid network, if found,
         It will return the first node that hosts the desired model and mpc shares.
 
@@ -237,7 +237,7 @@ class PublicGridNetwork(AbstractGrid):
 
             # Connect nodes
             nodes = workers + [host_node, crypto_node]
-            self._connect_all_nodes(tuple(nodes), DynamicFlClient)
+            self._connect_all_nodes(tuple(nodes), DynamicFLClient)
 
             return (host_node, workers, crypto_node)
         else:
@@ -286,7 +286,7 @@ class PublicGridNetwork(AbstractGrid):
 
     def __connect_with_node(self, node_id, node_url):
         if node_id not in self.hook.local_worker._known_workers:
-            worker = DynamicFlClient(self.hook, node_url)
+            worker = DynamicFLClient(self.hook, node_url)
         else:
             # There is already a connection to this node
             worker = self.hook.local_worker._known_workers[node_id]
