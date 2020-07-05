@@ -55,6 +55,19 @@ class FrameworkAttributes(ABC):
         """
         pass
 
+    @abstractmethod
+    def is_global_state_change_method(self, method_name):
+        """Determine if a method updates global module state.
+
+        Framework-dependent, see subclasses for details.
+
+        Args:
+            method_name: The name for the method.
+        Returns:
+            Boolean denoting if the method updates global module state.
+        """
+        pass
+
     def _command_guard(
         self, command: str, get_native: bool = False
     ) -> Union[Callable[..., Any], str]:
