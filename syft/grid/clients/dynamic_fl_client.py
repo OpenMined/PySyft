@@ -48,7 +48,7 @@ class DynamicFlCLient(WebsocketClientWorker):
         """
         self.address = address
         self.encoding = encoding
-    
+
         # Parse address string to get scheme, host and port
         self.secure, self.host, self.port = self._parse_address(address)
 
@@ -68,7 +68,6 @@ class DynamicFlCLient(WebsocketClientWorker):
 
         # Update Node reference using node's Id given by the remote node
         self._update_node_reference(self._get_node_infos())
-
 
     @property
     def url(self) -> str:
@@ -94,7 +93,6 @@ class DynamicFlCLient(WebsocketClientWorker):
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response, RESPONSE_MSG.MODELS)
-
 
     def _update_node_reference(self, new_id: str):
         """ Update worker references changing node id references at hook structure.
