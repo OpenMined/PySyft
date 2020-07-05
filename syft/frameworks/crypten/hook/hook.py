@@ -125,7 +125,9 @@ def define_crypten_plan_hook():
             "cat": CrypTenPlanBuild.f_return_cryptensor,
             "load_model": CrypTenPlanBuild.f_return_module,
         },
-        crypten.nn: {"MSELoss": CrypTenPlanBuild.f_return_module},
+        crypten.nn: {
+            "MSELoss": CrypTenPlanBuild.f_return_module
+        },
         crypten.nn.Module: {
             "encrypt": CrypTenPlanBuild.f_return_none,
             "decrypt": CrypTenPlanBuild.f_return_none,
