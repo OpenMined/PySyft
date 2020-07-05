@@ -4,6 +4,7 @@ from typing import Tuple
 from typing import Union
 from typing import Callable
 
+import syft
 from syft.generic.frameworks import framework_packages
 
 import syft as sy
@@ -311,6 +312,131 @@ class Role(SyftSerializable):
             output_placeholder_ids=new_output_placeholder_ids,
             id=sy.ID_PROVIDER.pop(),
         )
+
+    def _get_command_framework(self, action: Action):
+        """Helper method that returns framework module associated with command."""
+        if action.target is None:
+            framework_name, command = action.name.split(".", 2)
+            return getattr(syft, framework_name, syft.framework)
+
+        elif isinstance(action.target, PlaceholderId):
+            ph = self.placeholders.get(action.target.value, None)
+            if ph is not None:
+                framework_name = ph.child.__module__
+                return getattr(syft, framework_name, syft.framework)
+
+        return None
+
+    def _is_inplace_action(self, action: Action):
+        """
+        Helper method that returns True if action contains inplace operation.
+        """
+        framework = self._get_command_framework(action)
+        if framework is not None:
+            return framework.is_inplace_method(action.name.split(".")[-1])
+        else:
+            return False
+
+    def _is_state_change_action(self, action: Action):
+        """
+        Helper method that returns True if action affects module state.
+        """
+        framework = self._get_command_framework(action)
+        if framework is not None:
+            return framework.is_global_state_change_method(action.name.split(".")[-1])
+        else:
+            return False
+
+    def _prune_actions(self):
+        """
+        Removes unnecessary actions and placeholders.
+        """
+
+        def action_affects_placeholder_ids(action: Action, ids: set, inplace_only=False) -> bool:
+            """Returns true if action updates provided placeholder ids"""
+
+            # Operation has side-effect on connected placeholder(s)
+            target_ids = get_action_placeholder_ids(action, "target")
+            affects_connected_ph = len(
+                target_ids.intersection(ids)
+            ) > 0 and self._is_inplace_action(action)
+
+            if inplace_only or affects_connected_ph:
+                return affects_connected_ph
+
+            # Operation resulted in connected placeholder(s)
+            return_ids = get_action_placeholder_ids(action, "return")
+            returns_connected_ph = len(return_ids.intersection(ids)) > 0
+            return returns_connected_ph
+
+        def get_action_placeholder_ids(action, scope="all"):
+            """Returns PlaceholderId's used by Action"""
+            ids = set()
+            attrs = {
+                "all": ["target", "args", "kwargs", "return_ids"],
+                "return": ["return_ids"],
+                "target": ["target"],
+            }
+            for attr in attrs.get(scope):
+                Role.nested_object_traversal(
+                    getattr(action, attr), lambda ph_id: ids.add(ph_id.value), PlaceholderId
+                )
+
+            return ids
+
+        def find_connected_placeholder_ids(start_action_idx, ph_id):
+            """Returns all placeholders affecting given PlaceholderId (including itself)"""
+            placeholders = {ph_id} if not isinstance(ph_id, set) else ph_id
+            actions_idx = set()
+
+            # We need to examine actions in the order opposite to execution order
+            # To track placeholders that affected `id` starting from the given action
+            # and above in the execution flow
+            for action_idx_rev, action in enumerate(reversed(self.actions[: start_action_idx + 1])):
+                action_idx = start_action_idx - action_idx_rev
+                if action_affects_placeholder_ids(action, placeholders):
+                    placeholders |= get_action_placeholder_ids(action)
+                    actions_idx.add(action_idx)
+
+            return placeholders, actions_idx
+
+        connected_placeholder_ids = set()
+        connected_actions_idx = set()
+
+        # Find placeholders that affect output placeholders, starting from the last action
+        if len(self.output_placeholder_ids) > 0:
+            placeholder_ids, actions_idx = find_connected_placeholder_ids(
+                len(self.actions) - 1, set(self.output_placeholder_ids)
+            )
+            connected_placeholder_ids |= placeholder_ids
+            connected_actions_idx |= actions_idx
+
+        # Find inputs that have side-effects and all placeholders connected with them
+        input_ids = set(self.input_placeholder_ids)
+        for action_idx, action in enumerate(self.actions):
+            if action_affects_placeholder_ids(action, input_ids, inplace_only=True):
+                target_ids = get_action_placeholder_ids(action, "target")
+                placeholder_ids, actions_idx = find_connected_placeholder_ids(
+                    action_idx, target_ids
+                )
+                connected_placeholder_ids |= placeholder_ids
+                connected_actions_idx |= actions_idx
+
+        # Remove actions that do not affect input/output placeholders
+        # Exception is actions that affect module state, like `torch.manual_seed(n)`
+        self.actions = [
+            a
+            for i, a in enumerate(self.actions)
+            if i in connected_actions_idx or self._is_state_change_action(a)
+        ]
+
+        # Remove unused placeholders, except inputs
+        connected_placeholder_ids |= input_ids
+        self.placeholders = {
+            ph_id: ph
+            for ph_id, ph in self.placeholders.items()
+            if ph_id in connected_placeholder_ids
+        }
 
     @staticmethod
     def simplify(worker: AbstractWorker, role: "Role") -> tuple:

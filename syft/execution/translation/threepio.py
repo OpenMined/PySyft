@@ -31,19 +31,18 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
 
     def translate_framework(self, to_framework: str) -> Role:
         """Translates current plan's Role to specified framework"""
-        role = self.plan.role.copy()
-        plan = self.plan.copy()
-        # Check to see if plan has been translated to this framework yet
-        if plan.roles.get(to_framework, None) is not None:
-            plan.default_framework = to_framework
-            return plan
 
+        # Check to see if plan has been translated to this framework yet
+        if self.plan.roles.get(to_framework, None):
+            return self.plan.role
+
+        new_role = self.plan.role.copy()
         new_actions = []
-        for action in role.actions:
+        for action in new_role.actions:
             translated_actions = self.translate_action(action, to_framework)
             new_actions = [*new_actions, *translated_actions]
-        role.actions = tuple(new_actions)
-        return role
+        new_role.actions = new_actions
+        return new_role
 
 
 class PlanTranslatorTfjs(PlanTranslatorThreepio):
