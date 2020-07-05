@@ -114,7 +114,6 @@ on the "shell" CrypTensor (in our case is a CrypTensor that has only values of 0
 will not require to overwrite another function
 """
 
-
 def define_crypten_plan_hook():
     global crypten_plan_hook
 
