@@ -95,9 +95,10 @@ class PlanTranslatorThreepio(AbstractPlanTranslator):
 
         # We don't want to fully reset Role because we need to keep input/output placeholders
         # (which are known only at the Plan build time)
+        actions = new_role.actions
         new_role.actions = []
 
-        for action in self.plan.role.actions:
+        for action in actions:
             self.translate_action(action, to_framework, new_role)
         return new_role
 
