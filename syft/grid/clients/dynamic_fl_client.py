@@ -13,7 +13,7 @@ from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
 
 
-class DynamicFlCLient(WebsocketClientWorker):
+class DynamicFLClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(

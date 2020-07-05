@@ -1,20 +1,15 @@
 import json
 
 import binascii
-import base64
 import websocket
 import requests
-from timeit import timeit
-import random
 
 import syft as sy
 from syft.serde import protobuf
 
 from syft.execution.state import State
 from syft.grid.exceptions import GridError
-from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
 from syft_proto.execution.v1.state_pb2 import State as StatePB
-from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
 
