@@ -17,7 +17,7 @@ from syft.workers.base import BaseWorker
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT_INTERVAL = 60
+TIMEOUT_INTERVAL = 360
 
 
 class WebsocketClientWorker(BaseWorker):
