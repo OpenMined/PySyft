@@ -1,16 +1,16 @@
-from ..message.message import RunClassMethodMessage
-from ..message.message import SaveObjectMessage
-from ..message.message import GetObjectMessage
-from ..message.message import DeleteObjectMessage
-from ..message.message import RunFunctionOrConstructorMessage
+from src.syft.core.message import RunClassMethodMessage
+from src.syft.core.message import SaveObjectMessage
+from src.syft.core.message import GetObjectMessage
+from src.syft.core.message import DeleteObjectMessage
+from src.syft.core.message import RunFunctionOrConstructorMessage
 
-from ..store.store import ObjectStore
+from src.syft.core.store import ObjectStore
 
-from ..ast.globals import Globals
+from src.syft.ast.globals import Globals
 
-from ..pointer.pointer import Pointer
+from src.syft.core.pointer import Pointer
 
-from ..lib import supported_frameworks
+from src.syft.lib import supported_frameworks
 
 
 class Worker:
