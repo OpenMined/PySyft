@@ -29,7 +29,7 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
             if idx == 0 and param_name == "self":
                 continue
 
-            if not param_name in kwargs:
+            if param_name not in kwargs:
                 raise AttributeError(
                     f"'{param_name}' was passed into a function as an arg instead of a kwarg."
                     f"Please pass in arguments as kwargs."
@@ -40,7 +40,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         and decorated.__name__ not in SKIP_RETURN_TYPE_HINTS
     ):
         raise AttributeError(
-            f"Return type not annotated, please provide typing to the return type for function {decorated.__qualname__}."
+            "Return type not annotated, please provide typing to the return type "
+            f"for function {decorated.__qualname__}."
         )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
@@ -49,7 +50,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
 
         if param_name not in solved_signature:
             raise AttributeError(
-                f"Argument types not annotated, please provide typing to all argument types for function {decorated.__qualname__}."
+                "Argument types not annotated, please provide typing to all "
+                f"argument types for function {decorated.__qualname__}."
             )
 
     def decorator(*args, **kwargs):
