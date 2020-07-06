@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+stuff
+"""
+
 from ..message.message import RunClassMethodMessage
 from ..message.message import SaveObjectMessage
 from ..message.message import GetObjectMessage
