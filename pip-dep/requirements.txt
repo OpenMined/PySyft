@@ -12,7 +12,7 @@ gevent==1.4.0
 gunicorn==19.9.0
 itsdangerous==1.1.0
 Jinja2==2.10.1
-jwt
+pyjwt[crypto]==1.7.1
 MarkupSafe==1.1.1
 psycopg2-binary
 requests==2.22.0

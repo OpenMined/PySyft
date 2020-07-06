@@ -17,7 +17,7 @@ def run_task_once(name, func, *args):
                 "Failed to start new thread: %s %s" % (str(e), traceback.format_exc())
             )
     else:
-        logging.warn(
+        logging.warning(
             "Skipping %s execution because previous one is not finished" % name
         )
 

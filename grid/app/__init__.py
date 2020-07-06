@@ -62,7 +62,7 @@ def create_app(debug=False, n_replica=None, test_config=None):
 
     if app.config["SECRET_KEY"] is None:
         app.config["SECRET_KEY"] = DEFAULT_SECRET_KEY
-        logging.warn(
+        logging.warning(
             "Using default secrect key, this is not safe and should be used only for testing and development. To define a secrete key please define the environment variable SECRET_KEY."
         )
 
