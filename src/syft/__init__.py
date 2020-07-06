@@ -31,6 +31,8 @@ list of methods
     core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
     this would create future complications with lower level languages calling
     higher level ones.
+
+To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
 
 from pkg_resources import get_distribution, DistributionNotFound
