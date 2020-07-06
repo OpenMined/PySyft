@@ -13,9 +13,6 @@ Subpackages
    :maxdepth: 4
 
    syft.ast
+   syft.core
    syft.lib
-   syft.message
-   syft.pointer
-   syft.store
    syft.typecheck
-   syft.worker

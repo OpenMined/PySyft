@@ -27,10 +27,12 @@ list of methods
 * :py:mod:`syft.typecheck` - automatically checks Python type hints
 * :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for supported Python libs.
 
-IMPORTANT: syft.core should NEVER import functionality from outside of syft
-core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
-this would create future complications with lower level languages calling
-higher level ones.
+    IMPORTANT: syft.core should NEVER import functionality from outside of syft
+    core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
+    this would create future complications with lower level languages calling
+    higher level ones.
+
+To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
 
 from pkg_resources import get_distribution, DistributionNotFound
@@ -43,13 +45,3 @@ except DistributionNotFound:
     __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
-
-# from . import message
-# from . import pointer
-# from . import ast
-# from . import worker
-# from . import lib
-
-# from .worker.virtual.virtual_worker import VirtualWorker
-# from .worker import create_virtual_workers
-# from .worker import create_virtual_workers as cvw
