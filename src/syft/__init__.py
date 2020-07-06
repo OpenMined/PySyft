@@ -15,30 +15,22 @@ to be universal across all Syft languages (javascript, kotlin, swift, etc.).
 Syft "python" includes all functionality which by its very nature cannot be
 truly polyglot. Syft "core" functionality includes the following modules:
 
-* :py:mod:`syft.worker` - APIs for interacting with remote machines you do not directly control.
-* :py:mod:`syft.message` - APIs for serializing messages sent between Client and Worker classes.
-* :py:mod:`syft.pointer` - Client side API for referring to objects on a Worker
+* :py:mod:`syft.core.worker` - APIs for interacting with remote machines you do not directly control.
+* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Worker classes.
+* :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Worker
+* :py:mod:`syft.core.store` - Server side API for referring to object storage on a worker (things pointers point to)
 
 Syft "python" functionality includes the following modules:
 
 * :py:mod:`syft.ast` - code generates external library abstract syntax tree using a white\
 list of methods
 * :py:mod:`syft.typecheck` - automatically checks Python type hints
+* :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for supported Python libs.
 
-
-This is a skeleton file that can serve as a starting point for a Python
-console script. To run this script uncomment the following lines in the
-[options.entry_points] section in setup.cfg:
-
-    console_scripts =
-         fibonacci = syft.skeleton:run
-
-Then run `python setup.py install` which will install the command `fibonacci`
-inside your current environment.
-Besides console scripts, the header (i.e. until _logger...) of this file can
-also be used as template for Python modules.
-
-Note: This skeleton file can be safely removed if not needed!
+IMPORTANT: syft.core should NEVER import functionality from outside of syft
+core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
+this would create future complications with lower level languages calling
+higher level ones.
 """
 
 from pkg_resources import get_distribution, DistributionNotFound
