@@ -18,3 +18,4 @@
 forbiddenfruit>=0.1.3
 torch>=1.5
 typeguard
+pyscaffold[all]
