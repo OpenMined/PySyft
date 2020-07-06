@@ -24,7 +24,7 @@ class CycleManager:
         self._cycles = Warehouse(Cycle)
         self._worker_cycles = Warehouse(WorkerCycle)
 
-    def create(self, fl_process_id: str, version: str, cycle_time: int = 2500):
+    def create(self, fl_process_id: str, version: str, cycle_time: int):
         """ Create a new federated learning cycle.
             Args:
                 fl_process_id: FL Process's ID.
@@ -40,7 +40,7 @@ class CycleManager:
             self._cycles.query(fl_process_id=fl_process_id, version=version)
         )
         _now = datetime.now()
-        _end = _now + timedelta(seconds=cycle_time)
+        _end = _now + timedelta(seconds=cycle_time) if cycle_time is not None else None
         _new_cycle = self._cycles.register(
             start=_now,
             end=_end,
@@ -180,28 +180,24 @@ class CycleManager:
 
         server_config, _ = process_manager.get_configs(id=cycle.fl_process_id)
         logging.info("server_config: %s" % json.dumps(server_config, indent=2))
-        completed_cycles_num = self._worker_cycles.count(
-            cycle_id=cycle_id, is_completed=True
+
+        received_diffs = self._worker_cycles.count(cycle_id=cycle_id, is_completed=True)
+        logging.info("# of diffs: %d" % received_diffs)
+
+        min_diffs = server_config.get("min_diffs", None)
+        max_diffs = server_config.get("max_diffs", None)
+
+        hit_diffs_limit = (
+            received_diffs >= max_diffs if max_diffs is not None else False
         )
-        logging.info("# of diffs: %d" % completed_cycles_num)
+        hit_time_limit = datetime.now() >= cycle.end if cycle.end is not None else False
+        no_limits = max_diffs is None and cycle.end is None
+        has_enough_diffs = (
+            received_diffs >= min_diffs if min_diffs is not None else True
+        )
 
-        min_worker = server_config.get("min_worker", 3)
-        max_worker = server_config.get("max_worker", 3)
-        received_diffs_exceeds_min_worker = completed_cycles_num >= min_worker
-        received_diffs_exceeds_max_worker = completed_cycles_num >= max_worker
-        cycle_ended = True  # check cycle.cycle_time (but we should probably track cycle startime too)
-
-        # Hmm, I don't think there should be such connection between ready_to_average, max_workers, and received_diffs
-        # I thought max_workers just caps total number of simultaneous workers
-        # 'cycle end' condition should probably depend on cycle_length regardless of number of actual received diffs
-        # another 'cycle end' condition can be based on min_diffs
-        ready_to_average = (
-            True
-            if (
-                (received_diffs_exceeds_max_worker or cycle_ended)
-                and received_diffs_exceeds_min_worker
-            )
-            else False
+        ready_to_average = has_enough_diffs and (
+            no_limits or hit_diffs_limit or hit_time_limit
         )
 
         no_protocol = True  # only deal with plans for now
