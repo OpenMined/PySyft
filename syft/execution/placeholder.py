@@ -290,8 +290,6 @@ class PlaceHolder(AbstractTensor):
 
     @staticmethod
     def recursive_extract(results):
-        current_level = results
-
         if isinstance(results, (tuple, list)):
             results_placeholders = tuple(
                 PlaceHolder.recursive_extract(result) for result in results
