@@ -27,10 +27,10 @@ list of methods
 * :py:mod:`syft.typecheck` - automatically checks Python type hints
 * :py:mod:`syft.lib` - uses the ast library to dynamically create remote execution APIs for supported Python libs.
 
-IMPORTANT: syft.core should NEVER import functionality from outside of syft
-core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
-this would create future complications with lower level languages calling
-higher level ones.
+    IMPORTANT: syft.core should NEVER import functionality from outside of syft
+    core!!! Since we plan to drop syft core down to a language (such as C++ or Rust)
+    this would create future complications with lower level languages calling
+    higher level ones.
 """
 
 from pkg_resources import get_distribution, DistributionNotFound
