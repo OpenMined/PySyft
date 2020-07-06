@@ -1,6 +1,8 @@
 from ..client import Client
+from typing import final
 
 
+@final
 class VirtualClient(Client):
     def __init__(self, id, worker, verbose=False):
         super().__init__(id=id, verbose=verbose)
