@@ -17,7 +17,6 @@ from ..pointer.pointer import Pointer
 
 
 class Worker:
-
     def __init__(self, id, supported_frameworks):
         self.id = id
         self.verbose = verbose
