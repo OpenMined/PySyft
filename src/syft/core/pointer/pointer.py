@@ -1,4 +1,4 @@
-from ..message.message import GetObjectMessage
+from src.syft.core.message import GetObjectMessage
 
 import random
 

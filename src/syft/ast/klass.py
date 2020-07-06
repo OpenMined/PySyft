@@ -1,6 +1,5 @@
 from .. import ast
-from .. import message as msg
-from .. import pointer as ptr
+from ..core import message as msg
 
 from forbiddenfruit import curse
 
@@ -34,7 +33,7 @@ class Class(ast.callable.Callable):
                 attr, attr.path_and_name, _self, args, kwargs
             )
 
-        klass_pointer = type(self.pointer_name, (ptr.pointer.Pointer,), attrs)
+        klass_pointer = type(self.pointer_name, (src.syft.core.pointer.pointer.Pointer,), attrs)
 
         setattr(self, self.pointer_name, klass_pointer)
 
