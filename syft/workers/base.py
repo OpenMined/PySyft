@@ -759,7 +759,7 @@ class BaseWorker(AbstractWorker):
         return self.__str__()
 
     def __getitem__(self, idx):
-        return self.object_store.get_obj(idx, None)
+        return self.object_store.get_obj(idx)
 
     def request_is_remote_tensor_none(self, pointer: PointerTensor):
         """

@@ -1785,7 +1785,7 @@ def make_forceobjectdeletemessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ForceObjectDeleteMessage
-        assert detailed.object_id == original.object_id
+        assert detailed.object_ids == original.object_ids
         return True
 
     return [
@@ -1793,7 +1793,7 @@ def make_forceobjectdeletemessage(**kwargs):
             "value": del_message,
             "simplified": (
                 CODE[syft.messaging.message.ForceObjectDeleteMessage],
-                (id,),  # (int) id
+                (CODE[list], (id,)),  # list of (int) ids
             ),
             "cmp_detailed": compare,
         }
