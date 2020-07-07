@@ -1246,6 +1246,64 @@ def make_string(**kwargs):
     ]
 
 
+# syft.frameworks.crypten.model.OnnxModel
+def make_onnxmodel(**kwargs):
+
+    from syft.frameworks.crypten.utils import pytorch_to_onnx
+
+    class Net(torch.nn.Module):
+        def __init__(self):
+            super(Net, self).__init__()
+            self.fc1 = torch.nn.Linear(3, 3)
+            self.fc2 = torch.nn.Linear(3, 2)
+
+        def forward(self, x):
+            x = torch.nn.functional.relu(self.fc1(x))
+            x = self.fc2(x)
+            return torch.nn.functional.log_softmax(x, dim=0)
+
+    dummy_input = torch.Tensor([1, 2, 3])
+    serialized_model = pytorch_to_onnx(Net(), dummy_input)
+
+    def compare_simplified(actual, expected):
+        assert actual[0] == expected[0]
+        assert actual[1][0] == expected[1][0]
+        assert actual[1][1] == expected[1][1]
+        assert set(actual[1][2][1]) == set(expected[1][2][1])
+        assert actual[1][3] == expected[1][3]
+        return True
+
+    def compare_detailed(detailed, original):
+        assert detailed.serialized_model == original.serialized_model
+        assert detailed.id == original.id
+        assert detailed.tags == original.tags
+        assert detailed.description == original.description
+
+        return True
+
+    return [
+        {
+            "value": syft.frameworks.crypten.model.OnnxModel(
+                serialized_model=serialized_model,
+                id=1234,
+                tags={"tag1", "tag2"},
+                description="Test Onnx",
+            ),
+            "simplified": (
+                CODE[syft.frameworks.crypten.model.OnnxModel],
+                (
+                    serialized_model,
+                    1234,
+                    (CODE[set], ((CODE[str], (b"tag1",)), (CODE[str], (b"tag2",)))),
+                    (CODE[str], (b"Test Onnx",)),
+                ),
+            ),
+            "cmp_detailed": compare_detailed,
+            "cmp_simplified": compare_simplified,
+        }
+    ]
+
+
 # syft.workers.virtual.VirtualWorker
 def make_virtual_worker(**kwargs):
     worker = VirtualWorker(

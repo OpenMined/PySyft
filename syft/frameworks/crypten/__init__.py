@@ -1,5 +1,7 @@
 import syft
 
+from syft.frameworks.crypten.model import OnnxModel  # noqa: F401
+
 import crypten.communicator as comm
 import crypten
 
@@ -69,4 +71,22 @@ def load(tag: str, src: int, **kwargs):
     else:
         result = crypten.load_from_party(preloaded=-1, src=src, **kwargs)
 
+    return result
+
+
+def load_model(tag: str):
+    """
+    WARNING: All the workers that are part of the CrypTen computation
+    should have the model
+    This method should disappear once CrypTen has support to load models
+    that are available only at one party (by using the crypten.load function)
+    """
+    src = comm.get().get_rank()
+    worker = get_worker_from_rank(src)
+    results = worker.search(tag)
+
+    # Make sure there is only one result
+    assert len(results) == 1
+
+    result = results[0].to_crypten()
     return result
