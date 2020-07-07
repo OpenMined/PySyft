@@ -284,13 +284,25 @@ class TorchTensor(AbstractTensor):
         """
         return isinstance(self, torch.nn.Parameter)
 
-    # Fix handle_command_function to correct this. #2637
     @staticmethod
     @overloaded.module
     def torch(module):
+        @overloaded.module
+        def nn(module):
+            """
+            The syntax is the same, so @overloaded.module handles recursion
+            Note that we don't need to add the @staticmethod decorator
+            """
+
+        module.nn = nn  # Handles all the overloading properly
+
+    @staticmethod
+    @overloaded.module
+    def native_torch(module):
         def roll(tensor, shifts, **kwargs):
-            int_shifts = int(shifts.item())
-            return torch.native_roll(tensor, int_shifts, **kwargs)
+            if isinstance(shifts, FrameworkTensor):
+                shifts = int(shifts.item())
+            return torch.native_roll(tensor, shifts, **kwargs)
 
         module.roll = roll
 
@@ -356,6 +368,14 @@ class TorchTensor(AbstractTensor):
             # Put back the wrappers where needed
             response = hook_args.hook_response(cmd, response, wrap_type=args_type)
         except PureFrameworkTensorFoundError:  # means that it's not a wrapper but a pure tensor
+
+            # Check that the function has not been overwritten
+            try:
+                # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
+                command = cls.rgetattr(cls, f"native_{cmd}")
+                return command(*args_, **kwargs_)
+            except AttributeError:
+                pass
 
             # Run the native function with the new args
             # Note the the cmd should already be checked upon reception by the worker
