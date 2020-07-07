@@ -11,12 +11,12 @@ class CrypTenPlanBuild(object):
     TODO: When the problem converting Onnx serialized models to PyTorch is solved
     we can have serialized models on a SINGLE worker.
 
-    Those model will be known by a single party and when the party will call
-    the crypten.load function it will deserialize the model to a Torch one
+    This model will be known by a single party and when the party will call
+    the crypten.load function it will deserialize the model to a PyTorch one
     and share it with the other parties.
 
     In this scenario, the worker that started the computation will not know about the
-    instrinsics of the architecture and ONLY ONE worker can have knowledge about the
+    instrinsics of the architecture and *only one* worker can have knowledge about the
     model
     """
 

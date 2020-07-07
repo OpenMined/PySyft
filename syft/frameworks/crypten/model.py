@@ -4,12 +4,11 @@ import torch
 
 import syft
 
-from syft.workers.abstract import AbstractWorker
-from syft.workers.base import BaseWorker
 from syft.frameworks.crypten import utils
-
 from syft.generic.pointers.object_pointer import ObjectPointer
 from syft.generic.abstract.sendable import AbstractSendable
+from syft.workers.abstract import AbstractWorker
+from syft.workers.base import BaseWorker
 
 from syft_proto.frameworks.crypten.onnx_model_pb2 import OnnxModel as OnnxModelPB
 

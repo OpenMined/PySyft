@@ -76,9 +76,9 @@ def load(tag: str, src: int, **kwargs):
 
 def load_model(tag: str):
     """
-    ATTENTION: All the workers that are part of the CrypTen computation
+    WARNING: All the workers that are part of the CrypTen computation
     should have the model
-    This method should dissapear once CrypTen has support to load models
+    This method should disappear once CrypTen has support to load models
     that are available only at one party (by using the crypten.load function)
     """
     src = comm.get().get_rank()
