@@ -65,15 +65,11 @@ class CrypTenPlanBuild(object):
         return crypten.cryptensor(th.zeros([]))
 
     @staticmethod
-    def f_return_model_or_cryptensor(*args, **kwargs):
-        """
-        # TODO: When we solve the problem converting OnnxModels to PyTorch we can
-        have serialized models on workers that we can load without having the party
-        that started the computation know about the instrinsics of the architecture
-        if args[0] == "crypten_model":
-            return crypten.nn.Module()
-        else:
-        """
+    def f_return_model(*args, **kwargs):
+        return crypten.nn.Module()
+
+    @staticmethod
+    def f_return_cryptensor(*args, **kwargs):
         return crypten.cryptensor(th.zeros([]))
 
     @staticmethod
@@ -135,6 +131,7 @@ def define_crypten_plan_hook():
         crypten: {
             "load": CrypTenPlanBuild.f_return_model_or_cryptensor,
             "cat": CrypTenPlanBuild.f_return_cryptensor,
+            "load_model": CrypTenPlanBuild.f_return_mode,
         },
         crypten.nn: {"MSELoss": CrypTenPlanBuild.f_return_module},
         crypten.nn.Module: {
@@ -184,9 +181,11 @@ def unhook_plan_building():
 
 def hook_crypten():
     """Hook the load function from crypten"""
-    from syft.frameworks.crypten import load as crypten_load
+    from syft.frameworks.crypten import load, load_model
 
-    setattr(crypten, "load", crypten_load)
+    setattr(crypten, "load", load)
+    setattr(crypten, "load_model", load_model)
+    
     crypten_funcs_overload = ["cat"]
     CryptenHook().hook_crypten(crypten_funcs_overload)
 

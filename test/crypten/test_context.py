@@ -8,6 +8,7 @@ import torch.nn.functional as F
 import syft as sy
 
 from syft.frameworks.crypten.context import run_multiworkers, run_party
+from syft.frameworks.crypten.model import OnnxModel
 from syft.frameworks.crypten import utils
 
 
@@ -219,14 +220,50 @@ def test_context_plan_with_model(workers):
         [alice, bob], master_addr="127.0.0.1", model=pytorch_model, dummy_input=dummy_input
     )
     @sy.func2plan()
-    def plan_func_model(model=None, crypten=crypten):
+    def plan_func_model(model=None, crypten=crypten):  # noqa: F821
         t = crypten.load("crypten_data", 0)
 
-        model.encrypt()  # noqa: F821
-        out = model(t)  # noqa: F821
-        model.decrypt()  # noqa: F821
+        model.encrypt()
+        out = model(t)
+        model.decrypt()
         out = out.get_plain_text()
-        return model, out  # noqa: F821
+        return model, out
 
     result = plan_func_model()
     assert th.all(result[0][1] == result[1][1])
+
+
+def test_context_plan_with_model_private(workers):
+    """
+        Test if we can run remote inference (using data that is not on our local
+        paty) using a private model (model that is not known locally)
+    """
+    dummy_input = th.empty(1, 1, 28, 28)
+    pytorch_model = ExampleNet()
+
+    alice = workers["alice"]
+    bob = workers["bob"]
+
+    data_alice = th.tensor(dummy_input).tag("crypten_data").send(alice)
+    model = OnnxModel.fromModel(pytorch_model, dummy_input).tag("crypten_model")
+
+    # Model is known only by Bob and Alice and the data is at the local party
+    alice_model_ptr = model.send(alice)
+    bob_model_ptr = model.send(bob)
+
+    @run_multiworkers([alice, bob], master_addr="127.0.0.1")
+    @sy.func2plan()
+    def plan_func_model(crypten=crypten):  # noqa: F821
+        data = crypten.load("crypten_data", 0)
+
+        # This should load the crypten model that is found at all parties
+        model = crypten.load_model("crypten_model")
+
+        model.encrypt()
+        out = model(data)
+        model.decrypt()
+        out = out.get_plain_text()
+        return out
+
+    result = plan_func_model()
+    assert th.all(result[0] == result[1])
