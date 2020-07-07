@@ -12,7 +12,7 @@ psutil==5.7.0
 requests~=2.22.0
 RestrictedPython~=5.0
 scipy~=1.4.1
-git+https://github.com/gmuraru/syft-proto.git@d8a4069457f65891ff02ad7e565dace8cd7b9a3f#egg=syft-proto
+syft-proto==0.4.10
 tblib~=1.6.0
 torchvision~=0.5.0
 torch~=1.4.0

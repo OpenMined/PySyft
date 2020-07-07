@@ -234,6 +234,10 @@ def test_context_plan_with_model(workers):
 
 
 def test_context_plan_with_model_private(workers):
+    """
+        Test if we can run remote inference (using data that is not on our local
+        paty) using a private model (model that is not known locally)
+    """
     dummy_input = th.empty(1, 1, 28, 28)
     pytorch_model = ExampleNet()
 
