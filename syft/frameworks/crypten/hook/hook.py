@@ -80,10 +80,6 @@ class CrypTenPlanBuild(object):
     def f_return_module(*args, **kwargs):
         return crypten.nn.Module()
 
-    @staticmethod
-    def f_return_local_worker(*args, **kwargs):
-        return syft.hook.local_worker
-
 
 # Methods that need to be added to the PlaceHolder when building the plan
 # and hence need to be traced
