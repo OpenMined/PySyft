@@ -15,6 +15,8 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
     def translate(self):
         translation_plan = self.plan.copy()
         translation_plan.forward = None
+        # Make sure we're trying to trace Role with pytorch commands
+        translation_plan.base_framework = TranslationTarget.PYTORCH.value
 
         args = translation_plan.create_dummy_args()
 

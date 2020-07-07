@@ -1,4 +1,4 @@
-3p0==0.0.9
+3p0==0.0.10
 aiortc==0.9.28
 flask_socketio~=4.2.1
 Flask~=1.1.1

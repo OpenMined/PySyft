@@ -16,6 +16,8 @@ class Context:
 
         self.param = encryption_param
 
+        # A list containing values of coeff_mod[i] / plain_mod for one time computation
+        # and useful in encryption process.
         self.coeff_div_plain_modulus = [
             x / encryption_param.plain_modulus for x in encryption_param.coeff_modulus
         ]
