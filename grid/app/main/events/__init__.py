@@ -1,17 +1,22 @@
 """
 This file exists to provide a route to websocket events.
 """
-# Event module imports
-from .control_events import *
-from .fl_events import *
-from .socket_handler import SocketHandler
+# Standard Python imports
+import json
 
-# PyGrid imports
+# External imports
+from syft.codes import REQUEST_MSG
+
+# Local imports
 from ..codes import *
 from .. import ws
+from .sfl.control_events import *
+from .sfl.fl_events import *
+from .dfl.syft_events import *
+from .dfl.model_events import *
+from .dfl.control_events import *
+from .socket_handler import SocketHandler
 
-# Generic imports
-import json
 
 # Websocket events routes
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.
@@ -21,6 +26,13 @@ routes = {
     FL_EVENTS.AUTHENTICATE: authenticate,
     FL_EVENTS.CYCLE_REQUEST: cycle_request,
     FL_EVENTS.REPORT: report,
+    REQUEST_MSG.GET_ID: get_node_infos,
+    REQUEST_MSG.CONNECT_NODE: connect_grid_nodes,
+    REQUEST_MSG.HOST_MODEL: host_model,
+    REQUEST_MSG.RUN_INFERENCE: run_inference,
+    REQUEST_MSG.DELETE_MODEL: delete_model,
+    REQUEST_MSG.LIST_MODELS: get_models,
+    REQUEST_MSG.AUTHENTICATE: authentication,
 }
 
 
@@ -37,8 +49,15 @@ def route_requests(message, socket):
     """
     global routes
 
-    message = json.loads(message)
-    return routes[message[MSG_FIELD.TYPE]](message, socket)
+    if isinstance(message, bytearray):
+        return forward_binary_message(message)
+
+    try:
+        message = json.loads(message)
+        response = routes[message[REQUEST_MSG.TYPE_FIELD]](message)
+        return response
+    except Exception as e:
+        return json.dumps({"error": str(e)})
 
 
 @ws.route("/")
@@ -55,6 +74,9 @@ def socket_api(socket):
         else:
             # Process received message
             response = route_requests(message, socket)
-            socket.send(response)
+            if isinstance(response, bytearray):
+                socket.send(response, binary=True)
+            else:
+                socket.send(response)
 
     worker_id = handler.remove(socket)

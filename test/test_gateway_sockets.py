@@ -12,8 +12,8 @@ import torch.optim as optim
 
 import syft as sy
 
-from grid.app.main.syft_assets.plan_manager import PlanManager
-from grid.app.main.models.model_manager import ModelManager
+from grid.app.main.sfl.syft_assets.plan_manager import PlanManager
+from grid.app.main.sfl.models.model_manager import ModelManager
 
 from test import GATEWAY_WS_URL
 

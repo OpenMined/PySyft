@@ -11,14 +11,14 @@ sys.path.append(".")
 
 
 from flask_sqlalchemy import SQLAlchemy
-from grid.app.main.models.ai_model import Model, ModelCheckPoint
-from grid.app.main.syft_assets.protocol import Protocol
-from grid.app.main.syft_assets.plan import Plan
-from grid.app.main.workers.worker import Worker
-from grid.app.main.cycles.worker_cycle import WorkerCycle
-from grid.app.main.processes.fl_process import FLProcess
-from grid.app.main.cycles.cycle import Cycle
-from grid.app.main.processes.config import Config
+from grid.app.main.sfl.models.ai_model import Model, ModelCheckPoint
+from grid.app.main.sfl.syft_assets.protocol import Protocol
+from grid.app.main.sfl.syft_assets.plan import Plan
+from grid.app.main.sfl.workers.worker import Worker
+from grid.app.main.sfl.cycles.worker_cycle import WorkerCycle
+from grid.app.main.sfl.processes.fl_process import FLProcess
+from grid.app.main.sfl.cycles.cycle import Cycle
+from grid.app.main.sfl.processes.config import Config
 from grid.app.main import db
 
 app = Flask(__name__)

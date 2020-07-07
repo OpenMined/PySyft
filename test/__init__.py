@@ -1,4 +1,4 @@
-GATEWAY_PORT = "3004"
+GATEWAY_PORT = "3003"
 GATEWAY_URL = "http://localhost:{}".format(GATEWAY_PORT)
 GATEWAY_WS_URL = "ws://localhost:{}".format(GATEWAY_PORT)
 

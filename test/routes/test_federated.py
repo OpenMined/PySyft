@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from grid.app.main.routes import federated
+from grid.app.main.routes.sfl import routes
 from grid.app.main.exceptions import PyGridError
 
 
@@ -17,7 +17,7 @@ def test_worker_cycle_request_bad_request_json(client):
     )
 
 
-@patch("grid.app.main.routes.federated.cycle_request")
+@patch("grid.app.main.routes.sfl.routes.cycle_request")
 def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
     """
     assert that the endpoint returns a 400 for a PyGridError
@@ -30,7 +30,7 @@ def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
     assert result.get_json().get("error") == "test"
 
 
-@patch("grid.app.main.routes.federated.cycle_request")
+@patch("grid.app.main.routes.sfl.routes.cycle_request")
 def test_worker_cycle_request_internal_server_error(mock_cycle_request, client):
     """
     assert that the endpoint returns a 500 for an unknown error condition
@@ -56,7 +56,7 @@ def test_report_diff_bad_request_json(client):
     )
 
 
-@patch("grid.app.main.routes.federated.report")
+@patch("grid.app.main.routes.sfl.routes.report")
 def test_report_diff_bad_request_pygrid(mock_report, client):
     """
     assert that the endpoint returns a 400 for a PyGridError
@@ -69,7 +69,7 @@ def test_report_diff_bad_request_pygrid(mock_report, client):
     assert result.get_json().get("error") == "test"
 
 
-@patch("grid.app.main.routes.federated.report")
+@patch("grid.app.main.routes.sfl.routes.report")
 def test_report_diff_internal_server_error(mock_report, client):
     """
     assert that the endpoint returns a 500 for an unknown error condition

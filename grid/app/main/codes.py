@@ -5,6 +5,12 @@ class MSG_FIELD:
     MODEL = "model"
     MODEL_ID = "model_id"
     ALIVE = "alive"
+    ALLOW_DOWNLOAD = "allow_download"
+    ALLOW_REMOTE_INFERENCE = "allow_remote_inference"
+    MPC = "mpc"
+    PROPERTIES = "model_properties"
+    SIZE = "model_size"
+    SYFT_VERSION = "syft_version"
 
 
 class CONTROL_EVENTS(object):

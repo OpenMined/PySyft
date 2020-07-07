@@ -44,6 +44,11 @@ parser.add_argument(
     help="If this flag is used a SQLAlchemy DB URI is generated to use a local db.",
 )
 
+parser.add_argument(
+    "--id", type=str, help="PyGrid Node ID.", default=os.environ.get("NODE_ID", None),
+)
+
+
 parser.set_defaults(use_test_config=False)
 
 if __name__ == "__main__":
@@ -52,12 +57,13 @@ if __name__ == "__main__":
     if args.start_local_db:
         db_path = "sqlite:///databaseGateway.db"
         app = create_app(
+            node_id=args.id,
             debug=False,
             n_replica=args.num_replicas,
             test_config={"SQLALCHEMY_DATABASE_URI": db_path},
         )
     else:
-        app = create_app(debug=False, n_replica=args.num_replicas)
+        app = create_app(node_id=args.id, debug=False, n_replica=args.num_replicas)
 
     server = pywsgi.WSGIServer(
         (args.host, args.port), app, handler_class=WebSocketHandler
