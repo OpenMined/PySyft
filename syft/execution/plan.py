@@ -8,6 +8,7 @@ import inspect
 import io
 import torch
 import warnings
+import traceback
 
 import syft as sy
 from syft.execution.placeholder import PlaceHolder
@@ -289,7 +290,9 @@ class Plan(AbstractSendable):
                 self.add_translation(translator)
                 self.translations.append(translator)
             except:
-                warnings.warn(f"Failed to translate Plan with {translator.__name__}")
+                warnings.warn(
+                    f"Failed to translate Plan with {translator.__name__}: {traceback.format_exc()}"
+                )
 
         return results
 

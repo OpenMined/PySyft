@@ -49,7 +49,7 @@ class SumBackward(GradFunc):
 
     def gradient(self, grad):
         if grad.shape != self.self_.shape:
-            grad = grad.reshape(-1, 1)
+            grad = grad.reshape([-1, 1])
         return ((self.self_ * 0 + 1) * grad,)
 
 
@@ -62,7 +62,7 @@ class MeanBackward(GradFunc):
 
     def gradient(self, grad):
         if grad.shape != self.self_.shape:
-            grad = grad.reshape(-1, 1)
+            grad = grad.reshape([-1, 1])
         numel = self.self_.numel()
         return ((self.self_ * 0 + 1) * grad / numel,)
 
@@ -72,11 +72,10 @@ class ReshapeBackward(GradFunc):
 
     def __init__(self, self_, *dims):
         super().__init__(self, self_)
-        self.self_ = self_
 
     def gradient(self, grad):
         if grad.shape != self.self_.shape:
-            grad = grad.reshape(*self.self_.shape)
+            grad = grad.reshape(self.self_.shape)
         return ((self.self_ * 0 + 1) * grad,)
 
 
