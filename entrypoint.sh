@@ -1,3 +1,3 @@
 #!/bin/bash
-exec gunicorn -k flask_sockets.worker "grid.app:create_app()" \
+exec gunicorn -k flask_sockets.worker "grid.__main__:app" \
 "$@"

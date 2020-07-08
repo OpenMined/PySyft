@@ -12,22 +12,22 @@ from .app import create_app
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
-parser = argparse.ArgumentParser(description="Run Grid Gatway application.")
+parser = argparse.ArgumentParser(description="Run PyGrid application.")
 
 
 parser.add_argument(
     "--port",
     "-p",
     type=int,
-    help="Port number of the socket.io server, e.g. --port=8777. Default is os.environ.get('GRID_GATEWAY_PORT', None).",
-    default=os.environ.get("GRID_GATEWAY_PORT", None),
+    help="Port number of the socket server, e.g. --port=8777. Default is os.environ.get('GRID_PORT', None).",
+    default=os.environ.get("GRID_PORT", None),
 )
 
 parser.add_argument(
     "--host",
     type=str,
-    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_GATEWAY_HOST','0.0.0.0').",
-    default=os.environ.get("GRID_GATEWAY_HOST", "0.0.0.0"),
+    help="Grid node host, e.g. --host=0.0.0.0. Default is os.environ.get('GRID_HOST','0.0.0.0').",
+    default=os.environ.get("GRID_HOST", "0.0.0.0"),
 )
 
 parser.add_argument(
@@ -70,5 +70,6 @@ if __name__ == "__main__":
     )
     server.serve_forever()
 else:
+    node_id = os.environ.get("NODE_ID", None)
     num_replicas = os.environ.get("N_REPLICAS", None)
-    app = create_app(debug=False, n_replica=num_replicas)
+    app = create_app(node_id=node_id, debug=False, n_replica=num_replicas)

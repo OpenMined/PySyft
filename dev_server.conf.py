@@ -6,7 +6,8 @@ workers = 1
 
 # Environment variables to the execution environment.
 raw_env = [
-    "PORT=5000",
+    "NODE_ID=Bob",
+    "GRID_PORT=5000",
     "SECRET_KEY=ineedtoputasecrethere",
     "DATABASE_URL=sqlite:///databasegateway.db",
 ]
