@@ -5,7 +5,7 @@ import os
 import sys
 
 import syft
-from syft.workers.node_client import NodeClient
+from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 from syft.grid.public_grid import PublicGridNetwork
 
 
@@ -95,5 +95,5 @@ def connected_node(hook):
 
 
 def create_websocket_client(hook, port, id):
-    node = NodeClient(hook, "http://localhost:" + port + "/", id=id)
+    node = DynamicFLClient(hook, "http://localhost:" + port + "/", id=id)
     return node

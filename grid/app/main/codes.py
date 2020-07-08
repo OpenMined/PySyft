@@ -11,6 +11,8 @@ class MSG_FIELD:
     PROPERTIES = "model_properties"
     SIZE = "model_size"
     SYFT_VERSION = "syft_version"
+    USERNAME_FIELD = "username"
+    PASSWORD_FIELD = "password"
 
 
 class CONTROL_EVENTS(object):

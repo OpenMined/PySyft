@@ -4,21 +4,21 @@ import uuid
 # External imports
 from flask_login import UserMixin
 import syft as sy
-from syft.grid.authentication.account import AccountCredential
 
 # Local imports
 from ... import hook, local_worker
+from ...codes import MSG_FIELD
 
 
 class UserSession(UserMixin):
 
     NAMESPACE_DNS = "openmined.org"
 
-    def __init__(self, user: AccountCredential, active=True):
+    def __init__(self, user, active=True):
         """ Handle session with User Authentication.
 
             Args:
-                user (AccountCredential) : User instance.
+                user : User instance.
                 active (bool) : Session state.
         """
         self.id = uuid.uuid5(uuid.NAMESPACE_DNS, UserSession.NAMESPACE_DNS)
@@ -82,8 +82,8 @@ class UserSession(UserMixin):
             Returns:
                 result (bool) : Credential verification result.
         """
-        candidate_username = payload.get(AccountCredential.USERNAME_FIELD)
-        candidate_password = payload.get(AccountCredential.PASSWORD_FIELD)
+        candidate_username = payload.get(MSG_FIELD.USERNAME_FIELD)
+        candidate_password = payload.get(MSG_FIELD.PASSWORD_FIELD)
         if candidate_username and candidate_password:
             return (
                 self.user.password == candidate_password

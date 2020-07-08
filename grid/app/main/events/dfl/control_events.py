@@ -3,9 +3,8 @@ import json
 
 # External modules
 from flask_login import login_user
-from syft.workers.node_client import NodeClient
+from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 from syft.codes import RESPONSE_MSG
-from syft.grid.authentication.account import AccountCredential
 
 # Local imports
 from ...codes import MSG_FIELD
@@ -54,17 +53,8 @@ def connect_grid_nodes(message: dict) -> str:
         Returns:
             response (str) : response message.
     """
-    # If found any credential
-    credentials = message.get("auth")
-    if credentials:
-        credentials = AccountCredential(
-            username=credentials["username"], password=credentials["password"]
-        )
-
     if message["id"] not in local_worker._known_workers:
-        worker = NodeClient(
-            hook, address=message["address"], id=message["id"], credential=credentials
-        )
+        worker = DynamicFLClient(hook, address=message["address"], id=message["id"])
     return json.dumps({"status": "Succesfully connected."})
 
 
