@@ -1,4 +1,4 @@
-#3p0==0.0.9
+#3p0==0.0.10
 git+git://github.com/OpenMined/Threepio@fix/dont-override-base-funcs#egg=3p0&subdirectory=pythreepio
 aiortc==0.9.28
 flask_socketio~=4.2.1
