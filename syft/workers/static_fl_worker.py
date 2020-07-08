@@ -9,6 +9,7 @@ import random
 
 import syft as sy
 from syft.serde import protobuf
+from syft.grid.exceptions import GridError
 
 from syft.execution.state import State
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
@@ -23,13 +24,7 @@ CHECK_SPEED_EVERY = 10
 MAX_SPEED_TESTS = 50
 
 
-class GridError(BaseException):
-    def __init__(self, error, status):
-        self.status = status
-        self.error = error
-
-
-class GridClient:
+class StaticFLWorker:
     CYCLE_STATUS_ACCEPTED = "accepted"
     CYCLE_STATUS_REJECTED = "rejected"
     PLAN_TYPE_LIST = "list"
@@ -191,35 +186,6 @@ class GridClient:
 
     def close(self):
         self.ws.shutdown()
-
-    def host_federated_training(
-        self,
-        model,
-        client_plans,
-        client_protocols,
-        client_config,
-        server_averaging_plan,
-        server_config,
-    ):
-        serialized_model = binascii.hexlify(self._serialize(model)).decode()
-        serialized_plans = self._serialize_object(client_plans)
-        serialized_protocols = self._serialize_object(client_protocols)
-        serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
-
-        # "federated/host-training" request body
-        message = {
-            "type": "federated/host-training",
-            "data": {
-                "model": serialized_model,
-                "plans": serialized_plans,
-                "protocols": serialized_protocols,
-                "averaging_plan": serialized_avg_plan,
-                "client_config": client_config,
-                "server_config": server_config,
-            },
-        }
-
-        return self._send_msg(message)
 
     def authenticate(self, auth_token):
         message = {

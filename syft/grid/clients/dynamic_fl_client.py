@@ -11,17 +11,15 @@ from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
-from syft.grid.authentication.credential import AbstractCredential
 
 
-class NodeClient(WebsocketClientWorker):
+class DynamicFLClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(
         self,
         hook,
         address,
-        credential: AbstractCredential = None,
         id: Union[int, str] = 0,
         is_client_worker: bool = False,
         log_msgs: bool = False,
@@ -33,7 +31,6 @@ class NodeClient(WebsocketClientWorker):
         Args:
             hook : a normal TorchHook object.
             address : Address used to connect with remote node.
-            credential : Credential used to perform authentication.
             id : the unique id of the worker (string or int)
             is_client_worker : An optional boolean parameter to indicate
                 whether this worker is associated with an end user client. If
@@ -51,7 +48,6 @@ class NodeClient(WebsocketClientWorker):
         """
         self.address = address
         self.encoding = encoding
-        self.credential = credential
 
         # Parse address string to get scheme, host and port
         self.secure, self.host, self.port = self._parse_address(address)
@@ -72,9 +68,6 @@ class NodeClient(WebsocketClientWorker):
 
         # Update Node reference using node's Id given by the remote node
         self._update_node_reference(self._get_node_infos())
-
-        if self.credential:
-            self._authenticate()
 
     @property
     def url(self) -> str:
@@ -100,29 +93,6 @@ class NodeClient(WebsocketClientWorker):
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response, RESPONSE_MSG.MODELS)
-
-    def _authenticate(self):
-        """ Perform Authentication Process using credentials grid credentials.
-
-        Raises:
-            RuntimeError : If authentication process fail.
-        """
-        if not isinstance(self.credential, AbstractCredential):
-            raise RuntimeError("Your credential needs to be an instance of grid credentials.")
-
-        cred_dict = self.credential.json()
-
-        # Prepare a authentication request to remote grid node
-        cred_dict[REQUEST_MSG.TYPE_FIELD] = REQUEST_MSG.AUTHENTICATE
-        response = self._forward_json_to_websocket_server_worker(cred_dict)
-
-        # If succeeded, update node's reference and update client's credential.
-        node_id = self._return_bool_result(response, RESPONSE_MSG.NODE_ID)
-
-        if node_id:
-            self._update_node_reference(node_id)
-        else:
-            raise RuntimeError("Invalid user.")
 
     def _update_node_reference(self, new_id: str):
         """ Update worker references changing node id references at hook structure.

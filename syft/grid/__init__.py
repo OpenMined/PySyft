@@ -1,6 +1,7 @@
-from .network import Network
 import sys
 import uuid
+
+from syft.grid.rtc.network import Network
 
 DEFAULT_NETWORK_URL = "ws://ec2-13-59-45-128.us-east-2.compute.amazonaws.com"
 
