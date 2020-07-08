@@ -302,7 +302,8 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
         nb_rows_in += 2 * padding[0]
         nb_cols_in += 2 * padding[1]
 
-    # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+    # We want to get relative positions of values in the input tensor that are used by
+    # one filter convolution.
     # It basically is the position of the values used for the top left convolution.
     pattern_ind = []
     for r in range(nb_rows_kernel):
