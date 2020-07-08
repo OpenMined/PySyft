@@ -53,6 +53,7 @@ if dependency_check.crypten_available:
 ambiguous_methods = {
     "__getitem__",
     "__setitem__",
+    "__call__",
     "_getitem_public",
     "add_",
     "backward",

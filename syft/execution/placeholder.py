@@ -289,6 +289,17 @@ class PlaceHolder(AbstractTensor):
         return current_level
 
     @staticmethod
+    def recursive_extract(results):
+        if isinstance(results, (tuple, list)):
+            results_placeholders = tuple(
+                PlaceHolder.recursive_extract(result) for result in results
+            )
+        else:
+            results_placeholders = PlaceHolder.extract(results)
+
+        return results_placeholders
+
+    @staticmethod
     def create_placeholders(args_shape):
         """ Helper method to create a list of placeholders with shapes
         in args_shape.

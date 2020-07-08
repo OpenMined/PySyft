@@ -25,8 +25,6 @@ from syft.generic.abstract.tensor import _apply_args
 from syft.workers.base import BaseWorker
 from syft.workers.virtual import VirtualWorker
 from syft.execution.plan import Plan
-from syft.frameworks.crypten.hook.hook import hook_crypten
-from syft.frameworks.crypten.hook.hook import hook_crypten_module
 
 
 class TorchHook(FrameworkHook):
@@ -222,6 +220,8 @@ class TorchHook(FrameworkHook):
 
         # Hook the Crypten module
         if dependency_check.crypten_available:
+            from syft.frameworks.crypten.hook.hook import hook_crypten, hook_crypten_module
+
             hook_crypten()
             hook_crypten_module()
 
