@@ -318,11 +318,9 @@ class TorchTensor(AbstractTensor):
         """
         Operates as a router for functions. A function call always starts
         by being handled here and 3 scenarii must be considered:
-
         Real Torch tensor:
             The arguments of the function are real tensors so we should
             run the native torch command
-
         Torch wrapper:
             The arguments are just wrappers at the top of a chain
             (ex: wrapper>LoggingTensor>Torch tensor), so just forward
@@ -330,7 +328,6 @@ class TorchTensor(AbstractTensor):
             the example above to LoggingTensor.handle_func_command),
             get the response and replace a wrapper on top of all tensors
             found in the response.
-
         Syft Tensor:
             The arguments are syft tensors of same type: this can happen
             if at any node of the chain where some function is forwarded,
@@ -338,7 +335,6 @@ class TorchTensor(AbstractTensor):
             call but keeps the arguments "un-wrapped". Making a new call
             means that by default the command is treated here in the
             global router.
-
         :param command: instruction of a function command: (command name,
         <no self>, arguments[, kwargs_])
         :return: the response of the function command

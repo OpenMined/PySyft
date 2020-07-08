@@ -1185,11 +1185,9 @@ class AdditiveSharingTensor(AbstractTensor):
         handle_function_command of the type of the child attributes, get the
         response and replace a Syft Tensor on top of all tensors found in
         the response.
-
         Args:
             command: instruction of a function command: (command name,
             <no self>, arguments[, kwargs_])
-
         Returns:
             the response of the function command
         """

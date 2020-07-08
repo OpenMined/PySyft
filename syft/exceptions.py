@@ -362,25 +362,21 @@ class TranslationUnavailableError(Exception):
     pass
 
 
-def route_method_exception(exception, self, args_, kwargs_):  # noqa: C901
+def route_method_exception(exception, self, args_, kwargs_):
     try:
-        if self.is_wrapper:
-            if isinstance(self.child, sy.PointerTensor):
-                if len(args_) > 0:
-                    if not args_[0].is_wrapper:
-                        return TensorsNotCollocatedException(self, args_[0])
-                    elif isinstance(args_[0].child, sy.PointerTensor):
-                        if self.location != args_[0].child.location:
-                            return TensorsNotCollocatedException(self, args_[0])
+        if self.is_wrapper and isinstance(self.child, sy.PointerTensor) and len(args_) > 0:
+            if not args_[0].is_wrapper:
+                return TensorsNotCollocatedException(self, args_[0])
+            elif isinstance(args_[0].child, sy.PointerTensor):
+                if self.location != args_[0].child.location:
+                    return TensorsNotCollocatedException(self, args_[0])
 
         # if self is a normal tensor
-        elif isinstance(self, FrameworkTensor):
-            if len(args_) > 0:
-                if args_[0].is_wrapper:
-                    if isinstance(args_[0].child, sy.PointerTensor):
-                        return TensorsNotCollocatedException(self, args_[0])
-                elif isinstance(args_[0], sy.PointerTensor):
-                    return TensorsNotCollocatedException(self, args_[0])
+        elif isinstance(self, FrameworkTensor) and len(args_) > 0:
+            if args_[0].is_wrapper and isinstance(args_[0].child, sy.PointerTensor):
+                return TensorsNotCollocatedException(self, args_[0])
+            elif isinstance(args_[0], sy.PointerTensor):
+                return TensorsNotCollocatedException(self, args_[0])
     except:  # noqa: E722
         ""
     return exception
