@@ -79,6 +79,7 @@ crypten_to_auto_overload = {
         "train",
         "zero_grad",
         "update_parameters",
+        "eval",
     ],
 }
 
@@ -132,10 +133,12 @@ def define_crypten_plan_hook():
             "train": CrypTenPlanBuild.f_return_none,
             "zero_grad": CrypTenPlanBuild.f_return_none,
             "update_parameters": CrypTenPlanBuild.f_return_none,
+            "eval": CrypTenPlanBuild.f_return_none,
         },
         crypten.mpc.MPCTensor: {
             "__getitem__": CrypTenPlanBuild.f_return_cryptensor,
             "unsqueeze": CrypTenPlanBuild.f_return_cryptensor,
+            "flatten": CrypTenPlanBuild.f_return_cryptensor,
         },
     }
 
