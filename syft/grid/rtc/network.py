@@ -3,8 +3,8 @@ import websocket
 import json
 from syft.codes import NODE_EVENTS, GRID_EVENTS, MSG_FIELD
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor
-from syft.grid.nodes_manager import WebRTCManager
-from syft.grid.peer_events import (
+from syft.grid.rtc.nodes_manager import WebRTCManager
+from syft.grid.rtc.peer_events import (
     _monitor,
     _create_webrtc_scope,
     _accept_offer,
