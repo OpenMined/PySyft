@@ -33,8 +33,9 @@ def test_explicit_garbage_collect_pointer(workers):
 def test_explicit_garbage_collect_pointer_with_batch(workers):
     """Tests whether deleting a PointerTensor garbage collects the remote object too"""
     bob = workers["bob"]
+    me = syft.local_worker
 
-    syft.garbage_delay = 0.1
+    me.object_store.garbage_delay = 0.1
 
     x = torch.Tensor([1, 2])
     x_ptr = x.send(bob)
@@ -51,7 +52,7 @@ def test_explicit_garbage_collect_pointer_with_batch(workers):
 
     assert x.id not in bob.object_store._objects
 
-    syft.garbage_delay = 0
+    me.object_store.garbage_delay = 0
 
 
 def test_explicit_garbage_collect_double_pointer(workers):
