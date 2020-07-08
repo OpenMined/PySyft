@@ -1,4 +1,4 @@
-openmined.threepio==0.0.1
+openmined.threepio==0.2.0
 aiortc==0.9.28
 flask_socketio~=4.2.1
 Flask~=1.1.1
