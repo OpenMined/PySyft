@@ -1006,7 +1006,7 @@ def test_backward_autograd_can_be_traced(hook, workers):
     var_4 = var_3.sum()
     var_5 = var_4.mul(0)
     var_6 = var_5.add(1)
-    var_7 = var_6.reshape(-1, 1)
+    var_7 = var_6.reshape([-1, 1])
     var_8 = var_3.mul(0)
     var_9 = var_8.add(1)
     var_10 = var_9.mul(var_7)
