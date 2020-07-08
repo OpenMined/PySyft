@@ -8,6 +8,7 @@ import websockets
 import logging
 import ssl
 import time
+import asyncio
 
 import syft as sy
 
@@ -20,8 +21,6 @@ from syft.messaging.message import TensorCommandMessage
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
 from syft.workers.base import BaseWorker
-
-import asyncio
 
 logger = logging.getLogger(__name__)
 

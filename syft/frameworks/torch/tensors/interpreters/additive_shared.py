@@ -1024,57 +1024,6 @@ class AdditiveSharingTensor(AbstractTensor):
     def __eq__(self, other):
         return self.eq(other)
 
-    # def max(self, dim=None, return_idx=False):
-    #     """
-    #     Return the maximum value of an additive shared tensor
-    #
-    #     Args:
-    #         dim (None or int): if not None, the dimension on which
-    #             the comparison should be done
-    #         return_idx (bool): Return the index of the maximum value
-    #             Note that if dim is specified then the index is returned
-    #             anyway to match the Pytorch syntax.
-    #
-    #     return:
-    #         the maximum value (possibly across an axis)
-    #         and optionally the index of the maximum value (possibly across an axis)
-    #     """
-    #     values = self
-    #     n_dim = self.dim()
-    #
-    #     # Make checks and transformation
-    #     assert dim is None or (0 <= dim < n_dim), f"Dim overflow  0 <= {dim} < {n_dim}"
-    #     # FIXME make it cleaner and robust for more options
-    #     if n_dim == 2:
-    #         if dim == None:
-    #             values = values.view(-1)
-    #         elif dim == 1:
-    #             values = values.t()
-    #     assert n_dim <= 2, "Max on tensor with len(shape) > 2 is not supported."
-    #
-    #     # Init max vals and idx to the first element
-    #     max_value = values[0]
-    #     max_index = torch.tensor([0]).share(
-    #         *self.locations, dtype=self.dtype, crypto_provider=self.crypto_provider, **no_wrap,
-    #     )
-    #
-    #     for i in range(1, len(values)):
-    #         a = values[i]
-    #         beta = a >= max_value
-    #         max_index = max_index + beta * (i - max_index)
-    #         max_value = max_value + beta * (a - max_value)
-    #
-    #     if dim is None and return_idx is False:
-    #         return max_value
-    #     else:
-    #         return max_value, max_index * 1000
-
-    # def argmax(self, dim=None):
-    #
-    #     max_value, max_index = self.max(dim=dim, return_idx=True)
-    #
-    #     return max_index
-
     def _one_hot_to_index(self, dim, keepdim):
         """
         Converts a one-hot self output from an argmax / argmin function to a
@@ -1114,11 +1063,9 @@ class AdditiveSharingTensor(AbstractTensor):
 
         for worker, share in x.child.items():
 
-            response_ids = (sy.ID_PROVIDER.pop(), )
+            response_ids = (sy.ID_PROVIDER.pop(),)
             command = ("helper_argmax_pairwise", share, tuple(), dict(dim=dim))
-            response = self.owner.send_command(
-                share.location, *command, return_ids=response_ids
-            )
+            response = self.owner.send_command(share.location, *command, return_ids=response_ids)
             x_pairwise_shares[worker] = response
         x_pairwise = AdditiveSharingTensor(**self.get_class_attributes()).on(
             x_pairwise_shares, wrap=False
