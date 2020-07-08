@@ -231,14 +231,6 @@ class CycleManager:
         model_params = model_manager.unserialize_model_params(_checkpoint.values)
         logging.info("model params shapes: %s" % str([p.shape for p in model_params]))
 
-        # Here comes simple hardcoded avg plan
-        # it won't be always possible to retrieve and unserialize all diffs due to memory constrains
-        # needs some kind of iterative or streaming approach,
-        # e.g.
-        # for diff_N in diffs:
-        #    avg = avg_plan(avg, N, diff_N)
-        # and the plan is:
-        # avg_next = (avg_current*(N-1) + diff_N) / N
         reports_to_average = self._worker_cycles.query(
             cycle_id=cycle.id, is_completed=True
         )
@@ -247,19 +239,27 @@ class CycleManager:
             for report in reports_to_average
         ]
 
-        # Again, not sure max_workers == number of diffs to avg
-        diffs = random.sample(diffs, server_config.get("max_workers"))
-
         raw_diffs = [
             [diff[model_param] for diff in diffs]
             for model_param in range(len(model_params))
         ]
+
         logging.info("raw diffs lengths: %s" % str([len(row) for row in raw_diffs]))
 
-        sums = [reduce(th.add, param) for param in raw_diffs]
-        logging.info("sums shapes: %s" % str([sum.shape for sum in sums]))
+        avg_plan = process_manager.get_plan(
+            fl_process_id=cycle.fl_process_id, is_avg_plan=True
+        )
 
-        diff_avg = [th.div(param, len(diffs)) for param in sums]
+        # check if the uploaded avg plan is iterative or not
+        iterative_plan = server_config.get("iterative_plan", False)
+
+        if iterative_plan:
+            diff_avg = raw_diffs[0]
+            for i, diff in enumerate(raw_diffs[1:]):
+                diff_avg = avg_plan(diff_avg, diff, i + 1)
+        else:
+            diff_avg = avg_plan(raw_diffs)
+
         logging.info("diff_avg shapes: %s" % str([d.shape for d in diff_avg]))
 
         # apply avg diff!
