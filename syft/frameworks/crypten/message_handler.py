@@ -60,6 +60,9 @@ class CryptenMessageHandler(AbstractMessageHandler):
         # remove rank to id transaltion dict
         del syft_crypten.RANK_TO_WORKER_ID[cid]
 
+        # Delete the plan at the end of the computation
+        self.worker.de_register_obj(plan)
+
         return ObjectMessage(return_value)
 
     def run_crypten_party_jail(self, msg: CryptenInitJail):  # pragma: no cover
