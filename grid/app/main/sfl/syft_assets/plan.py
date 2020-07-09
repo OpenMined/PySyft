@@ -18,6 +18,7 @@ class Plan(db.Model):
     name = db.Column(db.String())
     value = db.Column(db.LargeBinary)
     value_ts = db.Column(db.LargeBinary)
+    value_tfjs = db.Column(db.LargeBinary)
     is_avg_plan = db.Column(db.Boolean, default=False)
     fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
 

@@ -27,4 +27,4 @@ class WorkerCycle(db.Model):
     diff = db.Column(db.LargeBinary)
 
     def __str__(self):
-        f"<WorkerCycle id: {self.id}, fl_process: {self.fl_process_id}, cycle: {self.cycle_id}, worker: {self.worker}, request_key: {self.request_key}>"
+        return f"<WorkerCycle id: {self.id}, cycle: {self.cycle_id}, worker: {self.worker_id}, is_completed: {self.is_completed}>"

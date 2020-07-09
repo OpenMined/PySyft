@@ -220,6 +220,8 @@ def download_plan():
 
         if receive_operations_as == "torchscript":
             response_body = _plan.value_ts
+        elif receive_operations_as == "tfjs":
+            response_body = _plan.value_tfjs
         else:
             response_body = _plan.value
 

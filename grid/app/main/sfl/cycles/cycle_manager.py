@@ -8,6 +8,7 @@ from ...exceptions import CycleNotFoundError
 from ..tasks.cycle import complete_cycle, run_task_once
 from ..models import model_manager
 from ..processes import process_manager
+from ..syft_assets import PlanManager
 
 # Generic imports
 from datetime import datetime, timedelta
@@ -156,8 +157,12 @@ class CycleManager:
             worker_id=worker_id, request_key=request_key
         )
 
+
+
         if not _worker_cycle:
             raise ProcessLookupError
+
+        logging.info(f"Updating worker cycle: {str(_worker_cycle)}")
 
         _worker_cycle.is_completed = True
         _worker_cycle.completed_at = datetime.utcnow()
@@ -246,19 +251,31 @@ class CycleManager:
 
         logging.info("raw diffs lengths: %s" % str([len(row) for row in raw_diffs]))
 
-        avg_plan = process_manager.get_plan(
+        avg_plan_rec = process_manager.get_plan(
             fl_process_id=cycle.fl_process_id, is_avg_plan=True
         )
 
-        # check if the uploaded avg plan is iterative or not
-        iterative_plan = server_config.get("iterative_plan", False)
+        if avg_plan_rec and avg_plan_rec.value:
+            logging.info("doing hosted avg plan")
+            avg_plan = PlanManager.deserialize_plan(avg_plan_rec.value)
 
-        if iterative_plan:
-            diff_avg = raw_diffs[0]
-            for i, diff in enumerate(raw_diffs[1:]):
-                diff_avg = avg_plan(diff_avg, diff, i + 1)
+            # check if the uploaded avg plan is iterative or not
+            iterative_plan = server_config.get("iterative_plan", False)
+
+            if iterative_plan:
+                diff_avg = raw_diffs[0]
+                for i, diff in enumerate(raw_diffs[1:]):
+                    diff_avg = avg_plan(diff_avg, diff, i + 1)
+            else:
+                diff_avg = avg_plan(raw_diffs)
+
         else:
-            diff_avg = avg_plan(raw_diffs)
+            # Fallback to simple hardcoded avg plan
+            logging.info("doing hardcoded avg plan")
+            logging.info("raw diffs lengths: %s" % str([len(row) for row in raw_diffs]))
+            sums = [reduce(th.add, param) for param in raw_diffs]
+            logging.info("sums shapes: %s" % str([sum.shape for sum in sums]))
+            diff_avg = [th.div(param, len(diffs)) for param in sums]
 
         logging.info("diff_avg shapes: %s" % str([d.shape for d in diff_avg]))
 
@@ -288,7 +305,7 @@ class CycleManager:
         max_cycles = server_config.get("num_cycles")
         if completed_cycles_num < max_cycles:
             # make new cycle
-            _new_cycle = self.create(cycle.fl_process_id, cycle.version)
+            _new_cycle = self.create(cycle.fl_process_id, cycle.version, server_config.get('cycle_length'))
             logging.info("new cycle: %s" % str(_new_cycle))
         else:
             logging.info("FL is done!")
