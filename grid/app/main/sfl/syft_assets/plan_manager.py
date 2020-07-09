@@ -125,10 +125,7 @@ class PlanManager:
             "tfjs": PlanTranslatorTfjs,
         }
 
-        if (
-            variant not in type_translators
-            and variant not in fw_translators
-        ):
+        if variant not in type_translators and variant not in fw_translators:
             raise PlanTranslationError
 
         plan_copy = plan.copy()
@@ -141,7 +138,7 @@ class PlanManager:
         if variant in fw_translators:
             # First, leave only default translation
             for name, cls in type_translators.items():
-                if name != 'default':
+                if name != "default":
                     plan_copy.remove_translation(cls)
             # Set actions to be specific type
             plan_copy.base_framework = variant

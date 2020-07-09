@@ -157,8 +157,6 @@ class CycleManager:
             worker_id=worker_id, request_key=request_key
         )
 
-
-
         if not _worker_cycle:
             raise ProcessLookupError
 
@@ -305,7 +303,9 @@ class CycleManager:
         max_cycles = server_config.get("num_cycles")
         if completed_cycles_num < max_cycles:
             # make new cycle
-            _new_cycle = self.create(cycle.fl_process_id, cycle.version, server_config.get('cycle_length'))
+            _new_cycle = self.create(
+                cycle.fl_process_id, cycle.version, server_config.get("cycle_length")
+            )
             logging.info("new cycle: %s" % str(_new_cycle))
         else:
             logging.info("FL is done!")
