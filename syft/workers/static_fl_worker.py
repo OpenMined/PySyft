@@ -133,7 +133,7 @@ class StaticFLWorker:
                 if (deviation < 20) and (avg > 0):
                     break
         if len(speed_history) == 0:
-            return -1
+            return float('inf')
         else:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
@@ -162,7 +162,7 @@ class StaticFLWorker:
                         break
 
         if len(speed_history) == 0:
-            return -1
+            return float('inf')
         else:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
@@ -187,10 +187,10 @@ class StaticFLWorker:
     def close(self):
         self.ws.shutdown()
 
-    def authenticate(self, auth_token):
+    def authenticate(self, auth_token, model_name, model_version):
         message = {
             "type": "federated/authenticate",
-            "data": {"auth_token": auth_token},
+            "data": {"auth_token": auth_token, "model_name": model_name, "model_version": model_version},
         }
 
         return self._send_msg(message)

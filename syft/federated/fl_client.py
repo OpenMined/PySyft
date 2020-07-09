@@ -14,7 +14,7 @@ class FLClient:
 
     def new_job(self, model_name, model_version) -> FLJob:
         if self.worker_id is None:
-            auth_response = self.grid_worker.authenticate(self.auth_token)
+            auth_response = self.grid_worker.authenticate(self.auth_token, model_name, model_version)
             self.worker_id = auth_response["data"]["worker_id"]
 
         job = FLJob(
