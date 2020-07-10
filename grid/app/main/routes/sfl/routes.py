@@ -248,7 +248,7 @@ def auth():
     response_body = {}
     status_code = 200
     data = json.loads(request.data)
-    _auth_token = data["auth_token"]
+    _auth_token = data.get("auth_token", None)
     model_name = data.get("model_name", None)
     model_version = data.get("model_version", None)
 
@@ -257,7 +257,7 @@ def auth():
 
         if verification_result["status"] == RESPONSE_MSG.SUCCESS:
             resp = assign_worker_id({"auth_token": _auth_token}, None)
-            response_body = json.loads(resp)["data"]
+            response_body = resp
 
         elif verification_result["status"] == RESPONSE_MSG.ERROR:
             status_code = 400
