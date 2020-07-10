@@ -70,7 +70,7 @@ def poly_add(op1, op2, poly_mod):
     return np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")).tolist()
 
 
-def poly_add_mod(op1, op2, coeff_mod, poly_mod):
+def poly_add_mod(op1, op2, coeff_mod, poly_mod, debug=False):
     """Add two polynomials and modulo every coefficient with coeff_mod.
 
     Args:
@@ -87,7 +87,8 @@ def poly_add_mod(op1, op2, coeff_mod, poly_mod):
         op1 += [0] * (poly_mod - len(op1))
     if len(op2) != poly_mod:
         op2 += [0] * (poly_mod - len(op2))
-
+    if debug:
+        print("arguments for poly_add_mod : ", op1, "\n\nsecond arg : ", op2)
     return np.mod(
         np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
     ).tolist()

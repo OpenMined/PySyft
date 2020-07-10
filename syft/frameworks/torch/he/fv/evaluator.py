@@ -337,3 +337,41 @@ class Evaluator:
         """
         pt1, pt2 = pt1.data, pt2.data
         return PlainText(poly_mul_mod(pt1, pt2, self.plain_modulus, self.poly_modulus))
+
+    def relin(self, ct, rlk):
+        ct0, ct1, ct2 = copy.deepcopy(ct.data)
+
+        mul_rlk0_c2 = [0] * len(self.coeff_modulus)
+        mul_rlk1_c2 = [0] * len(self.coeff_modulus)
+        for i in range(len(self.coeff_modulus)):
+            mul_rlk0_c2[i] = [0] * len(self.coeff_modulus)
+            mul_rlk1_c2[i] = [0] * len(self.coeff_modulus)
+
+        for i in range(len(self.coeff_modulus)):
+            for j in range(len(self.coeff_modulus)):
+                mul_rlk0_c2[i][j] = poly_mul_mod(
+                    rlk[i][0][j], ct2[j], self.coeff_modulus[j], self.poly_modulus
+                )
+                mul_rlk1_c2[i][j] = poly_mul_mod(
+                    rlk[i][1][j], ct2[j], self.coeff_modulus[j], self.poly_modulus
+                )
+
+        temp0 = [0] * len(self.coeff_modulus)
+        temp1 = [0] * len(self.coeff_modulus)
+        for i in range(len(self.coeff_modulus)):
+            temp0[i] = [0] * self.poly_modulus
+            temp1[i] = [0] * self.poly_modulus
+
+        for i in range(len(self.coeff_modulus)):
+            for j in range(len(self.coeff_modulus)):
+                temp0[i] = poly_add(mul_rlk0_c2[j][i], temp0[i], self.poly_modulus)
+                temp1[i] = poly_add(mul_rlk1_c2[j][i], temp1[i], self.poly_modulus)
+
+        ct0_final = [0] * len(self.coeff_modulus)
+        ct1_final = [0] * len(self.coeff_modulus)
+
+        for i in range(len(self.coeff_modulus)):
+            ct0_final[i] = poly_add_mod(ct0[i], temp0[i], self.coeff_modulus[i], self.poly_modulus)
+            ct1_final[i] = poly_add_mod(ct1[i], temp1[i], self.coeff_modulus[i], self.poly_modulus)
+
+        return CipherText([ct0_final, ct1_final])

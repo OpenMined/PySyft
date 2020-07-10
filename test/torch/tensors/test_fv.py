@@ -666,3 +666,23 @@ def test_fv_mul_plain_plain(int1, int2):
         == encoder.decode(evaluator.mul(op1, op2))
         == encoder.decode(evaluator._mul_plain_plain(op2, op1))
     )
+
+
+@pytest.mark.parametrize(
+    "val", [(0), (1), (-1), (100), (1000), (-1000), (-99)],
+)
+def test_fv_relin(val):
+    ctx = Context(EncryptionParams(128, CoeffModulus().create(128, [40]), 64))
+    keygenerator = KeyGenerator(ctx)
+    keys = keygenerator.keygen()
+    relin_key = keygenerator.get_relin_keys()
+    encoder = IntegerEncoder(ctx)
+    encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
+    decryptor = Decryptor(ctx, keys[0])  # keys[0] = secret_key
+    evaluator = Evaluator(ctx)
+
+    op = encryptor.encrypt(encoder.encode(val))
+    temp_prod = evaluator.mul(op, op)
+    relin_prod = evaluator.relin(temp_prod, relin_key)
+
+    assert val * val == encoder.decode(decryptor.decrypt(relin_prod))
