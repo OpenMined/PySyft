@@ -20,4 +20,4 @@ psycopg2-binary
 requests==2.22.0
 requests_toolbelt
 Werkzeug==0.15.5
-git+https://github.com/OpenMined/PySyft@master#egg=syft
+syft==0.2.7
