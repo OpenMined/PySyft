@@ -20,14 +20,14 @@ from syft.messaging.message import SearchMessage
 from syft.messaging.message import TensorCommandMessage
 from syft.generic.tensor import AbstractTensor
 from syft.generic.pointers.pointer_tensor import PointerTensor
-from syft.workers.base import BaseWorker
+from syft.workers.virtual import VirtualWorker
 
 logger = logging.getLogger(__name__)
 
 TIMEOUT_INTERVAL = 60
 
 
-class WebsocketClientWorker(BaseWorker):
+class WebsocketClientWorker(VirtualWorker):
     def __init__(
         self,
         hook,
