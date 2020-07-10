@@ -17,9 +17,9 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
-CHUNK_SIZE = 655360 #640KB
+CHUNK_SIZE = 655360  # 640KB
 SPEED_MULT_FACTOR = 10
-MAX_BUFFER_SIZE = 1048576 * 64 # 64 MB
+MAX_BUFFER_SIZE = 1048576 * 64  # 64 MB
 MAX_SPEED_TESTS = 3
 
 
@@ -123,9 +123,9 @@ class StaticFLWorker:
                 buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
             new_speed = buffer_size / (time_taken * 1024)
 
-            if new_speed != float("inf"): 
+            if new_speed != float("inf"):
                 speed_history.append(new_speed)
-                
+
         if len(speed_history) == 0:
             return float("inf")
         else:
@@ -148,9 +148,9 @@ class StaticFLWorker:
                     buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
                 new_speed = buffer_size / (time_taken * 1024)
 
-                if new_speed != float("inf"):   
+                if new_speed != float("inf"):
                     speed_history.append(new_speed)
-                
+
         if len(speed_history) == 0:
             return float("inf")
         else:
