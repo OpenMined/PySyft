@@ -17,11 +17,10 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
-CHUNK_SIZE = 8192
+CHUNK_SIZE = 655360 #640KB
 SPEED_MULT_FACTOR = 10
-MAX_BUFFER_SIZE = 1048576  # 1 MB
-CHECK_SPEED_EVERY = 10
-MAX_SPEED_TESTS = 50
+MAX_BUFFER_SIZE = 1048576 * 64 # 64 MB
+MAX_SPEED_TESTS = 3
 
 
 class StaticFLWorker:
@@ -121,17 +120,12 @@ class StaticFLWorker:
                 number=1,
             )
             if time_taken < 0.5:
-                buffer_size = min(
-                    buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE * 64
-                )  # 64 MB max file size
-                continue
-            upload_speed = 64 * 1024 / time_taken  # speed in KBps
-            speed_history.append(upload_speed)
-            if len(speed_history) % CHECK_SPEED_EVERY == 0:
-                avg = sum(speed_history) / len(speed_history)
-                deviation = avg - min(speed_history)
-                if (deviation < 20) and (avg > 0):
-                    break
+                buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
+            new_speed = buffer_size / (time_taken * 1024)
+
+            if new_speed != float("inf"): 
+                speed_history.append(new_speed)
+                
         if len(speed_history) == 0:
             return float("inf")
         else:
@@ -152,15 +146,11 @@ class StaticFLWorker:
                 )
                 if time_taken < 0.5:
                     buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
-                    continue
                 new_speed = buffer_size / (time_taken * 1024)
-                speed_history.append(new_speed)
-                if len(speed_history) % CHECK_SPEED_EVERY == 0:
-                    avg = sum(speed_history) / len(speed_history)
-                    deviation = avg - min(speed_history)
-                    if (deviation < 20) and (avg > 0):
-                        break
 
+                if new_speed != float("inf"):   
+                    speed_history.append(new_speed)
+                
         if len(speed_history) == 0:
             return float("inf")
         else:
