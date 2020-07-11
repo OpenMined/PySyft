@@ -34,6 +34,8 @@ list of methods
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
+from . import typecheck
+
 
 from pkg_resources import get_distribution, DistributionNotFound
 
@@ -45,3 +47,4 @@ except DistributionNotFound:
     __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
+

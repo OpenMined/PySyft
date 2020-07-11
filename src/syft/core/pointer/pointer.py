@@ -1,6 +1,6 @@
-from ..message.message import GetObjectMessage
-
 import random
+
+from ..message import GetObjectMessage
 
 
 class Pointer:
