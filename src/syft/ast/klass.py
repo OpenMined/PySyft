@@ -21,7 +21,11 @@ class Class(ast.callable.Callable):
             # TODO: lookup actual return type instead of just guessing that it's identical
             result = getattr(self, self.pointer_name)(location=__self.location)
 
+<<<<<<< HEAD
             cmd = msg.message.RunClassMethodMessage(
+=======
+            cmd = msg.RunClassMethodMessage(
+>>>>>>> 3000438c4a49c0d3a0593a7af3b6396c6eb4dba0
                 attr_path_and_name, __self, args, kwargs, result.id_at_location
             )
             __self.location.send_msg(cmd)
