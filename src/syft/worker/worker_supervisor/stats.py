@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ....typecheck import type_hints
+from .... import type_hints
 from dataclasses import dataclass
 from collections import defaultdict
 from collections import deque

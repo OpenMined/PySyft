@@ -1,7 +1,8 @@
 from __future__ import annotations
-from ....typecheck import type_hints
+from .... import type_hints
 from ..worker import Worker
 from ...message import SyftMessage
+
 
 class WorkerService:
     @staticmethod

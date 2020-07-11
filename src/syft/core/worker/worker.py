@@ -13,8 +13,7 @@ from .. import worker
 from .supervisor.supervisor import WorkerSupervisor
 from .supervisor.stats import WorkerStats
 
-from ...typecheck import type_hints
-
+from ... import type_hints
 
 
 class Worker(metaclass=WorkerSupervisor):
@@ -47,10 +46,9 @@ class Worker(metaclass=WorkerSupervisor):
                 self.frameworks.attrs[name] = ast
 
         self.msg_router = worker.message_service_mapping
-        self.worker_stats = None
+
         if debug:
             self.worker_stats = WorkerStats()
-
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> None:

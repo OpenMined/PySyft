@@ -1,6 +1,7 @@
 from __future__ import annotations
 from ..stats import WorkerStats
-from .....typecheck import type_hints
+from ..... import type_hints
+
 
 class Policy:
     @type_hints

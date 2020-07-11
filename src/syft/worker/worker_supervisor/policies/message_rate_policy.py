@@ -1,7 +1,6 @@
-
 from .policy import Policy
 from . import register_policy
-from .....typecheck import type_hints
+from ..... import type_hints
 from ..stats import WorkerStats
 
 MAX_RATE_DEFAULT = 100

@@ -22,7 +22,6 @@ class Class(ast.callable.Callable):
             result = getattr(self, self.pointer_name)(location=__self.location)
 
             cmd = msg.RunClassMethodMessage(
-
                 attr_path_and_name, __self, args, kwargs, result.id_at_location
             )
             __self.location.send_msg(cmd)
