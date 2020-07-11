@@ -1,11 +1,12 @@
 from __future__ import annotations
-import syft
+from ..stats import WorkerStats
+from .....typecheck import type_hints
 
 class Policy:
-    @syft.typecheck.type_hints
-    def error_policy(stats: "syft.worker.supervisor.stats.WorkerStats") -> None:
+    @type_hints
+    def error_policy(stats: WorkerStats) -> None:
         raise NotImplementedError
 
-    @syft.typecheck.type_hints
-    def enforce_policy(stats: "syft.worker.supervisor.stats.WorkerStats") -> None:
+    @type_hints
+    def enforce_policy(stats: WorkerStats) -> None:
         raise NotImplementedError

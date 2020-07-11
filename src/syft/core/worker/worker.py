@@ -3,11 +3,12 @@
 stuff
 """
 
-from ..message.message import RunClassMethodMessage
-from ..message.message import SaveObjectMessage
-from ..message.message import GetObjectMessage
-from ..message.message import DeleteObjectMessage
-from ..message.message import RunFunctionOrConstructorMessage
+from __future__ import annotations
+from ..message import RunClassMethodMessage
+from ..message import SaveObjectMessage
+from ..message import GetObjectMessage
+from ..message import DeleteObjectMessage
+from ..message import RunFunctionOrConstructorMessage
 
 from ..store.store import ObjectStore
 
@@ -16,10 +17,10 @@ from ...ast.globals import Globals
 from ..pointer.pointer import Pointer
 
 from .service import message_service_mapping
-from .supervisor import WorkerSupervisor
-from syft.worker.worker_supervisor.stats import WorkerStats
+from .supervisor.supervisor import WorkerSupervisor
+from .supervisor.stats import WorkerStats
 
-from __future__ import annotations
+from ...typecheck import type_hints
 
 
 
@@ -37,11 +38,10 @@ class Worker(metaclass=WorkerSupervisor):
     Each worker is identified by an id of type str.
     """
 
-    @syft.typecheck.type_hints
-    def __init__(self, id: str, debug: bool = False):
+    @type_hints
+    def __init__(self, id: str, debug: bool = False, supported_frameworks: list = []):
 
         self.id = id
-        self.verbose = verbose
         self.store = ObjectStore()
         self.frameworks = Globals()
         for fw in supported_frameworks:
@@ -58,15 +58,15 @@ class Worker(metaclass=WorkerSupervisor):
             self.worker_stats = WorkerStats()
 
 
-    @syft.typecheck.type_hints
-    def recv_msg(self, msg: "syft.message.SyftMessage") -> None:
+    @type_hints
+    def recv_msg(self, msg: "syft.core.message.SyftMessage") -> None:
         pass
 
-    @syft.typecheck.type_hints
+    @type_hints
     def _send_msg(self) -> None:
         raise NotImplementedError
 
-    @syft.typecheck.type_hints
+    @type_hints
     def _recv_msg(self) -> None:
         raise NotImplementedError
 

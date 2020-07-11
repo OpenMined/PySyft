@@ -1,15 +1,16 @@
 from __future__ import annotations
-import syft
-from syft.worker.worker_service import WorkerService, message_service_mapping
-from syft.message import RunClassMethodMessage
-from syft.typecheck.typecheck import type_hints
-from syft.pointer.pointer import Pointer
 
+from .worker_service import WorkerService
+from . import message_service_mapping
+from ...message import RunClassMethodMessage
+from ....typecheck import type_hints
+from ...pointer.pointer import Pointer
+from ..worker import Worker
 
 class RunClassMethodService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: "syft.worker.Worker", msg: RunClassMethodMessage) -> None:
+    def process(worker: Worker, msg: RunClassMethodMessage) -> None:
         self_possibly_pointer = msg._self
         args_with_pointers = msg.args
         kwargs_with_pointers = msg.kwargs

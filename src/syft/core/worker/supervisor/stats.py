@@ -1,5 +1,5 @@
 from __future__ import annotations
-import syft
+from ....typecheck import type_hints
 from dataclasses import dataclass
 from collections import defaultdict
 from collections import deque
@@ -24,11 +24,11 @@ class WorkerStats:
     message_frequency = defaultdict(int)
     event_log: deque = deque([None] * LOG_QUEUE_LENGTH, LOG_QUEUE_LENGTH)
 
-    @syft.typecheck.type_hints
+    @type_hints
     def add_event(self, event: WorkerEventLog) -> None:
         self.event_log.appendleft(event)
 
-    @syft.typecheck.type_hints
+    @type_hints
     def log_msg(self, msg_type: type) -> None:
         self.message_frequency[msg_type] += 1
 
