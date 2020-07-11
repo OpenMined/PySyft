@@ -7,14 +7,14 @@ from .. import service
 class VirtualWorker(Worker):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.client = VirtualClient(self.id, self, verbose=False)
+        self._client = VirtualClient(self.id, self, verbose=False)
 
     def _recv_msg(self, msg):
         return self.recv_msg(msg=msg)
 
     def get_client(self, debug=False):
-        self.client.debug = debug
-        return self.client
+        self._client.debug = debug
+        return self._client
 
     def _register_services(self) -> None:
         services = list()
