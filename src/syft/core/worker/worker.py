@@ -4,19 +4,12 @@ stuff
 """
 
 from __future__ import annotations
-from ..message import RunClassMethodMessage
-from ..message import SaveObjectMessage
-from ..message import GetObjectMessage
-from ..message import DeleteObjectMessage
-from ..message import RunFunctionOrConstructorMessage
 
 from ..store.store import ObjectStore
 
 from ...ast.globals import Globals
-
-from ..pointer.pointer import Pointer
-
-from .service import message_service_mapping
+from ..message import SyftMessage
+from .. import worker
 from .supervisor.supervisor import WorkerSupervisor
 from .supervisor.stats import WorkerStats
 
@@ -25,6 +18,7 @@ from ...typecheck import type_hints
 
 
 class Worker(metaclass=WorkerSupervisor):
+
     """
     Basic class for a syft worker behavior, explicit purpose workers will
     inherit this class (eg. WebsocketWorker, VirtualWorker).
@@ -52,14 +46,14 @@ class Worker(metaclass=WorkerSupervisor):
                     )
                 self.frameworks.attrs[name] = ast
 
-        self.msg_router = message_service_mapping
+        self.msg_router = worker.message_service_mapping
         self.worker_stats = None
         if debug:
             self.worker_stats = WorkerStats()
 
 
     @type_hints
-    def recv_msg(self, msg: "syft.core.message.SyftMessage") -> None:
+    def recv_msg(self, msg: SyftMessage) -> None:
         pass
 
     @type_hints

@@ -19,7 +19,7 @@ class MemoryLimitPolicy(Policy):
         raise MemoryError("Memory limit exceeded.")
 
     @type_hints
-    def enforce_policy(self, stats: WorkerStats) -> None:
+    def enforce_policy(self, stats: WorkerStats ) -> None:
         pass
 
 

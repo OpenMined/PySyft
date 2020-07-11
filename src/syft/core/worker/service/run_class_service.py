@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .worker_service import WorkerService
-from . import message_service_mapping
+from .. import message_service_mapping
 from ...message import RunClassMethodMessage
 from ....typecheck import type_hints
 from ...pointer.pointer import Pointer
