@@ -5,16 +5,15 @@ stuff
 
 from __future__ import annotations
 
-from ..store.store import ObjectStore
-
-from ...ast.globals import Globals
-from ..message import SyftMessage
-from .. import worker
-from .supervisor.supervisor import WorkerSupervisor
-from .supervisor.stats import WorkerStats
-
-from ... import type_hints
+# NON-CORE IMPORTS
 from ...common import AbstractWorker
+from ...ast.globals import Globals
+from ... import type_hints
+
+# CORE IMPORTS
+from ..store.store import ObjectStore
+from ..message import SyftMessage
+from .supervisor.stats import WorkerStats
 
 class Worker(AbstractWorker):
 
