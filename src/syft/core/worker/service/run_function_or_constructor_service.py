@@ -3,7 +3,8 @@ from __future__ import annotations
 from .worker_service import WorkerService
 from .. import message_service_mapping
 from ...message import RunFunctionOrConstructorMessage
-from ....typecheck import type_hints
+from .... import type_hints
+
 
 class RunFunctionOrConstructorService(WorkerService):
     @staticmethod

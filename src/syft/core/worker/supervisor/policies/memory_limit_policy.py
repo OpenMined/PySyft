@@ -1,9 +1,7 @@
-
-
 from typing import Final
 from .policy import Policy
 from . import register_policy
-from .....typecheck import type_hints
+from ..... import type_hints
 from ..stats import WorkerStats
 
 MAX_DEFAULT_MEMORY: Final = 25
@@ -19,7 +17,7 @@ class MemoryLimitPolicy(Policy):
         raise MemoryError("Memory limit exceeded.")
 
     @type_hints
-    def enforce_policy(self, stats: WorkerStats ) -> None:
+    def enforce_policy(self, stats: WorkerStats) -> None:
         pass
 
 

@@ -3,9 +3,8 @@ import typing
 from typeguard import typechecked
 
 
-SKIP_RETURN_TYPE_HINTS = {
-    "__init__"
-}
+SKIP_RETURN_TYPE_HINTS = {"__init__"}
+
 
 def type_hints(decorated: typing.Callable) -> typing.Callable:
     """
@@ -33,15 +32,18 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
                 continue
 
             if not param_name in kwargs:
-                raise AttributeError(f"'{param_name}' was passed into a function as an arg instead of a kwarg."
-                f"Please pass in arguments as kwargs.")
+                raise AttributeError(
+                    f"'{param_name}' was passed into a function as an arg instead of a kwarg."
+                    f"Please pass in arguments as kwargs."
+                )
 
-
-
-    if literal_signature.return_annotation is literal_signature.empty and decorated.__name__ not in SKIP_RETURN_TYPE_HINTS:
+    if (
+        literal_signature.return_annotation is literal_signature.empty
+        and decorated.__name__ not in SKIP_RETURN_TYPE_HINTS
+    ):
         raise AttributeError(
-                f"Return type not annotated, please provide typing to the return type for function {decorated.__qualname__}."
-            )
+            f"Return type not annotated, please provide typing to the return type for function {decorated.__qualname__}."
+        )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
         if idx == 0 and param_name == "self":
@@ -51,7 +53,6 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
             raise AttributeError(
                 f"Argument types not annotated, please provide typing to all argument types for function {decorated.__qualname__}."
             )
-
 
     def decorator(*args, **kwargs):
         check_args(*args, **kwargs)

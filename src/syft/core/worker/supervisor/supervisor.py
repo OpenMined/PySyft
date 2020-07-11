@@ -1,7 +1,7 @@
 import time
 from typing import Callable
 
-from ....typecheck import type_hints
+from .... import type_hints
 from .stats import WorkerEventLog
 
 

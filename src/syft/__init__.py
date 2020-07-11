@@ -34,11 +34,19 @@ list of methods
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
-from . import typecheck
 
+# CONVENIENCE FUNCTIONS
+from .typecheck import type_hints
+from .core.worker.virtual.virtual_worker import VirtualWorker
 
 from pkg_resources import get_distribution, DistributionNotFound
 
+
+# PACKAGE IMPORTS
+from . import lib
+
+
+# VERSIONING
 try:
     # Change here if project is renamed and does not equal the package name
     dist_name = __name__
@@ -47,4 +55,3 @@ except DistributionNotFound:
     __version__ = "unknown"
 finally:
     del get_distribution, DistributionNotFound
-

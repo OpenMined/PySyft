@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from ....typecheck import type_hints
+from .... import type_hints
 from .worker_service import WorkerService
 from .. import message_service_mapping
 from ...message import GetObjectMessage
 from ..worker import Worker
+
 
 class GetObjectService(WorkerService):
     @staticmethod

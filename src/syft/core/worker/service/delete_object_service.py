@@ -1,9 +1,10 @@
 from __future__ import annotations
-from ....typecheck import type_hints
+from .... import type_hints
 from .worker_service import WorkerService
 from .. import message_service_mapping
 from ...message import DeleteObjectMessage
 from ..worker import Worker
+
 
 class DeleteObjectService(WorkerService):
     @staticmethod
