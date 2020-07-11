@@ -12,8 +12,8 @@ class VirtualWorker(Worker):
     def _recv_msg(self, msg):
         return self.recv_msg(msg=msg)
 
-    def get_client(self, verbose=False):
-        self.client.verbose = verbose
+    def get_client(self, debug=False):
+        self.client.debug = debug
         return self.client
 
     def _register_services(self) -> None:
@@ -26,3 +26,15 @@ class VirtualWorker(Worker):
 
         for s in services:
             self.msg_router[s.message_type_handler()] = s()
+
+    def _register_frameworks(self) -> None:
+
+        from ....lib import supported_frameworks
+
+        for fw in supported_frameworks:
+            for name, ast in fw.ast.attrs.items():
+                if name in self.frameworks.attrs:
+                    raise KeyError(
+                        "Framework already imported. Why are you importing it twice?"
+                    )
+                self.frameworks.attrs[name] = ast
