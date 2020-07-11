@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from .worker_service import WorkerService
-from .. import message_service_mapping
 from ...message import RunClassMethodMessage
 from .... import type_hints
 from ...pointer.pointer import Pointer
@@ -60,11 +59,3 @@ class RunClassMethodService(WorkerService):
     @type_hints
     def message_type_handler() -> type:
         return RunClassMethodMessage
-
-    @staticmethod
-    @type_hints
-    def register_service() -> None:
-        message_service_mapping[RunClassMethodMessage] = RunClassMethodService
-
-
-RunClassMethodService.register_service()

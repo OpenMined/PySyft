@@ -15,8 +15,3 @@ class WorkerService:
     @type_hints
     def message_type_handler() -> SyftMessage:
         raise NotImplementedError
-
-    @staticmethod
-    @type_hints
-    def register_service() -> None:
-        raise NotImplementedError

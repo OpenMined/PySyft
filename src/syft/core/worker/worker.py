@@ -45,10 +45,12 @@ class Worker(AbstractWorker):
                     )
                 self.frameworks.attrs[name] = ast
 
-        self.msg_router = worker.message_service_mapping
+        self.msg_router = {}
 
         if debug:
             self.worker_stats = WorkerStats()
+
+        self._register_services()
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> object:
@@ -60,6 +62,10 @@ class Worker(AbstractWorker):
 
     @type_hints
     def _recv_msg(self) -> None:
+        raise NotImplementedError
+
+    @type_hints
+    def _register_services(self) -> None:
         raise NotImplementedError
 
     def __repr__(self):

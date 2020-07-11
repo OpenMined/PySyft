@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from .... import type_hints
 from .worker_service import WorkerService
-from .. import message_service_mapping
 from ...message import GetObjectMessage
 from ....common import AbstractWorker
 
@@ -17,11 +16,3 @@ class GetObjectService(WorkerService):
     @type_hints
     def message_type_handler() -> type:
         return GetObjectMessage
-
-    @staticmethod
-    @type_hints
-    def register_service() -> None:
-        message_service_mapping[GetObjectMessage] = GetObjectService
-
-
-GetObjectService.register_service()
