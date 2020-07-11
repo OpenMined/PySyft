@@ -4,14 +4,14 @@ from .... import type_hints
 from .worker_service import WorkerService
 from .. import message_service_mapping
 from ...message import GetObjectMessage
-from ..worker import Worker
+from ....common import AbstractWorker
 
 
 class GetObjectService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: Worker, msg: GetObjectMessage) -> None:
-        pass
+    def process(worker: AbstractWorker, msg: GetObjectMessage) -> object: #TODO: return StoreableObject
+        return worker.store.get_object(msg.id)
 
     @staticmethod
     @type_hints
