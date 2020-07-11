@@ -5,13 +5,13 @@ from .. import message_service_mapping
 from ...message import RunClassMethodMessage
 from .... import type_hints
 from ...pointer.pointer import Pointer
-from ..worker import Worker
+from ....common import AbstractWorker
 
 
 class RunClassMethodService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: Worker, msg: RunClassMethodMessage) -> None:
+    def process(worker: AbstractWorker, msg: RunClassMethodMessage) -> None:
         self_possibly_pointer = msg._self
         args_with_pointers = msg.args
         kwargs_with_pointers = msg.kwargs

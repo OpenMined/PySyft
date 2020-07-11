@@ -34,6 +34,9 @@ list of methods
 
 To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
 """
+# ASTRACT OBJECT IMPORTS
+from . import common
+
 
 # CONVENIENCE FUNCTIONS
 from .typecheck import type_hints

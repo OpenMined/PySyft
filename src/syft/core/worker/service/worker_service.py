@@ -1,13 +1,14 @@
 from __future__ import annotations
 from .... import type_hints
-from ..worker import Worker
+
 from ...message import SyftMessage
 
+from ....common import AbstractWorker
 
 class WorkerService:
     @staticmethod
     @type_hints
-    def process(worker: Worker, msg: SyftMessage) -> None:
+    def process(worker: AbstractWorker, msg: SyftMessage) -> object:
         raise NotImplementedError
 
     @staticmethod

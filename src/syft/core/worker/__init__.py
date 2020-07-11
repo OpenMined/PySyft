@@ -52,5 +52,6 @@ from typing import Dict
 
 message_service_mapping: Dict[str, WorkerService] = {}
 
-from . import worker
 from . import service
+from . import worker
+

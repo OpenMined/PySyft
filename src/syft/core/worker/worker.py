@@ -14,9 +14,9 @@ from .supervisor.supervisor import WorkerSupervisor
 from .supervisor.stats import WorkerStats
 
 from ... import type_hints
+from ...common import AbstractWorker
 
-
-class Worker(metaclass=WorkerSupervisor):
+class Worker(AbstractWorker):
 
     """
     Basic class for a syft worker behavior, explicit purpose workers will
@@ -51,8 +51,8 @@ class Worker(metaclass=WorkerSupervisor):
             self.worker_stats = WorkerStats()
 
     @type_hints
-    def recv_msg(self, msg: SyftMessage) -> None:
-        pass
+    def recv_msg(self, msg: SyftMessage) -> object:
+        return self.msg_router[type(msg)].process(worker=self, msg=msg)
 
     @type_hints
     def _send_msg(self) -> None:

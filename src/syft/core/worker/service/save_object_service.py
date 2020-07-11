@@ -6,14 +6,14 @@ from ...message import SaveObjectMessage
 
 from .... import type_hints
 
-from ..worker import Worker
+from ....common import AbstractWorker
 
 
 class SaveObjectService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: Worker, msg: SaveObjectMessage) -> None:
-        # self.store.store_object(msg.id, msg.obj)
+    def process(worker: AbstractWorker, msg: SaveObjectMessage) -> None:
+        worker.store.store_object(msg.id, msg.obj)
         pass
 
     @staticmethod

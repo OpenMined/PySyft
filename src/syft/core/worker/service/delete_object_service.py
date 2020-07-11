@@ -3,15 +3,14 @@ from .... import type_hints
 from .worker_service import WorkerService
 from .. import message_service_mapping
 from ...message import DeleteObjectMessage
-from ..worker import Worker
+from ....common import AbstractWorker
 
 
 class DeleteObjectService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: Worker, msg: DeleteObjectMessage) -> None:
-        # return self.store.delete_object(msg.id)
-        pass
+    def process(worker: AbstractWorker, msg: DeleteObjectMessage) -> None:
+        return worker.store.delete_object(msg.id)
 
     @staticmethod
     @type_hints

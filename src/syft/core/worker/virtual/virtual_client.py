@@ -9,10 +9,10 @@ class VirtualClient(Client):
         self.worker = worker
 
     def _send_msg(self, msg):
-        return self.worker._recv_msg(msg)
+        return self.worker._recv_msg(msg=msg)
 
     def send_msg(self, msg):
-        return self._send_msg(msg)
+        return self._send_msg(msg=msg)
 
     def __repr__(self):
         out = f"<VirtualClient id:{self.id}>"
