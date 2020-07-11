@@ -83,6 +83,7 @@ from syft.frameworks.torch.tensors.interpreters.precision import (  # noqa: E402
 from syft.frameworks.torch.tensors.interpreters.numpy import (  # noqa: E402,F401
     create_numpy_tensor as NumpyTensor,
 )
+from syft.frameworks.torch.tensors.interpreters.bfv import BFVTensor  # noqa: E402,F401
 
 from syft.frameworks.torch.tensors.interpreters.private import PrivateTensor  # noqa: E402, F401
 from syft.execution.placeholder import PlaceHolder  # noqa: E402, F401
