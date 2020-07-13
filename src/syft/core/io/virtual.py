@@ -17,21 +17,19 @@ known_objects = {}
 
 @final
 class VirtualServerConnection(ServerConnection):
-
     @type_hints
-    def __init__(self, worker:Worker):
+    def __init__(self, worker: Worker):
         self.worker = worker
 
     @type_hints
-    def recv_msg(self, msg:SyftMessage) -> SyftMessage:
+    def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         return self.worker.recv_msg(msg=msg)
 
 
 @final
 class VirtualClientConnection(ClientConnection):
-
     @type_hints
-    def __init__(self, server:VirtualServerConnection):
+    def __init__(self, server: VirtualServerConnection):
         self.server = server
 
     @type_hints
@@ -40,7 +38,7 @@ class VirtualClientConnection(ClientConnection):
 
 
 @type_hints
-def create_virtual_connection(worker:Worker) -> VirtualClientConnection:
+def create_virtual_connection(worker: Worker) -> VirtualClientConnection:
 
     server = VirtualServerConnection(worker=worker)
     client = VirtualClientConnection(server=server)

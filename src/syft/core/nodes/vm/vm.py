@@ -6,15 +6,15 @@ from ....typecheck import type_hints
 from ...message import SyftMessage
 from typing import final
 
+
 @final
 class VirtualMachine(Worker):
-
     @type_hints
-    def __init__(self, *args:list, **kwargs:str):
+    def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
 
     @type_hints
-    def _recv_msg(self, msg:SyftMessage) -> SyftMessage:
+    def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
         return self.recv_msg(msg=msg)
 
     @type_hints
@@ -29,7 +29,9 @@ class VirtualMachine(Worker):
         services.append(service.save_object_service.SaveObjectService)
         services.append(service.run_class_service.RunClassMethodService)
         services.append(service.delete_object_service.DeleteObjectService)
-        services.append(service.run_function_or_constructor_service.RunFunctionOrConstructorService)
+        services.append(
+            service.run_function_or_constructor_service.RunFunctionOrConstructorService
+        )
         services.append(service.repr_service.ReprService)
         for s in services:
             self.msg_router[s.message_type_handler()] = s()

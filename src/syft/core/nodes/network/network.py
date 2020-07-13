@@ -2,8 +2,7 @@ from ..abstract.worker import Worker
 
 
 class Network(Worker):
-
-    def __init__(self, name:str):
+    def __init__(self, name: str):
         super().__init__(name=name)
 
     def _register_services(self) -> None:

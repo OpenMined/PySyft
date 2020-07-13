@@ -5,7 +5,6 @@ from typing import final
 
 @final
 class ServerConnection(object):
-
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         raise NotImplementedError
@@ -13,7 +12,6 @@ class ServerConnection(object):
 
 @final
 class ClientConnection(object):
-
     @type_hints
     def send_msg(self, msg: SyftMessage) -> SyftMessage:
         raise NotImplementedError

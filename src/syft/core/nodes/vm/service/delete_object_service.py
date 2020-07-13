@@ -15,4 +15,3 @@ class DeleteObjectService(WorkerService):
     @type_hints
     def message_type_handler() -> type:
         return DeleteObjectMessage
-

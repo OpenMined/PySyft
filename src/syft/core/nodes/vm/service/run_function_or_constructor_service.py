@@ -5,6 +5,7 @@ from ....message import RunFunctionOrConstructorMessage
 from ..... import type_hints
 from .....common import AbstractWorker
 
+
 class RunFunctionOrConstructorService(WorkerService):
     @staticmethod
     @type_hints

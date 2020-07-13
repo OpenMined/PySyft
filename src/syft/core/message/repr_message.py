@@ -1,6 +1,7 @@
 from .syft_message import SyftMessage
 from ...typecheck import type_hints
 
+
 class ReprMessage(SyftMessage):
     def __init__(self, route, msg_id=None):
         super().__init__(route=route, msg_id=msg_id)

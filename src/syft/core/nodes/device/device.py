@@ -6,9 +6,9 @@ from ....typecheck import type_hints
 from ..vm.vm import VirtualMachine
 from ..vm.client import VirtualMachineClient
 
+
 @final
 class Device(Worker):
-
     @type_hints
     def __init__(self, name: str):
         super().__init__(name=name)

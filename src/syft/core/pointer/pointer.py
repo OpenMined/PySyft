@@ -12,5 +12,7 @@ class Pointer:
         self.id_at_location = id_at_location
 
     def get(self):
-        obj_msg = GetObjectMessage(id=self.id_at_location, msg_destination=self.location)
+        obj_msg = GetObjectMessage(
+            id=self.id_at_location, msg_destination=self.location
+        )
         return self.location.send_msg(obj_msg)

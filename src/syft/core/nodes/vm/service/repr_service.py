@@ -13,7 +13,6 @@ class ReprService(WorkerService):
     def process(worker: AbstractWorker, msg: ReprMessage) -> ReprReplyMessage:
         return ReprReplyMessage(value=worker.__repr__(), route=None)
 
-
     @staticmethod
     @type_hints
     def message_type_handler() -> type:

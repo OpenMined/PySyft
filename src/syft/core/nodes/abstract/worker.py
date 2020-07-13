@@ -46,13 +46,14 @@ class Worker(AbstractWorker):
         try:
             return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
-            if(type(msg) not in self.msg_router):
-                raise KeyError(f"The worker {self.id} of type {type(self)} cannot process messages of type "+
-                f"{type(msg)} because there is no service running to process it.")
+            if type(msg) not in self.msg_router:
+                raise KeyError(
+                    f"The worker {self.id} of type {type(self)} cannot process messages of type "
+                    + f"{type(msg)} because there is no service running to process it."
+                )
             else:
                 raise e
 
     @type_hints
     def _register_services(self) -> None:
         raise NotImplementedError
-

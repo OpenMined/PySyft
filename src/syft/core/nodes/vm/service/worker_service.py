@@ -5,6 +5,7 @@ from ....message import SyftMessage
 
 from .....common import AbstractWorker
 
+
 class WorkerService:
     @staticmethod
     @type_hints
