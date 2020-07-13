@@ -1,9 +1,9 @@
 from __future__ import annotations
-from .... import type_hints
+from ..... import type_hints
 
-from ...message import SyftMessage
+from ....message import SyftMessage
 
-from ....common import AbstractWorker
+from .....common import AbstractWorker
 
 class WorkerService:
     @staticmethod

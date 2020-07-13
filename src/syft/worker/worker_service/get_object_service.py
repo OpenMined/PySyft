@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from .... import type_hints
+from ..... import type_hints
 from .worker_service import WorkerService
-from ...message import GetObjectMessage
-from ....common import AbstractWorker
+from ....message import GetObjectMessage
+from .....common import AbstractWorker
 
 
 class GetObjectService(WorkerService):

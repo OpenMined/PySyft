@@ -1,8 +1,8 @@
 from __future__ import annotations
-from .... import type_hints
+from .....typecheck import type_hints
 from .worker_service import WorkerService
-from ...message import DeleteObjectMessage
-from ....common import AbstractWorker
+from ....message import DeleteObjectMessage
+from .....common import AbstractWorker
 
 
 class DeleteObjectService(WorkerService):

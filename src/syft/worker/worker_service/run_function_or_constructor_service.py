@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from .worker_service import WorkerService
-from ...message import RunFunctionOrConstructorMessage
-from .... import type_hints
-from ....common import AbstractWorker
+from ....message import RunFunctionOrConstructorMessage
+from ..... import type_hints
+from .....common import AbstractWorker
 
 class RunFunctionOrConstructorService(WorkerService):
     @staticmethod

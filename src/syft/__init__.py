@@ -31,7 +31,7 @@ list of methods
     this can create future complications with lower level languages calling
     higher level ones.
 
-To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
+To begin your education in Syft, continue to the :py:mod:`syft.core.nodes.vm.vm` module...
 """
 
 
@@ -41,7 +41,6 @@ from . import common
 
 # CONVENIENCE FUNCTIONS
 from .typecheck import type_hints
-from .core.worker.virtual.virtual_worker import VirtualWorker
 
 from pkg_resources import get_distribution, DistributionNotFound
 
