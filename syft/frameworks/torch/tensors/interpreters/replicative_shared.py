@@ -7,14 +7,11 @@ import random
 
 class ReplicatedSharingTensor(AbstractTensor):
     def __init__(
-        self, shares=None, owner=None, id=None, crypto_provider=None, tags=None, description=None,
+        self, shares=None, owner=None, id=None, tags=None, description=None,
     ):
         super().__init__(id=id, owner=owner, tags=tags, description=description)
         self.child = shares
         self.ring_size = 2 ** 5
-        self.crypto_provider = (
-            crypto_provider if crypto_provider is not None else sy.hook.local_worker
-        )
 
     def share_secret(self, secret, workers):
         shares = self.generate_shares(secret)
