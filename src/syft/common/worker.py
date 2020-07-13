@@ -1,2 +1,4 @@
-class AbstractWorker(object):
+from .object import ObjectWithId
+
+class AbstractWorker(ObjectWithId):
     ""

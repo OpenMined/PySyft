@@ -41,7 +41,6 @@ from . import common
 
 # CONVENIENCE FUNCTIONS
 from .typecheck import type_hints
-from .core.worker.virtual.virtual_worker import VirtualWorker
 
 from pkg_resources import get_distribution, DistributionNotFound
 

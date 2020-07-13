@@ -50,8 +50,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
             if not param_name in kwargs and len(args) > max_arg_len:
 
                 raise AttributeError(
-                    f"'{param_name}' was passed into a function as an arg instead of a kwarg."
-                    f"Please pass in arguments as kwargs."
+                    f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
+                    f"Please pass in all arguments as kwargs when coding/using PySyft."
                 )
 
     if (
