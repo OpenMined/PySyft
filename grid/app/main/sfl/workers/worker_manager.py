@@ -5,6 +5,7 @@ from .worker import Worker
 from ...storage.warehouse import Warehouse
 from ...exceptions import WorkerNotFoundError
 
+import logging
 
 class WorkerManager:
     def __init__(self):
@@ -54,10 +55,12 @@ class WorkerManager:
                 result: Boolean flag.
         """
         _worker = self._workers.first(id=worker_id)
+        logging.info(f"Checking worker [{_worker}] against server_config [{server_config}]")
 
         # Check bandwidth
         _comp_bandwidth = (
-            _worker.avg_upload > server_config["minimum_upload_speed"]
-        ) and (_worker.avg_download > server_config["minimum_download_speed"])
+            _worker.avg_upload >= server_config["minimum_upload_speed"]
+        ) and (_worker.avg_download >= server_config["minimum_download_speed"])
 
+        logging.info(f"Result of bandwidth check: {_comp_bandwidth}")
         return _comp_bandwidth
