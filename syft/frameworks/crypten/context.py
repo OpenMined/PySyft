@@ -150,7 +150,9 @@ def run_multiworkers(
                 # This is needed because at building we use a set of methods defined in syft
                 # (ex: load)
                 hook_plan_building()
-                crypten.init()
+                was_initialized = DistributedCommunicator.is_initialized()
+                if not was_initialized:
+                    crypten.init()
 
                 # We can build the plan only using a crypten model such that the actions
                 # traced inside the plan would know about it's existance
@@ -159,7 +161,8 @@ def run_multiworkers(
                 else:
                     plan.build(crypten_model)
 
-                crypten.uninit()
+                if not was_initialized:
+                    crypten.uninit()
                 unhook_plan_building()
 
                 # Mark the plan so the other workers will use that tag to retrieve the plan
