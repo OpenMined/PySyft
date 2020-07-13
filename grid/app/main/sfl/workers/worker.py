@@ -22,4 +22,4 @@ class Worker(db.Model):
     worker_cycle = db.relationship("WorkerCycle", backref="worker")
 
     def __str__(self):
-        return f"<Worker id: {self.id}, format_preference: {self.format_preference}, ping : {self.ping}, download: {self.download}, upload: {self.upload}>"
+        return f"<Worker id: {self.id}, format_preference: {self.format_preference}, ping : {self.ping}, download: {self.avg_download}, upload: {self.avg_upload}>"

@@ -9,6 +9,7 @@ from ...exceptions import ProtocolNotFoundError
 # Generic imports
 import hashlib
 import uuid
+import logging
 from datetime import datetime
 
 
@@ -102,6 +103,7 @@ class FLController:
 
         # Check if already exists a relation between the worker and the cycle.
         _assigned = cycle_manager.is_assigned(worker.id, _cycle.id)
+        logging.info(f"Worker {worker.id} is already assigned to cycle {_cycle.id}: {_assigned}")
 
         # Check bandwidth
         _comp_bandwidth = worker_manager.is_eligible(worker.id, server_config)
@@ -116,6 +118,7 @@ class FLController:
         # )
 
         _accepted = (not _assigned) and _comp_bandwidth and _allowed
+        logging.info(f"Worker is accepted: {_accepted}")
 
         if _accepted:
             # Assign
