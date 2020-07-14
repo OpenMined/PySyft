@@ -1,6 +1,4 @@
-import math
 import torch
-import syft as sy
 from syft.generic.abstract.tensor import AbstractTensor
 import random
 
@@ -40,7 +38,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     def reconstruct_secret(self):
         shares_locations = self.child
         shares = self.retrieve_shares(shares_locations)
-        plain_text = self.reconstruct_plaintext(shares)
+        plain_text = self.sum_shares(shares)
         return plain_text
 
     @staticmethod
@@ -52,7 +50,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares.append(share0)
         return shares
 
-    def reconstruct_plaintext(self, shares):
+    def sum_shares(self, shares):
         return sum(shares) % self.ring_size
 
     def __repr__(self):
