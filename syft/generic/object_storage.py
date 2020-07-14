@@ -25,6 +25,8 @@ class ObjectStore:
 
         # Garbage collect all remote data on a worker every garbage_delay seconds
         self.garbage_delay = 0
+        # Store at most trash_capacity elements before garbage collecting
+        self.trash_capacity = 10_000
         # Trash is a dict referencing for each worker key a tuple with the timestamp
         # of the last GC and the list of object to GC
         self.trash = {}

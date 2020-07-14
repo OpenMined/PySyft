@@ -460,7 +460,8 @@ class BaseWorker(AbstractWorker):
         Garbage manager which collects all the remote GC request and batch send
         them every "delay" seconds for every location.
         """
-        delay = self.object_store.garbage_delay
+        max_delay = self.object_store.garbage_delay
+        max_size = self.object_store.trash_capacity
         trash = self.object_store.trash
 
         if location.id not in trash:
@@ -468,7 +469,9 @@ class BaseWorker(AbstractWorker):
 
         trash[location.id][1].append(object_id)
 
-        if (time.time() - trash[location.id][0]) > delay:
+        delay = time.time() - trash[location.id][0]
+        current_size = len(trash[location.id][1])
+        if delay > max_delay or current_size > max_size:
             self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
             trash[location.id] = (time.time(), [])
 
