@@ -35,7 +35,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares_locations[workers[i].id] = (pointer1, pointer2)
         return shares_locations
 
-    def reconstruct_secret(self):
+    def reconstruct(self):
         shares_locations = self.child
         shares = self.retrieve_shares(shares_locations)
         plain_text = self.sum_shares(shares)
