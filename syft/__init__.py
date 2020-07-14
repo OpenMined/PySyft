@@ -118,6 +118,7 @@ __all__.extend(
         "make_plan",
         "LoggingTensor",
         "AdditiveSharingTensor",
+        "ReplicatedSharingTensor",
         "AutogradTensor",
         "FixedPrecisionTensor",
         "PointerTensor",
