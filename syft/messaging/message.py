@@ -673,7 +673,13 @@ class ForceObjectDeleteMessage(Message):
                 proto_msg (ForceObjectDeleteMessagePB): serialized ForceObjectDeleteMessage.
         """
         proto_msg = ForceObjectDeleteMessagePB()
-        sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_ids, msg.object_ids)
+        for elem in msg.object_ids:
+            id = IdPB()
+            if isinstance(elem, str):
+                id.id_str = elem
+            else:
+                id.id_int = elem
+            proto_msg.object_ids.append(id)
         return proto_msg
 
     @staticmethod
@@ -687,7 +693,10 @@ class ForceObjectDeleteMessage(Message):
             Returns:
                 ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
         """
-        obj_ids = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_ids)
+        obj_ids = []
+        for elem in proto_msg.object_ids:
+            obj_ids.append(getattr(elem, elem.WhichOneof("id")))
+
         return ForceObjectDeleteMessage(obj_ids=obj_ids)
 
     @staticmethod
