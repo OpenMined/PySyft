@@ -924,20 +924,26 @@ class TorchTensor(AbstractTensor):
                 **kwargs_,
             )
         else:
-            if self.type() == "torch.FloatTensor":
-                raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
+            if protocol == "snn":
+                if self.type() == "torch.FloatTensor":
+                    raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
 
-            shared_tensor = (
-                syft.AdditiveSharingTensor(
-                    protocol=protocol,
-                    field=field,
-                    dtype=dtype,
-                    crypto_provider=crypto_provider,
-                    owner=self.owner,
+                shared_tensor = (
+                    syft.AdditiveSharingTensor(
+                        protocol=protocol,
+                        field=field,
+                        dtype=dtype,
+                        crypto_provider=crypto_provider,
+                        owner=self.owner,
+                    )
+                    .on(self.copy(), wrap=False)
+                    .init_shares(*owners)
                 )
-                .on(self.copy(), wrap=False)
-                .init_shares(*owners)
-            )
+            elif protocol == "falcon":
+                shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
+                    self, owners
+                )
+                return shared_tensor
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
