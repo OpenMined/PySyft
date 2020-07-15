@@ -23,8 +23,11 @@ def test_rnn_plan_example():
 			emb_size = 100
 			num_hidden = 200
 			num_rnn_layers = 2
-			self.encoder = nn.Embedding(self.vocab_size, emb_size)
-			self.rnn = syft_nn.GRU(emb_size, num_hidden, num_rnn_layers)
+			# FIX Embedding might not be supported.
+			# self.encoder = nn.Embedding(self.vocab_size, emb_size)
+			# self.encoder = nn.Linear(self.vocab_size, emb_size, bias=False)
+			# self.rnn = syft_nn.GRU(emb_size, num_hidden, num_rnn_layers)
+			self.rnn = syft_nn.GRU(self.vocab_size, num_hidden, num_rnn_layers)
 			# FIX If `bias=True`, then the decoder returns `None`.
 			self.decoder = nn.Linear(num_hidden, self.vocab_size, bias=False)
 
@@ -42,7 +45,9 @@ def test_rnn_plan_example():
 			return self.rnn._init_hidden(inp)
 
 		def forward(self, x, hidden=None):
-			emb = self.encoder(x)
+			# FIX Embedding might not be supported by PySyft.
+			emb = x
+			# emb = self.encoder(x)
 			# FIX Corrections for PySyft.
 			if hasattr(emb, 'child'):
 				emb.device = emb.child.child.device
@@ -57,13 +62,14 @@ def test_rnn_plan_example():
 			decoded = self.decoder(output)
 			# FIX
 			assert decoded is not None, "The result of the decoder is None. This can happen if the decoder uses a bias."
-			# FIXME Find a way to reshape that will work with PySyft.
-			# `view` and `flatten` both yield params with grad=None.
+			# FIXME Find a way to reshape that will work with PySyft or just don't reshape/view and get weird output sizes.
+			# Error: `view` and `flatten` both yield params with grad=None.
 			# decoded = decoded.view(-1, self.vocab_size)
 			# decoded = decoded.flatten(0, 1)
 
-			# FIX 'ReshapeBackward' object has no attribute 'self_'
-			decoded = decoded.reshape(-1, self.vocab_size)
+			# Error: 'ReshapeBackward' object has no attribute 'self_'
+			# decoded = decoded.reshape(-1, self.vocab_size)
+			print(f"decoded.shape: {decoded.shape}")
 			return decoded, hidden
 
 	model = Net()
@@ -74,6 +80,7 @@ def test_rnn_plan_example():
 		param_idx = start_param_idx
 
 		for name, param in module._parameters.items():
+			# FIX A param can be None if it is not used, this happens for the bias on the decoder's Linear layer.
 			if param is not None:
 				module._parameters[name] = params_list[param_idx]
 				param_idx += 1
@@ -87,7 +94,7 @@ def test_rnn_plan_example():
 	def softmax_cross_entropy_with_logits(logits, targets, batch_size):
 		# numstable logsoftmax
 		norm_logits = logits - logits.max()
-		log_probs = norm_logits - norm_logits.exp().sum(dim=1, keepdim=True).log()
+		log_probs = norm_logits - norm_logits.exp().sum(dim=2, keepdim=True).log()
 		return -(targets * log_probs).sum() / batch_size
 
 	def naive_sgd(param, **kwargs):
@@ -109,6 +116,10 @@ def test_rnn_plan_example():
 		# backward
 		loss.backward()
 
+		for param in model_parameters:
+			if param.grad is None:
+				print(f"param.grad is None\n  {param}\n  {param.shape}")
+
 		# step
 		updated_params = [naive_sgd(param, lr=lr) for param in model_parameters]
 
@@ -125,9 +136,12 @@ def test_rnn_plan_example():
 	vocab_size = model.vocab_size
 	# Data has the index of the word in a vocabulary.
 	data = th.randint(0, vocab_size, (sequence_length, batch_size))
+	# FIX For the Embedding class not being supported by PySyft.
+	data = nn.functional.one_hot(data, vocab_size).float()
+
 	initial_hidden = model.init_hidden(batch_size)
-	target = th.randint(0, vocab_size, (sequence_length * batch_size,))
-	target = nn.functional.one_hot(target, vocab_size)
+	targets = th.randint(0, vocab_size, (sequence_length, batch_size,))
+	targets = nn.functional.one_hot(targets, vocab_size)
 	lr = th.tensor([0.1])
 	batch_size = th.tensor([float(batch_size)])
 	model_state = list(model.parameters())
@@ -161,7 +175,45 @@ def test_rnn_plan_example():
 
 	RNNBase._apply_time_step = _apply_time_step
 
-	# Build Plan
-	train.build(data, initial_hidden, target, lr, batch_size, model_state, trace_autograd=True)
+	# FIX Some backprop/gradient don't work with 3-D tensors.
+	from syft.frameworks.torch.tensors.interpreters.gradients import MatmulBackward, SumBackward, TBackward
 
-	return train, data, initial_hidden, target, lr, batch_size, model_state
+	def MatmulBackward_gradient(self, grad):
+		grad_self_ = grad @ self.other.t()
+		if self.self_.dim() == 2:
+			# Default case.
+			grad_other = self.self_.t() @ grad if isinstance(self.self_, type(self.other)) else None
+		else:
+			assert self.self_.dim() == 3
+			grad_other = th.transpose(self.self_, 1, 2) @ grad if isinstance(self.self_, type(self.other)) else None
+
+		return (grad_self_, grad_other)
+
+
+	MatmulBackward.gradient = MatmulBackward_gradient
+
+	def SumBackward_gradient(self, grad):
+		# if grad.shape != self.self_.shape:
+		if grad.dim() == 1 and grad.shape != self.self_.shape:
+			# Default case.
+			grad = grad.reshape([-1, 1])
+		else:
+			return ((self.self_.sum(**self.kwargs) * 0 +1)*grad , )
+		return ((self.self_ * 0 + 1) * grad,)
+	SumBackward.gradient = SumBackward_gradient
+
+	def TBackward_gradient(self, grad):
+		if grad.dim() == 2:
+			# Default case.
+			return (grad.t(),)
+		else:
+			assert grad.dim() == 3
+			return (th.transpose(grad, 1, 2),)
+
+	TBackward.gradient = TBackward_gradient
+
+
+	# Build Plan
+	train.build(data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True)
+
+	return train, data, initial_hidden, targets, lr, batch_size, model_state
