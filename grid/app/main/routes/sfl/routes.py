@@ -469,7 +469,10 @@ def get_model():
         version = request.args.get("version", None)
         checkpoint = request.args.get("checkpoint", None)
 
-        _fl_process = process_manager.get(name=name, version=version)
+        process_query = {"name": name}
+        if version:
+            process_query["version"] = version
+        _fl_process = process_manager.last(**process_query)
         _model = model_manager.get(fl_process_id=_fl_process.id)
         _model_checkpoint = model_manager.load(model_id=_model.id, id=checkpoint)
 
@@ -480,6 +483,7 @@ def get_model():
     except Exception as e:
         status_code = 500  # Internal Server Error
         response_body[RESPONSE_MSG.ERROR] = str(e)
+        logging.error("Exception in get-model", exc_info=e)
 
     return Response(
         json.dumps(response_body), status=status_code, mimetype="application/json"

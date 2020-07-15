@@ -103,7 +103,9 @@ class FLController:
 
         # Check if already exists a relation between the worker and the cycle.
         _assigned = cycle_manager.is_assigned(worker.id, _cycle.id)
-        logging.info(f"Worker {worker.id} is already assigned to cycle {_cycle.id}: {_assigned}")
+        logging.info(
+            f"Worker {worker.id} is already assigned to cycle {_cycle.id}: {_assigned}"
+        )
 
         # Check bandwidth
         _comp_bandwidth = worker_manager.is_eligible(worker.id, server_config)

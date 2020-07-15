@@ -7,6 +7,7 @@ from ...exceptions import WorkerNotFoundError
 
 import logging
 
+
 class WorkerManager:
     def __init__(self):
         self._workers = Warehouse(Worker)
@@ -55,7 +56,9 @@ class WorkerManager:
                 result: Boolean flag.
         """
         _worker = self._workers.first(id=worker_id)
-        logging.info(f"Checking worker [{_worker}] against server_config [{server_config}]")
+        logging.info(
+            f"Checking worker [{_worker}] against server_config [{server_config}]"
+        )
 
         # Check bandwidth
         _comp_bandwidth = (
