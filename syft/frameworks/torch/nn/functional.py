@@ -1,6 +1,8 @@
 import torch
 
 import syft as sy
+
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
@@ -183,9 +185,9 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
     input_fp, weight_fp = input, weight
 
-    if isinstance(input, sy.FixedPrecisionTensor) or isinstance(weight, sy.FixedPrecisionTensor):
-        assert isinstance(weight, sy.FixedPrecisionTensor)
-        assert isinstance(input, sy.FixedPrecisionTensor)
+    if isinstance(input.child, FrameworkTensor) or isinstance(weight.child, FrameworkTensor):
+        assert isinstance(input.child, FrameworkTensor)
+        assert isinstance(weight.child, FrameworkTensor)
         im_reshaped, weight_reshaped, *params = _pre_conv(
             input, weight, bias, stride, padding, dilation, groups
         )
@@ -203,8 +205,12 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         return result.wrap()
 
     input, weight = input.child, weight.child
+
     if bias is not None:
         bias = bias.child
+        assert isinstance(
+            bias, sy.AdditiveSharingTensor
+        ), "Have you provided bias as a kwarg? If so, please remove `bias=`."
 
     locations = input.locations
 
@@ -246,8 +252,8 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         for g in range(groups):
             tmp = chunks_im[g].matmul(chunks_weights[g])
             res.append(tmp)
-        res = torch.cat(res, dim=2)
-        raise NotImplementedError
+        res_fp = torch.cat(res, dim=2)
+        res = res_fp.child
     else:
         res_fp = im_reshaped.matmul(weight_reshaped)
         res = res_fp.child
