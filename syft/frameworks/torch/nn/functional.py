@@ -182,6 +182,26 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         the result of the convolution as a fixed precision tensor.
     """
     input_fp, weight_fp = input, weight
+
+    if isinstance(input, sy.FixedPrecisionTensor) or isinstance(weight, sy.FixedPrecisionTensor):
+        assert isinstance(weight, sy.FixedPrecisionTensor)
+        assert isinstance(input, sy.FixedPrecisionTensor)
+        im_reshaped, weight_reshaped, *params = _pre_conv(
+            input, weight, bias, stride, padding, dilation, groups
+        )
+        if groups > 1:
+            res = []
+            chunks_im = torch.chunk(im_reshaped, groups, dim=2)
+            chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
+            for g in range(groups):
+                tmp = chunks_im[g].matmul(chunks_weights[g])
+                res.append(tmp)
+            result = torch.cat(res, dim=2)
+        else:
+            result = im_reshaped.matmul(weight_reshaped)
+        result = _post_conv(bias, result, *params)
+        return result.wrap()
+
     input, weight = input.child, weight.child
     if bias is not None:
         bias = bias.child
