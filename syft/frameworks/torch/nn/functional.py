@@ -215,7 +215,11 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         input_share = input.child[location.id]
         weight_share = weight.child[location.id]
         bias_share = bias.child[location.id] if bias is not None else None
-        r = remote(_pre_conv, location=location)(
+        (
+            im_reshaped_shares[location.id],
+            weight_reshaped_shares[location.id],
+            *params[location.id],
+        ) = remote(_pre_conv, location=location)(
             input_share,
             weight_share,
             bias_share,
@@ -226,18 +230,6 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
             return_value=False,
             return_arity=6,
         )
-        (
-            im_reshaped_share,
-            weight_reshaped_share,
-            batch_size,
-            nb_channels_out,
-            nb_rows_out,
-            nb_cols_out,
-        ) = r
-        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
-
-        im_reshaped_shares[location.id] = im_reshaped_share
-        weight_reshaped_shares[location.id] = weight_reshaped_share
 
     im_reshaped = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
         sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes()), wrap=False
@@ -288,8 +280,6 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
         input = input.reshape(1, *input.shape)
     elif len(input.shape) == 2:
         input = input.reshape(1, 1, *input.shape)
-
-    assert len(input.shape) == 4
 
     # Change to tuple if not one
     stride = torch.nn.modules.utils._pair(stride)
@@ -449,9 +439,6 @@ def _pool2d(
         im_reshaped_shares[location.id], *params[location.id] = remote(
             _pre_pool, location=location
         )(input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=6)
-        # (im_reshaped_share, batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim) = r
-        # params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim)
-        # im_reshaped_shares[location.id] = im_reshaped_share
 
     im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
