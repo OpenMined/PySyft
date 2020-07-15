@@ -283,6 +283,12 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
     basically does the matrix unrolling to be able to do the pooling as a single
     max or average operation
     """
+    original_dim = len(input.shape)
+    if len(input.shape) == 3:
+        input = input.reshape(1, *input.shape)
+    elif len(input.shape) == 2:
+        input = input.reshape(1, 1, *input.shape)
+
     assert len(input.shape) == 4
 
     # Change to tuple if not one
@@ -353,11 +359,12 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
         torch.tensor(nb_channels_out),
         torch.tensor(nb_rows_out),
         torch.tensor(nb_cols_out),
+        torch.tensor(original_dim),
     )
 
 
 @allow_command
-def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
+def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim):
     """
     This is a block of local computation done at the end of the pool. It reshapes
     the output to the expected shape
@@ -373,6 +380,9 @@ def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
     res = res.reshape(  # .permute(0, 2, 1)
         batch_size, nb_channels_out, nb_rows_out, nb_cols_out
     ).contiguous()
+
+    if original_dim < 4:
+        res = res.reshape(*res.shape[-original_dim:])
 
     return res
 
@@ -436,13 +446,12 @@ def _pool2d(
     params = {}
     for location in locations:
         input_share = input.child[location.id]
-        r = remote(_pre_pool, location=location)(
-            input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=5,
-        )
-        (im_reshaped_share, batch_size, nb_channels_out, nb_rows_out, nb_cols_out,) = r
-        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
-
-        im_reshaped_shares[location.id] = im_reshaped_share
+        im_reshaped_shares[location.id], *params[location.id] = remote(
+            _pre_pool, location=location
+        )(input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=6)
+        # (im_reshaped_share, batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim) = r
+        # params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim)
+        # im_reshaped_shares[location.id] = im_reshaped_share
 
     im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
