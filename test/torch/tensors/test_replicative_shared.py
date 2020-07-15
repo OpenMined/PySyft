@@ -16,3 +16,11 @@ def test_reconstruction(workers):
     secret = plain_text.share(bob, alice, james, protocol="falcon")
     decryption = secret.reconstruct()
     assert (plain_text == decryption).all()
+
+
+def test_shares_number():
+    tensor = syft.ReplicatedSharingTensor()
+    secret = torch.tensor(7)
+    number_of_shares = 4
+    shares = tensor.generate_shares(secret, number_of_shares)
+    assert len(shares) == number_of_shares
