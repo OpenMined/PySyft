@@ -12,6 +12,7 @@ from syft.generic.utils import memorize
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
@@ -19,6 +20,42 @@ from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 imp
 )
 
 no_wrap = {"no_wrap": True}
+
+
+def check_if_op_with_zero(operation):
+    """
+    Decorator to check if an operation is made between a self and a other which
+    is a zero value. If so, then shares of zeros should be added to refresh the
+    result, as multiplying with zero destroys the shares.
+    """
+
+    def zero_check(self_, other, *args, **kwargs):
+        value = other
+        if isinstance(value, FrameworkTensor) and value.is_wrapper:
+            value = value.child
+        if isinstance(value, sy.FixedPrecisionTensor):
+            value = value.child
+        if isinstance(value, (sy.PointerTensor, sy.MultiPointerTensor)):
+            # The real check might be intrusive so we chose the safest option
+            # other_is_zero = list((value == 0).get())[0]
+            other_is_zero = True
+        else:
+            other_is_zero = value == 0
+        if not isinstance(other_is_zero, bool):
+            other_is_zero = other_is_zero.any()
+        if not isinstance(other_is_zero, (bool, torch.BoolTensor)):
+            raise ValueError("Should be a boolean:", other_is_zero)
+
+        result = operation(self_, other, *args, **kwargs)
+
+        # Need to refresh shares
+        if other_is_zero:
+            zero = self_.zero(result.shape)
+            result = result + zero
+
+        return result
+
+    return zero_check
 
 
 class AdditiveSharingTensor(AbstractTensor):
@@ -551,6 +588,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
+    @check_if_op_with_zero
     @overloaded.method
     def _public_mul(self, shares, other, equation):
         """Multiplies an AdditiveSharingTensor with a non-private value
@@ -576,28 +614,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 worker: (self.modulo(cmd(share, other[worker]))) for worker, share in shares.items()
             }
         else:
-            other_is_zero = False
-            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-                if (other == 0).any():
-                    other_is_zero = True
-            elif other == 0:
-                other_is_zero = True
-
-            if other_is_zero:
-                res = {}
-                first_it = True
-
-                for worker, share in shares.items():
-                    cmd_res = cmd(share, other)
-                    if first_it:
-                        first_it = False
-                        zero_shares = self.zero(cmd_res.shape).child
-                    res[worker] = self.modulo(cmd(share, other) + zero_shares[worker])
-                return res
-            else:
-                return {
-                    worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()
-                }
+            return {worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()}
 
     def mul(self, other):
         """Multiplies two tensors together
@@ -607,6 +624,8 @@ class AdditiveSharingTensor(AbstractTensor):
             other: another AdditiveSharingTensor, or a MultiPointerTensor, or an integer
         """
         if not isinstance(other, sy.AdditiveSharingTensor):
+            if isinstance(other, FrameworkTensor):
+                other = other.wrap()
             return self._public_mul(other, "mul")
 
         return self._private_mul(other, "mul")
