@@ -642,7 +642,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             data = simplify(msg)
         """
-        return (sy.serde.msgpack.serde._simplify(worker, msg.object_ids),)
+        return sy.serde.msgpack.serde._simplify(worker, msg.object_ids)
 
     @staticmethod
     def detail(worker: AbstractWorker, msg_tuple: tuple) -> "ForceObjectDeleteMessage":
@@ -659,7 +659,7 @@ class ForceObjectDeleteMessage(Message):
         Examples:
             message = detail(sy.local_worker, msg_tuple)
         """
-        return ForceObjectDeleteMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple[0]))
+        return ForceObjectDeleteMessage(sy.serde.msgpack.serde._detail(worker, msg_tuple))
 
     @staticmethod
     def bufferize(worker, msg):
@@ -673,7 +673,13 @@ class ForceObjectDeleteMessage(Message):
                 proto_msg (ForceObjectDeleteMessagePB): serialized ForceObjectDeleteMessage.
         """
         proto_msg = ForceObjectDeleteMessagePB()
-        sy.serde.protobuf.proto.set_protobuf_id(proto_msg.object_id, msg.object_id)
+        for elem in msg.object_ids:
+            id = IdPB()
+            if isinstance(elem, str):
+                id.id_str = elem
+            else:
+                id.id_int = elem
+            proto_msg.object_ids.append(id)
         return proto_msg
 
     @staticmethod
@@ -687,8 +693,11 @@ class ForceObjectDeleteMessage(Message):
             Returns:
                 ForceObjectDeleteMessage: deserialized ForceObjectDeleteMessagePB.
         """
-        obj_id = sy.serde.protobuf.proto.get_protobuf_id(proto_msg.object_id)
-        return ForceObjectDeleteMessage(obj_id=obj_id)
+        obj_ids = []
+        for elem in proto_msg.object_ids:
+            obj_ids.append(getattr(elem, elem.WhichOneof("id")))
+
+        return ForceObjectDeleteMessage(obj_ids=obj_ids)
 
     @staticmethod
     def get_protobuf_schema():

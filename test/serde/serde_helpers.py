@@ -1816,7 +1816,7 @@ def make_forceobjectdeletemessage(**kwargs):
             "value": del_message,
             "simplified": (
                 CODE[syft.messaging.message.ForceObjectDeleteMessage],
-                (CODE[list], (id,)),  # list of (int) ids
+                (CODE[list], (id,)),  # (list) of (int) id
             ),
             "cmp_detailed": compare,
         }
