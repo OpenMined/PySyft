@@ -61,7 +61,12 @@ class StaticFLClient:
             res = requests.post(self.http_url + path, params=params, data=body)
 
         if not res.ok:
-            raise GridError("HTTP response is not OK", res.status_code)
+            error = "HTTP response is not OK"
+            try:
+                json_response = json.loads(res.content)
+                error = json_response.get("error", error)
+            finally:
+                raise GridError(f"Grid Error: {error}", res.status_code)
 
         response = res.content
         return response
