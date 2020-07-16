@@ -91,10 +91,7 @@ def test_rnn_plan_example():
             self.decoder = nn.Linear(hidden_size, self.vocab_size)
 
         def init_hidden(self, batch_size):
-            if hasattr(self, 'rnn'):
-                return self.rnn.init_hidden(batch_size)
-            else:
-                return None
+            return self.rnn.init_hidden(batch_size)
 
         def forward(self, x, hidden=None):
             emb = self.encoder(x)
@@ -180,8 +177,9 @@ def test_rnn_plan_example():
     model_state = list(model.parameters())
 
     # Build Plan
-    build_result = train.build(data, initial_hidden, targets, lr, batch_size, model_state,
-                               trace_autograd=True)
+    build_result = train.build(
+        data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True
+    )
     loss, acc = build_result[:2]
     assert loss is not None
     assert loss.shape == th.Size([1])
