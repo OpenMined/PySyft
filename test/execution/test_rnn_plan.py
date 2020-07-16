@@ -40,7 +40,8 @@ class CustomGruCell(nn.Module):
         i_n = self.fc_in(x)
         h_n = self.fc_hn(h)
 
-        # Activation functions need to be on the object (not functional) for PySyft gradient stuff to work.
+        # Activation functions need to be on the object (not functional)
+        # for PySyft gradient stuff to work.
         resetgate = (i_r + h_r).sigmoid()
         inputgate = (i_z + h_z).sigmoid()
         newgate = (i_n + (resetgate * h_n)).tanh()
@@ -68,7 +69,8 @@ class CustomGru(nn.Module):
             hidden = self.init_hidden(batch_size)
         for t in range(sequence_length):
             hidden = self.gru_cell(x[t, :, :], hidden)
-        # Just return the result of the final cell since some PySyft autograd features seem like they have issues with 3D tensors.
+        # Just return the result of the final cell
+        # since some PySyft autograd features seem like they have issues with 3D tensors.
         output = hidden
         return output, hidden
 
@@ -126,7 +128,9 @@ def test_rnn_plan_example():
 
     def naive_sgd(param, **kwargs):
         if param.grad is None:
-            # A grad can be None if you used operations that are not supported by PySyft's autograd features or the param isn't trainable (e.g. nn.Embedding was used).
+            # A grad can be None if you used operations that are not supported
+            # by PySyft's autograd features or the param
+            # isn't trainable (e.g. nn.Embedding was used).
             return param
         return param - kwargs["lr"] * param.grad
 
@@ -163,7 +167,8 @@ def test_rnn_plan_example():
     # Data has the index of the word in a vocabulary.
     data = th.randint(0, vocab_size, (sequence_length, batch_size))
 
-    # The model can initialize the hidden state if it is not set but this might not work within a Plan.
+    # The model can initialize the hidden state if it is not set
+    # but this might not work within a Plan.
     initial_hidden = model.init_hidden(batch_size)
 
     # Predicting the next word for each sequence.
@@ -175,7 +180,8 @@ def test_rnn_plan_example():
     model_state = list(model.parameters())
 
     # Build Plan
-    build_result = train.build(data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True)
+    build_result = train.build(data, initial_hidden, targets, lr, batch_size, model_state,
+                               trace_autograd=True)
     loss, acc = build_result[:2]
     assert loss is not None
     assert loss.shape == th.Size([1])
