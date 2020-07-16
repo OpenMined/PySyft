@@ -43,3 +43,10 @@ def test_private_add(workers):
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
     y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
     assert x.private_add(y).reconstruct() == 10
+
+
+def test_public_add(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
+    y = 3
+    assert x.public_add(y).reconstruct() == 10

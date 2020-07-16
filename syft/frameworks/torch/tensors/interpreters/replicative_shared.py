@@ -33,7 +33,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         for i in range(len(shares)):
             pointer1 = shares[i].send(workers[i])
             pointer2 = shares[(i + 1) % len(shares)].send(workers[i])
-            shares_locations[workers[i].id] = (pointer1, pointer2)
+            shares_locations[workers[i]] = (pointer1, pointer2)
         return shares_locations
 
     def reconstruct(self):
@@ -64,6 +64,23 @@ class ReplicatedSharingTensor(AbstractTensor):
             for v in self.child.values():
                 out += "\n\t-> " + str(v)
         return out
+
+    def add(self, y):
+        if isinstance(y, (int, float, torch.Tensor)):
+            return self.public_add(y)
+        elif isinstance(y, syft.ReplicatedSharingTensor):
+            return self.private_add(y)
+        else:
+            raise ValueError(
+                "ReplicatedSharingTensor can only be added to int, float, torch tensor, or ReplicatedSharingTensor"
+            )
+
+    def public_add(self, plain_text):
+        players = self.get_players(self)
+        plain_text = torch.tensor(plain_text)
+        y = syft.ReplicatedSharingTensor().share_secret(plain_text, players)
+        z = self.private_add(y)
+        return z
 
     def private_add(self, secret):
         if not self.verify_matching_players(secret):
