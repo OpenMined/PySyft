@@ -1,6 +1,7 @@
 import torch
 from syft.generic.abstract.tensor import AbstractTensor
 import random
+import syft
 
 
 class ReplicatedSharingTensor(AbstractTensor):
@@ -22,7 +23,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         shares = []
         for _ in range(number_of_shares - 1):
             shares.append(torch.tensor(random.randrange(self.ring_size)))
-        shares.append(torch.tensor(secret - sum(shares) % self.ring_size))
+        shares.append(torch.tensor((secret - sum(shares)) % self.ring_size))
         return shares
 
     @staticmethod
@@ -63,3 +64,28 @@ class ReplicatedSharingTensor(AbstractTensor):
             for v in self.child.values():
                 out += "\n\t-> " + str(v)
         return out
+
+    def private_add(self, secret):
+        if not self.verify_matching_players(secret):
+            raise ValueError("Shares must be distributed among same parties")
+        z = {}
+        x, y = self.get_shares_pointers(self, secret)
+        for player in x.keys():
+            z[player] = (x[player][0] + y[player][0], x[player][1] + y[player][1])
+        return ReplicatedSharingTensor(z)
+
+    def verify_matching_players(self, *secrets):
+        players_set_0 = self.get_players(self)
+        for secret in secrets:
+            players_set_i = self.get_players(secret)
+            if players_set_i != players_set_0:
+                return False
+        return True
+
+    def get_players(self, secret):
+        return list(self.get_shares_pointers(secret).keys())
+
+    @staticmethod
+    def get_shares_pointers(*secrets):
+        pointers_dict = [secret.child for secret in secrets]
+        return pointers_dict if len(pointers_dict) > 1 else pointers_dict[0]

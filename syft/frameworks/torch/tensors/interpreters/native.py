@@ -909,6 +909,11 @@ class TorchTensor(AbstractTensor):
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,
                 default is False.
         """
+        if protocol == "falcon":
+            shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
+                self, owners
+            )
+            return shared_tensor
         if self.has_child():
             chain = self.child
 
@@ -924,26 +929,20 @@ class TorchTensor(AbstractTensor):
                 **kwargs_,
             )
         else:
-            if protocol == "snn":
-                if self.type() == "torch.FloatTensor":
-                    raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
+            if self.type() == "torch.FloatTensor":
+                raise TypeError("FloatTensor cannot be additively shared, Use fix_precision.")
 
-                shared_tensor = (
-                    syft.AdditiveSharingTensor(
-                        protocol=protocol,
-                        field=field,
-                        dtype=dtype,
-                        crypto_provider=crypto_provider,
-                        owner=self.owner,
-                    )
-                    .on(self.copy(), wrap=False)
-                    .init_shares(*owners)
+            shared_tensor = (
+                syft.AdditiveSharingTensor(
+                    protocol=protocol,
+                    field=field,
+                    dtype=dtype,
+                    crypto_provider=crypto_provider,
+                    owner=self.owner,
                 )
-            elif protocol == "falcon":
-                shared_tensor = syft.ReplicatedSharingTensor(owner=self.owner).share_secret(
-                    self, owners
-                )
-                return shared_tensor
+                .on(self.copy(), wrap=False)
+                .init_shares(*owners)
+            )
 
         if requires_grad and not isinstance(shared_tensor, syft.PointerTensor):
             shared_tensor = syft.AutogradTensor().on(shared_tensor, wrap=False)
