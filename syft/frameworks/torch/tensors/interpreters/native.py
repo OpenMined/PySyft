@@ -911,7 +911,6 @@ class TorchTensor(AbstractTensor):
             owners (list): A list of BaseWorker objects determining who to send shares to.
             protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             field (int or None): The arithmetic field where live the shares.
-            protocol (str): the crypto protocol used to perform the computations ('snn' or 'fss')
             dtype (str or None): The dtype of shares
             crypto_provider (BaseWorker or None): The worker providing the crypto primitives.
             requires_grad (bool): Should we add AutogradTensor to allow gradient computation,

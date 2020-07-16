@@ -594,7 +594,7 @@ class AdditiveSharingTensor(AbstractTensor):
             )
 
         return shares
-    
+
     @check_if_op_with_zero
     @overloaded.method
     def _public_mul(self, shares, other, equation):

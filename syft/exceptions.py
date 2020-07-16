@@ -343,7 +343,7 @@ class UndefinedProtocolTypePropertyError(Exception):
 class EmptyCryptoPrimitiveStoreError(Exception):
     """Raised when trying to get crypto primtives from an empty crypto store"""
 
-    def __init__(self, crypto_store, crypto_type, available_instances, n_instances, **kwargs):
+    def __init__(self, crypto_store, crypto_type, available_instances, n_instances):
         message = (
             f"You tried to run a crypto protocol on worker {crypto_store._owner.id} "
             f"but its crypto_store doesn't have enough primitives left for the type "
@@ -351,8 +351,6 @@ class EmptyCryptoPrimitiveStoreError(Exception):
             f" are available). Use your crypto_provider to `provide_primitives` to your "
             f"worker."
         )
-        if len(kwargs) > 0:
-            message += ", ".join([f"{k}:{v}" for k, v in kwargs.items()])
         super().__init__(message)
 
 

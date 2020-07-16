@@ -122,7 +122,6 @@ class BaseWorker(AbstractWorker):
         self.auto_add = auto_add
         self._message_pending_time = message_pending_time
         self.msg_history = []
-        self.trash = {}
 
         self.load_data(data)
 
@@ -303,7 +302,7 @@ class BaseWorker(AbstractWorker):
             The deserialized form of message from the worker at specified
             location.
         """
-        if self.verbose or False:
+        if self.verbose:
             print(f"{self.id}->{location.id} sending {message} ")
 
         # Step 1: serialize the message to a binary
@@ -339,8 +338,11 @@ class BaseWorker(AbstractWorker):
             self.msg_history.append(msg)
 
         if self.verbose:
-            print(f"To {self.id}: ({type(msg).__name__}) {msg}")
-            # time.sleep(0.068)
+            print(
+                f"worker {self} received {type(msg).__name__} {msg.contents}"
+                if hasattr(msg, "contents")
+                else f"worker {self} received {type(msg).__name__}"
+            )
 
         # Step 2: route message to appropriate function
 
@@ -473,7 +475,7 @@ class BaseWorker(AbstractWorker):
         if delay > max_delay or current_size > max_size:
             self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
             trash[location.id] = (time.time(), [])
-            
+
     async def async_dispatch(self, workers, commands, return_value=False):
         results = await asyncio.gather(
             *[

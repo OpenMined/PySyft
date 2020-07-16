@@ -395,7 +395,7 @@ def test_public_mul(workers, protocol):
         workers["charlie"],
         workers["james"],
     )
-    
+
     args = (alice, bob)
     kwargs = dict(protocol=protocol, crypto_provider=crypto_provider)
 
@@ -423,12 +423,12 @@ def test_public_mul(workers, protocol):
     assert (z == t_x * t_y).all()
 
     # 3 workers
-    if protocol != "fss:
-      t = torch.tensor([-3.1, 1.0])
-      x = t.fix_prec().share(alice, bob, charlie, crypto_provider=james)
-      y = 1
-      z = (x * y).get().float_prec()
-      assert (z == (t * y)).all()
+    if protocol != "fss":
+        t = torch.tensor([-3.1, 1.0])
+        x = t.fix_prec().share(alice, bob, charlie, crypto_provider=james)
+        y = 1
+        z = (x * y).get().float_prec()
+        assert (z == (t * y)).all()
 
 
 def test_div(workers):

@@ -206,11 +206,6 @@ class BaseMessageHandler(AbstractMessageHandler):
             self.object_store.de_register_obj(obj)
             return obj
 
-    def handle_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        # NOTE cannot currently be used because there is no ObjectDeleteMessage
-        for object_id in msg.object_ids:
-            self.object_store.rm_obj(object_id)
-
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
         for object_id in msg.object_ids:
             self.object_store.force_rm_obj(object_id)

@@ -242,7 +242,7 @@ class ObjectMessage(Message):
 
     def __str__(self):
         """Return a human readable version of this message"""
-        return f"({type(self).__name__} {self.object.shape})"
+        return f"({type(self).__name__} {self.object})"
 
     @staticmethod
     def simplify(worker: AbstractWorker, msg: "ObjectMessage") -> tuple:
