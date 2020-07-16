@@ -452,22 +452,26 @@ def _pool2d(
         # We have optimisations when the kernel is small, namely a square of size 2 or 3
         # to reduce the number of rounds and the total number of comparisons.
         # See more in Appendice C.3 https://arxiv.org/pdf/2006.04593.pdf
+        def max_half_split(tensor4d, half_size):
+            """
+            Split the tensor on 2 halves on the last dim and return the maximum half
+            """
+            left, right = tensor4d[:, :, :, :half_size], tensor4d[:, :, :, half_size:]
+            max_half = left + (right >= left) * (right - left)
+            return max_half
+
         if im_reshaped.shape[-1] == 4:
-            ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
-            max1 = ab + (cd >= ab) * (cd - ab)
-            e, f = max1[:, :, :, 0], max1[:, :, :, 1]
-            max2 = e + (f >= e) * (f - e)
-            res = max2
+            # Compute the max as a binary tree: 2 steps are needed for 4 values
+            res = max_half_split(im_reshaped, 2)
+            res = max_half_split(res, 1)
         elif im_reshaped.shape[-1] == 9:
-            abcd, efgh = im_reshaped[:, :, :, :4], im_reshaped[:, :, :, 4:8]
-            ABCD = abcd + (efgh >= abcd) * (efgh - abcd)
-            AB, CD = ABCD[:, :, :, :2], ABCD[:, :, :, 2:]
-            _AB = AB + (CD >= AB) * (CD - AB)
-            _A, _B = _AB[:, :, :, 0], _AB[:, :, :, 1]
-            _A_ = _A + (_B >= _A) * (_B - _A)
-            _B_ = im_reshaped[:, :, :, 8]
-            max4 = _A_ + (_B_ >= _A_) * (_B_ - _A_)
-            res = max4
+            # For 9 values we need 4 steps: we process the 8 first values and then
+            # compute the max with the 9th value
+            res = max_half_split(im_reshaped[:, :, :, :8], 4)
+            res = max_half_split(res, 2)
+            left = max_half_split(res, 1)
+            right = im_reshaped[:, :, :, 8:]
+            res = left + (right >= left) * (right - left)
         else:
             res = im_reshaped.max(dim=-1)
     elif mode == "avg":

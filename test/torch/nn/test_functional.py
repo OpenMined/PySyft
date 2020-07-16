@@ -134,6 +134,7 @@ def test_torch_nn_functional_conv2d(workers, protocol):
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_torch_nn_functional_maxpool(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    # 4d
     enc_tensor = torch.tensor(
         [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
     )
@@ -141,6 +142,11 @@ def test_torch_nn_functional_maxpool(workers, protocol):
     r_max = F.max_pool2d(enc_tensor, kernel_size=2)
     r_max = r_max.get().float_prec()
     exp_max = torch.tensor([[[[6.0, 8.0], [3.0, 4.0]]]])
+    assert (r_max == exp_max).all()
+    # 4d kernel_size = 3
+    r_max = F.max_pool2d(enc_tensor, kernel_size=3, stride=1)
+    r_max = r_max.get().float_prec()
+    exp_max = torch.tensor([[[[7.0, 8.0], [7.0, 8.0]]]])
     assert (r_max == exp_max).all()
     # 3d
     enc_tensor = torch.tensor(
