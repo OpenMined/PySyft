@@ -851,6 +851,14 @@ class FixedPrecisionTensor(AbstractTensor):
         Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
         contrary to the classic share version
         """
+        dtype = kwargs.get("dtype")
+        if dtype is None:
+            kwargs["dtype"] = self.dtype
+        else:
+            assert (
+                dtype == self.dtype
+            ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
+                must be the same as the one of the original tensor"
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 

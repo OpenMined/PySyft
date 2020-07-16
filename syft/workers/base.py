@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 import logging
+import time
 from typing import List
 from typing import Union
 from typing import TYPE_CHECKING
@@ -27,6 +28,7 @@ from syft.messaging.message import ObjectMessage
 from syft.messaging.message import ObjectRequestMessage
 from syft.messaging.message import PlanCommandMessage
 from syft.messaging.message import SearchMessage
+from syft.messaging.message import ForceObjectDeleteMessage
 
 from syft.workers.abstract import AbstractWorker
 from syft.workers.message_handler import BaseMessageHandler
@@ -452,6 +454,26 @@ class BaseWorker(AbstractWorker):
             pointer = obj
 
         return pointer
+
+    def garbage(self, object_id, location):
+        """
+        Garbage manager which collects all the remote GC request and batch send
+        them every "delay" seconds for every location.
+        """
+        max_delay = self.object_store.garbage_delay
+        max_size = self.object_store.trash_capacity
+        trash = self.object_store.trash
+
+        if location.id not in trash:
+            trash[location.id] = (time.time(), [])
+
+        trash[location.id][1].append(object_id)
+
+        delay = time.time() - trash[location.id][0]
+        current_size = len(trash[location.id][1])
+        if delay > max_delay or current_size > max_size:
+            self.send_msg(ForceObjectDeleteMessage(trash[location.id][1]), location)
+            trash[location.id] = (time.time(), [])
 
     def send_command(
         self,

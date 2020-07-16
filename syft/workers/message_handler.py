@@ -207,7 +207,8 @@ class BaseMessageHandler(AbstractMessageHandler):
             return obj
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        self.object_store.force_rm_obj(msg.object_id)
+        for object_id in msg.object_ids:
+            self.object_store.force_rm_obj(object_id)
 
     def is_object_none(self, msg):
         obj_id = msg.object_id

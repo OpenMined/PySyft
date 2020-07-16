@@ -1,6 +1,8 @@
 """All the tests relative to garbage collection of all kinds of remote or local tensors"""
 import torch
+import time
 
+import syft
 from syft.frameworks.torch.tensors.decorators.logging import LoggingTensor
 
 # TESTING POINTERS
@@ -26,6 +28,31 @@ def test_explicit_garbage_collect_pointer(workers):
 
     # ensure bob's object was garbage collected
     assert x.id not in bob.object_store._objects
+
+
+def test_explicit_garbage_collect_pointer_with_batch(workers):
+    """Tests whether deleting a PointerTensor garbage collects the remote object too"""
+    bob = workers["bob"]
+    me = syft.local_worker
+
+    me.object_store.garbage_delay = 0.1
+
+    x = torch.Tensor([1, 2])
+    x_ptr = x.send(bob)
+    assert x.id in bob.object_store._objects
+    del x_ptr
+    assert x.id in bob.object_store._objects
+
+    time.sleep(0.2)
+
+    # another GC call to trigger the global GC
+    y = torch.Tensor([1, 1])
+    y_ptr = y.send(bob)
+    del y_ptr
+
+    assert x.id not in bob.object_store._objects
+
+    me.object_store.garbage_delay = 0
 
 
 def test_explicit_garbage_collect_double_pointer(workers):
