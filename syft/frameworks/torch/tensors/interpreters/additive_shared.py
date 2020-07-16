@@ -33,11 +33,14 @@ def check_if_op_with_zero(operation):
         value = other
         if isinstance(value, FrameworkTensor) and value.is_wrapper:
             value = value.child
-        if isinstance(value, (sy.PointerTensor, sy.MultiPointerTensor)):
-            value = value.copy().get()
         if isinstance(value, sy.FixedPrecisionTensor):
             value = value.child
-        other_is_zero = value == 0
+        if isinstance(value, (sy.PointerTensor, sy.MultiPointerTensor)):
+            # The real check might be intrusive so we chose the safest option
+            # other_is_zero = list((value == 0).get())[0]
+            other_is_zero = True
+        else:
+            other_is_zero = value == 0
         if not isinstance(other_is_zero, bool):
             other_is_zero = other_is_zero.any()
         if not isinstance(other_is_zero, (bool, torch.BoolTensor)):
