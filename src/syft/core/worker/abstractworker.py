@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC
 from ...common.object import ObjectWithId
-from ..supervisor import WorkerSupervisor, supervisor
+from ..supervisor import syft_supervisor
 
 class AbstractWorker(ABC, ObjectWithId):
     """Base interface for the syft worker.
@@ -31,6 +31,7 @@ class AbstractWorker(ABC, ObjectWithId):
     def __init__(self, debug: bool = False, services=None):
         super().__init__()
 
+    @syft_supervisor
     def recv_msg(self, msg) -> "SyftMsgResponse":
         """Method that handles messages received by the worker, by redirecting
         the message to the actual service that handles it through the msg_router
@@ -65,6 +66,3 @@ class AbstractWorker(ABC, ObjectWithId):
 
     def get_info(self) -> str:
         pass
-
-    def get_supervisor(self):
-        return WorkerSupervisor
