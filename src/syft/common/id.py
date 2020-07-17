@@ -8,4 +8,4 @@ class UID(object):
     """A unique id"""
 
     def __init__(self):
-        self.value = random.getrandbits(32)
+        self.value: int = random.getrandbits(32)

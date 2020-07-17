@@ -1,6 +1,6 @@
 from .id import UID
 
 
-class ObjectWithId(object):
+class ObjectWithId:
     def __init__(self):
-        self.id = UID()
+        self.id: UID = UID()

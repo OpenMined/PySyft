@@ -2,7 +2,6 @@ import random
 
 from ..message import GetObjectMessage
 
-
 class Pointer:
     def __init__(self, location, id_at_location=None):
         if id_at_location is None:
