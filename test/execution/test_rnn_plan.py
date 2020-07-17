@@ -5,7 +5,7 @@ import torch.nn as nn
 import syft as sy
 from syft.execution.plan import Plan
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
-from syft.execution.translation.threepio import PlanTranslatorTfjs
+
 
 # Modified from handcrafted_GRU.py
 class CustomGruCell(nn.Module):
@@ -95,16 +95,30 @@ def test_rnn_plan_example():
         def __init__(self, vocab_size, embedding_size, hidden_size):
             super(Net, self).__init__()
             self.vocab_size = vocab_size
-            self.encoder = nn.Embedding(self.vocab_size, embedding_size)
+
+            # It would be nice to use PyTorch's nn.Embedding
+            # but gradients didn't get computed for its weights.
+            # We could make our own custom embedding layer but it didn't work yet in PySyft:
+            # * Doing
+            #   `output = self.weight[embedding_indices]`
+            #   doesn't work with PySyft's implementation for __getitem__.
+            # * Doing the lookup "manually" with loops gave grad=None for the embeddings too.
+            embeddings = th.zeros(self.vocab_size, embedding_size)
+            self.encoder: nn.Embedding = nn.Embedding.from_pretrained(embeddings, padding_idx=0)
+            self.encoder.reset_parameters()
+
             self.rnn = CustomGru(embedding_size, hidden_size)
             self.decoder = nn.Linear(hidden_size, self.vocab_size)
 
         def init_hidden(self, batch_size):
             return self.rnn.init_hidden(batch_size)
 
-        def forward(self, x, hidden=None):
-            emb = self.encoder(x)
-            output, hidden = self.rnn(emb, hidden)
+        # Compute embeddings separately because Plan building requires float tensors as input.
+        def embed(self, x):
+            return self.encoder(x)
+
+        def forward(self, embeddings, hidden=None):
+            output, hidden = self.rnn(embeddings, hidden)
             output = self.decoder(output)
             return output, hidden
 
@@ -140,7 +154,7 @@ def test_rnn_plan_example():
             return param
         return param - kwargs["lr"] * param.grad
 
-    model = Net(100, 64, 64)
+    model = Net(10, 8, 8)
 
     @sy.func2plan()
     def train(data, initial_hidden, targets, lr, batch_size, model_parameters):
@@ -154,10 +168,10 @@ def test_rnn_plan_example():
 
         num_none_grads = len(list(filter(lambda param: param.grad is None, model_parameters)))
         # Only the grad for the embeddings will be None.
-        # assert (
-        #     num_none_grads == 1
-        # ), f"{num_none_grads}/{len(model_parameters)} model params have None grad(s)."
-        # assert model_parameters[0].grad is None, "The grad for the embeddings should be None."
+        assert (
+            num_none_grads == 1
+        ), f"{num_none_grads}/{len(model_parameters)} model params have None grad(s)."
+        assert model_parameters[0].grad is None, "The grad for the embeddings should be None."
 
         updated_params = [naive_sgd(param, lr=lr) for param in model_parameters]
 
@@ -170,10 +184,14 @@ def test_rnn_plan_example():
     # Set up dummy inputs.
     # These size must always be the same when using the model.
     batch_size = 3
-    sequence_length = 3
+    # Changing the sequence length from 2 to 3 can make the Torchscript take much much longer.
+    # (a few seconds to a few minutes when testing on a decent machine).
+    sequence_length = 2
     vocab_size = model.vocab_size
     # Data has the index of the word in a vocabulary.
     data = th.randint(0, vocab_size, (sequence_length, batch_size))
+    # Compute embeddings separately because Plan building requires float tensors as input.
+    data = model.embed(data)
 
     # Test the model with no default hidden state.
     output, hidden = model(data)
@@ -193,18 +211,18 @@ def test_rnn_plan_example():
     model_state = list(model.parameters())
 
     # Build Plan
-    train.build(
-        data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True
-    )
+    train.build(data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True)
 
     # Original forward func (torch autograd)
-    loss_torch, acc_torch, *params_torch = train(data, initial_hidden, targets, lr, batch_size, model_state)
+    loss_torch, acc_torch, *params_torch = train(
+        data, initial_hidden, targets, lr, batch_size, model_state
+    )
 
     # Traced forward func (traced autograd)
     train.forward = None
-    loss_syft, acc_syft, *params_syft = train(data, initial_hidden, targets, lr, batch_size, model_state)
-
-    print(train.code)
+    loss_syft, acc_syft, *params_syft = train(
+        data, initial_hidden, targets, lr, batch_size, model_state
+    )
 
     # Tests
     loss, acc = loss_torch, acc_torch
@@ -216,15 +234,20 @@ def test_rnn_plan_example():
     assert acc.item() >= 0
 
     # Outputs should be equal
-    assert th.allclose(loss_torch, loss_syft), "loss torch/syft"
+    assert th.allclose(loss_torch, loss_syft), f"loss torch {loss_torch} != loss syft {loss_syft}"
     assert th.allclose(acc_torch, acc_syft), "acc torch/syft"
     for i, param_torch in enumerate(params_torch):
         if i == 0:
             # Skip Embedded weights comparison
             continue
-        assert th.allclose(param_torch, params_syft[i]), f"param {i} (out_{i+3}) torch/syft"
+        assert th.allclose(
+            param_torch, params_syft[i]
+        ), f"param {i} (out_{i + 3}) torch/syft. {th.abs(param_torch - params_syft[i]).max()}"
 
-    # Translate Plan to torchscript
+    # Translate Plan to Torchscript
+    print("Translating Plan to Torchscript")
     train.add_translation(PlanTranslatorTorchscript)
-    loss_ts, acc_ts, *params_ts = train.torchscript(data, initial_hidden, targets, lr, batch_size, model_state)
-    print(train.torchscript.code)
+    print("Running Torchscript Plan")
+    loss_ts, acc_ts, *params_ts = train.torchscript(
+        data, initial_hidden, targets, lr, batch_size, model_state
+    )
