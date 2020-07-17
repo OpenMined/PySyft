@@ -47,7 +47,7 @@ class...
 
 """
 
-from .service.worker_service import WorkerService
+from ..abstract.service import WorkerService
 from typing import Dict
 
 message_service_mapping: Dict[str, WorkerService] = {}

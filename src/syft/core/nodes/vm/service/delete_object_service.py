@@ -1,9 +1,9 @@
 from __future__ import annotations
 from .....typecheck import type_hints
-from .worker_service import WorkerService
+from ...abstract.service import WorkerService
 from ....message import DeleteObjectMessage
 from .....common import AbstractWorker
-
+from typing import List
 
 class DeleteObjectService(WorkerService):
     @staticmethod
@@ -13,5 +13,5 @@ class DeleteObjectService(WorkerService):
 
     @staticmethod
     @type_hints
-    def message_type_handler() -> type:
-        return DeleteObjectMessage
+    def message_handler_types() -> List[type]:
+        return [DeleteObjectMessage]

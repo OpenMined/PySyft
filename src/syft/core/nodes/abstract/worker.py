@@ -38,10 +38,12 @@ class Worker(AbstractWorker):
         self.store = ObjectStore()
         self.msg_router = {}
 
-        self._register_services()
+        self.services_registered = False
+
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
+
         try:
             return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
@@ -51,8 +53,20 @@ class Worker(AbstractWorker):
                     + f"{type(msg)} because there is no service running to process it."
                 )
             else:
+
+                if not self.services_registered:
+                    raise Exception("Please call _register_services on worker. This seems to have"
+                                    "been skipped for some reason.")
+
                 raise e
+
+
+    @type_hints
+    def _set_services(self, services):
+        self.services = services
 
     @type_hints
     def _register_services(self) -> None:
-        raise NotImplementedError
+
+        for s in self.services:
+            self.msg_router[s.message_handler_types()] = s()

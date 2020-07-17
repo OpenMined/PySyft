@@ -4,5 +4,3 @@ from .get_object_message import GetObjectMessage
 from .run_class_method_message import RunClassMethodMessage
 from .run_function_or_constructor_message import RunFunctionOrConstructorMessage
 from .save_object_message import SaveObjectMessage
-from .repr_message import ReprMessage
-from .repr_message import ReprReplyMessage
