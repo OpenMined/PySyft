@@ -61,9 +61,9 @@ class Worker(AbstractWorker):
 
                 raise e
 
-
+    # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
     @type_hints
-    def _set_services(self, services:List[WorkerService]) -> None:
+    def _set_services(self, services: List) -> None:
         self.services = services
 
     @type_hints

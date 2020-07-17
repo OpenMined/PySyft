@@ -6,6 +6,7 @@ from ....message import GetObjectMessage
 from .....common import AbstractWorker
 from typing import List
 
+
 class GetObjectService(WorkerService):
     @staticmethod
     @type_hints

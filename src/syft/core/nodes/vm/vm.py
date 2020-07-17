@@ -23,7 +23,7 @@ class VirtualMachine(Worker):
         )
         services.append(service.repr_service.ReprService)
 
-        self._set_services(services)
+        self._set_services(services=services)
 
     @type_hints
     def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
