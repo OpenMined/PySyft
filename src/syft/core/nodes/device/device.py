@@ -21,6 +21,11 @@ class Device(Worker):
         # a lookup table to lookup VMs by name instead of ID
         self.vm_name2id = {}
 
+        services = list()
+        # TODO: populate list of services
+
+        self._set_services(services=services)
+
     def create_vm(self, name: str) -> VirtualMachineClient:
         vm = VirtualMachine(name=name)
 
@@ -35,9 +40,4 @@ class Device(Worker):
         conn_client = create_virtual_connection(worker=self)
         return DeviceClient(device_id=self.id, connection=conn_client)
 
-    @type_hints
-    def _register_services(self) -> None:
-        services = list()
 
-        for s in services:
-            self.msg_router[s.message_handler_type()] = s()

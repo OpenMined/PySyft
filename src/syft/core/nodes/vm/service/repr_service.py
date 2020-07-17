@@ -1,11 +1,10 @@
 from __future__ import annotations
-
+from ..message.repr_message import ReprMessage
+from ..message.repr_message import ReprReplyMessage
 from ..... import type_hints
-from .worker_service import WorkerService
-from ....message import ReprMessage
-from ....message import ReprReplyMessage
+from ...abstract.service import WorkerService
 from .....common import AbstractWorker
-
+from typing import List
 
 class ReprService(WorkerService):
     @staticmethod
@@ -15,5 +14,5 @@ class ReprService(WorkerService):
 
     @staticmethod
     @type_hints
-    def message_type_handler() -> type:
-        return ReprMessage
+    def message_handler_types() -> List[type]:
+        return [ReprMessage]

@@ -13,17 +13,6 @@ class VirtualMachine(Worker):
     def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
 
-    @type_hints
-    def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.recv_msg(msg=msg)
-
-    @type_hints
-    def get_client(self) -> VirtualMachineClient:
-        conn = create_virtual_connection(worker=self)
-        return VirtualMachineClient(vm_id=self.id, connection=conn)
-
-    @type_hints
-    def _register_services(self) -> None:
         services = list()
         services.append(service.get_object_service.GetObjectService)
         services.append(service.save_object_service.SaveObjectService)
@@ -33,8 +22,17 @@ class VirtualMachine(Worker):
             service.run_function_or_constructor_service.RunFunctionOrConstructorService
         )
         services.append(service.repr_service.ReprService)
-        for s in services:
-            self.msg_router[s.message_type_handler()] = s()
+
+        self._set_services(services)
+
+    @type_hints
+    def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
+        return self.recv_msg(msg=msg)
+
+    @type_hints
+    def get_client(self) -> VirtualMachineClient:
+        conn = create_virtual_connection(worker=self)
+        return VirtualMachineClient(vm_id=self.id, connection=conn)
 
     @type_hints
     def _register_frameworks(self) -> None:

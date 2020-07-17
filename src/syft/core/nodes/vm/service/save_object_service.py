@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from .worker_service import WorkerService
+from ...abstract.service import WorkerService
 from ....message import SaveObjectMessage
 
 from ..... import type_hints
 
 from .....common import AbstractWorker
-
+from typing import List
 
 class SaveObjectService(WorkerService):
     @staticmethod
@@ -17,5 +17,5 @@ class SaveObjectService(WorkerService):
 
     @staticmethod
     @type_hints
-    def message_type_handler() -> type:
-        return SaveObjectMessage
+    def message_handler_types() -> List[type]:
+        return [SaveObjectMessage]

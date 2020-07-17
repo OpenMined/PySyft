@@ -1,13 +1,17 @@
-from .syft_message import SyftMessage
-from ...typecheck import type_hints
+from .vm_message import VirtualMachineMessage
+from .vm_message import VirtualMachineReplyMessage
+from .....typecheck import type_hints
+from typing import final
 
 
-class ReprMessage(SyftMessage):
+@final
+class ReprMessage(VirtualMachineMessage):
     def __init__(self, route, msg_id=None):
         super().__init__(route=route, msg_id=msg_id)
 
 
-class ReprReplyMessage(SyftMessage):
+@final
+class ReprReplyMessage(VirtualMachineReplyMessage):
     def __init__(self, value, route, msg_id=None):
         super().__init__(route=route, msg_id=msg_id)
         self.value = value

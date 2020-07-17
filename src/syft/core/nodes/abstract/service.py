@@ -1,10 +1,8 @@
 from __future__ import annotations
-from ..... import type_hints
-
-from ....message import SyftMessage
-
-from .....common import AbstractWorker
-
+from .... import type_hints
+from ...message import SyftMessage
+from ....common import AbstractWorker
+from typing import List
 
 class WorkerService:
     @staticmethod
@@ -14,5 +12,5 @@ class WorkerService:
 
     @staticmethod
     @type_hints
-    def message_type_handler() -> SyftMessage:
+    def message_handler_types() -> List[type]:
         raise NotImplementedError
