@@ -8,6 +8,14 @@ from syft.execution.plan import Plan
 
 # Modified from handcrafted_GRU.py
 class CustomGruCell(nn.Module):
+    """
+    A forward only GRU cell.
+    Input should be: (sequence length x batch size x input_size).
+    The output is the output of the final forward call.
+    It's not clear if it would be possible to use the output from each cell in a Plan
+    because of the assumptions of 2D tensors in backprop.
+    """
+
     def __init__(self, input_size, hidden_size, bias=True):
         super(CustomGruCell, self).__init__()
         self.input_size = input_size
@@ -144,10 +152,11 @@ def test_rnn_plan_example():
         loss.backward()
 
         num_none_grads = len(list(filter(lambda param: param.grad is None, model_parameters)))
-        s = f"{num_none_grads}/{len(model_parameters)} model params have None grad(s)."
-        print(s)
         # Only the grad for the embeddings will be None.
-        assert num_none_grads == 1, s
+        assert (
+            num_none_grads == 1
+        ), f"{num_none_grads}/{len(model_parameters)} model params have None grad(s)."
+        assert model_parameters[0].grad is None, "The grad for the embeddings should be None."
 
         updated_params = [naive_sgd(param, lr=lr) for param in model_parameters]
 
@@ -157,12 +166,18 @@ def test_rnn_plan_example():
 
         return (loss, acc, *updated_params)
 
-    # Dummy inputs
+    # Set up dummy inputs.
+    # These size must always be the same when using the model.
     batch_size = 3
     sequence_length = 3
     vocab_size = model.vocab_size
     # Data has the index of the word in a vocabulary.
     data = th.randint(0, vocab_size, (sequence_length, batch_size))
+
+    # Test the model with no default hidden state.
+    output, hidden = model(data)
+    assert output.shape == th.Size([batch_size, vocab_size])
+    assert hidden.shape == th.Size([batch_size, model.rnn.hidden_size])
 
     # The model can initialize the hidden state if it is not set
     # but this might not work within a Plan.
