@@ -67,6 +67,14 @@ class Worker(AbstractWorker):
 
     @type_hints
     def _register_services(self) -> None:
+        """In this method, we set each message type to the appropriate
+        service for this worker. It's important to note that one message type
+        cannot map to multiple services on any given worker type. If you want to
+        send information to a different service, create a new message type for that
+        service. Put another way, a service can have multiple message types which
+        correspond to it, but each message type can only have one service (per worker
+        subclass) which corresponds to it."""
 
         for s in self.services:
-            self.msg_router[s.message_handler_types()] = s()
+            for handler_type in s.message_handler_types():
+                self.msg_router[handler_type] = s()
