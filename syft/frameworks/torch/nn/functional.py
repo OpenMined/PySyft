@@ -3,6 +3,12 @@ import syft as sy
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
+import syft as sy
+
+from syft.generic.frameworks.types import FrameworkTensor
+from syft.generic.utils import allow_command
+from syft.generic.utils import remote
+
 
 def linear(*args):
     """
@@ -73,6 +79,14 @@ def batch_norm(input, _a, _b, weight, bias, _c, _d, eps):
 
 @allow_command
 def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
+    """
+    This is a block of local computation done at the beginning of the convolution. It
+    basically does the matrix unrolling to be able to do the convolution as a simple
+    matrix multiplication.
+
+    Because all the computation are local, we add the @allow_command and run it directly
+    on each share of the additive sharing tensor, when running mpc computations
+    """
     assert len(input.shape) == 4
     assert len(weight.shape) == 4
 
@@ -156,6 +170,14 @@ def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=
 
 @allow_command
 def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
+    """
+    This is a block of local computation done at the end of the convolution. It
+    basically reshape the matrix back to the shape it should have with a regular
+    convolution.
+
+    Because all the computation are local, we add the @allow_command and run it directly
+    on each share of the additive sharing tensor, when running mpc computations
+    """
     batch_size, nb_channels_out, nb_rows_out, nb_cols_out = (
         batch_size.item(),
         nb_channels_out.item(),
@@ -184,7 +206,7 @@ def _post_conv(bias, res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
 def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """
     Overloads torch.nn.functional.conv2d to be able to use MPC on convolutional networks.
-    The idea is to build new tensors from input and weight to compute a
+    The idea is to unroll the input and weight matrices to compute a
     matrix multiplication equivalent to the convolution.
     Args:
         input: input image
@@ -195,12 +217,36 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         dilation: spacing between kernel elements
         groups: split input into groups, in_channels should be divisible by the number of groups
     Returns:
-        the result of the convolution (FixedPrecision Tensor)
+        the result of the convolution as a fixed precision tensor.
     """
     input_fp, weight_fp = input, weight
+
+    if isinstance(input.child, FrameworkTensor) or isinstance(weight.child, FrameworkTensor):
+        assert isinstance(input.child, FrameworkTensor)
+        assert isinstance(weight.child, FrameworkTensor)
+        im_reshaped, weight_reshaped, *params = _pre_conv(
+            input, weight, bias, stride, padding, dilation, groups
+        )
+        if groups > 1:
+            res = []
+            chunks_im = torch.chunk(im_reshaped, groups, dim=2)
+            chunks_weights = torch.chunk(weight_reshaped, groups, dim=0)
+            for g in range(groups):
+                tmp = chunks_im[g].matmul(chunks_weights[g])
+                res.append(tmp)
+            result = torch.cat(res, dim=2)
+        else:
+            result = im_reshaped.matmul(weight_reshaped)
+        result = _post_conv(bias, result, *params)
+        return result.wrap()
+
     input, weight = input.child, weight.child
+
     if bias is not None:
         bias = bias.child
+        assert isinstance(
+            bias, sy.AdditiveSharingTensor
+        ), "Have you provided bias as a kwarg? If so, please remove `bias=`."
 
     locations = input.locations
 
@@ -211,7 +257,11 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         input_share = input.child[location.id]
         weight_share = weight.child[location.id]
         bias_share = bias.child[location.id] if bias is not None else None
-        r = remote(_pre_conv, location=location)(
+        (
+            im_reshaped_shares[location.id],
+            weight_reshaped_shares[location.id],
+            *params[location.id],
+        ) = remote(_pre_conv, location=location)(
             input_share,
             weight_share,
             bias_share,
@@ -222,18 +272,6 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
             return_value=False,
             return_arity=6,
         )
-        (
-            im_reshaped_share,
-            weight_reshaped_share,
-            batch_size,
-            nb_channels_out,
-            nb_rows_out,
-            nb_cols_out,
-        ) = r
-        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
-
-        im_reshaped_shares[location.id] = im_reshaped_share
-        weight_reshaped_shares[location.id] = weight_reshaped_share
 
     im_reshaped = sy.FixedPrecisionTensor(**input_fp.get_class_attributes()).on(
         sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes()), wrap=False
@@ -242,7 +280,7 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         sy.AdditiveSharingTensor(weight_reshaped_shares, **input.get_class_attributes()), wrap=False
     )
 
-    # Now that everything is set up, we can compute the result
+    # Now that everything is set up, we can compute the convolution as a simple matmul
     if groups > 1:
         res = []
         chunks_im = torch.chunk(im_reshaped, groups, dim=2)
@@ -250,12 +288,13 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
         for g in range(groups):
             tmp = chunks_im[g].matmul(chunks_weights[g])
             res.append(tmp)
-        res = torch.cat(res, dim=2)
-        raise NotImplementedError
+        res_fp = torch.cat(res, dim=2)
+        res = res_fp.child
     else:
         res_fp = im_reshaped.matmul(weight_reshaped)
         res = res_fp.child
 
+    # and then we reshape the result
     res_shares = {}
     for location in locations:
         bias_share = bias.child[location.id] if bias is not None else None
@@ -273,7 +312,16 @@ def conv2d(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
 
 @allow_command
 def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
-    assert len(input.shape) == 4
+    """
+    This is a block of local computation done at the beginning of the pool. It
+    basically does the matrix unrolling to be able to do the pooling as a single
+    max or average operation
+    """
+    original_dim = len(input.shape)
+    if len(input.shape) == 3:
+        input = input.reshape(1, *input.shape)
+    elif len(input.shape) == 2:
+        input = input.reshape(1, 1, *input.shape)
 
     # Change to tuple if not one
     stride = torch.nn.modules.utils._pair(stride)
@@ -312,7 +360,8 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
         nb_rows_in += 2 * padding[0]
         nb_cols_in += 2 * padding[1]
 
-    # We want to get relative positions of values in the input tensor that are used by one filter convolution.
+    # We want to get relative positions of values in the input tensor that are used by
+    # one filter convolution.
     # It basically is the position of the values used for the top left convolution.
     pattern_ind = []
     for r in range(nb_rows_kernel):
@@ -342,11 +391,16 @@ def _pre_pool(input, kernel_size, stride=1, padding=0, dilation=1, groups=1):
         torch.tensor(nb_channels_out),
         torch.tensor(nb_rows_out),
         torch.tensor(nb_cols_out),
+        torch.tensor(original_dim),
     )
 
 
 @allow_command
-def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
+def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out, original_dim):
+    """
+    This is a block of local computation done at the end of the pool. It reshapes
+    the output to the expected shape
+    """
     batch_size, nb_channels_out, nb_rows_out, nb_cols_out = (
         batch_size.item(),
         nb_channels_out.item(),
@@ -358,6 +412,9 @@ def _post_pool(res, batch_size, nb_channels_out, nb_rows_out, nb_cols_out):
     res = res.reshape(  # .permute(0, 2, 1)
         batch_size, nb_channels_out, nb_rows_out, nb_cols_out
     ).contiguous()
+
+    if original_dim < 4:
+        res = res.reshape(*res.shape[-original_dim:])
 
     return res
 
@@ -412,8 +469,6 @@ def _pool2d(
         assert stride[0] == stride[1]
         stride = stride[0]
 
-    # print(f"{mode}_pool2d", kernel_size, stride, padding, dilation)
-
     input_fp = input
     input = input.child
 
@@ -423,36 +478,36 @@ def _pool2d(
     params = {}
     for location in locations:
         input_share = input.child[location.id]
-        r = remote(_pre_pool, location=location)(
-            input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=5,
-        )
-        (im_reshaped_share, batch_size, nb_channels_out, nb_rows_out, nb_cols_out,) = r
-        params[location.id] = (batch_size, nb_channels_out, nb_rows_out, nb_cols_out)
-
-        im_reshaped_shares[location.id] = im_reshaped_share
+        im_reshaped_shares[location.id], *params[location.id] = remote(
+            _pre_pool, location=location
+        )(input_share, kernel_size, stride, padding, dilation, return_value=False, return_arity=6)
 
     im_reshaped = sy.AdditiveSharingTensor(im_reshaped_shares, **input.get_class_attributes())
 
     if mode == "max":
-        # Optim
+        # We have optimisations when the kernel is small, namely a square of size 2 or 3
+        # to reduce the number of rounds and the total number of comparisons.
+        # See more in Appendice C.3 https://arxiv.org/pdf/2006.04593.pdf
+        def max_half_split(tensor4d, half_size):
+            """
+            Split the tensor on 2 halves on the last dim and return the maximum half
+            """
+            left, right = tensor4d[:, :, :, :half_size], tensor4d[:, :, :, half_size:]
+            max_half = left + (right >= left) * (right - left)
+            return max_half
+
         if im_reshaped.shape[-1] == 4:
-            # print("Optim pool k=2")
-            ab, cd = im_reshaped[:, :, :, :2], im_reshaped[:, :, :, 2:]
-            max1 = ab + (cd >= ab) * (cd - ab)
-            e, f = max1[:, :, :, 0], max1[:, :, :, 1]
-            max2 = e + (f >= e) * (f - e)
-            res = max2
+            # Compute the max as a binary tree: 2 steps are needed for 4 values
+            res = max_half_split(im_reshaped, 2)
+            res = max_half_split(res, 1)
         elif im_reshaped.shape[-1] == 9:
-            # print("Optim pool k=3")
-            abcd, efgh = im_reshaped[:, :, :, :4], im_reshaped[:, :, :, 4:8]
-            ABCD = abcd + (efgh >= abcd) * (efgh - abcd)
-            AB, CD = ABCD[:, :, :, :2], ABCD[:, :, :, 2:]
-            _AB = AB + (CD >= AB) * (CD - AB)
-            _A, _B = _AB[:, :, :, 0], _AB[:, :, :, 1]
-            _A_ = _A + (_B >= _A) * (_B - _A)
-            _B_ = im_reshaped[:, :, :, 8]
-            max4 = _A_ + (_B_ >= _A_) * (_B_ - _A_)
-            res = max4
+            # For 9 values we need 4 steps: we process the 8 first values and then
+            # compute the max with the 9th value
+            res = max_half_split(im_reshaped[:, :, :, :8], 4)
+            res = max_half_split(res, 2)
+            left = max_half_split(res, 1)
+            right = im_reshaped[:, :, :, 8:]
+            res = left + (right >= left) * (right - left)
         else:
             res = im_reshaped.max(dim=-1)
     elif mode == "avg":

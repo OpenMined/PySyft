@@ -283,7 +283,7 @@ def msb(a_sh):
     L = a_sh.field + 1  # field of a is L - 1
     dtype = get_dtype(L)
     input_shape = a_sh.shape
-    a_sh = a_sh.view(-1)
+    a_sh = a_sh.reshape(-1)
 
     # the commented out numbers below correspond to the
     # line numbers in Table 5 of the SecureNN paper

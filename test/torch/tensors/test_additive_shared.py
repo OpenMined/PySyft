@@ -890,7 +890,7 @@ def test_argmax(workers, protocol):
     assert (ids.long() == torch.argmax(t, dim=1)).all()
 
 
-@pytest.mark.parametrize("protocol", ["fss"])
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_max_pool2d(workers, protocol):
     me, alice, bob, crypto_provider = (
         workers["me"],
@@ -934,7 +934,7 @@ def test_max_pool2d(workers, protocol):
     assert (result == expected).all()
 
 
-@pytest.mark.parametrize("protocol", ["fss"])
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
 def test_avg_pool2d(workers, protocol):
     me, alice, bob, crypto_provider = (
         workers["me"],
