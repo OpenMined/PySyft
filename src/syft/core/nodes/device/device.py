@@ -5,13 +5,15 @@ from .client import DeviceClient
 from ....typecheck import type_hints
 from ..vm.vm import VirtualMachine
 from ..vm.client import VirtualMachineClient
-
+from .service.vm_service import VirtualMachineService
+from ..common.device import AbstractDevice
 
 @final
-class Device(Worker):
+class Device(Worker, AbstractDevice):
     @type_hints
     def __init__(self, name: str):
         super().__init__(name=name)
+
         # the VM objects themselves
         self._vms = {}
 
@@ -23,7 +25,7 @@ class Device(Worker):
 
         services = list()
         # TODO: populate list of services
-
+        services.append(VirtualMachineService)
         self._set_services(services=services)
 
     def create_vm(self, name: str) -> VirtualMachineClient:
