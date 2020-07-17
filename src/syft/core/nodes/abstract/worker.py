@@ -65,6 +65,7 @@ class Worker(AbstractWorker):
     @type_hints
     def _set_services(self, services: List) -> None:
         self.services = services
+        self.services_registered = False
 
     @type_hints
     def _register_services(self) -> None:
@@ -79,3 +80,5 @@ class Worker(AbstractWorker):
         for s in self.services:
             for handler_type in s.message_handler_types():
                 self.msg_router[handler_type] = s()
+
+        self.services_registered = True
