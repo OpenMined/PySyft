@@ -26,7 +26,7 @@ from ...sfl.syft_assets import plans, protocols
 from ...codes import RESPONSE_MSG, CYCLE, MSG_FIELD
 from ...events.sfl.fl_events import report, cycle_request, assign_worker_id
 from ...sfl.auth.federated import verify_token
-from ...exceptions import InvalidRequestKeyError, PyGridError
+from ...exceptions import InvalidRequestKeyError, PyGridError, ModelNotFoundError
 
 
 @main.route("/federated/cycle-request", methods=["POST"])
@@ -474,11 +474,27 @@ def get_model():
             process_query["version"] = version
         _fl_process = process_manager.last(**process_query)
         _model = model_manager.get(fl_process_id=_fl_process.id)
-        _model_checkpoint = model_manager.load(model_id=_model.id, id=checkpoint)
+
+        checkpoint_query = {"model_id": _model.id}
+        if checkpoint:
+            if checkpoint.isnumeric():
+                checkpoint_query["number"] = int(checkpoint)
+            else:
+                checkpoint_query["alias"] = checkpoint
+        else:
+            checkpoint_query["alias"] = "latest"
+
+        logging.info(f"Looking for checkpoint: {checkpoint_query}")
+        _model_checkpoint = model_manager.load(**checkpoint_query)
 
         return send_file(
             io.BytesIO(_model_checkpoint.values), mimetype="application/octet-stream"
         )
+
+    except ModelNotFoundError as e:
+        status_code = 404
+        response_body[RESPONSE_MSG.ERROR] = str(e)
+        logging.warning("Model not found in get-model", exc_info=e)
 
     except Exception as e:
         status_code = 500  # Internal Server Error

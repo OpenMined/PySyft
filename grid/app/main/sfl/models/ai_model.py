@@ -39,6 +39,7 @@ class ModelCheckPoint(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     values = db.Column(db.LargeBinary)
+    number = db.Column(db.Integer)
     alias = db.Column(db.String)
     model_id = db.Column(db.String, db.ForeignKey("__model__.id"))
 
@@ -51,4 +52,4 @@ class ModelCheckPoint(db.Model):
         self.data = sy.serde.serialize(self.values)
 
     def __str__(self):
-        return f"<CheckPoint id: {self.id}, model_id: {self.model_id}>"
+        return f"<CheckPoint id: {self.id}, number: {self.number}, alias: {self.alias}, model_id: {self.model_id}>"

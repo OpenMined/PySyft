@@ -21,7 +21,9 @@ class ModelManager:
         _model_obj = self._models.register(flprocess=process)
 
         # Save model initial weights into ModelCheckpoint
-        self._model_checkpoints.register(values=model, model=_model_obj)
+        self._model_checkpoints.register(
+            values=model, model=_model_obj, number=1, alias="latest",
+        )
 
         return _model_obj
 
@@ -34,9 +36,19 @@ class ModelManager:
                 model_checkpoint: ModelCheckpoint instance.
         """
 
-        # checkpoints_count = self._model_checkpoints.count(model_id=model_id)
+        checkpoints_count = self._model_checkpoints.count(model_id=model_id)
+
+        # Reset "latest" alias
+        self._model_checkpoints.modify(
+            {"model_id": model_id, "alias": "latest"}, {"alias": ""}
+        )
+
+        # Create new checkpoint
         new_checkpoint = self._model_checkpoints.register(
-            model_id=model_id, values=data
+            model_id=model_id,
+            values=data,
+            number=checkpoints_count + 1,
+            alias="latest",
         )
         return new_checkpoint
 

@@ -78,5 +78,10 @@ class Warehouse:
         db.session.delete(object_to_delete)
         db.session.commit()
 
+    def modify(self, query, values):
+        """Modifies one or many records"""
+        self._schema.query.filter_by(**query).update(values)
+        db.session.commit()
+
     def update(self):
         db.session.commit()
