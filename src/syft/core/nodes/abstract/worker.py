@@ -9,11 +9,12 @@ from __future__ import annotations
 from ....common import AbstractWorker
 from ....ast.globals import Globals
 from .... import type_hints
+from typing import List
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
 from ...message import SyftMessage
-
+from .service import WorkerService
 
 class Worker(AbstractWorker):
 
@@ -62,7 +63,7 @@ class Worker(AbstractWorker):
 
 
     @type_hints
-    def _set_services(self, services):
+    def _set_services(self, services:List[WorkerService]) -> None:
         self.services = services
 
     @type_hints
