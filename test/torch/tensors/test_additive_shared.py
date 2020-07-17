@@ -1,6 +1,7 @@
 import pytest
 
 import torch
+import torch.nn.functional as F
 
 import syft
 from syft.frameworks.torch.tensors.interpreters.additive_shared import AdditiveSharingTensor
@@ -842,6 +843,96 @@ def test_argmax(workers, protocol):
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax(dim=1).get().float_prec()
     assert (ids.long() == torch.argmax(t, dim=1)).all()
+
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_max_pool2d(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
+        )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+
+    if protocol == "fss":
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=1000
+        )
+        # me.crypto_store.provide_primitives(["fss_comp"], [alice, bob], n_instances=2000)
+        # me.crypto_store.provide_primitives(
+        #     ["beaver"],
+        #     [alice, bob],
+        #     n_instances=2,
+        #     beaver={
+        #         "op_shapes": [
+        #             ("mul", torch.Size([3, 7, 4, 2]), torch.Size([3, 7, 4, 2])),
+        #             ("mul", torch.Size([3, 7, 4]), torch.Size([3, 7, 4])),
+        #             ("mul", torch.Size([3, 7, 1, 9]), torch.Size([3, 7, 1, 9])),
+        #         ]
+        #     },
+        # )
+
+    m = 4
+    t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
+    x = t.fix_prec().share(*args, **kwargs)
+
+    # using maxpool optimization for kernel_size=2
+    expected = F.max_pool2d(t, kernel_size=2)
+    result = F.max_pool2d(x, kernel_size=2).get().float_prec()
+
+    assert (result == expected).all()
+
+    # without
+    expected = F.max_pool2d(t, kernel_size=3)
+    result = F.max_pool2d(x, kernel_size=3).get().float_prec()
+
+    assert (result == expected).all()
+
+
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_avg_pool2d(workers, protocol):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    if protocol == "fss":
+        for worker in workers.values():
+            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
+        me.crypto_store.provide_primitives(
+            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
+        )
+
+    args = (alice, bob)
+    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+
+    m = 4
+    t = torch.tensor(list(range(3 * 7 * m * m))).float().reshape(3, 7, m, m)
+    x = t.fix_prec().share(*args, **kwargs)
+
+    # using maxpool optimization for kernel_size=2
+    expected = F.avg_pool2d(t, kernel_size=2)
+    result = F.avg_pool2d(x, kernel_size=2).get().float_prec()
+
+    assert (result == expected).all()
+
+    # without
+    expected = F.avg_pool2d(t, kernel_size=3)
+    result = F.avg_pool2d(x, kernel_size=3).get().float_prec()
+
+    assert (result == expected).all()
 
 
 def test_mod(workers):
