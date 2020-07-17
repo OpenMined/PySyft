@@ -31,7 +31,7 @@ list of methods
     this can create future complications with lower level languages calling
     higher level ones.
 
-To begin your education in Syft, continue to the :py:mod:`syft.core.worker` module...
+To begin your education in Syft, continue to the :py:mod:`syft.core.nodes.vm.vm` module...
 """
 
 

@@ -25,6 +25,14 @@ syft.core.message.get\_object\_message module
    :undoc-members:
    :show-inheritance:
 
+syft.core.message.repr\_message module
+--------------------------------------
+
+.. automodule:: syft.core.message.repr_message
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 syft.core.message.run\_class\_method\_message module
 ----------------------------------------------------
 

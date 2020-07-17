@@ -36,7 +36,6 @@ class Worker(AbstractWorker):
 
         self.name = name
         self.store = ObjectStore()
-        self.frameworks = Globals()
         self.msg_router = {}
 
         self._register_services()

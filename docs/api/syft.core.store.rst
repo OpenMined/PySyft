@@ -6,6 +6,14 @@ syft.core.store package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   syft.core.store.storeable
+
 Submodules
 ----------
 

@@ -12,7 +12,9 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   syft.core.io
    syft.core.message
+   syft.core.nodes
    syft.core.pointer
+   syft.core.search
    syft.core.store
-   syft.core.worker
