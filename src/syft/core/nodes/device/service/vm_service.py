@@ -4,7 +4,7 @@ from ..... import type_hints
 from ...abstract.service import WorkerService
 from ....message.abstract.vm import AbstractVirtualMachineMessage
 from ..device import Device
-
+from typing import List
 
 class VMService(WorkerService):
     @staticmethod
@@ -14,5 +14,5 @@ class VMService(WorkerService):
 
     @staticmethod
     @type_hints
-    def message_type_handler() -> type:
-        return AbstractVirtualMachineMessage
+    def message_handler_types() -> List[type]:
+        return [AbstractVirtualMachineMessage]
