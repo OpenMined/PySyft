@@ -1,4 +1,12 @@
+import math
+from functools import reduce
 from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
+from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_COUNT_MAX
+from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_COUNT_MIN
+from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_BIT_COUNT_MAX
+from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_BIT_COUNT_MIN
+from syft.frameworks.torch.he.fv.util.global_variable import POLY_MOD_DEGREE_MAX
+from syft.frameworks.torch.he.fv.util.global_variable import POLY_MOD_DEGREE_MIN
 
 
 class Context:
@@ -12,14 +20,68 @@ class Context:
         rns_tool: A RNSTool class instance.
     """
 
-    def __init__(self, encryption_param):
+    def __init__(self, params):
 
-        self.param = encryption_param
+        # Validation of params provided for the encryption scheme.
+        self.validate(params)
+
+        self.param = params
+
+        self.rns_tool = RNSTool(params)
+
+    def validate(self, params):
+
+        # The number of coeff moduli is restricted to 62
+        if (
+            len(params.coeff_modulus) > COEFF_MOD_COUNT_MAX
+            or len(params.coeff_modulus) < COEFF_MOD_COUNT_MIN
+        ):
+            raise RuntimeError("Invalid coefficient modulus counts")
+
+        # Check for the range of coefficient modulus primes.
+        for i in range(len(params.coeff_modulus)):
+            if params.coeff_modulus[i] >> COEFF_MOD_BIT_COUNT_MAX or not (
+                params.coeff_modulus[i] >> (COEFF_MOD_BIT_COUNT_MIN - 1)
+            ):
+                raise RuntimeError("Invalid coefficient modulus values")
+
+            # Check for the relative prime of coefficient modulus primes
+            for j in range(i):
+                if math.gcd(params.coeff_modulus[i], params.coeff_modulus[j]) > 1:
+                    raise RuntimeError("Coefficient modulus are not pairwise relatively prime")
+
+        # Compute the product of all coeff moduli
+        total_coeff_modulus = reduce(lambda x, y: x * y, params.coeff_modulus)
+        # total_coeff_modulus_bit_count = get_significant_count(total_coeff_modulus)
+
+        # Check polynomial modulus degree and create poly_modulus
+        poly_modulus_degree = params.poly_modulus
+        coeff_count_power = poly_modulus_degree & (poly_modulus_degree - 1)
+        if (
+            poly_modulus_degree < POLY_MOD_DEGREE_MIN
+            or poly_modulus_degree > POLY_MOD_DEGREE_MAX
+            or coeff_count_power < 0
+        ):
+            raise RuntimeError("Invalid polynomial modulus value")
+
+        # TODO Check if the parameters are secure according to HomomorphicEncryption.org standards
+
+        if params.plain_modulus >> COEFF_MOD_BIT_COUNT_MAX or not (
+            params.plain_modulus >> (COEFF_MOD_COUNT_MIN - 1)
+        ):
+            raise RuntimeError("Invalid plain modulus values")
+
+        if params.plain_modulus > total_coeff_modulus:
+            raise RuntimeError("Plain modulus cannot be greater than total coefficient modulus")
+
+        # Check all coeff moduli are relatively prime to plain_modulus
+        for i in range(len(params.coeff_modulus)):
+            for j in range(i):
+                if math.gcd(params.coeff_modulus[i], params.plain_modulus) > 1:
+                    raise RuntimeError(
+                        "Coefficient modulus are not relatively prime with plain modulus"
+                    )
 
         # A list containing values of coeff_mod[i] / plain_mod for one time computation
         # and useful in encryption process.
-        self.coeff_div_plain_modulus = [
-            x / encryption_param.plain_modulus for x in encryption_param.coeff_modulus
-        ]
-
-        self.rns_tool = RNSTool(encryption_param)
+        self.coeff_div_plain_modulus = [x / params.plain_modulus for x in params.coeff_modulus]
