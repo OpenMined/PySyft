@@ -1,11 +1,12 @@
 from ...decorators import syft_decorator
+from ...common.id import UID
 from typing import final
 
 
 @final
 class PublicRoute(object):
     @syft_decorator(typechecking=True)
-    def __init__(self, network: str, domain: str):
+    def __init__(self, network: (str, UID), domain: (str, UID)):
         self.network = network
         self.domain = domain
 
@@ -13,7 +14,7 @@ class PublicRoute(object):
 @final
 class PrivateRoute(object):
     @syft_decorator(typechecking=True)
-    def __init__(self, device: str, vm: str):
+    def __init__(self, device: (str, UID), vm: (str, UID)):
         self.device = device
         self.vm = vm
 
@@ -27,7 +28,7 @@ class Route(object):
 
 
 @syft_decorator(typechecking=True)
-def route(network: str, domain: str, device: str, vm: str) -> Route:
+def route(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Route:
     """A convenience method for creating routes"""
 
     pub = PublicRoute(network=network, domain=domain)
