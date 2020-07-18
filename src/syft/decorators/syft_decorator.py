@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 from .typecheck import type_hints
 
@@ -9,6 +11,9 @@ def syft_decorator(
     other_decorators: list = None,
 ):
     def decorator(function):
+        if typechecking:
+            function = type_hints(function)
+
         def wrapper(*args, **kwargs):
             return function(*args, **kwargs)
 
@@ -24,9 +29,6 @@ def syft_decorator(
 
         old_signature = inspect.signature(function)
         wrapper.__signature__ = old_signature
-
-        if typechecking:
-            wrapper = type_hints(wrapper)
 
         return wrapper
 
