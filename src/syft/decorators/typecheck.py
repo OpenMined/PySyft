@@ -47,7 +47,7 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
             # directly because we don't have arg names, only the list of args which were passed in.
             # Thus, the way this check works is to return an error if we find an argument which
             # isn't in kwargs and isn't "self".
-            if not param_name in kwargs and len(args) > max_arg_len:
+            if param_name not in kwargs and len(args) > max_arg_len:
 
                 raise AttributeError(
                     f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
