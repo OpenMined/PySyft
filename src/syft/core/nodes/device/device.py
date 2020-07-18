@@ -30,6 +30,9 @@ class Device(Worker, AbstractDevice):
         self._set_services(services=services)
 
     def get_vm(self, id_or_name:(str, UID)):
+        """
+        Fetch this from the network details.
+        """
         try:
             return self.vms[id_or_name]
         except KeyError as e:
