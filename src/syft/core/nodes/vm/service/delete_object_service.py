@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .....typecheck import type_hints
+from .....decorators import type_hints
 from ...abstract.service import WorkerService
 from ....message import DeleteObjectMessage
 from .....common import AbstractWorker

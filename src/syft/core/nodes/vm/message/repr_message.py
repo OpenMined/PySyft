@@ -1,6 +1,6 @@
 from .vm_message import VirtualMachineMessage
 from .vm_message import VirtualMachineReplyMessage
-from .....typecheck import type_hints
+from .....decorators import type_hints
 from typing import final
 
 
