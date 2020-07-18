@@ -44,7 +44,6 @@ class Worker(AbstractWorker):
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-
         try:
             processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
@@ -100,6 +99,7 @@ class Worker(AbstractWorker):
         """
         pass
 
+    @type_hints
     def sign_message(self, msg: SyftMessage) -> SyftMessage:
         """
         Add the worker's route to the message prior to forwarding
