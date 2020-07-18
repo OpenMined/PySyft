@@ -1,5 +1,6 @@
 from typing import List
-from .typecheck.typecheck import type_hints
+from syft.decorators.typecheck import type_hints
+
 
 @type_hints
 def get_subclasses(obj_type: type) -> List:

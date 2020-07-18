@@ -7,6 +7,7 @@ from ....pointer.pointer import Pointer
 from .....common import AbstractWorker
 from typing import List
 
+
 class RunClassMethodService(WorkerService):
     @staticmethod
     @type_hints

@@ -8,7 +8,7 @@ from ...io.abstract import ClientConnection
 @final
 class VirtualMachineClient(Client):
     @type_hints
-    def __init__(self, vm_id: UID, name:str, connection: ClientConnection):
+    def __init__(self, vm_id: UID, name: str, connection: ClientConnection):
         super().__init__(worker_id=vm_id, name=name, connection=connection)
 
     @type_hints

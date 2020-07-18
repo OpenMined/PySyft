@@ -6,10 +6,13 @@ from ....message.abstract.vm import AbstractVirtualMachineMessage
 from ...common.device import AbstractDevice
 from typing import List
 
+
 class VirtualMachineService(WorkerService):
     @staticmethod
     @type_hints
-    def process(worker: AbstractDevice, msg: AbstractVirtualMachineMessage) -> AbstractVirtualMachineMessage:
+    def process(
+        worker: AbstractDevice, msg: AbstractVirtualMachineMessage
+    ) -> AbstractVirtualMachineMessage:
         return worker.get_vm(name=msg.route.pri_route.vm).send_msg(msg=msg)
 
     @staticmethod

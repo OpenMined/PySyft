@@ -6,6 +6,7 @@ from ..... import type_hints
 from .....common import AbstractWorker
 from typing import List
 
+
 class RunFunctionOrConstructorService(WorkerService):
     @staticmethod
     @type_hints

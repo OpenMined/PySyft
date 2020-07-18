@@ -8,6 +8,7 @@ from ..... import type_hints
 from .....common import AbstractWorker
 from typing import List
 
+
 class SaveObjectService(WorkerService):
     @staticmethod
     @type_hints

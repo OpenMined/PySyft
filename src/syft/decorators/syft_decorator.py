@@ -3,7 +3,12 @@ from .typecheck import type_hints
 from typing import final
 
 
-def syft_decorator(typechecking=False, enforce_policies=False, syft_logger=False, other_decorators: list = None):
+def syft_decorator(
+    typechecking=False,
+    enforce_policies=False,
+    syft_logger=False,
+    other_decorators: list = None,
+):
     def decorator(function):
         def wrapper(*args, **kwargs):
             return function(*args, **kwargs)
@@ -25,4 +30,5 @@ def syft_decorator(typechecking=False, enforce_policies=False, syft_logger=False
             wrapper = type_hints(wrapper)
 
         return wrapper
+
     return decorator

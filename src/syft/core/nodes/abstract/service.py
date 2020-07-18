@@ -4,6 +4,7 @@ from ...message import SyftMessage
 from ....common import AbstractWorker
 from typing import List
 
+
 class WorkerService:
     @staticmethod
     @type_hints

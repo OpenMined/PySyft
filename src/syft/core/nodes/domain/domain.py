@@ -6,7 +6,7 @@ class Domain(Worker):
         super().__init__(name=name)
 
         available_device_types = set()
-        #TODO: add available compute types
+        # TODO: add available compute types
 
         default_device = None
-        #TODO: add default compute type
+        # TODO: add default compute type

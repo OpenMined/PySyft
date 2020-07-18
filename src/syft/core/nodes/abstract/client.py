@@ -6,7 +6,7 @@ from ...io.abstract import ClientConnection
 
 class Client:
     @type_hints
-    def __init__(self, worker_id: UID, name:str, connection: ClientConnection):
+    def __init__(self, worker_id: UID, name: str, connection: ClientConnection):
         self.worker_id = worker_id
         self.name = name
         self.connection = connection

@@ -40,7 +40,7 @@ from . import common
 
 
 # CONVENIENCE FUNCTIONS
-from .typecheck import type_hints
+from .decorators import type_hints
 
 from pkg_resources import get_distribution, DistributionNotFound
 

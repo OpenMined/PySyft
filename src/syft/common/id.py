@@ -1,5 +1,5 @@
 import uuid
-from ..typecheck import type_hints
+from ..decorators import type_hints
 from typing import final
 
 

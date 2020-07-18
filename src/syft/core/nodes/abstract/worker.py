@@ -15,6 +15,7 @@ from ....util import get_subclasses
 from ...store.store import ObjectStore
 from ...message import SyftMessage
 
+
 class Worker(AbstractWorker):
 
     """
@@ -40,7 +41,6 @@ class Worker(AbstractWorker):
 
         self.services_registered = False
 
-
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
 
@@ -55,8 +55,10 @@ class Worker(AbstractWorker):
             else:
 
                 if not self.services_registered:
-                    raise Exception("Please call _register_services on worker. This seems to have"
-                                    "been skipped for some reason.")
+                    raise Exception(
+                        "Please call _register_services on worker. This seems to have"
+                        "been skipped for some reason."
+                    )
 
                 raise e
 
