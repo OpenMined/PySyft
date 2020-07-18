@@ -3,9 +3,8 @@ from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
 from ....decorators import syft_decorator
-from ..vm.vm import VirtualMachine
-from ..vm.client import VirtualMachineClient
-from .service.vm_service import VirtualMachineService
+from .service.vm_msg_service import VirtualMachineMessageService
+from .service.vm_lifecycle_service import VirtualMachineLifecycleService
 from ..common.device import AbstractDevice
 from ....common.id import UID
 
@@ -26,27 +25,19 @@ class Device(Worker, AbstractDevice):
         self.vm_name2id = {}
 
         services = list()
-        # TODO: populate list of services
-        services.append(VirtualMachineService)
+        services.append(VirtualMachineMessageService)
+        services.append(VirtualMachineLifecycleService)
         self._set_services(services=services)
 
-    def get_vm(self, id: UID = None, name: str = None):
-        if id is not None:
-            return self.vms[id]
-        elif name is not None:
-            id = self.vm_name2id[name]
-            return self.vms[id]
-        else:
-            raise Exception("You must ask for a vm using either a name or ID.")
-
-    def create_vm(self, name: str) -> VirtualMachineClient:
-        vm = VirtualMachine(name=name)
-
-        client = vm.get_client()
-        self.vms[vm.id] = client
-        self.vm_name2id[vm.name] = vm.id
-
-        return client
+    def get_vm(self, id_or_name:(str, UID)):
+        try:
+            return self.vms[id_or_name]
+        except KeyError as e:
+            try:
+                id = self.vm_name2id[id_or_name]
+                return self.vms[id]
+            except KeyError as e:
+                raise KeyError("You must ask for a vm using either a name or ID.")
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:

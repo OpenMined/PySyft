@@ -7,13 +7,13 @@ from ...common.device import AbstractDevice
 from typing import List
 
 
-class VirtualMachineService(WorkerService):
+class VirtualMachineMessageService(WorkerService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(
         worker: AbstractDevice, msg: AbstractVirtualMachineMessage
     ) -> AbstractVirtualMachineMessage:
-        return worker.get_vm(name=msg.route.pri_route.vm).send_msg(msg=msg)
+        return worker.get_vm(id_or_name=msg.route.pri_route.vm).send_msg(msg=msg)
 
     @staticmethod
     @syft_decorator(typechecking=True)
