@@ -1,0 +1,10 @@
+[6883:6883:0707/142926.887062:ERROR:edid_parser.cc(102)] Too short EDID data: manufacturer id
+[6883:6883:0707/142926.887203:ERROR:edid_parser.cc(102)] Too short EDID data: manufacturer id
+[6928:6928:0707/142926.993231:ERROR:sandbox_linux.cc(374)] InitializeSandbox() called with multiple threads in process gpu-process.
+[6928:6928:0707/142931.337317:ERROR:gl_surface_presentation_helper.cc(258)] GetVSyncParametersIfAvailable() failed for 1 times!
+[6928:6928:0707/142931.340516:ERROR:gl_surface_presentation_helper.cc(258)] GetVSyncParametersIfAvailable() failed for 2 times!
+[6928:6928:0707/142939.249345:ERROR:gl_surface_presentation_helper.cc(258)] GetVSyncParametersIfAvailable() failed for 3 times!
+[6928:6928:0707/153556.759627:ERROR:shared_image_manager.cc(212)] SharedImageManager::ProduceSkia: Trying to Produce a Skia representation from a non-existent mailbox.
+[6928:6928:0707/153556.760063:ERROR:shared_image_manager.cc(212)] SharedImageManager::ProduceSkia: Trying to Produce a Skia representation from a non-existent mailbox.
+[0707/162805.401491:ERROR:nacl_helper_linux.cc(308)] NaCl helper process running without a sandbox!
+Most likely you need to configure your SUID sandbox correctly
