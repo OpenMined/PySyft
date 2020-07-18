@@ -7,7 +7,7 @@ from __future__ import annotations
 
 # NON-CORE IMPORTS
 from ....common import AbstractWorker
-from ....decorators import syft_decorator
+from ....decorators import type_hints, syft_decorator
 from typing import List
 from ....util import get_subclasses
 
@@ -41,7 +41,7 @@ class Worker(AbstractWorker):
 
         self.services_registered = False
 
-    @syft_decorator(typechecking=True)
+    @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
 
         try:
