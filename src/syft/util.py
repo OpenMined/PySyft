@@ -1,5 +1,5 @@
 from typing import List
-from syft.decorators.typecheck import type_hints
+from .decorators import type_hints
 
 
 @type_hints
