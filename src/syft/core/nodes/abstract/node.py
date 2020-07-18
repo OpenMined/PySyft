@@ -14,6 +14,7 @@ from ....util import get_subclasses
 # CORE IMPORTS
 from ...store.store import ObjectStore
 from ...message import SyftMessage
+from ...io import Route
 
 
 class Node(AbstractNode):
@@ -43,9 +44,8 @@ class Node(AbstractNode):
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-
         try:
-            return self.msg_router[type(msg)].process(node=self, msg=msg)
+            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -61,6 +61,9 @@ class Node(AbstractNode):
                     )
 
                 raise e
+        if self.shoud_forward(processed):
+            self.forward_message(processed)
+        return processed
 
     # TODO: change services type  to List[NodeService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
@@ -86,3 +89,49 @@ class Node(AbstractNode):
                     self.msg_router[handler_type_subclass] = service_instance
 
         self.services_registered = True
+
+    @type_hints
+    def update_network(self) -> None:
+        """
+        This method allow connecting to a main orchestrator that can
+        send the information about the surrounding networks to update
+        the configuration jsons.
+        """
+        pass
+
+    @type_hints
+    def sign_message(self, msg: SyftMessage) -> SyftMessage:
+        """
+        Add the worker's route to the message prior to forwarding
+        to other entities on the network.
+        """
+        return msg
+
+    @type_hints
+    def listen_on_messages(self, msg: SyftMessage) -> SyftMessage:
+        """
+        Allows workers to connect to messaging protocols and listen on messages.
+        """
+        return self.recv_msg(msg)
+
+    @type_hints
+    def should_forward(self, msg:SyftMessage) -> boolean:
+        """
+        Determine if the message should be forwarded in the network
+        """
+        return True
+
+    @type_hints
+    def forward_message(self, msg: SyftMessage) -> None:
+        """
+        forward message to entities on the network that may have objects of interest.
+        """
+        signed_message = self.sign_message(msg)
+        routes = []
+        return self.broadcast_message(msg, routes)
+
+    def broadcast_message(message: str, routes: Sequence[Route]) -> None:
+        """
+        This allows for broadcasting to either routes, or through a comms bus.
+        """
+        pass
