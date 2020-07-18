@@ -2,6 +2,7 @@ import pytest
 from typing import List, Union, Optional, Dict
 from syft.decorators.typecheck import type_hints
 
+
 def test_typecheck_basic_dtypes():
     @type_hints
     def func(x: int, y: int) -> int:
