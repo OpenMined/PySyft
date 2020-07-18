@@ -462,9 +462,13 @@ class Plan(AbstractSendable):
 
         def create_dummy(input_type, input_placeholder):
             if issubclass(input_type, FrameworkTensor):
-                return input_type(
-                    PlaceHolder.create_placeholders([input_placeholder.expected_shape])[0]
+                tensors = PlaceHolder.create_placeholders(
+                    [input_placeholder.expected_shape], [input_placeholder.expected_type]
                 )
+                var = tensors[0]
+                if input_type != type(var):
+                    var = input_type(var)
+                return var
             else:
                 return input_type()
 
