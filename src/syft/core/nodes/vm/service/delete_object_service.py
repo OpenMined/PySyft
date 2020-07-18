@@ -5,6 +5,7 @@ from ....message import DeleteObjectMessage
 from .....common import AbstractWorker
 from typing import List
 
+
 class DeleteObjectService(WorkerService):
     @staticmethod
     @type_hints

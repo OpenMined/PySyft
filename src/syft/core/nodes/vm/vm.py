@@ -2,14 +2,14 @@ from .client import VirtualMachineClient
 from ..abstract.worker import Worker
 from . import service
 from ...io.virtual import create_virtual_connection
-from ....typecheck import type_hints
+from ....decorators import syft_decorator
 from ...message import SyftMessage
 from typing import final
 
 
 @final
 class VirtualMachine(Worker):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
 
@@ -25,16 +25,16 @@ class VirtualMachine(Worker):
 
         self._set_services(services=services)
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
         return self.recv_msg(msg=msg)
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def get_client(self) -> VirtualMachineClient:
         conn = create_virtual_connection(worker=self)
         return VirtualMachineClient(vm_id=self.id, name=self.name, connection=conn)
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def _register_frameworks(self) -> None:
 
         from ....lib import supported_frameworks

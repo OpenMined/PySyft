@@ -7,13 +7,14 @@ from __future__ import annotations
 
 # NON-CORE IMPORTS
 from ....common import AbstractWorker
-from .... import type_hints
+from ....decorators import syft_decorator
 from typing import List
 from ....util import get_subclasses
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
 from ...message import SyftMessage
+
 
 class Worker(AbstractWorker):
 
@@ -30,7 +31,7 @@ class Worker(AbstractWorker):
     Each worker is identified by an id of type str.
     """
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, name: str = None):
         super().__init__()
 
@@ -40,8 +41,7 @@ class Worker(AbstractWorker):
 
         self.services_registered = False
 
-
-    @type_hints
+    @syft_decorator(typechecking=True)
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
 
         try:
@@ -55,18 +55,20 @@ class Worker(AbstractWorker):
             else:
 
                 if not self.services_registered:
-                    raise Exception("Please call _register_services on worker. This seems to have"
-                                    "been skipped for some reason.")
+                    raise Exception(
+                        "Please call _register_services on worker. This seems to have"
+                        "been skipped for some reason."
+                    )
 
                 raise e
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
-    @type_hints
+    @syft_decorator(typechecking=True)
     def _set_services(self, services: List) -> None:
         self.services = services
         self._register_services()
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
         """In this method, we set each message type to the appropriate
         service for this worker. It's important to note that one message type

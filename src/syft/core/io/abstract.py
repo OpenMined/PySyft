@@ -1,17 +1,17 @@
 from ..message.syft_message import SyftMessage
-from ...typecheck import type_hints
+from ...decorators import syft_decorator
 from typing import final
 
 
 @final
 class ServerConnection(object):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         raise NotImplementedError
 
 
 @final
 class ClientConnection(object):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def send_msg(self, msg: SyftMessage) -> SyftMessage:
         raise NotImplementedError

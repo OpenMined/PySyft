@@ -1,10 +1,10 @@
-from ...typecheck import type_hints
+from ...decorators import syft_decorator
 from typing import final
 
 
 @final
 class PublicRoute(object):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, network: str, domain: str):
         self.network = network
         self.domain = domain
@@ -12,7 +12,7 @@ class PublicRoute(object):
 
 @final
 class PrivateRoute(object):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, device: str, vm: str):
         self.device = device
         self.vm = vm
@@ -20,13 +20,13 @@ class PrivateRoute(object):
 
 @final
 class Route(object):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, pub_route: PublicRoute, pri_route: PrivateRoute):
         self.pub_route = pub_route
         self.pri_route = pri_route
 
 
-@type_hints
+@syft_decorator(typechecking=True)
 def route(network: str, domain: str, device: str, vm: str) -> Route:
     """A convenience method for creating routes"""
 
