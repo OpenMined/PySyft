@@ -4,6 +4,7 @@ stuff
 """
 
 from __future__ import annotations
+import json
 
 # NON-CORE IMPORTS
 from ....common import AbstractNode
@@ -39,6 +40,9 @@ class Node(AbstractNode):
         self.name = name
         self.store = ObjectStore()
         self.msg_router = {}
+        # bootstrap
+        self.network = self._fetch_network()
+        self.specs = self._learn_my_specs()
 
         self.services_registered = False
 
@@ -91,13 +95,24 @@ class Node(AbstractNode):
         self.services_registered = True
 
     @type_hints
-    def update_network(self) -> None:
+    def _fetch_network(self) -> None:
         """
         This method allow connecting to a main orchestrator that can
         send the information about the surrounding networks to update
         the configuration jsons.
+
+        A worker may override this method to allow for caching network
+        information in systems like Redis.
+        Also, extended worker is able to request updated configuration
+        from a remote system.
         """
-        pass
+        # read from json and cache network information.
+        with open('network.json') as f:
+          self.network = json.load(f)
+
+    def _learn_my_specs(self) -> None:
+        with open('specs.json') as f:
+          self.specs = json.load(f)
 
     @type_hints
     def sign_message(self, msg: SyftMessage) -> SyftMessage:
