@@ -30,7 +30,7 @@ def test_typecheck():
 
 def test_policy():
     @syft_decorator(enforce_policies=True)
-    def test_policy_decorator():
+    def test_policy_decorator() -> None:
         # TODO
         pass
 
@@ -39,7 +39,7 @@ def test_policy():
 
 def test_logger():
     @syft_decorator(syft_logger=True)
-    def test_logger_decorator():
+    def test_logger_decorator() -> None:
         # TODO
         pass
 
@@ -48,7 +48,7 @@ def test_logger():
 
 def test_compose_1():
     @syft_decorator(typechecking=True, syft_logger=True)
-    def test():
+    def test() -> None:
         # TODO
         pass
 
@@ -57,7 +57,7 @@ def test_compose_1():
 
 def test_compose_2():
     @syft_decorator(typechecking=True, enforce_policies=True)
-    def test():
+    def test() -> None:
         # TODO
         pass
 
@@ -66,7 +66,7 @@ def test_compose_2():
 
 def test_compose_3():
     @syft_decorator(typechecking=True, enforce_policies=True, syft_logger=True)
-    def test():
+    def test() -> None:
         # TODO
         pass
 
