@@ -9,4 +9,4 @@ class UID(object):
 
     def __init__(self):
         # TODO find out what type is smaller for protobuf msgs.
-        self.value = str(uuid.UUID(int=0x12345678123456781234567812345678))
+        self.value = uuid.uuid4()

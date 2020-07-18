@@ -8,11 +8,10 @@ from ...io.abstract import ClientConnection
 @final
 class VirtualMachineClient(Client):
     @type_hints
-    def __init__(self, vm_id: UID, connection: ClientConnection):
-        super().__init__(worker_id=vm_id, connection=connection)
+    def __init__(self, vm_id: UID, name:str, connection: ClientConnection):
+        super().__init__(worker_id=vm_id, name=name, connection=connection)
 
     @type_hints
     def __repr__(self) -> str:
         out = f"<VirtualMachineClient id:{self.name}>"
-        out += "\n" + str(self.vm.store._objects)  # TODO: remove this - security risk
         return out

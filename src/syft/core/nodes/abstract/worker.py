@@ -7,14 +7,13 @@ from __future__ import annotations
 
 # NON-CORE IMPORTS
 from ....common import AbstractWorker
-from ....ast.globals import Globals
 from .... import type_hints
 from typing import List
+from ....util import get_subclasses
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
 from ...message import SyftMessage
-from .service import WorkerService
 
 class Worker(AbstractWorker):
 
@@ -65,7 +64,7 @@ class Worker(AbstractWorker):
     @type_hints
     def _set_services(self, services: List) -> None:
         self.services = services
-        self.services_registered = False
+        self._register_services()
 
     @type_hints
     def _register_services(self) -> None:
@@ -78,7 +77,10 @@ class Worker(AbstractWorker):
         subclass) which corresponds to it."""
 
         for s in self.services:
+            service_instance = s()
             for handler_type in s.message_handler_types():
-                self.msg_router[handler_type] = s()
+                self.msg_router[handler_type] = service_instance
+                for handler_type_subclass in get_subclasses(obj_type=handler_type):
+                    self.msg_router[handler_type_subclass] = service_instance
 
         self.services_registered = True
