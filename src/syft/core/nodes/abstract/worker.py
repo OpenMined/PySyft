@@ -62,8 +62,9 @@ class Worker(AbstractWorker):
                     )
 
                 raise e
-        if self.shoud_forward(msg):
-            self.forward_message(msg)
+        if self.shoud_forward(processed):
+            self.forward_message(processed)
+        return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
