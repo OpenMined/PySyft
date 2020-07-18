@@ -7,10 +7,10 @@ def test_static():
     class Test:
         @staticmethod
         @syft_decorator()
-        def test_static(x, y):
+        def test_static(x: int, y: int) -> None:
             pass
 
-    Test.test_static()
+    Test.test_static(x=0, y=0)
     pass
 
 
