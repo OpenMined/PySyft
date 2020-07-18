@@ -1,6 +1,5 @@
 import inspect
 from .typecheck import type_hints
-from typing import final
 
 
 def syft_decorator(
