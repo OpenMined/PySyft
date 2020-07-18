@@ -75,8 +75,13 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         check_args(*args, **kwargs)
         return typechecked(decorated)(*args, **kwargs)
 
+    decorator.__annotations__ = decorated.__annotations__
     decorator.__qualname__ = decorated.__qualname__
-
     decorator.__name__ = decorated.__name__
+    decorator.__doc__ = decorated.__doc__
+    decorator.__module__ = decorated.__module__
+
+    old_signature = inspect.signature(decorated)
+    decorator.__signature__ = old_signature
 
     return decorator

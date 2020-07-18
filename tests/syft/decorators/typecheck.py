@@ -1,7 +1,7 @@
 import pytest
-from typing import List, Union, Optional, Tuple, Dict, DefaultDict, TypedDict
-from syft.typecheck.typecheck import type_hints
-
+from typing import List, Union, Optional, Dict
+from syft.decorators.typecheck import type_hints
+from syft.decorators.syft_decorator import syft_decorator
 
 def test_typecheck_basic_dtypes():
     @type_hints
@@ -84,4 +84,3 @@ def test_ret_type():
 
 
     assert str(e.value) == 'type of the return value must be int; got float instead'
-
