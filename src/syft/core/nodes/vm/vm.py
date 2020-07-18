@@ -32,7 +32,7 @@ class VirtualMachine(Worker):
     @type_hints
     def get_client(self) -> VirtualMachineClient:
         conn = create_virtual_connection(worker=self)
-        return VirtualMachineClient(vm_id=self.id, connection=conn)
+        return VirtualMachineClient(vm_id=self.id, name=self.name, connection=conn)
 
     @type_hints
     def _register_frameworks(self) -> None:
@@ -46,3 +46,6 @@ class VirtualMachine(Worker):
                         "Framework already imported. Why are you importing it twice?"
                     )
                 self.frameworks.attrs[name] = ast
+
+    def __repr__(self):
+        return f"VirtualMachine:{self.name}"

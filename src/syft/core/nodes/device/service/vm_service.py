@@ -9,8 +9,8 @@ from typing import List
 class VirtualMachineService(WorkerService):
     @staticmethod
     @type_hints
-    def process(device: AbstractDevice, msg: AbstractVirtualMachineMessage) -> AbstractVirtualMachineMessage:
-        return device.vms[msg.route.pri_route.vm].recv_msg(msg)
+    def process(worker: AbstractDevice, msg: AbstractVirtualMachineMessage) -> AbstractVirtualMachineMessage:
+        return worker.get_vm(name=msg.route.pri_route.vm).send_msg(msg=msg)
 
     @staticmethod
     @type_hints
