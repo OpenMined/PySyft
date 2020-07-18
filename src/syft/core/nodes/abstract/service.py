@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .... import type_hints
+from ....decorators import syft_decorator
 from ...message import SyftMessage
 from ....common import AbstractWorker
 from typing import List
@@ -7,11 +7,11 @@ from typing import List
 
 class WorkerService:
     @staticmethod
-    @type_hints
+    @syft_decorator(typechecking=True)
     def process(worker: AbstractWorker, msg: SyftMessage) -> object:
         raise NotImplementedError
 
     @staticmethod
-    @type_hints
+    @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         raise NotImplementedError

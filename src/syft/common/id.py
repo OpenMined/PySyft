@@ -1,5 +1,4 @@
 import uuid
-from ..decorators import type_hints
 from typing import final
 
 
