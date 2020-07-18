@@ -32,8 +32,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         incorrectly. The requirement to only use kwargs is a bit of an exotic one and some Python
         users might not be used to it. Thus, a good error message is important."""
 
-        # We begin by initializing the maximum number of args we will allow at 0. We will iterate this
-        # if by chance we see an argument whose name is "self".
+        # We begin by initializing the maximum number of args we will allow at 0. We will iterate
+        # this if by chance we see an argument whose name is "self".
         max_arg_len = 0
 
         # iterate through every parameter passed in
@@ -45,9 +45,9 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
 
             # if this parameter isn't in kwargs, then it's probably in args. However, we can't check
             # directly because we don't have arg names, only the list of args which were passed in.
-            # Thus, the way this check works is to return an error if we find an argument which isn't
-            # in kwargs and isn't "self".
-            if not param_name in kwargs and len(args) > max_arg_len:
+            # Thus, the way this check works is to return an error if we find an argument which
+            # isn't in kwargs and isn't "self".
+            if param_name not in kwargs and len(args) > max_arg_len:
 
                 raise AttributeError(
                     f"'{param_name}' was passed into a function as an arg instead of a kwarg. "
@@ -59,7 +59,8 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         and decorated.__name__ not in SKIP_RETURN_TYPE_HINTS
     ):
         raise AttributeError(
-            f"Return type not annotated, please provide typing to the return type for function {decorated.__qualname__}."
+            f"Return type not annotated, please provide typing to the return type for function"
+            f"{decorated.__qualname__}."
         )
 
     for idx, (param_name, param) in enumerate(literal_signature.parameters.items()):
@@ -68,15 +69,21 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
 
         if param_name not in solved_signature:
             raise AttributeError(
-                f"Argument types not annotated, please provide typing to all argument types for function {decorated.__qualname__}."
+                f"Argument types not annotated, please provide typing to all argument types for"
+                f"function {decorated.__qualname__}."
             )
 
     def decorator(*args, **kwargs):
         check_args(*args, **kwargs)
         return typechecked(decorated)(*args, **kwargs)
 
+    decorator.__annotations__ = decorated.__annotations__
     decorator.__qualname__ = decorated.__qualname__
-
     decorator.__name__ = decorated.__name__
+    decorator.__doc__ = decorated.__doc__
+    decorator.__module__ = decorated.__module__
+
+    old_signature = inspect.signature(decorated)
+    decorator.__signature__ = old_signature
 
     return decorator

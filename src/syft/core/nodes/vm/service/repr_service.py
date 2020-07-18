@@ -6,6 +6,7 @@ from ...abstract.service import WorkerService
 from .....common import AbstractWorker
 from typing import List
 
+
 class ReprService(WorkerService):
     @staticmethod
     @type_hints

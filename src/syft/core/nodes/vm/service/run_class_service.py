@@ -7,18 +7,19 @@ from ....pointer.pointer import Pointer
 from .....common import AbstractWorker
 from typing import List
 
+
 class RunClassMethodService(WorkerService):
     @staticmethod
     @type_hints
     def process(worker: AbstractWorker, msg: RunClassMethodMessage) -> None:
         self_possibly_pointer = msg._self
         args_with_pointers = msg.args
-        kwargs_with_pointers = msg.kwargs
+        # kwargs_with_pointers = msg.kwargs
 
         result_id_at_location = msg.id_at_location
 
         # Step 1: Replace Pointers with Objects in self, args, and kwargs
-        self_is_object = None
+        # self_is_object = None
         args_with_objects = list()
 
         kwargs_with_objects = {}

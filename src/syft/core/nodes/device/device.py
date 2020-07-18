@@ -2,16 +2,17 @@ from ..abstract.worker import Worker
 from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
-from ....typecheck import type_hints
+from ....decorators import syft_decorator
 from ..vm.vm import VirtualMachine
 from ..vm.client import VirtualMachineClient
 from .service.vm_service import VirtualMachineService
 from ..common.device import AbstractDevice
 from ....common.id import UID
 
+
 @final
 class Device(Worker, AbstractDevice):
-    @type_hints
+    @syft_decorator(typechecking=True)
     def __init__(self, name: str):
         super().__init__(name=name)
 
@@ -29,7 +30,7 @@ class Device(Worker, AbstractDevice):
         services.append(VirtualMachineService)
         self._set_services(services=services)
 
-    def get_vm(self, id:UID=None, name:str=None):
+    def get_vm(self, id: UID = None, name: str = None):
         if id is not None:
             return self.vms[id]
         elif name is not None:
@@ -47,9 +48,7 @@ class Device(Worker, AbstractDevice):
 
         return client
 
-    @type_hints
+    @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:
         conn_client = create_virtual_connection(worker=self)
         return DeviceClient(device_id=self.id, name=self.name, connection=conn_client)
-
-
