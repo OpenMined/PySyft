@@ -9,6 +9,7 @@ import random
 
 import syft as sy
 from syft.serde import protobuf
+from syft.grid.exceptions import GridError
 
 from syft.execution.state import State
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
@@ -16,20 +17,13 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
-CHUNK_SIZE = 8192
+CHUNK_SIZE = 655360  # 640KB
 SPEED_MULT_FACTOR = 10
-MAX_BUFFER_SIZE = 1048576  # 1 MB
-CHECK_SPEED_EVERY = 10
-MAX_SPEED_TESTS = 50
+MAX_BUFFER_SIZE = 1048576 * 64  # 64 MB
+MAX_SPEED_TESTS = 3
 
 
-class GridError(BaseException):
-    def __init__(self, error, status):
-        self.status = status
-        self.error = error
-
-
-class GridClient:
+class StaticFLWorker:
     CYCLE_STATUS_ACCEPTED = "accepted"
     CYCLE_STATUS_REJECTED = "rejected"
     PLAN_TYPE_LIST = "list"
@@ -126,19 +120,14 @@ class GridClient:
                 number=1,
             )
             if time_taken < 0.5:
-                buffer_size = min(
-                    buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE * 64
-                )  # 64 MB max file size
-                continue
-            upload_speed = 64 * 1024 / time_taken  # speed in KBps
-            speed_history.append(upload_speed)
-            if len(speed_history) % CHECK_SPEED_EVERY == 0:
-                avg = sum(speed_history) / len(speed_history)
-                deviation = avg - min(speed_history)
-                if (deviation < 20) and (avg > 0):
-                    break
+                buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
+            new_speed = buffer_size / (time_taken * 1024)
+
+            if new_speed != float("inf"):
+                speed_history.append(new_speed)
+
         if len(speed_history) == 0:
-            return -1
+            return float("inf")
         else:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
@@ -157,17 +146,13 @@ class GridClient:
                 )
                 if time_taken < 0.5:
                     buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
-                    continue
                 new_speed = buffer_size / (time_taken * 1024)
-                speed_history.append(new_speed)
-                if len(speed_history) % CHECK_SPEED_EVERY == 0:
-                    avg = sum(speed_history) / len(speed_history)
-                    deviation = avg - min(speed_history)
-                    if (deviation < 20) and (avg > 0):
-                        break
+
+                if new_speed != float("inf"):
+                    speed_history.append(new_speed)
 
         if len(speed_history) == 0:
-            return -1
+            return float("inf")
         else:
             avg_speed = sum(speed_history) / len(speed_history)
             return avg_speed
@@ -192,39 +177,14 @@ class GridClient:
     def close(self):
         self.ws.shutdown()
 
-    def host_federated_training(
-        self,
-        model,
-        client_plans,
-        client_protocols,
-        client_config,
-        server_averaging_plan,
-        server_config,
-    ):
-        serialized_model = binascii.hexlify(self._serialize(model)).decode()
-        serialized_plans = self._serialize_object(client_plans)
-        serialized_protocols = self._serialize_object(client_protocols)
-        serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
-
-        # "federated/host-training" request body
-        message = {
-            "type": "federated/host-training",
-            "data": {
-                "model": serialized_model,
-                "plans": serialized_plans,
-                "protocols": serialized_protocols,
-                "averaging_plan": serialized_avg_plan,
-                "client_config": client_config,
-                "server_config": server_config,
-            },
-        }
-
-        return self._send_msg(message)
-
-    def authenticate(self, auth_token):
+    def authenticate(self, auth_token, model_name, model_version):
         message = {
             "type": "federated/authenticate",
-            "data": {"auth_token": auth_token},
+            "data": {
+                "auth_token": auth_token,
+                "model_name": model_name,
+                "model_version": model_version,
+            },
         }
 
         return self._send_msg(message)

@@ -15,6 +15,7 @@ from syft.generic.utils import memorize
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.overload import overloaded
+from syft.generic.frameworks.types import FrameworkTensor
 from syft.workers.abstract import AbstractWorker
 
 from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 import (
@@ -22,6 +23,42 @@ from syft_proto.frameworks.torch.tensors.interpreters.v1.additive_shared_pb2 imp
 )
 
 no_wrap = {"no_wrap": True}
+
+
+def check_if_op_with_zero(operation):
+    """
+    Decorator to check if an operation is made between a self and a other which
+    is a zero value. If so, then shares of zeros should be added to refresh the
+    result, as multiplying with zero destroys the shares.
+    """
+
+    def zero_check(self_, other, *args, **kwargs):
+        value = other
+        if isinstance(value, FrameworkTensor) and value.is_wrapper:
+            value = value.child
+        if isinstance(value, sy.FixedPrecisionTensor):
+            value = value.child
+        if isinstance(value, (sy.PointerTensor, sy.MultiPointerTensor)):
+            # The real check might be intrusive so we chose the safest option
+            # other_is_zero = list((value == 0).get())[0]
+            other_is_zero = True
+        else:
+            other_is_zero = value == 0
+        if not isinstance(other_is_zero, bool):
+            other_is_zero = other_is_zero.any()
+        if not isinstance(other_is_zero, (bool, torch.BoolTensor)):
+            raise ValueError("Should be a boolean:", other_is_zero)
+
+        result = operation(self_, other, *args, **kwargs)
+
+        # Need to refresh shares
+        if other_is_zero:
+            zero = self_.zero(result.shape)
+            result = result + zero
+
+        return result
+
+    return zero_check
 
 
 class AdditiveSharingTensor(AbstractTensor):
@@ -556,6 +593,7 @@ class AdditiveSharingTensor(AbstractTensor):
 
         return shares
 
+    @check_if_op_with_zero
     @overloaded.method
     def _public_mul(self, shares, other, equation):
         """Multiplies an AdditiveSharingTensor with a non-private value
@@ -581,28 +619,7 @@ class AdditiveSharingTensor(AbstractTensor):
                 worker: (self.modulo(cmd(share, other[worker]))) for worker, share in shares.items()
             }
         else:
-            other_is_zero = False
-            if isinstance(other, (torch.LongTensor, torch.IntTensor)):
-                if (other == 0).any():
-                    other_is_zero = True
-            elif other == 0:
-                other_is_zero = True
-
-            if other_is_zero:
-                res = {}
-                first_it = True
-
-                for worker, share in shares.items():
-                    cmd_res = cmd(share, other)
-                    if first_it:
-                        first_it = False
-                        zero_shares = self.zero(cmd_res.shape).child
-                    res[worker] = self.modulo(cmd(share, other) + zero_shares[worker])
-                return res
-            else:
-                return {
-                    worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()
-                }
+            return {worker: (self.modulo(cmd(share, other))) for worker, share in shares.items()}
 
     def mul(self, other):
         """Multiplies two tensors together
@@ -612,6 +629,8 @@ class AdditiveSharingTensor(AbstractTensor):
             other: another AdditiveSharingTensor, or a MultiPointerTensor, or an integer
         """
         if not isinstance(other, sy.AdditiveSharingTensor):
+            if isinstance(other, FrameworkTensor):
+                other = other.wrap()
             return self._public_mul(other, "mul")
 
         return self._private_mul(other, "mul")
@@ -1088,29 +1107,31 @@ class AdditiveSharingTensor(AbstractTensor):
         handle_function_command of the type of the child attributes, get the
         response and replace a Syft Tensor on top of all tensors found in
         the response.
-
         Args:
             command: instruction of a function command: (command name,
             <no self>, arguments[, kwargs_])
-
         Returns:
             the response of the function command
         """
-        cmd, _, args_, kwargs_ = command
+        cmd_name, _, args_, kwargs_ = command
 
         # Check that the function has not been overwritten
+        cmd = None
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
+            cmd = cls.rgetattr(cls, cmd_name)
         except AttributeError:
             pass
-        if not isinstance(cmd, str):
+
+        if cmd is not None:
             return cmd(*args_, **kwargs_)
 
         tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Replace all SyftTensors with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         results = {}
         for worker, share in new_args[0].items():
@@ -1118,14 +1139,14 @@ class AdditiveSharingTensor(AbstractTensor):
             new_args_worker = tuple(AdditiveSharingTensor.select_worker(new_args, worker))
 
             # build the new command
-            new_command = (cmd, None, new_args_worker, new_kwargs)
+            new_command = (cmd_name, None, new_args_worker, new_kwargs)
 
             # Send it to the appropriate class and get the response
             results[worker] = new_type.handle_func_command(new_command)
 
         # Put back AdditiveSharingTensor on the tensors found in the response
         response = hook_args.hook_response(
-            cmd, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+            cmd_name, results, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
         return response

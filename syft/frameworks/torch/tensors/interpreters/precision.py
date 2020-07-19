@@ -781,30 +781,35 @@ class FixedPrecisionTensor(AbstractTensor):
         <no self>, arguments[, kwargs_])
         :return: the response of the function command
         """
-        cmd, _, args_, kwargs_ = command
+        cmd_name, _, args_, kwargs_ = command
 
         tensor = args_[0] if not isinstance(args_[0], (tuple, list)) else args_[0][0]
 
         # Check that the function has not been overwritten
+        cmd = None
         try:
             # Try to get recursively the attributes in cmd = "<attr1>.<attr2>.<attr3>..."
-            cmd = cls.rgetattr(cls, cmd)
-            return cmd(*args_, **kwargs_)
+            cmd = cls.rgetattr(cls, cmd_name)
         except AttributeError:
             pass
 
+        if cmd is not None:
+            return cmd(*args_, **kwargs_)
+
         # Replace all FixedPrecisionTensor with their child attribute
-        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(cmd, args_, kwargs_)
+        new_args, new_kwargs, new_type = hook_args.unwrap_args_from_function(
+            cmd_name, args_, kwargs_
+        )
 
         # build the new command
-        new_command = (cmd, None, new_args, new_kwargs)
+        new_command = (cmd_name, None, new_args, new_kwargs)
 
         # Send it to the appropriate class and get the response
         response = new_type.handle_func_command(new_command)
 
         # Put back FixedPrecisionTensor on the tensors found in the response
         response = hook_args.hook_response(
-            cmd, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
+            cmd_name, response, wrap_type=cls, wrap_args=tensor.get_class_attributes()
         )
 
         return response
@@ -846,6 +851,14 @@ class FixedPrecisionTensor(AbstractTensor):
         Performs an inplace call to share. The FixedPrecisionTensor returned is therefore the same,
         contrary to the classic share version
         """
+        dtype = kwargs.get("dtype")
+        if dtype is None:
+            kwargs["dtype"] = self.dtype
+        else:
+            assert (
+                dtype == self.dtype
+            ), "When sharing a FixedPrecisionTensor, the dtype of the resulting AdditiveSharingTensor \
+                must be the same as the one of the original tensor"
         self.child = self.child.share_(*args, no_wrap=True, **kwargs)
         return self
 

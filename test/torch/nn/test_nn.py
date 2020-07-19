@@ -35,33 +35,25 @@ def test_conv2d(workers):
     mkldnn_enabled_init = torch._C._get_mkldnn_enabled()
     torch._C._set_mkldnn_enabled(False)
 
-    # Direct Import from Syft
-    model = syft_nn.Conv2d(1, 2, 3, bias=True)
-    model_1 = nn.Conv2d(1, 2, 3, bias=True)
-    model.weight = model_1.weight.fix_prec()
-    model.bias = model_1.bias.fix_prec()
-    data = torch.rand(10, 1, 28, 28)  # eg. mnist data
-
-    out = model(data.fix_prec()).float_prec()
-    out_1 = model_1(data)
-
-    assert torch.allclose(out, out_1, atol=1e-2)
+    model = nn.Conv2d(1, 2, 3, bias=True)
+    data = torch.rand(5, 1, 7, 7)
+    expected = model(data)
 
     # Fixed Precision Tensor
-    model_2 = model_1.copy().fix_prec()
-    out_2 = model_2(data.fix_prec()).float_prec()
+    model_2 = model.copy().fix_prec()
+    out = model_2(data.fix_prec()).float_prec()
 
     # Note: absolute tolerance can be reduced by increasing precision_fractional of fix_prec()
-    assert torch.allclose(out_1, out_2, atol=1e-2)
+    assert torch.allclose(out, expected, atol=1e-2)
 
     # Additive Shared Tensor
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     shared_data = data.fix_prec().share(bob, alice, crypto_provider=james)
 
-    mode_3 = model_2.share(bob, alice, crypto_provider=james)
-    out_3 = mode_3(shared_data).get().float_prec()
+    model_3 = model_2.share(bob, alice, crypto_provider=james)
+    out = model_3(shared_data).get().float_prec()
 
-    assert torch.allclose(out_1, out_3, atol=1e-2)
+    assert torch.allclose(out, expected, atol=1e-2)
 
     # Reset mkldnn to the original state
     torch._C._set_mkldnn_enabled(mkldnn_enabled_init)
