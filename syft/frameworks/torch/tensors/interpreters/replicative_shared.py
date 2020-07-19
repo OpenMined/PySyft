@@ -101,7 +101,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
-        x, y = self.get_pointers_map(self, secret)
+        x, y = self.get_pointer_map(self, secret)
         for player in x.keys():
             z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
@@ -115,10 +115,10 @@ class ReplicatedSharingTensor(AbstractTensor):
         return True
 
     def get_players(self):
-        return list(self.get_pointers_map(self).keys())
+        return list(self.get_pointer_map(self).keys())
 
     @staticmethod
-    def get_pointers_map(*secrets):
+    def get_pointer_map(*secrets):
         """pointer_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
         pointers_maps = [secret.child for secret in secrets]
         return pointers_maps if len(pointers_maps) > 1 else pointers_maps[0]
