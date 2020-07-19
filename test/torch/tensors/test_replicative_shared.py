@@ -64,3 +64,10 @@ def test_public_sub(workers):
     x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
     y = 3
     assert x.sub(y).reconstruct() == 4
+
+
+def test_negative_result(workers):
+    bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    x = torch.tensor(7).share(bob, alice, james, protocol="falcon")
+    y = torch.tensor(3).share(bob, alice, james, protocol="falcon")
+    assert y.sub(x).reconstruct() == -4

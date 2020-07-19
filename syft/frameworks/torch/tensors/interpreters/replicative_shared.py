@@ -40,7 +40,8 @@ class ReplicatedSharingTensor(AbstractTensor):
     def reconstruct(self):
         shares_locations = self.child
         shares = self.__retrieve_shares(shares_locations)
-        plain_text = self.__sum_shares(shares)
+        plain_text_mod = self.__sum_shares(shares)
+        plain_text = self.__map_modular_to_real(plain_text_mod)
         return plain_text
 
     @staticmethod
@@ -55,16 +56,14 @@ class ReplicatedSharingTensor(AbstractTensor):
     def __sum_shares(self, shares):
         return sum(shares) % self.ring_size
 
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        type_name = type(self).__name__
-        out = f"[" f"{type_name}]"
-        if self.child is not None:
-            for v in self.child.values():
-                out += "\n\t-> " + str(v)
-        return out
+    def __map_modular_to_real(self, mod_number):
+        """In a modular ring, a number x is mapped to negative
+         real number ]0,-∞[ iff x > ring_size/2 """
+        if mod_number > self.ring_size // 2:
+            real_number = mod_number - self.ring_size
+        else:
+            real_number = mod_number
+        return real_number
 
     def add(self, y):
         if isinstance(y, (int, float, torch.Tensor)):
@@ -126,5 +125,17 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     @staticmethod
     def get_pointers_map(*secrets):
+        """pointer_map: dict(worker i : (pointer_to_share i, pointer_to_share i+1)"""
         pointers_maps = [secret.child for secret in secrets]
         return pointers_maps if len(pointers_maps) > 1 else pointers_maps[0]
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        type_name = type(self).__name__
+        out = f"[" f"{type_name}]"
+        if self.child is not None:
+            for v in self.child.values():
+                out += "\n\t-> " + str(v)
+        return out
