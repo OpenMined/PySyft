@@ -2,6 +2,7 @@ import torch
 from syft.generic.abstract.tensor import AbstractTensor
 import random
 import syft
+from operator import add, sub
 
 
 class ReplicatedSharingTensor(AbstractTensor):
@@ -15,7 +16,7 @@ class ReplicatedSharingTensor(AbstractTensor):
     def share_secret(self, secret, workers):
         number_of_shares = len(workers)
         shares = self.generate_shares(secret, number_of_shares)
-        shares_locations = self.distribute_shares(workers, shares)
+        shares_locations = self.__distribute_shares(workers, shares)
         self.child = shares_locations
         return self
 
@@ -27,7 +28,7 @@ class ReplicatedSharingTensor(AbstractTensor):
         return shares
 
     @staticmethod
-    def distribute_shares(workers, shares):
+    def __distribute_shares(workers, shares):
         shares_locations = {}
         assert len(workers) == len(shares)
         for i in range(len(shares)):
@@ -38,12 +39,12 @@ class ReplicatedSharingTensor(AbstractTensor):
 
     def reconstruct(self):
         shares_locations = self.child
-        shares = self.retrieve_shares(shares_locations)
-        plain_text = self.sum_shares(shares)
+        shares = self.__retrieve_shares(shares_locations)
+        plain_text = self.__sum_shares(shares)
         return plain_text
 
     @staticmethod
-    def retrieve_shares(shares_locations):
+    def __retrieve_shares(shares_locations):
         shares = []
         pointers = list(shares_locations.values())
         for pointer_double in pointers:
@@ -51,7 +52,7 @@ class ReplicatedSharingTensor(AbstractTensor):
             shares.append(share0)
         return shares
 
-    def sum_shares(self, shares):
+    def __sum_shares(self, shares):
         return sum(shares) % self.ring_size
 
     def __repr__(self):
@@ -72,37 +73,58 @@ class ReplicatedSharingTensor(AbstractTensor):
             return self.private_add(y)
         else:
             raise ValueError(
-                "ReplicatedSharingTensor can only be added to int, float, torch tensor, or ReplicatedSharingTensor"
+                "ReplicatedSharingTensor can only be added to"
+                " int, float, torch tensor, or ReplicatedSharingTensor"
             )
 
     def public_add(self, plain_text):
-        players = self.get_players(self)
         plain_text = torch.tensor(plain_text)
+        players = self.get_players()
         y = syft.ReplicatedSharingTensor().share_secret(plain_text, players)
         z = self.private_add(y)
         return z
 
     def private_add(self, secret):
+        return self.linear_operation(secret, add)
+
+    def sub(self, y):
+        if isinstance(y, (int, float, torch.Tensor)):
+            return self.public_sub(y)
+        elif isinstance(y, syft.ReplicatedSharingTensor):
+            return self.private_sub(y)
+        else:
+            raise ValueError(
+                "ReplicatedSharingTensor can only be added to"
+                " int, float, torch tensor, or ReplicatedSharingTensor"
+            )
+
+    def public_sub(self, y):
+        return self.add(-y)
+
+    def private_sub(self, secret):
+        return self.linear_operation(secret, sub)
+
+    def linear_operation(self, secret, operator):
         if not self.verify_matching_players(secret):
             raise ValueError("Shares must be distributed among same parties")
         z = {}
-        x, y = self.get_shares_pointers(self, secret)
+        x, y = self.get_pointers_map(self, secret)
         for player in x.keys():
-            z[player] = (x[player][0] + y[player][0], x[player][1] + y[player][1])
+            z[player] = (operator(x[player][0], y[player][0]), operator(x[player][1], y[player][1]))
         return ReplicatedSharingTensor(z)
 
     def verify_matching_players(self, *secrets):
-        players_set_0 = self.get_players(self)
+        players_set_0 = self.get_players()
         for secret in secrets:
-            players_set_i = self.get_players(secret)
+            players_set_i = secret.get_players()
             if players_set_i != players_set_0:
                 return False
         return True
 
-    def get_players(self, secret):
-        return list(self.get_shares_pointers(secret).keys())
+    def get_players(self):
+        return list(self.get_pointers_map(self).keys())
 
     @staticmethod
-    def get_shares_pointers(*secrets):
-        pointers_dict = [secret.child for secret in secrets]
-        return pointers_dict if len(pointers_dict) > 1 else pointers_dict[0]
+    def get_pointers_map(*secrets):
+        pointers_maps = [secret.child for secret in secrets]
+        return pointers_maps if len(pointers_maps) > 1 else pointers_maps[0]
