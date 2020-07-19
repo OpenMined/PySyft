@@ -57,24 +57,14 @@ class ReplicatedSharingTensor(AbstractTensor):
         return sum(shares) % self.ring_size
 
     def __map_modular_to_real(self, mod_number):
-        """In a modular ring, a number x is mapped to negative
+        """In a modular ring, a number x is mapped to a negative
          real number ]0,-∞[ iff x > ring_size/2 """
-        if mod_number > self.ring_size // 2:
-            real_number = mod_number - self.ring_size
-        else:
-            real_number = mod_number
+        element_wise_comparison = mod_number > self.ring_size // 2
+        real_number = (element_wise_comparison * -self.ring_size) + mod_number
         return real_number
 
     def add(self, y):
-        if isinstance(y, (int, float, torch.Tensor)):
-            return self.public_add(y)
-        elif isinstance(y, syft.ReplicatedSharingTensor):
-            return self.private_add(y)
-        else:
-            raise ValueError(
-                "ReplicatedSharingTensor can only be added to"
-                " int, float, torch tensor, or ReplicatedSharingTensor"
-            )
+        return self.switch_public_private(y, self.public_add, self.private_add)
 
     def public_add(self, plain_text):
         plain_text = torch.tensor(plain_text)
@@ -87,21 +77,25 @@ class ReplicatedSharingTensor(AbstractTensor):
         return self.linear_operation(secret, add)
 
     def sub(self, y):
-        if isinstance(y, (int, float, torch.Tensor)):
-            return self.public_sub(y)
-        elif isinstance(y, syft.ReplicatedSharingTensor):
-            return self.private_sub(y)
-        else:
-            raise ValueError(
-                "ReplicatedSharingTensor can only be added to"
-                " int, float, torch tensor, or ReplicatedSharingTensor"
-            )
+        return self.switch_public_private(y, self.public_sub, self.private_sub)
 
     def public_sub(self, y):
         return self.add(-y)
 
     def private_sub(self, secret):
         return self.linear_operation(secret, sub)
+
+    @staticmethod
+    def switch_public_private(y, public, private):
+        if isinstance(y, (int, float, torch.Tensor)):
+            return public(y)
+        elif isinstance(y, syft.ReplicatedSharingTensor):
+            return private(y)
+        else:
+            raise ValueError(
+                "ReplicatedSharingTensor can only be added to"
+                " int, float, torch tensor, or ReplicatedSharingTensor"
+            )
 
     def linear_operation(self, secret, operator):
         if not self.verify_matching_players(secret):
