@@ -113,11 +113,8 @@ def test_rnn_plan_example():
         def init_hidden(self, batch_size):
             return self.rnn.init_hidden(batch_size)
 
-        # Compute embeddings separately because Plan building requires float tensors as input.
-        def embed(self, x):
-            return self.encoder(x)
-
-        def forward(self, embeddings, hidden=None):
+        def forward(self, x, hidden=None):
+            embeddings = self.encoder(x)
             output, hidden = self.rnn(embeddings, hidden)
             output = self.decoder(output)
             return output, hidden
@@ -190,8 +187,6 @@ def test_rnn_plan_example():
     vocab_size = model.vocab_size
     # Data has the index of the word in a vocabulary.
     data = th.randint(0, vocab_size, (sequence_length, batch_size))
-    # Compute embeddings separately because Plan building requires float tensors as input.
-    data = model.embed(data)
 
     # Test the model with no default hidden state.
     output, hidden = model(data)
@@ -224,6 +219,14 @@ def test_rnn_plan_example():
         data, initial_hidden, targets, lr, batch_size, model_state
     )
 
+    # Translate Plan to torchscript
+    print("Translating Plan to Torchscript")
+    train.add_translation(PlanTranslatorTorchscript)
+    print("Running Torchscript Plan")
+    loss_ts, acc_ts, *params_ts = train.torchscript(
+        data, initial_hidden, targets, lr, batch_size, model_state
+    )
+
     # Tests
     loss, acc = loss_torch, acc_torch
     assert loss is not None
@@ -236,6 +239,8 @@ def test_rnn_plan_example():
     # Outputs should be equal
     assert th.allclose(loss_torch, loss_syft), f"loss torch {loss_torch} != loss syft {loss_syft}"
     assert th.allclose(acc_torch, acc_syft), "acc torch/syft"
+    assert th.allclose(loss_torch, loss_ts), f"loss torch {loss_torch} != loss ts {loss_ts}"
+    assert th.allclose(acc_torch, acc_ts), "acc torch/ts"
     for i, param_torch in enumerate(params_torch):
         if i == 0:
             # Skip Embedded weights comparison
@@ -243,11 +248,6 @@ def test_rnn_plan_example():
         assert th.allclose(
             param_torch, params_syft[i]
         ), f"param {i} (out_{i + 3}) torch/syft. {th.abs(param_torch - params_syft[i]).max()}"
-
-    # Translate Plan to Torchscript
-    print("Translating Plan to Torchscript")
-    train.add_translation(PlanTranslatorTorchscript)
-    print("Running Torchscript Plan")
-    loss_ts, acc_ts, *params_ts = train.torchscript(
-        data, initial_hidden, targets, lr, batch_size, model_state
-    )
+        assert th.allclose(
+            param_torch, params_ts[i]
+        ), f"param {i} (out_{i + 3}) torch/ts. {th.abs(param_torch - params_ts[i]).max()}"
