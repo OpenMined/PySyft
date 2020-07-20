@@ -40,8 +40,9 @@ class func2plan(object):
     This class should be used only as a decorator.
     """
 
-    def __init__(self, args_shape=None, state=None, trace_autograd=False):
+    def __init__(self, args_shape=None, state=None, trace_autograd=False, args_types=()):
         self.args_shape = args_shape
+        self.args_types = args_types
         self.state_tensors = state or ()
         # include_state is used to distinguish if the initial plan is a function or a class:
         # if it's a function, then the state should be provided in the args, so include_state
@@ -62,7 +63,7 @@ class func2plan(object):
 
         # Build the plan automatically
         if self.args_shape:
-            args_ = PlaceHolder.create_placeholders(self.args_shape)
+            args_ = PlaceHolder.create_placeholders(self.args_shape, self.args_types)
             try:
                 plan.build(*args_, trace_autograd=self.trace_autograd)
             except TypeError as e:
@@ -463,7 +464,7 @@ class Plan(AbstractSendable):
         def create_dummy(input_type, input_placeholder):
             if issubclass(input_type, FrameworkTensor):
                 tensors = PlaceHolder.create_placeholders(
-                    [input_placeholder.expected_shape], [input_placeholder.expected_type]
+                    [input_placeholder.expected_shape], [input_placeholder.expected_dtype]
                 )
                 var = tensors[0]
                 if input_type != type(var):

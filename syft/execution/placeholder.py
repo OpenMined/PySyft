@@ -1,3 +1,5 @@
+from itertools import zip_longest
+
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.abstract.tensor import AbstractTensor
@@ -14,7 +16,7 @@ class PlaceHolder(AbstractTensor):
         tags: set = None,
         description: str = None,
         shape=None,
-        expected_type=None,
+        expected_dtype=None,
     ):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
@@ -31,7 +33,7 @@ class PlaceHolder(AbstractTensor):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
 
         self.expected_shape = tuple(shape) if shape is not None else None
-        self.expected_type = expected_type
+        self.expected_dtype = expected_dtype
         self.child = None
         self.role = role
         self.tracing = tracing
@@ -130,7 +132,7 @@ class PlaceHolder(AbstractTensor):
             self.expected_shape = tuple(self.child.shape)
 
         if hasattr(self.child, "dtype"):
-            self.expected_type = self.child.dtype
+            self.expected_dtype = self.child.dtype
 
         return self
 
@@ -263,7 +265,7 @@ class PlaceHolder(AbstractTensor):
             tracing=self.tracing,
             tags=self.tags,
             shape=self.expected_shape,
-            expected_type=self.expected_type,
+            expected_dtype=self.expected_dtype,
         )
         placeholder.child = self.child
 
@@ -311,7 +313,7 @@ class PlaceHolder(AbstractTensor):
         return current_level
 
     @staticmethod
-    def create_placeholders(args_shape, args_types=()):
+    def create_placeholders(args_shape, args_dtypes=()):
         """ Helper method to create a list of placeholders with shapes
         in args_shape.
         """
@@ -325,10 +327,8 @@ class PlaceHolder(AbstractTensor):
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [
-            syft.framework.hook.create_zeros(
-                shape, dtype=args_types[i] if i < len(args_types) else None, requires_grad=False
-            )
-            for i, shape in enumerate(mapped_shapes)
+            syft.framework.hook.create_zeros(shape, dtype=dtype, requires_grad=False)
+            for shape, dtype in zip_longest(mapped_shapes, args_dtypes)
         ]
 
     @staticmethod
