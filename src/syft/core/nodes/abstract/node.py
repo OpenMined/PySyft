@@ -41,7 +41,7 @@ class Node(AbstractNode):
         self.store = ObjectStore()
         self.msg_router = {}
         # bootstrap
-        self.network = self._fetch_network()
+        self.network = self._fetch_visible_surrounding()
         self.specs = self._learn_my_specs()
 
         self.services_registered = False
@@ -49,7 +49,7 @@ class Node(AbstractNode):
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         try:
-            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
+            return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -65,9 +65,6 @@ class Node(AbstractNode):
                     )
 
                 raise e
-        if self.shoud_forward(processed):
-            self.forward_message(processed)
-        return processed
 
     # TODO: change services type  to List[NodeService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
