@@ -322,7 +322,7 @@ class Role(SyftSerializable):
         elif isinstance(action.target, PlaceholderId):
             ph = self.placeholders.get(action.target.value, None)
             if ph is not None:
-                framework_name = ph.child.__module__
+                framework_name = ph.child.__module__.split('.')[0]
                 return getattr(syft, framework_name, syft.framework)
 
         return None
