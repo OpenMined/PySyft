@@ -12,7 +12,6 @@ class StorableObject(Serializable):
     description: Optional[str]
     tags: Optional[List[str]]
 
-
     def get_serialization_schemas(self):
         return {
             SerializationProtocol.ProtoBuffers: None,
