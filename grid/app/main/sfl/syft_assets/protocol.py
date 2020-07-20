@@ -2,13 +2,14 @@ from ... import db
 
 
 class Protocol(db.Model):
-    """ Protocol table that represents Syft Protocols.
-        Columns:
-            id (Integer, Primary Key): Protocol ID.
-            name (String): protocol name.
-            value: String  (List of operations)
-            value_ts: String (TorchScript)
-            fl_process_id (Integer, Foreign Key) : Reference to FL Process.
+    """Protocol table that represents Syft Protocols.
+
+    Columns:
+        id (Integer, Primary Key): Protocol ID.
+        name (String): protocol name.
+        value: String  (List of operations)
+        value_ts: String (TorchScript)
+        fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
     __tablename__ = "__protocol__"

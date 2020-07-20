@@ -2,14 +2,15 @@ from ... import db
 
 
 class Worker(db.Model):
-    """ Web / Mobile worker table.
-        Columns:
-            id (String, Primary Key): Worker's ID.
-            format_preference (String): either "list" or "ts"
-            ping (Int): Ping rate.
-            avg_download (Int): Download rate.
-            avg_upload (Int): Upload rate.
-            worker_cycles (WorkerCycle): Relationship between workers and cycles (One to many).
+    """Web / Mobile worker table.
+
+    Columns:
+        id (String, Primary Key): Worker's ID.
+        format_preference (String): either "list" or "ts"
+        ping (Int): Ping rate.
+        avg_download (Int): Download rate.
+        avg_upload (Int): Upload rate.
+        worker_cycles (WorkerCycle): Relationship between workers and cycles (One to many).
     """
 
     __tablename__ = "__worker__"

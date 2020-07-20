@@ -1,14 +1,14 @@
 # PyGrid imports
-from ..models.ai_model import Model, ModelCheckPoint
-from ...storage.warehouse import Warehouse
-from ...exceptions import ModelNotFoundError
-
 # Syft dependencies
 import syft as sy
+from syft.execution.placeholder import PlaceHolder
 from syft.execution.state import State
 from syft.serde import protobuf
 from syft_proto.execution.v1.state_pb2 import State as StatePB
-from syft.execution.placeholder import PlaceHolder
+
+from ...core.exceptions import ModelNotFoundError
+from ...storage.warehouse import Warehouse
+from ..models.ai_model import Model, ModelCheckPoint
 
 
 class ModelManager:
@@ -28,12 +28,13 @@ class ModelManager:
         return _model_obj
 
     def save(self, model_id: str, data: bin):
-        """ Create a new model checkpoint.
-            Args:
-                model_id: Model ID.
-                data: Model data.
-            Returns:
-                model_checkpoint: ModelCheckpoint instance.
+        """Create a new model checkpoint.
+
+        Args:
+            model_id: Model ID.
+            data: Model data.
+        Returns:
+            model_checkpoint: ModelCheckpoint instance.
         """
 
         checkpoints_count = self._model_checkpoints.count(model_id=model_id)
@@ -53,7 +54,7 @@ class ModelManager:
         return new_checkpoint
 
     def load(self, **kwargs):
-        """ Load model's Checkpoint. """
+        """Load model's Checkpoint."""
         _check_point = self._model_checkpoints.last(**kwargs)
 
         if not _check_point:
@@ -62,13 +63,14 @@ class ModelManager:
         return _check_point
 
     def get(self, **kwargs):
-        """ Retrieve the model instance object.
-            Args:
-                process_id : Federated Learning Process ID attached to this model.
-            Returns:
-                model : SQL Model Object.
-            Raises:
-                ModelNotFoundError (PyGridError) : If model not found.
+        """Retrieve the model instance object.
+
+        Args:
+            process_id : Federated Learning Process ID attached to this model.
+        Returns:
+            model : SQL Model Object.
+        Raises:
+            ModelNotFoundError (PyGridError) : If model not found.
         """
         _model = self._models.last(**kwargs)
 
@@ -79,7 +81,7 @@ class ModelManager:
 
     @staticmethod
     def serialize_model_params(params):
-        """Serializes list of tensors into State/protobuf"""
+        """Serializes list of tensors into State/protobuf."""
         model_params_state = State(
             state_placeholders=[PlaceHolder().instantiate(param) for param in params],
         )
@@ -94,7 +96,8 @@ class ModelManager:
 
     @staticmethod
     def unserialize_model_params(bin: bin):
-        """Unserializes model or checkpoint or diff stored in db to list of tensors"""
+        """Unserializes model or checkpoint or diff stored in db to list of
+        tensors."""
         state = StatePB()
         state.ParseFromString(bin)
         worker = sy.VirtualWorker(hook=None)

@@ -1,7 +1,6 @@
 import os
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 # Utility function to read the README file.
@@ -13,7 +12,7 @@ def read(fname):
 
 
 def get_requirements(req_file):
-    """Read requirements file and return packages and git repos separately"""
+    """Read requirements file and return packages and git repos separately."""
     requirements = []
     dependency_links = []
     lines = read(req_file).split("\n")

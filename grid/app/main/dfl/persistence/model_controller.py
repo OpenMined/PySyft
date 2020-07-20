@@ -3,16 +3,17 @@ from typing import Dict
 
 # External imports
 from syft import Plan
-from syft.serde import deserialize
 from syft.codes import RESPONSE_MSG
+from syft.serde import deserialize
+
+from ...core.codes import MSG_FIELD
 
 # Local imports
 from .model_storage import ModelStorage
-from ...codes import MSG_FIELD
 
 
 class ModelController:
-    """ Controller Design Pattern to manage models on database/cache. """
+    """Controller Design Pattern to manage models on database/cache."""
 
     # Error Messages
     ID_CONFLICT_MSG = "Model id already exists."
@@ -31,17 +32,18 @@ class ModelController:
         allow_remote_inference: bool,
         mpc: bool = False,
     ) -> Dict:
-        """ Map and Save the desired model at database/cache.
-            If persistent mode isn't enable, this model will be saved in cache memory.
-            Args:
-                worker: Worker that owns this model.
-                serialized_model: Model serialized.
-                model_id: Model's ID.
-                allow_download: Flag to enable/disable download.
-                allow_remote_inference: Flag to enable/disable remote inference.
-                mpc: Flag used to identify if it is an encrypted model.
-            Returns:
-                response_msg: Dict response message.
+        """Map and Save the desired model at database/cache.
+
+        If persistent mode isn't enable, this model will be saved in cache memory.
+        Args:
+            worker: Worker that owns this model.
+            serialized_model: Model serialized.
+            model_id: Model's ID.
+            allow_download: Flag to enable/disable download.
+            allow_remote_inference: Flag to enable/disable remote inference.
+            mpc: Flag used to identify if it is an encrypted model.
+        Returns:
+            response_msg: Dict response message.
         """
         storage = self.get_storage(worker)
 
@@ -61,13 +63,14 @@ class ModelController:
         }
 
     def get(self, worker, model_id: str) -> Dict:
-        """ Map and retrieves model from cache/database by model_id.
-            If persistent mode isn't enable, this model will be searched only in the cache memory.
-            Args:
-                worker: Worker that owns this model.
-                model_id: Model's ID.
-            Returns:
-                response_msg: Dict response message.
+        """Map and retrieves model from cache/database by model_id.
+
+        If persistent mode isn't enable, this model will be searched only in the cache memory.
+        Args:
+            worker: Worker that owns this model.
+            model_id: Model's ID.
+        Returns:
+            response_msg: Dict response message.
         """
         storage = self.get_storage(worker)
         if storage.contains(model_id):
@@ -82,12 +85,13 @@ class ModelController:
             }
 
     def delete(self, worker, model_id: str) -> Dict:
-        """ Delete the specific model from cache/database.
-            Args:
-                worker: Worker that owns this model.
-                model_id: Model's ID
-            Returns:
-                response_msg: Dict response message.
+        """Delete the specific model from cache/database.
+
+        Args:
+            worker: Worker that owns this model.
+            model_id: Model's ID
+        Returns:
+            response_msg: Dict response message.
         """
         storage = self.get_storage(worker)
 
@@ -104,23 +108,25 @@ class ModelController:
         return response
 
     def models(self, worker) -> Dict:
-        """ Retrieves a list of model ids hosted by this worker.
-            If persistent mode isn't enable,
-            this method won't return model id's stored in the database.
-            Args:
-                worker: Worker that owns this model.
-            Returns:
-                response_msg: Dict response message.
+        """Retrieves a list of model ids hosted by this worker.
+
+        If persistent mode isn't enable,
+        this method won't return model id's stored in the database.
+        Args:
+            worker: Worker that owns this model.
+        Returns:
+            response_msg: Dict response message.
         """
         storage = self.get_storage(worker)
         return {RESPONSE_MSG.SUCCESS: True, RESPONSE_MSG.MODELS: storage.models}
 
     def get_storage(self, worker) -> ModelStorage:
-        """ Returns the storage instance of an specific worker.
-            Args:
-                worker: Owner of this storage.
-            Returns:
-                storage: Worker's model Storage instance.
+        """Returns the storage instance of an specific worker.
+
+        Args:
+            worker: Owner of this storage.
+        Returns:
+            storage: Worker's model Storage instance.
         """
         if worker.id in self.model_storages:
             storage = self.model_storages[worker.id]
@@ -129,11 +135,12 @@ class ModelController:
         return storage
 
     def _new_storage(self, worker) -> ModelStorage:
-        """ Create a new storage instance.
-            Args:
-                worker: Worker that will own this instance.
-            Returns:
-                new_storage: New storage instance.
+        """Create a new storage instance.
+
+        Args:
+            worker: Worker that will own this instance.
+        Returns:
+            new_storage: New storage instance.
         """
         new_storage = ModelStorage(worker)
         self.model_storages[worker.id] = new_storage

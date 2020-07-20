@@ -1,13 +1,14 @@
 # Standard Python imports
 import uuid
 
+import syft as sy
+
 # External imports
 from flask_login import UserMixin
-import syft as sy
 
 # Local imports
 from ... import hook, local_worker
-from ...codes import MSG_FIELD
+from ...core.codes import MSG_FIELD
 
 
 class UserSession(UserMixin):
@@ -15,11 +16,11 @@ class UserSession(UserMixin):
     NAMESPACE_DNS = "openmined.org"
 
     def __init__(self, user, active=True):
-        """ Handle session with User Authentication.
+        """Handle session with User Authentication.
 
-            Args:
-                user : User instance.
-                active (bool) : Session state.
+        Args:
+            user : User instance.
+            active (bool) : Session state.
         """
         self.id = uuid.uuid5(uuid.NAMESPACE_DNS, UserSession.NAMESPACE_DNS)
         self.user = user  # PySyft Account Credential object
@@ -34,53 +35,53 @@ class UserSession(UserMixin):
         self.active = True
 
     def get_id(self) -> int:
-        """ Get Session ID.
+        """Get Session ID.
 
-            Returns:
-                ID: Session's ID.
+        Returns:
+            ID: Session's ID.
         """
         return self.id
 
     def save_tensor_request(self, request_msg: tuple) -> None:
-        """ Save tensor request at user's request list.
+        """Save tensor request at user's request list.
 
-            Args:
-                request_msg (tuple) : Tuple structure containing tensor id, credentials and reason.
+        Args:
+            request_msg (tuple) : Tuple structure containing tensor id, credentials and reason.
         """
         self.tensor_requests.append(request_msg)
 
     @property
     def worker(self) -> sy.VirtualWorker:
-        """ Get Worker used by current session.
+        """Get Worker used by current session.
 
-            Returns:
-                node (VirtualWorker) : Worker used by this session.
+        Returns:
+            node (VirtualWorker) : Worker used by this session.
         """
         return self.node
 
     def username(self) -> str:
-        """ Get username of this session.
+        """Get username of this session.
 
-            Returns:
-                username (str) : session's username.
+        Returns:
+            username (str) : session's username.
         """
         return self.user.username
 
     def is_active(self) -> bool:
-        """ Get session's state.
+        """Get session's state.
 
-            Returns:
-                session_state (bool) : session's state.
+        Returns:
+            session_state (bool) : session's state.
         """
         return self.active
 
     def authenticate(self, payload: dict) -> bool:
-        """ Verify if payload credentials matches with this user instance.
+        """Verify if payload credentials matches with this user instance.
 
-            Args:
-                payload (dict) : Dict containing user credentials.
-            Returns:
-                result (bool) : Credential verification result.
+        Args:
+            payload (dict) : Dict containing user credentials.
+        Returns:
+            result (bool) : Credential verification result.
         """
         candidate_username = payload.get(MSG_FIELD.USERNAME_FIELD)
         candidate_password = payload.get(MSG_FIELD.PASSWORD_FIELD)

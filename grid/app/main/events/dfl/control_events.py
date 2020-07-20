@@ -3,20 +3,21 @@ import json
 
 # External modules
 from flask_login import login_user
-from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 from syft.codes import RESPONSE_MSG
+from syft.grid.clients.dynamic_fl_client import DynamicFLClient
+
+from ... import hook, local_worker, sy
 
 # Local imports
-from ...codes import MSG_FIELD
-from ... import local_worker, hook, sy
+from ...core.codes import MSG_FIELD
 from ...dfl.auth import authenticated_only, get_session
 
 
 def get_node_infos(message: dict) -> str:
-    """ Returns node id.
+    """Returns node id.
 
-        Returns:
-            response (str) : Response message containing node id.
+    Returns:
+        response (str) : Response message containing node id.
     """
     return json.dumps(
         {
@@ -27,12 +28,12 @@ def get_node_infos(message: dict) -> str:
 
 
 def authentication(message: dict) -> str:
-    """ Receive user credentials and performs user authentication.
+    """Receive user credentials and performs user authentication.
 
-        Args:
-            message (dict) : Dict data structure containing user credentials.
-        Returns:
-            response (str) : Authentication response message.
+    Args:
+        message (dict) : Dict data structure containing user credentials.
+    Returns:
+        response (str) : Authentication response message.
     """
     user = get_session().authenticate(message)
     # If it was authenticated
@@ -46,12 +47,12 @@ def authentication(message: dict) -> str:
 
 
 def connect_grid_nodes(message: dict) -> str:
-    """ Connect remote grid nodes between each other.
+    """Connect remote grid nodes between each other.
 
-        Args:
-            message (dict) :  Dict data structure containing node_id, node address and user credentials(optional).
-        Returns:
-            response (str) : response message.
+    Args:
+        message (dict) :  Dict data structure containing node_id, node address and user credentials(optional).
+    Returns:
+        response (str) : response message.
     """
     if message["id"] not in local_worker._known_workers:
         worker = DynamicFLClient(hook, address=message["address"], id=message["id"])
@@ -60,5 +61,5 @@ def connect_grid_nodes(message: dict) -> str:
 
 @authenticated_only
 def socket_ping(message: dict) -> str:
-    """ Ping request to check node's health state. """
+    """Ping request to check node's health state."""
     return json.dumps({"alive": "True"})

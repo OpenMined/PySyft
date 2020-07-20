@@ -1,20 +1,21 @@
 # Database object controllers
-from ..processes import process_manager
-from ..cycles import cycle_manager
-from ..models import model_manager
-from ..workers import worker_manager
-from ...codes import MSG_FIELD, CYCLE
-from ...exceptions import ProtocolNotFoundError
-
 # Generic imports
 import hashlib
-import uuid
 import logging
+import uuid
 from datetime import datetime
+
+from ...core.codes import CYCLE, MSG_FIELD
+from ...core.exceptions import ProtocolNotFoundError
+from ..cycles import cycle_manager
+from ..models import model_manager
+from ..processes import process_manager
+from ..workers import worker_manager
 
 
 class FLController:
-    """ This class implements controller design pattern over the federated learning processes. """
+    """This class implements controller design pattern over the federated
+    learning processes."""
 
     def __init__(self):
         pass
@@ -66,13 +67,14 @@ class FLController:
         return _process
 
     def last_cycle(self, worker_id: str, name: str, version: str) -> int:
-        """ Retrieve the last time the worker participated from this cycle.
-            Args:
-                worker_id: Worker's ID.
-                name: Federated Learning Process Name.
-                version: Model's version.
-            Return:
-                last_participation: Index of the last cycle assigned to this worker.
+        """Retrieve the last time the worker participated from this cycle.
+
+        Args:
+            worker_id: Worker's ID.
+            name: Federated Learning Process Name.
+            version: Model's version.
+        Return:
+            last_participation: Index of the last cycle assigned to this worker.
         """
         process = process_manager.first(name=name, version=version)
         return cycle_manager.last_participation(process, worker_id)
@@ -174,21 +176,23 @@ class FLController:
             return response
 
     def _generate_hash_key(self, primary_key: str) -> str:
-        """ Generate SHA256 Hash to give access to the cycle.
-            Args:
-                primary_key : Used to generate hash code.
-            Returns:
-                hash_code : Hash in string format.
+        """Generate SHA256 Hash to give access to the cycle.
+
+        Args:
+            primary_key : Used to generate hash code.
+        Returns:
+            hash_code : Hash in string format.
         """
         return hashlib.sha256(primary_key.encode()).hexdigest()
 
     def submit_diff(self, worker_id: str, request_key: str, diff: bin):
-        """ Submit worker model diff to the assigned cycle.
-            Args:
-                worker_id: Worker's ID.
-                request_key: request (token) used by this worker during this cycle.
-                diff: Model params trained by this worker.
-            Raises:
-                ProcessLookupError : If Not found any relation between the worker/cycle.
+        """Submit worker model diff to the assigned cycle.
+
+        Args:
+            worker_id: Worker's ID.
+            request_key: request (token) used by this worker during this cycle.
+            diff: Model params trained by this worker.
+        Raises:
+            ProcessLookupError : If Not found any relation between the worker/cycle.
         """
         return cycle_manager.submit_worker_diff(worker_id, request_key, diff)

@@ -1,19 +1,16 @@
 #!/bin/env python
-"""
-    Grid Gateway is a Flask based application used to manage / monitor / control and route grid workers remotely.
-"""
+"""Grid Gateway is a Flask based application used to manage / monitor / control
+and route grid workers remotely."""
+import argparse
 import os
 import sys
-
-import argparse
-
-from .app import create_app
 
 from gevent import pywsgi
 from geventwebsocket.handler import WebSocketHandler
 
-parser = argparse.ArgumentParser(description="Run PyGrid application.")
+from .app import create_app
 
+parser = argparse.ArgumentParser(description="Run PyGrid application.")
 
 parser.add_argument(
     "--port",
@@ -47,7 +44,6 @@ parser.add_argument(
 parser.add_argument(
     "--id", type=str, help="PyGrid Node ID.", default=os.environ.get("NODE_ID", None),
 )
-
 
 parser.set_defaults(use_test_config=False)
 

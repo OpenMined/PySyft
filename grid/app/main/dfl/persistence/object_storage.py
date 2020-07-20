@@ -1,12 +1,13 @@
 # Standard Python imports
 from typing import Union
 
-# External imports
-from syft.serde import serialize, deserialize
-from syft.generic.frameworks.types import FrameworkTensorType
-from syft.generic.abstract.tensor import AbstractTensor
-from syft.generic.object_storage import ObjectStore
 from syft.exceptions import ObjectNotFoundError
+from syft.generic.abstract.tensor import AbstractTensor
+from syft.generic.frameworks.types import FrameworkTensorType
+from syft.generic.object_storage import ObjectStore
+
+# External imports
+from syft.serde import deserialize, serialize
 from syft.workers.base import BaseWorker
 
 # Local imports
@@ -14,9 +15,10 @@ from .database import db_instance
 
 
 def set_persistent_mode(redis_db):
-    """ Update/Overwrite PySyft ObjectStore to work in a persistent mode.
-        Args:
-            redis_db : Redis database instance.
+    """Update/Overwrite PySyft ObjectStore to work in a persistent mode.
+
+    Args:
+        redis_db : Redis database instance.
     """
 
     # Updated methods
@@ -61,11 +63,12 @@ def set_persistent_mode(redis_db):
 
 
 def recover_objects(worker) -> BaseWorker:
-    """ Retrieves all database objects for a given worker.
-        Args:
-            worker : Worker Instance.
-        Returns:
-            worker: Updated worker instance.
+    """Retrieves all database objects for a given worker.
+
+    Args:
+        worker : Worker Instance.
+    Returns:
+        worker: Updated worker instance.
     """
     if db_instance():
         raw_objs = db_instance().hgetall(worker.id)

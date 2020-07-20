@@ -1,6 +1,8 @@
-venv: venv/bin/activate
-
+# Global environment variables.
 REQ_DIR=pip-dep
+PYTHON_MODULE_PATH=grid
+
+venv: venv/bin/activate
 
 reqs: $(REQ_DIR)/requirements.txt $(REQ_DIR)/requirements_dev.txt
 
@@ -33,6 +35,11 @@ test: venv
 		python setup.py install; \
 		venv/bin/coverage run -m pytest test;\
 	)
+
+format:
+	black --verbose .
+	isort --verbose .
+	docformatter --in-place --recursive .
 
 clean:
 	rm -rf venv

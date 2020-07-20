@@ -1,17 +1,17 @@
 # Syft assets module imports
-from .plan import Plan
+# Syft dependencies
+import syft as sy
+from syft.execution.translation.default import PlanTranslatorDefault
+from syft.execution.translation.threepio import PlanTranslatorTfjs
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.serde import protobuf
+from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
+
+from ...core.exceptions import PlanInvalidError, PlanNotFoundError, PlanTranslationError
 
 # PyGrid imports
 from ...storage.warehouse import Warehouse
-from ...exceptions import PlanNotFoundError, PlanTranslationError, PlanInvalidError
-
-# Syft dependencies
-import syft as sy
-from syft.execution.translation.torchscript import PlanTranslatorTorchscript
-from syft.execution.translation.threepio import PlanTranslatorTfjs
-from syft.execution.translation.default import PlanTranslatorDefault
-from syft.serde import protobuf
-from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
+from .plan import Plan
 
 # Make fake local worker for serialization
 worker = sy.VirtualWorker(hook=None)
@@ -59,13 +59,14 @@ class PlanManager:
             self._plans.register(value=plans, avg_flprocess=process, is_avg_plan=True)
 
     def get(self, **kwargs):
-        """ Retrieve the desired plans.
-            Args:
-                query : query used to identify the desired plans object.
-            Returns:
-                plan : Plan list or None if it wasn't found.
-            Raises:
-                PlanNotFound (PyGridError) : If Plan not found.
+        """Retrieve the desired plans.
+
+        Args:
+            query : query used to identify the desired plans object.
+        Returns:
+            plan : Plan list or None if it wasn't found.
+        Raises:
+            PlanNotFound (PyGridError) : If Plan not found.
         """
         _plans = self._plans.query(**kwargs)
 
@@ -75,13 +76,14 @@ class PlanManager:
         return _plans
 
     def first(self, **kwargs):
-        """ Retrieve the first occurrence that matches with query.
-            Args:
-                query : query used to identify the desired plans object.
-            Returns:
-                plan : Plan Instance or None if it wasn't found.
-            Raises:
-                PlanNotFound (PyGridError) : If Plan not found.
+        """Retrieve the first occurrence that matches with query.
+
+        Args:
+            query : query used to identify the desired plans object.
+        Returns:
+            plan : Plan Instance or None if it wasn't found.
+        Raises:
+            PlanNotFound (PyGridError) : If Plan not found.
         """
         _plan = self._plans.first(**kwargs)
 
@@ -91,15 +93,16 @@ class PlanManager:
         return _plan
 
     def delete(self, **kwargs):
-        """ Delete a registered Plan.
-            Args:
-                query: Query used to identify the plan object.
+        """Delete a registered Plan.
+
+        Args:
+            query: Query used to identify the plan object.
         """
         self._plans.delete(**kwargs)
 
     @staticmethod
     def deserialize_plan(bin: bin) -> "sy.Plan":
-        """Deserialize a Plan"""
+        """Deserialize a Plan."""
         pb = PlanPB()
         pb.ParseFromString(bin)
         plan = protobuf.serde._unbufferize(worker, pb)
@@ -107,14 +110,14 @@ class PlanManager:
 
     @staticmethod
     def serialize_plan(plan: "sy.Plan") -> bin:
-        """Serialize a Plan"""
+        """Serialize a Plan."""
         pb = protobuf.serde._bufferize(worker, plan)
         serialized_plan = pb.SerializeToString()
         return serialized_plan
 
     @staticmethod
     def trim_plan(plan: "sy.Plan", variant: str) -> "sy.Plan":
-        """Trim Plan to specified variant"""
+        """Trim Plan to specified variant."""
 
         type_translators = {
             "torchscript": PlanTranslatorTorchscript,

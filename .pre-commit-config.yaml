@@ -19,3 +19,12 @@ repos:
     rev: v1.1.0
     hooks:
     -   id: python-use-type-annotations
+-   repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.0.5
+    hooks:
+    -   id: isort
+        name: isort
+        entry: isort
+        language: python
+        'types': [python]
+        args: ["--verbose"]

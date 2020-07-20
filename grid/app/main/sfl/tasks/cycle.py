@@ -1,6 +1,6 @@
 # Standard python imports
-import traceback
 import logging
+import traceback
 
 # Local imports
 from ... import executor

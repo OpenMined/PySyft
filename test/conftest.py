@@ -1,27 +1,24 @@
-import pytest
-import torch
-from multiprocessing import Process
+import json
 import os
 import sys
+import time
+from multiprocessing import Process
 
+import pytest
+import requests
 import syft
+import torch
+from gevent import pywsgi
+from geventwebsocket.handler import WebSocketHandler
 from syft.grid.clients.dynamic_fl_client import DynamicFLClient
 from syft.grid.public_grid import PublicGridNetwork
 
-
-from . import IDS, PORTS, GATEWAY_URL, GATEWAY_PORT
-import time
-
-import requests
-import json
-
-from gevent import pywsgi
-from geventwebsocket.handler import WebSocketHandler
+from . import GATEWAY_PORT, GATEWAY_URL, IDS, PORTS
 
 
 @pytest.fixture()
 def start_proc():  # pragma: no cover
-    """ helper function for spinning up a websocket participant """
+    """helper function for spinning up a websocket participant."""
 
     def _start_proc(participant, kwargs):
         def target():

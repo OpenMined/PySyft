@@ -2,15 +2,16 @@ from ... import db
 
 
 class Cycle(db.Model):
-    """ Cycle table.
-        Columns:
-            id (Integer, Primary Key): Cycle ID.
-            start (TIME): Start time.
-            sequence (Integer): Cycle's sequence number.
-            version (String) : Cycle Version.
-            end (TIME): End time.
-            worker_cycles (WorkerCycle): Relationship between workers and cycles (One to many).
-            fl_process_id (Integer,ForeignKey): Federated learning ID that owns this cycle.
+    """Cycle table.
+
+    Columns:
+        id (Integer, Primary Key): Cycle ID.
+        start (TIME): Start time.
+        sequence (Integer): Cycle's sequence number.
+        version (String) : Cycle Version.
+        end (TIME): End time.
+        worker_cycles (WorkerCycle): Relationship between workers and cycles (One to many).
+        fl_process_id (Integer,ForeignKey): Federated learning ID that owns this cycle.
     """
 
     __tablename__ = "__cycle__"

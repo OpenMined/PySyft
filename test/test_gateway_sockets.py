@@ -1,21 +1,19 @@
-import json
-import pytest
 import binascii
-import websockets
-import aiounittest
+import json
+from test import GATEWAY_WS_URL
 from uuid import UUID
 
-import torch as th
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-
+import aiounittest
+import pytest
 import syft as sy
+import torch as th
+import websockets
+from torch import nn as nn
+from torch import optim as optim
+from torch.nn import functional as F
 
-from grid.app.main.sfl.syft_assets.plan_manager import PlanManager
 from grid.app.main.sfl.models.model_manager import ModelManager
-
-from test import GATEWAY_WS_URL
+from grid.app.main.sfl.syft_assets.plan_manager import PlanManager
 
 hook = sy.TorchHook(th)
 

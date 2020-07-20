@@ -1,13 +1,11 @@
 from unittest.mock import patch
 
+from grid.app.main.core.exceptions import PyGridError
 from grid.app.main.routes.sfl import routes
-from grid.app.main.exceptions import PyGridError
 
 
 def test_worker_cycle_request_bad_request_json(client):
-    """
-    assert that the endpoint returns a 400 for malformed JSON
-    """
+    """assert that the endpoint returns a 400 for malformed JSON."""
     result = client.post(
         "/federated/cycle-request", data="{bad", content_type="application/json"
     )
@@ -19,9 +17,7 @@ def test_worker_cycle_request_bad_request_json(client):
 
 @patch("grid.app.main.routes.sfl.routes.cycle_request")
 def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
-    """
-    assert that the endpoint returns a 400 for a PyGridError
-    """
+    """assert that the endpoint returns a 400 for a PyGridError."""
     mock_cycle_request.side_effect = PyGridError("test")
 
     result = client.post("/federated/cycle-request", json={"test": "data"})
@@ -32,9 +28,8 @@ def test_worker_cycle_request_bad_request_pygrid(mock_cycle_request, client):
 
 @patch("grid.app.main.routes.sfl.routes.cycle_request")
 def test_worker_cycle_request_internal_server_error(mock_cycle_request, client):
-    """
-    assert that the endpoint returns a 500 for an unknown error condition
-    """
+    """assert that the endpoint returns a 500 for an unknown error
+    condition."""
     mock_cycle_request.side_effect = RuntimeError("test")
 
     result = client.post("/federated/cycle-request", json={"test": "data"})
@@ -44,9 +39,7 @@ def test_worker_cycle_request_internal_server_error(mock_cycle_request, client):
 
 
 def test_report_diff_bad_request_json(client):
-    """
-    assert that the endpoint returns a 400 for malformed JSON
-    """
+    """assert that the endpoint returns a 400 for malformed JSON."""
     result = client.post(
         "/federated/report", data="{bad", content_type="application/json"
     )
@@ -58,9 +51,7 @@ def test_report_diff_bad_request_json(client):
 
 @patch("grid.app.main.routes.sfl.routes.report")
 def test_report_diff_bad_request_pygrid(mock_report, client):
-    """
-    assert that the endpoint returns a 400 for a PyGridError
-    """
+    """assert that the endpoint returns a 400 for a PyGridError."""
     mock_report.side_effect = PyGridError("test")
 
     result = client.post("/federated/report", json={"test": "data"})
@@ -71,9 +62,8 @@ def test_report_diff_bad_request_pygrid(mock_report, client):
 
 @patch("grid.app.main.routes.sfl.routes.report")
 def test_report_diff_internal_server_error(mock_report, client):
-    """
-    assert that the endpoint returns a 500 for an unknown error condition
-    """
+    """assert that the endpoint returns a 500 for an unknown error
+    condition."""
     mock_report.side_effect = RuntimeError("test")
 
     result = client.post("/federated/report", json={"test": "data"})

@@ -1,18 +1,18 @@
 # Standard python imports
 import datetime
 
-
 # Local imports
 from ... import db
 
 
 class WorkerCycle(db.Model):
-    """ Relation between Workers and Cycles.
-        Columns:
-            id (Integer, Primary Key): Worker Cycle ID.
-            cycle_id (Integer, ForeignKey): Cycle Foreign key that owns this worker cycle.
-            worker_id (String, ForeignKey): Worker Foreign key that owns this worker cycle.
-            request_key (String): unique token that permits downloading specific Plans, Protocols, etc.
+    """Relation between Workers and Cycles.
+
+    Columns:
+        id (Integer, Primary Key): Worker Cycle ID.
+        cycle_id (Integer, ForeignKey): Cycle Foreign key that owns this worker cycle.
+        worker_id (String, ForeignKey): Worker Foreign key that owns this worker cycle.
+        request_key (String): unique token that permits downloading specific Plans, Protocols, etc.
     """
 
     __tablename__ = "__worker_cycle__"

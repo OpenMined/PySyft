@@ -2,18 +2,19 @@ from ... import db
 
 
 class FLProcess(db.Model):
-    """ Federated Learning Process table.
-        Columns:
-            id (Integer, Primary Key): Federated Learning Process ID.
-            name (String) : Federated Process name.
-            version (String) : FL Process version.
-            model (Model): Model.
-            averaging_plan (Plan): Averaging Plan.
-            plans: Generic Plans (such as training plan and validation plan)
-            protocols (Protocol) : Generic protocols.
-            server_config (Config): Server Configs.
-            client_config (Config): Client Configs.
-            cycles [Cycles]: FL Cycles.
+    """Federated Learning Process table.
+
+    Columns:
+        id (Integer, Primary Key): Federated Learning Process ID.
+        name (String) : Federated Process name.
+        version (String) : FL Process version.
+        model (Model): Model.
+        averaging_plan (Plan): Averaging Plan.
+        plans: Generic Plans (such as training plan and validation plan)
+        protocols (Protocol) : Generic protocols.
+        server_config (Config): Server Configs.
+        client_config (Config): Client Configs.
+        cycles [Cycles]: FL Cycles.
     """
 
     __tablename__ = "__fl_process__"
