@@ -5,6 +5,7 @@ from ...io.route import Route
 from typing import List
 
 
+
 @final
 class DeviceClient(Client):
     def __init__(self, address, name, routes: List[Route]):
@@ -43,9 +44,7 @@ class DeviceClient(Client):
     #     self.device_id = new_target_node_id
     #     return self.device_id
 
-    def add_me_to_my_address(self):
-        # I should already be added
-        assert self.device_id is not None
+    def create_vm(self, name: str):
 
     @property
     def vm_id(self) -> UID:

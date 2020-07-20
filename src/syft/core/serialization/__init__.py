@@ -1,2 +1,3 @@
 from .serializable import Serializable
-from .protocol import SerializationProtocol
+from .store import serialization_store
+from .serde import serialize, deserialize

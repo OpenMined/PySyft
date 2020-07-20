@@ -32,9 +32,15 @@ class Device(Node):
 
         self._register_services()
 
-    @syft_decorator(typechecking=True)
-    def add_me_to_my_address(self) -> None:
-        self.address.pri_address.device = self.id
+    def get_vm(self, id_or_name: (str, UID)):
+        try:
+            return self.vms[id_or_name]
+        except KeyError as e:
+            try:
+                id = self.vm_name2id[id_or_name]
+                return self.vms[id]
+            except KeyError as e:
+                raise KeyError("You must ask for a vm using either a name or ID.")
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:

@@ -50,9 +50,11 @@ connection health, and overall cost of each connection option as
 measured by fixed constants as well as previous uses of the
 connection.
 
-This necessitates an abstraction which lets us store connection
-information both about hops we know about and about hops we don't
-know about.
+@syft_decorator(typechecking=True)
+def route(
+    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
+) -> Route:
+    """A convenience method for creating routes"""
 
 This abstraction is called a "Route" and each hop is called a "Hop"
 where any collection of hops within the route is called a 
