@@ -1,4 +1,6 @@
 import json
+import requests
+from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 
 from typing import Union
 from urllib.parse import urlparse
@@ -9,28 +11,26 @@ from syft.version import __version__
 from syft.execution.plan import Plan
 from syft.codes import REQUEST_MSG, RESPONSE_MSG
 from syft.workers.websocket_client import WebsocketClientWorker
-from syft.grid.authentication.credential import AbstractCredential
 
 
-class NodeClient(WebsocketClientWorker):
+class DynamicFLClient(WebsocketClientWorker):
     """Federated Node Client."""
 
     def __init__(
         self,
         hook,
         address,
-        credential: AbstractCredential = None,
         id: Union[int, str] = 0,
         is_client_worker: bool = False,
         log_msgs: bool = False,
         verbose: bool = False,
         encoding: str = "ISO-8859-1",
+        timeout: int = None,
     ):
         """
         Args:
             hook : a normal TorchHook object.
             address : Address used to connect with remote node.
-            credential : Credential used to perform authentication.
             id : the unique id of the worker (string or int)
             is_client_worker : An optional boolean parameter to indicate
                 whether this worker is associated with an end user client. If
@@ -44,10 +44,10 @@ class NodeClient(WebsocketClientWorker):
             verbose : a verbose option - will print all messages
                 sent/received to stdout.
             encoding : Encoding pattern used to send/retrieve models.
+            timeout : connection's timeout with the remote worker.
         """
         self.address = address
         self.encoding = encoding
-        self.credential = credential
 
         # Parse address string to get scheme, host and port
         self.secure, self.host, self.port = self._parse_address(address)
@@ -63,13 +63,11 @@ class NodeClient(WebsocketClientWorker):
             log_msgs,
             verbose,
             None,  # initial data
+            timeout,
         )
 
         # Update Node reference using node's Id given by the remote node
         self._update_node_reference(self._get_node_infos())
-
-        if self.credential:
-            self._authenticate()
 
     @property
     def url(self) -> str:
@@ -95,29 +93,6 @@ class NodeClient(WebsocketClientWorker):
         message = {REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.LIST_MODELS}
         response = self._forward_json_to_websocket_server_worker(message)
         return self._return_bool_result(response, RESPONSE_MSG.MODELS)
-
-    def _authenticate(self):
-        """ Perform Authentication Process using credentials grid credentials.
-
-        Raises:
-            RuntimeError : If authentication process fail.
-        """
-        if not isinstance(self.credential, AbstractCredential):
-            raise RuntimeError("Your credential needs to be an instance of grid credentials.")
-
-        cred_dict = self.credential.json()
-
-        # Prepare a authentication request to remote grid node
-        cred_dict[REQUEST_MSG.TYPE_FIELD] = REQUEST_MSG.AUTHENTICATE
-        response = self._forward_json_to_websocket_server_worker(cred_dict)
-
-        # If succeeded, update node's reference and update client's credential.
-        node_id = self._return_bool_result(response, RESPONSE_MSG.NODE_ID)
-
-        if node_id:
-            self._update_node_reference(node_id)
-        else:
-            raise RuntimeError("Invalid user.")
 
     def _update_node_reference(self, new_id: str):
         """ Update worker references changing node id references at hook structure.
@@ -239,7 +214,7 @@ class NodeClient(WebsocketClientWorker):
         else:
             res_model = model
 
-        serialized_model = serialize(res_model)
+        serialized_model = serialize(res_model).decode(self.encoding)
 
         message = {
             REQUEST_MSG.TYPE_FIELD: REQUEST_MSG.HOST_MODEL,
@@ -248,10 +223,31 @@ class NodeClient(WebsocketClientWorker):
             "allow_download": str(allow_download),
             "mpc": str(mpc),
             "allow_remote_inference": str(allow_remote_inference),
-            "model": serialized_model.decode(self.encoding),
+            "model": serialized_model,
         }
-        response = self._forward_json_to_websocket_server_worker(message)
-        return self._return_bool_result(response)
+
+        url = self.address.replace("ws", "http") + "/dynamic/serve-model/"
+
+        # Multipart encoding
+        form = MultipartEncoder(message)
+        upload_size = form.len
+
+        # Callback that shows upload progress
+        def progress_callback(monitor):
+            upload_progress = "{} / {} ({:.2f} %)".format(
+                monitor.bytes_read, upload_size, (monitor.bytes_read / upload_size) * 100
+            )
+            print(upload_progress, end="\r")
+            if monitor.bytes_read == upload_size:
+                print()
+
+        monitor = MultipartEncoderMonitor(form, progress_callback)
+        headers = {"Prefer": "respond-async", "Content-Type": monitor.content_type}
+
+        session = requests.Session()
+        response = session.post(url, headers=headers, data=monitor).content
+        session.close()
+        return self._return_bool_result(json.loads(response))
 
     def run_remote_inference(self, model_id, data):
         """ Run a dataset inference using a remote model.

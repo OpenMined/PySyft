@@ -83,6 +83,10 @@ ambiguous_functions = {
     "torch.split",
     "split",
     "backward",
+    "torch.nn.functional.max_pool2d",
+    "torch.nn.functional.adaptive_max_pool2d",
+    "torch.nn.functional.avg_pool2d",
+    "torch.nn.functional.adaptive_avg_pool2d",
 }
 
 register_ambiguous_method(*ambiguous_methods)

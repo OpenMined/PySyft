@@ -8,6 +8,8 @@ import syft
 from syft.serde import msgpack
 from syft.workers.virtual import VirtualWorker
 from syft.serde.syft_serializable import SyftSerializable
+from syft.execution.translation.torchscript import PlanTranslatorTorchscript
+from syft.execution.translation.threepio import PlanTranslatorTfjs
 
 
 class SerializableDummyClass(SyftSerializable):
@@ -773,6 +775,11 @@ def make_pointerdataset(**kwargs):
 
 # syft.execution.plan.Plan
 def make_plan(**kwargs):
+    syft.execution.plan.Plan._build_translators = [
+        PlanTranslatorTorchscript,
+        PlanTranslatorTfjs,
+    ]
+
     # Function to plan
     @syft.func2plan([torch.Size((3,))])
     def plan(x):
@@ -805,11 +812,19 @@ def make_plan(**kwargs):
         assert detailed.name == original.name
         assert detailed.tags == original.tags
         assert detailed.description == original.description
+        assert detailed._base_framework == original._base_framework
+
+        assert set(detailed.roles.keys()) == set(original.roles.keys())
+        for fw_name in original.roles.keys():
+            compare_roles(detailed.roles[fw_name], original.roles[fw_name])
+
         with kwargs["workers"]["serde_worker"].registration_enabled():
             t = torch.tensor([1.1, -2, 3])
             res1 = detailed(t)
             res2 = original(t)
         assert res1.equal(res2)
+
+        assert original.code == detailed.code
         return True
 
     return [
@@ -828,6 +843,10 @@ def make_plan(**kwargs):
                         kwargs["workers"]["serde_worker"], plan.torchscript
                     ),  # Torchscript
                     msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.input_types),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], plan._base_framework
+                    ),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], plan.roles),
                 ),
             ),
             "cmp_detailed": compare,
@@ -851,6 +870,10 @@ def make_plan(**kwargs):
                     msgpack.serde._simplify(
                         kwargs["workers"]["serde_worker"], model_plan.input_types
                     ),
+                    msgpack.serde._simplify(
+                        kwargs["workers"]["serde_worker"], model_plan._base_framework
+                    ),
+                    msgpack.serde._simplify(kwargs["workers"]["serde_worker"], model_plan.roles),
                 ),
             ),
             "cmp_detailed": compare,
@@ -1843,7 +1866,7 @@ def make_forceobjectdeletemessage(**kwargs):
 
     def compare(detailed, original):
         assert type(detailed) == syft.messaging.message.ForceObjectDeleteMessage
-        assert detailed.object_id == original.object_id
+        assert detailed.object_ids == original.object_ids
         return True
 
     return [
@@ -1851,7 +1874,7 @@ def make_forceobjectdeletemessage(**kwargs):
             "value": del_message,
             "simplified": (
                 CODE[syft.messaging.message.ForceObjectDeleteMessage],
-                (id,),  # (int) id
+                (CODE[list], (id,)),  # (list) of (int) id
             ),
             "cmp_detailed": compare,
         }

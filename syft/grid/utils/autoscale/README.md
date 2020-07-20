@@ -9,7 +9,7 @@ In addition to a GCP account, you'll need two things to use Terraform to provisi
 
 - Google Compute Engine: You'll need to enable Google Compute Engine for your project. Do so now in the console. Make sure the project you're using to follow this guide is selected and click the "Enable" button.
 
-- A GCP service account key: Terraform will access your GCP account by using a service account key. Create one now in the console. When creating the key, use the following settings:
+- A [GCP service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts) key: Terraform will access your GCP account by using a service account key. Create one now in the console. When creating the key, use the following settings:
 
   - Select the project you created in the previous step.
   - Under "Service account", select "New service account".
@@ -33,31 +33,65 @@ pip install terrascript
 
 ## Usage
 
-You can create compute instance using the sample code in test .py
+### Set Up Budget Alerts (important)
+
+Before you start to spin-up instances we encourace to set a budget alert on GCP to avoid suprise costs.
+
+[Setup Budget and Budget Alerts](https://cloud.google.com/billing/docs/how-to/budgets)
+
+### Spin-up Instances using the follwoing commands:-
+
+You can find sample code in ```test.py```  and  ```test.ipynb```
+
+- Import enums from the ```gcloud_configurations.py```
+
+```python
+import syft.grid.autoscale.utils.gcloud_configurations as configs
+```
 
 - Initialize using :
 
-```bash
+```python
 
 instance_name = gcloud.GoogleCloud(
     credentials="GCP Login/terraf.json",
     project_id="terraform",
-    region="us-central1"
+    region=configs.Region.us_central1,
 )
 ```
 
 - Create Instnaces using :
 
-```bash
+```python
 instance_name.compute_instance(
     name="new-12345",
-    machine_type="f1-micro",
-    zone="us-central1-a",
-    image_family="debian-9",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    image_family=configs.ImageFamily.ubuntu_2004_lts,
 )
+```
+
+- Create Clusters using :
+
+```python
+c1 = instance_name.create_cluster(
+    name="my-cluster1",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    image_family=configs.ImageFamily.ubuntu_2004_lts,
+    target_size=3,
+    eviction_policy="delete",
+)
+```
+
+- Run a parameter sweep to figure out the best parameters using :
+
+```python
+c1.sweep()
 ```
 
 - Destroy the created instances using :
 
-```bash
+```python
 instance_name.destroy()
+```

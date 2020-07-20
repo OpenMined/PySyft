@@ -57,38 +57,144 @@ def invert_mod(value, modulus):
         return gcd_tuple[1]
 
 
-def poly_add_mod(op1, op2, modulus):
-    """return addition of two polynomials with all coefficients of
-    polynomial %q(coefficient modulus)"""
-    return np.mod(np.polyadd(op1, op2), modulus).tolist()
+def poly_add(op1, op2, poly_mod):
+    """return addition of two polynomials"""
+
+    # For non same size polynomials we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
+
+    return np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")).tolist()
 
 
-def poly_mul_mod(op1, op2, modulus):
-    """return multiplication of two polynomials with all coefficients of
-    polynomial %q(coefficient modulus) and result polynomial % t(polynomial modulus)"""
-    poly_mod = np.array([1] + [0] * (len(op1) - 1) + [1])
+def poly_add_mod(op1, op2, coeff_mod, poly_mod):
+    """Add two polynomials and modulo every coefficient with coeff_mod.
+
+    Args:
+        op1 (list): First Polynomail (Augend).
+        op2 (list): Second Polynomail (Addend).
+
+    Returns:
+        A list with polynomial coefficients.
+    """
+
+    # For non same size polynomials we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
+
+    return np.mod(
+        np.polyadd(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
+    ).tolist()
+
+
+def poly_sub_mod(op1, op2, coeff_mod, poly_mod):
+    """Subtract two polynomials and modulo every coefficient with coeff_mod.
+
+    Args:
+        op1 (list): First Polynomail (Minuend).
+        op2 (list): Second Polynomail (Subtrahend).
+
+    Returns:
+        A list with polynomial coefficients.
+    """
+
+    # For non same size polynomials we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
+
+    return np.mod(
+        np.polysub(np.array(op1, dtype="object"), np.array(op2, dtype="object")), coeff_mod
+    ).tolist()
+
+
+def poly_mul(op1, op2, poly_mod):
+    """return multiplication of two polynomials with result % t(polynomial modulus)"""
+
+    # For non same size polynomials we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != len(op2):
+        if len(op1) > len(op2):
+            op2 = op2 + [0] * (len(op1) - len(op2))
+        else:
+            op1 = op1 + [0] * (len(op2) - len(op1))
+
+    poly_len = poly_mod
+    poly_mod = np.array([1] + [0] * (poly_len - 1) + [1])
     result = (
         poly.polydiv(
-            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")) % modulus,
-            poly_mod,
+            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")), poly_mod,
         )[1]
-        % modulus
     ).tolist()
+
+    if len(result) != poly_len:
+        result += [0] * (poly_len - len(result))
+
     return [round(x) for x in result]
 
 
-def poly_negate_mod(op, modulus):
-    """returns negative of polynomial i.e (-1 * op)"""
+def poly_mul_mod(op1, op2, coeff_mod, poly_mod):
+    """Multiply two polynomials and modulo every coefficient with coeff_mod.
+
+    Args:
+        op1 (list): First Polynomail (Multiplicand).
+        op2 (list): Second Polynomail (Multiplier).
+
+    Returns:
+        A list with polynomial coefficients.
+    """
+
+    # For non same size polynomials we have to shift the polynomials because numpy consider right
+    # side as lower order of polynomial and we consider right side as heigher order.
+    if len(op1) != poly_mod:
+        op1 += [0] * (poly_mod - len(op1))
+    if len(op2) != poly_mod:
+        op2 += [0] * (poly_mod - len(op2))
+
+    poly_len = poly_mod
+    poly_mod = np.array([1] + [0] * (poly_len - 1) + [1])
+    result = (
+        poly.polydiv(
+            poly.polymul(np.array(op1, dtype="object"), np.array(op2, dtype="object")) % coeff_mod,
+            poly_mod,
+        )[1]
+        % coeff_mod
+    ).tolist()
+
+    if len(result) != poly_len:
+        result += [0] * (poly_len - len(result))
+
+    return [round(x) for x in result]
+
+
+def poly_negate_mod(op, coeff_mod):
+    """Negate polynomail and modulo every coefficient with coeff_mod.
+
+    Args:
+        op1 (list): First Polynomail (Multiplicand).
+        op2 (list): Second Polynomail (Multiplier).
+
+    Returns:
+        A list with polynomial coefficients.
+    """
     coeff_count = len(op)
 
     result = [0] * coeff_count
     for i in range(coeff_count):
-        if modulus == 0:
+        if coeff_mod == 0:
             raise ValueError("Modulus cannot be 0")
-        if op[i] >= modulus:
+        if op[i] >= coeff_mod:
             raise OverflowError("operand cannot be greater than modulus")
         non_zero = op[i] != 0
-        result[i] = (modulus - op[i]) & (-int(non_zero))
+        result[i] = (coeff_mod - op[i]) & (-int(non_zero))
     return result
 
 
@@ -151,28 +257,55 @@ def xgcd(x, y):
     return [x, prev_a, prev_b]
 
 
-def multiply_add_plain_with_delta(phase, message, context):
-    """Add message (PlainText) into phase.
+def multiply_add_plain_with_delta(ct, pt, context):
+    """Add message into phase.
 
     Args:
-        phase: phase is pre-computed carrier polynomial where we can add message data.
-        message (Plaintext): A plaintext representation of integer data to be encrypted.
+        ct (Ciphertext): ct is pre-computed carrier polynomial where we can add pt data.
+        pt (Plaintext): A plaintext representation of integer data to be encrypted.
         context (Context): Context for extracting encryption parameters.
 
     Returns:
         A Ciphertext object with the encrypted result of encryption process.
     """
     coeff_modulus = context.param.coeff_modulus
-    message = message.data
-    plain_coeff_count = len(message)
+    pt = pt.data
+    plain_coeff_count = len(pt)
     delta = context.coeff_div_plain_modulus
-    phase0, phase1 = phase.data  # here phase = pk * u * e
+    ct0, ct1 = ct.data  # here ct = pk * u * e
 
     # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
     # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
     for i in range(plain_coeff_count):
         for j in range(len(coeff_modulus)):
-            temp = round(delta[j] * message[i]) % coeff_modulus[j]
-            phase0[j][i] = (phase0[j][i] + temp) % coeff_modulus[j]
+            temp = round(delta[j] * pt[i]) % coeff_modulus[j]
+            ct0[j][i] = (ct0[j][i] + temp) % coeff_modulus[j]
 
-    return CipherText([phase0, phase1])  # phase0 = pk0 * u * e + delta * m
+    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e + delta * pt
+
+
+def multiply_sub_plain_with_delta(ct, pt, context):
+    """Subtract plaintext from ciphertext.
+
+    Args:
+        ct (Ciphertext): ct is pre-computed carrier polynomial where we can add message data.
+        pt (Plaintext): A plaintext representation of integer data to be encrypted.
+        context (Context): Context for extracting encryption parameters.
+
+    Returns:
+        A Ciphertext object with the encrypted result of encryption process.
+    """
+    coeff_modulus = context.param.coeff_modulus
+    pt = pt.data
+    plain_coeff_count = len(pt)
+    delta = context.coeff_div_plain_modulus
+    ct0, ct1 = ct.data  # here ct = pk * u * e
+
+    # Coefficients of plain m multiplied by coeff_modulus q, divided by plain_modulus t,
+    # and rounded to the nearest integer (rounded up in case of a tie). Equivalent to
+    for i in range(plain_coeff_count):
+        for j in range(len(coeff_modulus)):
+            temp = round(delta[j] * pt[i]) % coeff_modulus[j]
+            ct0[j][i] = (ct0[j][i] - temp) % coeff_modulus[j]
+
+    return CipherText([ct0, ct1])  # ct0 = pk0 * u * e - delta * pt

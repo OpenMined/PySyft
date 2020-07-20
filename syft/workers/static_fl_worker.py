@@ -4,9 +4,12 @@ import binascii
 import base64
 import websocket
 import requests
+from timeit import timeit
+import random
 
 import syft as sy
 from syft.serde import protobuf
+from syft.grid.exceptions import GridError
 
 from syft.execution.state import State
 from syft_proto.execution.v1.plan_pb2 import Plan as PlanPB
@@ -14,15 +17,13 @@ from syft_proto.execution.v1.state_pb2 import State as StatePB
 from syft_proto.execution.v1.protocol_pb2 import Protocol as ProtocolPB
 
 TIMEOUT_INTERVAL = 60
+CHUNK_SIZE = 655360  # 640KB
+SPEED_MULT_FACTOR = 10
+MAX_BUFFER_SIZE = 1048576 * 64  # 64 MB
+MAX_SPEED_TESTS = 3
 
 
-class GridError(BaseException):
-    def __init__(self, error, status):
-        self.status = status
-        self.error = error
-
-
-class GridClient:
+class StaticFLWorker:
     CYCLE_STATUS_ACCEPTED = "accepted"
     CYCLE_STATUS_REJECTED = "rejected"
     PLAN_TYPE_LIST = "list"
@@ -75,13 +76,86 @@ class GridClient:
         if method == "GET":
             res = requests.get(self.http_url + path, params)
         elif method == "POST":
-            res = requests.post(self.http_url + path, body)
+            res = requests.post(self.http_url + path, params=params, data=body)
 
         if not res.ok:
             raise GridError("HTTP response is not OK", res.status_code)
 
         response = res.content
         return response
+
+    def _yield_chunk_from_request(self, request, chunk_size):
+        for chunk in request.iter_content(chunk_size=chunk_size):
+            yield chunk
+
+    def _read_n_request_chunks(self, chunk_generator, n):
+        for i in range(n):
+            try:
+                next(chunk_generator)
+            except:
+                return False
+        return True
+
+    def _get_ping(self, worker_id, random_id):
+        params = {"is_ping": 1, "worker_id": worker_id, "random": random_id}
+        ping = (
+            timeit(
+                lambda: self._send_http_req("GET", "/federated/speed-test", params),
+                number=MAX_SPEED_TESTS,
+            )
+            * 1000
+        )  # for ms
+        return ping
+
+    def _get_upload_speed(self, worker_id, random_id):
+        buffer_size = CHUNK_SIZE
+        speed_history = []
+
+        for _ in range(MAX_SPEED_TESTS):
+            data_sample = b"x" * buffer_size
+            params = {"worker_id": worker_id, "random": random_id}
+            body = {"upload_data": data_sample}
+            time_taken = timeit(
+                lambda: self._send_http_req("POST", "/federated/speed-test", params, body),
+                number=1,
+            )
+            if time_taken < 0.5:
+                buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
+            new_speed = buffer_size / (time_taken * 1024)
+
+            if new_speed != float("inf"):
+                speed_history.append(new_speed)
+
+        if len(speed_history) == 0:
+            return float("inf")
+        else:
+            avg_speed = sum(speed_history) / len(speed_history)
+            return avg_speed
+
+    def _get_download_speed(self, worker_id, random_id):
+        params = {"worker_id": worker_id, "random": random_id}
+        speed_history = []
+        with requests.get(self.http_url + "/federated/speed-test", params, stream=True) as r:
+            r.raise_for_status()
+            buffer_size = CHUNK_SIZE
+            chunk_generator = self._yield_chunk_from_request(r, CHUNK_SIZE)
+            for _ in range(MAX_SPEED_TESTS):
+                time_taken = timeit(
+                    lambda: self._read_n_request_chunks(chunk_generator, buffer_size // CHUNK_SIZE),
+                    number=1,
+                )
+                if time_taken < 0.5:
+                    buffer_size = min(buffer_size * SPEED_MULT_FACTOR, MAX_BUFFER_SIZE)
+                new_speed = buffer_size / (time_taken * 1024)
+
+                if new_speed != float("inf"):
+                    speed_history.append(new_speed)
+
+        if len(speed_history) == 0:
+            return float("inf")
+        else:
+            avg_speed = sum(speed_history) / len(speed_history)
+            return avg_speed
 
     def _serialize(self, obj):
         """Serializes object to protobuf"""
@@ -103,39 +177,14 @@ class GridClient:
     def close(self):
         self.ws.shutdown()
 
-    def host_federated_training(
-        self,
-        model,
-        client_plans,
-        client_protocols,
-        client_config,
-        server_averaging_plan,
-        server_config,
-    ):
-        serialized_model = binascii.hexlify(self._serialize(model)).decode()
-        serialized_plans = self._serialize_object(client_plans)
-        serialized_protocols = self._serialize_object(client_protocols)
-        serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
-
-        # "federated/host-training" request body
-        message = {
-            "type": "federated/host-training",
-            "data": {
-                "model": serialized_model,
-                "plans": serialized_plans,
-                "protocols": serialized_protocols,
-                "averaging_plan": serialized_avg_plan,
-                "client_config": client_config,
-                "server_config": server_config,
-            },
-        }
-
-        return self._send_msg(message)
-
-    def authenticate(self, auth_token):
+    def authenticate(self, auth_token, model_name, model_version):
         message = {
             "type": "federated/authenticate",
-            "data": {"auth_token": auth_token},
+            "data": {
+                "auth_token": auth_token,
+                "model_name": model_name,
+                "model_version": model_version,
+            },
         }
 
         return self._send_msg(message)
@@ -190,5 +239,8 @@ class GridClient:
         return self._send_msg(params)
 
     def get_connection_speed(self, worker_id):
-        # TODO
-        return {"ping": 5, "download": 100, "upload": 100}
+        random_num = random.getrandbits(128)
+        ping = self._get_ping(worker_id, random_num)
+        upload_speed = self._get_upload_speed(worker_id, random_num)
+        download_speed = self._get_download_speed(worker_id, random_num)
+        return {"ping": ping, "download": download_speed, "upload": upload_speed}

@@ -996,14 +996,174 @@ def test_backward_autograd_can_be_traced(hook, workers):
     autograd_test.forward = None
     plan_grads = autograd_test(X)
 
-    autograd_str = (
-        "def autograd_test(arg_1):\n    var_0 = arg_1.mul(5)\n    var_1 = var_0.log()\n    "
-        "var_2 = var_1.neg()\n    var_3 = var_2.div(2)\n    var_4 = var_3.sum()\n    "
-        "var_5 = var_4.mul(0)\n    var_6 = var_5.add(1)\n    var_7 = var_3.mul(0)\n    "
-        "var_8 = var_7.add(1)\n    var_9 = var_8.mul(var_6)\n    var_10 = var_9.div(2)\n    "
-        "var_11 = var_10.mul(-1)\n    var_12 = var_0.__rtruediv__(1)\n    "
-        "var_13 = var_11.mul(var_12)\n    var_14 = var_13.mul(5)\n    var_15 = var_13.mul(arg_1)\n    "  # noqa:
-        "out_1 = var_14.copy()\n    return out_1"
-    )
+    print(autograd_test.code)
+
+    autograd_str = """def autograd_test(arg_1):
+    var_0 = arg_1.mul(5)
+    var_1 = var_0.log()
+    var_2 = var_1.neg()
+    var_3 = var_2.div(2)
+    var_4 = var_3.sum()
+    var_5 = var_4.mul(0)
+    var_6 = var_5.add(1)
+    var_7 = var_6.reshape([-1, 1])
+    var_8 = var_3.mul(0)
+    var_9 = var_8.add(1)
+    var_10 = var_9.mul(var_7)
+    var_11 = var_10.div(2)
+    var_12 = var_11.mul(-1)
+    var_13 = var_0.__rtruediv__(1)
+    var_14 = var_12.mul(var_13)
+    var_15 = var_14.mul(5)
+    out_1 = var_15.copy()
+    return out_1"""
     assert autograd_test.code == autograd_str
     assert torch_grads.eq(plan_grads).all()
+
+
+def test_prune_unused_actions_1(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test(X):
+        # stored as constant, action is removed
+        d = X.dim()
+        v1 = X + d
+        v1.add_(1.0)
+        # side-effect on input
+        X.add_(1.0)
+        # unused actions
+        v3 = X + 5
+        v3.add_(1.0)
+        # side-effect on input
+        X += 1.0
+        v2 = v1 + 1.0
+        v2 += 1.0
+        return v2
+
+    orig_input = th.ones(5, 5)
+    orig_output = test(orig_input)
+
+    test.forward = None
+    traced_input = th.ones(5, 5)
+    traced_output = test(traced_input)
+
+    assert len(test.role.actions) == 6
+    assert orig_input.eq(traced_input).all()
+    assert orig_output.eq(traced_output).all()
+
+
+def test_prune_unused_actions_2(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test1(X):
+        a = X + 1
+        a += 1
+        b = a + 1
+        b += 1
+        c = b + 1  # should be removed
+        X += b  # should be kept + all actions on a,b above
+        b += 1  # should be removed
+        return
+
+    assert (
+        test1.code
+        == """def test1(arg_1):
+    var_0 = arg_1.__add__(1)
+    var_0 = var_0.__iadd__(1)
+    var_1 = var_0.__add__(1)
+    var_1 = var_1.__iadd__(1)
+    arg_1 = arg_1.__iadd__(var_1)
+    return """
+    )
+
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test2(X):
+        a = X + 1
+        a += 1
+        b = a + 1
+        b += 1
+        c = b + 1
+        X += b  # should be kept
+        b += 1  # should be removed
+        return c
+
+    assert (
+        test2.code
+        == """def test2(arg_1):
+    var_0 = arg_1.__add__(1)
+    var_0 = var_0.__iadd__(1)
+    var_1 = var_0.__add__(1)
+    var_1 = var_1.__iadd__(1)
+    out_1 = var_1.__add__(1)
+    arg_1 = arg_1.__iadd__(var_1)
+    return out_1"""
+    )
+
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test3(X):
+        a = X + 1
+        a += 1
+        b = a + 1
+        b += 1
+        c = b + 1  # should be removed
+        X += b  # should be kept
+        b += 1  # should be kept
+        return b
+
+    assert (
+        test3.code
+        == """def test3(arg_1):
+    var_0 = arg_1.__add__(1)
+    var_0 = var_0.__iadd__(1)
+    out_1 = var_0.__add__(1)
+    out_1 = out_1.__iadd__(1)
+    arg_1 = arg_1.__iadd__(out_1)
+    out_1 = out_1.__iadd__(1)
+    return out_1"""
+    )
+
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test4(X):
+        a = X + 1
+        a += 1
+        b = a + 1
+        b += 1
+        c = b + 1  # should be removed
+        X += b  # should be kept
+        b += 1  # should be removed
+        return a
+
+    assert (
+        test4.code
+        == """def test4(arg_1):
+    out_1 = arg_1.__add__(1)
+    out_1 = out_1.__iadd__(1)
+    var_0 = out_1.__add__(1)
+    var_0 = var_0.__iadd__(1)
+    arg_1 = arg_1.__iadd__(var_0)
+    return out_1"""
+    )
+
+
+def test_inplace_ops(hook, workers):
+    @sy.func2plan(args_shape=[(5, 5)])
+    def test(X):
+        X += 1.0
+        X -= 1.0
+        X *= 2.0
+        X /= 2.0
+        X.add_(1.0)
+        X.sub_(1.0)
+        X.mul_(2.0)
+        X.div_(2.0)
+        return X
+
+    orig_input = th.ones(5, 5)
+    orig_output = test(orig_input)
+
+    test.forward = None
+    traced_input = th.ones(5, 5)
+    traced_output = test(traced_input)
+
+    assert orig_input.eq(traced_input).all()
+    assert orig_output.eq(traced_output).all()
+    for action in test.role.actions:
+        assert action.return_ids[0] == action.target

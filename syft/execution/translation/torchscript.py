@@ -1,10 +1,13 @@
 from torch import jit
 from syft.execution.placeholder import PlaceHolder
+from syft.execution.translation import TranslationTarget
 from syft.execution.translation.abstract import AbstractPlanTranslator
 
 
 class PlanTranslatorTorchscript(AbstractPlanTranslator):
     """Performs translation from 'list of ops' Plan into torchscript Plan"""
+
+    framework = TranslationTarget.TORCHSCRIPT.value
 
     def __init__(self, plan):
         super().__init__(plan)
@@ -12,6 +15,8 @@ class PlanTranslatorTorchscript(AbstractPlanTranslator):
     def translate(self):
         translation_plan = self.plan.copy()
         translation_plan.forward = None
+        # Make sure we're trying to trace Role with pytorch commands
+        translation_plan.base_framework = TranslationTarget.PYTORCH.value
 
         args = translation_plan.create_dummy_args()
 
