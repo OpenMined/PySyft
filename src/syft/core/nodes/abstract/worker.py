@@ -17,6 +17,9 @@ from ...store.store import ObjectStore
 from ...message import SyftMessage
 from ...io import Route
 
+# nodes related imports
+from ..abstract.remote_nodes import RemoteNodes
+
 
 class Worker(AbstractWorker):
 
@@ -41,9 +44,7 @@ class Worker(AbstractWorker):
         self.store = ObjectStore()
         self.msg_router = {}
         # bootstrap
-        self.network = self._fetch_visible_surrounding()
-        self.specs = self._learn_my_specs()
-
+        self.known_workers = RemoteNodes()
         self.services_registered = False
 
     @type_hints
@@ -92,36 +93,11 @@ class Worker(AbstractWorker):
         self.services_registered = True
 
     @type_hints
-    def _fetch_visible_surrounding(self) -> None:
-        """
-        This method allow connecting to a main orchestrator that can
-        send the information about the surrounding networks to update
-        the configuration jsons.
-
-        A worker may override this method to allow for caching network
-        information in systems like Redis.
-        Also, extended worker is able to request updated configuration
-        from a remote system.
-        """
-        # read from json and cache network information.
-        with open('network.json') as f:
-          self.network = json.load(f)
-
-    def _learn_my_specs(self) -> None:
-        with open('specs.json') as f:
-          self.specs = json.load(f)
-
-    @type_hints
-    def sign_message(self, msg: SyftMessage) -> SyftMessage:
-        """
-        Add the worker's route to the message prior to forwarding
-        to other entities on the network.
-        """
-        return msg
-
-    @type_hints
     def listen_on_messages(self, msg: SyftMessage) -> SyftMessage:
         """
-        Allows workers to connect to messaging protocols and listen on messages.
+        Allows workers to connect to open messaging protocols and listen on
+            messages.
+
+        The worker would extend this class to implement the specific protocol.
         """
         return self.recv_msg(msg)
