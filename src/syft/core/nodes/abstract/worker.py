@@ -41,7 +41,7 @@ class Worker(AbstractWorker):
         self.store = ObjectStore()
         self.msg_router = {}
         # bootstrap
-        self.network = self._fetch_network()
+        self.network = self._fetch_visible_surrounding()
         self.specs = self._learn_my_specs()
 
         self.services_registered = False
