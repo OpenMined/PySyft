@@ -28,7 +28,9 @@ class Route(object):
 
 
 @syft_decorator(typechecking=True)
-def route(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Route:
+def route(
+    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
+) -> Route:
     """A convenience method for creating routes"""
 
     pub = PublicRoute(network=network, domain=domain)

@@ -29,7 +29,7 @@ class Device(Worker, AbstractDevice):
         services.append(VirtualMachineLifecycleService)
         self._set_services(services=services)
 
-    def get_vm(self, id_or_name:(str, UID)):
+    def get_vm(self, id_or_name: (str, UID)):
         try:
             return self.vms[id_or_name]
         except KeyError as e:

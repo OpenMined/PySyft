@@ -42,7 +42,7 @@ class DiskObjectStore(ObjectStore):
 
     @syft_decorator(typechecking=True)
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        self.db[key] = value.serialize()
+        self.db[key] = StorableObject.serialize(value)
         self.db.commit(blocking=False)
 
     @syft_decorator(typechecking=True)

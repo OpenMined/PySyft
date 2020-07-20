@@ -3,12 +3,13 @@ from typing import final
 from .message.lifecycles_messages import CreateVirtualMachineMessage
 from ...io.route import route
 
+
 @final
 class DeviceClient(Client):
     def __init__(self, device_id, name, connection):
         super().__init__(worker_id=device_id, name=name, connection=connection)
 
-    def create_vm(self, name:str):
+    def create_vm(self, name: str):
 
         # Step 1: create a message which will request for a VM to be created.
         # we can set route=None because we know the message is just going directly

@@ -11,13 +11,13 @@ from typing import List
 
 
 class VirtualMachineLifecycleService(WorkerService):
-
     def __init__(self, *args, **kwargs):
         self.msg_type_router = {}
         self.msg_type_router[CreateVirtualMachineMessage] = self.create_vm
 
     @syft_decorator(typechecking=True)
-    def process(self, worker: AbstractDevice, msg: VirtualMachineLifecycleMessage
+    def process(
+        self, worker: AbstractDevice, msg: VirtualMachineLifecycleMessage
     ) -> VirtualMachineLifecycleMessage:
         return self.msg_type_router[type(msg)](worker=worker, msg=msg)
 
@@ -26,7 +26,9 @@ class VirtualMachineLifecycleService(WorkerService):
     def message_handler_types() -> List[type]:
         return [VirtualMachineLifecycleMessage]
 
-    def create_vm(self, worker:AbstractDevice, msg: CreateVirtualMachineMessage) -> CreateVirtualMachineReplyMessage:
+    def create_vm(
+        self, worker: AbstractDevice, msg: CreateVirtualMachineMessage
+    ) -> CreateVirtualMachineReplyMessage:
         vm = VirtualMachine(name=msg.vm_name)
 
         client = vm.get_client()
