@@ -49,7 +49,7 @@ class Worker(AbstractWorker):
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         try:
-            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
+            return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -65,9 +65,6 @@ class Worker(AbstractWorker):
                     )
 
                 raise e
-        if self.shoud_forward(processed):
-            self.forward_message(processed)
-        return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
