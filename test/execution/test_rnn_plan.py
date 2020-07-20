@@ -69,13 +69,17 @@ class CustomGru(nn.Module):
     def init_hidden(self, batch_size):
         return th.zeros(batch_size, self.hidden_size)
 
-    def forward(self, x, hidden=None):
-        # For the plan to work, the sequence length must always be the same.
-        sequence_length = x.shape[0]
-
+    def forward(self, x, hidden=None, sequence_length=None):
         if hidden is None:
             batch_size = x.shape[1]
             hidden = self.init_hidden(batch_size)
+        if sequence_length is None:
+            sequence_length = x.shape[0]
+        else:
+            # The sequence length should always be the same size when running the Plan.
+            # But maybe we can one day be more dynamic and use it.
+            sequence_length = sequence_length.item()
+
         for t in range(sequence_length):
             hidden = self.gru_cell(x[t, :, :], hidden)
         # Just return the result of the final cell
@@ -96,12 +100,14 @@ def test_rnn_plan_example():
             super(Net, self).__init__()
             self.vocab_size = vocab_size
 
-            # It would be nice to use PyTorch's nn.Embedding
-            # but gradients didn't get computed for its weights.
+            # It would be nice use PyTorch's nn.Embedding and let them be trainable:
+            # `self.encoder = nn.Embedding(self.vocab_size, embedding_size)`
+            # but gradients didn't get computed for its weights when building the Plan.
             # We could make our own custom embedding layer but it didn't work yet in PySyft:
             # * Doing
             #   `output = self.weight[embedding_indices]`
-            #   doesn't work with PySyft's implementation for __getitem__.
+            #   doesn't work with PySyft's implementation for __getitem__
+            #   because the indices have too many dimensions.
             # * Doing the lookup "manually" with loops gave grad=None for the embeddings too.
             embeddings = th.zeros(self.vocab_size, embedding_size)
             self.encoder: nn.Embedding = nn.Embedding.from_pretrained(embeddings, padding_idx=0)
@@ -113,9 +119,9 @@ def test_rnn_plan_example():
         def init_hidden(self, batch_size):
             return self.rnn.init_hidden(batch_size)
 
-        def forward(self, x, hidden=None):
+        def forward(self, x, hidden=None, sequence_length=None):
             embeddings = self.encoder(x)
-            output, hidden = self.rnn(embeddings, hidden)
+            output, hidden = self.rnn(embeddings, hidden, sequence_length)
             output = self.decoder(output)
             return output, hidden
 
@@ -154,10 +160,10 @@ def test_rnn_plan_example():
     model = Net(10, 8, 8)
 
     @sy.func2plan()
-    def train(data, initial_hidden, targets, lr, batch_size, model_parameters):
+    def train(data, initial_hidden, targets, lr, batch_size, sequence_length, model_parameters):
         set_model_params(model, model_parameters)
 
-        logits, hidden = model(data, initial_hidden)
+        logits, hidden = model(data, initial_hidden, sequence_length)
 
         loss = softmax_cross_entropy_with_logits(logits, targets, batch_size)
 
@@ -182,11 +188,15 @@ def test_rnn_plan_example():
     # These size must always be the same when using the model.
     batch_size = 3
     # Changing the sequence length from 2 to 3 can make the Torchscript take much much longer.
-    # (a few seconds to a few minutes when testing on a decent machine).
+    # (a few seconds to 1min when testing on a decent machine).
+    # The sequence length should always be the same size when running the Plan.
+    # But maybe we can one day be more dynamic and use it.
+    # For non-example purposes, increase the sequence length and use padding on the data.
     sequence_length = 2
     vocab_size = model.vocab_size
     # Data has the index of the word in a vocabulary.
-    data = th.randint(0, vocab_size, (sequence_length, batch_size))
+    # Start at 1 since 0 is for padding.
+    data = th.randint(1, vocab_size, (sequence_length, batch_size))
 
     # Test the model with no default hidden state.
     output, hidden = model(data)
@@ -202,29 +212,39 @@ def test_rnn_plan_example():
     targets = nn.functional.one_hot(targets, vocab_size)
 
     lr = th.tensor([0.1])
-    batch_size = th.tensor([float(batch_size)])
+    batch_size = th.tensor([batch_size])
+    sequence_length = th.tensor([sequence_length])
     model_state = list(model.parameters())
 
     # Build Plan
-    train.build(data, initial_hidden, targets, lr, batch_size, model_state, trace_autograd=True)
+    train.build(
+        data,
+        initial_hidden,
+        targets,
+        lr,
+        batch_size,
+        sequence_length,
+        model_state,
+        trace_autograd=True,
+    )
 
-    # Original forward func (torch autograd)
+    # Original forward func (Torch autograd)
     loss_torch, acc_torch, *params_torch = train(
-        data, initial_hidden, targets, lr, batch_size, model_state
+        data, initial_hidden, targets, lr, batch_size, sequence_length, model_state,
     )
 
     # Traced forward func (traced autograd)
     train.forward = None
     loss_syft, acc_syft, *params_syft = train(
-        data, initial_hidden, targets, lr, batch_size, model_state
+        data, initial_hidden, targets, lr, batch_size, sequence_length, model_state
     )
 
-    # Translate Plan to torchscript
+    # Translate Plan to Torchscript
     print("Translating Plan to Torchscript")
     train.add_translation(PlanTranslatorTorchscript)
     print("Running Torchscript Plan")
     loss_ts, acc_ts, *params_ts = train.torchscript(
-        data, initial_hidden, targets, lr, batch_size, model_state
+        data, initial_hidden, targets, lr, batch_size, sequence_length, model_state
     )
 
     # Tests
@@ -236,15 +256,13 @@ def test_rnn_plan_example():
     assert acc.shape == th.Size([1])
     assert acc.item() >= 0
 
-    # Outputs should be equal
+    # Outputs from each type of run should be equal.
     assert th.allclose(loss_torch, loss_syft), f"loss torch {loss_torch} != loss syft {loss_syft}"
     assert th.allclose(acc_torch, acc_syft), "acc torch/syft"
     assert th.allclose(loss_torch, loss_ts), f"loss torch {loss_torch} != loss ts {loss_ts}"
     assert th.allclose(acc_torch, acc_ts), "acc torch/ts"
-    for i, param_torch in enumerate(params_torch):
-        if i == 0:
-            # Skip Embedded weights comparison
-            continue
+    # Skip embedding weights comparison (1st param).
+    for i, param_torch in enumerate(params_torch[1:], start=1):
         assert th.allclose(
             param_torch, params_syft[i]
         ), f"param {i} (out_{i + 3}) torch/syft. {th.abs(param_torch - params_syft[i]).max()}"
