@@ -95,7 +95,7 @@ class Worker(AbstractWorker):
         self.services_registered = True
 
     @type_hints
-    def _fetch_network(self) -> None:
+    def _fetch_visible_surrounding(self) -> None:
         """
         This method allow connecting to a main orchestrator that can
         send the information about the surrounding networks to update
@@ -128,25 +128,3 @@ class Worker(AbstractWorker):
         Allows workers to connect to messaging protocols and listen on messages.
         """
         return self.recv_msg(msg)
-
-    @type_hints
-    def should_forward(self, msg:SyftMessage) -> boolean:
-        """
-        Determine if the message should be forwarded in the network
-        """
-        return True
-
-    @type_hints
-    def forward_message(self, msg: SyftMessage) -> None:
-        """
-        forward message to entities on the network that may have objects of interest.
-        """
-        signed_message = self.sign_message(msg)
-        routes = []
-        return self.broadcast_message(msg, routes)
-
-    def broadcast_message(message: str, routes: Sequence[Route]) -> None:
-        """
-        This allows for broadcasting to either routes, or through a comms bus.
-        """
-        pass
