@@ -3,8 +3,33 @@ from ...common.id import UID
 from typing import final
 
 
+class BaseRoute(object):
+    def configure_connection(self, protocol, url, port):
+        pass
+
+    def register_broadcast_channel(self, channel_name):
+        """
+        Args:
+            channel_name: the name of the channel to broadcast on.
+        """
+        self.broadcast_channel = name
+
+    def client(self):
+        # connect to configured connection.
+        return
+
+    def type(self):
+        if self.vm != '*':
+            return 'VM'
+        if self.domain != '*':
+            return 'Domain'
+        if self.device != '*':
+            return 'Device'
+        if self.network != '*':
+            return 'Network'
+
 @final
-class PublicRoute(object):
+class PublicRoute(BaseRoute):
     @syft_decorator(typechecking=True)
     def __init__(self, network: (str, UID), domain: (str, UID)):
         self.network = network
@@ -12,7 +37,7 @@ class PublicRoute(object):
 
 
 @final
-class PrivateRoute(object):
+class PrivateRoute(BaseRoute):
     @syft_decorator(typechecking=True)
     def __init__(self, device: (str, UID), vm: (str, UID)):
         self.device = device
@@ -20,7 +45,7 @@ class PrivateRoute(object):
 
 
 @final
-class Route(object):
+class Route(BaseRoute):
     @syft_decorator(typechecking=True)
     def __init__(self, pub_route: PublicRoute, pri_route: PrivateRoute):
         self.pub_route = pub_route

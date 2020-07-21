@@ -15,6 +15,8 @@ class Device(Worker, AbstractDevice):
     def __init__(self, name: str):
         super().__init__(name=name)
 
+        remote_nodes = DeviceRemoteNodes()
+
         # the VM objects themselves
         self._vms = {}
 
