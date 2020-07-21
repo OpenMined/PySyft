@@ -96,9 +96,10 @@ def test_rnn_plan_example():
     Plan._build_translators = []
 
     class Net(nn.Module):
-        def __init__(self, vocab_size, embedding_size, hidden_size):
+        def __init__(self, vocab_size, embedding_size, hidden_size, padding_idx=0):
             super(Net, self).__init__()
             self.vocab_size = vocab_size
+            self.padding_idx = padding_idx
 
             # It would be nice use PyTorch's nn.Embedding and let them be trainable:
             # `self.encoder = nn.Embedding(self.vocab_size, embedding_size)`
@@ -110,7 +111,9 @@ def test_rnn_plan_example():
             #   because the indices have too many dimensions.
             # * Doing the lookup "manually" with loops gave grad=None for the embeddings too.
             embeddings = th.zeros(self.vocab_size, embedding_size)
-            self.encoder: nn.Embedding = nn.Embedding.from_pretrained(embeddings, padding_idx=0)
+            self.encoder: nn.Embedding = nn.Embedding.from_pretrained(
+                embeddings, padding_idx=self.padding_idx
+            )
             self.encoder.reset_parameters()
 
             self.rnn = CustomGru(embedding_size, hidden_size)
@@ -132,7 +135,7 @@ def test_rnn_plan_example():
         param_idx = start_param_idx
 
         for name, param in module._parameters.items():
-            # A param can be None if it is not used.
+            # A param can be None if it is not trainable.
             if param is not None:
                 module._parameters[name] = params_list[param_idx]
                 param_idx += 1
@@ -195,8 +198,9 @@ def test_rnn_plan_example():
     sequence_length = 2
     vocab_size = model.vocab_size
     # Data has the index of the word in a vocabulary.
-    # Start at 1 since 0 is for padding.
-    data = th.randint(1, vocab_size, (sequence_length, batch_size))
+    # Start token indices after padding index.
+    token_start_index = max(model.padding_idx + 1, 1)
+    data = th.randint(token_start_index, vocab_size, (sequence_length, batch_size))
 
     # Test the model with no default hidden state.
     output, hidden = model(data)
