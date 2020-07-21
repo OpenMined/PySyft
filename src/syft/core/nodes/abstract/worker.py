@@ -42,7 +42,8 @@ class Worker(AbstractWorker):
         self.store = ObjectStore()
         self.msg_router = {}
         self.services_registered = False
-        self.remote_nodes = MyRemoteNodes(my_route=route)
+        self.node_type = type(self).__name__
+        self.remote_nodes = MyRemoteNodes(type=self.node_type)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
@@ -64,8 +65,10 @@ class Worker(AbstractWorker):
                     )
 
                 raise e
-            if type(msg) is SyftMessageWithReply:
-                return reply_to_message(processed)
+
+            # if this is a message awaiting reply, reply.
+            if hasattr(msg, 'reply_to'):
+                return self._reply_to_message(processed)
             return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
@@ -93,6 +96,6 @@ class Worker(AbstractWorker):
 
         self.services_registered = True
 
-    def reply_to_message(self, reply_msg: SyftMessage):
+    def _reply_to_message(self, reply_msg: SyftMessage):
         route = msg.reply_to
         route.client().send(msg)

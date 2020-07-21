@@ -15,15 +15,6 @@ class Device(Worker, AbstractDevice):
     def __init__(self, name: str):
         super().__init__(name=name)
 
-        # the VM objects themselves
-        self._vms = {}
-
-        # clients to the VM objects
-        self.vms = {}
-
-        # a lookup table to lookup VMs by name instead of ID
-        self.vm_name2id = {}
-
         services = list()
         services.append(VirtualMachineMessageService)
         services.append(VirtualMachineLifecycleService)
@@ -31,16 +22,9 @@ class Device(Worker, AbstractDevice):
 
     def get_vm(self, id_or_name:(str, UID)):
         """
-        Fetch this from the network details.
+        Fetch this from the RemoteNodes details.
         """
-        try:
-            return self.vms[id_or_name]
-        except KeyError as e:
-            try:
-                id = self.vm_name2id[id_or_name]
-                return self.vms[id]
-            except KeyError as e:
-                raise KeyError("You must ask for a vm using either a name or ID.")
+        return self.remote_nodes.get_node('vm', id_or_name)
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:
