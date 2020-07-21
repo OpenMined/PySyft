@@ -4,6 +4,7 @@ import torch.nn as nn
 
 import syft as sy
 from syft.execution.plan import Plan
+from syft.execution.translation.threepio import PlanTranslatorTfjs
 from syft.execution.translation.torchscript import PlanTranslatorTorchscript
 
 
@@ -273,3 +274,5 @@ def test_rnn_plan_example():
         assert th.allclose(
             param_torch, params_ts[i]
         ), f"param {i} (out_{i + 3}) torch/ts. {th.abs(param_torch - params_ts[i]).max()}"
+
+    train.add_translation(PlanTranslatorTfjs)
