@@ -68,7 +68,7 @@ class Worker(AbstractWorker):
 
             # if this is a message awaiting reply, reply.
             if hasattr(msg, 'reply_to'):
-                return self._reply_to_message(processed)
+                self._reply_to_message(processed)
             return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing

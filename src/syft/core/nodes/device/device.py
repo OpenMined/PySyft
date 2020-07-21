@@ -21,10 +21,10 @@ class Device(Worker, AbstractDevice):
         self._set_services(services=services)
 
     def get_vm(self, id_or_name:(str, UID)):
-        """
-        Fetch this from the RemoteNodes details.
-        """
-        return self.remote_nodes.get_node('vm', id_or_name)
+        return self.remote_nodes.get_node('VM', id_or_name)
+
+    def register_vm(self, id_or_name: (str, UID), route: Route):
+        return self.remote_nodes.register_node('VM', id_or_name, route)
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:

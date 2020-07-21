@@ -18,9 +18,9 @@ class BaseRoute(object):
         """
         self.broadcast_channel = name
 
-    def client(self):
-        # connect to configured connection and return a client obj.
-        return self.client
+    def connect(self):
+        # connect to configured connection and return a connection obj.
+        return
 
 
 @final
