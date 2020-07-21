@@ -46,11 +46,9 @@ class Worker(AbstractWorker):
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        # should the message be forwarded, go for it.
         self.remote_nodes.route_message_to_relevant_nodes(msg)
-
         try:
-            return self.msg_router[type(msg)].process(worker=self, msg=msg)
+            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -66,6 +64,9 @@ class Worker(AbstractWorker):
                     )
 
                 raise e
+            if type(msg) is SyftMessageWithReply:
+                return reply_to_message(processed)
+            return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
@@ -92,9 +93,6 @@ class Worker(AbstractWorker):
 
         self.services_registered = True
 
-    def reply_to_message(self, original_msg: SyftMessage, reply_msg: SyftMessage):
-        # get a client and reply.
-        if not type(original_msg) is SyftMessageWithReply:
-            return
-        route = msg.reply_to.route
+    def reply_to_message(self, reply_msg: SyftMessage):
+        route = msg.reply_to
         route.client().send(msg)

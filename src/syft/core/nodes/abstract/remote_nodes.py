@@ -52,3 +52,4 @@ class MyRemoteNodes(object):
 
     def broadcast(self, route: Route):
         channel = route.broadcast_channel
+        route.client().send_msg
