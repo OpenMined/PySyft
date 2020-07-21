@@ -23,7 +23,7 @@ class MyRemoteNodes(object):
     def forget_node(self, route: Route, type: RouteTypes) -> None:
         self.nodes[type].pop(route)
 
-    def route_message_to_relevant_nodes(self, route: Route, message: SyftMessage) -> None:
+    def route_message_to_relevant_nodes(self, message: SyftMessage) -> None:
         """
         check if the message should be forwarded.
         Network: routes to domains
@@ -31,6 +31,7 @@ class MyRemoteNodes(object):
         Device: routes to VMs
         VM: doesn't route
         """
+        route = message.route
         if self.iam == 'network':
             if route.domain != '*':
                 route.domain.client().send(message)
