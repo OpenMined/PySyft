@@ -17,4 +17,7 @@ class Client:
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Client pointing to node with id:{self.node_id}>"
+        return f"<Client pointing to worker with id:{self.worker_id}>"
+
+    def get_connection_route(self):
+        raise NotImplementedError()

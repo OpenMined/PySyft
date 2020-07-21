@@ -1,7 +1,6 @@
 from ..abstract.node import Node
 
-
-class Domain(Node):
+class Domain(Worker):
     def __init__(self, name):
         super().__init__(name=name)
 

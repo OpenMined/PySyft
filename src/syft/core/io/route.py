@@ -4,29 +4,24 @@ from typing import final
 
 
 class BaseRoute(object):
-    def configure_connection(self, protocol, url, port):
-        pass
+    def configure_connection(self, client):
+        """
+        the route should have connection details embedded in it.
+        """
+        self.client = client
 
     def register_broadcast_channel(self, channel_name):
         """
+        In the case configured protocol is pub/sub or event driven.
         Args:
             channel_name: the name of the channel to broadcast on.
         """
         self.broadcast_channel = name
 
     def client(self):
-        # connect to configured connection.
-        return
+        # connect to configured connection and return a client obj.
+        return self.client
 
-    def type(self):
-        if self.vm != '*':
-            return 'VM'
-        if self.domain != '*':
-            return 'Domain'
-        if self.device != '*':
-            return 'Device'
-        if self.network != '*':
-            return 'Network'
 
 @final
 class PublicRoute(BaseRoute):
