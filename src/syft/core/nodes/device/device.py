@@ -18,7 +18,7 @@ class Device(Node, AbstractDevice):
     def __init__(self, name: str, device_type: DeviceType=unknown_device, vms: Dict[UID, VirtualMachine]={}):
         super().__init__(name=name)
 
-        self.device_type = device_type
+        remote_nodes = DeviceRemoteNodes()
 
         # the VM objects themselves
         self._vms = vms

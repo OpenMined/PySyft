@@ -14,12 +14,9 @@ from ....util import get_subclasses
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
-from ...message import SyftMessage
+from ...message import SyftMessage, SyftMessageWithReply
 from ...io import Route
-
-# nodes related imports
-from ..abstract.remote_nodes import RemoteNodes
-
+from remote_nodes import MyRemoteNodes
 
 class Node(AbstractNode):
 
@@ -43,12 +40,14 @@ class Node(AbstractNode):
         self.name = name
         self.store = ObjectStore()
         self.msg_router = {}
-        # bootstrap
-        self.known_workers = RemoteNodes()
         self.services_registered = False
+        self.remote_nodes = MyRemoteNodes()
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
+        # should the message be forwarded, go for it.
+        self.remote_nodes.route_message_to_relevant_nodes(msg)
+
         try:
             return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
@@ -92,12 +91,9 @@ class Node(AbstractNode):
 
         self.services_registered = True
 
-    @type_hints
-    def listen_on_messages(self, msg: SyftMessage) -> SyftMessage:
-        """
-        Allows workers to connect to open messaging protocols and listen on
-            messages.
-
-        The worker would extend this class to implement the specific protocol.
-        """
-        return self.recv_msg(msg)
+    def reply_to_message(self, original_msg: SyftMessage, reply_msg: SyftMessage):
+        # get a client and reply.
+        if not type(original_msg) is SyftMessageWithReply:
+            return
+        route = msg.reply_to.route
+        route.client().send(msg)
