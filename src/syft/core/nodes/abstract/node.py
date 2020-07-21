@@ -68,7 +68,7 @@ class Node(AbstractNode):
 
             # if this is a message awaiting reply, reply.
             if hasattr(msg, 'reply_to'):
-                return self._reply_to_message(processed)
+                self._reply_to_message(processed)
             return processed
 
     # TODO: change services type  to List[NodeService] when typechecker allows subclassing
