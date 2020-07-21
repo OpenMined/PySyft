@@ -34,14 +34,15 @@ class Worker(AbstractWorker):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, name: str = None):
+    def __init__(self, route: Route, name: str = None):
         super().__init__()
 
         self.name = name
+        self.route = route
         self.store = ObjectStore()
         self.msg_router = {}
         self.services_registered = False
-        self.remote_nodes = MyRemoteNodes()
+        self.remote_nodes = MyRemoteNodes(my_route=route)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:

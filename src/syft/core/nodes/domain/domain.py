@@ -1,6 +1,5 @@
 from ..abstract.worker import Worker
 
-
 class Domain(Worker):
     def __init__(self, name):
         super().__init__(name=name)
