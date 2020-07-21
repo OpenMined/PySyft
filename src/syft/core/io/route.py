@@ -4,11 +4,11 @@ from typing import final
 
 
 class BaseRoute(object):
-    def configure_connection(self, client):
+    def configure_connection(self, connection_details):
         """
         the route should have connection details embedded in it.
         """
-        self.client = client
+        self.connection_details = connection_details
 
     def register_broadcast_channel(self, channel_name):
         """

@@ -42,15 +42,14 @@ class Node(AbstractNode):
         self.store = ObjectStore()
         self.msg_router = {}
         self.services_registered = False
-        self.remote_nodes = MyRemoteNodes(my_route=route)
+        self.node_type = type(self).__name__
+        self.remote_nodes = MyRemoteNodes(type=self.node_type)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        # should the message be forwarded, go for it.
         self.remote_nodes.route_message_to_relevant_nodes(msg)
-
         try:
-            return self.msg_router[type(msg)].process(worker=self, msg=msg)
+            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -66,6 +65,11 @@ class Node(AbstractNode):
                     )
 
                 raise e
+
+            # if this is a message awaiting reply, reply.
+            if hasattr(msg, 'reply_to'):
+                return self._reply_to_message(processed)
+            return processed
 
     # TODO: change services type  to List[NodeService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
@@ -92,9 +96,6 @@ class Node(AbstractNode):
 
         self.services_registered = True
 
-    def reply_to_message(self, original_msg: SyftMessage, reply_msg: SyftMessage):
-        # get a client and reply.
-        if not type(original_msg) is SyftMessageWithReply:
-            return
-        route = msg.reply_to.route
+    def _reply_to_message(self, reply_msg: SyftMessage):
+        route = msg.reply_to
         route.client().send(msg)
