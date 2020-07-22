@@ -347,12 +347,11 @@ def test_mul(workers, dtype, protocol, force_preprocessing):
     y = x * x
     assert (y.get() == (t * t)).all()
 
-    # TODO 3 workers
-    # if protocol != "fss":  # not supported for the moment
-    #     t = torch.tensor([1, 2, 3, 4])
-    #     x = t.share(bob, alice, charlie, crypto_provider=crypto_provider)
-    #     y = x * x
-    #     assert (y.get() == (t * t)).all()
+    # TODO 3 workers not supported for the moment
+    # t = torch.tensor([1, 2, 3, 4])
+    # x = t.share(bob, alice, charlie, crypto_provider=crypto_provider)
+    # y = x * x
+    # assert (y.get() == (t * t)).all()
 
     # with fixed precision
     args = (alice, bob)

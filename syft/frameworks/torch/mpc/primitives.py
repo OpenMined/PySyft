@@ -5,6 +5,7 @@ import numpy as np
 import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
+from syft.frameworks.torch.mpc.beaver import build_triple
 from syft.workers.abstract import AbstractWorker
 
 
@@ -248,52 +249,18 @@ class PrimitiveStorage:
             if not isinstance(shapes, list):
                 assert len(shapes) == 2
                 shapes = [shapes]
-            primitives_worker = [[], []]
+
+            # get params and set default values
             dtype = kwargs.get("dtype", "long")
             torch_dtype = kwargs.get("torch_dtype", th.int64)
             field = kwargs.get("field", 2 ** 64)
 
-            for shape in shapes:  # , dtype
-                a_shape, b_shape = shape
-                cmd = getattr(th, op)
-                a = th.randint(
-                    -(field // 2), (field - 1) // 2, (n_instances, *a_shape), dtype=torch_dtype
-                )
-                b = th.randint(
-                    -(field // 2), (field - 1) // 2, (n_instances, *b_shape), dtype=torch_dtype
-                )
-
-                if op == "mul" and b.numel() == a.numel():
-                    # examples:
-                    #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
-                    #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
-                    if len(a.shape) == len(b.shape):
-                        c = cmd(a, b)
-                    elif len(a.shape) > len(b.shape):
-                        shape = b.shape
-                        b = b.reshape_as(a)
-                        c = cmd(a, b)
-                        b = b.reshape(*shape)
-                    else:  # len(a.shape) < len(b.shape):
-                        shape = a.shape
-                        a = a.reshape_as(b)
-                        c = cmd(a, b)
-                        a = a.reshape(*shape)
-                else:
-                    c = cmd(a, b)
-
-                masks_0 = []
-                masks_1 = []
-                for i, tensor in enumerate([a, b, c]):
-                    mask = th.randint(
-                        -(field // 2), (field - 1) // 2, tensor.shape, dtype=torch_dtype
-                    )
-                    masks_0.append(tensor - mask)
-                    masks_1.append(mask)
-
+            primitives_worker = [[] for _ in range(n_party)]
+            for shape in shapes:
+                shares_worker = build_triple(op, shape, n_party, n_instances, torch_dtype, field)
                 config = (shape, dtype, torch_dtype, field)
-                primitives_worker[0].append((config, masks_0))
-                primitives_worker[1].append((config, masks_1))
+                for primitives, shares in zip(primitives_worker, shares_worker):
+                    primitives.append((config, shares))
 
             return primitives_worker
 
