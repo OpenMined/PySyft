@@ -126,5 +126,5 @@ class StaticFLClient:
             "version": version,
             "checkpoint": checkpoint,
         }
-        serialized_model = self._send_http_req("GET", "/get-model", params)
+        serialized_model = self._send_http_req("GET", "/model_centric/retrieve-model", params)
         return self._unserialize(serialized_model, StatePB)
