@@ -19,7 +19,7 @@ class DomainRemoteNodes(RemoteNodes):
         pri_route = message.route.pri_route
         device = pri_route.device
         # look up the private connection to this device.
-        private_route = self.nodes.get(key='id', value=device.id)
+        private_route = self.nodes.get(on_multi_keys=['id', 'name'], value=device)
 
         # get a device client and connect.
         connection = private_route.connect()

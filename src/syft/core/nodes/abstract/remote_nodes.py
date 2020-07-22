@@ -18,10 +18,19 @@ class Node(object):
         self.tags = tags
         self.is_local = is_local
 
-    def as_dict(self, on_key = 'id'):
-        key = getattr(self, on_key)
-        if on_key == 'tags':
-            key = self._flatten_tags_for_search(key)
+    def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
+        if len(on_multi_keys):
+            key = ''
+            for on_key in on_multi_keys:
+                val = getattr(self, on_key)
+                # we probably shouldn't allow very large keys.
+                if on_key == 'tags':
+                    val = self._flatten_tags_for_search(key)
+                key += val
+        else:
+            key = getattr(self, on_key)
+            if on_key == 'tags':
+                key = self._flatten_tags_for_search(key)
         {key: {
             'id': self.id,
             'name': self.name,
@@ -57,14 +66,14 @@ class RemoteNodes(object):
         #self.nodes =
         pass
 
-    def as_dict(self, on_key = 'id'):
+    def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
         all = {}
         for node in nodes:
-            all.update(node.as_dict(on_key))
+            all.update(node.as_dict(on_key, on_multi_keys))
         return all
 
-    def get_node(self, key: str = 'id', value:(str, UID)):
-        nodes = self.as_dict(on_key = key)
+    def get_node(self, key: str = 'id', on_multi_keys: list = [], value:(str, UID)):
+        nodes = self.as_dict(on_key = key, on_multi_keys = on_multi_keys)
         return nodes.get(value)
 
     def route_message_to_relevant_nodes(self, message: SyftMessage) -> None:
