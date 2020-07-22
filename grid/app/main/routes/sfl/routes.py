@@ -18,15 +18,20 @@ from scipy.stats import poisson
 # Local imports
 from ... import main, model_centric
 from ...core.codes import CYCLE, MSG_FIELD, RESPONSE_MSG
-from ...core.exceptions import InvalidRequestKeyError, ModelNotFoundError, PyGridError
-from ...events.sfl.fl_events import assign_worker_id, cycle_request, report
 from ...sfl.auth.federated import verify_token
 from ...sfl.controller import processes
 from ...sfl.cycles import cycle_manager
 from ...sfl.models import model_manager
 from ...sfl.processes import process_manager
 from ...sfl.syft_assets import plans, protocols
+from ...events.sfl.fl_events import (
+    report,
+    cycle_request,
+    assign_worker_id,
+    requires_speed_test,
+)
 from ...sfl.workers import worker_manager
+from ...core.exceptions import InvalidRequestKeyError, PyGridError, ModelNotFoundError
 
 
 @model_centric.route("/cycle-request", methods=["POST"])
@@ -259,6 +264,10 @@ def auth():
 
         if verification_result["status"] == RESPONSE_MSG.SUCCESS:
             resp = assign_worker_id({"auth_token": _auth_token}, None)
+            # check if requires speed test
+            resp[MSG_FIELD.REQUIRES_SPEED_TEST] = requires_speed_test(
+                model_name, model_version
+            )
             response_body = resp
 
         elif verification_result["status"] == RESPONSE_MSG.ERROR:

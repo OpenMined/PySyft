@@ -11,6 +11,7 @@ class MSG_FIELD:
     PROPERTIES = "model_properties"
     SIZE = "model_size"
     SYFT_VERSION = "syft_version"
+    REQUIRES_SPEED_TEST = "requires_speed_test"
     USERNAME_FIELD = "username"
     PASSWORD_FIELD = "password"
 
