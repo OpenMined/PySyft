@@ -935,6 +935,38 @@ def test_avg_pool2d(workers, protocol):
     assert (result == expected).all()
 
 
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+@pytest.mark.parametrize("training", [True, False])
+def test_batch_norm(workers, protocol, training):
+    me, alice, bob, crypto_provider = (
+        workers["me"],
+        workers["alice"],
+        workers["bob"],
+        workers["james"],
+    )
+
+    args = (alice, bob)
+    syft.local_worker.clients = args
+    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
+
+    model = nn.BatchNorm2d(4, momentum=0)
+    if training:
+        model.train()
+    else:
+        model.eval()
+
+    x = torch.rand(1, 4, 5, 5)
+    expected = model(x)
+
+    model.fix_prec().share(*args, **kwargs)
+    x = x.fix_prec().share(*args, **kwargs)
+    y = model(x)
+    predicted = y.get().float_prec()
+
+    relative_error = 2 * (expected - predicted).abs() / (expected.abs() + predicted.abs())
+    assert relative_error.mean() < 0.1
+
+
 def test_mod(workers):
     alice, bob, james = workers["alice"], workers["bob"], workers["james"]
 
