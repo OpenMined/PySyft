@@ -16,11 +16,21 @@ class Node(object):
         self.type = type
         self.route = route
         self.tags = tags
+        self.is_local = is_local
 
-    def as_dict(self, on_key = 'id'):
-        key = getattr(self, on_key)
-        if on_key == 'tags':
-            key = self._flatten_tags_for_search(key)
+    def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
+        if len(on_multi_keys):
+            key = ''
+            for on_key in on_multi_keys:
+                val = getattr(self, on_key)
+                # we probably shouldn't allow very large keys.
+                if on_key == 'tags':
+                    val = self._flatten_tags_for_search(key)
+                key += val
+        else:
+            key = getattr(self, on_key)
+            if on_key == 'tags':
+                key = self._flatten_tags_for_search(key)
         {key: {
             'id': self.id,
             'name': self.name,
@@ -32,6 +42,15 @@ class Node(object):
         return tags.join('-')
 
 class RemoteNodes(object):
+    """
+    This object keeps a registery of a node's surrounding.
+    for example a domain may know a number of public networks,
+    a number of other domains and a number of devices.
+    this also plays a role in routing messages internally and externally.
+    eg. if a domain receives a message from a public network asking to be
+    routed to a particular device. the remote nodes would have private routes
+    with preconfigured connections that it can route through internally.
+    """
     nodes = []
 
     def __init__(self, my_type):
@@ -47,14 +66,14 @@ class RemoteNodes(object):
         #self.nodes =
         pass
 
-    def as_dict(self, on_key = 'id'):
+    def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
         all = {}
         for node in nodes:
-            all.update(node.as_dict(on_key))
+            all.update(node.as_dict(on_key, on_multi_keys))
         return all
 
-    def get_node(self, key: str = 'id', value:(str, UID)):
-        nodes = self.as_dict(on_key = key)
+    def get_node(self, key: str = 'id', on_multi_keys: list = [], value:(str, UID)):
+        nodes = self.as_dict(on_key = key, on_multi_keys = on_multi_keys)
         return nodes.get(value)
 
     def route_message_to_relevant_nodes(self, message: SyftMessage) -> None:
@@ -69,4 +88,4 @@ class RemoteNodes(object):
 
     def broadcast(self, route: Route, message: SyftMessage) -> None:
         channel = route.broadcast_channel
-        route.connection().send_msg(message)
+        route.connect().send_msg(message)
