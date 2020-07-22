@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import List
 
 import numpy as np
-import torch as th
 import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.abstract import AbstractWorker

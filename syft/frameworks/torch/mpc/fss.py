@@ -11,7 +11,6 @@ Note that the protocols are quite different in aspect from those papers
 """
 import hashlib
 import math
-import time
 import numpy as np
 import sha_loop
 import multiprocessing
@@ -514,8 +513,10 @@ def H(seed, idx=0):
     # [λ, 1, λ, 1, λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
 
-    # valuebits[0] = buffer[0] & b63_, buffer[1], buffer[0] & b_1, buffer[2] & b63_, buffer[3], buffer[2] & b_1
-    # valuebits[1] = buffer[4] & b63_, buffer[5], buffer[4] & b_1, buffer[6] & b63_, buffer[7], buffer[6] & b_1
+    # valuebits[0] = buffer[0] & b63_, buffer[1], buffer[0] & b_1,
+    #                buffer[2] & b63_, buffer[3], buffer[2] & b_1
+    # valuebits[1] = buffer[4] & b63_, buffer[5], buffer[4] & b_1,
+    #                buffer[6] & b63_, buffer[7], buffer[6] & b_1
     valuebits[0, 0], last_bit = split_last_bit(buffer[0])
     valuebits[0, 1] = buffer[1]
     valuebits[0, 2] = last_bit
