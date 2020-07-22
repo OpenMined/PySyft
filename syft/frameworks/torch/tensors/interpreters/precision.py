@@ -692,7 +692,11 @@ class FixedPrecisionTensor(AbstractTensor):
         unbiased_self = self - mu
         mean = (unbiased_self * unbiased_self).mean(**kwargs)
         if unbiased:
-            numel = self.numel()
+            if kwargs.get("dim"):
+                dim = kwargs["dim"]
+                numel = self.shape[dim]
+            else:
+                numel = self.numel()
             return mean * numel / (numel - 1)
         else:
             return mean
