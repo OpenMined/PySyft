@@ -19,6 +19,7 @@ import asyncio
 
 import torch as th
 import syft as sy
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.websocket_client import WebsocketClientWorker
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
@@ -45,30 +46,21 @@ N_CORES = 8
 MULTI_LIMIT = 10_000
 
 
-def fss_op(x1, x2, type_op="eq"):
+def fss_op(x1, x2, op="eq"):
     """
     Define the workflow for a binary operation using Function Secret Sharing
 
     Currently supported operand are = & <=, respectively corresponding to
-    type_op = 'eq' and 'comp'
+    op = 'eq' and 'comp'
 
     Args:
         x1: first AST
         x2: second AST
-        type_op: type of operation to perform, should be 'eq' or 'comp'
+        op: type of operation to perform, should be 'eq' or 'comp'
 
     Returns:
         shares of the comparison
     """
-    # simple vs multi depending on num elements
-    # {
-    #     5_000: [0.085, 0.10]
-    #     10_000: [0.15, 0.15],
-    #     20_000: [0.28, 0.23]
-    #     50_000: [0.75, 0.47],
-    #     100_000: [1.50, 0.95]
-    # }
-
     if isinstance(x1, sy.AdditiveSharingTensor):
         locations = x1.locations
         class_attributes = x1.get_class_attributes()
@@ -87,15 +79,21 @@ def fss_op(x1, x2, type_op="eq"):
             x2.child[location.id]
             if isinstance(x2, sy.AdditiveSharingTensor)
             else (x2 if i == 0 else 0),
-            type_op,
+            op,
         )
         for i, location in enumerate(locations)
     ]
 
-    shares = []
-    for i, location in enumerate(locations):
-        share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
-        shares.append(share)
+    try:
+        shares = []
+        for i, location in enumerate(locations):
+            share = remote(mask_builder, location=location)(*workers_args[i], return_value=True)
+            shares.append(share)
+    except EmptyCryptoPrimitiveStoreError as e:
+        if sy.local_worker.crypto_store.force_preprocessing:
+            raise
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        return fss_op(x1, x2, op)
 
     # async has a cost which is too expensive for this command
     # shares = asyncio.run(sy.local_worker.async_dispatch(
@@ -113,7 +111,7 @@ def fss_op(x1, x2, type_op="eq"):
         location.de_register_obj(share)
         del share
 
-    workers_args = [(th.IntTensor([i]), mask_value, type_op, dtype) for i in range(2)]
+    workers_args = [(th.IntTensor([i]), mask_value, op, dtype) for i in range(2)]
     if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
@@ -136,7 +134,7 @@ def fss_op(x1, x2, type_op="eq"):
 
 # share level
 @allow_command
-def mask_builder(x1, x2, type_op):
+def mask_builder(x1, x2, op):
     if not isinstance(x1, int):
         worker = x1.owner
         numel = x1.numel()
@@ -146,18 +144,16 @@ def mask_builder(x1, x2, type_op):
     x = x1 - x2
     # Keep the primitive in store as we use it after
     # you actually get a share of alpha
-    alpha, s_0, *CW = worker.crypto_store.get_keys(
-        f"fss_{type_op}", n_instances=numel, remove=False
-    )
+    alpha, s_0, *CW = worker.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=False)
     r = x + th.tensor(alpha.astype(np.int64)).reshape(x.shape)
     return r
 
 
 @allow_command
-def evaluate(b, x_masked, type_op, dtype):
-    if type_op == "eq":
+def evaluate(b, x_masked, op, dtype):
+    if op == "eq":
         return eq_evaluate(b, x_masked)
-    elif type_op == "comp":
+    elif op == "comp":
         numel = x_masked.numel()
         if numel > MULTI_LIMIT:
             # print('MULTI EVAL', numel, x_masked.owner)
@@ -179,7 +175,7 @@ def evaluate(b, x_masked, type_op, dtype):
             result = th.cat(partitions)
 
             # Burn the primitives (copies of the workers were sent)
-            owner.crypto_store.get_keys(f"fss_{type_op}", n_instances=numel, remove=True)
+            owner.crypto_store.get_keys(f"fss_{op}", n_instances=numel, remove=True)
 
             return result.reshape(*original_shape)
         else:
@@ -192,7 +188,7 @@ def evaluate(b, x_masked, type_op, dtype):
 # share level
 def eq_evaluate(b, x_masked):
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="fss_eq", n_instances=x_masked.numel(), remove=True
+        op="fss_eq", n_instances=x_masked.numel(), remove=True
     )
     result_share = DPF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
     return th.tensor(result_share)
@@ -205,10 +201,10 @@ def comp_evaluate(b, x_masked, owner_id=None, core_id=None, burn_offset=0, dtype
 
     if burn_offset > 0:
         _ = x_masked.owner.crypto_store.get_keys(
-            type_op="fss_comp", n_instances=burn_offset, remove=True
+            op="fss_comp", n_instances=burn_offset, remove=True
         )
     alpha, s_0, *CW = x_masked.owner.crypto_store.get_keys(
-        type_op="fss_comp", n_instances=x_masked.numel(), remove=True
+        op="fss_comp", n_instances=x_masked.numel(), remove=True
     )
     result_share = DIF.eval(b.numpy().item(), x_masked.numpy(), s_0, *CW)
 

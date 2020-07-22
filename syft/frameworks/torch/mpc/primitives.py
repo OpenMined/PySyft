@@ -1,5 +1,4 @@
 from collections import defaultdict
-import math
 from typing import List
 
 import numpy as np
@@ -8,8 +7,6 @@ import syft as sy
 from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.workers.abstract import AbstractWorker
 
-import os.path
-
 
 class PrimitiveStorage:
     """
@@ -17,7 +14,7 @@ class PrimitiveStorage:
     Used by crypto providers to build crypto primitives
     """
 
-    def __init__(self, owner):
+    def __init__(self, owner: AbstractWorker):
         """
         Their are below different kinds of primitives available.
         Each primitive stack is a fixed length list corresponding to all the
@@ -30,38 +27,42 @@ class PrimitiveStorage:
         """
         self.fss_eq: list = []
         self.fss_comp: list = []
-        self.beaver: list = defaultdict(list)
+        self.mul: list = defaultdict(list)
+        self.matmul: list = defaultdict(list)
 
         self._owner: AbstractWorker = owner
         self._builders: dict = {
-            "fss_eq": self.build_fss_keys(type_op="eq"),
-            "fss_comp": self.build_fss_keys(type_op="comp"),
-            "beaver": self.build_triples,
+            "fss_eq": self.build_fss_keys(op="eq"),
+            "fss_comp": self.build_fss_keys(op="comp"),
+            "mul": self.build_triples(op="mul"),
+            "matmul": self.build_triples(op="matmul"),
         }
 
         self.force_preprocessing = False
 
-    def get_keys(self, type_op, n_instances=1, remove=True, **kwargs):
+    def get_keys(self, op: str, n_instances: int = 1, remove: bool = True, **kwargs):
         """
-        Return FSS keys primitives #TODO
+        Return FSS keys primitives
 
         Args:
-            type_op: fss_eq, fss_comp, or xor_add_couple
-            n_instances: how many primitives to retrieve. Comparison is pointwise so this is
+            op (str): primitive type, should be fss_eq, fss_comp, mul or matmul
+            n_instances (int): how many primitives to retrieve. Comparison is pointwise so this is
                 convenient: for any matrice of size nxm I can unstack n*m elements for the
                 comparison
-            remove: if true, pop out the primitive. If false, only read it. Read mode is
+            remove (boolean): if true, pop out the primitive. If false, only read it. Read mode is
                 needed because we're working on virtual workers and they need to gather
                 a some point and then re-access the keys.
+            kwargs (dict): further arguments to be used depending of the primitive
         """
-        primitive_stack = getattr(self, type_op)
+        primitive_stack = getattr(self, op)
 
-        if type_op == "beaver":
-            op = kwargs.get("op")
+        if op in ("mul", "matmul"):
             shapes = kwargs.get("shapes")
             dtype = kwargs.get("dtype")
-            op_shapes = (op, *shapes)
-            primitive_stack = primitive_stack[op_shapes]
+            torch_dtype = kwargs.get("torch_dtype")
+            field = kwargs.get("field")
+            config = (shapes, dtype, torch_dtype, field)
+            primitive_stack = primitive_stack[config]
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = []
@@ -76,33 +77,16 @@ class PrimitiveStorage:
                             primitive_stack[i] = prim[n_instances:]
                 return keys
             else:
-                if not self.force_preprocessing:
-                    if self._owner.verbose:
-                        # print(
-                        #     f"Autogenerate: "
-                        #     f'["{type_op}"], '
-                        #     # f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                        #     f"n_instances={n_instances}, "
-                        #     'beaver={"op_shape": ['
-                        #     f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})'
-                        #     "]}"
-                        # )
-                        print(
-                            f"\t\t\t "
-                            f'("{op}", {str(tuple(shapes[0]))}, {str(tuple(shapes[1]))}),'
-                        )
-                    sy.local_worker.crypto_store.provide_primitives(
-                        [type_op],
-                        sy.local_worker.clients,
-                        n_instances=n_instances,
-                        beaver={"op_shapes": [op_shapes]},
-                        dtype=dtype,
+                if self._owner.verbose:
+                    print(
+                        f"Autogenerate: "
+                        f'"{op}", '
+                        f"[({str(tuple(shapes[0]))}, {str(tuple(shapes[1]))})], "
+                        f"n_instances={n_instances}"
                     )
-                    return self.get_keys(type_op, n_instances=n_instances, remove=remove, **kwargs)
-                else:
-                    raise EmptyCryptoPrimitiveStoreError(
-                        self, type_op, available_instances, n_instances, **kwargs
-                    )
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                )
         else:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
@@ -146,106 +130,69 @@ class PrimitiveStorage:
 
                 return keys
             else:
-                if not self.force_preprocessing:
-                    if self._owner.verbose:
-                        print(
-                            f"Autogenerate: "
-                            f'["{type_op}"], '
-                            f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
-                            f"n_instances={n_instances}"
-                        )
-                    sy.local_worker.crypto_store.provide_primitives(
-                        [type_op], sy.local_worker.clients, n_instances=n_instances
+                if self._owner.verbose:
+                    print(
+                        f"Autogenerate: "
+                        f'"{op}", '
+                        f"[{', '.join(c.id for c in sy.local_worker.clients)}], "
+                        f"n_instances={n_instances}"
                     )
-                    return self.get_keys(type_op, n_instances=n_instances, remove=remove, **kwargs)
-                else:
-                    raise EmptyCryptoPrimitiveStoreError(
-                        self, type_op, available_instances, n_instances
-                    )
+                raise EmptyCryptoPrimitiveStoreError(
+                    self, available_instances, n_instances=n_instances, op=op, **kwargs
+                )
 
     def provide_primitives(
-        self, crypto_type: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
+        self, op: str, workers: List[AbstractWorker], n_instances: int = 10, **kwargs,
     ):
-        """ Build n_instances of crypto primitives of the different crypto_types given and
+        """Build n_instances of crypto primitives of the different crypto_types given and
         send them to some workers.
 
         Args:
-            crypto_types: type of primitive (fss_eq, etc)
-            workers: recipients for those primitive
-            n_instances: how many of them are needed
-            **kwargs: any parameters needs for the primitive builder
+            op (str): type of primitive (fss_eq, etc)
+            workers (AbstractWorker): recipients for those primitive
+            n_instances (int): how many of them are needed
+            **kwargs: any parameters needed for the primitive builder
         """
-        if isinstance(crypto_type, list):
-            crypto_type = crypto_type[0]
+        assert isinstance(op, str)
 
-        while n_instances > 0:
-            n_instances_batch = min(500_000, n_instances)
-            if n_instances_batch > 10_000:
-                n_instances_batch = math.ceil(n_instances_batch / 100_000) * 100_000
-            worker_types_primitives = defaultdict(dict)
+        worker_types_primitives = defaultdict(dict)
 
-            path = "/Users/tryffel/code/PySyft/data/primitives"
+        builder = self._builders[op]
 
-            def filename(worker):
-                if "beaver" in crypto_type:
-                    raise NotImplementedError
-                    op, *shapes = kwargs["beaver"]["op_shapes"][0]
-                    dtype = kwargs["dtype"]  # TODO add dtype
-                    shapes = [",".join([str(s) for s in shape]) for shape in shapes]
-                    return f"{path}/{crypto_type}-{op}-({shapes[0]})-({shapes[1]})-{n_instances_batch}-{worker.id}.data"
-                else:
-                    return f"{path}/{crypto_type}-{n_instances_batch}-{worker.id}.data"
+        primitives = builder(n_party=len(workers), n_instances=n_instances, **kwargs)
 
-            if "beaver" not in crypto_type and os.path.isfile(filename(workers[0]) + ".npy"):
-                for i, worker in enumerate(workers):
-                    worker_message = self._owner.create_worker_command_message(
-                        "load_crypto_primitive", None, crypto_type, filename(worker)
-                    )
-                    self._owner.send_msg(worker_message, worker)
-            else:
-                builder = self._builders[crypto_type]
+        for worker_primitives, worker in zip(primitives, workers):
+            worker_types_primitives[worker][op] = worker_primitives
 
-                primitives = builder(n_party=len(workers), n_instances=n_instances_batch, **kwargs)
-
-                for worker_primitives, worker in zip(primitives, workers):
-                    if "beaver" not in crypto_type:
-                        np.save(filename(worker), worker_primitives)
-                    worker_types_primitives[worker][crypto_type] = worker_primitives
-
-                for i, worker in enumerate(workers):
-                    worker_message = self._owner.create_worker_command_message(
-                        "feed_crypto_primitive_store", None, worker_types_primitives[worker]
-                    )
-                    self._owner.send_msg(worker_message, worker)
-
-            n_instances -= n_instances_batch
+        for i, worker in enumerate(workers):
+            worker_message = self._owner.create_worker_command_message(
+                "feed_crypto_primitive_store", None, worker_types_primitives[worker]
+            )
+            self._owner.send_msg(worker_message, worker)
 
     def add_primitives(self, types_primitives: dict):
         """
         Include primitives in the store
 
         Args:
-            types_primitives: dict {crypto_type: str: primitives: list}
+            types_primitives: dict {op: str: primitives: list}
         """
-        for crypto_type, primitives in types_primitives.items():
-            assert hasattr(self, crypto_type), f"Unknown crypto primitives {crypto_type}"
+        for op, primitives in types_primitives.items():
+            assert hasattr(self, op), f"Unknown crypto primitives {op}"
 
-            current_primitives = getattr(self, crypto_type)
-            if crypto_type == "beaver":
-                for op_shapes, primitive_triple in primitives:
-                    if (
-                        op_shapes not in current_primitives
-                        or len(current_primitives[op_shapes]) == 0
-                    ):
-                        current_primitives[op_shapes] = primitive_triple
+            current_primitives = getattr(self, op)
+            if op in ("mul", "matmul"):
+                for params, primitive_triple in primitives:
+                    if params not in current_primitives or len(current_primitives[params]) == 0:
+                        current_primitives[params] = primitive_triple
                     else:
                         for i, primitive in enumerate(primitive_triple):
-                            current_primitives[op_shapes][i] = th.cat(
-                                (current_primitives[op_shapes][i], primitive)
+                            current_primitives[params][i] = th.cat(
+                                (current_primitives[params][i], primitive)
                             )
-            elif crypto_type in ("fss_eq", "fss_comp"):
+            elif op in ("fss_eq", "fss_comp"):
                 if len(current_primitives) == 0:
-                    setattr(self, crypto_type, list(primitives))
+                    setattr(self, op, list(primitives))
                 else:
                     for i, primitive in enumerate(primitives):
                         if len(current_primitives[i]) == 0:
@@ -264,39 +211,22 @@ class PrimitiveStorage:
                                     axis=len(primitive.shape) - 1,
                                 )
             else:
-                raise TypeError(f"Can't resolve primitive {crypto_type} to a framework")
+                raise TypeError(f"Can't resolve primitive {op} to a framework")
 
-    def load_primitives(self, crypto_type, filename):
-        """
-        Load primitives in the store from file
-
-        Args:
-            types_primitives: dict {crypto_type: str: primitives: list}
-        """
-        primitives = np.load(filename + ".npy", allow_pickle=True)
-        if len(primitives.shape) > 0:
-            primitives = primitives.tolist()
-        else:
-            primitives = primitives.item()
-
-        types_primitives = {crypto_type: primitives}
-
-        self.add_primitives(types_primitives)
-
-    def build_fss_keys(self, type_op):
+    def build_fss_keys(self, op: str):
         """
         The builder to generate functional keys for Function Secret Sharing (FSS)
         """
-        if type_op == "eq":
+        if op == "eq":
             fss_class = sy.frameworks.torch.mpc.fss.DPF
-        elif type_op == "comp":
+        elif op == "comp":
             fss_class = sy.frameworks.torch.mpc.fss.DIF
         else:
-            raise ValueError(f"type_op {type_op} not valid")
+            raise ValueError(f"type_op {op} not valid")
 
         n = sy.frameworks.torch.mpc.fss.n
 
-        def build_separate_fss_keys(n_party, n_instances=100):
+        def build_separate_fss_keys(n_party: int, n_instances: int = 100):
             assert (
                 n_party == 2
             ), f"The FSS protocol only works for 2 workers, {n_party} were provided."
@@ -307,50 +237,64 @@ class PrimitiveStorage:
 
         return build_separate_fss_keys
 
-    def build_triples(self, n_party, n_instances, **kwargs):
-        # TODO n -> field
-        assert n_party == 2, f"Only 2 workers supported for the moment"
-        n = sy.frameworks.torch.mpc.fss.n
-        op_shapes = kwargs["beaver"]["op_shapes"]
-        primitives_worker = [[], []]
-        dtype = kwargs.get("dtype")
-        if isinstance(dtype, str) or dtype is None:
-            dtype_options = {None: th.long, "int": th.int32, "long": th.long}
-            dtype = dtype_options[dtype]
-        for op, a_shape, b_shape in op_shapes:  # , dtype
-            cmd = getattr(th, op)
-            a = th.randint(0, 2 ** n, (n_instances, *a_shape), dtype=dtype)
-            b = th.randint(0, 2 ** n, (n_instances, *b_shape), dtype=dtype)
-            # a = th.ones(*(n_instances, *a_shape)).long()
-            # b = th.ones(*(n_instances, *b_shape)).long()
+    def build_triples(self, op: str):
+        """
+        The builder to generate beaver triple for multiplication or matrix multiplication
+        """
 
-            if op == "mul" and b.numel() == a.numel():
-                # examples:
-                #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
-                #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
-                if len(a.shape) == len(b.shape):
+        def build_separate_triples(n_party: int, n_instances: int, **kwargs):
+            assert n_party == 2, f"Only 2 workers supported for the moment"
+            shapes = kwargs["shapes"]
+            if not isinstance(shapes, list):
+                assert len(shapes) == 2
+                shapes = [shapes]
+            primitives_worker = [[], []]
+            dtype = kwargs.get("dtype", "long")
+            torch_dtype = kwargs.get("torch_dtype", th.int64)
+            field = kwargs.get("field", 2 ** 64)
+
+            for shape in shapes:  # , dtype
+                a_shape, b_shape = shape
+                cmd = getattr(th, op)
+                a = th.randint(
+                    -(field // 2), (field - 1) // 2, (n_instances, *a_shape), dtype=torch_dtype
+                )
+                b = th.randint(
+                    -(field // 2), (field - 1) // 2, (n_instances, *b_shape), dtype=torch_dtype
+                )
+
+                if op == "mul" and b.numel() == a.numel():
+                    # examples:
+                    #   torch.tensor([3]) * torch.tensor(3) = tensor([9])
+                    #   torch.tensor([3]) * torch.tensor([[3]]) = tensor([[9]])
+                    if len(a.shape) == len(b.shape):
+                        c = cmd(a, b)
+                    elif len(a.shape) > len(b.shape):
+                        shape = b.shape
+                        b = b.reshape_as(a)
+                        c = cmd(a, b)
+                        b = b.reshape(*shape)
+                    else:  # len(a.shape) < len(b.shape):
+                        shape = a.shape
+                        a = a.reshape_as(b)
+                        c = cmd(a, b)
+                        a = a.reshape(*shape)
+                else:
                     c = cmd(a, b)
-                elif len(a.shape) > len(b.shape):
-                    shape = b.shape
-                    b = b.reshape_as(a)
-                    c = cmd(a, b)
-                    b = b.reshape(*shape)
-                else:  # len(a.shape) < len(b.shape):
-                    shape = a.shape
-                    a = a.reshape_as(b)
-                    c = cmd(a, b)
-                    a = a.reshape(*shape)
-            else:
-                c = cmd(a, b)
 
-            masks_0 = []
-            masks_1 = []
-            for i, tensor in enumerate([a, b, c]):
-                mask = th.randint(0, 2 ** n, tensor.shape, dtype=dtype)
-                masks_0.append(tensor - mask)
-                masks_1.append(mask)
+                masks_0 = []
+                masks_1 = []
+                for i, tensor in enumerate([a, b, c]):
+                    mask = th.randint(
+                        -(field // 2), (field - 1) // 2, tensor.shape, dtype=torch_dtype
+                    )
+                    masks_0.append(tensor - mask)
+                    masks_1.append(mask)
 
-            primitives_worker[0].append(((op, a_shape, b_shape), masks_0))
-            primitives_worker[1].append(((op, a_shape, b_shape), masks_1))
+                config = (shape, dtype, torch_dtype, field)
+                primitives_worker[0].append((config, masks_0))
+                primitives_worker[1].append((config, masks_1))
 
-        return primitives_worker
+            return primitives_worker
+
+        return build_separate_triples

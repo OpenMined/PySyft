@@ -5,11 +5,11 @@ import torch as th
 import multiprocessing
 import syft as sy
 import asyncio
-from syft.workers.websocket_client import WebsocketClientWorker
-from syft.frameworks.torch.mpc.beaver import request_triple
-from syft.workers.abstract import AbstractWorker
+from syft.exceptions import EmptyCryptoPrimitiveStoreError
 from syft.generic.utils import allow_command
 from syft.generic.utils import remote
+from syft.workers.abstract import AbstractWorker
+from syft.workers.websocket_client import WebsocketClientWorker
 
 no_wrap = {"no_wrap": True}
 
@@ -22,9 +22,15 @@ def full_name(f):
 
 # share level
 @allow_command
-def spdz_mask(x, y, type_op):
+def spdz_mask(x, y, op, dtype, torch_dtype, field):
     a, b, c = x.owner.crypto_store.get_keys(
-        "beaver", op=type_op, shapes=(x.shape, y.shape), n_instances=1, remove=False, dtype=x.dtype
+        op=op,
+        shapes=(x.shape, y.shape),
+        n_instances=1,
+        remove=False,
+        dtype=dtype,
+        torch_dtype=torch_dtype,
+        field=field,
     )
     return x - a, y - b
 
@@ -45,17 +51,18 @@ def triple_mat_mul(core_id, delta, epsilon, a, b):
 
 # share level
 @allow_command
-def spdz_compute(j, delta, epsilon, type_op):
+def spdz_compute(j, delta, epsilon, op, dtype, torch_dtype, field):
     a, b, c = delta.owner.crypto_store.get_keys(
-        "beaver",
-        op=type_op,
+        op=op,
         shapes=(delta.shape, epsilon.shape),
         n_instances=1,
         remove=True,
-        dtype=delta.dtype,
+        dtype=dtype,
+        torch_dtype=torch_dtype,
+        field=field,
     )
 
-    if type_op == "matmul":
+    if op == "matmul":
         batch_size = delta.shape[0]
 
         multiprocessing_args = []
@@ -77,7 +84,7 @@ def spdz_compute(j, delta, epsilon, type_op):
         a_epsilon = th.cat([partition[2] for partition in partitions])
         delta_epsilon = th.cat([partition[3] for partition in partitions])
     else:
-        cmd = getattr(th, type_op)
+        cmd = getattr(th, op)
 
         delta_b = cmd(delta, b)
         a_epsilon = cmd(a, epsilon)
@@ -89,35 +96,42 @@ def spdz_compute(j, delta, epsilon, type_op):
         return delta_b + a_epsilon + c
 
 
-def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
-    """
-    Define the workflow for a binary operation using Function Secret Sharing
-
-    Currently supported operand are = & <=, respectively corresponding to
-    type_op = 'eq' and 'comp'
-
+def spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field):
+    """Abstractly multiplies two tensors (mul or matmul)
     Args:
-        x1: first AST
-        x2: second AST
-        type_op: type of operation to perform, should be 'eq' or 'comp'
-
-    Returns:
-        shares of the comparison
+        cmd: a callable of the equation to be computed (mul or matmul)
+        x (AdditiveSharingTensor): the left part of the operation
+        y (AdditiveSharingTensor): the right part of the operation
+        crypto_provider (AbstractWorker): an AbstractWorker which is used
+            to generate triples
+        dtype (str): denotes the dtype of the shares, should be 'long' (default),
+            'int' or 'custom'
+        torch_dtype (type): the real type of the shares, should be th.int64
+            (default) or th.int32
+        field (int): an integer denoting the size of the field, default is 2**64
+    Return:
+        an AdditiveSharingTensor
     """
 
-    # TODO field
-    type_op = cmd
+    op = cmd
     locations = x.locations
-    asynchronous = isinstance(locations[0], WebsocketClientWorker)
+    # Experimental results don't show real improvements with asynchronous = True
+    asynchronous = False  # isinstance(locations[0], WebsocketClientWorker)
 
-    shares_delta, shares_epsilon = [], []
-    for location in locations:
-        args = (x.child[location.id], y.child[location.id], type_op)
-        share_delta, share_epsilon = remote(spdz_mask, location=location)(
-            *args, return_value=True, return_arity=2
-        )
-        shares_delta.append(share_delta)
-        shares_epsilon.append(share_epsilon)
+    try:
+        shares_delta, shares_epsilon = [], []
+        for location in locations:
+            args = (x.child[location.id], y.child[location.id], op, dtype, torch_dtype, field)
+            share_delta, share_epsilon = remote(spdz_mask, location=location)(
+                *args, return_value=True, return_arity=2
+            )
+            shares_delta.append(share_delta)
+            shares_epsilon.append(share_epsilon)
+    except EmptyCryptoPrimitiveStoreError as e:
+        if sy.local_worker.crypto_store.force_preprocessing:
+            raise
+        sy.local_worker.crypto_store.provide_primitives(workers=locations, **e.kwargs_)
+        return spdz_mul(cmd, x, y, crypto_provider, dtype, torch_dtype, field)
 
     delta = sum(shares_delta)
     epsilon = sum(shares_epsilon)
@@ -128,11 +142,10 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
         del share_delta
         del share_epsilon
 
-    if not asynchronous or True:
-        # print('sync spdz')
+    if not asynchronous:
         shares = []
         for i, location in enumerate(locations):
-            args = (th.LongTensor([i]), delta, epsilon, type_op)
+            args = (th.LongTensor([i]), delta, epsilon, op, dtype, torch_dtype, field)
             share = remote(spdz_compute, location=location)(*args, return_value=False)
             shares.append(share)
     else:
@@ -141,12 +154,7 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
             sy.local_worker.async_dispatch(
                 workers=locations,
                 commands=[
-                    (
-                        full_name(spdz_compute),
-                        None,
-                        (th.LongTensor([i]), delta, epsilon, type_op),
-                        {},
-                    )
+                    (full_name(spdz_compute), None, (th.LongTensor([i]), delta, epsilon, op), {},)
                     for i in [0, 1]
                 ],
                 return_value=False,
@@ -157,51 +165,3 @@ def spdz_mul(cmd, x, y, crypto_provider, field, dtype):
 
     response = sy.AdditiveSharingTensor(shares, **x.get_class_attributes())
     return response
-
-
-def old_spdz_mul(
-    cmd: Callable, x_sh, y_sh, crypto_provider: AbstractWorker, field: int, dtype: str
-):
-    """Abstractly multiplies two tensors (mul or matmul)	
-    Args:	
-        cmd: a callable of the equation to be computed (mul or matmul)	
-        x_sh (AdditiveSharingTensor): the left part of the operation	
-        y_sh (AdditiveSharingTensor): the right part of the operation	
-        crypto_provider (AbstractWorker): an AbstractWorker which is used to generate triples	
-        field (int): an integer denoting the size of the field	
-        dtype (str): denotes the dtype of shares	
-    Return:	
-        an AdditiveSharingTensor	
-    """
-    assert isinstance(x_sh, sy.AdditiveSharingTensor)
-    assert isinstance(y_sh, sy.AdditiveSharingTensor)
-
-    locations = x_sh.locations
-    torch_dtype = x_sh.torch_dtype
-
-    # Get triples
-    a, b, a_mul_b = request_triple(
-        crypto_provider, cmd, field, dtype, x_sh.shape, y_sh.shape, locations
-    )
-
-    delta = x_sh - a
-    epsilon = y_sh - b
-    # Reconstruct and send to all workers
-    delta = delta.reconstruct()
-    epsilon = epsilon.reconstruct()
-
-    delta_epsilon = cmd(delta, epsilon)
-
-    # Trick to keep only one child in the MultiPointerTensor (like in SNN)
-    j1 = th.ones(delta_epsilon.shape).type(torch_dtype).send(locations[0], **no_wrap)
-    j0 = th.zeros(delta_epsilon.shape).type(torch_dtype).send(*locations[1:], **no_wrap)
-    if len(locations) == 2:
-        j = sy.MultiPointerTensor(children=[j1, j0])
-    else:
-        j = sy.MultiPointerTensor(children=[j1] + list(j0.child.values()))
-
-    delta_b = cmd(delta, b)
-    a_epsilon = cmd(a, epsilon)
-    res = delta_epsilon * j + delta_b + a_epsilon + a_mul_b
-    res = res.type(torch_dtype)
-    return res

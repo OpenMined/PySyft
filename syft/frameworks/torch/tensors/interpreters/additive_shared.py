@@ -584,14 +584,9 @@ class AdditiveSharingTensor(AbstractTensor):
         if self.crypto_provider is None:
             raise AttributeError("For multiplication a crypto_provider must be passed.")
 
-        if self.protocol == "fss":
-            shares = spdz.spdz_mul(
-                equation, self, other, self.crypto_provider, self.field, self.dtype
-            )
-        else:
-            shares = spdz.old_spdz_mul(
-                cmd, self, other, self.crypto_provider, self.field, self.dtype
-            )
+        shares = spdz.spdz_mul(
+            equation, self, other, self.crypto_provider, self.dtype, self.torch_dtype, self.field
+        )
 
         return shares
 

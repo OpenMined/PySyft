@@ -7,7 +7,6 @@ from syft.frameworks.torch.nn.functional import dropout
 from syft.frameworks.torch.nn.functional import linear
 from syft.frameworks.torch.nn.functional import batch_norm
 from syft.frameworks.torch.nn.pool import AvgPool2d
-
 from syft.frameworks.torch.nn.rnn import GRU
 from syft.frameworks.torch.nn.rnn import GRUCell
 from syft.frameworks.torch.nn.rnn import LSTM

@@ -913,9 +913,6 @@ class BaseWorker(AbstractWorker):
     def feed_crypto_primitive_store(self, types_primitives: dict):
         self.crypto_store.add_primitives(types_primitives)
 
-    def load_crypto_primitive(self, crypto_type, filename):
-        self.crypto_store.load_primitives(crypto_type, filename)
-
     def list_tensors(self):
         return str(self.object_store._tensors)
 
