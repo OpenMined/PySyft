@@ -226,7 +226,7 @@ class DynamicFLClient(WebsocketClientWorker):
             "model": serialized_model,
         }
 
-        url = self.address.replace("ws", "http") + "/dynamic/serve-model/"
+        url = self.address.replace("ws", "http") + "/data_centric/serve-model/"
 
         # Multipart encoding
         form = MultipartEncoder(message)
