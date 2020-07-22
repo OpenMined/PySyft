@@ -5,6 +5,7 @@ from syft.frameworks.torch.nn.functional import avg_pool2d
 from syft.frameworks.torch.nn.functional import adaptive_avg_pool2d
 from syft.frameworks.torch.nn.functional import dropout
 from syft.frameworks.torch.nn.functional import linear
+from syft.frameworks.torch.nn.functional import batch_norm
 from syft.frameworks.torch.nn.pool import AvgPool2d
 from syft.frameworks.torch.nn.rnn import GRU
 from syft.frameworks.torch.nn.rnn import GRUCell
@@ -32,6 +33,7 @@ def nn(module):
         module.max_pool2d = max_pool2d
         module.avg_pool2d = avg_pool2d
         module.adaptive_avg_pool2d = adaptive_avg_pool2d
+        module.batch_norm = batch_norm
 
     module.functional = functional
 
