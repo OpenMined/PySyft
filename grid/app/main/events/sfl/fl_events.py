@@ -6,7 +6,11 @@ import uuid
 from binascii import unhexlify
 
 from ...core.codes import CYCLE, MODEL_CENTRIC_FL_EVENTS, MSG_FIELD, RESPONSE_MSG
-from ...core.exceptions import CycleNotFoundError, MaxCycleLimitExceededError
+from ...core.exceptions import (
+    CycleNotFoundError,
+    MaxCycleLimitExceededError,
+    PyGridError,
+)
 from ...sfl.auth.federated import verify_token
 from ...sfl.processes import process_manager
 from ...sfl.workers import worker_manager
@@ -180,16 +184,31 @@ def cycle_request(message: dict, socket=None) -> str:
         worker_id = data.get(MSG_FIELD.WORKER_ID, None)
         name = data.get(MSG_FIELD.MODEL, None)
         version = data.get(CYCLE.VERSION, None)
-        ping = int(data.get(CYCLE.PING, None))
-        download = float(data.get(CYCLE.DOWNLOAD, None))
-        upload = float(data.get(CYCLE.UPLOAD, None))
 
         # Retrieve the worker
         worker = worker_manager.get(id=worker_id)
 
-        worker.ping = ping
-        worker.avg_download = download
-        worker.avg_upload = upload
+        # Request fields to worker's DB fields mapping
+        fields_map = {
+            CYCLE.PING: "ping",
+            CYCLE.DOWNLOAD: "avg_download",
+            CYCLE.UPLOAD: "avg_upload",
+        }
+        requires_speed_fields = requires_speed_test(name, version)
+
+        # Check and save connection speed to DB
+        for request_field, db_field in fields_map.items():
+            if request_field in data:
+                value = data.get(request_field)
+                if not isinstance(value, (float, int)) or value < 0:
+                    raise PyGridError(
+                        f"'{request_field}' needs to be a positive number"
+                    )
+                setattr(worker, db_field, float(value))
+            elif requires_speed_fields:
+                # Require fields to present when FL model has speed req's
+                raise PyGridError(f"'{request_field}' is required")
+
         worker_manager.update(worker)  # Update database worker attributes
 
         # The last time this worker was assigned for this model/version.

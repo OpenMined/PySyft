@@ -287,6 +287,35 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
         self.assertIsNotNone(worker_id)
         self.assertTrue(requires_speed_test)
 
+        # Speed must be required in cycle-request
+        cycle_req = {
+            "type": "model_centric/cycle-request",
+            "data": {
+                "worker_id": worker_id,
+                "model": "my-federated-model-2",
+                "version": "0.1.0",
+            },
+        }
+        response = await send_ws_message(cycle_req)
+        self.assertIsNotNone(response["data"].get("error"))
+        self.assertEqual(response["data"].get("status"), "rejected")
+
+        # Should accept into cycle if all speed fields are sent
+        cycle_req = {
+            "type": "model_centric/cycle-request",
+            "data": {
+                "worker_id": worker_id,
+                "model": "my-federated-model-2",
+                "version": "0.1.0",
+                "ping": 1,
+                "download": 5,
+                "upload": 5,
+            },
+        }
+        response = await send_ws_message(cycle_req)
+        self.assertIsNone(response["data"].get("error"))
+        self.assertEqual(response["data"].get("status"), "accepted")
+
     async def test_requires_speed_test_false(self):
 
         client_config = {
@@ -335,3 +364,16 @@ riWYMKALI61uc+NH0jr+B5/XTV/KlNqmbuEWfZdgRcXodNmIXt+LGHOQ1C+X+7OY
 
         self.assertIsNotNone(worker_id)
         self.assertFalse(requires_speed_test)
+
+        # Speed is not required in cycle-request
+        cycle_req = {
+            "type": "model_centric/cycle-request",
+            "data": {
+                "worker_id": worker_id,
+                "model": "my-federated-model-3",
+                "version": "0.1.0",
+            },
+        }
+        response = await send_ws_message(cycle_req)
+        self.assertIsNone(response["data"].get("error"))
+        self.assertEqual(response["data"].get("status"), "accepted")

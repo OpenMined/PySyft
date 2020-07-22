@@ -468,7 +468,7 @@ def fl_cycle_application_decision():
     )
 
 
-@model_centric.route("/get-model", methods=["GET"])
+@model_centric.route("/retrieve-model", methods=["GET"])
 def get_model():
     """Request a download of a model."""
 
