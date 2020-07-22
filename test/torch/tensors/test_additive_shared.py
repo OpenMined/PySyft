@@ -675,11 +675,6 @@ def test_eq(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(["fss_eq"], [alice, bob], n_instances=6)
-
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
@@ -700,7 +695,8 @@ def test_eq(workers, protocol):
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
-def test_comp(workers, protocol):
+@pytest.mark.parametrize("force_preprocessing", [True, False])
+def test_comp(workers, protocol, force_preprocessing):
     me, alice, bob, crypto_provider = (
         workers["me"],
         workers["alice"],
@@ -708,12 +704,8 @@ def test_comp(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=50
-        )
+    if force_preprocessing:
+        me.crypto_store.provide_primitives("fss_comp", [alice, bob], n_instances=50)
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -772,13 +764,6 @@ def test_max(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
-        )
-
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
@@ -806,13 +791,6 @@ def test_argmax(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -853,13 +831,6 @@ def test_max_pool2d(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
@@ -907,13 +878,6 @@ def test_avg_pool2d(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
