@@ -2,10 +2,10 @@
 import datetime
 
 # Local imports
-from ... import db
+from ... import db, BaseModel
 
 
-class WorkerCycle(db.Model):
+class WorkerCycle(BaseModel):
     """Relation between Workers and Cycles.
 
     Columns:
@@ -15,12 +15,12 @@ class WorkerCycle(db.Model):
         request_key (String): unique token that permits downloading specific Plans, Protocols, etc.
     """
 
-    __tablename__ = "__worker_cycle__"
+    __tablename__ = "static_worker_cycle"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     request_key = db.Column(db.String())
-    cycle_id = db.Column(db.BigInteger, db.ForeignKey("__cycle__.id"))
-    worker_id = db.Column(db.String, db.ForeignKey("__worker__.id"))
+    cycle_id = db.Column(db.Integer, db.ForeignKey("static_cycle.id"))
+    worker_id = db.Column(db.String, db.ForeignKey("static_worker.id"))
     started_at = db.Column(db.DateTime(), default=datetime.datetime.utcnow())
     is_completed = db.Column(db.Boolean(), default=False)
     completed_at = db.Column(db.DateTime())

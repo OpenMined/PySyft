@@ -9,6 +9,7 @@ flask_migrate
 flask_login
 flask_sqlalchemy
 flask_testing
+sqlalchemy_mixins
 gevent==1.4.0
 gunicorn==19.9.0
 itsdangerous==1.1.0

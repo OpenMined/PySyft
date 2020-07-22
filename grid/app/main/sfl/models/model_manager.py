@@ -22,12 +22,12 @@ class ModelManager:
 
         # Save model initial weights into ModelCheckpoint
         self._model_checkpoints.register(
-            values=model, model=_model_obj, number=1, alias="latest",
+            value=model, model=_model_obj, number=1, alias="latest",
         )
 
         return _model_obj
 
-    def save(self, model_id: str, data: bin):
+    def save(self, model_id: int, data: bin):
         """Create a new model checkpoint.
 
         Args:
@@ -46,10 +46,7 @@ class ModelManager:
 
         # Create new checkpoint
         new_checkpoint = self._model_checkpoints.register(
-            model_id=model_id,
-            values=data,
-            number=checkpoints_count + 1,
-            alias="latest",
+            model_id=model_id, value=data, number=checkpoints_count + 1, alias="latest",
         )
         return new_checkpoint
 

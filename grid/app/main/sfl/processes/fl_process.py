@@ -1,7 +1,7 @@
-from ... import db
+from ... import db, BaseModel
 
 
-class FLProcess(db.Model):
+class FLProcess(BaseModel):
     """Federated Learning Process table.
 
     Columns:
@@ -17,7 +17,7 @@ class FLProcess(db.Model):
         cycles [Cycles]: FL Cycles.
     """
 
-    __tablename__ = "__fl_process__"
+    __tablename__ = "static_fl_process"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())

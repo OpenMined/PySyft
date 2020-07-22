@@ -7,7 +7,7 @@ import pytest
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-from grid.app.main import db
+from grid.app.main import db, BaseModel
 from grid.app.main.sfl.cycles.cycle import Cycle
 from grid.app.main.sfl.cycles.worker_cycle import WorkerCycle
 from grid.app.main.sfl.models.ai_model import Model, ModelCheckPoint
@@ -30,6 +30,7 @@ class TestDatabase(unittest.TestCase):
         app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
         self.db = db
         self.db.init_app(app)
+        BaseModel.set_session(db.session)
         app.app_context().push()
         self.db.create_all()
 
@@ -81,7 +82,6 @@ class TestDatabase(unittest.TestCase):
     def testCreateWorker(self):
         worker = Worker(
             id=randint(0, BIG_INT),
-            format_preference="list",
             ping=randint(0, 100),
             avg_download=randint(0, 100),
             avg_upload=randint(0, 100),
@@ -304,7 +304,6 @@ class TestDatabase(unittest.TestCase):
 
         worker = Worker(
             id=randint(0, BIG_INT),
-            format_preference="list",
             ping=randint(0, 100),
             avg_download=randint(0, 100),
             avg_upload=randint(0, 100),

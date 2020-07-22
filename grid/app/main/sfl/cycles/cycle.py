@@ -1,7 +1,7 @@
-from ... import db
+from ... import db, BaseModel
 
 
-class Cycle(db.Model):
+class Cycle(BaseModel):
     """Cycle table.
 
     Columns:
@@ -14,15 +14,15 @@ class Cycle(db.Model):
         fl_process_id (Integer,ForeignKey): Federated learning ID that owns this cycle.
     """
 
-    __tablename__ = "__cycle__"
+    __tablename__ = "static_cycle"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     start = db.Column(db.DateTime())
     end = db.Column(db.DateTime())
-    sequence = db.Column(db.BigInteger())
+    sequence = db.Column(db.Integer())
     version = db.Column(db.String())
     worker_cycles = db.relationship("WorkerCycle", backref="cycle")
-    fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
+    fl_process_id = db.Column(db.Integer, db.ForeignKey("static_fl_process.id"))
     is_completed = db.Column(db.Boolean, default=False)
 
     def __str__(self):

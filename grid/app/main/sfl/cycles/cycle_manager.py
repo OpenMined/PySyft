@@ -26,7 +26,7 @@ class CycleManager:
         self._cycles = Warehouse(Cycle)
         self._worker_cycles = Warehouse(WorkerCycle)
 
-    def create(self, fl_process_id: str, version: str, cycle_time: int):
+    def create(self, fl_process_id: int, version: str, cycle_time: int):
         """Create a new federated learning cycle.
 
         Args:
@@ -107,7 +107,7 @@ class CycleManager:
         """
         self._cycles.delete(**kwargs)
 
-    def is_assigned(self, worker_id: str, cycle_id: str):
+    def is_assigned(self, worker_id: str, cycle_id: int):
         """Check if a workers is already assigned to an specific cycle.
 
         Args:
@@ -125,7 +125,7 @@ class CycleManager:
 
         return _worker_cycle
 
-    def validate(self, worker_id: str, cycle_id: str, request_key: str):
+    def validate(self, worker_id: str, cycle_id: int, request_key: str):
         """Validate Worker's request key.
 
         Args:
@@ -178,7 +178,7 @@ class CycleManager:
         # (for prod we probably should be replace this with Redis queue + separate worker)
         run_task_once("complete_cycle", complete_cycle, self, _worker_cycle.cycle_id)
 
-    def complete_cycle(self, cycle_id: str):
+    def complete_cycle(self, cycle_id: int):
         """Checks if the cycle is completed and runs plan avg."""
         logging.info("running complete_cycle for cycle_id: %s" % cycle_id)
         cycle = self._cycles.first(id=cycle_id)

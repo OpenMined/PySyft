@@ -1,7 +1,7 @@
-from ... import db
+from ... import db, BaseModel
 
 
-class Plan(db.Model):
+class Plan(BaseModel):
     """Plan table that represents Syft Plans.
 
     Columns:
@@ -13,7 +13,7 @@ class Plan(db.Model):
         fl_process_id (Integer, Foreign Key) : Reference to FL Process.
     """
 
-    __tablename__ = "__plan__"
+    __tablename__ = "static_plan"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String())
@@ -21,7 +21,7 @@ class Plan(db.Model):
     value_ts = db.Column(db.LargeBinary)
     value_tfjs = db.Column(db.LargeBinary)
     is_avg_plan = db.Column(db.Boolean, default=False)
-    fl_process_id = db.Column(db.BigInteger, db.ForeignKey("__fl_process__.id"))
+    fl_process_id = db.Column(db.Integer, db.ForeignKey("static_fl_process.id"))
 
     def __str__(self):
         return (
