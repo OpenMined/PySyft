@@ -15,8 +15,12 @@ class DomainRemoteNodes(RemoteNodes):
         this routes the message internally on private connection.
         private network connection is on routes hidden from the outside world.
         """
+
         pri_route = message.route.pri_route
         device = pri_route.device
+        # look up the private connection to this device.
+        private_route = self.nodes.get(key='id', value=device.id)
+
         # get a device client and connect.
-        connection = route.connect()
+        connection = private_route.connect()
         DeviceClient(connection).send(message)
