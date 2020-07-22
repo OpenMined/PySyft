@@ -963,7 +963,9 @@ def test_avg_pool2d(workers, protocol):
     assert (result == expected).all()
 
 
-def test_batch_norm(workers):
+@pytest.mark.parametrize("protocol", ["fss", "snn"])
+@pytest.mark.parametrize("training", [True, False])
+def test_batch_norm(workers, protocol, training):
     me, alice, bob, crypto_provider = (
         workers["me"],
         workers["alice"],
@@ -972,9 +974,15 @@ def test_batch_norm(workers):
     )
 
     args = (alice, bob)
-    kwargs = dict(crypto_provider=crypto_provider, protocol="fss")
+    syft.local_worker.clients = args
+    kwargs = dict(crypto_provider=crypto_provider, protocol=protocol)
 
-    model = nn.BatchNorm2d(4)
+    model = nn.BatchNorm2d(4, momentum=0)
+    if training:
+        model.train()
+    else:
+        model.eval()
+
     x = torch.rand(1, 4, 5, 5)
     expected = model(x)
 
@@ -983,7 +991,6 @@ def test_batch_norm(workers):
     y = model(x)
     predicted = y.get().float_prec()
 
-    # print((expected - predicted).abs() )
     relative_error = 2 * (expected - predicted).abs() / (expected.abs() + predicted.abs())
     assert relative_error.mean() < 0.1
 
