@@ -4,7 +4,6 @@ stuff
 """
 
 from __future__ import annotations
-import json
 
 # NON-CORE IMPORTS
 from ....common import AbstractWorker
@@ -16,7 +15,7 @@ from ....util import get_subclasses
 from ...store.store import ObjectStore
 from ...message import SyftMessage, SyftMessageWithReply
 from ...io import Route
-from remote_nodes import MyRemoteNodes
+from remote_nodes import RemoteNodes
 
 class Worker(AbstractWorker):
 
@@ -43,7 +42,7 @@ class Worker(AbstractWorker):
         self.msg_router = {}
         self.services_registered = False
         self.node_type = type(self).__name__
-        self.remote_nodes = MyRemoteNodes(type=self.node_type)
+        self.remote_nodes = RemoteNodes(type=self.node_type)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
@@ -98,4 +97,4 @@ class Worker(AbstractWorker):
 
     def _reply_to_message(self, reply_msg: SyftMessage):
         route = msg.reply_to
-        route.client().send(msg)
+        route.connection().send(msg)
