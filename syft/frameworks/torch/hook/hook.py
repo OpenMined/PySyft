@@ -127,6 +127,7 @@ class TorchHook(FrameworkHook):
         if dependency_check.crypten_available:
             import crypten
             from syft.frameworks.crypten.crypten_attributes import CryptenAttributes
+
             syft.crypten = CryptenAttributes(crypten, self)
 
         # Hook some torch methods such that tensors could be created directy at workers

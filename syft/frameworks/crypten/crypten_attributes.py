@@ -25,10 +25,9 @@ class CryptenAttributes(FrameworkAttributes):
         hook: A TorchHook to stash
     """
 
-
     # Subclasses must provide the following class attributes
     ALIAS = "crypten"
-    Tensor = crypten.mpc.MPCTensor # This is not used but needs to be provided
+    Tensor = crypten.mpc.MPCTensor  # This is not used but needs to be provided
 
     def __init__(self, torch: ModuleType, hook: ModuleType) -> None:
         """Initialization of the CrypTenAttributes class."""
@@ -58,7 +57,6 @@ class CryptenAttributes(FrameworkAttributes):
             Boolean denoting if the method is inplace or not.
         """
         return method_name in self.inplace_methods
-
 
     def is_global_state_change_method(self, method_name):
         """
