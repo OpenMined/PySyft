@@ -12,6 +12,7 @@ from torch.nn import functional as F
 hook = sy.TorchHook(th)
 
 
+@pytest.mark.skip
 def test_host_plan_not_allowed_to_run_ops(connected_node):
     hook.local_worker.is_client_worker = False
 
@@ -43,6 +44,7 @@ def test_host_plan_not_allowed_to_run_ops(connected_node):
     hook.local_worker.is_client_worker = True
 
 
+@pytest.mark.skip
 def test_host_plan_model(connected_node):
     hook.local_worker.is_client_worker = False
 

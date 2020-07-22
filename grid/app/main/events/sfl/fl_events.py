@@ -5,12 +5,13 @@ import traceback
 import uuid
 from binascii import unhexlify
 
-from ...core.codes import CYCLE, FL_EVENTS, MSG_FIELD, RESPONSE_MSG
+from ...core.codes import CYCLE, MODEL_CENTRIC_FL_EVENTS, MSG_FIELD, RESPONSE_MSG
 from ...core.exceptions import CycleNotFoundError, MaxCycleLimitExceededError
 from ...sfl.auth.federated import verify_token
 from ...sfl.controller import processes
 from ...sfl.workers import worker_manager
 
+# Local imports
 # Local imports
 from ..socket_handler import SocketHandler
 
@@ -60,7 +61,10 @@ def host_federated_training(message: dict, socket=None) -> str:
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
         response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
-    response = {MSG_FIELD.TYPE: FL_EVENTS.HOST_FL_TRAINING, MSG_FIELD.DATA: response}
+    response = {
+        MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.HOST_FL_TRAINING,
+        MSG_FIELD.DATA: response,
+    }
 
     return json.dumps(response)
 
@@ -124,7 +128,10 @@ def authenticate(message: dict, socket=None) -> str:
     except Exception as e:
         response[RESPONSE_MSG.ERROR] = str(e) + "\n" + traceback.format_exc()
 
-    response = {MSG_FIELD.TYPE: FL_EVENTS.AUTHENTICATE, MSG_FIELD.DATA: response}
+    response = {
+        MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.AUTHENTICATE,
+        MSG_FIELD.DATA: response,
+    }
     return json.dumps(response)
 
 
@@ -174,7 +181,10 @@ def cycle_request(message: dict, socket=None) -> str:
         response[CYCLE.STATUS] = CYCLE.REJECTED
         response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
-    response = {MSG_FIELD.TYPE: FL_EVENTS.CYCLE_REQUEST, MSG_FIELD.DATA: response}
+    response = {
+        MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.CYCLE_REQUEST,
+        MSG_FIELD.DATA: response,
+    }
     return json.dumps(response)
 
 
@@ -208,5 +218,8 @@ def report(message: dict, socket=None) -> str:
     except Exception as e:  # Retrieve exception messages such as missing JSON fields.
         response[RESPONSE_MSG.ERROR] = str(e) + traceback.format_exc()
 
-    response = {MSG_FIELD.TYPE: FL_EVENTS.REPORT, MSG_FIELD.DATA: response}
+    response = {
+        MSG_FIELD.TYPE: MODEL_CENTRIC_FL_EVENTS.REPORT,
+        MSG_FIELD.DATA: response,
+    }
     return json.dumps(response)

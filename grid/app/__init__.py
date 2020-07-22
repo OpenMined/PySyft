@@ -78,6 +78,8 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     app.config["N_REPLICA"] = n_replica
     sockets = Sockets(app)
 
+    from .main import main, model_centric, data_centric, ws, local_worker, auth, hook
+
     # Register app blueprints
     from .main import auth, hook, local_worker, main, ws
 
@@ -86,7 +88,11 @@ def create_app(node_id: str, debug=False, n_replica=None, test_config=None) -> F
     hook.local_worker._known_workers[node_id] = local_worker
     local_worker.add_worker(hook.local_worker)
 
+    # Register app blueprints
     app.register_blueprint(main, url_prefix=r"/")
+    app.register_blueprint(model_centric, url_prefix=r"/model_centric")
+    app.register_blueprint(data_centric, url_prefix=r"/data_centric")
+
     sockets.register_blueprint(ws, url_prefix=r"/")
 
     # Set SQLAlchemy configs

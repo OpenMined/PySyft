@@ -1,15 +1,15 @@
 # PyGrid imports
-import base64
-import json
-import logging
-import uuid
+from ...core.codes import MSG_FIELD, RESPONSE_MSG, CYCLE, MODEL_CENTRIC_FL_EVENTS
+from ..processes import process_manager
+from ..processes import process_manager
 
 # Generic imports
 import jwt
 import requests
-
-from ...core.codes import RESPONSE_MSG
-from ..processes import process_manager
+import base64
+import json
+import logging
+import uuid
 
 
 def verify_token(auth_token, model_name, model_version=None):
@@ -73,9 +73,7 @@ def verify_token(auth_token, model_name, model_version=None):
                         "status": RESPONSE_MSG.ERROR,
                     }
 
-            return {
-                "status": RESPONSE_MSG.SUCCESS,
-            }
+            return {"status": RESPONSE_MSG.SUCCESS}
     else:
         # Authentication is not configured
         return {"status": RESPONSE_MSG.SUCCESS}

@@ -18,10 +18,10 @@ from .socket_handler import SocketHandler
 # This structure allows compatibility between javascript applications (syft.js/grid.js) and PyGrid.
 routes = {
     CONTROL_EVENTS.SOCKET_PING: socket_ping,
-    FL_EVENTS.HOST_FL_TRAINING: host_federated_training,
-    FL_EVENTS.AUTHENTICATE: authenticate,
-    FL_EVENTS.CYCLE_REQUEST: cycle_request,
-    FL_EVENTS.REPORT: report,
+    MODEL_CENTRIC_FL_EVENTS.HOST_FL_TRAINING: host_federated_training,
+    MODEL_CENTRIC_FL_EVENTS.AUTHENTICATE: authenticate,
+    MODEL_CENTRIC_FL_EVENTS.CYCLE_REQUEST: cycle_request,
+    MODEL_CENTRIC_FL_EVENTS.REPORT: report,
     REQUEST_MSG.GET_ID: get_node_infos,
     REQUEST_MSG.CONNECT_NODE: connect_grid_nodes,
     REQUEST_MSG.HOST_MODEL: host_model,

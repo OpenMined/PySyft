@@ -92,5 +92,5 @@ def connected_node(hook):
 
 
 def create_websocket_client(hook, port, id):
-    node = DynamicFLClient(hook, "http://localhost:" + port + "/", id=id)
+    node = DynamicFLClient(hook, "http://localhost:" + port, id=id)
     return node
