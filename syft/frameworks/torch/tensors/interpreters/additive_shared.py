@@ -614,7 +614,6 @@ class AdditiveSharingTensor(AbstractTensor):
             equation: a string representation of the equation to be computed in einstein
                 summation form
         """
-        shares = self.child
         assert equation == "mul" or equation == "matmul"
         cmd = getattr(torch, equation)
         if isinstance(other, dict):
@@ -704,7 +703,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def _private_div(self, divisor):
         return securenn.division(self, divisor)
 
-    def _public_div(self, divisor):
+    @overloaded.method
+    def _public_div(self, shares: dict, divisor):
         shares = self.child
         # TODO: how to correctly handle division in Zq?
         divided_shares = {}
@@ -714,14 +714,7 @@ class AdditiveSharingTensor(AbstractTensor):
             # For now, the solution works in most cases when the tensor is shared between 2 workers
             divided_shares[location] = pointer / divisor
 
-        result = hook_args.hook_response(
-            "_public_div",
-            divided_shares,
-            wrap_type=type(self),
-            wrap_args=self.get_class_attributes(),
-        )
-
-        return result
+        return divided_shares
 
     def div(self, divisor):
         if isinstance(divisor, AdditiveSharingTensor):

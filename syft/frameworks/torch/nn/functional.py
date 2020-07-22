@@ -1,7 +1,4 @@
 import torch
-import syft as sy
-from syft.generic.utils import allow_command
-from syft.generic.utils import remote
 
 import syft as sy
 

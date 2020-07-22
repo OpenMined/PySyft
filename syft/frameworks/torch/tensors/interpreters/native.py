@@ -18,8 +18,6 @@ from syft.workers.base import BaseWorker
 from syft.exceptions import PureFrameworkTensorFoundError
 from syft.exceptions import InvalidTensorForRemoteGet
 
-from syft.frameworks.torch.nn.functional import batch_norm
-
 
 def _get_maximum_precision():
     """This function returns the maximum value allowed for precision fractions before the
@@ -294,12 +292,6 @@ class TorchTensor(AbstractTensor):
             The syntax is the same, so @overloaded.module handles recursion
             Note that we don't need to add the @staticmethod decorator
             """
-
-            @overloaded.module
-            def functional(module):
-                module.batch_norm = batch_norm
-
-            module.functional = functional
 
         module.nn = nn  # Handles all the overloading properly
 
