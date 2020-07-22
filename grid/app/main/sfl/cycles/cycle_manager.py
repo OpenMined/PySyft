@@ -238,7 +238,7 @@ class CycleManager:
         logging.info("model id: %d" % model_id)
         _checkpoint = model_manager.load(model_id=model_id)
         logging.info("current checkpoint: %s" % str(_checkpoint))
-        model_params = model_manager.unserialize_model_params(_checkpoint.values)
+        model_params = model_manager.unserialize_model_params(_checkpoint.value)
         logging.info("model params shapes: %s" % str([p.shape for p in model_params]))
 
         reports_to_average = self._worker_cycles.query(

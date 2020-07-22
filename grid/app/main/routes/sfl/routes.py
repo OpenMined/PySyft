@@ -183,7 +183,7 @@ def download_model():
         _last_checkpoint = model_manager.load(model_id=model_id)
 
         return send_file(
-            io.BytesIO(_last_checkpoint.values), mimetype="application/octet-stream"
+            io.BytesIO(_last_checkpoint.value), mimetype="application/octet-stream"
         )
 
     except InvalidRequestKeyError as e:
@@ -498,7 +498,7 @@ def get_model():
         _model_checkpoint = model_manager.load(**checkpoint_query)
 
         return send_file(
-            io.BytesIO(_model_checkpoint.values), mimetype="application/octet-stream"
+            io.BytesIO(_model_checkpoint.value), mimetype="application/octet-stream"
         )
 
     except ModelNotFoundError as e:
