@@ -1,7 +1,5 @@
-import re
 from types import ModuleType
 
-from syft.frameworks.torch.tensors.interpreters.native import TorchTensor
 from syft.generic.frameworks.attributes import FrameworkAttributes
 import crypten
 
@@ -29,7 +27,7 @@ class CryptenAttributes(FrameworkAttributes):
     ALIAS = "crypten"
     Tensor = crypten.mpc.MPCTensor  # This is not used but needs to be provided
 
-    def __init__(self, torch: ModuleType, hook: ModuleType) -> None:
+    def __init__(self, crypten: ModuleType, hook: ModuleType) -> None:
         """Initialization of the CrypTenAttributes class."""
 
         # Stash the hook here for global access elsewhere
