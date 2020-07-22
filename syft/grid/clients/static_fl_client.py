@@ -105,9 +105,9 @@ class StaticFLClient:
         serialized_protocols = self._serialize_object(client_protocols)
         serialized_avg_plan = binascii.hexlify(self._serialize(server_averaging_plan)).decode()
 
-        # "federated/host-training" request body
+        # "model_centric/host-training" request body
         message = {
-            "type": "federated/host-training",
+            "type": "model_centric/host-training",
             "data": {
                 "model": serialized_model,
                 "plans": serialized_plans,
