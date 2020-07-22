@@ -60,13 +60,13 @@ class RemoteNodes(object):
     def route_message_to_relevant_nodes(self, message: SyftMessage) -> None:
         """
         check if the message should be forwarded.
-        Network: routes to domains
+        Network: routes to domains and/or to other networks.
         Domain: routes to devices
         Device: routes to VMs
         VM: doesn't route
         """
         raise NotImplementedError()
 
-    def broadcast(self, route: Route):
+    def broadcast(self, route: Route, message: SyftMessage) -> None:
         channel = route.broadcast_channel
-        route.connection().send_msg
+        route.connection().send_msg(message)

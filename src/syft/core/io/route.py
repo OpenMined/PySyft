@@ -7,8 +7,10 @@ class BaseRoute(object):
     def configure_connection(self, connection_details):
         """
         the route should have connection details embedded in it.
+        so that nodes operators can utilize it to route messages.
         """
         self.connection_details = connection_details
+        self.connection = None
 
     def register_broadcast_channel(self, channel_name):
         """
@@ -19,7 +21,12 @@ class BaseRoute(object):
         self.broadcast_channel = name
 
     def connect(self):
-        # connect to configured connection and return a connection obj.
+        """
+        connect to configured connection and return a connection obj.
+        when this is a broadcast protocol, the conn obj should have a
+        protocol messaging client, eg. paho object on mqtt.
+        over http, this would return a static definition (request object).
+        """
         return
 
 
