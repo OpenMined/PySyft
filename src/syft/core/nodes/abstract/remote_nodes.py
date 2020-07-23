@@ -68,7 +68,7 @@ class RemoteNodes(object):
 
     def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
         all = {}
-        for node in nodes:
+        for node in self.nodes:
             all.update(node.as_dict(on_key, on_multi_keys))
         return all
 

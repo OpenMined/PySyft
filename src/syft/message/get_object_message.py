@@ -1,7 +1,7 @@
 from .syft_message import SyftMessage
-
+from ...common.token import Token
 
 class GetObjectMessage(SyftMessage):
-    def __init__(self, obj_id, route, msg_id=None):
-        super().__init__(route=route, msg_id=msg_id)
+    def __init__(self, obj_id, token=None, msg_id=None):
+        super().__init__(token=token, msg_id=msg_id)
         self.obj_id = obj_id

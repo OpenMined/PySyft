@@ -25,12 +25,6 @@ class BaseRoute(object):
         """
         self.connection_details.update({'broadcast_channel': name})
 
-    def generate_token(self):
-        """
-        could potentially provide a token that declares the
-        permissions on this route.
-        """
-        pass
 
 
 @final
