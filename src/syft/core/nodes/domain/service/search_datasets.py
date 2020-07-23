@@ -1,11 +1,11 @@
-from ...abstract.service import WorkerService
+from ...abstract.service import NodeService
 from ....message.search_message import SearchMessage, SearchMessageReply
-from ..domain.domain import Domain as DomainWorker
+from ..domain.domain import Domain as DomainNode
 
-class DomainSearchService(WorkerService):
+class DomainSearchService(NodeService):
     @staticmethod
     def process(
-        worker: DomainWorker, msg: SearchMessage
+        Node: DomainNode, msg: SearchMessage
     ) -> SearchMessageReply:
         # build a new route
         device, vm = None, None
