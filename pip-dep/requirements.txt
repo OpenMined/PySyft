@@ -1,6 +1,6 @@
 openmined.threepio==0.2.0
 aiortc==0.9.28
-dill
+dill~=0.3.1
 flask_socketio~=4.2.1
 Flask~=1.1.1
 git+https://github.com/facebookresearch/CrypTen.git#egg=crypten
