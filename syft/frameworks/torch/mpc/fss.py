@@ -443,7 +443,7 @@ def huge_loop(seed_t_bytes, n_iter):
 
 
 def G(seed):
-    """ λ -> 2(λ + 1)"""
+    """Pseudo Random Generator λ -> 2(λ + 1)"""
 
     assert len(seed.shape) == 2
     n_values = seed.shape[1]
@@ -480,7 +480,8 @@ empty_dict = {}
 
 
 def H(seed, idx=0):
-    """ λ -> 4(λ + 1)
+    """
+    Pseudo Random Generator λ -> 4(λ + 1)
 
     idx is here to allow not reusing the same empty dict. Otherwise in key generation
     h0 is erased by h1
@@ -513,10 +514,6 @@ def H(seed, idx=0):
     # [λ, 1, λ, 1, λ, 1, λ, 1]
     # [λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1, λ - 64, 64, 1]
 
-    # valuebits[0] = buffer[0] & b63_, buffer[1], buffer[0] & b_1,
-    #                buffer[2] & b63_, buffer[3], buffer[2] & b_1
-    # valuebits[1] = buffer[4] & b63_, buffer[5], buffer[4] & b_1,
-    #                buffer[6] & b63_, buffer[7], buffer[6] & b_1
     valuebits[0, 0], last_bit = split_last_bit(buffer[0])
     valuebits[0, 1] = buffer[1]
     valuebits[0, 2] = last_bit
