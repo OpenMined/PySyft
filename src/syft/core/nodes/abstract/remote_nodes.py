@@ -86,6 +86,9 @@ class RemoteNodes(object):
         """
         raise NotImplementedError()
 
-    def broadcast(self, route: Route, message: SyftMessage) -> None:
-        channel = route.broadcast_channel
-        route.connect().send_msg(message)
+    def cache_registry(self, file_path: str = 'registry.cache'):
+        """
+        cache registry on disk to support bootstrapping
+        on __init__ should check if registry cache file exists.
+        """
+        pass
