@@ -78,7 +78,8 @@ class RemoteNodes(object):
 
     def route_message_to_relevant_nodes(self, message: SyftMessage) -> None:
         """
-        check if the message should be forwarded.
+        check if the message has reached its final destination or if it
+        should be routed somewhere else.
         Network: routes to domains and/or to other networks.
         Domain: routes to devices
         Device: routes to VMs
