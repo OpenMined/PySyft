@@ -1101,3 +1101,17 @@ class TorchTensor(AbstractTensor):
                 "on a wrapper. Add NumpyTensor to the chain by hand if you want "
                 "this functionality.",
             )
+
+    def helper_argmax_pairwise(self, dim=None):
+
+        dim = -1 if dim is None else dim
+        row_length = self.size(dim) if self.size(dim) > 1 else 2
+
+        # Copy each row (length - 1) times to compare to each other row
+        a = self.expand(row_length - 1, *self.size())
+        # print(a)
+
+        # Generate cyclic permutations for each row
+        b = torch.stack([self.roll(i + 1, dims=dim) for i in range(row_length - 1)])
+
+        return a - b

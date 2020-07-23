@@ -687,6 +687,11 @@ class FixedPrecisionTensor(AbstractTensor):
 
     __eq__ = eq
 
+    @overloaded.method
+    def argmax(self, _self, **kwargs):
+        result = _self.argmax(**kwargs)
+        return result.long() * self.base ** self.precision_fractional
+
     def var(self, unbiased=False, **kwargs):
         mu = self.mean(**kwargs)
         unbiased_self = self - mu
