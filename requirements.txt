@@ -20,3 +20,4 @@ torch>=1.5
 typeguard
 pyscaffold[all]
 black
+pyjwt

@@ -3,7 +3,6 @@ from ....decorators import syft_decorator
 from ....common.id import UID
 from ...io.abstract import ClientConnection
 
-
 class Client:
     @syft_decorator(typechecking=True)
     def __init__(self, worker_id: UID, name: str, connection: ClientConnection):
