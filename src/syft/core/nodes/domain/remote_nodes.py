@@ -23,4 +23,4 @@ class DomainRemoteNodes(RemoteNodes):
 
         # get a device client and connect.
         connection = private_route.connect()
-        DeviceClient(connection).send(message)
+        DeviceClient(connection).send_msg(message)

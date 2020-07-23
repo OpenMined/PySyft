@@ -65,10 +65,6 @@ class Worker(AbstractWorker):
 
                 raise e
 
-            # if this is a message awaiting reply, reply.
-            if hasattr(msg, 'reply_to'):
-                self._reply_to_message(processed)
-            return processed
 
     # TODO: change services type  to List[WorkerService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
@@ -94,7 +90,3 @@ class Worker(AbstractWorker):
                     self.msg_router[handler_type_subclass] = service_instance
 
         self.services_registered = True
-
-    def _reply_to_message(self, reply_msg: SyftMessage):
-        route = msg.reply_to
-        route.connection().send(msg)
