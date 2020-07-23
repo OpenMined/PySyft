@@ -22,6 +22,10 @@ class BaseRoute(object):
 
     def connect(self):
         """
+        # TODO replace this with connection abstraction layer.
+        to support multi-protocols from configs and virtual (mock)
+        connections.
+
         connect to configured connection and return a connection obj.
         when this is a broadcast protocol, the conn obj should have a
         protocol messaging client, eg. paho object on mqtt.

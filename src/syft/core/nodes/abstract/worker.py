@@ -33,11 +33,10 @@ class Worker(AbstractWorker):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, route: Route, name: str = None):
+    def __init__(self, name: str = None):
         super().__init__()
 
         self.name = name
-        self.route = route
         self.store = ObjectStore()
         self.msg_router = {}
         self.services_registered = False
@@ -48,7 +47,7 @@ class Worker(AbstractWorker):
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         self.remote_nodes.route_message_to_relevant_nodes(msg)
         try:
-            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
+            return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
