@@ -6,7 +6,7 @@ from typing import final
 class BaseRoute(object):
     connection_details = {}
 
-    def configure_connection(self, protocol, host, port):
+    def configure_connection(self, protocol: str, host: str, port: int):
         """
         the route should have connection details embedded in it.
         so that nodes operators can utilize it to route messages.
@@ -17,7 +17,7 @@ class BaseRoute(object):
             'port': port
         })
 
-    def register_broadcast_channel(self, channel_name):
+    def register_broadcast_channel(self, channel_name: str):
         """
         In the case configured protocol is pub/sub or event driven.
         Args:
