@@ -4,13 +4,18 @@ from typing import final
 
 
 class BaseRoute(object):
-    def configure_connection(self, connection_details):
+    connection_details = {}
+
+    def configure_connection(self, protocol, host, port):
         """
         the route should have connection details embedded in it.
         so that nodes operators can utilize it to route messages.
         """
-        self.connection_details = connection_details
-        self.connection = None
+        self.connection_details.update({
+            'host': host,
+            'protocol': protocol,
+            'port': port
+        })
 
     def register_broadcast_channel(self, channel_name):
         """
@@ -18,20 +23,14 @@ class BaseRoute(object):
         Args:
             channel_name: the name of the channel to broadcast on.
         """
-        self.broadcast_channel = name
+        self.connection_details.update({'broadcast_channel': name})
 
-    def connect(self):
+    def generate_token(self):
         """
-        # TODO replace this with connection abstraction layer.
-        to support multi-protocols from configs and virtual (mock)
-        connections.
-
-        connect to configured connection and return a connection obj.
-        when this is a broadcast protocol, the conn obj should have a
-        protocol messaging client, eg. paho object on mqtt.
-        over http, this would return a static definition (request object).
+        could potentially provide a token that declares the
+        permissions on this route.
         """
-        return
+        pass
 
 
 @final
