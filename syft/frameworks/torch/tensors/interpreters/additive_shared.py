@@ -7,7 +7,9 @@ from syft.frameworks.torch.mpc import crypto_protocol
 from syft.frameworks.torch.mpc import spdz
 from syft.frameworks.torch.mpc import securenn
 from syft.frameworks.torch.mpc import fss
+from syft.generic.utils import allow_command
 from syft.generic.utils import memorize
+from syft.generic.utils import remote
 
 from syft.generic.abstract.tensor import AbstractTensor
 from syft.generic.frameworks.hook import hook_args
@@ -1041,9 +1043,8 @@ class AdditiveSharingTensor(AbstractTensor):
     def argmax(self, dim=None, keepdim=False, one_hot=False):
         """
         Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
-
+        
         This is inspired from CrypTen.
-
         Args:
             dim: compute argmax over a specific dimension
             keepdim: when one_hot is true, keep all the dimensions of the tensor
@@ -1052,12 +1053,10 @@ class AdditiveSharingTensor(AbstractTensor):
         x = self.flatten() if dim is None and len(self.shape) > 1 else self
 
         x_pairwise_shares = {}
-
         for worker, share in x.child.items():
-            response_ids = (sy.ID_PROVIDER.pop(),)
-            command = ("helper_argmax_pairwise", share, tuple(), dict(dim=dim))
-            response = self.owner.send_command(share.location, *command, return_ids=response_ids)
-            x_pairwise_shares[worker] = response
+            share = remote(helper_argmax_pairwise, location=worker)(share, dim, return_value=False)
+            x_pairwise_shares[worker] = share
+
         x_pairwise = AdditiveSharingTensor(**self.get_class_attributes()).on(
             x_pairwise_shares, wrap=False
         )
@@ -1079,21 +1078,24 @@ class AdditiveSharingTensor(AbstractTensor):
     def max(self, dim=None, keepdim=False, algorithm="pairwise"):
         """
         Returns the maximum value of all elements in the input tensor, using argmax
-
         Args:
-            dim: compute the max over a specific dimention
+            dim: compute the max over a specific dimension
             keepdim: keep the dimension of the tensor when dim is not None
             algorithm: method to compute the maximum
-
         Returns:
             the max of the tensor self
         """
         assert algorithm == "pairwise", "Other methods not supported for the moment"
 
         argmax_result = self.argmax(dim=dim, keepdim=keepdim, one_hot=True)
-        max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
-        if dim and keepdim:
-            max_result = max_result.unsqueeze(dim) if max_result.dim() < self.dim() else max_result
+        if dim is not None:
+            max_result = (self * argmax_result).sum(dim=dim, keepdim=keepdim)
+            if keepdim:
+                max_result = (
+                    max_result.unsqueeze(dim) if max_result.dim() < self.dim() else max_result
+                )
+        else:
+            max_result = (self * argmax_result).sum()
         return max_result
 
     ## STANDARD
@@ -1329,3 +1331,18 @@ class AdditiveSharingTensor(AbstractTensor):
 
 ### Register the tensor with hook_args.py ###
 hook_args.default_register_tensor(AdditiveSharingTensor)
+
+
+@allow_command
+def helper_argmax_pairwise(self, dim=None):
+    dim = -1 if dim is None else dim
+    row_length = self.size(dim) if self.size(dim) > 1 else 2
+
+    # Copy each row (length - 1) times to compare to each other row
+    a = self.expand(row_length - 1, *self.size())
+    # print(a)
+
+    # Generate cyclic permutations for each row
+    b = torch.stack([self.roll(i + 1, dims=dim) for i in range(row_length - 1)])
+
+    return a - b

@@ -773,30 +773,23 @@ def test_max(workers, protocol):
         workers["james"],
     )
 
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=16
-        )
-
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
-    t = torch.tensor([3, 1.0, 2])
+    t = torch.tensor([3, 1.0, -2])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([3.0])
 
-    t = torch.tensor([3, 4.0])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([4.0])
 
-    t = torch.tensor([3, 4.0, 5, 2])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
-    max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([5.0])
+    max_value = x.max(dim=0).get().float_prec()
+    assert (max_value == t.max(dim=0)[0]).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
@@ -807,13 +800,6 @@ def test_argmax(workers, protocol):
         workers["bob"],
         workers["james"],
     )
-
-    if protocol == "fss":
-        for worker in workers.values():
-            syft.frameworks.torch.mpc.fss.initialize_crypto_plans(worker)
-        me.crypto_store.provide_primitives(
-            ["xor_add_couple", "fss_eq", "fss_comp"], [alice, bob], n_instances=32
-        )
 
     args = (alice, bob)
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
@@ -833,7 +819,7 @@ def test_argmax(workers, protocol):
     idx = x.argmax().get().float_prec()
     assert idx == torch.tensor([2.0])
 
-    # no dim=
+    # no dim
     t = torch.tensor([[1, 2.0, 4], [3, 9.0, 2.0]])
     x = t.fix_prec().share(*args, **kwargs)
     ids = x.argmax().get().float_prec()
