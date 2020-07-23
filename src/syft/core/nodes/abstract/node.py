@@ -33,11 +33,10 @@ class Node(AbstractNode):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, route: Route, name: str = None):
+    def __init__(self, name: str = None):
         super().__init__()
 
         self.name = name
-        self.route = route
         self.store = ObjectStore()
         self.msg_router = {}
         self.services_registered = False
@@ -48,7 +47,7 @@ class Node(AbstractNode):
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
         self.remote_nodes.route_message_to_relevant_nodes(msg)
         try:
-            processed = self.msg_router[type(msg)].process(worker=self, msg=msg)
+            return self.msg_router[type(msg)].process(worker=self, msg=msg)
         except KeyError as e:
             if type(msg) not in self.msg_router:
                 raise KeyError(
@@ -65,10 +64,6 @@ class Node(AbstractNode):
 
                 raise e
 
-            # if this is a message awaiting reply, reply.
-            if hasattr(msg, 'reply_to'):
-                self._reply_to_message(processed)
-            return processed
 
     # TODO: change services type  to List[NodeService] when typechecker allows subclassing
     @syft_decorator(typechecking=True)
@@ -94,7 +89,3 @@ class Node(AbstractNode):
                     self.msg_router[handler_type_subclass] = service_instance
 
         self.services_registered = True
-
-    def _reply_to_message(self, reply_msg: SyftMessage):
-        route = msg.reply_to
-        route.connection().send(msg)
