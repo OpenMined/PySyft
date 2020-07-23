@@ -1,3 +1,3 @@
-def test_virtual_worker():
-    # TODO (gmuraru) Add tests after we finish the VirtualWorker
+def test_virtual_node():
+    # TODO (gmuraru) Add tests after we finish the VirtualNode
     pass

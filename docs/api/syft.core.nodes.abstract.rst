@@ -17,10 +17,10 @@ syft.core.nodes.abstract.client module
    :undoc-members:
    :show-inheritance:
 
-syft.core.nodes.abstract.worker module
+syft.core.nodes.abstract.node module
 --------------------------------------
 
-.. automodule:: syft.core.nodes.abstract.worker
+.. automodule:: syft.core.nodes.abstract.node
    :members:
    :undoc-members:
    :show-inheritance:
