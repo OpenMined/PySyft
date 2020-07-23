@@ -1,3 +1,5 @@
+import traceback
+
 import numpy as np
 import torch as th
 import torch.nn as nn
@@ -82,7 +84,8 @@ class CustomGru(nn.Module):
             sequence_length = sequence_length.item()
 
         for t in range(sequence_length):
-            hidden = self.gru_cell(x[t, :, :], hidden)
+            # `x.select(0, t)` == `x[t, :, :]` but it can be converted to Tensorflow.js.
+            hidden = self.gru_cell(x.select(0, t), hidden)
         # Just return the result of the final cell
         # since some PySyft autograd features seem like they have issues with 3D tensors.
         output = hidden
@@ -244,6 +247,16 @@ def test_rnn_plan_example():
         data, initial_hidden, targets, lr, batch_size, sequence_length, model_state
     )
 
+    print("Translating Plan to Tfjs.")
+    try:
+        train.add_translation(PlanTranslatorTfjs)
+    except Exception as e:
+        print(
+            "Failed to translate the Plan to Tensorflow.js."
+            " A later version of 3p0 (>0.2) that might not be released yet is required."
+        )
+        print(traceback.format_exc())
+
     # Translate Plan to Torchscript
     print("Translating Plan to Torchscript")
     train.add_translation(PlanTranslatorTorchscript)
@@ -274,5 +287,3 @@ def test_rnn_plan_example():
         assert th.allclose(
             param_torch, params_ts[i]
         ), f"param {i} (out_{i + 3}) torch/ts. {th.abs(param_torch - params_ts[i]).max()}"
-
-    train.add_translation(PlanTranslatorTfjs)
