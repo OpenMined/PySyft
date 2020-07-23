@@ -2,7 +2,6 @@ from __future__ import annotations
 from ....decorators import syft_decorator
 from ...message import SyftMessage
 from ....common import AbstractWorker
-from ....common.token import Token
 from typing import List
 
 
