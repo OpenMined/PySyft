@@ -7,19 +7,27 @@ from .service.vm_msg_service import VirtualMachineMessageService
 from .service.vm_lifecycle_service import VirtualMachineLifecycleService
 from ..common.device import AbstractDevice
 from ....common.id import UID
-
+from .device_type.device_type import DeviceType
+from .device_type.unknown import unknown_device
+from ..vm.vm import VirtualMachine
+from typing import Dict
 
 @final
 class Device(Node, AbstractDevice):
     @syft_decorator(typechecking=True)
-    def __init__(self, name: str):
+    def __init__(self, name: str, device_type: DeviceType=unknown_device, vms: Dict[UID, VirtualMachine]={}):
         super().__init__(name=name)
 
+        self.device_type = device_type
+
         # the VM objects themselves
-        self._vms = {}
+        self._vms = vms
 
         # clients to the VM objects
         self.vms = {}
+        for key, vm in self._vms.items():
+            self.vms[key] = vm.get_client()
+
 
         # a lookup table to lookup VMs by name instead of ID
         self.vm_name2id = {}
