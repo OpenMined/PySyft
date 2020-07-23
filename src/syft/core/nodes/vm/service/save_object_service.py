@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-from ...abstract.service import WorkerService
+from ...abstract.service import NodeService
 from ....message import SaveObjectMessage
 
 from ..... import type_hints
 
-from .....common import AbstractWorker
+from .....common import AbstractNode
 from typing import List
 
 
-class SaveObjectService(WorkerService):
+class SaveObjectService(NodeService):
     @staticmethod
     @type_hints
-    def process(worker: AbstractWorker, msg: SaveObjectMessage) -> None:
-        worker.store.store_object(msg.id, msg.obj)
+    def process(node: AbstractNode, msg: SaveObjectMessage) -> None:
+        node.store.store_object(msg.id, msg.obj)
         pass
 
     @staticmethod

@@ -6,7 +6,7 @@ from ...io.route import route
 @final
 class DeviceClient(Client):
     def __init__(self, device_id, name, connection):
-        super().__init__(worker_id=device_id, name=name, connection=connection)
+        super().__init__(node_id=device_id, name=name, connection=connection)
 
     def create_vm(self, name:str):
 
@@ -31,5 +31,5 @@ class DeviceClient(Client):
         return vm_client
 
     def __repr__(self):
-        out = f"<DeviceClient id:{self.worker_id}>"
+        out = f"<DeviceClient id:{self.node_id}>"
         return out

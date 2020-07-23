@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from ...abstract.service import WorkerService
+from ...abstract.service import NodeService
 from ....message import RunFunctionOrConstructorMessage
 from ..... import type_hints
-from .....common import AbstractWorker
+from .....common import AbstractNode
 from typing import List
 
 
-class RunFunctionOrConstructorService(WorkerService):
+class RunFunctionOrConstructorService(NodeService):
     @staticmethod
     @type_hints
-    def process(worker: AbstractWorker, msg: RunFunctionOrConstructorMessage) -> None:
+    def process(node: AbstractNode, msg: RunFunctionOrConstructorMessage) -> None:
         pass
 
     @staticmethod

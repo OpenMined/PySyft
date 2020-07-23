@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from ..... import type_hints
-from ...abstract.service import WorkerService
+from ...abstract.service import NodeService
 from ....message import GetObjectMessage
-from .....common import AbstractWorker
+from .....common import AbstractNode
 from typing import List
 
 
-class GetObjectService(WorkerService):
+class GetObjectService(NodeService):
     @staticmethod
     @type_hints
     def process(
-        worker: AbstractWorker, msg: GetObjectMessage
+        node: AbstractNode, msg: GetObjectMessage
     ) -> object:  # TODO: return StoreableObject
-        return worker.store.get_object(msg.id)
+        return node.store.get_object(msg.id)
 
     @staticmethod
     @type_hints

@@ -57,10 +57,10 @@ syft.core.nodes.vm.service.save\_object\_service module
    :undoc-members:
    :show-inheritance:
 
-syft.core.nodes.vm.service.worker\_service module
+syft.core.nodes.vm.service.node\_service module
 -------------------------------------------------
 
-.. automodule:: syft.core.nodes.vm.service.worker_service
+.. automodule:: syft.core.nodes.vm.service.node_service
    :members:
    :undoc-members:
    :show-inheritance:

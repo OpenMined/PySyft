@@ -9,7 +9,7 @@ from ...io.abstract import ClientConnection
 class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(self, vm_id: UID, name: str, connection: ClientConnection):
-        super().__init__(worker_id=vm_id, name=name, connection=connection)
+        super().__init__(node_id=vm_id, name=name, connection=connection)
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

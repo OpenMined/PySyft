@@ -1,7 +1,7 @@
-from ..abstract.worker import Worker
+from ..abstract.node import Node
 
 
-class Network(Worker):
+class Network(Node):
     def __init__(self, name: str):
         super().__init__(name=name)
 
