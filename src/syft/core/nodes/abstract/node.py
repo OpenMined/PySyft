@@ -20,7 +20,7 @@ class Node(AbstractNode):
 
     """
     Basic class for a syft node behavior, explicit purpose nodes will
-    inherit this class (eg. WebsocketNode, VirtualNode).
+    inherit this class (e.g., Device, Domain, Network, and VirtualMachine).
 
     A node is a collection of objects owned by a machine, a list of supported
     frameworks used for remote execution and a message router. The objects
@@ -28,8 +28,7 @@ class Node(AbstractNode):
     frameworks are a list of Globals and the message router is a dict that maps
     a message type to a processing method.
 
-
-    Each node is identified by an id of type str.
+    Each node is identified by an id of type ID and a name of type string.
     """
 
     @syft_decorator(typechecking=True)
