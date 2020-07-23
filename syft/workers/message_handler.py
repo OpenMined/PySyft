@@ -207,7 +207,8 @@ class BaseMessageHandler(AbstractMessageHandler):
             return obj
 
     def handle_force_delete_object_msg(self, msg: ForceObjectDeleteMessage):
-        self.object_store.force_rm_obj(msg.object_id)
+        for object_id in msg.object_ids:
+            self.object_store.force_rm_obj(object_id)
 
     def is_object_none(self, msg):
         obj_id = msg.object_id
@@ -245,7 +246,13 @@ class BaseMessageHandler(AbstractMessageHandler):
             # decision to decide when to delete the tensor.
             ptr = obj.create_pointer(
                 garbage_collect_data=False, owner=sy.local_worker, tags=obj.tags
-            ).wrap()
+            )
+
+            # Wrap only if the pointer points to a tensor.
+            # If it points to a generic object, do not wrap.
+            if isinstance(ptr, PointerTensor):
+                ptr = ptr.wrap()
+
             results.append(ptr)
 
         return results

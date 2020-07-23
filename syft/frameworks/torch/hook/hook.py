@@ -115,6 +115,21 @@ class TorchHook(FrameworkHook):
         syft.torch = TorchAttributes(torch, self)
         syft.framework = syft.torch
 
+        """
+        In Syft there is a syft.framework value that can contain only one framework.
+        Ideally it should contain a list of supported frameworks.
+
+        We do this because in Plans there is method to reduce the number of actions
+        that are traced (and then sent).
+        The actions that are not returning a result, changing a placeholder, inplace
+        or changing the global state are eliminated from the traced list
+        """
+        if dependency_check.crypten_available:
+            import crypten
+            from syft.frameworks.crypten.crypten_attributes import CryptenAttributes
+
+            syft.crypten = CryptenAttributes(crypten, self)
+
         # Hook some torch methods such that tensors could be created directy at workers
         self._hook_worker_methods()
 

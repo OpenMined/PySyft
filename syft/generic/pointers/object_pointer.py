@@ -12,7 +12,6 @@ from syft.generic.frameworks.hook.hook_args import register_backward_func
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.frameworks.types import FrameworkTensor
 from syft.generic.abstract.sendable import AbstractSendable
-from syft.messaging.message import ForceObjectDeleteMessage
 from syft.workers.abstract import AbstractWorker
 
 from syft.exceptions import RemoteObjectFoundError
@@ -343,7 +342,7 @@ class ObjectPointer(AbstractSendable, SyftSerializable):
         if hasattr(self, "owner") and self.garbage_collect_data:
             # attribute pointers are not in charge of GC
             if self.point_to_attr is None:
-                self.owner.send_msg(ForceObjectDeleteMessage(self.id_at_location), self.location)
+                self.owner.garbage(self.id_at_location, self.location)
 
     def _create_attr_name_string(self, attr_name):
         if self.point_to_attr is not None:

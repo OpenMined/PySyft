@@ -1,9 +1,12 @@
+import pytest
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-def test_torch_nn_functional_linear():
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_torch_nn_functional_linear(protocol):
     tensor = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=False).fix_prec()
     weight = nn.Parameter(torch.tensor([[1.0, 2], [3, 4]]), requires_grad=True).fix_prec()
 
@@ -36,7 +39,8 @@ def test_torch_nn_functional_linear():
     assert (result == expected).all()
 
 
-def test_torch_nn_functional_dropout(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_torch_nn_functional_dropout(workers, protocol):
 
     # Test for fixed precision tensor
     a = torch.rand((20, 20))
@@ -61,7 +65,8 @@ def test_torch_nn_functional_dropout(workers):
     assert ((test_output == x).get().float_prec() == 1).all()
 
 
-def test_torch_nn_functional_conv2d(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_torch_nn_functional_conv2d(workers, protocol):
     # Test with FixedPrecision tensors
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     im = torch.tensor(
@@ -84,14 +89,14 @@ def test_torch_nn_functional_conv2d(workers):
     w_fp = w.fix_prec()
     bias_fp = bias.fix_prec()
 
-    res0 = F.conv2d(im_fp, w_fp, bias=bias_fp, stride=1).float_prec()
+    res0 = F.conv2d(im_fp, w_fp, bias_fp, stride=1).float_prec()
     res1 = F.conv2d(
-        im_fp, w_fp[:, 0:1].contiguous(), bias=bias_fp, stride=2, padding=3, dilation=2, groups=2
+        im_fp, w_fp[:, 0:1].contiguous(), bias_fp, stride=2, padding=3, dilation=2, groups=2
     ).float_prec()
 
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
+    expected0 = torch.conv2d(im, w, bias, stride=1)
     expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
+        im, w[:, 0:1].contiguous(), bias, stride=2, padding=3, dilation=2, groups=2
     )
 
     assert (res0 == expected0).all()
@@ -102,12 +107,12 @@ def test_torch_nn_functional_conv2d(workers):
     w_shared = w.fix_prec().share(bob, alice, crypto_provider=james)
     bias_shared = bias.fix_prec().share(bob, alice, crypto_provider=james)
 
-    res0 = F.conv2d(im_shared, w_shared, bias=bias_shared, stride=1).get().float_precision()
+    res0 = F.conv2d(im_shared, w_shared, bias_shared, stride=1).get().float_precision()
     res1 = (
         F.conv2d(
             im_shared,
             w_shared[:, 0:1].contiguous(),
-            bias=bias_shared,
+            bias_shared,
             stride=2,
             padding=3,
             dilation=2,
@@ -117,17 +122,19 @@ def test_torch_nn_functional_conv2d(workers):
         .float_precision()
     )
 
-    expected0 = torch.conv2d(im, w, bias=bias, stride=1)
+    expected0 = torch.conv2d(im, w, bias, stride=1)
     expected1 = torch.conv2d(
-        im, w[:, 0:1].contiguous(), bias=bias, stride=2, padding=3, dilation=2, groups=2
+        im, w[:, 0:1].contiguous(), bias, stride=2, padding=3, dilation=2, groups=2
     )
 
     assert (res0 == expected0).all()
     assert (res1 == expected1).all()
 
 
-def test_torch_nn_functional_maxpool(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_torch_nn_functional_maxpool(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
+    # 4d
     enc_tensor = torch.tensor(
         [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
     )
@@ -135,6 +142,11 @@ def test_torch_nn_functional_maxpool(workers):
     r_max = F.max_pool2d(enc_tensor, kernel_size=2)
     r_max = r_max.get().float_prec()
     exp_max = torch.tensor([[[[6.0, 8.0], [3.0, 4.0]]]])
+    assert (r_max == exp_max).all()
+    # 4d kernel_size = 3
+    r_max = F.max_pool2d(enc_tensor, kernel_size=3, stride=1)
+    r_max = r_max.get().float_prec()
+    exp_max = torch.tensor([[[[7.0, 8.0], [7.0, 8.0]]]])
     assert (r_max == exp_max).all()
     # 3d
     enc_tensor = torch.tensor(
@@ -156,7 +168,8 @@ def test_torch_nn_functional_maxpool(workers):
     assert (r_max == exp_max).all()
 
 
-def test_torch_nn_functional_avgpool(workers):
+@pytest.mark.parametrize("protocol", ["snn", "fss"])
+def test_torch_nn_functional_avgpool(workers, protocol):
     bob, alice, james = (workers["bob"], workers["alice"], workers["james"])
     enc_tensor = torch.tensor(
         [[[[1, 1, 2, 4], [5, 6, 7, 8], [3, 2, 1, 0], [1, 2, 3, 4]]]], dtype=torch.float
