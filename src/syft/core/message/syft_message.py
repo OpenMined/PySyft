@@ -5,7 +5,6 @@ from ..io.address import Address
 
 class SyftMessage(AbstractMessage):
     def __init__(self, address: Address, msg_id: UID = None) -> None:
-        self.token = token
         self.msg_id = msg_id
 
 class SignedMessage(SyftMessage):
