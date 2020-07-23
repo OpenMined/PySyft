@@ -805,20 +805,20 @@ def test_max(workers, protocol):
 
     kwargs = {"protocol": protocol, "crypto_provider": crypto_provider}
 
-    t = torch.tensor([3, 1.0, 2])
+    t = torch.tensor([3, 1.0, -2])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([3.0])
 
-    t = torch.tensor([3, 4.0])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
     max_value = x.max().get().float_prec()
     assert max_value == torch.tensor([4.0])
 
-    t = torch.tensor([3, 4.0, 5, 2])
+    t = torch.tensor([[1.0, 2], [3, 4.0]])
     x = t.fix_prec().share(*args, **kwargs)
-    max_value = x.max().get().float_prec()
-    assert max_value == torch.tensor([5.0])
+    max_value = x.max(dim=0).get().float_prec()
+    assert (max_value == t.max(dim=0)[0]).all()
 
 
 @pytest.mark.parametrize("protocol", ["snn", "fss"])
