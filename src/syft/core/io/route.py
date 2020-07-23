@@ -3,8 +3,19 @@ from ...common.id import UID
 from typing import final
 
 
-class BaseRoute(object):
-    connection_details = {}
+class Route(object):
+    """
+    A route is how a node can be reached by other nodes.
+    Route provides a name, imagine it like a name server
+        so that if user had multiple routes to the same name server
+        it can identify it that these routes lead to the same
+        destination.
+    and Route provides connection details which could be any protocol.
+    potentially this could also serve authentication details.
+    """
+    def __init__(self, node_unique_name: UID):
+        self.name = node_unique_name
+        self.connection_details = {}
 
     def configure_connection(self, protocol: str, host: str, port: int):
         """
@@ -24,38 +35,3 @@ class BaseRoute(object):
             channel_name: the name of the channel to broadcast on.
         """
         self.connection_details.update({'broadcast_channel': name})
-
-
-
-@final
-class PublicRoute(BaseRoute):
-    @syft_decorator(typechecking=True)
-    def __init__(self, network: (str, UID), domain: (str, UID)):
-        self.network = network
-        self.domain = domain
-
-
-@final
-class PrivateRoute(BaseRoute):
-    @syft_decorator(typechecking=True)
-    def __init__(self, device: (str, UID), vm: (str, UID)):
-        self.device = device
-        self.vm = vm
-
-
-@final
-class Route(BaseRoute):
-    @syft_decorator(typechecking=True)
-    def __init__(self, pub_route: PublicRoute, pri_route: PrivateRoute):
-        self.pub_route = pub_route
-        self.pri_route = pri_route
-
-
-@syft_decorator(typechecking=True)
-def route(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Route:
-    """A convenience method for creating routes"""
-
-    pub = PublicRoute(network=network, domain=domain)
-    pri = PrivateRoute(device=device, vm=vm)
-
-    return Route(pub_route=pub, pri_route=pri)
