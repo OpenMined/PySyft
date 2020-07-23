@@ -34,4 +34,13 @@ class Route(object):
         Args:
             channel_name: the name of the channel to broadcast on.
         """
-        self.connection_details.update({'broadcast_channel': name})
+        self.connection_details.update({'broadcast_channel': channel_name})
+
+
+class MQTTRoute(Route):
+    def connect(self):
+        pass
+
+class HTTPRoute(Route):
+    def connect(self):
+        pass

@@ -13,9 +13,8 @@ from ....util import get_subclasses
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
-from ...message import SyftMessage, SyftMessageWithReply
-from ...io import Route
-from remote_nodes import RemoteNodes
+from ...message import SyftMessage
+from .remote_nodes import RemoteNodes
 
 class Node(AbstractNode):
 
@@ -41,7 +40,7 @@ class Node(AbstractNode):
         self.msg_router = {}
         self.services_registered = False
         self.node_type = type(self).__name__
-        self.remote_nodes = RemoteNodes(type=self.node_type)
+        self.remote_nodes = RemoteNodes(my_type=self.node_type)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:

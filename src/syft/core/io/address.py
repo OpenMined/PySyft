@@ -19,7 +19,7 @@ class PrivateAddress(object):
 
 
 @final
-class Address(BaseRoute):
+class Address(object):
     @syft_decorator(typechecking=True)
     def __init__(self, pub_address: PublicAddress, pri_address: PrivateAddress):
         self.pub_address = pub_address
@@ -27,10 +27,10 @@ class Address(BaseRoute):
 
 
 @syft_decorator(typechecking=True)
-def address(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Route:
+def address(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Address:
     """A convenience method for creating routes"""
 
     pub = PublicAddress(network=network, domain=domain)
     pri = PrivateAddress(device=device, vm=vm)
 
-    return address(pub_address=pub, pri_address=pri)
+    return Address(pub_address=pub, pri_address=pri)

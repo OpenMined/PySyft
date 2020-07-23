@@ -3,11 +3,11 @@ from ..device.client import DeviceClient
 
 class DomainRemoteNodes(RemoteNodes):
 
-    def register_device(self, id_or_name, route):
-        self._register_node('device', id_or_name, route)
+    def register_device(self, id_or_name):
+        return self.register_node('device', id_or_name, route)
 
-    def lookup_device(self, id_or_name, route=None):
-        devices = self._rotate_on_id(self.nodes['device'])
+    def lookup_device(self, id_or_name):
+        devices = self.get_node(on_multi_keys = ['id', 'name'], value=id_or_name)
         return devices[id_or_name]
 
     def route_message_to_relevant_nodes(self, message):
@@ -21,7 +21,6 @@ class DomainRemoteNodes(RemoteNodes):
         # look up the private connection to this device.
         private_route = self.nodes.get(on_key='name', value=device).route
 
-        # need to make this part work as connection
-        #  isn't something that can be done directly on route.
-        connection = private_route.connection
+        # TODO connections on route don't yet work.
+        connection = private_route.connect()
         DeviceClient(connection).send_msg(message)
