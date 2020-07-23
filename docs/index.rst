@@ -46,8 +46,8 @@ However, the Syft ecosystem only focuses on consistent object serialization/dese
 
 - GridNetwork_ - think of this like DNS for private data. It helps you find remote data assets so that you can compute with them.
 - PyGrid_ - This is the gateway to an organization's data, responsible for permissions, load balancing, and governance.
-- GridNode_ - This is an individual worker within an organization's datacenter, running executions requested by external parties.
-- GridMonitor_ - This is a UI which allows an institution to introspect and control their PyGrid worker and the GridNodes it manages.
+- GridNode_ - This is an individual node within an organization's datacenter, running executions requested by external parties.
+- GridMonitor_ - This is a UI which allows an institution to introspect and control their PyGrid node and the GridNodes it manages.
 
 .. _GridNetwork: https://github.com/OpenMined/GridNetwork
 .. _PyGrid: https://github.com/OpenMined/PyGrid

@@ -5,8 +5,8 @@ from ...io.abstract import ClientConnection
 
 class Client:
     @syft_decorator(typechecking=True)
-    def __init__(self, worker_id: UID, name: str, connection: ClientConnection):
-        self.worker_id = worker_id
+    def __init__(self, node_id: UID, name: str, connection: ClientConnection):
+        self.node_id = node_id
         self.name = name
         self.connection = connection
 
@@ -16,4 +16,4 @@ class Client:
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
-        return f"<Client pointing to worker with id:{self.worker_id}>"
+        return f"<Client pointing to node with id:{self.node_id}>"

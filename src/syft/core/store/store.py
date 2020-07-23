@@ -1,5 +1,5 @@
 class ObjectStore:
-    """Logic to store and retrieve objects within a worker"""
+    """Logic to store and retrieve objects within a node"""
 
     def __init__(self):
         self._objects = {}

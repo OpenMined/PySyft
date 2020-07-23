@@ -5,7 +5,7 @@ Replacing this object with an actual network connection object
 execute the exact same functionality but do so over a network"""
 
 from ..message.syft_message import SyftMessage
-from ..nodes.abstract.worker import Worker
+from ..nodes.abstract.node import Node
 from ...decorators import syft_decorator
 from typing import final
 
@@ -18,12 +18,12 @@ known_objects = {}
 @final
 class VirtualServerConnection(ServerConnection):
     @syft_decorator(typechecking=True)
-    def __init__(self, worker: Worker):
-        self.worker = worker
+    def __init__(self, node: Node):
+        self.node = node
 
     @syft_decorator(typechecking=True)
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.worker.recv_msg(msg=msg)
+        return self.node.recv_msg(msg=msg)
 
 
 @final
@@ -38,9 +38,9 @@ class VirtualClientConnection(ClientConnection):
 
 
 @syft_decorator(typechecking=True)
-def create_virtual_connection(worker: Worker) -> VirtualClientConnection:
+def create_virtual_connection(node: Node) -> VirtualClientConnection:
 
-    server = VirtualServerConnection(worker=worker)
+    server = VirtualServerConnection(node=node)
     client = VirtualClientConnection(server=server)
 
     return client

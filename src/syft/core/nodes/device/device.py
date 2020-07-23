@@ -1,4 +1,4 @@
-from ..abstract.worker import Worker
+from ..abstract.node import Node
 from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
@@ -10,7 +10,7 @@ from ....common.id import UID
 
 
 @final
-class Device(Worker, AbstractDevice):
+class Device(Node, AbstractDevice):
     @syft_decorator(typechecking=True)
     def __init__(self, name: str):
         super().__init__(name=name)
@@ -28,5 +28,5 @@ class Device(Worker, AbstractDevice):
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:
-        conn_client = create_virtual_connection(worker=self)
+        conn_client = create_virtual_connection(node=self)
         return DeviceClient(device_id=self.id, name=self.name, connection=conn_client)

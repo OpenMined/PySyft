@@ -1,5 +1,5 @@
 from .client import VirtualMachineClient
-from ..abstract.worker import Worker
+from ..abstract.node import Node
 from . import service
 from ...io.virtual import create_virtual_connection
 from ....decorators import syft_decorator
@@ -8,7 +8,7 @@ from typing import final
 
 
 @final
-class VirtualMachine(Worker):
+class VirtualMachine(Node):
     @syft_decorator(typechecking=True)
     def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
@@ -31,7 +31,7 @@ class VirtualMachine(Worker):
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> VirtualMachineClient:
-        conn = create_virtual_connection(worker=self)
+        conn = create_virtual_connection(node=self)
         return VirtualMachineClient(vm_id=self.id, name=self.name, connection=conn)
 
     @syft_decorator(typechecking=True)

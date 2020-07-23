@@ -1,1 +1,1 @@
-from .worker import AbstractWorker  # noqa: F401
+from .node import AbstractNode  # noqa: F401

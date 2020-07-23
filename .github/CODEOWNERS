@@ -43,7 +43,7 @@
 /syft/generic/ @OpenMined/syft-core
 /syft/messaging/ @OpenMined/syft-core
 /syft/serde/ @OpenMined/syft-core
-/syft/workers/ @OpenMined/syft-core
+/syft/nodes/ @OpenMined/syft-core
 
 # Crypto Team
 /syft/torch/he/ @OpenMined/cryptography
