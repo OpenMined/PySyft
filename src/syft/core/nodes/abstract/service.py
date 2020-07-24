@@ -5,6 +5,7 @@ from ....common import AbstractNode
 from typing import List
 
 
+
 class NodeService:
     @staticmethod
     @syft_decorator(typechecking=True)

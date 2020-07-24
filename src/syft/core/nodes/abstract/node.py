@@ -14,7 +14,7 @@ from ....util import get_subclasses
 # CORE IMPORTS
 from ...store.store import ObjectStore
 from ...message import SyftMessage
-
+from .remote_nodes import RemoteNodes
 
 class Node(AbstractNode):
 
@@ -38,12 +38,13 @@ class Node(AbstractNode):
         self.name = name
         self.store = ObjectStore()
         self.msg_router = {}
-
         self.services_registered = False
+        self.node_type = type(self).__name__
+        self.remote_nodes = RemoteNodes(my_type=self.node_type)
 
     @type_hints
     def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-
+        self.remote_nodes.route_message_to_relevant_nodes(msg)
         try:
             return self.msg_router[type(msg)].process(node=self, msg=msg)
         except KeyError as e:
@@ -62,7 +63,7 @@ class Node(AbstractNode):
 
                 raise e
 
-    # TODO: change services type  to List[NodeService] when typechecker allows subclassing
+
     @syft_decorator(typechecking=True)
     def _set_services(self, services: List) -> None:
         self.services = services

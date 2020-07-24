@@ -38,14 +38,10 @@ class Device(Node, AbstractDevice):
         self._set_services(services=services)
 
     def get_vm(self, id_or_name:(str, UID)):
-        try:
-            return self.vms[id_or_name]
-        except KeyError as e:
-            try:
-                id = self.vm_name2id[id_or_name]
-                return self.vms[id]
-            except KeyError as e:
-                raise KeyError("You must ask for a vm using either a name or ID.")
+        return self.remote_nodes.get_node('VM', id_or_name)
+
+    def register_vm(self, id_or_name: (str, UID), route: Route):
+        return self.remote_nodes.register_node('VM', id_or_name, route)
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:
