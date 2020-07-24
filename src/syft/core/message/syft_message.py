@@ -1,6 +1,6 @@
 from ...common.message import AbstractMessage
 from ...common.id import UID
-from ..io import Route
+from ..io.route import Route
 from ..io.address import Address
 
 class SyftMessage(AbstractMessage):

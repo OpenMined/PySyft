@@ -1,13 +1,8 @@
-import enum
 from .client import Client
 from ...io.route import Route
 from ...message.syft_message import SyftMessage
+from ....common.id import UID
 
-class NodeTypes(enum):
-    Network = 1
-    Domain = 2
-    Device = 3
-    VM = 4
 
 class Node(object):
     def __init__(self, type, id = None, name = None, route = None, tags=[]):
@@ -16,7 +11,6 @@ class Node(object):
         self.type = type
         self.route = route
         self.tags = tags
-        self.is_local = is_local
 
     def as_dict(self, on_key: str = 'id', on_multi_keys: list = []):
         if len(on_multi_keys):
@@ -31,7 +25,7 @@ class Node(object):
             key = getattr(self, on_key)
             if on_key == 'tags':
                 key = self._flatten_tags_for_search(key)
-        {key: {
+        return {key: {
             'id': self.id,
             'name': self.name,
             'type': self.type,
@@ -40,6 +34,12 @@ class Node(object):
 
     def _flatten_tags_for_search(self):
         return tags.join('-')
+
+    def get_name_for_address(self):
+        """
+        returns a name for this node that can be used as address.
+        """
+        pass
 
 class RemoteNodes(object):
     """
@@ -72,7 +72,7 @@ class RemoteNodes(object):
             all.update(node.as_dict(on_key, on_multi_keys))
         return all
 
-    def get_node(self, key: str = 'id', on_multi_keys: list = [], value:(str, UID)):
+    def get_node(self, value:(str, UID), key: str = 'id', on_multi_keys: list = []):
         nodes = self.as_dict(on_key = key, on_multi_keys = on_multi_keys)
         return nodes.get(value)
 
@@ -93,3 +93,15 @@ class RemoteNodes(object):
         on __init__ should check if registry cache file exists.
         """
         pass
+
+    def resolve_address(self, address):
+        """
+        resolve an address to the respective nodes.
+        """
+        pass
+
+    def all(self):
+        """
+        return all registered remote nodes.
+        """
+        return self.as_dict()
