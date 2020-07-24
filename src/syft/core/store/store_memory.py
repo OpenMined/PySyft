@@ -1,11 +1,8 @@
 from ...decorators import syft_decorator
 from ...common.id import UID
-from ..serialization import Serializable
-from .storeable_object import StorableObject
-from typing import Iterable
+from . import StorableObject, ObjectStore
 
-
-class ObjectStore(Serializable):
+class MemoryStore(ObjectStore):
     """Logic to store and retrieve objects within a worker"""
 
     def __init__(self):
@@ -14,44 +11,44 @@ class ObjectStore(Serializable):
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
-        raise NotImplementedError
+        return self._objects.__sizeof__()
 
     @syft_decorator(typechecking=True)
-    def __str__(self) -> int:
-        raise NotImplementedError
+    def __str__(self) -> str:
+        return str(self._objects)
 
     @syft_decorator(typechecking=True)
     def __len__(self) -> int:
-        raise NotImplementedError
+        return len(self._objects)
 
     @syft_decorator(typechecking=True)
-    def keys(self) -> Iterable[UID]:
-        raise NotImplementedError
+    def keys(self) -> [UID]:
+        return self._objects.keys()
 
     @syft_decorator(typechecking=True)
-    def values(self) -> Iterable[StorableObject]:
-        raise NotImplementedError
+    def values(self) -> [StorableObject]:
+        return self._objects.values()
 
     @syft_decorator(typechecking=True)
-    def store(self, obj: StorableObject) -> None:
-        raise NotImplementedError
+    def store(self, obj: StorableObject):
+        self._objects[obj.key] = obj
 
     @syft_decorator(typechecking=True)
     def __contains__(self, key: UID) -> bool:
-        raise NotImplementedError
+        return key in self._objects.values()
 
     @syft_decorator(typechecking=True)
     def __getitem__(self, key: UID) -> StorableObject:
-        raise NotImplementedError
+        return self._objects[key]
 
     @syft_decorator(typechecking=True)
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        raise NotImplementedError
+        self._objects[key] = value
 
     @syft_decorator(typechecking=True)
     def __delitem__(self, key: UID) -> None:
-        raise NotImplementedError
+        del self._objects[key]
 
     @syft_decorator(typechecking=True)
     def clear(self) -> None:
-        raise NotImplementedError
+        self._objects.clear()

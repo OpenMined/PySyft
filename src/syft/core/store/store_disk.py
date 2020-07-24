@@ -2,7 +2,7 @@ from sqlitedict import SqliteDict
 from typing import Optional, Final
 
 from .store_interface import ObjectStore
-from . import StorableObject
+from .storeable_object import StorableObject
 from ...decorators import syft_decorator
 from ...common.id import UID
 
@@ -15,6 +15,12 @@ class DiskObjectStore(ObjectStore):
             db_path = "/tmp/test.sqlite"
 
         self.db: Final = SqliteDict(db_path)
+        self.search_engine = None
+
+    @syft_decorator(typechecking=True)
+    def store(self, obj: StorableObject) -> None:
+        self.db[obj.key] = obj.serialize()
+
 
     @syft_decorator(typechecking=True)
     def __sizeof__(self) -> int:
@@ -42,7 +48,7 @@ class DiskObjectStore(ObjectStore):
 
     @syft_decorator(typechecking=True)
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        self.db[key] = StorableObject.serialize(value)
+        self.db[key] = value.serialize()
         self.db.commit(blocking=False)
 
     @syft_decorator(typechecking=True)

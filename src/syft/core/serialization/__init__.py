@@ -1,3 +1,2 @@
 from .serializable import Serializable
-from .protocol import SerializationProtocol
-from .store import SerializationStore
+from .store import serialization_store
