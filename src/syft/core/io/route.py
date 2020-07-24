@@ -3,35 +3,44 @@ from ...common.id import UID
 from typing import final
 
 
-@final
-class PublicRoute(object):
-    @syft_decorator(typechecking=True)
-    def __init__(self, network: (str, UID), domain: (str, UID)):
-        self.network = network
-        self.domain = domain
-
-
-@final
-class PrivateRoute(object):
-    @syft_decorator(typechecking=True)
-    def __init__(self, device: (str, UID), vm: (str, UID)):
-        self.device = device
-        self.vm = vm
-
-
-@final
 class Route(object):
-    @syft_decorator(typechecking=True)
-    def __init__(self, pub_route: PublicRoute, pri_route: PrivateRoute):
-        self.pub_route = pub_route
-        self.pri_route = pri_route
+    """
+    A route is how a node can be reached by other nodes.
+    Route provides a name, imagine it like a name server
+        so that if user had multiple routes to the same name server
+        it can identify it that these routes lead to the same
+        destination.
+    and Route provides connection details which could be any protocol.
+    potentially this could also serve authentication details.
+    """
+    def __init__(self, node_unique_name: UID):
+        self.name = node_unique_name
+        self.connection_details = {}
+
+    def configure_connection(self, protocol: str, host: str, port: int):
+        """
+        the route should have connection details embedded in it.
+        so that nodes operators can utilize it to route messages.
+        """
+        self.connection_details.update({
+            'host': host,
+            'protocol': protocol,
+            'port': port
+        })
+
+    def register_broadcast_channel(self, channel_name: str):
+        """
+        In the case configured protocol is pub/sub or event driven.
+        Args:
+            channel_name: the name of the channel to broadcast on.
+        """
+        self.connection_details.update({'broadcast_channel': channel_name})
 
 
-@syft_decorator(typechecking=True)
-def route(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Route:
-    """A convenience method for creating routes"""
+class MQTTRoute(Route):
+    def connect(self):
+        pass
 
-    pub = PublicRoute(network=network, domain=domain)
-    pri = PrivateRoute(device=device, vm=vm)
-
-    return Route(pub_route=pub, pri_route=pri)
+class HTTPRoute(Route):
+    def connect(self):
+        pass
