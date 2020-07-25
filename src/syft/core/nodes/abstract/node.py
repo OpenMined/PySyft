@@ -125,9 +125,11 @@ class Node(AbstractNode):
     def known_child_nodes(self):
         raise NotImplementedError
 
+    @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg:SyftMessage) -> bool:
         raise NotImplementedError
 
+    @syft_decorator(typechecking=True)
     def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
@@ -145,6 +147,7 @@ class Node(AbstractNode):
             print("the message is not for me...")
             return self.message_forwarding_service.process(node=self, msg=msg)
 
+    @syft_decorator(typechecking=True)
     def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
 
         if self.message_is_for_me(msg):
@@ -169,6 +172,7 @@ class Node(AbstractNode):
             print("the message is not for me...")
             self.message_forwarding_service.process(node=self, msg=msg)
 
+    @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
         if not self.services_registered:
             raise Exception(
