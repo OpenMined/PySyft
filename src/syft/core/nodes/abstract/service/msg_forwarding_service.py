@@ -8,7 +8,6 @@ from typing import List
 
 
 class MessageForwardingService(NodeService):
-
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: AbstractMessage) -> AbstractMessage:
         addr = msg.address
@@ -27,7 +26,6 @@ class MessageForwardingService(NodeService):
             return node.store.get_object(pub_addr.network).send_msg(msg=msg)
 
         raise Exception("Address unknown - cannot forward message. Throwing it away.")
-
 
     @staticmethod
     @syft_decorator(typechecking=True)

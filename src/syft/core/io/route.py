@@ -3,6 +3,7 @@ from ...common.id import UID
 from ...common.message import AbstractMessage
 from typing import List
 
+
 class Route(object):
     """
     A route is the highest level interface for how a node can
@@ -29,19 +30,20 @@ class Route(object):
 
 
 class PointToPointRoute(Route):
-
     def __init__(self, target_node_id: UID, connection_client_type: type):
         super().__init__(connection_client_type=connection_client_type)
         self.target_node_id = target_node_id
 
+
 class BroadcastRoute(Route):
 
-    #TODO: instead of passing in a list, come up with an abstractoin for
+    # TODO: instead of passing in a list, come up with an abstractoin for
     # "worker group" of arbitrary size and membership which can include
     # "known members" but isn't intended to be exhaustive.
     def __init__(self, target_node_ids: List[UID], connection_client_type: type):
         super().__init__(connection_client_type=connection_client_type)
         self.target_node_ids = target_node_ids
+
 
 class MQTTRoute(Route):
     def connect(self):
@@ -51,4 +53,3 @@ class MQTTRoute(Route):
 class HTTPRoute(Route):
     def connect(self):
         pass
-

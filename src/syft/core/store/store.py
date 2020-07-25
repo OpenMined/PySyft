@@ -13,11 +13,11 @@ class ObjectStore:
     def get_object(self, id):
         return self._objects[id]
 
-    def get_objects_of_type(self, obj_type:type):
+    def get_objects_of_type(self, obj_type: type):
         out = list()
         for id, obj in self._objects.items():
             if isinstance(obj, obj_type):
-               out.append(obj)
+                out.append(obj)
         return out
 
     def delete_object(self, id):
@@ -25,4 +25,3 @@ class ObjectStore:
 
     def __repr__(self):
         return f"ObjectStore:{self._objects}"
-

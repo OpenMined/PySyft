@@ -1,5 +1,6 @@
 from .syft_message import SyftMessage
 
+
 class RunClassMethodMessage(SyftMessage):
     def __init__(self, path, _self, args, kwargs, id_at_location, address, msg_id=None):
         super().__init__(address=address, msg_id=msg_id)

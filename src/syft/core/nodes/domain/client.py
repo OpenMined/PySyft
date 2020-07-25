@@ -2,6 +2,7 @@ from ..abstract.client import Client
 from ....common.id import UID
 from ....decorators.syft_decorator import syft_decorator
 
+
 class DomainClient(Client):
     def __init__(self, domain_id, name, connection):
         super().__init__(target_node_id=domain_id, name=name, connection=connection)
@@ -25,7 +26,7 @@ class DomainClient(Client):
         raise Exception("This client points to a domain, you don't have a Device ID.")
 
     @device_id.setter
-    def device_id(self, new_device_id:UID) -> UID:
+    def device_id(self, new_device_id: UID) -> UID:
         """This client points to a node, if that node lives within a device
         or is a device itself and we learn the id of that device, this setter
         allows us to save the id of that device for use later. We use a getter
@@ -44,7 +45,7 @@ class DomainClient(Client):
         raise Exception("This client points to a network, you don't have a VM ID.")
 
     @vm_id.setter
-    def vm_id(self, new_vm_id:UID) -> UID:
+    def vm_id(self, new_vm_id: UID) -> UID:
         """This client points to an node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter

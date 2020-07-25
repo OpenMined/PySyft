@@ -3,11 +3,11 @@ from typing import final
 from ....decorators.syft_decorator import syft_decorator
 from ....common.id import UID
 
+
 @final
 class DeviceClient(Client):
     def __init__(self, device_id, name, connection):
         super().__init__(target_node_id=device_id, name=name, connection=connection)
-
 
     # def create_vm(self, name:str):
     #
@@ -51,7 +51,7 @@ class DeviceClient(Client):
         raise Exception("This client points to a device, you don't have a VM ID.")
 
     @vm_id.setter
-    def vm_id(self, new_vm_id:UID) -> UID:
+    def vm_id(self, new_vm_id: UID) -> UID:
         """This client points to an node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter

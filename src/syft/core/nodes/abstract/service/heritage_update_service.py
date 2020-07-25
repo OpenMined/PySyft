@@ -15,15 +15,17 @@ from .....common.id import UID
 from ....message.syft_message import SyftMessageWithoutReply
 from typing import List
 
-class HeritageUpdateMessage(SyftMessageWithoutReply):
 
-    def __init__(self, id_type:str, new_ancestor_id: UID, address: Address, msg_id: UID = None):
+class HeritageUpdateMessage(SyftMessageWithoutReply):
+    def __init__(
+        self, id_type: str, new_ancestor_id: UID, address: Address, msg_id: UID = None
+    ):
         super().__init__(address=address, msg_id=msg_id)
         self.id_type = id_type
         self.new_ancestor_id = new_ancestor_id
 
-class HeritageUpdateService(NodeService):
 
+class HeritageUpdateService(NodeService):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: HeritageUpdateMessage) -> None:
         print(f"Updating {msg.id_type} to {msg.new_ancestor_id} on note {node}")

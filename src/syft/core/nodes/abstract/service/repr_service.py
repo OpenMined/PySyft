@@ -13,8 +13,7 @@ from .....common.id import UID
 
 @final
 class ReprMessage(SyftMessageWithoutReply):
-
-    def __init__(self, address: Address, msg_id:(UID, None)=None):
+    def __init__(self, address: Address, msg_id: (UID, None) = None):
         super().__init__(address=address, msg_id=msg_id)
 
 

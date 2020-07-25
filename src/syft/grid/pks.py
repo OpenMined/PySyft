@@ -3,15 +3,18 @@ functionality on an actual local network. This is NOT meant to be run in
 production (that's the *actual* grid's job)."""
 
 from flask import Flask
+
 app = Flask(__name__)
 
 from syft.core.nodes.network.network import Network
 
 network = Network(name="ucsf-net")
 
-@app.route('/')
+
+@app.route("/")
 def hello_world():
     return "A network:" + str(network.name)
+
 
 def run():
     app.run()

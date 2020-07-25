@@ -7,17 +7,18 @@ from typing import List
 
 
 class NodeService:
-
     @staticmethod
     @syft_decorator(typechecking=True)
     def message_handler_types() -> List[type]:
         raise NotImplementedError
+
 
 class NodeServiceWithReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: SyftMessage) -> SyftMessageWithoutReply:
         raise NotImplementedError
+
 
 class NodeServiceWithoutReply(NodeService):
     @staticmethod

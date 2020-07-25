@@ -26,9 +26,7 @@ class RunClassMethodService(NodeService):
 
         # Step 1a: set self_is_object to be the object self_possibly_pointer points to
         if issubclass(type(self_possibly_pointer), Pointer):
-            self_is_object = node.store.get_object(
-                self_possibly_pointer.id_at_location
-            )
+            self_is_object = node.store.get_object(self_possibly_pointer.id_at_location)
         else:
             self_is_object = self_possibly_pointer
 

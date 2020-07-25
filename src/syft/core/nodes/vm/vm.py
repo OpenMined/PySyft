@@ -15,7 +15,7 @@ class VirtualMachine(Node):
 
         self._register_services()
 
-    def message_is_for_me(self, msg:SyftMessage) -> bool:
+    def message_is_for_me(self, msg: SyftMessage) -> bool:
         return msg.address.pri_address.vm == self.id
 
     @syft_decorator(typechecking=True)

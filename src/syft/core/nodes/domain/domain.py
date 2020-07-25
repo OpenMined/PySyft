@@ -6,6 +6,7 @@ from ...io.virtual import create_virtual_connection
 from ..device.device import Device
 from ..device.client import DeviceClient
 
+
 class Domain(Node):
 
     child_type = Device
@@ -22,7 +23,10 @@ class Domain(Node):
         self._register_services()
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.pub_address.domain == self.id and msg.address.pri_address.device is None
+        return (
+            msg.address.pub_address.domain == self.id
+            and msg.address.pri_address.device is None
+        )
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DomainClient:

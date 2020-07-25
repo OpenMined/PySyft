@@ -20,7 +20,7 @@ class NetworkClient(Client):
         raise Exception("This client points to a network, you don't have a Domain ID.")
 
     @domain_id.setter
-    def domain_id(self, new_domain_id:UID) -> UID:
+    def domain_id(self, new_domain_id: UID) -> UID:
         """This client points to a node, if that node lives within a domain
         or is a domain itself and we learn the id of that domain, this setter
         allows us to save the id of that domain for use later. We use a getter
@@ -38,7 +38,7 @@ class NetworkClient(Client):
         raise Exception("This client points to a network, you don't have a Device ID.")
 
     @device_id.setter
-    def device_id(self, new_device_id:UID) -> UID:
+    def device_id(self, new_device_id: UID) -> UID:
         """This client points to a node, if that node lives within a device
         or is a device itself and we learn the id of that device, this setter
         allows us to save the id of that device for use later. We use a getter
@@ -57,7 +57,7 @@ class NetworkClient(Client):
         raise Exception("This client points to a network, you don't have a VM ID.")
 
     @vm_id.setter
-    def vm_id(self, new_vm_id:UID) -> UID:
+    def vm_id(self, new_vm_id: UID) -> UID:
         """This client points to an node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter
@@ -66,7 +66,6 @@ class NetworkClient(Client):
         target. That address object will include this information if it is available"""
 
         raise Exception("This client points to a network, you don't need a VM ID.")
-
 
     @property
     def target_node_id(self) -> UID:

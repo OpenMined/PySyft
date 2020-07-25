@@ -15,7 +15,6 @@ class Drive:
 
 
 class Storage:
-
     def __init__(self, drives: List[Drive]):
         self.drives = drives
 
