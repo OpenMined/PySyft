@@ -180,7 +180,8 @@ class GoogleCloud:
                 apt-get -y upgrade
                 sudo -i bash -c 'pip install notebook==5.7.8'
                 sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNode.git'
-                sudo -i bash -c 'echo Starting Node {name} joined with PyGridNetwork at {gridnetwork_ip} & \
+                sudo -i bash -c 'echo Starting Node {name} \
+                joined with PyGridNetwork at {gridnetwork_ip} & \
                 python -m gridnode --id={name} --port=80 {pygrid_network_address}'""",
         )
         self.config += node
@@ -258,8 +259,10 @@ class GoogleCloud:
                 apt-get -y upgrade
                 sudo -i bash -c 'pip install notebook==5.7.8'
                 sudo -i bash -c 'pip install git+https://github.com/OpenMined/PyGridNode.git'
-                sudo -i bash -c 'echo Starting Node {name} joined with PyGridNetwork at {pygrid_network_address} & \
-                python -m gridnode --id={name} --port=80 --gateway_url={pygrid_network_address}'""",
+                sudo -i bash -c 'echo Starting Node {name} \
+                joined with PyGridNetwork at {pygrid_network_address} & \
+                python -m gridnode --id={name} --port=80 \
+                --gateway_url={pygrid_network_address}'""",
             lifecycle={"create_before_destroy": True},
         )
         self.config += instance_template
