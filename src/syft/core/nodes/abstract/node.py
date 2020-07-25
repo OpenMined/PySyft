@@ -7,7 +7,7 @@ from __future__ import annotations
 
 # NON-CORE IMPORTS
 from ..common.node import AbstractNode
-from ....decorators import type_hints, syft_decorator
+from ....decorators import syft_decorator
 from typing import List
 from ....util import get_subclasses
 from ...message.syft_message import SyftMessage
@@ -27,11 +27,7 @@ class Node(AbstractNode):
     Basic class for a syft node behavior, explicit purpose nodes will
     inherit this class (e.g., Device, Domain, Network, and VirtualMachine).
 
-    A node is a collection of objects owned by a machine, a list of supported
-    frameworks used for remote execution and a message router. The objects
-    owned by the node are placed in an ObjectStore object, the list of
-    frameworks are a list of Globals and the message router is a dict that maps
-    a message type to a processing method.
+
 
     Each node is identified by an id of type ID and a name of type string.
     """
@@ -135,7 +131,7 @@ class Node(AbstractNode):
     def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
-            try:
+            try: # we use try/except here because it's marginally faster in Python
                 return self.msg_with_reply_router[type(msg)].process(node=self, msg=msg)
             except KeyError as e:
                 if type(msg) not in self.msg_with_reply_router:
@@ -150,10 +146,13 @@ class Node(AbstractNode):
             return self.message_forwarding_service.process(node=self, msg=msg)
 
     def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
-            try:
+            try: # we use try/except here because it's marginally faster in Python
+
                 self.msg_without_reply_router[type(msg)].process(node=self, msg=msg)
+
             except KeyError as e:
 
                 if type(msg) not in self.msg_without_reply_router:
@@ -190,17 +189,35 @@ class Node(AbstractNode):
         subclass) which corresponds to it."""
 
         for s in self.services_with_reply:
+            # Create a single instance of the service to cache in the router corresponding
+            # to one or more message types.
             service_instance = s()
             for handler_type in s.message_handler_types():
+
+                # for each explicitly supported type, add it to the router
                 self.msg_with_reply_router[handler_type] = service_instance
+
+                # for all sub-classes of the explicitly supported type, add them
+                # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.msg_with_reply_router[handler_type_subclass] = service_instance
 
         for s in self.services_without_reply:
+            # Create a single instance of the service to cache in the router corresponding
+            # to one or more message types.
             service_instance = s()
             for handler_type in s.message_handler_types():
+
+                # for each explicitly supported type, add it to the router
                 self.msg_without_reply_router[handler_type] = service_instance
+
+                # for all sub-classes of the explicitly supported type, add them
+                # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
                     self.msg_without_reply_router[handler_type_subclass] = service_instance
 
+        # Set the services_registered flag to true so that we know that all services
+        # have been properly registered. This mostly exists because someone might
+        # accidentally delete (forget to call) this method inside the __init__ function
+        # of a sub-class of Node.
         self.services_registered = True
