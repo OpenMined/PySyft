@@ -2,6 +2,7 @@ from ...decorators import syft_decorator
 from ...common.id import UID
 from typing import final
 
+
 @final
 class PublicAddress(object):
     @syft_decorator(typechecking=True)
@@ -33,8 +34,11 @@ class Address(object):
         out += f" VM:{self.pri_address.vm})"
         return out
 
+
 @syft_decorator(typechecking=True)
-def address(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Address:
+def address(
+    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
+) -> Address:
     """A convenience method for creating routes"""
 
     pub = PublicAddress(network=network, domain=domain)

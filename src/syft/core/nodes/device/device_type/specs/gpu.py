@@ -1,6 +1,12 @@
 class GPU:
-
-    def __init__(self, name:str, count:int, manufacturer:str, memory_total:int, memory_per_gpu:int):
+    def __init__(
+        self,
+        name: str,
+        count: int,
+        manufacturer: str,
+        memory_total: int,
+        memory_per_gpu: int,
+    ):
         self.name = name
         self.count = count
         self.manufacturer = manufacturer

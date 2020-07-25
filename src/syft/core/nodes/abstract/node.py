@@ -21,6 +21,7 @@ from .service.repr_service import ReprService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
 
+
 class Node(AbstractNode):
 
     """
@@ -80,7 +81,6 @@ class Node(AbstractNode):
         # privacy/security concerns are more concentrated within service
         # which reply with some amount of information.
 
-
         # for messages which need a reply, this uses the type
         # of the message to look up the service which
         # addresses that message.
@@ -126,14 +126,14 @@ class Node(AbstractNode):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
-    def message_is_for_me(self, msg:SyftMessage) -> bool:
+    def message_is_for_me(self, msg: SyftMessage) -> bool:
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
     def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
-            try: # we use try/except here because it's marginally faster in Python
+            try:  # we use try/except here because it's marginally faster in Python
                 return self.msg_with_reply_router[type(msg)].process(node=self, msg=msg)
             except KeyError as e:
                 if type(msg) not in self.msg_with_reply_router:
@@ -152,7 +152,7 @@ class Node(AbstractNode):
 
         if self.message_is_for_me(msg):
             print("the message is for me!!!")
-            try: # we use try/except here because it's marginally faster in Python
+            try:  # we use try/except here because it's marginally faster in Python
 
                 self.msg_without_reply_router[type(msg)].process(node=self, msg=msg)
 
@@ -179,8 +179,6 @@ class Node(AbstractNode):
                 "Please call _register_services on node. This seems to have"
                 "been skipped for some reason."
             )
-
-
 
     @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
@@ -218,7 +216,9 @@ class Node(AbstractNode):
                 # for all sub-classes of the explicitly supported type, add them
                 # to the router as well.
                 for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.msg_without_reply_router[handler_type_subclass] = service_instance
+                    self.msg_without_reply_router[
+                        handler_type_subclass
+                    ] = service_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

@@ -12,17 +12,19 @@ from ...common.node import AbstractNodeClient
 
 
 class RegisterChildNodeMessage(SyftMessageWithoutReply):
-
-    def __init__(self, child_node_client: AbstractNodeClient, address: Address, msg_id: UID = None):
+    def __init__(
+        self,
+        child_node_client: AbstractNodeClient,
+        address: Address,
+        msg_id: UID = None,
+    ):
         super().__init__(address=address, msg_id=msg_id)
         self.child_node_client = child_node_client
 
 
 class ChildNodeLifecycleService(NodeService):
-
     @syft_decorator(typechecking=True)
-    def process(self, node: AbstractNode, msg: RegisterChildNodeMessage
-    ) -> None:
+    def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 
         node.store.store_object(id=msg.device_client.device_id, obj=msg.device_client)
 

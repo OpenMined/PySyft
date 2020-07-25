@@ -11,6 +11,7 @@ from ..vm.client import VirtualMachineClient
 from typing import Dict
 from ...message.syft_message import SyftMessage
 
+
 @final
 class Device(Node):
 
@@ -18,7 +19,12 @@ class Device(Node):
     child_type_client_type = VirtualMachineClient
 
     @syft_decorator(typechecking=True)
-    def __init__(self, name: str, device_type: DeviceType=unknown_device, vms: Dict[UID, VirtualMachine]={}):
+    def __init__(
+        self,
+        name: str,
+        device_type: DeviceType = unknown_device,
+        vms: Dict[UID, VirtualMachine] = {},
+    ):
         super().__init__(name=name)
 
         self.device_type = device_type
@@ -30,7 +36,10 @@ class Device(Node):
         return self.store.get_objects_of_type(obj_type=VirtualMachineClient)
 
     def message_is_for_me(self, msg: SyftMessage) -> bool:
-        return msg.address.pri_address.device == self.id and msg.address.pri_address.vm is None
+        return (
+            msg.address.pri_address.device == self.id
+            and msg.address.pri_address.vm is None
+        )
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:

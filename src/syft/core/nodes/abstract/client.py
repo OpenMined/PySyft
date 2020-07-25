@@ -7,6 +7,7 @@ from ...io.address import Address
 from ...io.address import address
 from ..common.node import AbstractNodeClient
 
+
 class Client(AbstractNodeClient):
     @syft_decorator(typechecking=True)
     def __init__(self, target_node_id: UID, name: str, connection: ClientConnection):
@@ -31,25 +32,24 @@ class Client(AbstractNodeClient):
         # is known
         self._vm_id = None
 
-        self._node_address = address(network=self._network_id,
-                                     domain=self._domain_id,
-                                     device=self._device_id,
-                                     vm=self._vm_id)
+        self._node_address = address(
+            network=self._network_id,
+            domain=self._domain_id,
+            device=self._device_id,
+            vm=self._vm_id,
+        )
 
         self.target_node_id = target_node_id
         self.name = name
         self.connection = connection
-
-
 
     @property
     def target_node_id(self) -> UID:
         """This client points to an node, this returns the id of that node."""
         raise NotImplementedError
 
-
     @target_node_id.setter
-    def target_node_id(self, new_target_node_id:UID) -> UID:
+    def target_node_id(self, new_target_node_id: UID) -> UID:
         """This client points to an node, this saves the id of that node"""
         raise NotImplementedError
 
@@ -62,7 +62,7 @@ class Client(AbstractNodeClient):
         return self._network_id
 
     @network_id.setter
-    def network_id(self, new_network_id:UID) -> UID:
+    def network_id(self, new_network_id: UID) -> UID:
         """This client points to a node, if that node lives within a network
         or is a network itself and we learn the id of that network, this setter
         allows us to save the id of that network for use later. We use a getter
@@ -82,7 +82,7 @@ class Client(AbstractNodeClient):
         return self._domain_id
 
     @domain_id.setter
-    def domain_id(self, new_domain_id:UID) -> UID:
+    def domain_id(self, new_domain_id: UID) -> UID:
         """This client points to a node, if that node lives within a domain
         or is a domain itself and we learn the id of that domain, this setter
         allows us to save the id of that domain for use later. We use a getter
@@ -102,7 +102,7 @@ class Client(AbstractNodeClient):
         return self._device_id
 
     @device_id.setter
-    def device_id(self, new_device_id:UID) -> UID:
+    def device_id(self, new_device_id: UID) -> UID:
         """This client points to a node, if that node lives within a device
         or is a device itself and we learn the id of that device, this setter
         allows us to save the id of that device for use later. We use a getter
@@ -123,7 +123,7 @@ class Client(AbstractNodeClient):
         return self._device_id
 
     @vm_id.setter
-    def vm_id(self, new_vm_id:UID) -> UID:
+    def vm_id(self, new_vm_id: UID) -> UID:
         """This client points to an node, if that node lives within a vm
         or is a vm itself and we learn the id of that vm, this setter
         allows us to save the id of that vm for use later. We use a getter
