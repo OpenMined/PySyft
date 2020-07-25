@@ -20,6 +20,8 @@ from .service.msg_forwarding_service import MessageForwardingService
 from .service.repr_service import ReprService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
+from ...io.address import Address
+from ...io.address import address as create_address
 
 
 class Node(AbstractNode):
@@ -34,7 +36,7 @@ class Node(AbstractNode):
     """
 
     @syft_decorator(typechecking=True)
-    def __init__(self, name: str = None):
+    def __init__(self, name: str = None, address: Address = None):
         super().__init__()
 
         # This is the name of the node - it exists purely to help the
@@ -42,6 +44,26 @@ class Node(AbstractNode):
         # readable form. It is not guaranteed to be unique (or to
         # really be anything for that matter).
         self.name = name
+
+        # All nodes should have a representation of where they think
+        # they are currently held. Note that this is at risk of going
+        # out of date and so we need to make sure we write good
+        # logic to keep these addresses up to date. The main
+        # way that it could go out of date is by the node being moved
+        # by its parent or its parent being moved by a grandparent, etc.
+        # without anyone telling this node. This would be bad because
+        # it would mean that when the node creates a new Client for
+        # someone to use, it might have trouble actually reaching
+        # the node. Fortunately, the creation of a client is (always?)
+        # going to be initiated by the parent node itself, so we should
+        # be able to check for it there. TODO: did we check for it?
+        if address is None:
+            address = create_address()
+
+        self.address = address
+
+        # make sure address includes my own ID
+        self.add_me_to_my_address()
 
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
@@ -123,6 +145,9 @@ class Node(AbstractNode):
 
     @property
     def known_child_nodes(self):
+        raise NotImplementedError
+
+    def add_me_to_my_address(self):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)
