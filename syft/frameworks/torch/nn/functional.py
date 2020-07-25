@@ -41,6 +41,50 @@ def dropout(input, p=0.5, training=True, inplace=False):
     return input
 
 
+def batch_norm(
+    input, running_mean, running_var, weight, bias, training, exponential_average_factor, eps
+):
+    """
+    Implementation of batch_norm
+
+    Note that exponential_average_factor is not supported for the moment and should be set to 0
+    when training a model. However for testing, this doesn't matter.
+    """
+    input = input.permute(1, 0, 2, 3)
+    input_shape = input.shape
+    input = input.reshape(input_shape[0], -1)
+    input = input.t()
+
+    if training:
+        assert exponential_average_factor == 0  # == momentum
+        mean = input.mean(dim=0)
+        var = input.var(dim=0) + eps
+    else:
+        mean = running_mean
+        var = running_var
+
+    x = None
+
+    C = 20
+
+    for i in range(80):
+        if x is not None:
+            y = C + 1 - var * (x * x)
+            x = y * x / C
+        else:
+            y = C + 1 - var
+            x = y / C
+
+    normalized = x * (input - mean)
+    result = normalized * weight + bias
+
+    result = result.t()
+    result = result.reshape(*input_shape)
+    result = result.permute(1, 0, 2, 3)
+
+    return result
+
+
 @allow_command
 def _pre_conv(input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1):
     """

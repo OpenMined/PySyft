@@ -1,3 +1,5 @@
+from itertools import zip_longest
+
 import syft
 from syft.generic.frameworks.hook import hook_args
 from syft.generic.abstract.tensor import AbstractTensor
@@ -14,6 +16,7 @@ class PlaceHolder(AbstractTensor):
         tags: set = None,
         description: str = None,
         shape=None,
+        expected_dtype=None,
     ):
         """A PlaceHolder acts as a tensor but does nothing special. It can get
         "instantiated" when a real tensor is appended as a child attribute. It
@@ -30,6 +33,7 @@ class PlaceHolder(AbstractTensor):
             self.id = syft.execution.placeholder_id.PlaceholderId(self.id)
 
         self.expected_shape = tuple(shape) if shape is not None else None
+        self.expected_dtype = expected_dtype
         self.child = None
         self.role = role
         self.tracing = tracing
@@ -113,6 +117,9 @@ class PlaceHolder(AbstractTensor):
 
         if hasattr(self.child, "shape"):
             self.expected_shape = tuple(self.child.shape)
+
+        if hasattr(self.child, "dtype"):
+            self.expected_dtype = self.child.dtype
 
         return self
 
@@ -241,7 +248,11 @@ class PlaceHolder(AbstractTensor):
         instantiated object. As the child doesn't get sent, this is not an issue.
         """
         placeholder = PlaceHolder(
-            role=self.role, tracing=self.tracing, tags=self.tags, shape=self.expected_shape
+            role=self.role,
+            tracing=self.tracing,
+            tags=self.tags,
+            shape=self.expected_shape,
+            expected_dtype=self.expected_dtype,
         )
         placeholder.child = self.child
 
@@ -300,7 +311,7 @@ class PlaceHolder(AbstractTensor):
         return results_placeholders
 
     @staticmethod
-    def create_placeholders(args_shape):
+    def create_placeholders(args_shape, args_dtypes=()):
         """ Helper method to create a list of placeholders with shapes
         in args_shape.
         """
@@ -314,7 +325,8 @@ class PlaceHolder(AbstractTensor):
             mapped_shapes.append(tuple(map(lambda y: 1 if y == -1 else y, shape)))
 
         return [
-            syft.framework.hook.create_zeros(shape, requires_grad=False) for shape in mapped_shapes
+            syft.framework.hook.create_zeros(shape, dtype=dtype, requires_grad=False)
+            for shape, dtype in zip_longest(mapped_shapes, args_dtypes)
         ]
 
     @staticmethod
