@@ -60,6 +60,12 @@ instance_name = gcloud.GoogleCloud(
 )
 ```
 
+- Reserve IP address using :
+
+```python
+instance_name.reserve_ip("grid")
+```
+
 - Create Instnaces using :
 
 ```python
@@ -71,6 +77,27 @@ instance_name.compute_instance(
 )
 ```
 
+- Create PyGrid Netowork instance using :
+
+```python
+instance_name.create_gridnetwork(
+    name="new-network",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+)
+```
+
+- Create PyGrid Node instance using :
+
+```python
+instance_name.create_gridnode(
+    name="new-node",
+    machine_type=configs.MachineType.f1_micro,
+    zone=configs.Zone.us_central1_a,
+    gridnetwork_name="new-network",
+)
+```
+
 - Create Clusters using :
 
 ```python
@@ -78,7 +105,7 @@ c1 = instance_name.create_cluster(
     name="my-cluster1",
     machine_type=configs.MachineType.f1_micro,
     zone=configs.Zone.us_central1_a,
-    image_family=configs.ImageFamily.ubuntu_2004_lts,
+    reserve_ip_name="grid"
     target_size=3,
     eviction_policy="delete",
 )
