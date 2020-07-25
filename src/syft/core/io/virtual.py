@@ -4,7 +4,8 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from ..message.syft_message import SyftMessage
+from ..message.syft_message import SyftMessageWithReply
+from ..message.syft_message import SyftMessageWithoutReply
 from ..nodes.abstract.node import Node
 from ...decorators import syft_decorator
 from typing import final
@@ -22,8 +23,12 @@ class VirtualServerConnection(ServerConnection):
         self.node = node
 
     @syft_decorator(typechecking=True)
-    def recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.node.recv_msg(msg=msg)
+    def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+        return self.node.recv_msg_with_reply(msg=msg)
+
+    @syft_decorator(typechecking=True)
+    def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        self.node.recv_msg_without_reply(msg=msg)
 
 
 @final
@@ -32,9 +37,12 @@ class VirtualClientConnection(ClientConnection):
     def __init__(self, server: VirtualServerConnection):
         self.server = server
 
+    def send_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
+        self.server.recv_msg_without_reply(msg=msg)
+
     @syft_decorator(typechecking=True)
-    def send_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.server.recv_msg(msg=msg)
+    def send_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
+        return self.server.recv_msg_with_reply(msg=msg)
 
 
 @syft_decorator(typechecking=True)

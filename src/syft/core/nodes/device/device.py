@@ -3,31 +3,34 @@ from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
 from ....decorators import syft_decorator
-from .service.vm_msg_service import VirtualMachineMessageService
-from .service.vm_lifecycle_service import VirtualMachineLifecycleService
-from ..common.device import AbstractDevice
 from ....common.id import UID
 from .device_type.device_type import DeviceType
 from .device_type.unknown import unknown_device
 from ..vm.vm import VirtualMachine
+from ..vm.client import VirtualMachineClient
 from typing import Dict
+from ...message.syft_message import SyftMessage
 
 @final
-class Device(Node, AbstractDevice):
+class Device(Node):
+
+    child_type = VirtualMachine
+    child_type_client_type = VirtualMachineClient
+
     @syft_decorator(typechecking=True)
     def __init__(self, name: str, device_type: DeviceType=unknown_device, vms: Dict[UID, VirtualMachine]={}):
         super().__init__(name=name)
 
-        services = list()
-        services.append(VirtualMachineMessageService)
-        services.append(VirtualMachineLifecycleService)
-        self._set_services(services=services)
+        self.device_type = device_type
 
-    def get_vm(self, id_or_name:(str, UID)):
-        return self.remote_nodes.get_node('VM', id_or_name)
+        self._register_services()
 
-    def register_vm(self, id_or_name: (str, UID), route: Route):
-        return self.remote_nodes.register_node('VM', id_or_name, route)
+    @property
+    def known_child_nodes(self):
+        return self.store.get_objects_of_type(obj_type=VirtualMachineClient)
+
+    def message_is_for_me(self, msg: SyftMessage) -> bool:
+        return msg.address.pri_address.device == self.id and msg.address.pri_address.vm is None
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:

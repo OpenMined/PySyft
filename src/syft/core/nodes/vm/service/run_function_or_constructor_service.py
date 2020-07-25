@@ -1,9 +1,8 @@
 from __future__ import annotations
-
-from ...abstract.service import NodeService
+from ...abstract.service.node_service import NodeService
+from ...common.node import AbstractNode
 from ....message import RunFunctionOrConstructorMessage
 from ..... import type_hints
-from .....common import AbstractNode
 from typing import List
 
 

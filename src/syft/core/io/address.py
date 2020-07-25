@@ -25,6 +25,13 @@ class Address(object):
         self.pub_address = pub_address
         self.pri_address = pri_address
 
+    def __repr__(self):
+        out = ""
+        out += f"Public(Network:{self.pub_address.network},"
+        out += f" Domain:{self.pub_address.domain}) "
+        out += f" Private(Device:{self.pri_address.device},"
+        out += f" VM:{self.pri_address.vm})"
+        return out
 
 @syft_decorator(typechecking=True)
 def address(network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)) -> Address:
