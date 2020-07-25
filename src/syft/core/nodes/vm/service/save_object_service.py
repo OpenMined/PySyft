@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from ...abstract.service import NodeService
+
 from ....message import SaveObjectMessage
 
 from ..... import type_hints
 
-from .....common import AbstractNode
+from ...abstract.service.node_service import NodeService
+from ...common.node import AbstractNode
 from typing import List
 
 

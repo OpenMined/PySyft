@@ -9,7 +9,18 @@ from ...io.abstract import ClientConnection
 class VirtualMachineClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(self, vm_id: UID, name: str, connection: ClientConnection):
-        super().__init__(node_id=vm_id, name=name, connection=connection)
+        super().__init__(target_node_id=vm_id, name=name, connection=connection)
+
+    @property
+    def target_node_id(self) -> UID:
+        """This client points to a vm, this returns the id of that vm."""
+        return self.vm_id
+
+    @target_node_id.setter
+    def target_node_id(self, new_target_node_id: UID) -> UID:
+        """This client points to a vm, this saves the id of that vm"""
+        self.vm_id = new_target_node_id
+        return self.vm_id
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:

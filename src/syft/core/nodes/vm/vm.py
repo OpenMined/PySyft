@@ -3,7 +3,7 @@ from ..abstract.node import Node
 from . import service
 from ...io.virtual import create_virtual_connection
 from ....decorators import syft_decorator
-from ...message import SyftMessage
+from ...message.syft_message import SyftMessage
 from typing import final
 
 
@@ -13,21 +13,10 @@ class VirtualMachine(Node):
     def __init__(self, *args: list, **kwargs: str):
         super().__init__(*args, **kwargs)
 
-        services = list()
-        services.append(service.get_object_service.GetObjectService)
-        services.append(service.save_object_service.SaveObjectService)
-        services.append(service.run_class_service.RunClassMethodService)
-        services.append(service.delete_object_service.DeleteObjectService)
-        services.append(
-            service.run_function_or_constructor_service.RunFunctionOrConstructorService
-        )
-        services.append(service.repr_service.ReprService)
+        self._register_services()
 
-        self._set_services(services=services)
-
-    @syft_decorator(typechecking=True)
-    def _recv_msg(self, msg: SyftMessage) -> SyftMessage:
-        return self.recv_msg(msg=msg)
+    def message_is_for_me(self, msg:SyftMessage) -> bool:
+        return msg.address.pri_address.vm == self.id
 
     @syft_decorator(typechecking=True)
     def get_client(self) -> VirtualMachineClient:
