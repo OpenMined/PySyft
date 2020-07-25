@@ -222,7 +222,7 @@ class GoogleCloud:
             machine_type=machine_type,
             zone=zone,
             boot_disk={"initialize_params": {"image": "${" + image.self_link + "}"}},
-            network_interface={"network": "default", "access_config": {"nat_ip": gridnetwork_ip},},
+            network_interface={"network": "default", "access_config": {"nat_ip": gridnetwork_ip}},
             metadata_startup_script="""
                 #!/bin/bash
                 apt-get update
