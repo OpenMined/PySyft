@@ -11,7 +11,7 @@ def get_from_inheritance_chain(condition: Callable) -> set:
     original_subclasses = {s for s in cls.__subclasses__() if condition(s)}
     sub_sets = {
         s
-        for c in cls.__subclasses__()
+        for _ in cls.__subclasses__()
         for s in get_from_inheritance_chain(condition)
         if condition(s)
     }
@@ -73,9 +73,6 @@ def get_protobuf_classes() -> set:
         If these methods are not implemented, the class won't be enrolled in the types that can
         use syft-proto.
     """
-
-    cls = Serializable
-
     def check_implementation(s):
         """
             Check if a class has:
