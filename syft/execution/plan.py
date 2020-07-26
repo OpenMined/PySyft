@@ -273,10 +273,8 @@ class Plan(AbstractSendable):
         self.role.register_inputs(args_placeholders)
 
         # Register outputs in role
-        if isinstance(results, (tuple, list)):
-            results_placeholders = tuple(PlaceHolder.extract(result) for result in results)
-        else:
-            results_placeholders = PlaceHolder.extract(results)
+
+        results_placeholders = PlaceHolder.recursive_extract(results)
         self.role.register_outputs(results_placeholders)
 
         # Disable tracing

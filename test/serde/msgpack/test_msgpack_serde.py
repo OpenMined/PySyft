@@ -841,7 +841,7 @@ def test_no_simplifier_found(workers):
     """Test that types that can not be simplified are cached."""
     me = workers["me"]
     # Clean cache.
-    msgpack.serde._no_simplifiers_found = set()
+    msgpack.serde.MsgpackGlobalState._no_simplifiers_found = set()
     x = bytes(5)
     assert type(x) not in msgpack.serde.msgpack_global_state._no_simplifiers_found
     _ = msgpack.serde._simplify(me, x)

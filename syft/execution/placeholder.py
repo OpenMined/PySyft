@@ -103,19 +103,6 @@ class PlaceHolder(AbstractTensor):
 
         return placeholders
 
-    def __getattribute__(self, name):
-        """Try to find the attribute in the current object
-        and in case we can not then we forward it to the child
-
-        """
-        try:
-            response = object.__getattribute__(self, name)
-        except AttributeError:
-            child = object.__getattribute__(self, "child")
-            response = getattr(child, name)
-
-        return response
-
     def instantiate(self, tensor):
         """
         Add a tensor as a child attribute. All operations on the placeholder will be also
@@ -311,6 +298,17 @@ class PlaceHolder(AbstractTensor):
         while not isinstance(current_level, PlaceHolder) and current_level is not None:
             current_level = getattr(current_level, "child", None)
         return current_level
+
+    @staticmethod
+    def recursive_extract(results):
+        if isinstance(results, (tuple, list)):
+            results_placeholders = tuple(
+                PlaceHolder.recursive_extract(result) for result in results
+            )
+        else:
+            results_placeholders = PlaceHolder.extract(results)
+
+        return results_placeholders
 
     @staticmethod
     def create_placeholders(args_shape, args_dtypes=()):
