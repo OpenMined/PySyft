@@ -47,4 +47,4 @@ class Device(Node):
     @syft_decorator(typechecking=True)
     def get_client(self) -> DeviceClient:
         conn_client = create_virtual_connection(node=self)
-        return DeviceClient(device_id=self.id, name=self.name, connection=conn_client)
+        return DeviceClient(address=self.address, name=self.name, connection=conn_client)
