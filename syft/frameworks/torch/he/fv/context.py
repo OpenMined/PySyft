@@ -1,5 +1,8 @@
 import math
 from functools import reduce
+
+# from syft.frameworks.torch.he.fv.modulus import CoeffModulus
+# from syft.frameworks.torch.he.fv.util.operations import get_significant_count
 from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_COUNT_MAX
 from syft.frameworks.torch.he.fv.util.global_variable import COEFF_MOD_COUNT_MIN
@@ -36,14 +39,20 @@ class Context:
             len(params.coeff_modulus) > COEFF_MOD_COUNT_MAX
             or len(params.coeff_modulus) < COEFF_MOD_COUNT_MIN
         ):
-            raise RuntimeError("Invalid coefficient modulus counts")
+            raise RuntimeError(
+                f"Invalid coefficient modulus count {len(params.coeff_modulus)}, "
+                + "should be in range [1, 62]"
+            )
 
         # Check for the range of coefficient modulus primes.
         for i in range(len(params.coeff_modulus)):
             if params.coeff_modulus[i] >> COEFF_MOD_BIT_COUNT_MAX or not (
                 params.coeff_modulus[i] >> (COEFF_MOD_BIT_COUNT_MIN - 1)
             ):
-                raise RuntimeError("Invalid coefficient modulus values")
+                raise RuntimeError(
+                    f"Invalid coefficient modulus values {params.coeff_modulus[i]}, "
+                    + "should be in smaller than 60 bit number."
+                )
 
             # Check for the relative prime of coefficient modulus primes
             for j in range(i):
@@ -52,19 +61,23 @@ class Context:
 
         # Compute the product of all coeff moduli
         total_coeff_modulus = reduce(lambda x, y: x * y, params.coeff_modulus)
-        # total_coeff_modulus_bit_count = get_significant_count(total_coeff_modulus)
 
         # Check polynomial modulus degree and create poly_modulus
-        poly_modulus_degree = params.poly_modulus
-        coeff_count_power = poly_modulus_degree & (poly_modulus_degree - 1)
+        poly_modulus = params.poly_modulus
+        coeff_count_power = poly_modulus & (poly_modulus - 1)
         if (
-            poly_modulus_degree < POLY_MOD_DEGREE_MIN
-            or poly_modulus_degree > POLY_MOD_DEGREE_MAX
+            poly_modulus < POLY_MOD_DEGREE_MIN
+            or poly_modulus > POLY_MOD_DEGREE_MAX
             or coeff_count_power < 0
         ):
             raise RuntimeError("Invalid polynomial modulus value")
 
-        # TODO Check if the parameters are secure according to HomomorphicEncryption.org standards
+        # TODO: Check if the parameters are secure according to HomomorphicEncryption.org standards
+        # total_coeff_mod_bit_count = get_significant_count(total_coeff_modulus)
+        # if total_coeff_mod_bit_count > CoeffModulus.max_bit_count(poly_modulus, self.sec_level):
+        #     raise RuntimeError(
+        #         "Coefficient modulus is not appropriate for the specified security level."
+        #     )
 
         if params.plain_modulus >> COEFF_MOD_BIT_COUNT_MAX or not (
             params.plain_modulus >> (COEFF_MOD_COUNT_MIN - 1)
@@ -76,11 +89,10 @@ class Context:
 
         # Check all coeff moduli are relatively prime to plain_modulus
         for i in range(len(params.coeff_modulus)):
-            for j in range(i):
-                if math.gcd(params.coeff_modulus[i], params.plain_modulus) > 1:
-                    raise RuntimeError(
-                        "Coefficient modulus are not relatively prime with plain modulus"
-                    )
+            if math.gcd(params.coeff_modulus[i], params.plain_modulus) > 1:
+                raise RuntimeError(
+                    "Coefficient modulus are not relatively prime with plain modulus"
+                )
 
         # A list containing values of coeff_mod[i] / plain_mod for one time computation
         # and useful in encryption process.
