@@ -16,7 +16,8 @@ from ...message.syft_message import SyftMessageWithoutReply
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
-from .service.msg_forwarding_service import MessageForwardingService
+from .service.msg_forwarding_service import MessageWithoutReplyForwardingService
+from .service.msg_forwarding_service import MessageWithReplyForwardingService
 from .service.repr_service import ReprService
 from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .client import Client
@@ -117,7 +118,8 @@ class Node(AbstractNode, LocationAwareObject):
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
-        self.message_forwarding_service = MessageForwardingService()
+        self.message_without_reply_forwarding_service = MessageWithoutReplyForwardingService()
+        self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
 
     @property
     def known_nodes(self) -> List[Client]:
@@ -154,7 +156,7 @@ class Node(AbstractNode, LocationAwareObject):
                 self.ensure_services_have_been_registered_error_if_not()
         else:
             print("the message is not for me...")
-            return self.message_forwarding_service.process(node=self, msg=msg)
+            return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
     def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
@@ -179,7 +181,7 @@ class Node(AbstractNode, LocationAwareObject):
 
         else:
             print("the message is not for me...")
-            self.message_forwarding_service.process(node=self, msg=msg)
+            self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
     def ensure_services_have_been_registered_error_if_not(self) -> None:
