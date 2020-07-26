@@ -47,7 +47,7 @@ class Client(AbstractNodeClient, LocationAwareObject):
             vm=self._vm_id,
         )
 
-        super(LocationAwareObject).__init__(address=address)
+        LocationAwareObject.__init__(self, address=address)
 
         self.target_node_id = target_node_id
         self.name = name
