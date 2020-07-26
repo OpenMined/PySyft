@@ -24,8 +24,9 @@ from .service.heritage_update_service import HeritageUpdateService
 from ...io.address import Address
 from ...io.address import address as create_address
 
+from .location_aware_object import LocationAwareObject
 
-class Node(AbstractNode):
+class Node(AbstractNode, LocationAwareObject):
 
     """
     Basic class for a syft node behavior, explicit purpose nodes will
@@ -38,7 +39,8 @@ class Node(AbstractNode):
 
     @syft_decorator(typechecking=True)
     def __init__(self, name: str = None, address: Address = None):
-        super().__init__()
+        super(AbstractNode).__init__()
+        super(LocationAwareObject).__init__(address=address)
 
         # This is the name of the node - it exists purely to help the
         # end user have some idea about what this node is in a human
