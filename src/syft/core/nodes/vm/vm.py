@@ -15,6 +15,9 @@ class VirtualMachine(Node):
 
         self._register_services()
 
+    def add_me_to_my_address(self):
+        self.address.pri_address.vm = self.id
+
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return msg.address.pri_address.vm == self.id
 

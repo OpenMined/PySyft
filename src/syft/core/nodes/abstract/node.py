@@ -58,7 +58,10 @@ class Node(AbstractNode):
         # going to be initiated by the parent node itself, so we should
         # be able to check for it there. TODO: did we check for it?
         if address is None:
-            address = create_address()
+            address = create_address(network=None,
+                                     domain=None,
+                                     device=None,
+                                     vm=None)
 
         self.address = address
 

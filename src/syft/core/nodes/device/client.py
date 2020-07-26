@@ -6,6 +6,7 @@ from ....common.id import UID
 
 @final
 class DeviceClient(Client):
+
     def __init__(self, device_id, name, connection):
         super().__init__(target_node_id=device_id, name=name, connection=connection)
 
