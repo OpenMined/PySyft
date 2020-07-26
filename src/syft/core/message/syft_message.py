@@ -1,6 +1,5 @@
 from ...common.message import AbstractMessage
 from ...common.id import UID
-from ..io.route import Route
 from ..io.address import Address
 
 
