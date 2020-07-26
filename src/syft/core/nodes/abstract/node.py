@@ -39,8 +39,8 @@ class Node(AbstractNode, LocationAwareObject):
 
     @syft_decorator(typechecking=True)
     def __init__(self, name: str = None, address: Address = None):
-        super(AbstractNode).__init__()
-        super(LocationAwareObject).__init__(address=address)
+        AbstractNode.__init__(self)
+        LocationAwareObject.__init__(self, address=address)
 
         # This is the name of the node - it exists purely to help the
         # end user have some idea about what this node is in a human
