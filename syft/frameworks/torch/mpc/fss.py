@@ -9,7 +9,6 @@ Useful papers are:
 
 Note that the protocols are quite different in aspect from those papers
 """
-import hashlib
 import math
 import numpy as np
 import sha_loop
@@ -24,9 +23,9 @@ from syft.generic.utils import allow_command
 from syft.generic.utils import remote
 
 
-λ = 127  # 6  # 110 or 63  # security parameter
-n = 32  # 8  # 32  # bit precision
-λs = math.ceil(λ / 64)  # how many dtype values are needed to store λ, typically 2
+λ = 127  # security parameter
+n = 32  # bit precision
+λs = math.ceil(λ / 64)  # how many int64 are needed to store λ, here 2
 assert λs == 2
 
 no_wrap = {"no_wrap": True}
@@ -368,6 +367,11 @@ class DIF:
 
 
 def compress(CWi, alpha_i, op=EQ):
+    """Compression technique which reduces the size of the CWi by dropping some
+    non-necessary randomness.
+
+    The original paper on FSS explains that this trick doesn't affect the security.
+    """
     if op == EQ:
         sL, tL, sR, tR = split(CWi, (op, λs, 1, λs, 1))
         return (tL.astype(np.bool), tR.astype(np.bool), (1 - alpha_i) * sR + alpha_i * sL)
@@ -384,6 +388,8 @@ def compress(CWi, alpha_i, op=EQ):
 
 
 def uncompress(_CWi, op=EQ):
+    """Decompress the compressed CWi by duplicating the randomness to recreate
+    the original shape."""
     if op == EQ:
         CWi = concat(
             _CWi[2],
@@ -436,10 +442,6 @@ def concat(*args, **kwargs):
 def split_last_bit(buffer):
     # Numbers are on 64 bits
     return buffer & 0b1111111111111111111111111111111111111111111111111111111111111110, buffer & 0b1
-
-
-def huge_loop(seed_t_bytes, n_iter):
-    return [hashlib.sha3_256(seed_t_bytes[i * 16 : (i + 1) * 16]).digest() for i in range(n_iter)]
 
 
 def G(seed):

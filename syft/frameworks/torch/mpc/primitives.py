@@ -21,7 +21,7 @@ class PrimitiveStorage:
         have 3 components. Each component is a high dimensional tensor whose
         last dimension is the same and corresponds to the number of instances available
         for this primitive. That's why get_keys uses a quite complicated dimension
-        selector. This structures helps generating efficiently primitives using
+        selector. Those structures help generating efficiently primitives using
         tensorized key generation algorithms.
         """
         self.fss_eq: list = []
@@ -51,7 +51,7 @@ class PrimitiveStorage:
         """
         primitive_stack = getattr(self, op)
 
-        if op in ("fss_eq", "fss_comp"):
+        if op in {"fss_eq", "fss_comp"}:
             available_instances = len(primitive_stack[0]) if len(primitive_stack) > 0 else -1
             if available_instances >= n_instances:
                 keys = []
