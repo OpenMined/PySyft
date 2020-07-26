@@ -9,6 +9,14 @@ from ..common.node import AbstractNodeClient
 
 
 class Client(AbstractNodeClient):
+    """Client is an incredibly powerful abstraction in Syft. We assume that,
+    no matter where a client is, it can figure out how to communicate with
+    the Node it is supposed to point to. If I send you a client I have
+    with all of the metadata in it, you should have all the information
+    you need to know to interact with a node (although you might not
+    have permissions - clients should not store private keys)."""
+
+
     @syft_decorator(typechecking=True)
     def __init__(self, target_node_id: UID, name: str, connection: ClientConnection):
 

@@ -26,7 +26,7 @@ class ChildNodeLifecycleService(NodeService):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 
-        node.store.store_object(id=msg.device_client.device_id, obj=msg.device_client)
+        node.store.store_object(id=msg.child_node_client.target_node_id, obj=msg.child_node_client)
 
     @staticmethod
     @syft_decorator(typechecking=True)

@@ -31,6 +31,9 @@ class Device(Node):
 
         self._register_services()
 
+    def add_me_to_my_address(self):
+        self.address.pri_address.device = self.id
+
     @property
     def known_child_nodes(self):
         return self.store.get_objects_of_type(obj_type=VirtualMachineClient)
