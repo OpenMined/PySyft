@@ -128,7 +128,7 @@ class Client(AbstractNodeClient):
         or is a vm itself, this property will return the ID of that vm
         if it is known by the client."""
 
-        return self._device_id
+        return self._vm_id
 
     @vm_id.setter
     def vm_id(self, new_vm_id: UID) -> UID:

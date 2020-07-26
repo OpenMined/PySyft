@@ -18,6 +18,7 @@ from ...message.syft_message import SyftMessageWithoutReply
 from ...store.store import ObjectStore
 from .service.msg_forwarding_service import MessageForwardingService
 from .service.repr_service import ReprService
+from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
 from ...io.address import Address
@@ -127,6 +128,7 @@ class Node(AbstractNode):
         # class documentation.
         self.services_without_reply.append(ReprService)
         self.services_without_reply.append(HeritageUpdateService)
+        self.services_without_reply.append(ChildNodeLifecycleService)
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
