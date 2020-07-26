@@ -48,29 +48,6 @@ class Node(AbstractNode, LocationAwareObject):
         # really be anything for that matter).
         self.name = name
 
-        # All nodes should have a representation of where they think
-        # they are currently held. Note that this is at risk of going
-        # out of date and so we need to make sure we write good
-        # logic to keep these addresses up to date. The main
-        # way that it could go out of date is by the node being moved
-        # by its parent or its parent being moved by a grandparent, etc.
-        # without anyone telling this node. This would be bad because
-        # it would mean that when the node creates a new Client for
-        # someone to use, it might have trouble actually reaching
-        # the node. Fortunately, the creation of a client is (always?)
-        # going to be initiated by the parent node itself, so we should
-        # be able to check for it there. TODO: did we check for it?
-        if address is None:
-            address = create_address(network=None,
-                                     domain=None,
-                                     device=None,
-                                     vm=None)
-
-        self.address = address
-
-        # make sure address includes my own ID
-        self.add_me_to_my_address()
-
         # Any object that needs to be stored on a node is stored here
         # More specifically, all collections of objects are found here
         # There should be NO COLLECTIONS stored as attributes directly
@@ -150,11 +127,11 @@ class Node(AbstractNode, LocationAwareObject):
 
         return self.store.get_objects_of_type(obj_type=Client)
 
-    @property
-    def known_child_nodes(self):
+    def add_me_to_my_address(self):
         raise NotImplementedError
 
-    def add_me_to_my_address(self):
+    @property
+    def known_child_nodes(self):
         raise NotImplementedError
 
     @syft_decorator(typechecking=True)

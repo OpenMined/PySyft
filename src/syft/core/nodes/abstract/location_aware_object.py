@@ -1,10 +1,41 @@
 from ....common.id import UID
 from ...io.address import Address
+from ...io.address import address as create_address
 
 class LocationAwareObject:
 
-    def __init__(self, address:Address):
+    def __init__(self, address: Address=None):
+
+        # All nodes should have a representation of where they think
+        # they are currently held. Note that this is at risk of going
+        # out of date and so we need to make sure we write good
+        # logic to keep these addresses up to date. The main
+        # way that it could go out of date is by the node being moved
+        # by its parent or its parent being moved by a grandparent, etc.
+        # without anyone telling this node. This would be bad because
+        # it would mean that when the node creates a new Client for
+        # someone to use, it might have trouble actually reaching
+        # the node. Fortunately, the creation of a client is (always?)
+        # going to be initiated by the parent node itself, so we should
+        # be able to check for it there. TODO: did we check for it?
+
+        if address is None:
+            address = create_address(network=None,
+                                     domain=None,
+                                     device=None,
+                                     vm = None)
+
         self._address = address
+        self._network_id = address.pub_address.network
+        self._domain_id = address.pub_address.domain
+        self._device_id = address.pri_address.device
+        self._vm_id = address.pri_address.vm
+
+        # make sure address includes my own ID
+        self.add_me_to_my_address()
+
+    def add_me_to_my_address(self):
+        raise NotImplementedError
 
     @property
     def network_id(self) -> UID:

@@ -11,6 +11,9 @@ class VirtualMachineClient(Client):
     def __init__(self, vm_id: UID, name: str, connection: ClientConnection):
         super().__init__(target_node_id=vm_id, name=name, connection=connection)
 
+    def add_me_to_my_address(self):
+        self.address.pri_address.vm = self.vm_id
+
     @property
     def target_node_id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
