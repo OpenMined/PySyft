@@ -38,6 +38,9 @@ class Node(AbstractNode, LocationAwareObject):
     Each node is identified by an id of type ID and a name of type string.
     """
 
+    child_type = None
+    child_type_client_type = None
+
     @syft_decorator(typechecking=True)
     def __init__(self, name: str = None, address: Address = None):
         AbstractNode.__init__(self)
@@ -133,8 +136,11 @@ class Node(AbstractNode, LocationAwareObject):
         raise NotImplementedError
 
     @property
-    def known_child_nodes(self):
-        raise NotImplementedError
+    def known_child_nodes(self) -> List:
+        if(self.child_type_client_type is not None):
+            return self.store.get_objects_of_type(obj_type=self.child_type_client_type)
+        else:
+            return []
 
     @syft_decorator(typechecking=True)
     def message_is_for_me(self, msg: SyftMessage) -> bool:

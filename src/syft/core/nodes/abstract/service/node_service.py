@@ -19,9 +19,19 @@ class NodeServiceWithReply(NodeService):
     def process(node: AbstractNode, msg: SyftMessage) -> SyftMessageWithoutReply:
         raise NotImplementedError
 
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[type]:
+        raise NotImplementedError
+
 
 class NodeServiceWithoutReply(NodeService):
     @staticmethod
     @syft_decorator(typechecking=True)
     def process(node: AbstractNode, msg: SyftMessage) -> SyftMessageWithoutReply:
+        raise NotImplementedError
+
+    @staticmethod
+    @syft_decorator(typechecking=True)
+    def message_handler_types() -> List[type]:
         raise NotImplementedError

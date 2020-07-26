@@ -22,6 +22,9 @@ class Domain(Node):
 
         self._register_services()
 
+    def add_me_to_my_address(self):
+        self.address.pub_address.domain = self.id
+
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pub_address.domain == self.id
@@ -31,4 +34,4 @@ class Domain(Node):
     @syft_decorator(typechecking=True)
     def get_client(self) -> DomainClient:
         conn_client = create_virtual_connection(node=self)
-        return DomainClient(domain_id=self.id, name=self.name, connection=conn_client)
+        return DomainClient(address=self.address, name=self.name, connection=conn_client)

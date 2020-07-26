@@ -18,6 +18,10 @@ class DomainClient(Client):
     #     self.domain_id = new_target_node_id
     #     return self.domain_id
 
+    def add_me_to_my_address(self):
+        # I should already be added
+        assert self.domain_id is not None
+
     @property
     def device_id(self) -> UID:
         """This client points to a node, if that node lives within a device
