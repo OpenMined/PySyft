@@ -21,6 +21,7 @@ from syft.frameworks.torch.he.fv.encryptor import Encryptor
 from syft.frameworks.torch.he.fv.decryptor import Decryptor
 from syft.frameworks.torch.he.fv.evaluator import Evaluator
 from syft.frameworks.torch.he.fv.secret_key import SecretKey
+from syft.frameworks.torch.he.fv.util.rns_tool import RNSTool
 
 
 @pytest.mark.parametrize(
@@ -581,7 +582,6 @@ def test_fv_sub_cipher_plain(int1, int2):
 @pytest.mark.parametrize(
     "int1, int2",
     [
-        (0x12345678, 0x54321),
         (-1, 1),
         (0, 0),
         (100, 10),
@@ -589,6 +589,7 @@ def test_fv_sub_cipher_plain(int1, int2):
         (-1000, 100),
         (-99, -99),
         (-99, 99),
+        (0x12345678, 0x54321),
     ],
 )
 def test_fv_mul_cipher_cipher(int1, int2):
@@ -666,3 +667,62 @@ def test_fv_mul_plain_plain(int1, int2):
         == encoder.decode(evaluator.mul(op1, op2))
         == encoder.decode(evaluator._mul_plain_plain(op2, op1))
     )
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0]]),
+        (2, [3], 0, [[1 << 32, 1 << 33], [1 << 32, 1 << 33], [0, 0]], [[1, 2], [1, 2]]),
+        (2, [3], 0, [[15, 30], [15, 30], [15, 30], [15, 30]], [[0, 0], [0, 0]]),
+    ],
+)
+def test_rns_tool_sm_mrq(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.sm_mrq(input)
+    assert result == output
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0], [0, 0]], [[0, 0], [0, 0]]),
+        (2, [3], 0, [[15, 3], [15, 3], [15, 3]], [[5, 1], [5, 1]]),
+        (2, [3], 0, [[17, 4], [17, 4], [17, 4]], [[5, 1], [5, 1]]),
+        (
+            2,
+            [3, 5],
+            0,
+            [[15, 30], [15, 30], [15, 30], [15, 30], [15, 30]],
+            [[1, 2], [1, 2], [1, 2]],
+        ),
+        (
+            2,
+            [3, 5],
+            0,
+            [[21, 32], [21, 32], [21, 32], [21, 32], [21, 32]],
+            [[1, 1], [1, 1], [1, 1]],
+        ),
+    ],
+)
+def test_rns_tool_fast_floor(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.fast_floor(input)
+    assert result == output
+
+
+@pytest.mark.parametrize(
+    "poly_len, coeff_mod, plain_mod, input, output",
+    [
+        (2, [3], 0, [[0, 0], [0, 0]], [[0, 0]]),
+        (2, [3], 0, [[1, 2], [1, 2]], [[1, 2]]),
+        (2, [3, 5], 0, [[1, 2], [1, 2], [1, 2]], [[1, 2], [1, 2]]),
+    ],
+)
+def test_rns_tool_fastbconv_sk(poly_len, coeff_mod, plain_mod, input, output):
+    enc_param = EncryptionParams(poly_len, coeff_mod, plain_mod)
+    rns_tool = RNSTool(enc_param)
+    result = rns_tool.fastbconv_sk(input)
+    assert result == output

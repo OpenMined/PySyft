@@ -36,7 +36,7 @@ class BaseConvertor:
         Returns:
             A list of integers converted from input base plain to output base plain.
         """
-
+        assert len(input) == self._ibase.size
         output = [0] * self._obase.size
         for i in range(self._obase.size):
             output[i] = [0] * count
@@ -62,4 +62,5 @@ class BaseConvertor:
                     dot_product += multiply_mod(temp[tt][k], self._base_change_matrix[j][tt], obase)
                 output[j][k] = dot_product % obase
 
+        assert len(output) == self._obase.size
         return output
