@@ -7,8 +7,8 @@ from ....common.id import UID
 @final
 class DeviceClient(Client):
 
-    def __init__(self, device_id, name, connection):
-        super().__init__(target_node_id=device_id, name=name, connection=connection)
+    def __init__(self, address, name, connection):
+        super().__init__(address=address, name=name, connection=connection)
 
     # def create_vm(self, name:str):
     #
@@ -32,16 +32,20 @@ class DeviceClient(Client):
     #     # the appropriate VM.
     #     return vm_client
 
-    @property
-    def target_node_id(self) -> UID:
-        """This client points to a vm, this returns the id of that vm."""
-        return self.device_id
+    # @property
+    # def target_node_id(self) -> UID:
+    #     """This client points to a vm, this returns the id of that vm."""
+    #     return self.device_id
+    #
+    # @target_node_id.setter
+    # def target_node_id(self, new_target_node_id: UID) -> UID:
+    #     """This client points to a vm, this saves the id of that vm"""
+    #     self.device_id = new_target_node_id
+    #     return self.device_id
 
-    @target_node_id.setter
-    def target_node_id(self, new_target_node_id: UID) -> UID:
-        """This client points to a vm, this saves the id of that vm"""
-        self.device_id = new_target_node_id
-        return self.device_id
+    def add_me_to_my_address(self):
+        # I should already be added
+        assert self.device_id is not None
 
     @property
     def vm_id(self) -> UID:

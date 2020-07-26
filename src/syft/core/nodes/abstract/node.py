@@ -234,3 +234,6 @@ class Node(AbstractNode, LocationAwareObject):
         # accidentally delete (forget to call) this method inside the __init__ function
         # of a sub-class of Node.
         self.services_registered = True
+
+    def __repr__(self):
+        return f"{self.node_type}:{self.name}:{self.id}"

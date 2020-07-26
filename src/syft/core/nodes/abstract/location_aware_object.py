@@ -26,9 +26,25 @@ class LocationAwareObject:
                                      vm = None)
 
         self._address = address
+
+        # this address points to a node, if that node lives within a network,
+        # or is a network itself, this property will store the ID of that network
+        # if it is known.
         self._network_id = address.pub_address.network
+
+        # this address points to a node, if that node lives within a domain
+        # or is a domain itself, this property will store the ID of that domain
+        # if it is known.
         self._domain_id = address.pub_address.domain
+
+        # this address points to a node, if that node lives within a device
+        # or is a device itself, this property will store the ID of that device
+        # if it is known
         self._device_id = address.pri_address.device
+
+        # this client points to a node, if that node lives within a vm
+        # or is a vm itself, this property will store the ID of that vm if it
+        # is known
         self._vm_id = address.pri_address.vm
 
         # make sure address includes my own ID
@@ -133,3 +149,10 @@ class LocationAwareObject:
         If we later learn more address information we can add it, but it's not required
         to be complete in all cases."""
         return self._address
+
+    @address.setter
+    def address(self, new_address: Address) -> Address:
+        raise Exception("We did not design the address attribute to be updated in this"
+                        " way. Please update individual attributes (.vm_id, .device_id, "
+                        " .domain_id, or .network_id) directly. If you absolutely must,"
+                        " you can update ._address but we don't recommend this.")

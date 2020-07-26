@@ -26,6 +26,21 @@ class Address(object):
         self.pub_address = pub_address
         self.pri_address = pri_address
 
+    @property
+    def target_id(self) -> UID:
+        """Return the address of the node which lives at this address.
+
+        Note that this id is simply the most granular id available to the
+        address."""
+        if self.pri_address.vm is not None:
+            return self.pri_address.vm
+        elif self.pri_address.device is not None:
+            return self.pri_address.device
+        elif self.pub_address.domain is not None:
+            return self.pub_address.domain
+        else:
+            return self.pub_address.network
+
     def __repr__(self):
         out = ""
         out += f"Public(Network:{self.pub_address.network},"
@@ -37,7 +52,7 @@ class Address(object):
 
 @syft_decorator(typechecking=True)
 def address(
-    network: (str, UID), domain: (str, UID), device: (str, UID), vm: (str, UID)
+    network: (UID, None), domain: (UID, None), device: (UID, None), vm: (UID, None)
 ) -> Address:
     """A convenience method for creating routes"""
 

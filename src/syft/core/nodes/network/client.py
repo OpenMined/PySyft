@@ -2,14 +2,15 @@ from ..abstract.client import Client
 from typing import final
 from ....decorators import syft_decorator
 from ....common.id import UID
+from ...io.address import Address
 from ...io.abstract import ClientConnection
 
 
 @final
 class NetworkClient(Client):
     @syft_decorator(typechecking=True)
-    def __init__(self, network_id: UID, name: str, connection: ClientConnection):
-        super().__init__(target_node_id=network_id, name=name, connection=connection)
+    def __init__(self, address: Address, name: str, connection: ClientConnection):
+        super().__init__(address=address, name=name, connection=connection)
 
     @property
     def domain_id(self) -> UID:
@@ -67,16 +68,16 @@ class NetworkClient(Client):
 
         raise Exception("This client points to a network, you don't need a VM ID.")
 
-    @property
-    def target_node_id(self) -> UID:
-        """This client points to a vm, this returns the id of that vm."""
-        return self.network_id
-
-    @target_node_id.setter
-    def target_node_id(self, new_target_node_id: UID) -> UID:
-        """This client points to a vm, this saves the id of that vm"""
-        self.network_id = new_target_node_id
-        return self.network_id
+    # @property
+    # def target_node_id(self) -> UID:
+    #     """This client points to a vm, this returns the id of that vm."""
+    #     return self.network_id
+    #
+    # @target_node_id.setter
+    # def target_node_id(self, new_target_node_id: UID) -> UID:
+    #     """This client points to a vm, this saves the id of that vm"""
+    #     self.network_id = new_target_node_id
+    #     return self.network_id
 
     @syft_decorator(typechecking=True)
     def __repr__(self) -> str:
