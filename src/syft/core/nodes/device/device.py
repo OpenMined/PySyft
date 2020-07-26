@@ -1,4 +1,4 @@
-from ..abstract.node import Node
+from ..common.node import Node
 from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient

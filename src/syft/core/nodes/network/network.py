@@ -1,4 +1,4 @@
-from ..abstract.node import Node
+from ..common.node import Node
 from ...store.storeable.dataset import Dataset
 from ...store.storeable.model import Model
 from ...message.syft_message import SyftMessage

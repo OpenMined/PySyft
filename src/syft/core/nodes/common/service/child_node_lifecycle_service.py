@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from ...abstract.service.node_service import NodeService
-from ...common.node import AbstractNode
+from ...common.service.node_service import NodeService
+from ...abstract.node import AbstractNode
 from typing import List
 
 from ....io.address import Address
 from .....common.id import UID
 from ....message.syft_message import SyftMessageWithoutReply
-from ...common.node import AbstractNodeClient
+from ...abstract.node import AbstractNodeClient
 
 from .heritage_update_service import HeritageUpdateMessage
 

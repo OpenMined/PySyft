@@ -5,7 +5,7 @@ from typing import final
 from .....decorators.syft_decorator import syft_decorator
 
 from .node_service import NodeServiceWithoutReply
-from ...common.node import AbstractNode
+from ...abstract.node import AbstractNode
 from ....message.syft_message import SyftMessageWithoutReply
 from ....io.address import Address
 from .....common.id import UID

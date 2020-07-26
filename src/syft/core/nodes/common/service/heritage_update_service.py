@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from .....decorators import syft_decorator
 from .node_service import NodeServiceWithoutReply
-from ...common.node import AbstractNode
+from ...abstract.node import AbstractNode
 from ....io.address import Address
 from .....common.id import UID
 from ....message.syft_message import SyftMessageWithoutReply

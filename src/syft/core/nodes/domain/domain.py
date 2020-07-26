@@ -1,4 +1,4 @@
-from ..abstract.node import Node
+from ..common.node import Node
 from ...message.syft_message import SyftMessage
 from ....decorators.syft_decorator import syft_decorator
 from .client import DomainClient

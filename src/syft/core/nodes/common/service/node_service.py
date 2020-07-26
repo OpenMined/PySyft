@@ -2,7 +2,7 @@ from __future__ import annotations
 from syft.decorators import syft_decorator
 from ....message.syft_message import SyftMessage
 from ....message.syft_message import SyftMessageWithoutReply
-from ...common.node import AbstractNode
+from ...abstract.node import AbstractNode
 from typing import List
 
 

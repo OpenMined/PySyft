@@ -1,4 +1,4 @@
-from ..abstract.client import Client
+from ..common.client import Client
 from ....common.id import UID
 from ....decorators.syft_decorator import syft_decorator
 

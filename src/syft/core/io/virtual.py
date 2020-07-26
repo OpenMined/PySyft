@@ -6,7 +6,7 @@ execute the exact same functionality but do so over a network"""
 
 from ..message.syft_message import SyftMessageWithReply
 from ..message.syft_message import SyftMessageWithoutReply
-from ..nodes.common.node import AbstractNode
+from ..nodes.abstract.node import AbstractNode
 from ...decorators import syft_decorator
 from typing import final
 
