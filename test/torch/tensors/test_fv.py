@@ -582,7 +582,7 @@ def test_fv_sub_cipher_plain(int1, int2):
     ],
 )
 def test_fv_mul_cipher_cipher(int1, int2):
-    ctx = Context(EncryptionParams(1024, CoeffModulus().create(1024, [40, 40]), 1024))
+    ctx = Context(EncryptionParams(64, CoeffModulus().create(64, [40]), 64))
     keys = KeyGenerator(ctx).keygen()
     encoder = IntegerEncoder(ctx)
     encryptor = Encryptor(ctx, keys[1])  # keys[1] = public_key
