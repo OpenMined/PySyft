@@ -3,7 +3,7 @@ from __future__ import annotations
 from .....decorators import syft_decorator
 from .node_service import NodeServiceWithoutReply
 from .node_service import NodeServiceWithReply
-from ...common.node import AbstractNode
+from ...abstract.node import AbstractNode
 from ....message.syft_message import SyftMessageWithoutReply
 from ....message.syft_message import SyftMessageWithReply
 from typing import List

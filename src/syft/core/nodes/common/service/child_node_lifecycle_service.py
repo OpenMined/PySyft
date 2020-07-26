@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from .....decorators import syft_decorator
-from ...abstract.service.node_service import NodeService
-from ...common.node import AbstractNode
+from ...common.service.node_service import NodeService
+from ...abstract.node import AbstractNode
 from typing import List
 
 from ....io.address import Address
 from .....common.id import UID
 from ....message.syft_message import SyftMessageWithoutReply
-from ...common.node import AbstractNodeClient
+from ...abstract.node import AbstractNodeClient
+
+from .heritage_update_service import HeritageUpdateMessage
 
 
 class RegisterChildNodeMessage(SyftMessageWithoutReply):
@@ -26,7 +28,12 @@ class ChildNodeLifecycleService(NodeService):
     @syft_decorator(typechecking=True)
     def process(self, node: AbstractNode, msg: RegisterChildNodeMessage) -> None:
 
+        # Step 1: Store the client to the child in our object store.
         node.store.store_object(id=msg.child_node_client.address.target_id, obj=msg.child_node_client)
+
+        # Step 2: update the child node and its descendants with our node.id in their .address objects
+        heritage_msg = HeritageUpdateMessage(new_ancestry_address=node.address, address=msg.child_node_client.address)
+        msg.child_node_client.send_msg_without_reply(msg=heritage_msg)
 
     @staticmethod
     @syft_decorator(typechecking=True)

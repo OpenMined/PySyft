@@ -1,4 +1,4 @@
-from ..abstract.client import Client
+from ..common.client import Client
 from ....common.id import UID
 from ....decorators.syft_decorator import syft_decorator
 
@@ -7,16 +7,9 @@ class DomainClient(Client):
     def __init__(self, address, name, connection):
         super().__init__(address=address, name=name, connection=connection)
 
-    # @property
-    # def target_node_id(self) -> UID:
-    #     """This client points to a domain, this returns the id of that domain."""
-    #     return self.domain_id
-    #
-    # @target_node_id.setter
-    # def target_node_id(self, new_target_node_id: UID) -> UID:
-    #     """This client points to a domain, this saves the id of that domain"""
-    #     self.domain_id = new_target_node_id
-    #     return self.domain_id
+    def add_me_to_my_address(self):
+        # I should already be added
+        assert self.domain_id is not None
 
     @property
     def device_id(self) -> UID:

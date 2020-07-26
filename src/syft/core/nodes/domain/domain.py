@@ -1,4 +1,4 @@
-from ..abstract.node import Node
+from ..common.node import Node
 from ...message.syft_message import SyftMessage
 from ....decorators.syft_decorator import syft_decorator
 from .client import DomainClient
@@ -7,7 +7,10 @@ from ..device.device import Device
 from ..device.client import DeviceClient
 
 
+
 class Domain(Node):
+
+    client_type = DomainClient
 
     child_type = Device
     child_type_client_type = DeviceClient
@@ -22,13 +25,12 @@ class Domain(Node):
 
         self._register_services()
 
+    def add_me_to_my_address(self):
+        self.address.pub_address.domain = self.id
+
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pub_address.domain == self.id
             and msg.address.pri_address.device is None
         )
 
-    @syft_decorator(typechecking=True)
-    def get_client(self) -> DomainClient:
-        conn_client = create_virtual_connection(node=self)
-        return DomainClient(domain_id=self.id, name=self.name, connection=conn_client)

@@ -1,4 +1,4 @@
-from ..abstract.client import Client
+from ..common.client import Client
 from typing import final
 from ....decorators import syft_decorator
 from ....common.id import UID
@@ -11,6 +11,10 @@ class NetworkClient(Client):
     @syft_decorator(typechecking=True)
     def __init__(self, address: Address, name: str, connection: ClientConnection):
         super().__init__(address=address, name=name, connection=connection)
+
+    def add_me_to_my_address(self):
+        # I should already be added
+        assert self.network_id is not None
 
     @property
     def domain_id(self) -> UID:

@@ -24,7 +24,7 @@ classes.
 
 Syft "python" functionality includes the following modules:
 
-* :py:mod:`syft.ast` - code generates external library abstract syntax tree using a white\
+* :py:mod:`syft.ast` - code generates external library common syntax tree using a white\
 list of methods
 * :py:mod:`syft.typecheck` - automatically checks and enforces Python type hints and the exclusive
 use of kwargs.
@@ -69,7 +69,7 @@ from syft.core.nodes.device.device import Device
 from syft.core.nodes.domain.domain import Domain
 from syft.core.nodes.network.network import Network
 
-from syft.core.nodes.abstract.service.repr_service import ReprMessage
+from syft.core.nodes.common.service.repr_service import ReprMessage
 
 # def get_client(host="127.0.0.1", port="5000"):
 #     res = requests.get(f"http://{host}:{port}/")

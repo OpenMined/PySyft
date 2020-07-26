@@ -1,4 +1,4 @@
-from ..abstract.node import Node
+from ..common.node import Node
 from typing import final
 from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
@@ -12,8 +12,11 @@ from typing import Dict
 from ...message.syft_message import SyftMessage
 
 
+
 @final
 class Device(Node):
+
+    client_type = DeviceClient
 
     child_type = VirtualMachine
     child_type_client_type = VirtualMachineClient
@@ -34,17 +37,8 @@ class Device(Node):
     def add_me_to_my_address(self):
         self.address.pri_address.device = self.id
 
-    @property
-    def known_child_nodes(self):
-        return self.store.get_objects_of_type(obj_type=VirtualMachineClient)
-
     def message_is_for_me(self, msg: SyftMessage) -> bool:
         return (
             msg.address.pri_address.device == self.id
             and msg.address.pri_address.vm is None
         )
-
-    @syft_decorator(typechecking=True)
-    def get_client(self) -> DeviceClient:
-        conn_client = create_virtual_connection(node=self)
-        return DeviceClient(address=self.address, name=self.name, connection=conn_client)

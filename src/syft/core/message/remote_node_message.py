@@ -1,5 +1,5 @@
-from syft_message import SyftMessageWithReply, SyftMessage
-from ..io.route import Route
+from .syft_message import SyftMessageWithReply
+from .syft_message import SyftMessage
 from ..io.address import Address
 from ...common.id import UID
 

@@ -5,7 +5,7 @@ from ....common.id import UID
 from ...io.abstract import ClientConnection
 from ...io.address import Address
 from ...io.address import address as create_address
-from ..common.node import AbstractNodeClient
+from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage
 

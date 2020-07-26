@@ -6,7 +6,7 @@ execute the exact same functionality but do so over a network"""
 
 from ..message.syft_message import SyftMessageWithReply
 from ..message.syft_message import SyftMessageWithoutReply
-from ..nodes.abstract.node import Node
+from ..nodes.abstract.node import AbstractNode
 from ...decorators import syft_decorator
 from typing import final
 
@@ -19,7 +19,7 @@ known_objects = {}
 @final
 class VirtualServerConnection(ServerConnection):
     @syft_decorator(typechecking=True)
-    def __init__(self, node: Node):
+    def __init__(self, node: AbstractNode):
         self.node = node
 
     @syft_decorator(typechecking=True)
@@ -46,7 +46,7 @@ class VirtualClientConnection(ClientConnection):
 
 
 @syft_decorator(typechecking=True)
-def create_virtual_connection(node: Node) -> VirtualClientConnection:
+def create_virtual_connection(node: AbstractNode) -> VirtualClientConnection:
 
     server = VirtualServerConnection(node=node)
     client = VirtualClientConnection(server=server)
