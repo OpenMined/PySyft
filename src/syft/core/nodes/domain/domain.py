@@ -7,7 +7,10 @@ from ..device.device import Device
 from ..device.client import DeviceClient
 
 
+
 class Domain(Node):
+
+    client_type = DomainClient
 
     child_type = Device
     child_type_client_type = DeviceClient
@@ -31,7 +34,3 @@ class Domain(Node):
             and msg.address.pri_address.device is None
         )
 
-    @syft_decorator(typechecking=True)
-    def get_client(self) -> DomainClient:
-        conn_client = create_virtual_connection(node=self)
-        return DomainClient(address=self.address, name=self.name, connection=conn_client)

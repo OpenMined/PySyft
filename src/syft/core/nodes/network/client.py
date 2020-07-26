@@ -12,6 +12,10 @@ class NetworkClient(Client):
     def __init__(self, address: Address, name: str, connection: ClientConnection):
         super().__init__(address=address, name=name, connection=connection)
 
+    def add_me_to_my_address(self):
+        # I should already be added
+        assert self.network_id is not None
+
     @property
     def domain_id(self) -> UID:
         """This client points to a node, if that node lives within a domain

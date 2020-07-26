@@ -23,7 +23,7 @@ from .service.child_node_lifecycle_service import ChildNodeLifecycleService
 from .client import Client
 from .service.heritage_update_service import HeritageUpdateService
 from ...io.address import Address
-from ...io.address import address as create_address
+from ...io.virtual import create_virtual_connection
 
 from .location_aware_object import LocationAwareObject
 
@@ -37,6 +37,8 @@ class Node(AbstractNode, LocationAwareObject):
 
     Each node is identified by an id of type ID and a name of type string.
     """
+
+    client_type = Client
 
     child_type = None
     child_type_client_type = None
@@ -123,6 +125,11 @@ class Node(AbstractNode, LocationAwareObject):
         # all messages are applied to" but for now this will do.
         self.message_without_reply_forwarding_service = MessageWithoutReplyForwardingService()
         self.message_with_reply_forwarding_service = MessageWithReplyForwardingService()
+
+    @syft_decorator(typechecking=True)
+    def get_client(self) -> Client:
+        conn_client = create_virtual_connection(node=self)
+        return self.client_type(address=self.address, name=self.name, connection=conn_client)
 
     @property
     def known_nodes(self) -> List[Client]:

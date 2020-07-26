@@ -12,8 +12,11 @@ from typing import Dict
 from ...message.syft_message import SyftMessage
 
 
+
 @final
 class Device(Node):
+
+    client_type = DeviceClient
 
     child_type = VirtualMachine
     child_type_client_type = VirtualMachineClient
@@ -39,8 +42,3 @@ class Device(Node):
             msg.address.pri_address.device == self.id
             and msg.address.pri_address.vm is None
         )
-
-    @syft_decorator(typechecking=True)
-    def get_client(self) -> DeviceClient:
-        conn_client = create_virtual_connection(node=self)
-        return DeviceClient(address=self.address, name=self.name, connection=conn_client)
