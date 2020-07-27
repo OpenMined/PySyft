@@ -1,4 +1,3 @@
-import copy
 from syft.frameworks.torch.he.fv.util.operations import negate_mod
 from syft.frameworks.torch.he.fv.util.operations import invert_mod
 from syft.frameworks.torch.he.fv.util.operations import multiply_mod
@@ -197,12 +196,10 @@ class RNSTool:
                 temp[i][j] = multiply_mod(input[i][j], self.m_tilde, self.base_q.base[i])
 
         # Now convert to Bsk
-        result = self.base_q_to_Bsk_conv.fast_convert_list(copy.deepcopy(temp), self.coeff_count)
+        result = self.base_q_to_Bsk_conv.fast_convert_list(temp, self.coeff_count)
 
         # Finally convert to {m_tilde}
-        result += self.base_q_to_m_tilde_conv.fast_convert_list(
-            copy.deepcopy(temp), self.coeff_count
-        )
+        result += self.base_q_to_m_tilde_conv.fast_convert_list(temp, self.coeff_count)
         return result
 
     def sm_mrq(self, input):
@@ -254,9 +251,7 @@ class RNSTool:
         base_Bsk_size = self.base_Bsk.size
 
         # Convert q -> Bsk
-        result = self.base_q_to_Bsk_conv.fast_convert_list(
-            copy.deepcopy(input[:base_q_size]), self.coeff_count
-        )
+        result = self.base_q_to_Bsk_conv.fast_convert_list(input[:base_q_size], self.coeff_count)
 
         for i in range(base_Bsk_size):
             base_Bsk_elt = self.base_Bsk.base[i]
@@ -277,15 +272,11 @@ class RNSTool:
         """
 
         # Fast convert B -> q; input is in Bsk but we only use B
-        result = self.base_B_to_q_conv.fast_convert_list(
-            copy.deepcopy(input[:-1]), self.coeff_count
-        )
+        result = self.base_B_to_q_conv.fast_convert_list(input[:-1], self.coeff_count)
 
         # Compute alpha_sk
         # Fast convert B -> {m_sk}; input is in Bsk but we only use B
-        temp = self.base_B_to_m_sk_conv.fast_convert_list(
-            copy.deepcopy(input[:-1]), self.coeff_count
-        )
+        temp = self.base_B_to_m_sk_conv.fast_convert_list(input[:-1], self.coeff_count)
 
         # Take the m_sk part of input, subtract from temp, and multiply by inv_prod_B_mod_m_sk_
         # input_sk is allocated in input + (base_B_size * coeff_count_)

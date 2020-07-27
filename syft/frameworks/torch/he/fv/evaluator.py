@@ -250,7 +250,7 @@ class Evaluator:
             A Ciphertext object with a value equivalent to the result of the product of two
                 operands.
         """
-        ct1, ct2 = copy.deepcopy(ct1.data), copy.deepcopy(ct2.data)
+        ct1, ct2 = ct1.data, ct2.data
 
         if len(ct1) > 2 or len(ct2) > 2:
             # TODO: perform relinearization operation.
