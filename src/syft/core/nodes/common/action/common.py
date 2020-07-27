@@ -1,7 +1,7 @@
 from ...abstract.node import AbstractNode
-from ....message.syft_message import SyftMessage
-from ....message.syft_message import SyftMessageWithoutReply
-from ....message.syft_message import SyftMessageWithReply
+from syft.core.message import SyftMessage
+from syft.core.message import SyftMessageWithoutReply
+from syft.core.message import SyftMessageWithReply
 
 
 class Action(SyftMessage):

@@ -4,7 +4,7 @@ from .....decorators import syft_decorator
 from ...common.service.node_service import ImmediateNodeServiceWithoutReply
 from ...common.service.node_service import ImmediateNodeServiceWithReply
 from ...abstract.node import AbstractNode
-from ....message.syft_message import ImmediateSyftMessageWithReply
+from syft.core.message import ImmediateSyftMessageWithReply
 from ..action.common import ImmediateActionWithReply
 from ..action.common import ImmediateActionWithoutReply
 from typing import List

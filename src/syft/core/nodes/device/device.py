@@ -1,6 +1,5 @@
 from ..common.node import Node
 from typing import final
-from ...io.virtual import create_virtual_connection
 from .client import DeviceClient
 from ....decorators import syft_decorator
 from ....common.id import UID
@@ -9,7 +8,7 @@ from .device_type.unknown import unknown_device
 from ..vm.vm import VirtualMachine
 from ..vm.client import VirtualMachineClient
 from typing import Dict
-from ...message.syft_message import SyftMessage
+from syft.core.message import SyftMessage
 
 
 

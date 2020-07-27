@@ -1,8 +1,6 @@
 from ..common.node import Node
-from ...message.syft_message import SyftMessage
-from ....decorators.syft_decorator import syft_decorator
+from syft.core.message import SyftMessage
 from .client import DomainClient
-from ...io.virtual import create_virtual_connection
 from ..device.device import Device
 from ..device.client import DeviceClient
 

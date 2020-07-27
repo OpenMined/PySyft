@@ -7,7 +7,7 @@ from typing import List
 
 from ....io.address import Address
 from .....common.id import UID
-from ....message.syft_message import ImmediateSyftMessageWithoutReply
+from syft.core.message import ImmediateSyftMessageWithoutReply
 from ...abstract.node import AbstractNodeClient
 
 from .heritage_update_service import HeritageUpdateMessage

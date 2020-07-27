@@ -30,7 +30,7 @@ def type_hints(decorated: typing.Callable) -> typing.Callable:
         """In this method, we want to check to see if all arguments (except self) are passed in as
         kwargs. Additionally, we want to have an informative error for when args are passed in
         incorrectly. The requirement to only use kwargs is a bit of an exotic one and some Python
-        users might not be used to it. Thus, a good error message is important."""
+        users might not be used to it. Thus, a good error old_message is important."""
 
         # We begin by initializing the maximum number of args we will allow at 0. We will iterate
         # this if by chance we see an argument whose name is "self".

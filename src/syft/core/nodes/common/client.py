@@ -1,10 +1,8 @@
-from ...message.syft_message import SyftMessageWithReply
-from ...message.syft_message import SyftMessageWithoutReply
+from syft.core.message import SyftMessageWithReply
+from syft.core.message import SyftMessageWithoutReply
 from ....decorators import syft_decorator
 from ....common.id import UID
-from ...io.connection import ClientConnection
 from ...io.address import Address
-from ...io.address import address as create_address
 from ..abstract.node import AbstractNodeClient
 from .location_aware_object import LocationAwareObject
 from .service.child_node_lifecycle_service import RegisterChildNodeMessage

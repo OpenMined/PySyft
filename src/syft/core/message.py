@@ -1,6 +1,6 @@
-from ...common.message import AbstractMessage
-from ...common.id import UID
-from ..io.address import Address
+from syft.common.message import AbstractMessage
+from syft.common.id import UID
+from syft.core.io.address import Address
 
 
 class SyftMessage(AbstractMessage):

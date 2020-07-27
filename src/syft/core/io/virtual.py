@@ -4,8 +4,8 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
-from ..message.syft_message import SyftMessageWithReply
-from ..message.syft_message import SyftMessageWithoutReply
+from syft.core.message import SyftMessageWithReply
+from syft.core.message import SyftMessageWithoutReply
 from ..nodes.abstract.node import AbstractNode
 from ...decorators import syft_decorator
 from typing import final

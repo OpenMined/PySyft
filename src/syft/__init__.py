@@ -16,7 +16,7 @@ truly polyglot. Syft "core" functionality includes the following modules:
 
 * :py:mod:`syft.core.node` - APIs for interacting with remote machines you do not directly
 control.
-* :py:mod:`syft.core.message` - APIs for serializing messages sent between Client and Node
+* :py:mod:`syft.core.old_message` - APIs for serializing messages sent between Client and Node
 classes.
 * :py:mod:`syft.core.pointer` - Client side API for referring to objects on a Node
 * :py:mod:`syft.core.store` - Server side API for referring to object storage on a node

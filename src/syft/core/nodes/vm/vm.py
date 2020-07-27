@@ -1,7 +1,7 @@
 from .client import VirtualMachineClient
 from ..common.node import Node
 from ....decorators import syft_decorator
-from ...message.syft_message import SyftMessage
+from syft.core.message import SyftMessage
 from typing import final
 
 

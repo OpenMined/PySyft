@@ -10,9 +10,9 @@ from ..abstract.node import AbstractNode
 from ....decorators import syft_decorator
 from typing import List
 from ....util import get_subclasses
-from ...message.syft_message import SyftMessage
-from ...message.syft_message import SyftMessageWithReply
-from ...message.syft_message import SyftMessageWithoutReply
+from syft.core.message import SyftMessage
+from syft.core.message import SyftMessageWithReply
+from syft.core.message import SyftMessageWithoutReply
 
 # CORE IMPORTS
 from ...store.store import ObjectStore
@@ -82,7 +82,7 @@ class Node(AbstractNode, LocationAwareObject):
 
         # ABOUT SERVICES AND MESSAGES
 
-        # Each service corresponds to one or more message types which
+        # Each service corresponds to one or more old_message types which
         # the service processes. There are two kinds of messages, those
         # which require a reply and those which do not. Thus, there
         # are two kinds of services, service which generate a reply
@@ -100,13 +100,13 @@ class Node(AbstractNode, LocationAwareObject):
         # which reply with some amount of information.
 
         # for messages which need a reply, this uses the type
-        # of the message to look up the service which
-        # addresses that message.
+        # of the old_message to look up the service which
+        # addresses that old_message.
         self.msg_with_reply_router = {}
 
         # for messages which don't lead to a reply, this uses
-        # the type of the message to look up the service
-        # which addresses that message
+        # the type of the old_message to look up the service
+        # which addresses that old_message
         self.msg_without_reply_router = {}
 
         # for services which return a reply
@@ -126,9 +126,9 @@ class Node(AbstractNode, LocationAwareObject):
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all
-        # types. Thus, it does not live in a message router since
+        # types. Thus, it does not live in a old_message router since
         # routers only exist to decide which messages go to which
-        # services, and they require that every message only correspond
+        # services, and they require that every old_message only correspond
         # to only one service type. If we have more messages like
         # these we'll make a special category for "services that
         # all messages are applied to" but for now this will do.
@@ -171,7 +171,7 @@ class Node(AbstractNode, LocationAwareObject):
     @syft_decorator(typechecking=True)
     def recv_msg_with_reply(self, msg: SyftMessageWithReply) -> SyftMessageWithoutReply:
         if self.message_is_for_me(msg):
-            print("the message is for me!!!")
+            print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
                 return self.msg_with_reply_router[type(msg)].process(node=self, msg=msg)
             except KeyError as e:
@@ -183,14 +183,14 @@ class Node(AbstractNode, LocationAwareObject):
 
                 self.ensure_services_have_been_registered_error_if_not()
         else:
-            print("the message is not for me...")
+            print("the old_message is not for me...")
             return self.message_with_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
     def recv_msg_without_reply(self, msg: SyftMessageWithoutReply) -> None:
 
         if self.message_is_for_me(msg):
-            print("the message is for me!!!")
+            print("the old_message is for me!!!")
             try:  # we use try/except here because it's marginally faster in Python
 
                 self.msg_without_reply_router[type(msg)].process(node=self, msg=msg)
@@ -208,7 +208,7 @@ class Node(AbstractNode, LocationAwareObject):
                 raise e
 
         else:
-            print("the message is not for me...")
+            print("the old_message is not for me...")
             self.message_without_reply_forwarding_service.process(node=self, msg=msg)
 
     @syft_decorator(typechecking=True)
@@ -221,17 +221,17 @@ class Node(AbstractNode, LocationAwareObject):
 
     @syft_decorator(typechecking=True)
     def _register_services(self) -> None:
-        """In this method, we set each message type to the appropriate
-        service for this node. It's important to note that one message type
+        """In this method, we set each old_message type to the appropriate
+        service for this node. It's important to note that one old_message type
         cannot map to multiple services on any given node type. If you want to
-        send information to a different service, create a new message type for that
-        service. Put another way, a service can have multiple message types which
-        correspond to it, but each message type can only have one service (per node
+        send information to a different service, create a new old_message type for that
+        service. Put another way, a service can have multiple old_message types which
+        correspond to it, but each old_message type can only have one service (per node
         subclass) which corresponds to it."""
 
         for s in self.services_with_reply:
             # Create a single instance of the service to cache in the router corresponding
-            # to one or more message types.
+            # to one or more old_message types.
             service_instance = s()
             for handler_type in s.message_handler_types():
 
@@ -245,7 +245,7 @@ class Node(AbstractNode, LocationAwareObject):
 
         for s in self.services_without_reply:
             # Create a single instance of the service to cache in the router corresponding
-            # to one or more message types.
+            # to one or more old_message types.
             service_instance = s()
             for handler_type in s.message_handler_types():
 
